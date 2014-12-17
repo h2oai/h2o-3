@@ -136,8 +136,8 @@ public class EnumWrappedVec extends WrappedVec {
     @Override public NewChunk inflate_impl(NewChunk nc) {
       nc.set_sparseLen(nc.set_len(0));
       for( int i=0; i< _len; i++ )
-        if(isNA0(i))nc.addNA();
-        else nc.addNum(at80(i),0);
+        if(isNA(i))nc.addNA();
+        else nc.addNum(at8(i),0);
       return nc;
     }
     @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }

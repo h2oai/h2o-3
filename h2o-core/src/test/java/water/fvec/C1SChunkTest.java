@@ -24,44 +24,44 @@ public class C1SChunkTest extends TestUtil {
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
       if (l==1) {
-        Assert.assertTrue(cc.isNA0(0));
         Assert.assertTrue(cc.isNA(0));
+        Assert.assertTrue(cc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at0(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at_abs(l + i), 0);
       }
-      Assert.assertTrue(cc.isNA0(man.length + l));
       Assert.assertTrue(cc.isNA(man.length + l));
+      Assert.assertTrue(cc.isNA_abs(man.length + l));
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc.sparseLen());
       if (l==1) {
-        Assert.assertTrue(nc.isNA0(0));
         Assert.assertTrue(nc.isNA(0));
+        Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at0(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.atd(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at_abs(l + i), 0);
       }
-      Assert.assertTrue(nc.isNA0(man.length + l));
       Assert.assertTrue(nc.isNA(man.length + l));
+      Assert.assertTrue(nc.isNA_abs(man.length + l));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C1SChunk);
       if (l==1) {
-        Assert.assertTrue(cc2.isNA0(0));
         Assert.assertTrue(cc2.isNA(0));
+        Assert.assertTrue(cc2.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at0(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.atd(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at_abs(l + i), 0);
       }
-      Assert.assertTrue(cc2.isNA0(man.length + l));
       Assert.assertTrue(cc2.isNA(man.length + l));
+      Assert.assertTrue(cc2.isNA_abs(man.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -78,33 +78,33 @@ public class C1SChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C1SChunk);
-      if (l==1) Assert.assertTrue(cc.isNA0(0));
+      if (l==1) Assert.assertTrue(cc.isNA(0));
       for (int i = 0; i < man.length; ++i)
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.at0(l + i), 0);
-      Assert.assertTrue(cc.isNA0(man.length + l));
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
+      Assert.assertTrue(cc.isNA(man.length + l));
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc.sparseLen());
       if (l==1) {
-        Assert.assertTrue(nc.isNA0(0));
         Assert.assertTrue(nc.isNA(0));
+        Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < man.length; ++i) {
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at0(l + i), 0);
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.atd(l + i), 0);
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) nc.at_abs(l + i), 0);
       }
-      Assert.assertTrue(nc.isNA0(man.length + l));
       Assert.assertTrue(nc.isNA(man.length + l));
+      Assert.assertTrue(nc.isNA_abs(man.length + l));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(man.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C1SChunk);
-      if (l==1) Assert.assertTrue(cc2.isNA0(0));
+      if (l==1) Assert.assertTrue(cc2.isNA(0));
       for (int i = 0; i < man.length; ++i)
-        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.at0(l + i), 0);
-      Assert.assertTrue(cc2.isNA0(man.length + l));
+        Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc2.atd(l + i), 0);
+      Assert.assertTrue(cc2.isNA(man.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -123,17 +123,17 @@ public class C1SChunkTest extends TestUtil {
     Futures fs = new Futures();
     fs.blockForPending();
 
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at80(i));
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
+    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA(na);
+    for (int na : NAs) cc.setNA_abs(na);
 
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
@@ -145,18 +145,18 @@ public class C1SChunkTest extends TestUtil {
     for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
     Assert.assertTrue(!it.hasNext());
 
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     Chunk cc2 = nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof C1SChunk);
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     vec.remove();

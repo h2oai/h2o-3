@@ -657,7 +657,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   private static void data(double[] values, Chunk[] chks, int row, double[] means, double[] mults) {
     for( int i = 0; i < values.length; i++ ) {
-      double d = chks[i].at0(row);
+      double d = chks[i].atd(row);
       values[i] = data(d, i, means, mults, chks[i].vec().cardinality());
     }
   }

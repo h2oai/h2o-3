@@ -73,7 +73,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //  for( int c=0; c<_nclass; c++ ) {
       //    final double init = _model._output._priorClassDist[c];
       //    new MRTask() {
-      //      @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set0(i, init); }
+      //      @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
       //    }.doAll(vec_tree(_train,c));
       //  }
       //  throw H2O.unimpl("untested");
@@ -132,24 +132,24 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           Chunk tr = chk_tree(chks,0);
           Chunk wk = chk_work(chks,0);
           for( int row = 0; row < ys._len; row++)
-            // wk.set0(row, 1.0f/(1f+Math.exp(-tr.at0(row))) ); // Prob_1
-            wk.set0(row, 1.0f/(1f+Math.exp(tr.at0(row))) );     // Prob_0
+            // wk.set(row, 1.0f/(1f+Math.exp(-tr.atd(row))) ); // Prob_1
+            wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row))));     // Prob_0
         } else if( _nclass > 1 ) {       // Classification
           float fs[] = new float[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
             float sum = score1(chks,fs,row);
             if( Float.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
-                chk_work(chks,k).set0(row,Float.isInfinite(fs[k+1])?1.0f:0.0f);
+                chk_work(chks,k).set(row,Float.isInfinite(fs[k+1])?1.0f:0.0f);
             else
               for( int k=0; k<_nclass; k++ ) // Save as a probability distribution
-                chk_work(chks,k).set0(row,fs[k+1]/sum);
+                chk_work(chks,k).set(row,fs[k+1]/sum);
           }
         } else {                  // Regression
           Chunk tr = chk_tree(chks,0); // Prior tree sums
           Chunk wk = chk_work(chks,0); // Predictions
           for( int row=0; row<ys._len; row++ )
-            wk.set0(row,(float)tr.at0(row));
+            wk.set(row,(float)tr.atd(row));
         }
       }
     }
@@ -162,22 +162,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk ys = chk_resp(chks);
         if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
           for(int row = 0; row < ys._len; row++) {
-            if( ys.isNA0(row) ) continue;
-            int y = (int)ys.at80(row); // zero-based response variable
+            if( ys.isNA(row) ) continue;
+            int y = (int)ys.at8(row); // zero-based response variable
             Chunk wk = chk_work(chks,0);
-            // wk.set0(row, y-(float)wk.at0(row));  // wk.at0(row) is Prob_1
-            wk.set0(row, y-1f+(float)wk.at0(row));  // wk.at0(row) is Prob_0
+            // wk.set(row, y-(float)wk.atd(row));  // wk.atd(row) is Prob_1
+            wk.set(row, y-1f+(float)wk.atd(row));  // wk.atd(row) is Prob_0
           }
         } else if( _nclass > 1 ) {       // Classification
 
           for( int row=0; row<ys._len; row++ ) {
-            if( ys.isNA0(row) ) continue;
-            int y = (int)ys.at80(row); // zero-based response variable
+            if( ys.isNA(row) ) continue;
+            int y = (int)ys.at8(row); // zero-based response variable
             // Actual is '1' for class 'y' and '0' for all other classes
             for( int k=0; k<_nclass; k++ ) {
               if( _model._output._distribution[k] != 0 ) {
                 Chunk wk = chk_work(chks,k);
-                wk.set0(row, (y==k?1f:0f)-(float)wk.at0(row) );
+                wk.set(row, (y==k?1f:0f)-(float)wk.atd(row) );
               }
             }
           }
@@ -185,7 +185,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         } else {                  // Regression
           Chunk wk = chk_work(chks,0); // Prediction==>Residuals
           for( int row=0; row<ys._len; row++ )
-            wk.set0(row, (float)(ys.at0(row)-wk.at0(row)) );
+            wk.set(row, (float)(ys.atd(row)-wk.atd(row)) );
         }
       }
     }
@@ -296,12 +296,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             final Chunk nids = chk_nids(chks,k);
             final Chunk ct   = chk_tree(chks,k);
             for( int row=0; row<nids._len; row++ ) {
-              int nid = (int)nids.at80(row);
+              int nid = (int)nids.at8(row);
               if( nid < 0 ) continue;
               // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
               // <tree_klazz> fields from tree prediction
-              ct.set0(row, (float)(ct.at0(row) + (float) ((LeafNode)tree.node(nid))._pred));
-              nids.set0(row,0);
+              ct.set(row, (float)(ct.atd(row) + (float) ((LeafNode)tree.node(nid))._pred));
+              nids.set(row, 0);
             }
           }
         }
@@ -350,7 +350,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // root and the residuals should be zero.
           if( tree.root() instanceof LeafNode ) continue;
           for( int row=0; row<nids._len; row++ ) { // For all rows
-            int nid = (int)nids.at80(row);         // Get Node to decide from
+            int nid = (int)nids.at8(row);         // Get Node to decide from
             if( nid < 0 ) continue;                // Missing response
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
               nid = tree.node(nid)._pid;                  // Then take parent's decision
@@ -364,14 +364,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // the prediction presented by the tree.  For GBM, we compute the
             // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
             // leaf, and get our prediction from that.
-            nids.set0(row,leafnid);
-            assert !ress.isNA0(row);
+            nids.set(row, leafnid);
+            assert !ress.isNA(row);
 
             // Compute numerator (rs) and denominator (gs) of gamma
-            double res = ress.at0(row);
+            double res = ress.atd(row);
             double ares = Math.abs(res);
             if( _isBernoulli ) {
-              double prob = resp.at0(row) - res;
+              double prob = resp.atd(row) - res;
               gs[leafnid-leaf] += prob*(1-prob);
             } else
               gs[leafnid-leaf] += _nclass > 1 ? ares*(1-ares) : 1;
@@ -449,22 +449,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0f/(float)(1f+Math.exp(chk_tree(chks,0).at0(row)));
+      fs[1] = 1.0f/(float)(1f+Math.exp(chk_tree(chks,0).atd(row)));
       fs[2] = 1f-fs[1];
       return fs[1]+fs[2];
     }
     if( _nclass == 1 )          // Classification?
-      return fs[0]=(float)chk_tree(chks,0).at0(row); // Regression.
+      return fs[0]=(float)chk_tree(chks,0).atd(row); // Regression.
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree
-      fs[1] = (float)Math.exp(chk_tree(chks,0).at0(row));
+      fs[1] = (float)Math.exp(chk_tree(chks,0).atd(row));
       fs[2] = 1.0f/fs[1]; // exp(-d) === 1/exp(d)
       return fs[1]+fs[2];
     }
     float sum=0;
     for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
-      sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).at0(row)));
+      sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).atd(row)));
     return sum;
   }
 

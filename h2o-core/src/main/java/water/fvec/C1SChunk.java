@@ -19,7 +19,7 @@ public class C1SChunk extends Chunk {
   }
   @Override protected final long at8_impl( int i ) {
     long res = 0xFF&_mem[i+_OFF];
-    if( res == C1Chunk._NA ) throw new IllegalArgumentException("at8 but value is missing");
+    if( res == C1Chunk._NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)((res+_bias)*_scale);
   }
   @Override protected final double atd_impl( int i ) {

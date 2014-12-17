@@ -135,15 +135,15 @@ public class AUC extends Iced {
 //        _cms[i] = new ConfusionMatrix(2);
 //      final int len = Math.min(ca._len, cp._len);
 //      for( int i=0; i < len; i++ ) {
-//        if (ca.isNA0(i))
+//        if (ca.isNA(i))
 //          throw new UnsupportedOperationException("Actual class label cannot be a missing value!");
-//        final int a = (int)ca.at80(i); //would be a 0 if double was NaN
+//        final int a = (int)ca.at8(i); //would be a 0 if double was NaN
 //        assert (a == 0 || a == 1) : "Invalid values in vactual: must be binary (0 or 1).";
-//        if (cp.isNA0(i)) {
+//        if (cp.isNA(i)) {
 ////          Log.warn("Skipping predicted NaN."); //some models predict NaN!
 //          continue;
 //        }
-//        final double pr = cp.at0(i);
+//        final double pr = cp.atd(i);
 //        for( int t=0; t < _cms.length; t++ ) {
 //          final int p = pr >= _thresh[t]?1:0;
 //          _cms[t].add(a, p);

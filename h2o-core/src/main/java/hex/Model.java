@@ -402,7 +402,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int len = chks[0]._len;
       for( int row=0; row<len; row++ ) {
         float[] p = score0(chks,row,tmp,preds);
-        _mb.perRow(preds,(float)ys.at0(row));
+        _mb.perRow(preds,(float)ys.atd(row));
         for( int c=0; c<_ncols; c++ )  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
@@ -417,7 +417,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=_output._names.length;
     for( int i=0; i<_output._names.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
+      tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }
 

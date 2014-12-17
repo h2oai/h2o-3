@@ -34,7 +34,7 @@ public class MRUtils {
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
-              ncs[i].addNum(cs[i].at0(r));
+              ncs[i].addNum(cs[i].atd(r));
             }
           }
       }
@@ -61,7 +61,7 @@ public class MRUtils {
         ArrayUtils.shuffleArray(idx, seed);
         for (long anIdx : idx) {
           for (int i = 0; i < ncs.length; i++) {
-            ncs[i].addNum(cs[i].at0((int) anIdx));
+            ncs[i].addNum(cs[i].atd((int) anIdx));
           }
         }
       }
@@ -106,8 +106,8 @@ public class MRUtils {
     @Override public void map(Chunk ys) {
       _ys = new long[_nclass];
       for( int i=0; i<ys._len; i++ )
-        if( !ys.isNA0(i) )
-          _ys[(int)ys.at80(i)]++;
+        if( !ys.isNA(i) )
+          _ys[(int)ys.at8(i)]++;
     }
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
@@ -208,8 +208,8 @@ public class MRUtils {
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getDeterRNG(seed + cs[0].cidx());
         for (int r = 0; r < cs[0]._len; r++) {
-          if (cs[labelidx].isNA0(r)) continue; //skip missing labels
-          final int label = (int)cs[labelidx].at80(r);
+          if (cs[labelidx].isNA(r)) continue; //skip missing labels
+          final int label = (int)cs[labelidx].at8(r);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;
           if (poisson) {
@@ -221,7 +221,7 @@ public class MRUtils {
           }
           for (int i = 0; i < ncs.length; i++) {
             for (int j = 0; j < sampling_reps; ++j) {
-              ncs[i].addNum(cs[i].at0(r));
+              ncs[i].addNum(cs[i].atd(r));
             }
           }
         }

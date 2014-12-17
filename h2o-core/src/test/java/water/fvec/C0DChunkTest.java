@@ -18,21 +18,21 @@ public class C0DChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(K, cc._len);
       Assert.assertTrue(cc instanceof C0DChunk);
-      for (int i=0;i<K;++i) Assert.assertEquals(d, cc.at0(i), Math.ulp(d));
-      for (int i=0;i<K;++i) Assert.assertEquals(d, cc.at (i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, cc.atd(i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, cc.at_abs(i), Math.ulp(d));
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);
       Assert.assertEquals(K, nc.sparseLen());
-      for (int i=0;i<K;++i) Assert.assertEquals(d, nc.at0(i), Math.ulp(d));
-      for (int i=0;i<K;++i) Assert.assertEquals(d, nc.at (i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, nc.atd(i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, nc.at_abs(i), Math.ulp(d));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(K, cc2._len);
       Assert.assertTrue(cc2 instanceof C0DChunk);
-      for (int i=0;i<K;++i) Assert.assertEquals(d, cc2.at0(i), Math.ulp(d));
-      for (int i=0;i<K;++i) Assert.assertEquals(d, cc2.at (i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, cc2.atd(i), Math.ulp(d));
+      for (int i=0;i<K;++i) Assert.assertEquals(d, cc2.at_abs(i), Math.ulp(d));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

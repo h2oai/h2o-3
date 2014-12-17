@@ -1,0 +1,48 @@
+Package: h2o
+Version: 0.1.15.99999
+Type: Package
+Title: H2O R Interface
+Date: 2014-12-12
+Branch: master
+Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the 0xdata team
+Maintainer: Spencer Aiello <spencer@0xdata.com>
+Description: This is a package for running H2O via its REST API from within R.
+License: Apache License (== 2.0)
+URL: http://www.h2o.ai
+NeedsCompilation: no
+SystemRequirements: Java (>= 1.7)
+Depends: R (>= 2.13.0),
+         stats,
+         tools,
+         RCurl,
+         rjson,
+         statmod,
+         methods,
+         utils,
+         devtools,
+         roxygen2
+Collate:
+         'wrapper.R'
+         'constants.R'
+         'logging.R'
+         'utils.R'
+         'h2o.R'
+         'exec.R'
+         'classes.R'
+         'ops.R'
+         'methods.R'
+         'ast.R'
+         'astfun.R'
+         'import.R'
+         'parse.R'
+         'export.R'
+         'edicts.R'
+         'models.R'
+         'algorithms.R'
+         'predict.R'
+         'kmeans.R'
+         'gbm.R'
+         'deeplearning.R'
+         'pca.R'
+         'word2vec.R'
+Suggests: testthat

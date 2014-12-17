@@ -63,15 +63,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double eta = 0.0;
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].at0(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].at0(row_in_chunk)-1)];
+      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
+        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
     } else { // do not skip any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)chks[i].at0(row_in_chunk)];
+        eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*chks[i].at0(row_in_chunk);
+      eta += b[noff+i]*chks[i].atd(row_in_chunk);
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
     preds[0] = (float)mu;

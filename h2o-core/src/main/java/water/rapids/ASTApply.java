@@ -117,7 +117,7 @@ public class ASTApply extends ASTOp {
           double rowin [] = new double[cs.length];
           double rowout[] = new double[outlen];
           for (int row = 0; row < cs[0]._len; row++) {
-            for (int c = 0; c < cs.length; c++) rowin[c] = cs[c].at0(row);
+            for (int c = 0; c < cs.length; c++) rowin[c] = cs[c].atd(row);
             rowout = op.map(env0, rowin, rowout, _fun_args);
             for (int c = 0; c < ncs.length; c++) ncs[c].addNum(rowout[c]);
           }
