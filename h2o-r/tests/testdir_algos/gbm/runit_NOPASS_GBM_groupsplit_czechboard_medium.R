@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 test.GBM.Czechboard <- function(conn) {
   # Training set has checkerboard pattern
   Log.info("Importing czechboard_300x300.csv data...\n")
-  board.hex <- h2o.uploadFile(conn, locate("smalldata/histogram_test/czechboard_300x300.csv"), key = "board.hex")
+  board.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/czechboard_300x300.csv"), key = "board.hex")
   board.hex[,3] <- as.factor(board.hex[,3])
   Log.info("Summary of czechboard_300x300.csv from H2O:\n")
   print(summary(board.hex))
