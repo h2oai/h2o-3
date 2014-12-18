@@ -67,6 +67,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("for", new ASTFor());
     SYMBOLS.put("while", new ASTWhile());
     SYMBOLS.put("return", new ASTReturn());
+    SYMBOLS.put("del", new ASTDelete());
 
     //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
 

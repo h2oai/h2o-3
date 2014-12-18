@@ -15,8 +15,8 @@ class H2OFrame(object):
       parse  = H2OCONN.Parse(setup)
       hexKey = parse['hex']['name']
       cols   = parse['columnNames']
-      fr     = H2OCONN.Frame(hexKey)
-      rows   = fr['frames'][0]['rows']
+      frames = H2OCONN.Frame(hexKey)
+      rows   = frames['frames'][0]['rows']
       self._vecs = [Vec(str(col),Expr(hexKey,idx,str(col),rows))  for idx,col in enumerate(cols)]
       print "Imported",remoteFName,"into cluster as",hexKey,"with",rows,"rows and",len(cols),"cols"
     elif localFName:            # Read locally into python process
@@ -58,16 +58,16 @@ class H2OFrame(object):
   # Addition
   def __add__(self,i):
     if len(self)==0: return self
-    if isinstance(i,Frame):
+    if isinstance(i,H2OFrame):
       if len(i) != len(self):
         raise ValueError("Frame len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
-      return Frame(vecs=[x+y for x,y in zip(self._vecs,i._vecs)])
+      return H2OFrame(vecs=[x+y for x,y in zip(self._vecs,i._vecs)])
     if isinstance(i,Vec):
       if len(i) != len(self._vecs[0]):
         raise ValueError("Vec len()="+len(self._vecs[0])+" cannot be broadcast across len(i)="+len(i))
-      return Frame(vecs=[x+i for x in self._vecs])
+      return H2OFrame(vecs=[x+i for x in self._vecs])
     if isinstance(i,int):
-      return Frame(vecs=[x+i for x in self._vecs])
+      return H2OFrame(vecs=[x+i for x in self._vecs])
     raise NotImplementedError
 
   def __radd__(self,i): return self+i  # Add is associative
@@ -105,7 +105,7 @@ class Vec(object):
       return Vec(self._name+"+"+i._name,Expr("+",self,i))
     if isinstance(i,(int,float)): # Vec+int
       if i==0: return self        # Additive identity
-      return Vec(self._name+"+"+str(i),Expr("+",self,i))
+      return Vec(self._name+"+"+str(i),Expr("+",self,Expr(i)))
     raise NotImplementedError
 
   def __radd__(self,i): return self+i  # Add is associative
@@ -141,16 +141,17 @@ class Expr(object):
   # (hexkey #num name) - precomputed remote  Big Data
   def __init__(self,op,left=None,rite=None,length=None):
     self._op,self._data = (op,None) if isinstance(op,str) else ("rawdata",op)
+    self._name = self._op       # Set an initial name, generally overwritten
     assert self.isLocal() or self.isRemote() or self.isPending()
-....left/rite is Expr or None, never scalar....
     self._left = left._expr if isinstance(left,Vec) else left
     self._rite = rite._expr if isinstance(rite,Vec) else rite
-    self._name = self._op       # Set an initial name, generally overwritten
+    assert self._left is None or isinstance(self._left,Expr) or isinstance(self._data,unicode), self.debug()
+    assert self._rite is None or isinstance(self._rite,Expr) or isinstance(self._data,unicode), self.debug()
     # Compute length eagerly
     if self.isRemote():
       assert length is not None
       self._len  = length
-    elif self.isLocal:
+    elif self.isLocal():
       self._len = len(self._data) if isinstance(self._data,list) else 1
     else:
       self._len = len(self._left)
@@ -166,13 +167,20 @@ class Expr(object):
 
   # Print structure without eval'ing
   def debug(self):
-    return "(["+self._name+"]="+self._left._name+self._op+str(self._rite._name if isinstance(self._rite,Expr) else self._rite)+")"
+    return ("(["+self._name+"] = "+
+            str(self._left._name if isinstance(self._left,Expr) else self._left)+
+            " "+self._op+" "+
+            str(self._rite._name if isinstance(self._rite,Expr) else self._rite)+
+            " = "+str(type(self._data))+")")
 
   # Eval and print
   def __repr__(self):
     x = self.eager()
     if self.isLocal():  return x.__str__()
     # Big Data result.  Download the first bits only before printing.
+    print "Download "+str(x)
+    frames = H2OCONN.Frame(x)
+    print frames
     raise NotImplementedError
 
   # Basic indexed or sliced lookup
@@ -181,7 +189,7 @@ class Expr(object):
     if self.isLocal(): return x[i]
     if not isinstance(i,int): raise NotImplementedError  # need a bigdata slice here
     # ([ $frame #row #col)
-    j = H2OCONN.Rapids("([ $"+str(self._data)+" #"+str(i)+" #"+str(self._left)+")")
+    j = H2OCONN.Rapids("([ $"+str(self._data)+" #"+str(i)+" '"+str(self._rite)+"')")
     return j['scalar']
 
   # Small-data add; result of a (lazy but small) Expr vs a plain int/float
@@ -189,12 +197,15 @@ class Expr(object):
   def __radd__(self,i): return self+i  # Add is associative
 
   def __del__(self):
-    if self._data is None: print "DELE: Expr never evaluated:",self._name
-    if isinstance(self._data,list):
-      global _CMD;  
-      s = "DELE: "+self._name+"; "
-      if _CMD:  _CMD += s  # Tell cluster to delete temp as part of larger expression
-      else:  print s       # Tell cluster to delete now
+    if self.isPending() or self.isLocal(): return  # Dead pending op or local data; nothing to delete
+    assert self.isRemote()
+    global _CMD;  
+    if _CMD is None:
+      H2OCONN.Rapids("(del $"+str(self._data)+" '"+str(self._rite)+"')")
+    else:
+      s = "DELE: "+self._name+" key="+self._rite+ "; "
+      _CMD += s  # Tell cluster to delete temp as part of larger expression
+      raise NotImplementedError
 
   def eager(self):
     if self._data is None:
@@ -205,36 +216,33 @@ class Expr(object):
   # May trigger (recursive) big-data eval.
   def _doit(self):
     if self.isComputed(): return
-    if isinstance(self._left,Expr): self._left._doit()
-    if isinstance(self._rite,Expr): self._rite._doit()
-    left = self._left and isinstance(self._left,Expr) and self._left.isRemote()
-    rite = self._rite and isinstance(self._rite,Expr) and self._rite.isRemote()
-    if (left and not rite) or (rite and not left):
-      # Need to shuffle a local result over to the cluster
-      raise NotImplementedError
+    left = self._left
+    rite = self._rite
+    if isinstance(left,Expr): left._doit()
+    if isinstance(rite,Expr): rite._doit()
 
     if self._op == "+":
-      if isinstance(self._left,(int,float)):
-        if isinstance(self._rite,(int,float)):  # Small data
+      if isinstance(left._data,(int,float)):
+        if isinstance(rite._data,(int,float)):  # Small data
           lname, rname = None,None  
-          self._data = self._left+self._rite
+          self._data = left+rite
         else:
-          lname, rname = str(self._left), self._rite._name
-          self._data = [self._left+x for x in self._rite._data]
-      elif isinstance(self._rite,(int,float)):
-        lname, rname = self._left._name, str(self._rite)
-        if self._left.isLocal():  # Small data
-          self._data = [x+self._rite for x in self._left._data]
+          lname, rname = str(left), rite._name
+          self._data = [left+x for x in rite._data]
+      elif isinstance(rite._data,(int,float)):
+        lname, rname = left._name, str(rite)
+        if left.isLocal():  # Small data
+          self._data = [x+rite for x in left._data]
         else:                   # Big Data + scalar
           # (+ ([ $frame "null" #col) rite)
-          j = H2OCONN.Rapids("(+ ([ $"+str(self._left._data)+" \"null\" #"+str(self._left._left)+") #"+str(self._rite)+")")
-          self._data, self._left, self._rite = j['key']['name'], 0, ""
+          j = H2OCONN.Rapids("(+ ([ $"+str(left._data)+" \"null\" #"+str(left._left)+") #"+str(rite)+")")
+          self._data, left, rite = j['key']['name'], 0, ""
       else:
-        lname, rname = self._left._name, self._rite._name
-        self._data = [x+y for x,y in zip(self._left._data,self._rite._data)]
+        lname, rname = left._name, rite._name
+        self._data = [x+y for x,y in zip(left._data,rite._data)]
     elif self._op == "mean":
-      lname, rname = self._left._name, None
-      self._data = sum(self._left._data)/len(self._left._data)  # Stores a small data result
+      lname, rname = left._name, None
+      self._data = sum(left._data)/len(left._data)  # Stores a small data result
     else:
       raise NotImplementedError
     if lname:

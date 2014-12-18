@@ -993,7 +993,7 @@ class ASTSlice extends AST {
     if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST cols = E.skipWS().parse();
-    if (cols instanceof ASTString) cols = new ASTNull();
+    if (cols instanceof ASTString) ;
     if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);
     if (cols instanceof ASTSeries) ((ASTSeries) cols).setSlice(false, true);
     ASTSlice res = (ASTSlice) clone();
@@ -1010,6 +1010,12 @@ class ASTSlice extends AST {
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = rows_type == Env.ARY ? env.pop0() : env.pop();
+    if( cols_type == Env.STR ) {
+      Frame ary = env.peekAry();
+      int idx = ary.find(((ValStr)cols)._s);
+      if( idx == -1 ) throw new IllegalArgumentException("Column name not in frame, "+cols);
+      cols = new ValNum(idx);  cols_type = Env.NUM;
+    }
 
     // Scalar load?  Throws AIIOOB if out-of-bounds
     if(cols_type == Env.NUM && rows_type == Env.NUM) {
@@ -1142,5 +1148,29 @@ class ASTSlice extends AST {
     if(  _asts[1]==null ) indent(sb,d+1).append("all");
     else _asts[1].toString(sb,d+1);
     return sb;
+  }
+}
+
+//-----------------------------------------------------------------------------
+class ASTDelete extends AST {
+  ASTDelete parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
+    AST cols = E.skipWS().parse();
+    ASTDelete res = (ASTDelete) clone();
+    res._asts = new AST[]{ary,cols};
+    return res;
+  }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+  @Override public String toString() { return "(del)"; }
+  @Override void exec(Env env) {
+    // stack looks like:  [....,hex,cols]
+    Frame  ary = ((ASTFrame )_asts[0])._fr;
+    String col = ((ASTString)_asts[1])._s;
+    Vec vec = ary.remove(col);
+    vec.remove();
+    DKV.put(ary);
+    env.push(new ValFrame(ary));
   }
 }

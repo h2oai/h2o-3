@@ -73,6 +73,13 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
+  @Test public void test7() {
+    Frame fr = parse_test_file(Key.make("iris.hex"),"smalldata/iris/iris_wheader.csv");
+    String x = "(del $iris.hex 'class')";
+    checkTree(x);
+    fr.delete();
+  }
+
   private static void checkTree(String tree) {
     Frame r = frame(new double[]{-1,1,2,3,4,5,6,254});
     Key ahex = Key.make("a.hex");

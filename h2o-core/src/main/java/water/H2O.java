@@ -423,10 +423,8 @@ final public class H2O {
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
-  @Deprecated public static RuntimeException fail() { return new RuntimeException("do not call"); } // DO NOT USE: always return an actionable reason to the user
-  public static RuntimeException fail(String msg) {
-    return new RuntimeException(msg);
-  }
+  public static RuntimeException fail() { return new RuntimeException("do not call"); }  // Internal H2O fail; only interesting thing is the stack-trace
+  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }  // Internal H2O fail; only interesting thing is the stack-trace
   public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
 
   // --------------------------------------------------------------------------
