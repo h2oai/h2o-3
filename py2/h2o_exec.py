@@ -51,10 +51,13 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
         else:
             print "Frame return"
+            if resultKey is None:
+                raise Exception("\nWhy is key.name null when it looks like a frame result? %s" % dump_json(resultExec))
+                
             # if test said to look at a resultKey, it's should be in h2o k/v store
             # inspect a result key?
             # Should we get the key name from the exec return?
-            if 1==0 and resultKey is None:
+            if 1==0:
                 kwargs = {'ast': resultKey} 
                 resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
                 print "exec key result:", dump_json(resultExec)
