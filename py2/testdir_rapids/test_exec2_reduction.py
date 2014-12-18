@@ -1,7 +1,7 @@
 import unittest, random, sys, time, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
-from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col
+from h2o_xl import Key, AssignObj, Fcn
 
 # http://stackoverflow.com/questions/6558921/r-boolean-operators-and
 # The shorter ones are vectorized, meaning they can return a vector, like this:
@@ -25,30 +25,26 @@ from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col
 # One final difference: the && and || only evaluate as many terms as they need to (which seems to be what is meant by short-circuiting). For example, here's a comparison using an undefined value a; if it didn't short-circuit, as & and | don't, it would give an error.
 # also see http://www.burns-stat.com/pages/Tutor/R_inferno.pdf
 initList = [
-        # 'a=c(1); a = sum(r1[1,])',
-        Assign('a', Col(Seq(1,0,0))).ast(),
+        AssignObj('a', [1,0,0] ),
     ]
 
+
+r1 = Key('r1')
+
 exprList = [
-        Assign('a', Fcn('&&', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'b=c(1); b = sum(r1[1,])',
-        Assign('b', Col(Seq(1))).ast(),
-        Assign('b', Fcn('&&', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'd=c(1); d = sum(r1[1,])'(),
-        Assign('d', Col(Seq(1))).ast(),
-        Assign('d', Fcn('&&', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'e=c(1); e = sum(r1[1,])',
-        Assign('e', Col(Seq(1))).ast(),
-        Assign('e', Fcn('||', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'f=c(1); f = sum(r1[1,])',
-        Assign('f', Col(Seq(1))).ast(),
-        Assign('f', Fcn('||', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'f=c(1); g = sum(r1[1,])',
-        Assign('g', Col(Seq(1))).ast(),
-        Assign('g', Fcn('||', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
-        # 'h=c(1); h = sum(r1[1,])',
-        Assign('h', Col(Seq(1))).ast(),
-        Assign('h', Fcn('||', KeyIndexed('r1', row=1), KeyIndexed('r1', row=2),)).ast(),
+        AssignObj('a', Fcn('&&', r1[1], r1[2]) ),
+        AssignObj('b', 1),
+        AssignObj('b', Fcn('&&', r1[1], r1[2]) ),
+        AssignObj('d', 1),
+        AssignObj('d', Fcn('&&', r1[1], r1[2]) ),
+        AssignObj('e', 1),
+        AssignObj('e', Fcn('||', r1[1], r1[2]) ),
+        AssignObj('f', 1),
+        AssignObj('f', Fcn('||', r1[1], r1[2]) ),
+        AssignObj('g', 1),
+        AssignObj('g', Fcn('||', r1[1], r1[2]) ),
+        AssignObj('h', 1),
+        AssignObj('h', Fcn('||', r1[1], r1[2]) ),
         ]
 
 class Basic(unittest.TestCase):
@@ -59,7 +55,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, java_heap_GB=28)
+        h2o.init(1, java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -71,28 +67,27 @@ class Basic(unittest.TestCase):
         if getpass.getuser()=='jenkins':
             csvPathname = 'standard/billion_rows.csv.gz'
         else:
-            csvPathname = '1B/reals_100000x1000_15f.data'
             csvPathname = '1B/reals_1B_15f.data'
-            csvPathname = '1B/reals_1000000x1000_15f.data'
+            csvPathname = '1B/reals_100000x1000_15f.data'
 
         hex_key = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local', 
             hex_key=hex_key, timeoutSecs=3000, retryDelaySecs=2)
+
         inspect = h2o_cmd.runInspect(key=hex_key)
         missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
 
         for execExpr in initList:
-            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=300)
-            print "result:", result
+            result = execExpr.do(timeoutSecs=30)
 
         for execExpr in exprList:
             start = time.time()
-            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=300)
-            print 'exec took', time.time() - start, 'seconds'
-            print "result:", result
-            assert result==1
-
-        h2o.check_sandbox_for_errors()
+            result = execExpr.do(timeoutSecs=30)
+            execResult = execExpr.execResult
+            print "exec took", time.time() - start, "seconds"
+            print "exec result:", result
+            print "exec result (full):", h2o.dump_json(execResult)
+            h2o.check_sandbox_for_errors()
 
 
 if __name__ == '__main__':

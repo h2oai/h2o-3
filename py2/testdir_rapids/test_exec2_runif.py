@@ -29,10 +29,11 @@ class Basic(unittest.TestCase):
         # work up to the failing case incrementally
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
+            # params for h2o-dev runif are: column, min, max, seed 
             Assign('r0.hex', KeyIndexed('r.hex',col=0), do=False),
-            Assign('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=0), 0), do=False),
-            Assign('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=1), 0, 5, -1), do=False),
-            Assign('s2.hex', Fcn("h2o.runif", KeyIndexed('r.hex',col=54), 0, 5, -1), do=False),
+            Assign('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=0), 1), do=False),
+            Assign('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=1), 0, 5, -1), do=False),
+            Assign('s2.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=54), -1, 5, -1), do=False),
         ]
 
         results = []
@@ -41,7 +42,7 @@ class Basic(unittest.TestCase):
             result = execExpr.do(timeoutSecs=30)
             results.append(result)
             execResult = execExpr.execResult
-            print "exec end on ", "operators" , 'took', time.time() - start, 'seconds'
+            print "exec took", time.time() - start, "seconds"
             print "exec result:", result
             print "exec result (full):", h2o.dump_json(execResult)
             h2o.check_sandbox_for_errors()
