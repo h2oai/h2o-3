@@ -3,7 +3,7 @@ package water;
 import java.lang.management.ManagementFactory;
 import javax.management.*;
 import water.persist.Persist;
-import water.init.LinuxProcFileReader;
+import water.util.LinuxProcFileReader;
 import water.util.Log;
 import water.init.*;
 

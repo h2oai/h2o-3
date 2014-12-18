@@ -346,5 +346,9 @@ function(model) {
 .deeplearning.builder <- function(json, client) {
   new("H2ODeepLearningModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+}
 
+.quantile.builder <- function(json, client) {
+  new("H2OQuantileModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
 }

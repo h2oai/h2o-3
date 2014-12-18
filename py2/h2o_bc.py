@@ -465,10 +465,14 @@ def tear_down_cloud(nodeList=None, sandboxIgnoreErrors=False, force=False):
     # FIX! what about usecloud or cloud_cloud_json params from build_cloud time?
     if force or not (h2o_args.usecloud or h2o_args.clone_cloud_json):
         try:
-            # update: send a shutdown to all nodes. h2o maybe doesn't progagate well if sent to one node
+            # update: send a shutdown to all nodes. 
+            # h2o maybe doesn't progagate well if sent to one node
             # the api watchdog shouldn't complain about this?
-            for n in nodeList:
-                n.shutdown_all()
+            # just send one?
+
+            # for n in nodeList:
+            #     n.shutdown_all()
+            h2o_nodes.nodes[0].shutdown_all()
         except:
             pass
 

@@ -7,7 +7,7 @@ test.rdocextremes.golden <- function(H2Oserver) {
 ausPath = system.file("extdata", "australia.csv", package="h2o")
 australia.hex = h2o.importFile(H2Oserver, path = ausPath, key = "australia.hex")
 min(australia.hex)
-min(c(-1, 0.5, 0.2), FALSE, australia.hex[,1:4])
+min(australia.hex[,1:4], australia.hex[,5:8], na.rm=FALSE)
 
 
 testEnd()

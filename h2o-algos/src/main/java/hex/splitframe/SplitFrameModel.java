@@ -11,9 +11,9 @@ public class SplitFrameModel extends Model<SplitFrameModel,SplitFrameModel.Split
 
   public static class SplitFrameParameters extends Model.Parameters {
     /** Split ratios - resulting number of split is ratios.length+1 */
-    double[] _ratios = new double[]{0.5};
+    public double[] _ratios = new double[]{0.5};
     /** Destination keys for each output frame split. */
-    Key[] _destKeys;
+    public Key[] _destKeys;
   }
 
   public static class SplitFrameOutput extends Model.Output {

@@ -16,7 +16,7 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
         polls += 1
         # get utilization and print it
         # any busy jobs
-        a = h2o_nodes.nodes[0].jobs_admin(timeoutSecs=60)
+        a = h2o_nodes.nodes[0].jobs(timeoutSecs=60)
         busy = False
         for j in a['jobs']:
             if j['end_time']=='' and not (j['cancelled'] or (j['result'].get('val', None)=='CANCELLED')):
@@ -108,8 +108,8 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
     waitTime = 0
     ignoredJobs = set()
     while (wait):
-        a = h2o_nodes.nodes[0].jobs_admin(timeoutSecs=pollTimeoutSecs)
-        verboseprint("jobs_admin():", dump_json(a))
+        a = h2o_nodes.nodes[0].jobs(timeoutSecs=pollTimeoutSecs)
+        verboseprint("jobs():", dump_json(a))
         jobs = a['jobs']
         busy = 0
         for j in jobs:
@@ -202,15 +202,15 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
 
 def showAllJobs():
     print "Showing all jobs"
-    a = h2o_nodes.nodes[0].jobs_admin(timeoutSecs=10)
+    a = h2o_nodes.nodes[0].jobs(timeoutSecs=10)
     print dump_json(a)
 
 #*******************************************************************************************
 def cancelAllJobs(timeoutSecs=10, **kwargs): # I guess you could pass pattern
     # what if jobs had just been dispatched? wait until they get in the queue state correctly
     time.sleep(2)
-    a = h2o_nodes.nodes[0].jobs_admin(timeoutSecs=120)
-    print "jobs_admin():", dump_json(a)
+    a = h2o_nodes.nodes[0].jobs(timeoutSecs=120)
+    print "jobs():", dump_json(a)
     jobsList = a['jobs']
     for j in jobsList:
         if j['end_time'] == '':

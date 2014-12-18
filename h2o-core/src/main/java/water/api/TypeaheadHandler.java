@@ -31,6 +31,7 @@ class TypeaheadHandler extends Handler {
   private Schema serveLocalDisk(int version, TypeaheadV2 t) {
     File base = null;
     String filterPrefix = "";
+    if( t.limit == 0 ) t.limit--;
     if( !t.src.isEmpty() ) {
       File file = new File(t.src);
       if( file.isDirectory() ) {
@@ -49,7 +50,7 @@ class TypeaheadHandler extends Handler {
         if (file.isHidden()) continue;
         if (file.getName().toLowerCase().startsWith(filterPrefix))
           array.add(file.getPath());
-        if (array.size() == t.limit) break;
+        if (array.size() == t.limit) break;    // When t.limit == -1, check all files/directories in directory for matches
       }
       t.matches = array.toArray(new String[array.size()]);
     }

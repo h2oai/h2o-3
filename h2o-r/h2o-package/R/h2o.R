@@ -35,7 +35,7 @@
   return(url)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
   if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
@@ -47,6 +47,7 @@
   }
   if (missing(method)) stop()
   stopifnot(class(method) == "character")
+  if (! missing(fileUploadInfo)) { stopifnot(class(fileUploadInfo) == "FileUploadInfo") }
 
   url = .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
 
@@ -64,10 +65,17 @@
   }
 
   postBody = ""
-  if (method == "POST") {
-    postBody = queryString
-  }
-  else {
+  if (missing(fileUploadInfo)) {
+    # This is the typical case.
+    if (method == "POST") {
+      postBody = queryString
+    } else {
+      if (nchar(queryString) > 0) {
+        url = sprintf("%s?%s", url, queryString)
+      }
+    }
+  } else {
+    stopifnot(method == "POST")
     if (nchar(queryString) > 0) {
       url = sprintf("%s?%s", url, queryString)
     }
@@ -97,6 +105,17 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = tmp
     }
+  } else if (! missing(fileUploadInfo)) {
+    stopifnot(method == "POST")
+    h = basicHeaderGatherer()
+    t = basicTextGatherer()
+    tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, verbose = FALSE)),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    if (! .__curlError) {
+      httpStatusCode = as.numeric(h$value()["status"])
+      httpStatusMessage = h$value()["statusMessage"]
+      payload = t$value()
+    }
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer()
@@ -107,7 +126,8 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
-  } else {
+  }
+  else {
     message = sprintf("Unknown HTTP method %s", method)
     stop(message)
   }
@@ -183,13 +203,14 @@ h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, the version prefix is skipped.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return A list object as described above
-h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST")
+h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
+  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
   return(rv)
 }
 
-.h2o.doREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method) {
+.h2o.doREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
   if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
@@ -202,7 +223,7 @@ h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
 
-  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method)
+  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method, fileUploadInfo)
   return(rv)
 }
 
@@ -230,7 +251,7 @@ h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   return(rv)
 }
 
-.h2o.doSafeREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method) {
+.h2o.doSafeREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   if (missing(conn)) stop()
   stopifnot(class(conn) == "h2o.client")
   if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
@@ -238,8 +259,9 @@ h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
   stopifnot(class(urlSuffix) == "character")
   if (missing(method)) stop()
   stopifnot(class(method) == "character")
+  if (! missing(fileUploadInfo)) { stopifnot(class(fileUploadInfo) == "FileUploadInfo") }
 
-  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method)
+  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method, fileUploadInfo = fileUploadInfo)
 
   if (rv$curlError) {
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
@@ -276,9 +298,10 @@ h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param h2oRestApiVersion (Optional) A version number to prefix to the urlSuffix.  If no version is provided, a default version is chosen for you.
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
+#' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return The raw response payload as a character vector
-h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST")
+h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
+  rv = .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
   return(rv)
 }
 

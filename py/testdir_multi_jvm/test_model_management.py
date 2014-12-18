@@ -379,6 +379,11 @@ if h2o.H2O.verbose:
     print 'Models: '
     pp.pprint(models)
 
+models = a_node.models(api_version=92)
+if h2o.H2O.verbose:
+    print 'ModelsV92: '
+    pp.pprint(models)
+
 frames = a_node.frames(len=5)
 if h2o.H2O.verbose:
     print 'Frames: '
