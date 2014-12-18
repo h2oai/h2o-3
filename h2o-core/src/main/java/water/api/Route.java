@@ -12,8 +12,11 @@ import java.util.regex.Pattern;
 * Routing of an http request to a handler method, with path parameter parsing.
 */
 final class Route extends Iced {
+  static final int MIN_VERSION = 1;
+
   // TODO: handlers are now stateless, so create a single instance and stash it here
   public String  _http_method;
+  public String _url_pattern_raw;
   public Pattern _url_pattern;
   public String _summary;
   public Class<? extends Handler> _handler_class;
@@ -24,9 +27,10 @@ final class Route extends Iced {
 
   public Route() { }
 
-  public Route(String http_method, Pattern url_pattern, String summary, Class<? extends Handler> handler_class, Method handler_method, Method doc_method, String[] path_params) {
+  public Route(String http_method, String url_pattern_raw, Pattern url_pattern, String summary, Class<? extends Handler> handler_class, Method handler_method, Method doc_method, String[] path_params) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
     _http_method = http_method;
+    _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
     _summary = summary;
     _handler_class = handler_class;
@@ -42,7 +46,7 @@ final class Route extends Iced {
     MarkdownBuilder builder = new MarkdownBuilder();
 
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
-    builder.heading1(_http_method, _url_pattern.toString().replace("(?<", "{").replace(">.*)", "}"));
+    builder.heading1(_http_method, _url_pattern_raw.replace("(?<", "{").replace(">.*)", "}"));
     builder.hline();
     builder.paragraph(_summary);
 
@@ -88,7 +92,7 @@ final class Route extends Iced {
     if( !_handler_method.equals(route._handler_method)) return false;
     if( !_doc_method.equals(route._doc_method)) return false;
     if( !_http_method   .equals(route._http_method)) return false;
-    if( !_url_pattern   .equals(route._url_pattern   )) return false;
+    if( !_url_pattern_raw   .equals(route._url_pattern_raw)) return false;
     if( !Arrays.equals(_path_params, route._path_params)) return false;
     return true;
   }
@@ -96,7 +100,7 @@ final class Route extends Iced {
   @Override
   public int hashCode() {
     long result = _http_method.hashCode();
-    result = 31 * result + _url_pattern.hashCode();
+    result = 31 * result + _url_pattern_raw.hashCode();
     result = 31 * result + _handler_class.hashCode();
     result = 31 * result + _handler_method.hashCode();
     result = 31 * result + _doc_method.hashCode();
@@ -108,7 +112,7 @@ final class Route extends Iced {
   public String toString() {
     return "Route{" +
             "_http_method='" + _http_method + '\'' +
-            ", _url_pattern=" + _url_pattern +
+            ", _url_pattern=" + _url_pattern_raw +
             ", _summary='" + _summary + '\'' +
             ", _handler_class=" + _handler_class +
             ", _handler_method=" + _handler_method +

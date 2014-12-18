@@ -85,7 +85,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 Log.info("STARTING.");
                                 Log.info("Running with " + activation.name() + " activation function and " + loss.name() + " loss function.");
                                 Log.info("Initialization with " + dist.name() + " distribution and " + scale + " scale, holdout ratio " + holdout_ratio);
-                                Log.info("Using " + hidden + " hidden layers and momentum: " + momentum);
+                                Log.info("Using " + hidden + " hidden layer neurons and momentum: " + momentum);
                                 Log.info("Using seed " + seed);
 
                                 Random rand;

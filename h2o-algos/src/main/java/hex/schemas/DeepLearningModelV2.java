@@ -2,14 +2,14 @@ package hex.schemas;
 
 import hex.deeplearning.DeepLearningModel;
 import water.Key;
+import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
-    //FIXME
-    //add output fields
+    @API(help="Scoring information")
     DeepLearningModel.Errors errors;
   } // DeepLearningModelOutputV2
 

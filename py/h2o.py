@@ -11,6 +11,8 @@ class H2O(object):
     python_test_name = inspect.stack()[1][1]
     verbose = False
 
+    ## TODO: support api_version parameter for all api calls!
+    # Also a global in the H2O object set at creation time.
 
     # TODO: ensure that all of this is really necessary:
     def __init__(self,
@@ -685,16 +687,16 @@ class H2O(object):
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
     '''
-    def models(self, key=None, timeoutSecs=10, **kwargs):
+    def models(self, api_version=3, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_frames': False
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', H2O.verbose)
 
         if key:
-            result = self.__do_json_request('3/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request(str(api_version) + '/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('3/Models.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request(str(api_version) + '/Models.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
