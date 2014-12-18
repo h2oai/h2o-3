@@ -23,6 +23,9 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
+    // Names of features clustered upon
+    public String[] _names;
+
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
     // is used during the building process, the *builders* clusters are standardized).
@@ -31,11 +34,17 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Rows per cluster
     public long[/*k*/] _rows;
 
-    // Sum squared distance between each point and its cluster center, divided by rows
-    public double[/*k*/] _mses;   // Per-cluster MSE, variance
+    // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
+    public double[/*k*/] _withinmse;   // Within-cluster MSE, variance
 
-    // Sum squared distance between each point and its cluster center, divided by rows.
-    public double _mse;           // Total MSE, variance
+    // Sum squared distance between each point and its cluster center, divided by total number of observations.
+    public double _avgwithinmse;      // Total within-cluster MSE, variance
+
+    // Sum squared distance between each point and grand mean, divided by total number of observations.
+    public double _avgss;            // Total MSE to grand mean centroid
+
+    // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
+    public double _avgbetweenss;    // Total between-cluster MSE (avgss - avgwithinmse)
 
     public KMeansOutput( KMeans b ) { super(b); }
 
