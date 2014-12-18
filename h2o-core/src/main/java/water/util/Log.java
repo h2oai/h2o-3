@@ -252,11 +252,17 @@ abstract public class Log {
   private static synchronized org.apache.log4j.Logger createLog4j() {
     if( _logger != null ) return _logger; // Test again under lock
 
+    File dir;
+    boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
+
     // Use ice folder if local, or default
-    File dir = new File( H2O.ICE_ROOT.getScheme() == null || Persist.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme())
-                         ? H2O.ICE_ROOT.getPath()
-                         : H2O.DEFAULT_ICE_ROOT());
-      
+    if (windowsPath)
+      dir = new File(H2O.ICE_ROOT.toString());
+    else if( H2O.ICE_ROOT.getScheme() == null || Persist.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+      dir = new File(H2O.ICE_ROOT.getPath());
+    else
+      dir = new File(H2O.DEFAULT_ICE_ROOT());
+
     // If a log4j properties file was specified on the command-line, use it.
     // Don't use it if we were launched with 'hadoop jar'.
     // Create some default properties on the fly if we aren't using a provided configuration file.
