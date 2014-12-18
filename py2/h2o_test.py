@@ -61,6 +61,9 @@ class OutputObj(AttrDict):
                     print "Not showing 'columns'"
                 elif k == '__meta':
                     print "Not showing '__meta'"
+                # this is if I drill into an inspect column with an object
+                elif k == 'domain' and self.name=='inspect_column': 
+                    print "Not showing 'domain'"
                 else:
                     #  if it's a list with > 20, just print it normal
                     if isinstance(v, list) and len(v) > 20:
