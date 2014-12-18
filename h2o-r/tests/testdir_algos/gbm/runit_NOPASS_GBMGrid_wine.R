@@ -3,7 +3,7 @@ source('../../h2o-runit.R')
 
 gbm.grid.test<-
 function(conn) {
-    wine.hex <- h2o.uploadFile(conn, locate("smalldata/wine.data"), key="wine.hex")
+    wine.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/wine.data"), key="wine.hex")
     print(summary(wine.hex))
     x <- 3:14
     wine.grid <- h2o.gbm(y = 2, x = c(1,3:14),

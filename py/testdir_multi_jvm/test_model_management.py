@@ -366,7 +366,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep', 'splitframe']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -377,6 +377,11 @@ h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
 models = a_node.models()
 if h2o.H2O.verbose:
     print 'Models: '
+    pp.pprint(models)
+
+models = a_node.models(api_version=92)
+if h2o.H2O.verbose:
+    print 'ModelsV92: '
     pp.pprint(models)
 
 frames = a_node.frames(len=5)

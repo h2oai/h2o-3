@@ -1,5 +1,13 @@
-import("RCurl", "rjson", "statmod", "methods")
-importFrom("utils", "installed.packages")
+import(methods)
+import(RCurl)
+importFrom(graphics, barplot, lines)
+importFrom(rjson, fromJSON)
+importFrom(stats, binomial, Gamma, gaussian, poisson, runif)
+importFrom(statmod, tweedie)
+importFrom(tools, md5sum)
+importFrom(utils, download.file, packageVersion, read.csv,
+           setTxtProgressBar, txtProgressBar, URLencode, write.csv)
+
 exportPattern("^[[:alpha:]]+")
 export("%in%")
 exportMethods(

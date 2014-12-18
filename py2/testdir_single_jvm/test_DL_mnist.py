@@ -18,6 +18,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_mnist(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'laptop/mnist/train.csv.gz'
         csvPathname_test  = 'laptop/mnist/test.csv.gz'
         hex_key = 'mnist_train.hex'
@@ -26,18 +27,9 @@ class Basic(unittest.TestCase):
         parseResult  = h2i.import_parse(bucket='bigdata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
-        parse_key = pA.parse_key
-        numRows = iA.numRows
         numCols = iA.numCols
         labelList = iA.labelList
-
         parseResultV = h2i.import_parse(bucket='bigdata', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        pV = h2o_cmd.ParseObj(parseResult)
-        iV = h2o_cmd.InspectObj(pA.parse_key)
-        parse_keyV = pV.parse_key
-        numRowsV = iV.numRows
-        numColsV = iV.numCols
-        labelListV = iV.labelList
 
         response = numCols-1
 
@@ -129,6 +121,10 @@ class Basic(unittest.TestCase):
 
         print 'deep learning took', time.time() - start, 'seconds'
 
+        modelResult = h2o.n0.models(key=model_key)
+        model = OutputObj(modelResult['models'][0]['output'], 'model')
+#        print "model:", dump_json(model)
+
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=validation_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
 
@@ -140,23 +136,13 @@ class Basic(unittest.TestCase):
 
         h2o_cmd.runStoreView()
 
+        actualErr = model['errors']['valid_err']
         print "expected classification error: " + format(expectedErr)
+        print "actual   classification error: " + format(actualErr)
 
-        print "==============================="
-        print "==============================="
-        print "==============================="
-        print "TODO: COMPARE WITH ACTUAL ERROR"
-        print "==============================="
-        print "==============================="
-        print "==============================="
-
-#        actualErr = ...
-#        print "actual   classification error: " + format(actualErr)
-
-#        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
-#            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
-#                            (actualErr, float(relTol)*100, expectedErr))
-
+        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
+            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
+                            (actualErr, float(relTol)*100, expectedErr))
 
 if __name__ == '__main__':
     h2o.unit_main()

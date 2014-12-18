@@ -630,11 +630,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public static class DeepLearningOutput extends SupervisedModel.SupervisedOutput {
     public DeepLearningOutput() { super(); }
     public DeepLearningOutput( DeepLearning b ) { super(b); }
-    //FIXME
-    //add output fields
+    Errors errors;
   }
 
-  // Default publically visible Schema is V2
+  // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV2(); }
 
   private volatile DeepLearningModelInfo model_info;
@@ -1288,6 +1287,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
+    _output.errors = last_scored();
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1317,6 +1317,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new Errors();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
+      _output.errors = last_scored();
     }
     assert _key.equals(destKey);
   }
@@ -1439,6 +1440,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
+        _output.errors = last_scored();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)

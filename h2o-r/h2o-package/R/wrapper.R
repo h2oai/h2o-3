@@ -158,8 +158,8 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
   if(!is.logical(prompt)) stop("prompt must be of class logical")
   
   if(! h2o.clusterIsUp(conn)) {
-    message = sprintf("There is no H2O instance running at ", h2o.getBaseURL(conn))
-    stop(paste("", myURL))
+    message = sprintf("There is no H2O instance running at %s", h2o.getBaseURL(conn))
+    stop(message)
   }
   
   if(prompt) {

@@ -3,7 +3,7 @@ package water;
 import java.lang.management.ManagementFactory;
 import javax.management.*;
 import water.persist.Persist;
-import water.init.LinuxProcFileReader;
+import water.util.LinuxProcFileReader;
 import water.util.Log;
 import water.init.*;
 
@@ -125,6 +125,10 @@ public class HeartBeatThread extends Thread {
         hb._process_num_open_fds = -1;
       }
       hb._cpus_allowed = lpfr.getProcessCpusAllowed();
+      if (H2O.ARGS.nthreads < hb._cpus_allowed) {
+        hb._cpus_allowed = H2O.ARGS.nthreads;
+      }
+      hb._nthreads = H2O.ARGS.nthreads;
       hb._pid = lpfr.getProcessID();
 
       // Announce what Cloud we think we are in.

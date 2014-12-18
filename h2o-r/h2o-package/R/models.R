@@ -329,6 +329,11 @@ function(model) {
 }
 
 .kmeans.builder <- function(json, client) {
+  if(!is.na(json$output$clusters) && !is.null(json$output$clusters)) {
+    json$output$clusters = do.call(rbind.data.frame, json$output$clusters)
+    if(!is.null(json$output$names) && ncol(json$output$clusters) == length(json$output$names))
+      names(json$output$clusters) = json$output$names
+  }
   new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o = client, key="NA"))
 }
@@ -346,5 +351,9 @@ function(model) {
 .deeplearning.builder <- function(json, client) {
   new("H2ODeepLearningModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+}
 
+.quantile.builder <- function(json, client) {
+  new("H2OQuantileModel", h2o = client, key = json$key$name, model = json$output,
+      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
 }

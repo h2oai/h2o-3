@@ -1,10 +1,11 @@
 import h2o_exec as h2e, h2o_print as h2p, h2o_cmd
-import re
+import re, math
 from copy import copy
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
 # can set this in a test to disable the actual exec, just debugprint()
 debugPrintEnable = False
+debugRefPrintEnable = False
 # to work without h2o (just print asts)
 debugNoH2O = False
 def debugprint(*args, **kwargs):
@@ -38,8 +39,9 @@ class Xbase(object):
     keyWriteHistoryList = []
 
     def refcntInc(self, *args):
-    # Expr shouldn't be used? but maybe useful redirect.
-        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
+        # Expr shouldn't be used? but maybe useful redirect.
+        # can't do a = 1 and assume a key is created
+        if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF, Col)):
             return
         if isinstance(self, (int, float, list, tuple)):
             return
@@ -48,10 +50,12 @@ class Xbase(object):
         # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
         # by making that non-indexed assign look like the indexed assign, things should be easier.
         # Items can be root?
-        h2p.red_print("refcntInc: %s for" % self.refcnt, id(self), type(self), self)
+        if debugRefPrintEnable:
+            h2p.red_print("refcntInc: %s for" % self.refcnt, id(self), type(self), self)
         # so we refcnt ourselves once? so if refcnt=1, that's a "root" ?
         if self.refcnt > 1:
-            h2o.red_print("INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self))
+            if debugRefPrintEnable:
+                h2o.red_print("INTERESTING: refcnt is > 1: %s %s %s" % (self.refcnt, type(self), self))
 
         for a in args:
             if a:
@@ -65,7 +69,8 @@ class Xbase(object):
     def assignIfRoot(self):
         if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF)):
             return
-        h2p.red_print("assignIfRoot for", id(self), type(self), self)
+        if debugRefPrintEnable:
+            h2p.red_print("assignIfRoot for", id(self), type(self), self)
 
     # not used
     def json(self): # returns a json string. debugprint(s it too.)
@@ -327,7 +332,8 @@ class Xbase(object):
 
     def __eq__(self, right):
         # raise Exception("__eq__ What is doing this? %s %s %s" % (type(self), self, right))
-        return self._binary_common('==', Item(right))
+        print "__eq__", self, right
+        # return self._binary_common('==', Item(right))
         # return NotImplemented
         # if result is NotImplemented:
 
@@ -339,6 +345,7 @@ class Xbase(object):
     # get=True will get the actual result. Easy if it's scalar. Will have to inspect the key to get a col result/
     # if it has more than one col, unsupported for now.
     def do(self, timeoutSecs=30):
+        print "enter .do()"
         if not isinstance(self, (Assign, Expr, Def, Key, KeyInit, KeyIndexed, Item, Fcn, If, IfElse, Return)):
             raise Exception(".do() Maybe you're trying to send a wrong instance to h2o? %s %s" % \
                 (type(self), self))
@@ -398,13 +405,18 @@ class Xbase(object):
                     print "Hack scalar to int for new key for scalar, because rapids doesn't take reals yet"
                     # doesn't like 0.0?
                     # we always want a key for the result, regardless of what h2o does.
-                    execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
+                    # what if self.scalar is NaN
+                    if math.isnan(float(self.scalar)):
+                        print "Rapids returned scalar result that's NaN. Using -1 instead: %s" % self.scalar
+                        execExpr2 = '(= !%s (c {#-1}))' % self.frame
+                    else:
+                        execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
 
                 self.numRows = 1
                 self.numCols = 1
 
                 execResult2, result2 = h2e.exec_expr(execExpr=execExpr2)
-                assert execResult2['key'] is not None
+                assert execResult2['key'] is not None, dump_json(execResult2)
                 assert self.numRows==execResult2['num_rows'], "%s %s" % (self.numRows, execResult2['num_rows'])
                 assert self.numCols==execResult2['num_cols'], "%s %s" % (self.numCols, execResult2['num_cols'])
 
@@ -671,7 +683,7 @@ def legalKey(frame, parent):
             raise Exception("%s: frame can't be 'c' %s" % (parent, frameStr))
         if not re.match('[\a-zA-Z0-9_]', frameStr):
             raise Exception("%s: Don't like the chars in your frame %s" % (parent, frameStr))
-    debugprint("%s frame: %s" % (parent, frameStr))
+    debugprint("legalKey %s frame: %s" % (parent, frameStr))
     return True
 
 #********************************************************************************
@@ -745,7 +757,6 @@ class Key(Xbase):
         # can have row/col?
         legalKey(frame, "Key")
         self.frame = frame
-
         if not noRefCnt:
             self.refcntInc()
             # how do I know all references to me have done their refcntInc?
@@ -779,6 +790,10 @@ class Key(Xbase):
 
             elif isinstance(item, Colon):
                 debugprint("Key item Colon", Colon)
+                return item
+
+            elif isinstance(item, Fcn):
+                debugprint("Key item Fcn", Fcn)
                 return item
 
             # what if the indexer is a list/tuple, string, or Key?
@@ -871,7 +886,6 @@ class KeyIndexed(Key):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -929,7 +943,6 @@ class KeyInit(Xbase):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -952,7 +965,6 @@ class DF(Key):
         # normal writes always work, even if it really wasn't existing.
 
         self.refcntInc()
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):
@@ -1023,7 +1035,6 @@ class Return(Xbase):
 
         if not noRefCnt:
             self.refcntInc(expr)
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -1070,9 +1081,6 @@ class Assign(Key):
     def __init__(self, lhs=None, rhs=None, do=True, assignDisable=False, timeoutSecs=30, noRefCnt=False):
         super(Assign, self).__init__(lhs, noRefCnt=True)
 
-         # this is going to inhibit GC..this probably should be a weakref dict. (but then entries may disappear)
-        Assign.instances.add(self)
-
         debugprint("Assign enter. lhs %s %s" % (type(lhs), lhs))
         # base init for execResult etc results. Should only need for Assign, Expr, Def ?
         if lhs is None:
@@ -1112,7 +1120,6 @@ class Assign(Key):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
 
@@ -1141,6 +1148,11 @@ class Assign(Key):
                 lhsprefix = ''
             return "(= %s%s %s)" % (lhsprefix, lhsAssign, self.rhs)
 
+# same as Assign, just have do=False default
+# can never set do=True
+class AssignObj(Assign):
+    def __init__(self, *args, **kwargs):
+        super(AssignObj, self).__init__(*args, do=False, **kwargs)
 
 # can only do one expression/statement per ast.
 # Not currently used
@@ -1228,7 +1240,6 @@ class If(Xbase):
         self.clause = Item(clause)
         self.exprList = exprList
         self.refcntInc(clause, exprs)
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):
@@ -1251,7 +1262,6 @@ class IfElse(Xbase):
         self.ifExprList = ifExprList
         self.elseExprList = elseExprList
         self.refcntInc(iclause, ifExpr, elseExpr)
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):
@@ -1316,6 +1326,7 @@ class Cut(Fcn):
 if __name__ == '__main__':
     debugNoH2O = True
     debugPrintEnable = True
+    debugRefPrintEnable = True
 
 
 # http://eli.thegreenplace.net/2011/05/15/understanding-unboundlocalerror-in-python

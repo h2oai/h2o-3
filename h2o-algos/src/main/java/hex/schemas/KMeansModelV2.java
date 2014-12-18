@@ -14,13 +14,19 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     public double[/*k*/][/*features*/] clusters;
 
     @API(help="Rows[k]")
-    public long[/*k*/]  rows;
+    public long[/*k*/] rows;
 
-    @API(help="Mean Square Error per cluster")
-    public double[/*k*/] mses;   // Per-cluster MSE, variance
+    @API(help="Within cluster Mean Square Error per cluster")
+    public double[/*k*/] withinmse;   // Within-cluster MSE, variance
 
-    @API(help="Mean Square Error")
-    public double mse;           // Total MSE, variance
+    @API(help="Average within cluster Mean Square Error")
+    public double avgwithinmse;       // Average within-cluster MSE, variance
+
+    @API(help="Average Mean Square Error to grand mean")
+    public double avgss;    // Total MSE to grand mean centroid
+
+    @API(help="Average between cluster Mean Square Error")
+    public double avgbetweenss;
 
     @API(help="Iterations executed")
     public double iters;

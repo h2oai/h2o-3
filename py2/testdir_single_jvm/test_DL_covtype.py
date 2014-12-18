@@ -18,6 +18,7 @@ class Basic(unittest.TestCase):
         h2o.tear_down_cloud()
 
     def test_DL_covtype(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'standard/covtype.data'
         csvPathname_test  = 'standard/covtype.data'
         hex_key = 'covtype.hex'
@@ -116,7 +117,7 @@ class Basic(unittest.TestCase):
         expectedErr = 0.27 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
-        timeoutSecs = 60
+        timeoutSecs = 300
         start = time.time()
 
         bmResult = h2o.n0.build_model(
@@ -129,6 +130,10 @@ class Basic(unittest.TestCase):
 
         print 'deep learning took', time.time() - start, 'seconds'
 
+        modelResult = h2o.n0.models(key=model_key)
+        model = OutputObj(modelResult['models'][0]['output'], 'model')
+#        print "model:", dump_json(model)
+
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=validation_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
 
@@ -140,23 +145,13 @@ class Basic(unittest.TestCase):
 
         h2o_cmd.runStoreView()
 
+        actualErr = model['errors']['valid_err']
         print "expected classification error: " + format(expectedErr)
+        print "actual   classification error: " + format(actualErr)
 
-        print "==============================="
-        print "==============================="
-        print "==============================="
-        print "TODO: COMPARE WITH ACTUAL ERROR"
-        print "==============================="
-        print "==============================="
-        print "==============================="
-
-#        actualErr = ...
-#        print "actual   classification error: " + format(actualErr)
-
-#        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
-#            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
-#                            (actualErr, float(relTol)*100, expectedErr))
-
+        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
+            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
+                            (actualErr, float(relTol)*100, expectedErr))
 
 if __name__ == '__main__':
     h2o.unit_main()

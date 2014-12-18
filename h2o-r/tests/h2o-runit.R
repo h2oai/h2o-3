@@ -100,7 +100,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/wrapper.R", "/constants.R", "/logging.R", "/gbm.R",  "/h2o.R", "/exec.R", "/classes.R", "/ops.R", "/methods.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/algorithms.R", "/predict.R", "/kmeans.R", "/deeplearning.R")
+  to_src <- c("/wrapper.R", "/constants.R", "/logging.R", "/gbm.R",  "/h2o.R", "/utils.R", "/exec.R", "/classes.R", "/ops.R", "/methods.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/algorithms.R", "/predict.R", "/kmeans.R", "/deeplearning.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }

@@ -65,7 +65,8 @@ public class RequestServer extends NanoHTTPD {
 
   // An array of regexs-over-URLs and handling Methods.
   // The list is searched in-order, first match gets dispatched.
-  private static final LinkedHashMap<Pattern,Route> _routes = new LinkedHashMap<>();
+  private static final LinkedHashMap<Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
+  private static final LinkedHashMap<Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
   public static final int numRoutes() { return _routes.size(); }
   public static final Collection<Route> routes() { return _routes.values(); }
 
@@ -89,7 +90,7 @@ public class RequestServer extends NanoHTTPD {
     // Admin
     addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
     register("/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
-    addToNavbar(register("/Jobs"       ,"GET",JobsHandler       .class,"list"        ,"Get a list of all the H2O Jobs (long-running actions)."),"/Jobs"       , "Jobs",          "Admin");
+    addToNavbar(register("/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
     addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
@@ -153,9 +154,9 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
 
-    register("/2/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
+    register("/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
-    register("/2/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
+    register("/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
       "Return the Model Builder metadata for all available algorithms.");
 
     // TODO: filtering isn't working for these first four; we get all results:
@@ -264,8 +265,8 @@ public class RequestServer extends NanoHTTPD {
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary) {
-    assert uri_pattern.startsWith("/");
+  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary) {
+    assert uri_pattern_raw.startsWith("/");
 
     // Search handler_class and all its superclasses for the method.
     Method meth = null;
@@ -298,31 +299,67 @@ public class RequestServer extends NanoHTTPD {
       throw H2O.fail("Failed to find doc method: " + doc_method + " for handler class: " + handler_class);
 
 
-    if (uri_pattern.matches("^/v?\\d+/.*")) {
+    if (uri_pattern_raw.matches("^/\\d+/.*")) {
       // register specifies a version
     } else {
       // register all versions
-      uri_pattern = "^(/v?\\d+)?" + uri_pattern;
+      uri_pattern_raw = "^(/\\d+)?" + uri_pattern_raw;
     }
-    assert lookup(handler_method, uri_pattern)==null; // Not shadowed
-    Pattern pattern = Pattern.compile(uri_pattern);
-    Route route = new Route(http_method, pattern, summary, handler_class, meth, doc_meth, path_params);
-    _routes.put(pattern, route);
+    assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
+    Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
+    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params);
+    _routes.put(uri_pattern, route);
     return route;
   }
 
 
+  static Pattern version_pattern = null;
   // Lookup the method/url in the register list, and return a matching Method
   protected static Route lookup( String http_method, String uri ) {
     if (null == http_method || null == uri)
       return null;
 
+    // Search the explicitly registered routes:
     for( Route r : _routes.values() )
       if (r._url_pattern.matcher(uri).matches())
         if (http_method.equals(r._http_method))
           return r;
 
-    return null;
+    // Search the fallbacks cache:
+    for( Route r : _fallbacks.values() )
+      if (r._url_pattern.matcher(uri).matches())
+        if (http_method.equals(r._http_method))
+          return r;
+
+    // Didn't find a registered route and didn't find a cached fallback, so do a backward version search and cache if we find a match:
+    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+)/(.*)");
+    Matcher m = version_pattern.matcher(uri);
+    if (! m.matches()) return null;
+
+    // Ok then. . .  Try to fall back to a previous version.
+    int version = Integer.valueOf(m.group(1));
+    if (version == Route.MIN_VERSION) return null; // don't go any lower
+
+    String lower_uri = "/" + (version - 1) + "/" + m.group(2);
+    Route fallback = lookup(http_method, lower_uri);
+
+    if (null == fallback) return null;
+
+    // Store the route fallback for later.
+    Matcher route_m = version_pattern.matcher(fallback._url_pattern_raw);
+    if (! route_m.matches()) throw H2O.fail("Found a fallback route that doesn't have a version: " + fallback);
+
+    // register fallbacks for all the versions <= the one in URI we were originally given and >  the one in the fallback route:
+    int route_version = Integer.valueOf(route_m.group(1));
+    for (int i = version; i > route_version && i >= Route.MIN_VERSION; i--) {
+      String fallback_route_uri = "/" + i + "/" + route_m.group(2);
+      Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
+      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params);
+      _fallbacks.put(fallback_route_pattern, generated);
+    }
+
+    // Better be there in the _fallbacks cache now!
+    return lookup(http_method, uri);
   }
 
 

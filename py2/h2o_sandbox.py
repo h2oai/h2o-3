@@ -165,6 +165,9 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 #[Loaded java.lang.Error from /usr/lib/jvm/java-7-oracle/jre/lib/rt.jar]
                 foundBadPartial = regex1.search(line)
                 foundBad = foundBadPartial and not (
+                    ('WARNING: found non-Schema Iced field:' in line) or # arno has 'errors' as a field
+                    ('ti-UDP-R ERRR: Multicast' in line) or # from Shutdown AIOOBE
+                    ('Skipping field that lacks an annotation' in line) or # can have DeepLearningModel$Errors
                     ('python_test_name' in line) or
                     ('Retrying after IO error' in line) or
                     ('Error on' in line) or

@@ -164,9 +164,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
-
       } else {
-        final DeepLearningModel previous = DKV.get(_parms._checkpoint).get();
+        final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
         if (_parms._n_folds != 0)
@@ -181,8 +180,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Log.warn("Automatically re-using ignored_cols from the checkpointed model.");
         }
         if ((_parms._valid == null) != (previous._parms._valid == null)
-                || (_parms._valid != null && previous._parms._valid != null
-                    && !_parms._valid.equals(previous._parms._valid))) {
+                || (_parms._valid != null  && !_parms._valid.equals(previous._parms._valid))) {
           throw new IllegalArgumentException("validation must be the same as for the checkpointed model.");
         }
         if( isClassifier() != previous._output.isClassifier() )
@@ -230,26 +228,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       }
       trainModel(cp);
 
-      // clean up
-      Frame tra_fr = _train;
-      Frame val_fr = _valid;
-      int validlen = val_fr!= null ? val_fr.vecs().length : 0;
-      Key[] keep = new Key[tra_fr.vecs().length+validlen+6];
-      //don't delete the training data
-      for (int i = 0; i< tra_fr.vecs().length; ++i)
-        keep[i] = tra_fr.vecs()[i]._key;
-      keep[tra_fr.vecs().length] = _train._key;
-      //don't delete the validation data
-      for (int i = 0; i< validlen; ++i)
-        keep[i] = val_fr.vecs()[i]._key;
-      if (val_fr != null) keep[tra_fr.vecs().length+1] = _valid._key;
-      //don't delete the model
-      keep[tra_fr.vecs().length+2] = _dest;
-      keep[tra_fr.vecs().length+3] = cp.actual_best_model_key;
-      //don't delete the job
-      keep[tra_fr.vecs().length+4] = self();
-      keep[tra_fr.vecs().length+5] = _progressKey;
-      Scope.exit(keep);
+      // clean up, but don't delete the model
+      Scope.exit(dest());
     }
 
 

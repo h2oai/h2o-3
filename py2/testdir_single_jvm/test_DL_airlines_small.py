@@ -17,21 +17,20 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_DL_covtype(self):
+    def test_DL_airlines_small(self):
+        h2o.nodes[0].remove_all_keys()
         csvPathname_train = 'airlines/AirlinesTrain.csv.zip'
         csvPathname_test  = 'airlines/AirlinesTest.csv.zip'
         hex_key = 'train.hex'
         validation_key = 'validation.hex'
         timeoutSecs = 60
         parseResult  = h2i.import_parse(bucket='smalldata', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
-        inspectResult = h2o_cmd.runInspect(key=parse_key)
-        missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspectResult)
+        pA = h2o_cmd.ParseObj(parseResult)
+        iA = h2o_cmd.InspectObj(pA.parse_key)
 
         parseResultV = h2i.import_parse(bucket='smalldata', path=csvPathname_test, hex_key=validation_key, timeoutSecs=timeoutSecs, doSummary=False)
-        numRowsV, numColsV, parse_keyV = h2o_cmd.infoFromParse(parseResultV)
-        inspectResultV = h2o_cmd.runInspect(key=parse_keyV)
-        missingListV, labelListV, numRowsV, numColsV = h2o_cmd.infoFromInspect(inspectResultV)
+        pAV = h2o_cmd.ParseObj(parseResultV)
+        iAV = h2o_cmd.InspectObj(pAV.parse_key)
 
         #Making random id
         identifier = ''.join(random.sample(string.ascii_lowercase + string.digits, 10))
@@ -39,13 +38,13 @@ class Basic(unittest.TestCase):
 
         parameters = {
             'validation_frame': validation_key, # KeyIndexed None
-            'ignored_columns': '["IsDepDelayed_REC"]', # string[] None
+            'ignored_columns': '[IsDepDelayed_REC]', # string[] None
             'score_each_iteration': None, # boolean false
             'response_column': 'IsDepDelayed', # string None
             'do_classification': True, # boolean false
             'loss': 'CrossEntropy'
         }
-        expectedErr = 0.27 ## expected validation error for the above model
+        expectedErr = 0.32 ## expected validation error for the above model
         relTol = 0.15 ## 15% rel. error tolerance due to Hogwild!
 
         timeoutSecs = 60
@@ -61,6 +60,10 @@ class Basic(unittest.TestCase):
 
         print 'deep learning took', time.time() - start, 'seconds'
 
+        modelResult = h2o.n0.models(key=model_key)
+        model = OutputObj(modelResult['models'][0]['output'], 'model')
+#        print "model:", dump_json(model)
+
         cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=validation_key, timeoutSecs=60)
         cmm = OutputObj(cmmResult, 'cmm')
 
@@ -72,23 +75,13 @@ class Basic(unittest.TestCase):
 
         h2o_cmd.runStoreView()
 
+        actualErr = model['errors']['valid_err']
         print "expected classification error: " + format(expectedErr)
+        print "actual   classification error: " + format(actualErr)
 
-        print "==============================="
-        print "==============================="
-        print "==============================="
-        print "TODO: COMPARE WITH ACTUAL ERROR"
-        print "==============================="
-        print "==============================="
-        print "==============================="
-
-#        actualErr = ...
-#        print "actual   classification error: " + format(actualErr)
-
-#        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
-#            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
-#                            (actualErr, float(relTol)*100, expectedErr))
-
+        if actualErr != expectedErr and abs((expectedErr - actualErr)/expectedErr) > relTol:
+            raise Exception("Scored classification error of %s is not within %s %% relative error of %s" %
+                            (actualErr, float(relTol)*100, expectedErr))
 
 if __name__ == '__main__':
     h2o.unit_main()

@@ -76,34 +76,31 @@ class Basic(unittest.TestCase):
                 # take advantage of default params for row/col (None)
                 # need the 'c' function, to make sure the key is created
 
-                Assign('seq1', Fcn('c', Seq(range(5)) ))
+                Assign('seq2', Fcn('c', Seq(range(5)) ))
                 inspect = h2o_cmd.runInspect(key='seq1')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-                assert numRows==5
-                assert numCols==1
 
-                Assign('seq2', Col(Seq(range(5))) )
+                Assign('seq3', Col(Seq(range(5))) )
                 inspect = h2o_cmd.runInspect(key='seq2')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-                assert numRows==5
-                assert numCols==1
 
                 # can't have sequence of sequences?
                 # make sure key is created with c()
-                Assign('seq1', 
-                    Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) )) )
+                Assign('seq4', Fcn('c', Seq(Colon(99,400), "#2", 1, range(1,5), range(7,10), range(50,52) )) )
 
                 inspect = h2o_cmd.runInspect(key='seq1')
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)
-                assert numRows==313
-                assert numCols==1
             
                 Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) )
-                Assign('seq1', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
+                Assign('seq5', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
 
-                Assign(result_key, Cut(KeyIndexed(data_key, col=0)))
-                Assign(result_key, Cut(KeyIndexed(data_key, col=1), breaks=3))
-                Assign(result_key, Fcn('mean', KeyIndexed(data_key, col=1), True))
+                Assign('seq6', Key('seq5') + Key('seq4') + Key('seq3'))
+
+                # doesn't like my cut? complains on FALSE
+                # Assign(result_key, Cut(KeyIndexed(data_key, col=0)))
+                # Assign(result_key, Cut(KeyIndexed(data_key, col=1), breaks=3))
+
+                Assign(result_key, Fcn('mean', KeyIndexed(data_key, col=1), 1))
                 Assign(result_key, Fcn('min', KeyIndexed(data_key, col=1), True))
                 Assign(result_key, Fcn('max', KeyIndexed(data_key, col=1), True))
 

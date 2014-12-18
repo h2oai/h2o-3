@@ -91,12 +91,12 @@ setClassUnion("data.frame.N", c("data.frame", "NULL"))
 #'
 setClass("h2o.frame",
          representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
-         col_names="vector", nrows="numeric", ncols="numeric", scalar="numeric",
+         col_names="character", nrows="numeric", ncols="numeric", scalar="numeric",
          factors="data.frame.N"),
          prototype(h2o       = NULL,
                    key       = NA_character_,
                    ast       = NULL,
-                   col_names = NA_integer_,
+                   col_names = NA_character_,
                    nrows     = NA_integer_,
                    ncols     = NA_integer_,
                    factors   = NULL,
@@ -351,7 +351,7 @@ setMethod("show", "H2ODRFModel", function(object) {
   cat("Distributed Random Forest Model Key:", object@key)
 
   model = object@model
-  cat("\n\nClasification:", model$params$classification)
+  cat("\n\nClassification:", model$params$classification)
   cat("\nNumber of trees:", model$params$ntree)
   cat("\nTree statistics:\n"); print(model$forest)
 
@@ -412,6 +412,21 @@ setMethod("show", "H2OGBMModel", function(object) {
 #    cat("\nCross-Validation Models:\n")
 #    print(sapply(object@xval, function(x) x@key))
 #  }
+})
+
+#'
+#' The H2OQuantileModel class.
+#'
+#' This class represents a quantile model.
+#' @slot valid Object of class \code{\linkS4class{h2o.frame}}, which is the dataset used to build the model.
+#' @aliases H2OQuantileModel
+setClass("H2OQuantileModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+
+#' @rdname H2OQuantileModel-class
+setMethod("show", "H2OQuantileModel", function(object) {
+# print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
+  cat("Quantile Model Key:", object@key, "\n")
 })
 
 #'
@@ -512,10 +527,13 @@ setClass("H2OKMeansModel", representation(valid="h2o.frame", xval="list"), conta
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
 #    cat("Parsed Data Key:", object@data@key, "\n\n")
-    cat("K-Means Model Key:", object@key)
+    cat("K-means Model Key:", object@key)
 
     model = object@model
     cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
+    cat("\n\nCluster means:\n"); print(model$clusters)
+    cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
+    cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2), "%)\n")
 #    cat("\n\nCluster means:\n"); print(model$centers)
 #    cat("\nClustering vector:\n"); print(summary(model$clusters))
 #    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)

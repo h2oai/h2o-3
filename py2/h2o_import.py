@@ -229,17 +229,14 @@ def import_only(node=None, schema='local', bucket=None, path=None,
         # hmm.. what should importResult be in the put case
         # set it to None. No import is done, and shouldn't be used if you're doing schema='put'
         # ..make it look like an import files result..This is just for test consistency
-        a = '{\
+        importResult = json.loads('{\
           "dels": [],\
           "fails": [],\
           "files": ["%s"],\
           "keys": ["%s"],\
           "path": "%s",\
           "schema_name": null, "schema_type": null, "schema_version": null\
-        }'% (filename, src_key, filePath)
-
-        print "json string:", a
-        importResult = json.loads(a)
+        }'% (filename, src_key, filePath))
         return (importResult, key)
 
     if schema=='local' and not \
@@ -439,6 +436,7 @@ def import_parse(node=None, schema='local', bucket=None, path=None,
         benchmarkLogging, noPoll, **kwargs)
     elapsed = time.time() - start
     print importPattern, "parsed in", elapsed, "seconds.", "%d pct. of timeout" % ((elapsed*100)/timeoutSecs), "\n"
+    parseResult['python_elapsed'] = elapsed
 
     verboseprint("parseResult:", dump_json(parseResult))
 

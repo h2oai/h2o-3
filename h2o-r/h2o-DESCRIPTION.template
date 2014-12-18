@@ -12,19 +12,22 @@ URL: http://www.h2o.ai
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.7)
 Depends: R (>= 2.13.0),
-         stats,
-         tools,
+         methods,
+         statmod,
+         stats
+Imports: graphics,
          RCurl,
          rjson,
-         statmod,
-         methods,
-         utils,
-         devtools,
-         roxygen2
+         tools,
+         utils
+Suggests: devtools,
+          roxygen2,
+          testthat
 Collate:
          'wrapper.R'
          'constants.R'
          'logging.R'
+         'utils.R'
          'h2o.R'
          'exec.R'
          'classes.R'
@@ -44,4 +47,3 @@ Collate:
          'deeplearning.R'
          'pca.R'
          'word2vec.R'
-Suggests: testthat

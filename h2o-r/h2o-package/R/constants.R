@@ -184,12 +184,14 @@
                "long" = "numeric",
                "long[]" = "narray",
                "string" = "character",
-               "string[]" = "sarray")
+               "string[]" = "sarray",
+               "VecSpecifier" = "character")
 
 .algo.map <- c("deeplearning" = ".deeplearning.builder",
                "gbm" = ".gbm.builder",
                "kmeans" = ".kmeans.builder",
-               "glm" = ".glm.builder")
+               "glm" = ".glm.builder",
+               "quantile" = ".quantile.builder")
 #'
 #' Inspect/Summary Endpoints
 #'
