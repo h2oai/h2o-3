@@ -390,8 +390,7 @@ public class Weaver {
   static private final String[] FLDSZ1 = {
     "Z","1","2","2","4","4f","8","8d", // Primitives
     "Str","","Enum",                   // String, Freezable, Enum
-    "Ser",                             // java.lang.Serializable
-    "D"                                // Double
+    "Ser"                              // java.lang.Serializable
   };
 
   // Field types:
@@ -413,7 +412,6 @@ public class Weaver {
     case 'D': return 7;
     case 'L':                   // Handled classes
       if( sig.equals("Ljava/lang/String;") ) return 8;
-      if( sig.equals("Ljava/lang/Double;") ) return 12;
 
       String clz = sig.substring(1,sig.length()-1).replace('/', '.');
       CtClass argClass = _pool.get(clz);
