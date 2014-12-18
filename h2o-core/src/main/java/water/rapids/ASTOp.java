@@ -49,7 +49,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("=", new ASTAssign());
     SYMBOLS.put("'", new ASTString('\'', ""));
     SYMBOLS.put("\"",new ASTString('\"', ""));
-    SYMBOLS.put("$", new ASTId('$', ""));
+    SYMBOLS.put("%", new ASTId('%', ""));
     SYMBOLS.put("!", new ASTId('!', ""));
     SYMBOLS.put("#", new ASTNum(0));
     SYMBOLS.put("g", new ASTGT());
@@ -61,7 +61,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("[", new ASTSlice());
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
-    SYMBOLS.put("_", new ASTNot());
+    SYMBOLS.put("not", new ASTNot());
     SYMBOLS.put("if", new ASTIf());
     SYMBOLS.put("else", new ASTElse());
     SYMBOLS.put("for", new ASTFor());
@@ -1065,7 +1065,7 @@ class ASTPow2 extends ASTBinOp { public ASTPow2() { super(); } @Override String 
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
 }
-class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "%"  ;} @Override ASTOp make() {return new ASTMod ();}
+class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "mod"  ;} @Override ASTOp make() {return new ASTMod ();}
   @Override double op(double d0, double d1) { return d0%d1;}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot mod (%) Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}

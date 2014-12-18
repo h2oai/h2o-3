@@ -142,7 +142,7 @@ class ASTId extends AST {
   @Override int type() { return Env.ID; }
   @Override String value() { return _id; }
   boolean isSet() { return _type == '!'; }
-  boolean isLookup() { return _type == '$'; }
+  boolean isLookup() { return _type == '%'; }
   boolean isValid() { return isSet() || isLookup(); }
 }
 
@@ -165,10 +165,11 @@ class ASTFrame extends AST {
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
-    Key<Frame> k = Key.make(key);
-    if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    Key k = Key.make(key);
+    Keyed val = DKV.getGet(k);
+    if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
-    _fr = k.get();
+    _fr = val instanceof Frame ? (Frame)val : new Frame((Vec)val);
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {

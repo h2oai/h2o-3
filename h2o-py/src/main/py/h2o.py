@@ -12,13 +12,12 @@ class H2OFrame(object):
       if not H2OCONN: raise ValueError("No open h2o connection")
       rawkey = H2OCONN.ImportFile(remoteFName)
       setup  = H2OCONN.ParseSetup(rawkey)
-      parse  = H2OCONN.Parse(setup)
-      hexKey = parse['hex']['name']
+      parse  = H2OCONN.Parse(setup,"PY_TMP")
       cols   = parse['columnNames']
-      frames = H2OCONN.Frame(hexKey)
-      rows   = frames['frames'][0]['rows']
-      self._vecs = [Vec(str(col),Expr(hexKey,idx,str(col),rows))  for idx,col in enumerate(cols)]
-      print "Imported",remoteFName,"into cluster as",hexKey,"with",rows,"rows and",len(cols),"cols"
+      rows   = parse['rows']
+      veckeys= parse['vecKeys']
+      self._vecs = [Vec(str(col),Expr(op=veckey['name'],length=rows))  for idx,(col,veckey) in enumerate(zip(cols,veckeys))]
+      print "Imported",remoteFName,"into cluster with",rows,"rows and",len(cols),"cols"
     elif localFName:            # Read locally into python process
       with open(localFName, 'rb') as csvfile:
         self._vecs = []
@@ -95,7 +94,7 @@ class Vec(object):
   def __repr__(self): return self._name+" "+self._expr.__str__()
 
   # Basic indexed or sliced lookup
-  def __getitem__(self,i): return self._expr[i]
+  def __getitem__(self,i): return Expr("[",self,Expr(i));
 
   # Basic (broadening) addition
   def __add__(self,i):
@@ -110,8 +109,7 @@ class Vec(object):
 
   def __radd__(self,i): return self+i  # Add is associative
 
-  def mean(self):
-    return Expr("mean",self._expr,None)
+  def mean(self): return Expr("mean",self._expr,None)
 
   # Number of rows
   def __len__(self): return len(self._expr)
@@ -175,10 +173,11 @@ class Expr(object):
 
   # Eval and print
   def __repr__(self):
-    x = self.eager()
+    x = self.eager();
     if self.isLocal():  return x.__str__()
     # Big Data result.  Download the first bits only before printing.
-    print "Download "+str(x)
+    global _CMD
+    print "Download "+str(_CMD)
     frames = H2OCONN.Frame(x)
     print frames
     raise NotImplementedError
@@ -188,9 +187,10 @@ class Expr(object):
     x = self.eager()
     if self.isLocal(): return x[i]
     if not isinstance(i,int): raise NotImplementedError  # need a bigdata slice here
-    # ([ $frame #row #col)
-    j = H2OCONN.Rapids("([ $"+str(self._data)+" #"+str(i)+" '"+str(self._rite)+"')")
-    return j['scalar']
+    # ([ %vec #row #0)
+    #j = H2OCONN.Rapids("([ %"+str(self._data)+" #"+str(i)+" #0)")
+    #return j['scalar']
+    raise NotImplementedError
 
   # Small-data add; result of a (lazy but small) Expr vs a plain int/float
   def __add__ (self,i): return self.eager()+i
@@ -201,15 +201,31 @@ class Expr(object):
     assert self.isRemote()
     global _CMD;  
     if _CMD is None:
-      H2OCONN.Rapids("(del $"+str(self._data)+" '"+str(self._rite)+"')")
+      H2OCONN.Remove(self._data)
     else:
       s = "DELE: "+self._name+" key="+self._rite+ "; "
       _CMD += s  # Tell cluster to delete temp as part of larger expression
       raise NotImplementedError
 
+  # This forces a top-level execution, as needed, and produces a top-level
+  # result LOCALLY.  Frames are returned and truncated to the standard head()
+  # response - 200cols by 100rows.
   def eager(self):
-    if self._data is None:
-      global _CMD; assert not _CMD;  _CMD = "{";  self._doit();  print _CMD+"}"; _CMD = None
+    if self.isComputed(): return self._data
+    # Gather the computation path for remote work, or doit locally for local work
+    global _CMD; assert not _CMD;  
+    _CMD = "";                  # Begin gathering rapids commands
+    self._doit();
+    cmd = _CMD;  _CMD = None;
+    if self.isLocal():  return self._data # Local computation, all done
+
+    # Remote computation - ship Rapids over wire, bring the result local
+    j = H2OCONN.Rapids(cmd)
+    if j['num_rows']:
+      print j
+      raise NotImplementedError
+    self._data = j['scalar']
+    assert self._data is not None
     return self._data
 
   # External API for eager; called by all top-level demanders (e.g. print)
@@ -220,6 +236,7 @@ class Expr(object):
     rite = self._rite
     if isinstance(left,Expr): left._doit()
     if isinstance(rite,Expr): rite._doit()
+    global _CMD
 
     if self._op == "+":
       if isinstance(left._data,(int,float)):
@@ -234,21 +251,21 @@ class Expr(object):
         if left.isLocal():  # Small data
           self._data = [x+rite for x in left._data]
         else:                   # Big Data + scalar
-          # (+ ([ $frame "null" #col) rite)
-          j = H2OCONN.Rapids("(+ ([ $"+str(left._data)+" \"null\" #"+str(left._left)+") #"+str(rite)+")")
-          self._data, left, rite = j['key']['name'], 0, ""
+          _CMD += "(+ %"+str(left._data)+" #"+str(rite)+")"
       else:
         lname, rname = left._name, rite._name
         self._data = [x+y for x,y in zip(left._data,rite._data)]
+    elif self._op == "[":
+      lname, rname = left._name, None
+      if left.isLocal():
+        self._data = left._data[rite._data]
+      else:
+        _CMD += "([ %"+str(left._data)+" #"+str(rite._data)+" #0)"
     elif self._op == "mean":
       lname, rname = left._name, None
       self._data = sum(left._data)/len(left._data)  # Stores a small data result
     else:
       raise NotImplementedError
-    if lname:
-      global _CMD
-      _CMD += self._name+"= "+lname+" "+self._op+" "+str(rname)+"; "
-    assert self._data is not None
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
     return
@@ -305,10 +322,10 @@ class H2OConnection(object):
     if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
-  # Trigger a parse; blocking
-  def Parse(self,setup):
+  # Trigger a parse; blocking; removeFrame just keep the Vec keys
+  def Parse(self,setup,hexname):
     # Some initial parameters
-    p = {'delete_on_done':True,'blocking':True,'hex':setup['hexName']}
+    p = {'delete_on_done':True,'blocking':True,'removeFrame':True,'hex':hexname}
     # Copy selected keys
     for key in ['ncols','sep','columnNames','pType','checkHeader','singleQuotes']:
       p[key] = setup[key]
@@ -321,13 +338,13 @@ class H2OConnection(object):
     if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
     return j
 
+  # Remove a Key (probably just a Vec)
+  def Remove(self,key):
+    return self.doSafeGet(self.buildURL("Remove",{"key":key}))
+
   # Fire off a Rapids expression
   def Rapids(self,expr):
     return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
-
-  # Return basic Frame info
-  def Frame(self,hexKey,off=0,length=10):
-    return self.doSafeGet(self.buildURL("3/Frames/"+hexKey+"/columns",{"offset":off,"len":length}))
 
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):

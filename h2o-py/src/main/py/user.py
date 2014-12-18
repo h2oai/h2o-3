@@ -18,10 +18,10 @@ print a[0]+a[1]     # Add 2 columns; broadcast parallel add
 print a["sepal_len"].mean()
 print sum(a)
 
-try: print a["a.Sepal_len"]  # Error, mispelt column name
+try: print a["Sepal_len"]   # Error, mispelt column name
 except ValueError,ex: pass  # Expected error
 
-b = H2OFrame(localFName="smalldata/iris/iris_wheader.csv")[0:4]
+b = H2OFrame(remoteFName="smalldata/iris/iris_wheader.csv")[0:4]
 c = a+b
 d = c+c+sum(a)
 e = c+a+1
