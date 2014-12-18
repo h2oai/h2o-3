@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.util.Log;
 import water.util.TwoDimTable;
+import static water.util.TwoDimTable.emptyDouble;
 
 public class TwoDimTableTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -22,11 +23,11 @@ public class TwoDimTableTest extends TestUtil {
                     new String[]{null,             "Three",  null        },
                     new String[]{null,             "FooBar", null        }
             },
-            new Double[][]{
-                    new Double[]{1.123,            null,    3200034.00001},
-                    new Double[]{123.34,           null,    1.0          },
-                    new Double[]{null,             null,    3234.00001   },
-                    new Double[]{3.33420923423423, null,    3.40234234   }
+            new double[][]{
+                    new double[]{1.123,            emptyDouble,    3200034.00001},
+                    new double[]{123.34,           emptyDouble,    1.0          },
+                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
+                    new double[]{3.33420923423423, emptyDouble,    3.40234234   }
             }
     );
     String ts = table.toString();
@@ -51,11 +52,11 @@ public class TwoDimTableTest extends TestUtil {
                     new String[]{null,             "Three",  "extra"     },
                     new String[]{null,             "FooBar", null        }
             },
-            new Double[][]{
-                    new Double[]{1.123,            null,    3200034.00001},
-                    new Double[]{123.34,           null,    1.0          },
-                    new Double[]{null,             null,    3234.00001   },
-                    new Double[]{3.33420923423423, null,    3.40234234   }
+            new double[][]{
+                    new double[]{1.123,            emptyDouble,    3200034.00001},
+                    new double[]{123.34,           emptyDouble,    1.0          },
+                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
+                    new double[]{3.33420923423423, emptyDouble,    3.40234234   }
             }
     );
   }
@@ -73,11 +74,11 @@ public class TwoDimTableTest extends TestUtil {
                     new String[]{null,             "Three",  null        },
                     new String[]{null,             "FooBar", null        }
             },
-            new Double[][]{
-                    new Double[]{1.123,            null,    3200034.00001},
-                    new Double[]{123.34,           null,    1.0          },
-                    new Double[]{null,             null,    3234.00001   },
-                    new Double[]{3.33420923423423, null,    3.40234234   }
+            new double[][]{
+                    new double[]{1.123,            emptyDouble,    3200034.00001},
+                    new double[]{123.34,           emptyDouble,    1.0          },
+                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
+                    new double[]{3.33420923423423, emptyDouble,    3.40234234   }
             }
     );
     String ts = table.toString();
@@ -97,11 +98,11 @@ public class TwoDimTableTest extends TestUtil {
             new String[]{"%f", "%f", "%f"},
             new String[]{"R1", "R2", "R3", "R4"},
             new String[4][],
-            new Double[][]{
-                    new Double[]{1.123,            3.42,    3200034.00001},
-                    new Double[]{123.34,           null,    1.0          },
-                    new Double[]{null,             null,    3234.00001   },
-                    new Double[]{3.33420923423423, 83.32,   3.40234234   }
+            new double[][]{
+                    new double[]{1.123,            3.42,    3200034.00001},
+                    new double[]{123.34,           emptyDouble,    1.0          },
+                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
+                    new double[]{3.33420923423423, 83.32,   3.40234234   }
             }
     );
     String ts = table.toString();
@@ -109,7 +110,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"All numbers\",\"colNames\":[\"Num1\",\"Num2\",\"Num3\"],\"colFormatStrings\":[\"%f\",\"%f\",\"%f\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[null,null,null,null],\"doubles\":[[1.123,3.42,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,83.32,3.40234234]]}"));
+    assertTrue(json.equals("{\"description\":\"All numbers\",\"colNames\":[\"Num1\",\"Num2\",\"Num3\"],\"colFormatStrings\":[\"%f\",\"%f\",\"%f\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[[null,null,null],[null,null,null],[null,null,null],[null,null,null]],\"doubles\":[[1.123,3.42,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,83.32,3.40234234]]}"));
     Log.info(json);
   }
 
@@ -126,14 +127,14 @@ public class TwoDimTableTest extends TestUtil {
                     new String[]{"a", null, "c", "d"},
                     new String[]{"a", "b", "c", null},
             },
-            new Double[4][]
+            new double[4][]
     );
     String ts = table.toString();
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"All strings\",\"colNames\":[\"S1\",\"S2\",\"S3\",\"S4\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[[\"a\",\"b\",\"c\",\"d\"],[\"a\",\"b\",\"c\",\"d\"],[\"a\",null,\"c\",\"d\"],[\"a\",\"b\",\"c\",null]],\"doubles\":[null,null,null,null]}"));
+    assertTrue(json.equals("{\"description\":\"All strings\",\"colNames\":[\"S1\",\"S2\",\"S3\",\"S4\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[[\"a\",\"b\",\"c\",\"d\"],[\"a\",\"b\",\"c\",\"d\"],[\"a\",null,\"c\",\"d\"],[\"a\",\"b\",\"c\",null]],\"doubles\":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]]}"));
     Log.info(json);
   }
 
@@ -144,8 +145,8 @@ public class TwoDimTableTest extends TestUtil {
             new String[]{"C0", "C1", "C2", "C3"},
             new String[]{"%s", "%s", "%s", "%s"},
             new String[]{"R0", "R1", "R2", "R3"},
-            new String[4][4],
-            new Double[4][4]
+            new String[4][],
+            new double[4][]
     );
     table.set(3, 3, "a33");
     table.set(0, 1, "a01");
