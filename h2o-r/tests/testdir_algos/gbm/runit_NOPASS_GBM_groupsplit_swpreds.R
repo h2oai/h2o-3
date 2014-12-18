@@ -7,7 +7,7 @@ test.GBM.SWpreds <- function(conn) {
   # Ratio of y = 1 per Level: cat01 = 1.0 (strong predictor), cat02 to cat10 = 0.5 (weak predictors)
   
   Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds.hex <- h2o.uploadFile(conn, locate("smalldata/histogram_test/swpreds_1000x3.csv"), key = "swpreds.hex")
+  swpreds.hex <- h2o.uploadFile(conn, locate("smalldata/gbm_test/swpreds_1000x3.csv"), key = "swpreds.hex")
   swpreds.hex[,3] <- as.factor(swpreds.hex[,3])
   Log.info("Summary of swpreds_1000x3.csv from H2O:\n")
   print(summary(swpreds.hex))
