@@ -2,6 +2,7 @@ import unittest, time, sys, random, re
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
+import h2o_test
 
 
 targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park', 
@@ -43,7 +44,9 @@ def random_enum(n):
             t = 1
         else:
             t = 0
-        return (t,r)
+        # need more randomness to get enums to be strings
+        r2 = random.randint(0, 10000)
+        return (t,"%s_%s" % (r, r2))
 
 def write_syn_dataset(csvPathname, rowCount, colCount=1, SEED='12345678',
         colSepChar=",", rowSepChar="\n"):
@@ -141,7 +144,7 @@ class Basic(unittest.TestCase):
     def test_w2v_basic_1(self):
         global SYNDATASETS_DIR
         SYNDATASETS_DIR = h2o.make_syn_dir()
-        n = 100
+        n = 500000
         tryList = [
             (n, 1, 'cD', 300),
             (n, 2, 'cE', 300),
@@ -163,12 +166,24 @@ class Basic(unittest.TestCase):
                 checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
+            cA = h2o_test.OutputObj(iA.columns[0], "inspect_column")
+
             parse_key = pA.parse_key
             numRows = iA.numRows
             numCols = iA.numCols
             labelList = iA.labelList
 
-            # src_key = h2i.find_key('syn_.*csv')
+            for i in range(colCount):
+                print cA.type, cA.missing
+                self.assertEqual(0, cA.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing))
+                self.assertEqual('string', cA.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, cA.type))
+
+            for i in range(colCount):
+                co = h2o_cmd.runSummary(key=parse_key, column=i)
+                print co.label, co.type, co.missing, co.domain, sum(co.bins)
+                self.assertEqual(0, co.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing))
+                self.assertEqual('String', co.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, co.type))
+
 
             # no cols ignored
             labelListUsed = list(labelList)
