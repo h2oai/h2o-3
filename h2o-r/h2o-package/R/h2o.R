@@ -90,7 +90,9 @@
   if (.h2o.isLogging()) {
     .h2o.logRest("------------------------------------------------------------")
     .h2o.logRest("")
-    .h2o.logRest(sprintf("%s %s", method, url))
+    .h2o.logRest(sprintf("Time:     %s", as.character(format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"))))
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("%-9s %s", method, url))
     .h2o.logRest(sprintf("postBody: %s", postBody))
   }
 
