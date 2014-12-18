@@ -15,27 +15,23 @@ public class TwoDimTable {
    * @param values
    */
   public TwoDimTable(String description, String[] colNames, String[] colFormatStrings, String[] rowNames, Object[][] values) {
+    if (description == null) throw new IllegalArgumentException("description is missing.");
+    if (colNames == null) throw new IllegalArgumentException("colNames are missing.");
+    if (colFormatStrings == null) throw new IllegalArgumentException("colFormatStrings are missing.");
+    if (rowNames == null) throw new IllegalArgumentException("rowNames are missing.");
+    if (values == null) throw new IllegalArgumentException("values are missing.");
+    if (values.length != rowNames.length)
+      throw new IllegalArgumentException("values must have the same length as rowNames: " + rowNames.length);
+    for (Object[] v : values)
+      if (v.length != colNames.length)
+        throw new IllegalArgumentException("Each entry in values must have the same length as colNames: " + colNames.length);
+    if (colFormatStrings != null && colFormatStrings.length != colNames.length)
+      throw new IllegalArgumentException("colFormatStrings must have the same length as colNames: " + colNames.length);
     this.description = description;
     this.colNames = colNames;
     this.colFormatStrings = colFormatStrings;
     this.rowNames = rowNames;
     this.values = values;
-  }
-
-  /**
-   * Construct empty two-dim table from row/column names
-   * @param colNames
-   * @param rowNames
-   */
-  public TwoDimTable(String description, String[] colNames, String[] colFormatStrings, String[] rowNames) {
-    this.description = description;
-    this.colNames = colNames;
-    this.colFormatStrings = colFormatStrings;
-    this.rowNames = rowNames;
-    values = new Object[colNames.length][];
-    for (int i=0; i<values.length; ++i) {
-      values[i] = new Object[rowNames.length];
-    }
   }
 
   public String toString() {

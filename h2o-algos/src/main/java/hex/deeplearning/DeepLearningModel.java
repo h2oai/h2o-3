@@ -633,7 +633,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Errors errors;
   }
 
-  // Default publically visible Schema is V2
+  // Default publicly visible Schema is V2
   public ModelSchema schema() { return new DeepLearningModelV2(); }
 
   private volatile DeepLearningModelInfo model_info;
