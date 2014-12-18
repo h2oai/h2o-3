@@ -4,6 +4,7 @@ import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_test
 
+DO_SUMMARY=False
 
 targetList = ['red', 'mail', 'black flag', 5, 1981, 'central park', 
     'good', 'liquor store rooftoop', 'facebook']
@@ -135,7 +136,7 @@ class Basic(unittest.TestCase):
         global SEED
         SEED = h2o.setup_random_seed()
 
-        h2o.init(1)
+        h2o.init(1, java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -178,11 +179,12 @@ class Basic(unittest.TestCase):
                 self.assertEqual(0, cA.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing))
                 self.assertEqual('string', cA.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, cA.type))
 
-            for i in range(colCount):
-                co = h2o_cmd.runSummary(key=parse_key, column=i)
-                print co.label, co.type, co.missing, co.domain, sum(co.bins)
-                self.assertEqual(0, co.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing))
-                self.assertEqual('String', co.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, co.type))
+            if DO_SUMMARY:
+                for i in range(colCount):
+                    co = h2o_cmd.runSummary(key=parse_key, column=i)
+                    print co.label, co.type, co.missing, co.domain, sum(co.bins)
+                    self.assertEqual(0, co.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing))
+                    self.assertEqual('String', co.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, co.type))
 
 
             # no cols ignored
@@ -203,7 +205,7 @@ class Basic(unittest.TestCase):
                     'windowSize': 5,  # int 5
                     'sentSampleRate': 0.001,  # float 0.001
                     'initLearningRate': 0.05,  # float 0.05
-                    'epochs': 5, # int 5
+                    'epochs': 1, # int 5
                 }
 
                 model_key = 'benign_w2v.hex'
@@ -212,7 +214,7 @@ class Basic(unittest.TestCase):
                     destination_key=model_key,
                     training_frame=parse_key,
                     parameters=parameters, 
-                    timeoutSecs=10) 
+                    timeoutSecs=60) 
                 bm = OutputObj(bmResult, 'bm')
 
                 modelResult = h2o.n0.models(key=model_key)
@@ -224,8 +226,10 @@ class Basic(unittest.TestCase):
                 mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
                 mm = OutputObj(mmResult['model_metrics'][0], 'mm')
 
-                prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
-                pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
+                # not implemented?
+
+                # prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+                # pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
         
                 h2o_cmd.runStoreView()
 
