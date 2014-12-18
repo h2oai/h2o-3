@@ -924,6 +924,23 @@ public final class AutoBuffer {
     }
     return buf;
   }
+  public Double[] getAD( ) {
+    //_arys++;
+    int len = getInt(); if( len == -1 ) return null;
+    double[] buf = MemoryManager.malloc8d(len);
+    int sofar = 0;
+    while( sofar < len ) {
+      DoubleBuffer as = _bb.asDoubleBuffer();
+      int more = Math.min(as.remaining(), len - sofar);
+      as.get(buf, sofar, more);
+      sofar += more;
+      _bb.position(_bb.position() + as.position()*8);
+      if( sofar < len ) getSp(Math.min(_bb.capacity()-7, (len-sofar)*8));
+    }
+    Double[] bufD = new Double[len];
+    for (int i=0; i<len; ++i) bufD[i] = buf[i];
+    return bufD;
+  }
   @SuppressWarnings("unused")
   public byte[][] getAA1( ) {
     //_arys++;
@@ -990,6 +1007,17 @@ public final class AutoBuffer {
     int z = y==0 ? 0 : getInt(); // Trailing nulls
     double[][] ary  = new double[x+y+z][];
     for( int i=x; i<x+y; i++ ) ary[i] = getA8d();
+    return ary;
+  }
+  @SuppressWarnings("unused")  public Double[][] getAAD( ) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    Double[][] ary  = new Double[x+y+z][];
+    for( int i=x; i<x+y; i++ ) ary[i] = getAD();
     return ary;
   }
   @SuppressWarnings("unused")  public int[][][] getAAA4( ) {
@@ -1143,6 +1171,23 @@ public final class AutoBuffer {
     }
     return this;
   }
+  public AutoBuffer putAD( Double[] ary ) {
+    //_arys++;
+    if( ary == null ) return putInt(-1);
+    putInt(ary.length);
+    int sofar = 0;
+    while( sofar < ary.length ) {
+      DoubleBuffer sb = _bb.asDoubleBuffer();
+      int len = Math.min(ary.length - sofar, sb.remaining());
+      double[] ary_d = new double[ary.length];
+      for (int i=0; i<ary.length; ++i) ary_d[i] = ary[i];
+      sb.put(ary_d, sofar, len);
+      sofar += len;
+      _bb.position(_bb.position() + sb.position()*8);
+      if( sofar < ary.length ) sendPartial();
+    }
+    return this;
+  }
 
   @SuppressWarnings("unused")  AutoBuffer putAA1( byte[][] ary ) {
     //_arys++;
@@ -1197,6 +1242,15 @@ public final class AutoBuffer {
     int x=(int)(xy>>32);
     int y=(int)xy;
     for( int i=x; i<x+y; i++ ) putA8d(ary[i]);
+    return this;
+  }
+  @SuppressWarnings("unused")  public AutoBuffer putAAD( Double[][] ary ) {
+    //_arys++;
+    long xy = putZA(ary);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putAD(ary[i]);
     return this;
   }
   @SuppressWarnings("unused")  AutoBuffer putAAA4( int[][][] ary ) {
@@ -1551,13 +1605,24 @@ public final class AutoBuffer {
   }
 
   AutoBuffer putJSON8d( double d ) { return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d)))); }
+  AutoBuffer putJSOND( Double d ) { return d==null ? putJNULL() : putJSON8d(d); }
   public AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
+  public AutoBuffer putJSOND( String name, Double d ) { return putJSONStr(name).put1(':').putJSOND(d); }
   public AutoBuffer putJSONA8d( double[] a ) {
     if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
       putJSON8d(a[i]);
+    }
+    return put1(']');
+  }
+  public AutoBuffer putJSONAD( Double[] a ) {
+    if( a == null ) return putJNULL();
+    put1('[');
+    for( int i=0; i<a.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSOND(a[i]);
     }
     return put1(']');
   }
@@ -1572,6 +1637,16 @@ public final class AutoBuffer {
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
       putJSONA8d(a[i]);
+    }
+    return put1(']');
+  }
+  public AutoBuffer putJSONAAD( String name, Double[][] a ) {
+    putJSONStr(name).put1(':');
+    if( a == null ) return putJNULL();
+    put1('[');
+    for( int i=0; i<a.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSONAD(a[i]);
     }
     return put1(']');
   }
