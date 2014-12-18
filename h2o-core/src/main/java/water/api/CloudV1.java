@@ -98,6 +98,12 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
     @API(help="num_cpus", direction=API.Direction.OUTPUT)
     public int num_cpus;
 
+    @API(help="cpus_allowed", direction=API.Direction.OUTPUT)
+    public int cpus_allowed;
+
+    @API(help="nthreads", direction=API.Direction.OUTPUT)
+    public int nthreads;
+
     @API(help="PID", direction=API.Direction.OUTPUT)
     public String pid;
 
@@ -133,6 +139,8 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
       tcps_active = hb._tcps_active;
       open_fds = hb._process_num_open_fds; // -1 if not available
       num_cpus = hb._num_cpus;
+      cpus_allowed = hb._cpus_allowed;
+      nthreads = hb._nthreads;
       pid = hb._pid;
     }
   }

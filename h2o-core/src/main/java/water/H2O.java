@@ -155,7 +155,7 @@ final public class H2O {
     public String ice_root;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public int nthreads=Math.max(99,10*NUMCPUS);
+    public int nthreads=NUMCPUS;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -482,7 +482,7 @@ final public class H2O {
     private final int _cap;
     FJWThrFact( int cap ) { _cap = cap; }
     @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-      int cap = _cap==-1 ? ARGS.nthreads : _cap;
+      int cap = 4 * NUMCPUS;
       return pool.getPoolSize() <= cap ? new FJWThr(pool) : null;
     }
   }
@@ -490,7 +490,13 @@ final public class H2O {
   // A standard FJ Pool, with an expected priority level.
   private static class ForkJoinPool2 extends ForkJoinPool {
     final int _priority;
-    private ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p<MIN_HI_PRIORITY); _priority = p; }
+    private ForkJoinPool2(int p, int cap) {
+      super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
+            new FJWThrFact(cap),
+            null,
+            p<MIN_HI_PRIORITY);
+      _priority = p;
+    }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
   }
 

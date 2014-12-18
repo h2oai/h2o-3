@@ -125,6 +125,10 @@ public class HeartBeatThread extends Thread {
         hb._process_num_open_fds = -1;
       }
       hb._cpus_allowed = lpfr.getProcessCpusAllowed();
+      if (H2O.ARGS.nthreads < hb._cpus_allowed) {
+        hb._cpus_allowed = H2O.ARGS.nthreads;
+      }
+      hb._nthreads = H2O.ARGS.nthreads;
       hb._pid = lpfr.getProcessID();
 
       // Announce what Cloud we think we are in.
