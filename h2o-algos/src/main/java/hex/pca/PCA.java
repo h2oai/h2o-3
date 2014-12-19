@@ -56,7 +56,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null;
       try {
-        _parms.lock_frames(PCA.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
         init(true);
 
         // The model to be built
@@ -131,7 +131,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       } finally {
         if( model != null ) model.unlock(_key);
         DKV.remove(dinfo._key);
-        _parms.unlock_frames(PCA.this);
+        _parms.read_unlock_frames(PCA.this);
         done();                 // Job done!
       }
       tryComplete();

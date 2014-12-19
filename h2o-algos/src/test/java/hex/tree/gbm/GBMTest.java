@@ -1,6 +1,6 @@
 package hex.tree.gbm;
 
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -212,7 +212,7 @@ public class GBMTest extends TestUtil {
 
       double auc = mm._aucdata.AUC();
       Assert.assertTrue(0.80 <= auc && auc < 0.83); // Sanely good model
-      ConfusionMatrix2 cmf1 = mm._aucdata.CM();
+      ConfusionMatrix cmf1 = mm._aucdata.CM();
       Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
 
     } finally {

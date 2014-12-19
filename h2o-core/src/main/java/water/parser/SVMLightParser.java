@@ -27,7 +27,7 @@ class SVMLightParser extends Parser {
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
     SVMLightParser p = new SVMLightParser(new ParseSetup(true, 0, 0, null, ParserType.SVMLight, ParseSetup.AUTO_SEP, -1, false, null,null,null,0, null));
-    InspectDataOut2 dout = new InspectDataOut2();
+    SVMLightInspectDataOut dout = new SVMLightInspectDataOut();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
                                  dout._invalidLines, 0, dout.errors(), ParserType.SVMLight, ParseSetup.AUTO_SEP, dout._ncols,
@@ -335,8 +335,8 @@ class SVMLightParser extends Parser {
   // --------------------------------------------------------
   // Used for previewing datasets.
   // Fill with zeros not NAs, and grow columns on-demand.
-  private static class InspectDataOut2 extends InspectDataOut {
-    public InspectDataOut2() {
+  private static class SVMLightInspectDataOut extends InspectDataOut {
+    public SVMLightInspectDataOut() {
       for (String[] a_data : _data) Arrays.fill(a_data, "0");
     }
     // Expand columns on-demand

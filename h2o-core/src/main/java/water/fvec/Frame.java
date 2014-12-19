@@ -15,15 +15,15 @@ import java.util.HashMap;
  *
  *  <p>Frames represent a large distributed 2-D table with named columns
  *  ({@link Vec}s) and numbered rows.  A reasonable <em>column</em> limit is
- *  100K columns, but theres no hard-coded limit.  There's no real <em>row</em>
+ *  100K columns, but there's no hard-coded limit.  There's no real <em>row</em>
  *  limit except memory; Frames (and Vecs) with many billions of rows are used
  *  routinely.
  *
  *  <p>A Frame is a collection of named Vecs; a Vec is a collection of numbered
  *  {@link Chunk}s.  A Frame is small, cheaply and easily manipulated, it is
  *  commonly passed-by-Value.  It exists on one node, and <em>may</em> be
- *  stored in the DKV.  Vecs, on the otherhand, <em>must</em> be stored in the
- *  DKV, as they represent the shared common management state for a collection
+ *  stored in the {@link DKV}.  Vecs, on the other hand, <em>must</em> be stored in the
+ *  {@link DKV}, as they represent the shared common management state for a collection
  *  of distributed Chunks.
  *
  *  <p>Multiple Frames can reference the same Vecs, although this sharing can
@@ -41,7 +41,7 @@ import java.util.HashMap;
  *  <p>Example: Make a Frame from a CSV file:<pre>
  *  File file = ...
  *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
- *  Frame fr = water.parser.ParseDataset2.parse(Key.make("myKey"),nfs._key);
+ *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
  *  </pre>
  * 
  *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
@@ -171,7 +171,7 @@ public class Frame extends Lockable<Frame> {
   public Key[] keys() { return _keys; }
 
   /** The internal array of Vecs.  For efficiency Frames contain an array of
-   *  Vec Keys - and the Vecs themselves are lazily loaded from the DKV. 
+   *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
    *  @return the internal array of Vecs */
   public final Vec[] vecs() {
     Vec[] tvecs = _vecs; // read the content

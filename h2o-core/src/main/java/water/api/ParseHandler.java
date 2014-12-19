@@ -5,6 +5,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 class ParseHandler extends Handler {
@@ -21,7 +22,7 @@ class ParseHandler extends Handler {
       srcs[i] = parse.srcs[i].key();
 
     // TODO: add JobBase:
-    parse.job = (JobV2)Schema.schema(version, Job.class).fillFromImpl(water.parser.ParseDataset2.parse(parse.hex.key(), srcs, parse.delete_on_done, setup, parse.blocking));
+    parse.job = (JobV2)Schema.schema(version, Job.class).fillFromImpl(ParseDataset.parse(parse.hex.key(), srcs, parse.delete_on_done, setup, parse.blocking));
     if( parse.blocking ) {
       Frame fr = DKV.getGet(parse.hex.key());
       parse.rows = fr.numRows();

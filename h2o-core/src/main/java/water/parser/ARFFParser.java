@@ -72,23 +72,23 @@ class ARFFParser extends CsvParser {
           String type = data[i][2];
           domains[i] = null;
           if (type.equalsIgnoreCase("NUMERIC") || type.equalsIgnoreCase("REAL") || type.equalsIgnoreCase("INTEGER") || type.equalsIgnoreCase("INT")) {
-            ctypes[i] = ParseDataset2.FVecDataOut.NCOL;
+            ctypes[i] = ParseDataset.FVecDataOut.NCOL;
             continue;
           }
           else if (type.equalsIgnoreCase("DATE") || type.equalsIgnoreCase("TIME")) {
-            ctypes[i] = ParseDataset2.FVecDataOut.TCOL;
+            ctypes[i] = ParseDataset.FVecDataOut.TCOL;
             continue;
           }
           else if (type.equalsIgnoreCase("ENUM")) {
-            ctypes[i] = ParseDataset2.FVecDataOut.ECOL;
+            ctypes[i] = ParseDataset.FVecDataOut.ECOL;
             continue;
           }
           else if (type.equalsIgnoreCase("STRING")) {
-            ctypes[i] = ParseDataset2.FVecDataOut.SCOL;
+            ctypes[i] = ParseDataset.FVecDataOut.SCOL;
             continue;
           }
           else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
-            ctypes[i] = ParseDataset2.FVecDataOut.ICOL;
+            ctypes[i] = ParseDataset.FVecDataOut.ICOL;
             continue;
           }
           else if (type.equalsIgnoreCase("RELATIONAL")) {
@@ -98,7 +98,7 @@ class ARFFParser extends CsvParser {
             domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
             if (domains[i][0].length() > 0) {
               // case of {A,B,C} (valid list of factors)
-              ctypes[i] = ParseDataset2.FVecDataOut.ECOL;
+              ctypes[i] = ParseDataset.FVecDataOut.ECOL;
               continue;
             }
           }

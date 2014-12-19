@@ -8,7 +8,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 import water.util.Log;
 
 public class DeepLearningSpiralsTest extends TestUtil {
@@ -17,7 +17,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
   @Test public void run() {
     Scope.enter();
     NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/two_spiral.csv"));
-    Frame frame = ParseDataset2.parse(Key.make(), nfs._key);
+    Frame frame = ParseDataset.parse(Key.make(), nfs._key);
     int resp = frame.names().length-1;
 
     Key dest = Key.make("spirals2");

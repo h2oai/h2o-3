@@ -1,6 +1,5 @@
 package hex;
 
-import java.util.HashSet;
 import static java.util.Arrays.sort;
 
 import water.Iced;
@@ -8,7 +7,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
 
 public class AUC extends Iced {
   public Frame actual;
@@ -41,7 +39,7 @@ public class AUC extends Iced {
    *  @param cms ConfusionMatrices
    *  @param thresh Thresholds
    *  @param domain Domain  */
-  public AUC(ConfusionMatrix2[] cms, float[] thresh, String[] domain) {
+  public AUC(ConfusionMatrix[] cms, float[] thresh, String[] domain) {
     aucdata = new AUCData().compute(cms, thresh, domain, threshold_criterion);
   }
 
@@ -83,7 +81,7 @@ public class AUC extends Iced {
 //  }
 
   /* return true if a is better than b with respect to criterion criter */
-  static boolean isBetter(ConfusionMatrix2 a, ConfusionMatrix2 b, ThresholdCriterion criter) {
+  static boolean isBetter(ConfusionMatrix a, ConfusionMatrix b, ThresholdCriterion criter) {
     if (criter == ThresholdCriterion.maximum_F1) {
       return (!Double.isNaN(a.F1()) &&
               (Double.isNaN(b.F1()) || a.F1() > b.F1()));
@@ -115,10 +113,10 @@ public class AUC extends Iced {
     }
   }
 
-  // Compute CMs for different thresholds via MRTask2
+  // Compute CMs for different thresholds via MRTask
   private static class AUCTask extends MRTask<AUCTask> {
-    /* @OUT CMs */ private ConfusionMatrix2[] getCMs() { return _cms; }
-    private ConfusionMatrix2[] _cms;
+    /* @OUT CMs */ private ConfusionMatrix[] getCMs() { return _cms; }
+    private ConfusionMatrix[] _cms;
     double nullDev;
     double resDev;
     final double ymu;
@@ -140,9 +138,9 @@ public class AUC extends Iced {
       return 2 * ((y_log_y(yreal, ymodel)) + y_log_y(1 - yreal, 1 - ymodel));
     }
     @Override public void map( Chunk ca, Chunk cp ) {
-      _cms = new ConfusionMatrix2[_thresh.length];
+      _cms = new ConfusionMatrix[_thresh.length];
       for (int i=0;i<_cms.length;++i)
-        _cms[i] = new ConfusionMatrix2(2);
+        _cms[i] = new ConfusionMatrix(2);
       final int len = Math.min(ca._len, cp._len);
       for( int i=0; i < len; i++ ) {
         if (ca.isNA0(i))

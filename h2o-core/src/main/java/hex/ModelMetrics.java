@@ -29,11 +29,11 @@ public final class ModelMetrics extends Keyed {
   public final double _sigma;   // stddev of the response (if any)
   public final double _mse;     // Mean Squared Error
   public final AUCData _aucdata;
-  public final ConfusionMatrix2 _cm;
+  public final ConfusionMatrix _cm;
   public final HitRatio _hr;
 
   public ModelMetrics(Model model, Frame frame) {this(model,frame,null,null,null,Double.NaN,Double.NaN); }
-  private ModelMetrics(Model model, Frame frame, AUCData aucdata, ConfusionMatrix2 cm, HitRatio hr, double sigma, double mse) {
+  private ModelMetrics(Model model, Frame frame, AUCData aucdata, ConfusionMatrix cm, HitRatio hr, double sigma, double mse) {
     super(buildKey(model, frame));
     _modelKey = model._key;
     _frameKey = frame._key;
@@ -124,15 +124,15 @@ public final class ModelMetrics extends Keyed {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) { 
       AUCData aucdata;
-      ConfusionMatrix2 cm;
+      ConfusionMatrix cm;
       if( _cms.length > 1 ) {
-        ConfusionMatrix2[] cms = new ConfusionMatrix2[_cms.length];
-        for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix2(_cms[i]);
+        ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
+        for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i]);
         aucdata = new AUC(cms,_thresholds,_domain).data();
         cm = aucdata.CM();
       } else {
         aucdata = null;
-        cm = new ConfusionMatrix2(_cms[0]);
+        cm = new ConfusionMatrix(_cms[0]);
       }
       double mse = _sumsqe / cm.totalRows();
       HitRatio hr = null;       // TODO

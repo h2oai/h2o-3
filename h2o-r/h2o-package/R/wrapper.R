@@ -79,17 +79,14 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     min_mem_size <- Xmx
   }
 
-  if (is.null(ice_root)) {
-    ice_root = tempdir()
-  }
+  if (is.null(ice_root))
+    ice_root <- tempdir()
 
   warnNthreads = FALSE
   tmpConn = new("h2o.client", ip = ip, port = port)
   if (! h2o.clusterIsUp(tmpConn)) {
-    if (!startH2O) {
-      message = sprintf("Cannot connect to H2O server. Please check that H2O is running at %s", h2o.getBaseURL(tmpConn))
-      stop(message)
-    }
+    if (!startH2O)
+      stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
     else if (ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
 
@@ -98,20 +95,19 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
         nthreads = 2
       }
 
-      .h2o.startJar(nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size, beta = beta, assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root)
+      .h2o.startJar(nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size, beta = beta,
+                    assertion = assertion, forceDL = forceDL, license = license, ice_root = ice_root)
 
-      count = 0;
-      while(! h2o.clusterIsUp(conn = tmpConn) && (count < 60)) {
-        Sys.sleep(1);
-        count = count + 1
+      count = 0L
+      while(! h2o.clusterIsUp(conn = tmpConn) && (count < 60L)) {
+        Sys.sleep(1L)
+        count = count + 1L
       }
 
-      if (! h2o.clusterIsUp(conn = tmpConn)) {
+      if (! h2o.clusterIsUp(conn = tmpConn))
         stop("H2O failed to start, stopping execution.")
-      }
-    } else {
+    } else
       stop("Can only start H2O launcher if IP address is localhost.")
-    }
   }
 
   conn = new("h2o.client", ip = ip, port = port)
@@ -123,12 +119,10 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   verPkg = packageVersion("h2o")
   if (verH2O != verPkg) {
     message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
-    if (strict_version_check) {
+    if (strict_version_check)
       stop(message)
-    }
-    else {
+    else
       warning(message)
-    }
   }
 
   if (warnNthreads) {
@@ -140,7 +134,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   assign("SERVER", conn, .pkg.env)
-  return(conn)
+  conn
 }
 
 #' Shut Down H2O Instance 
@@ -163,18 +157,14 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' }
 #'
 h2o.shutdown <- function(conn, prompt = TRUE) {
-  if(class(conn) != "h2o.client") stop("conn must be of class h2o.client")
+  if(!is(conn, "h2o.client")) stop("conn must be of class h2o.client")
+  if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
+
   if(!is.logical(prompt)) stop("prompt must be of class logical")
-  
-  if(! h2o.clusterIsUp(conn)) {
-    message = sprintf("There is no H2O instance running at %s", h2o.getBaseURL(conn))
-    stop(message)
-  }
-  
   if(prompt) {
     message = sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
     ans = readline(message)
-    temp = substr(ans, 1, 1)
+    temp = substr(ans, 1L, 1L)
   } else {
     temp = "y"
   }
@@ -198,7 +188,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 h2o.clusterStatus <- function(client) {
   if(missing(client) || class(client) != "h2o.client") stop("client must be a h2o.client object")
   .h2o.__checkUp(client)
-  myURL = paste("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD, sep = "")
+  myURL = paste0("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
   res = fromJSON(h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
   
@@ -207,7 +197,7 @@ h2o.clusterStatus <- function(client) {
   cat("Node name:", res$node_name, "\n")
   cat("Cloud size:", res$cloud_size, "\n")
   if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
-  if(is.null(res$nodes) || length(res$nodes) == 0) stop("No nodes found!")
+  if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found!")
   
   # Calculate how many seconds ago we last contacted cloud
   cur_time <- Sys.time()
@@ -218,7 +208,7 @@ h2o.clusterStatus <- function(client) {
   }
   cnames = c("name", "value_size_bytes", "free_mem_bytes", "max_mem_bytes", "free_disk_bytes", "max_disk_bytes", "num_cpus", "system_load", "rpcs", "last_contact")
   temp = data.frame(t(sapply(res$nodes, c)))
-  return(temp[,cnames])
+  temp[,cnames]
 }
 
 #---------------------------- H2O Jar Initialization -------------------------------#
@@ -226,15 +216,15 @@ h2o.clusterStatus <- function(client) {
 .h2o.jar.env <- new.env()    # Dummy variable used to shutdown H2O when R exits
 
 .onLoad <- function(lib, pkg) {
-  .h2o.pkg.path <<- paste(lib, pkg, sep = .Platform$file.sep)
+  .h2o.pkg.path <<- file.path(lib, pkg)
   
   # installing RCurl requires curl and curl-config, which is typically separately installed
-  rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0
+  rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0L
   if(!rcurl_package_is_installed) {
     if(.Platform$OS.type == "unix") {
       # packageStartupMessage("Checking libcurl version...")
       curl_path <- Sys.which("curl-config")
-      if(curl_path[[1]] == '' || system2(curl_path, args = "--version") != 0)
+      if(!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
         stop("libcurl not found! Please install libcurl (version 7.14.0 or higher) from http://curl.haxx.se. On Linux systems, 
               you will often have to explicitly install libcurl-devel to have the header files and the libcurl library.")
     }
@@ -242,7 +232,7 @@ h2o.clusterStatus <- function(client) {
 }
 
 .onAttach <- function(libname, pkgname) {
-  msg = paste(
+  msg = paste0(
     "\n",
     "----------------------------------------------------------------------\n",
     "\n",
@@ -256,8 +246,7 @@ h2o.clusterStatus <- function(client) {
     "After starting H2O, you can use the Web UI at http://localhost:54321\n",
     "For more information visit http://docs.0xdata.com\n",
     "\n",
-    "----------------------------------------------------------------------\n",
-    sep = "")
+    "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
   
   # Shut down local H2O when user exits from R
@@ -266,7 +255,7 @@ h2o.clusterStatus <- function(client) {
   
   reg.finalizer(.h2o.jar.env, function(e) {
     ip = "127.0.0.1"; port = 54321
-    myURL = paste("http://", ip, ":", port, sep = "")
+    myURL = paste0("http://", ip, ":", port)
             
     # require(RCurl); require(rjson)
     if(.h2o.startedH2O() && url.exists(myURL))
@@ -278,7 +267,7 @@ h2o.clusterStatus <- function(client) {
 .onDetach <- function(libpath) {
   ip    <- "127.0.0.1";
   port  <- 54321
-  myURL <- paste("http://", ip, ":", port, sep = "")
+  myURL <- paste0("http://", ip, ":", port)
   if (url.exists(myURL)) {
     tryCatch(h2o.shutdown(new("h2o.client", ip = ip, port = port), prompt = FALSE), error = function(e) {
       msg = paste(
@@ -318,12 +307,12 @@ h2o.clusterStatus <- function(client) {
 
   if (! is.null(license)) {
     if (! file.exists(license)) {
-      stop(paste("License file not found (", license, ")", sep=""))
+      stop("License file not found (", license, ")")
     }
   }
 
   if (missing(ice_root)) {
-    stop("ice_root must be specified for .h2o.startJar");
+    stop("ice_root must be specified for .h2o.startJar")
   }
 
   # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
@@ -332,7 +321,7 @@ h2o.clusterStatus <- function(client) {
   write(Sys.getpid(), .h2o.getTmpFile("pid"), append = FALSE)   # Write PID to file to track if R started H2O
   
   jar_file <- .h2o.downloadJar(overwrite = forceDL)
-  jar_file <- paste('"', jar_file, '"', sep = "")
+  jar_file <- paste0('"', jar_file, '"')
 
   # Throw an error if GNU Java is being used
   jver <- system2(command, "-version", stdout = TRUE, stderr = TRUE)
@@ -362,8 +351,8 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
 
   # Compose args
   mem_args <- c()
-  if(!is.null(min_memory)) mem_args <- c(mem_args, paste("-Xms", min_memory, sep=""))
-  if(!is.null(max_memory)) mem_args <- c(mem_args, paste("-Xmx", max_memory, sep=""))
+  if(!is.null(min_memory)) mem_args <- c(mem_args, paste0("-Xms", min_memory))
+  if(!is.null(max_memory)) mem_args <- c(mem_args, paste0("-Xmx", max_memory))
 
   args <- mem_args
   if(assertion) args <- c(args, "-ea")
@@ -372,7 +361,7 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
   args <- c(args, "-ip", "127.0.0.1")
   args <- c(args, "-port", "54321")
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
-  if(nthreads > 0) args <- c(args, "-nthreads", nthreads)
+  if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(beta) args <- c(args, "-beta")
   if(!is.null(license)) args <- c(args, "-license", license)
 
@@ -392,13 +381,13 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
                stdout=stdout,
                stderr=stderr,
                wait=FALSE)
-  if (rc != 0) {
+  if (rc != 0L) {
     stop(sprintf("Failed to exec %s with return code=%s", jar_file, as.character(rc)))
   }
 }
 
 .h2o.getTmpFile <- function(type) {
-  if(missing(type) || !type %in% c("stdout", "stderr", "pid"))
+  if(missing(type) || !(type %in% c("stdout", "stderr", "pid")))
     stop("type must be one of 'stdout', 'stderr', or 'pid'")
 
   if(.Platform$OS.type == "windows") {
@@ -408,19 +397,20 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
   }
 
   if(type == "stdout")
-    paste(tempdir(), paste("h2o", usr, "started_from_r.out", sep="_"), sep = .Platform$file.sep)
+    file.path(tempdir(), paste("h2o", usr, "started_from_r.out", sep="_"))
   else if(type == "stderr")
-    paste(tempdir(), paste("h2o", usr, "started_from_r.err", sep="_"), sep = .Platform$file.sep)
+    file.path(tempdir(), paste("h2o", usr, "started_from_r.err", sep="_"))
   else
-    paste(tempdir(), paste("h2o", usr, "started_from_r.pid", sep="_"), sep = .Platform$file.sep)
+    file.path(tempdir(), paste("h2o", usr, "started_from_r.pid", sep="_"))
 }
 
 .h2o.startedH2O <- function() {
   pid_file <- .h2o.getTmpFile("pid")
   if(file.exists(pid_file)) {
     pid_saved <- as.numeric(readLines(pid_file))
-    return(pid_saved == Sys.getpid())
-  } else return(FALSE)
+    pid_saved == Sys.getpid()
+  } else
+    FALSE
 }
 
 # This function returns the path to the Java executable if it exists
@@ -429,31 +419,31 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
 # 3) If Windows, check standard install locations in Program Files folder. Warn if JRE found, but not JDK since H2O requires JDK to run.
 # 4) When all fails, stop and prompt user to download JDK from Oracle website.
 .h2o.checkJava <- function() {
-  if(nchar(Sys.which("java")) > 0)
-    return(Sys.which("java"))
-  else if(nchar(Sys.getenv("JAVA_HOME")) > 0)
-    return(paste(Sys.getenv("JAVA_HOME"), "bin", "java.exe", sep = .Platform$file.sep))
+  if(nzchar(Sys.which("java")))
+    Sys.which("java")
+  else if(nzchar(Sys.getenv("JAVA_HOME")))
+    file.path(Sys.getenv("JAVA_HOME"), "bin", "java.exe")
   else if(.Platform$OS.type == "windows") {
     # Note: Should we require the version (32/64-bit) of Java to be the same as the version of R?
     prog_folder <- c("Program Files", "Program Files (x86)")
     for(prog in prog_folder) {
-      prog_path <- paste("C:", prog, "Java", sep = .Platform$file.sep)
+      prog_path <- file.path("C:", prog, "Java")
       jdk_folder <- list.files(prog_path, pattern = "jdk")
       
       for(jdk in jdk_folder) {
-        path <- paste(prog_path, jdk, "bin", "java.exe", sep = .Platform$file.sep)
+        path <- file.path(prog_path, jdk, "bin", "java.exe")
         if(file.exists(path)) return(path)
       }
     }
     
     # Check for existence of JRE and warn user
     for(prog in prog_folder) {
-      path <- paste("C:", prog, "Java", "jre7", "bin", "java.exe", sep = .Platform$file.sep)
+      path <- file.path("C:", prog, "Java", "jre7", "bin", "java.exe")
       if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run.")
     }
   }
-  
-  stop("Cannot find Java. Please install the latest JDK from http://www.oracle.com/technetwork/java/javase/downloads/index.html")
+  else
+    stop("Cannot find Java. Please install the latest JDK from http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
 .h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
@@ -463,27 +453,27 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     pkg_path = .h2o.pkg.path
 
     # Find h2o-jar from testthat tests inside R-Studio.
-    if (length(grep("h2o-dev/h2o-r/h2o$", pkg_path)) == 1) {
-      tmp = substr(pkg_path, 1, nchar(pkg_path) - nchar("h2o-dev/h2o-r/h2o"))
+    if (length(grep("h2o-dev/h2o-r/h2o$", pkg_path)) == 1L) {
+      tmp = substr(pkg_path, 1L, nchar(pkg_path) - nchar("h2o-dev/h2o-r/h2o"))
       return(sprintf("%s/h2o-dev/build/h2o.jar", tmp))
     }
   }
 
   if (missing(branch)) {
-    branchFile = paste(pkg_path, "branch.txt", sep = .Platform$file.sep)
+    branchFile <- file.path(pkg_path, "branch.txt")
     branch <- readLines(branchFile)
   }
 
   if (missing(version)) {
-    buildnumFile = paste(pkg_path, "buildnum.txt", sep = .Platform$file.sep)
+    buildnumFile <- file.path(pkg_path, "buildnum.txt")
     version <- readLines(buildnumFile)
   }
 
   if(!is.logical(overwrite)) stop("overwrite must be TRUE or FALSE")
   
-  dest_folder <- paste(pkg_path, "java", sep = .Platform$file.sep)
+  dest_folder <- file.path(pkg_path, "java")
   if(!file.exists(dest_folder)) dir.create(dest_folder)
-  dest_file <- paste(dest_folder, "h2o.jar", sep = .Platform$file.sep)
+  dest_file <- file.path(dest_folder, "h2o.jar")
   
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
   if(overwrite || !file.exists(dest_file)) {
@@ -498,7 +488,7 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     # close(tcon)
     md5_file <- tempfile(fileext = ".md5")
     download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
-    md5_check <- readLines(md5_file, n = 1)
+    md5_check <- readLines(md5_file, n = 1L)
     if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
     unlink(md5_file)
     
@@ -524,5 +514,5 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     # Move good file into final position
     file.rename(temp_file, dest_file)
   }
-  return(dest_file)
+  dest_file
 }

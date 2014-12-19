@@ -13,7 +13,7 @@ import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +36,7 @@ public class GLMTest  extends TestUtil {
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
-      fr = ParseDataset2.parse(parsed, raw);
+      fr = ParseDataset.parse(parsed, raw);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
       // params._response = 1;
@@ -69,7 +69,7 @@ public class GLMTest  extends TestUtil {
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
-      fr = ParseDataset2.parse(parsed, raw);
+      fr = ParseDataset.parse(parsed, raw);
       Vec v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max()  + ", mean = " + v.mean());
       GLMParameters params = new GLMParameters(Family.poisson);
@@ -89,7 +89,7 @@ public class GLMTest  extends TestUtil {
 
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
       FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
-      fr = ParseDataset2.parse(parsed, raw);
+      fr = ParseDataset.parse(parsed, raw);
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
       // params2._response = 1;
@@ -126,7 +126,7 @@ public class GLMTest  extends TestUtil {
       Key raw = Key.make("gamma_test_data_raw");
       Key parsed = Key.make("gamma_test_data_parsed");
       FVecTest.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
-      fr = ParseDataset2.parse(parsed, raw);
+      fr = ParseDataset.parse(parsed, raw);
 //      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
 //      double [] vals = new double[] {1.0,1.0};
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
@@ -158,7 +158,7 @@ public class GLMTest  extends TestUtil {
 //    try {
 //      // make data so that the expected coefficients is icept = col[0] = 1.0
 //      FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9\n0,0\n1,0\n2,0\n3,0\n4,0\n5,0\n6,0\n7,0\n8,0\n9,0");
-//      fr = ParseDataset2.parse(parsed, new Key[]{raw});
+//      fr = ParseDataset.parse(parsed, new Key[]{raw});
 //      double [] powers = new double [] {1.5,1.1,1.9};
 //      double [] intercepts = new double []{3.643,1.318,9.154};
 //      double [] xs = new double []{-0.260,-0.0284,-0.853};

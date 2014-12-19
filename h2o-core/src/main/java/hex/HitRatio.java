@@ -89,7 +89,7 @@ public class HitRatio extends Iced {
     }
   }
 
-  // Compute CMs for different thresholds via MRTask2
+  // Compute CMs for different thresholds via MRTask
   private static class HitRatioTask extends MRTask<HitRatioTask> {
     /* @OUT CMs */ private final float[] hit_ratios() {
       float[] hit_ratio = new float[_K];

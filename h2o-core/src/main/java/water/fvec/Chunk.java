@@ -87,8 +87,8 @@ import water.parser.ValueString;
  *
  *  <p>Note that Chunk alignment is guaranteed within all the Vecs of a Frame:
  *  Same numbered Chunks of <em>different</em> Vecs will have the same global
- *  row numbering and the same length, enabling a particularly simple way to
- *  iterate over all rows.
+ *  row numbering and the same length, enabling a particularly simple and
+ *  efficient way to iterate over all rows.
  *
  *  <p>This example computes the Euclidean distance between all the columns and
  *  a given point, and stores the squared distance back in the last column.
@@ -101,7 +101,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
     double dist=0;                                 // Squared distance
     for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
       double d = chks[col].at0(row) - _point[col]; // Distance along this dimension
-      dist += d*d*;                                // Sum-squared-distance
+      dist += d*d;                                // Sum-squared-distance
     }
     chks[chks.length-1].set0( row, dist );         // Store back the distance in the last col
   }
@@ -548,7 +548,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
 
-  /** Size in bytes of the Chunk plus embedded array. */
+  /** In memory size in bytes of the compressed Chunk plus embedded array. */
   public long byteSize() {
     long s= _mem == null ? 0 : _mem.length;
     s += (2+5)*8 + 12; // 2 hdr words, 5 other words, @8bytes each, plus mem array hdr

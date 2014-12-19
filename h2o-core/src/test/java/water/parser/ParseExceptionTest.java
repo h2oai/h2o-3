@@ -22,7 +22,7 @@ public class ParseExceptionTest extends TestUtil {
       // Now "break" one of the files.  Globally
       new Break(fkey1).doAllNodes();
 
-      water.parser.ParseDataset2.parse(okey, fkey0,fkey1,fkey2);
+      ParseDataset.parse(okey, fkey0, fkey1, fkey2);
 
     } catch( Throwable e2 ) {
       ex = e2; // Record expected exception
@@ -50,7 +50,7 @@ public class ParseExceptionTest extends TestUtil {
       fkey0 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_0.csv"))._key;
       fkey1 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_1.csv"))._key;
       fkey2 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_2.csv"))._key;
-      Frame fr = water.parser.ParseDataset2.parse(okey, fkey0,fkey1,fkey2);
+      Frame fr = ParseDataset.parse(okey, fkey0, fkey1, fkey2);
       fr.delete();
       
       assertTrue( "All input & output keys not removed", DKV.get(fkey0)==null );

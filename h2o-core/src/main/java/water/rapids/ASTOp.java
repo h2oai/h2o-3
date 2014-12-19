@@ -792,7 +792,7 @@ class ASTScale extends ASTUniPrefixOp {
 //    Frame fr = env.popAry();
 //    String skey = env.key();
 //    final ASTTimeOp uni = this;  // Final 'this' so can use in closure
-//    Frame fr2 = new MRTask2() {
+//    Frame fr2 = new MRTask() {
 //      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
 //        MutableDateTime dt = new MutableDateTime(0);
 //        for( int i=0; i<nchks.length; i++ ) {
@@ -845,7 +845,7 @@ class ASTScale extends ASTUniPrefixOp {
 //    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
 //      throw new IllegalArgumentException("diff takes a single numeric column vector");
 //
-//    Frame fr2 = new MRTask2() {
+//    Frame fr2 = new MRTask() {
 //      @Override public void map(Chunk chk, NewChunk nchk) {
 //        int rstart = (int)(diffs*lag - chk._start);
 //        if(rstart > chk._len) return;
@@ -1931,7 +1931,7 @@ class ASTQtile extends ASTUniPrefixOp {
     // a little obtuse because reusing first pass object, if p has multiple thresholds
     // since it's always the same (always had same valStart/End seed = vec min/max
     // some MULTIPASS conditionals needed if we were going to make this work for approx or exact
-    final Quantiles[] qbins1 = new Quantiles.BinTask2(MAX_QBINS, xv.min(), xv.max()).doAll(xv)._qbins;
+    final Quantiles[] qbins1 = new Quantiles.BinningTask(MAX_QBINS, xv.min(), xv.max()).doAll(xv)._qbins;
     for( int i=0; i<p.length; i++ ) {
       double quantile = p[i];
       // need to pass a different threshold now for each finishUp!
@@ -1940,7 +1940,7 @@ class ASTQtile extends ASTUniPrefixOp {
         res.set(i,qbins1[0]._pctile[0]);
       } else {
         // the 2-N map/reduces are here (with new start/ends. MULTIPASS is implied
-        Quantiles[] qbinsM = new Quantiles.BinTask2(MAX_QBINS, qbins1[0]._newValStart, qbins1[0]._newValEnd).doAll(xv)._qbins;
+        Quantiles[] qbinsM = new Quantiles.BinningTask(MAX_QBINS, qbins1[0]._newValStart, qbins1[0]._newValEnd).doAll(xv)._qbins;
         for( int iteration = 2; iteration <= MAX_ITERATIONS; iteration++ ) {
           qbinsM[0].finishUp(xv, new double[]{quantile}, INTERPOLATION, MULTIPASS);
           if( qbinsM[0]._done ) {
@@ -1948,7 +1948,7 @@ class ASTQtile extends ASTUniPrefixOp {
             break;
           }
           // the 2-N map/reduces are here (with new start/ends. MULTIPASS is implied
-          qbinsM = new Quantiles.BinTask2(MAX_QBINS, qbinsM[0]._newValStart, qbinsM[0]._newValEnd).doAll(xv)._qbins;
+          qbinsM = new Quantiles.BinningTask(MAX_QBINS, qbinsM[0]._newValStart, qbinsM[0]._newValEnd).doAll(xv)._qbins;
         }
       }
     }
@@ -2304,7 +2304,7 @@ class ASTMean extends ASTUniPrefixOp {
         env.push(new ValNum(ave));
       }
     }
-    env.cleanup(fr);
+      env.cleanup(fr);
   }
 
   @Override double[] map(Env e, double[] in, double[] out, AST[] args) {
@@ -3097,7 +3097,7 @@ class ASTXorSum extends ASTReducerOp {
 //      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
 //        throw new IllegalArgumentException("First argument must be a numeric column vector");
 //
-//      Frame fr2 = new MRTask2() {
+//      Frame fr2 = new MRTask() {
 //        @Override public void map(Chunk chk, NewChunk nchk) {
 //          for(int r = 0; r < chk._len; r++) {
 //            double x = chk.at0(r);

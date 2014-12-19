@@ -29,7 +29,7 @@ public class ParseProgressTest extends TestUtil {
     Key k = c.syncDirectory(null,null,null,null);
     Assert.assertEquals(true,k!=null);
 
-    Frame fr = ParseDataset2.parse(Key.make(),k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertEquals( 55, fr.numCols() );
     Assert.assertEquals( 581012, fr.numRows() );
     fr.delete();
