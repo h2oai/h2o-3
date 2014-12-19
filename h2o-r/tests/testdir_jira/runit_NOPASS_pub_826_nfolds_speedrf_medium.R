@@ -24,7 +24,7 @@ test.pub.826 <- function(conn) {
   # Response
   Delayed        <- vars[31]         # "IsDepDelayed"
 
-  m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), y = Delayed, data = flights, nfold = 3)
+  m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), type = "bigdata", y = Delayed, data = flights, nfold = 3)
 
   show(m)
   testEnd()

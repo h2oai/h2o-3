@@ -21,8 +21,8 @@ test <- function(conn) {
   dim(adult.train)
   
   print("Set variables to build models")
-  myX = c(1:14)
-  myY = "label"
+  myX <- c(1:14)
+  myY <- "label"
   
   print("Creating model without CV")
   system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, data=adult.train, key="h2o.glm.adult", family="binomial", alpha=1, higher_accuracy=T, lambda_search=T, nfolds=0, variable_importances=TRUE, use_all_factor_levels=TRUE))

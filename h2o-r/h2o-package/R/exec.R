@@ -42,19 +42,19 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
-  if (e1 %i% "h2o.frame")     lhs <- .get(e1)
-  else if (e1 %i% "ASTNode")       lhs <- e1
-  else if (e1 %i% "numeric")       lhs <- '#' %p0% e1
-  else if (e1 %i% "character")     lhs <- deparse(eval(e1))
-  else if (e1 %i% "ASTEmpty")      lhs <- '%' %p0% e1@key
+  if (e1 %i% "h2o.frame")      lhs <- .get(e1)
+  else if (e1 %i% "ASTNode")   lhs <- e1
+  else if (e1 %i% "numeric")   lhs <- '#' %p0% e1
+  else if (e1 %i% "character") lhs <- deparse(eval(e1))
+  else if (e1 %i% "ASTEmpty")  lhs <- '%' %p0% e1@key
   else stop("LHS operand type not handled")
 
   # Prep the RHS
-  if (e2 %i% "h2o.frame")     rhs <- .get(e2)
-  else if (e2 %i% "ASTNode")       rhs <- e2
-  else if (e2 %i% "numeric")       rhs <- '#' %p0% e2
-  else if (e2 %i% "character")     rhs <- deparse(eval(e2))
-  else if (e2 %i% "ASTEmpty")      rhs <- '%' %p0% e2@key
+  if (e2 %i% "h2o.frame")       rhs <- .get(e2)
+  else if (e2 %i% "ASTNode")    rhs <- e2
+  else if (e2 %i% "numeric")    rhs <- '#' %p0% e2
+  else if (e2 %i% "character")  rhs <- deparse(eval(e2))
+  else if (e2 %i% "ASTEmpty")   rhs <- '%' %p0% e2@key
   else stop("RHS operand type not handled")
 
   # Return an ASTNode
