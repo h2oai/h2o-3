@@ -241,7 +241,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         if (model2._output.nclasses() == 2) {
                                           // make labels with 0.5 threshold for binary classifier
                                           // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
-                                          String ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+0.5+"))";
+                                          String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
                                           Env ev = Exec.exec(ast);
                                           try {
                                             pred2 = ev.pop0Ary(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
@@ -254,7 +254,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                           // make labels with AUC-given threshold for best F1
                                           // similar ast to the above
-                                          ast = "(= ([ $pred2 \"null\" #0) (G ([ $pred2 \"null\" #2) #"+threshold+"))";
+                                          ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                           ev = Exec.exec(ast);
                                           try {
                                             pred2 = ev.pop0Ary();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup

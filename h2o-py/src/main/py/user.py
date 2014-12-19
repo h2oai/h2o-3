@@ -1,26 +1,27 @@
-import h2o
+from h2o import H2OConnection
+from h2o import H2OFrame
 
 ######################################################
 #
 # Sample use-cases
 
 # Connect to a pre-existing cluster
-cluster = h2o.Cluster()
+cluster = H2OConnection()
 
-a = h2o.Frame(cluster,fname="smalldata/iris/iris_wheader.csv")[0:4]
+a = H2OFrame(remoteFName="smalldata/iris/iris_wheader.csv")[0:4]
 
 print a[0]._name    # Column header
 print a[0][2]       # column 0, row 2 value
-print a["a.sepal_len"][2]  # Column 0, row 2 value
+print a["sepal_len"][2]  # Column 0, row 2 value
 print a[0]+2        # Add 2 to every element; broadcast a constant
 print a[0]+a[1]     # Add 2 columns; broadcast parallel add
-print a["a.sepal_len"].mean()
+print a["sepal_len"].mean()
 print sum(a)
 
-try: print a["a.Sepal_len"]  # Error, mispelt column name
+try: print a["Sepal_len"]   # Error, mispelt column name
 except ValueError,ex: pass  # Expected error
 
-b = h2o.Frame("b.",fname="smalldata/iris/iris_wheader.csv")[0:4]
+b = H2OFrame(remoteFName="smalldata/iris/iris_wheader.csv")[0:4]
 c = a+b
 d = c+c+sum(a)
 e = c+a+1
@@ -33,5 +34,6 @@ c = None
 
 print 1+(a[0]+b[1]).mean()
 
-c = h2o.Frame(vecs=[h2o.Vec("C1",h2o.Expr([1,2,3])),h2o.Vec("C2",h2o.Expr([4,5,6]))])
+from h2o import Vec, Expr
+c = H2OFrame(vecs=[Vec("C1",Expr([1,2,3])),Vec("C2",Expr([4,5,6]))])
 print c
