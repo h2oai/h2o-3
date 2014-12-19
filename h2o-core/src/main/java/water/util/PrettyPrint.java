@@ -124,10 +124,9 @@ public class PrettyPrint {
     return ss;
   }
 
-  public static StringBuilder printConfusionMatrix(StringBuilder sb, long[][] cm, String[] domain, boolean html) {
+  public static StringBuilder printConfusionMatrix(StringBuilder sb, long[][] cm, String[] domain) {
     if (cm == null || domain == null) return sb;
     for (int i=0; i<cm.length; ++i) assert(cm.length == cm[i].length);
-//    if (html) DocGen.HTML.arrayHead(sb);
     // Sum up predicted & actuals
     long acts [] = new long[cm   .length];
     long preds[] = new long[cm[0].length];
@@ -143,89 +142,49 @@ public class PrettyPrint {
     String pdomain[] = createConfusionMatrixHeader(preds, domain);
     assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
 
-    String fmt = "";
-    String fmtS = "";
-
     // Header
-    if (html) {
-      sb.append("<tr class='warning' style='min-width:60px'>");
-      sb.append("<th>&darr; Actual / Predicted &rarr;</th>");
-      for( int p=0; p<pdomain.length; p++ )
-        if( pdomain[p] != null )
-          sb.append("<th style='min-width:60px'>").append(pdomain[p]).append("</th>");
-      sb.append("<th>Error</th>");
-      sb.append("</tr>");
-    } else {
-      // determine max length of each space-padded field
-      int maxlen = 0;
-      for( String s : pdomain ) if( s != null ) maxlen = Math.max(maxlen, s.length());
-      long lsum = 0;
-      for( int a=0; a<cm.length; a++ ) {
-        if( adomain[a] == null ) continue;
-        for( int p=0; p<pdomain.length; p++ ) { if( pdomain[p] == null ) continue; lsum += cm[a][p]; }
-      }
-      maxlen = Math.max(8, Math.max(maxlen, String.valueOf(lsum).length()) + 2);
-      fmt  = "%" + maxlen + "d";
-      fmtS = "%" + maxlen + "s";
-      sb.append(String.format(fmtS, "Act/Prd"));
-      for( String s : pdomain ) if( s != null ) sb.append(String.format(fmtS, s));
-      sb.append("   " + String.format(fmtS, "Error\n"));
+    // determine max length of each space-padded field
+    int maxlen = 0;
+    for( String s : pdomain ) if( s != null ) maxlen = Math.max(maxlen, s.length());
+    long lsum = 0;
+    for( int a=0; a<cm.length; a++ ) {
+      if( adomain[a] == null ) continue;
+      for( int p=0; p<pdomain.length; p++ ) { if( pdomain[p] == null ) continue; lsum += cm[a][p]; }
     }
+    maxlen = Math.max(8, Math.max(maxlen, String.valueOf(lsum).length()) + 2);
+    String fmt  = "%" + maxlen + "d";
+    String fmtS = "%" + maxlen + "s";
+    sb.append(String.format(fmtS, "Act/Prd"));
+    for( String s : pdomain ) if( s != null ) sb.append(String.format(fmtS, s));
+    sb.append("   " + String.format(fmtS, "Error\n"));
 
     // Main CM Body
     long terr=0;
     for( int a=0; a<cm.length; a++ ) {
       if( adomain[a] == null ) continue;
-      if (html) {
-        sb.append("<tr style='min-width:60px'>");
-        sb.append("<th style='min-width:60px'>").append(adomain[a]).append("</th>");
-      } else {
-        sb.append(String.format(fmtS,adomain[a]));
-      }
+      sb.append(String.format(fmtS,adomain[a]));
       long correct=0;
       for( int p=0; p<pdomain.length; p++ ) {
         if( pdomain[p] == null ) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
         if( onDiag ) correct = cm[a][p];
-        String id = "";
-        if (html) {
-          sb.append(onDiag ? "<td style='min-width: 60px; background-color:LightGreen' "+id+">":"<td style='min-width: 60px;'"+id+">").append(String.format("%,d", cm[a][p])).append("</td>");
-        } else {
-          sb.append(String.format(fmt,cm[a][p]));
-        }
+        sb.append(String.format(fmt,cm[a][p]));
       }
       long err = acts[a]-correct;
       terr += err;
-      if (html) {
-        sb.append(String.format("<th  style='min-width: 60px;'>%.05f = %,d / %,d</th></tr>", (double)err/acts[a], err, acts[a]));
-      } else {
-        sb.append("   " + String.format("%.05f = %,d / %d\n", (double)err/acts[a], err, acts[a]));
-      }
+
+      sb.append("   " + String.format("%.05f = %,d / %d\n", (double)err/acts[a], err, acts[a]));
     }
 
     // Last row of CM
-    if (html) {
-      sb.append("<tr style='min-width:60px'><th>Totals</th>");
-    } else {
-      sb.append(String.format(fmtS, "Totals"));
-    }
+    sb.append(String.format(fmtS, "Totals"));
     for( int p=0; p<pdomain.length; p++ ) {
       if( pdomain[p] == null ) continue;
-      if (html) {
-        sb.append("<td style='min-width:60px'>").append(String.format("%,d", preds[p])).append("</td>");
-      } else {
-        sb.append(String.format(fmt, preds[p]));
-      }
+      sb.append(String.format(fmt, preds[p]));
     }
     long nrows = 0;
     for (long n : acts) nrows += n;
-
-    if (html) {
-      sb.append(String.format("<th style='min-width:60px'>%.05f = %,d / %,d</th></tr>", (float)terr/nrows, terr, nrows));
-//      DocGen.HTML.arrayTail(sb);
-    } else {
-      sb.append("   " + String.format("%.05f = %,d / %,d\n", (float)terr/nrows, terr, nrows));
-    }
-    return sb;                  // For flow-coding
+    sb.append("   " + String.format("%.05f = %,d / %,d\n", (float)terr/nrows, terr, nrows));
+    return sb;
   }
 }

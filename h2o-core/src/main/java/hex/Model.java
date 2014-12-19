@@ -334,7 +334,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String mdomain[] = mresp.domain(); // Domain of predictions (union of test and train)
     ConfusionMatrix2 cm = ModelMetrics.getFromDKV(this,fr)._cm;
     if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-      water.util.Log.info(water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),cm._arr,mdomain,false));
+      water.util.Log.info(water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),cm._arr,mdomain));
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.  
