@@ -49,7 +49,7 @@ public class QuantilesHandler extends Handler {
       double valStart = q._column.min();
       double valEnd = q._column.max();
       // quantile doesn't matter for the map/reduce binning
-      qbins = new Quantiles.BinTask2(q._max_qbins, valStart, valEnd).doAll(q._column)._qbins;
+      qbins = new Quantiles.BinningTask(q._max_qbins, valStart, valEnd).doAll(q._column)._qbins;
       Log.debug("Q_ for approx. valStart: " + valStart + " valEnd: " + valEnd);
 
       // Have to get this internal state, and copy this state for the next iteration
@@ -103,7 +103,7 @@ public class QuantilesHandler extends Handler {
         // cleaned up things so no multipass behavior in qbins..all in finishUp:w
         // so can reuse the qbins from the approx pass above (if done)
         if ( !(q._multiple_pass ==2 && b==0) ) {
-          qbins = new Quantiles.BinTask2(q._max_qbins, valStart, valEnd).doAll(q._column)._qbins;
+          qbins = new Quantiles.BinningTask(q._max_qbins, valStart, valEnd).doAll(q._column)._qbins;
         }
         q._iterations = b + 1;
         if ( qbins == null ) break;
