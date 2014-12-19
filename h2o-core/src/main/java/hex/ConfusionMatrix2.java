@@ -10,7 +10,7 @@ import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 public class ConfusionMatrix2 extends Iced {
-  public TwoDimTable _cm_json;
+  public TwoDimTable _cmTable;
   public long[][] _arr; // [actual][predicted]
   public final double[] _classErr;
   public double _predErr;
@@ -243,9 +243,9 @@ public class ConfusionMatrix2 extends Iced {
   }
 
   public String toASCII(String[] domain) {
-    if (_cm_json == null && domain != null) {
-      _cm_json = toTable(domain);
-      return _cm_json.toString();
+    if (_cmTable == null && domain != null) {
+      _cmTable = toTable(domain);
+      return _cmTable.toString();
     }
     return "";
   }
