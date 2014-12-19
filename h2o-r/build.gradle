@@ -118,7 +118,7 @@ task setPackageFiles << {
 }
 
 task buildPackageDocumentation(type: Exec) {
-    commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document(\"h2o-package\");"])
+    commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
 }
 
 task genPDF(type: Exec) {
