@@ -173,14 +173,9 @@ class Expr(object):
 
   # Eval and print
   def __repr__(self):
-    x = self.eager();
-    if self.isLocal():  return x.__str__()
-    # Big Data result.  Download the first bits only before printing.
-    global _CMD
-    print "Download "+str(_CMD)
-    frames = H2OCONN.Frame(x)
-    print frames
-    raise NotImplementedError
+    # Note that Big Data results are capped at first 200 columns, first 100 rows.
+    # Here we do a dumb print of that result.
+    return self.eager().__str__()
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i): 
@@ -215,16 +210,13 @@ class Expr(object):
     # Gather the computation path for remote work, or doit locally for local work
     global _CMD; assert not _CMD;  
     _CMD = "";                  # Begin gathering rapids commands
-    self._doit();
-    cmd = _CMD;  _CMD = None;
+    self._doit();               # Execute the command
+    cmd = _CMD;  _CMD = None;   # Stop  gathering rapids commands
     if self.isLocal():  return self._data # Local computation, all done
 
     # Remote computation - ship Rapids over wire, bring the result local
     j = H2OCONN.Rapids(cmd)
-    if j['num_rows']:
-      print j
-      raise NotImplementedError
-    self._data = j['scalar']
+    self._data = j['head'] if j['num_rows'] else j['scalar']
     assert self._data is not None
     return self._data
 
@@ -234,38 +226,39 @@ class Expr(object):
     if self.isComputed(): return
     left = self._left
     rite = self._rite
-    if isinstance(left,Expr): left._doit()
     if isinstance(rite,Expr): rite._doit()
     global _CMD
+    _CMD += "("+self._op+" "
+    if left: 
+      if left.isPending():  left._doit()
+      elif isinstance(left._data,(int,float)): _CMD += "#"+str(left)
+      else: _CMD += "%"+str(left._data)
+    _CMD += " "
+    if rite: 
+      if rite.isPending():  rite._doit()
+      elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite)
+      else: _CMD += "%"+str(rite._data)
 
     if self._op == "+":
       if isinstance(left._data,(int,float)):
-        if isinstance(rite._data,(int,float)):  # Small data
-          lname, rname = None,None  
-          self._data = left+rite
-        else:
-          lname, rname = str(left), rite._name
-          self._data = [left+x for x in rite._data]
+        if isinstance(rite._data,(int,float)):   self._data = left+rite
+        elif rite.isLocal():                     self._data = [left+x for x in rite._data]
+        else:                                    pass
       elif isinstance(rite._data,(int,float)):
-        lname, rname = left._name, str(rite)
-        if left.isLocal():  # Small data
-          self._data = [x+rite for x in left._data]
-        else:                   # Big Data + scalar
-          _CMD += "(+ %"+str(left._data)+" #"+str(rite)+")"
+        if left.isLocal():                       self._data = [x+rite for x in left._data]
+        else:                                    pass
       else:
-        lname, rname = left._name, rite._name
-        self._data = [x+y for x,y in zip(left._data,rite._data)]
+        if left.isLocal():         self._data = [x+y for x,y in zip(left._data,rite._data)]
+        else:                                    pass
     elif self._op == "[":
-      lname, rname = left._name, None
-      if left.isLocal():
-        self._data = left._data[rite._data]
-      else:
-        _CMD += "([ %"+str(left._data)+" #"+str(rite._data)+" #0)"
+      if left.isLocal():                               self._data = left._data[rite._data]
+      else:                                      _CMD += " #0"
     elif self._op == "mean":
-      lname, rname = left._name, None
-      self._data = sum(left._data)/len(left._data)  # Stores a small data result
+      if left.isLocal():                      self._data = sum(left._data)/len(left._data)
+      else:                                      _CMD += " #0 %TRUE"
     else:
       raise NotImplementedError
+    _CMD += ")"
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
     return

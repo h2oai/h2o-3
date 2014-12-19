@@ -67,7 +67,7 @@ class RapidsHandler extends Handler {
         rapids.num_cols = fr.numCols();
         rapids.col_names = fr.names();
         rapids.string = null;
-        String[][] head = new String[Math.min(200,fr.numCols())][(int)Math.min(100,fr.numRows())];
+        String[][] head = rapids.head = new String[Math.min(200,fr.numCols())][(int)Math.min(100,fr.numRows())];
         for (int r = 0; r < head[0].length; ++r) {
           for (int c = 0; c < head.length; ++c) {
             head[c][r] = String.valueOf(fr.vec(c).at(r));

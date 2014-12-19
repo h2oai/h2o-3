@@ -22,4 +22,5 @@ public class RapidsV1 extends Schema<Iced, RapidsV1> {
   @API(help="Raft ast"               , direction=API.Direction.OUTPUT) String raft_ast;
   @API(help="Raft key"               , direction=API.Direction.OUTPUT) KeyV1  raft_key;
   @API(help="Was evaluated"          , direction=API.Direction.OUTPUT) boolean evaluated;
+  @API(help="Head of a Frame result" , direction=API.Direction.OUTPUT) String[][] head;
 }
