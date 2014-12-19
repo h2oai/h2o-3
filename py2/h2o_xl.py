@@ -43,8 +43,6 @@ class Xbase(object):
         # can't do a = 1 and assume a key is created
         if not isinstance(self, (Key, KeyIndexed, Fcn, Expr, Def, DF, Col)):
             return
-        if isinstance(self, (int, float, list, tuple)):
-            return
 
         self.refcnt += 1
         # if a lhs Assign does exist due to a indexed key, then the last function won't be the root
@@ -59,7 +57,9 @@ class Xbase(object):
 
         for a in args:
             if a:
-                if isinstance(a, list):
+                if isinstance(a, (int, float, list, tuple, basestring)):
+                    continue
+                if isinstance(a, (list, tuple)):
                     for operand in a:
                         if operand:
                             operand.refcntInc()
@@ -1033,9 +1033,8 @@ class Return(Xbase):
         super(Return, self).__init__()
         self.expr = Item(expr)
 
-        if not noRefCnt:
-            self.refcntInc(expr)
-            self.assignIfRoot()
+        self.refcntInc(expr)
+        self.assignIfRoot()
 
     def __str__(self):
         return "%s" % self.expr
@@ -1261,7 +1260,7 @@ class IfElse(Xbase):
         self.clause = Item(clause)
         self.ifExprList = ifExprList
         self.elseExprList = elseExprList
-        self.refcntInc(iclause, ifExpr, elseExpr)
+        self.refcntInc(clause, ifExpr, elseExpr)
         self.assignIfRoot()
 
     def __str__(self):

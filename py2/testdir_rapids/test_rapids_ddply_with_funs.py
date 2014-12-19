@@ -298,7 +298,7 @@ class Basic(unittest.TestCase):
         for execExpr1 in initList:
             # ddply function can only return one row. Just use expressions above as nose
             # some of the expressions above use %v, but v won't be created as key outside any more with ddply
-            funs = '[(def anon {v} %s;;(sum %v %TRUE);;;)]' % execExpr1
+            funs = "[(def anon {v} " + "{};;(sum %v %TRUE);;;)]".format(execExpr1)
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=5)
 
             execExpr2 = '(= !a h2o.ddply %r2 {#2;#3} %anon)'

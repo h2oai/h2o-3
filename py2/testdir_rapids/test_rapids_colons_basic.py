@@ -142,13 +142,13 @@ class Basic(unittest.TestCase):
                     t = "t%s" % trial
                     cases = [
                         # no colon 
-                        '(= !%s %s)' % (t, execExpr),
+                        '(= !{} {})'.format(t, execExpr),
                         # colon lhs
                         # '(= ([ %%s %s) %s)' % (t, colon, execExpr),
                         # colon rhs
                         # '(= !%s  ([ %s %s))' % (t, execExpr, colon),
                         # colon lhs and rhs
-                        '(= ([ %%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
+                        '(= ([ %{} {}) ([ {} {}))'.format(t, colon, execExpr, colon),
                     ]
 
                     for case in cases:

@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
     def test_rapids_cut(self):
         SYNDATASETS_DIR = h2o.make_syn_dir()
         tryList = [
-            (1000000, 5, 'cA', 200),
+            (1000, 5, 'cA', 200),
             ]
 
         # h2b.browseTheCloud()
@@ -94,15 +94,16 @@ class Basic(unittest.TestCase):
                 Assign(result_key, KeyIndexed(data_key, row=Seq(range(1, 5))) )
                 Assign('seq5', KeyIndexed(data_key, row=Seq(Colon(99, 400), "#2", 1, range(1,5))) )
 
-                Assign('seq6', Key('seq5') + Key('seq4') + Key('seq3'))
+                # they need to be same size
+                # Assign('seq6', Key('seq5') + Key('seq4') + Key('seq3'))
 
                 # doesn't like my cut? complains on FALSE
                 # Assign(result_key, Cut(KeyIndexed(data_key, col=0)))
                 # Assign(result_key, Cut(KeyIndexed(data_key, col=1), breaks=3))
 
-                Assign(result_key, Fcn('mean', KeyIndexed(data_key, col=1), 1))
                 Assign(result_key, Fcn('min', KeyIndexed(data_key, col=1), True))
                 Assign(result_key, Fcn('max', KeyIndexed(data_key, col=1), True))
+                Assign(result_key, Fcn('mean', KeyIndexed(data_key, col=1), 0, False))
 
                 Assign(result_key, KeyIndexed(data_key, row='#1'))
                 Assign(result_key, KeyIndexed(data_key, row=Colon('#1', '#100')))
@@ -118,12 +119,12 @@ class Basic(unittest.TestCase):
                 Assign(result_key, KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
                 Assign(result_key, KeyIndexed(data_key, col=Colon('#1', colCount-1, )))
 
-                # no assign
-                Expr(KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
-                Expr(KeyIndexed(data_key, col=Colon('#1', colCount-1,)))
+                # no assign. Expr() complains when result has no key?
+                Assign(result_key, KeyIndexed(data_key, row=Colon('#1', rowCount-10)))
+                Assign(result_key, KeyIndexed(data_key, col=Colon('#1', colCount-1,)))
 
                 # do some function translation
-                Expr(Fcn('==', 1, KeyIndexed(data_key, col=Colon('#1', colCount-1,))) )
+                Assign(result_key, Fcn('==', 1, KeyIndexed(data_key, col=Colon('#1', colCount-1,))) )
 
                 print "\n" + csvPathname, \
                     "    numRows:", "{:,}".format(numRows), \

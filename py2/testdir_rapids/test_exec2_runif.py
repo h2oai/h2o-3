@@ -30,10 +30,10 @@ class Basic(unittest.TestCase):
         execExprList = [
             # hack to make them keys? (not really needed but interesting)
             # params for h2o-dev runif are: column, min, max, seed 
-            Assign('r0.hex', KeyIndexed('r.hex',col=0), do=False),
-            Assign('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=0), 1), do=False),
-            Assign('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=1), 0, 5, -1), do=False),
-            Assign('s2.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=54), -1, 5, -1), do=False),
+            AssignObj('r0.hex', KeyIndexed('r.hex',col=0) ),
+            AssignObj('s0.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=0), 1) ),
+            AssignObj('s1.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=1), -1)  ),
+            AssignObj('s2.hex', Fcn("h2o.runif", KeyIndexed('r.hex', col=54), -1) ),
         ]
 
         results = []
