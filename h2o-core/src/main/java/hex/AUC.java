@@ -1,7 +1,5 @@
 package hex;
 
-import static java.util.Arrays.sort;
-
 import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -13,7 +11,7 @@ public class AUC extends Iced {
   public Vec vactual;
   public Frame predict;
   public Vec vpredict;
-  private float[] thresholds;
+//  private float[] thresholds;
   public ThresholdCriterion threshold_criterion = ThresholdCriterion.maximum_F1;
 
   public enum ThresholdCriterion {
@@ -30,10 +28,6 @@ public class AUC extends Iced {
 
   AUCData aucdata;
   public AUCData data() { return aucdata; }
-
-  public AUC(Vec actuals, Frame predictions) {
-    throw water.H2O.unimpl();
-  }
 
   /** Constructor for algos that make their own CMs
    *  @param cms ConfusionMatrices
