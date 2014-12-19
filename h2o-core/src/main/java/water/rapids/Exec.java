@@ -16,7 +16,7 @@ import java.util.HashSet;
  *     '#'   signals the parser to parse a double: attached_token
  *     '"'   signals the parser to parse a String (double quote): attached_token
  *     "'"   signals the parser to parse a String (single quote): attached_token
- *     '$'   signals a variable lookup: attached_token
+ *     '%'   signals a variable lookup: attached_token
  *     '!'   signals a variable set: attached_token
  *     '['   signals a column slice by index - R handles all named to int conversions (as well as 1-based to 0-based)
  *     'def' signals the parser to a parse a function: (def name args body).
@@ -28,10 +28,10 @@ import java.util.HashSet;
  *     'n'   signals ==
  *     'N'   signals !=
  *     '_'   signals negation (!)
- *     '{'   signals the parser to begin parsing a ';'-separated array of flagged inputs (#, $, ", ') (ASTSeries is the resulting AST)
+ *     '{'   signals the parser to begin parsing a ';'-separated array of flagged inputs (#, %, ", ') (ASTSeries is the resulting AST)
  *
  * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
- * variable names (in the case of $ and !), doubles (in the case of #), or Strings (in the case of ' and ").
+ * variable names (in the case of % and !), doubles (in the case of #), or Strings (in the case of ' and ").
  *
  * Everything else is a function call (prefix/infix/func) and has a leading char of '('.
  */
@@ -208,7 +208,7 @@ public class Exec extends Iced {
     return this;
   }
 
-  private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
+  boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '%' || c =='{'; }
 
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 

@@ -2,7 +2,7 @@ import unittest, random, sys, time, re, getpass
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_glm, h2o_util
 import h2o_print as h2p, h2o_gbm
-from h2o_xl import Fcn, Seq, Colon, Col, Cbind, Assign, Item, KeyIndexed
+from h2o_xl import Key, Fcn, Assign, Cbind
 
 # FIX! This has some abbreviated stuff from h2o...look back there for completeness, eventually
 DO_QUANTILE = False
@@ -21,10 +21,11 @@ quoteChars = ""
 MIN_ENUM_WIDTH = 2
 MAX_ENUM_WIDTH = 8
 RAND_ENUM_LENGTH = True
-CUT_EXPR_CNT = 200
+# CUT_EXPR_CNT = 200
+CUT_EXPR_CNT = 20
 
-ROWS=1000000
-# ROWS=10000
+# ROWS=1000000
+ROWS=10000
 # ROWS=100
 
 DO_PLOT = getpass.getuser()=='kevin'
@@ -104,7 +105,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1,java_heap_GB=14)
+        h2o.init(java_heap_GB=14)
 
     @classmethod
     def tearDownClass(cls):
@@ -132,8 +133,8 @@ class Basic(unittest.TestCase):
 
             # create 100 possible cut expressions here, so we don't waste time below
             rowExprList = []
+            print "Creating", CUT_EXPR_CNT, 'cut expressions'
             for j in range(CUT_EXPR_CNT):
-                print "Creating", CUT_EXPR_CNT, 'cut expressions'
                 # init cutValue. None means no compare
                 cutValue = [None for i in range(iColCount)]
                 # build up a random cut expression
@@ -142,14 +143,15 @@ class Basic(unittest.TestCase):
                     # possible choices within the column
                     cel = colEnumList[c]
                     # for now the cutValues are numbers for the enum mappings
-                    if 1==1:
-                        # FIX! hack. don't use encoding 0, maps to NA here? h2o doesn't like
-                        celChoice = str(random.choice(range(len(cel))))
-                    else:
-                        celChoice = random.choice(cel)
+
+                    # FIX! hack. don't use encoding 0, maps to NA here? h2o doesn't like
+                    # celChoice = str(random.choice(range(len(cel))))
+                    celChoice = random.choice(range(len(cel)))
                     cutValue[c] = celChoice
     
                 cutExprList = []
+
+                pKey = Key('p')
                 for i,c in enumerate(cutValue):
                     if c is None:   
                         continue
@@ -158,7 +160,7 @@ class Basic(unittest.TestCase):
                         # src[ src$age<17 && src$zip=95120 && ... , ]
                         # cutExprList.append('p$C'+str(i+1)+'=='+c)
                         # all column indexing in h2o-dev is with number
-                        e = Fcn('==', Item(c), KeyIndexed('p', col=i))
+                        e = Fcn('==', c, pKey[:,i])
                         cutExprList.append(e)
 
                 cutExpr = None
@@ -176,7 +178,9 @@ class Basic(unittest.TestCase):
                 eKey = e[1]
 
                 # rowExpr = '%s[%s,];' % (hex_key, cutExpr)
-                rowExpr = KeyIndexed(hex_key, row=cutExpr)
+                hKey = Key(hex_key)
+                rowExpr = hKey[cutExpr, :]
+
                 print "rowExpr:", rowExpr
                 rowExprList.append(rowExpr)
 
@@ -207,16 +211,14 @@ class Basic(unittest.TestCase):
             # INIT all possible key names used***************************
             # remember. 1 indexing!
 
-            # is this needed?
-            if 1==1:
-                # build up the columns
-                Assign('b', Col(Seq(1,2,3))).do()
-                # could also append 1 col at a time, by assigning to the next col number?
-                Assign('a', Cbind(['b' for i in range(colCount)])).do()
-                
-                for eKey in eKeys:
-                    Assign(eKey, 'a').do()
-                    ## print h2o.dump_json(e)
+            # build up the columns
+            Assign('b', [1,2,3])
+            # could also append 1 col at a time, by assigning to the next col number?
+            Assign('a', Cbind(['b' for i in range(colCount)]))
+            
+            for eKey in eKeys:
+                Assign(eKey, 'a')
+                ## print h2o.dump_json(e)
 
             xList = []
             eList = []

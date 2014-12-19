@@ -351,7 +351,7 @@ setMethod("show", "H2ODRFModel", function(object) {
   cat("Distributed Random Forest Model Key:", object@key)
 
   model = object@model
-  cat("\n\nClasification:", model$params$classification)
+  cat("\n\nClassification:", model$params$classification)
   cat("\nNumber of trees:", model$params$ntree)
   cat("\nTree statistics:\n"); print(model$forest)
 
@@ -527,10 +527,13 @@ setClass("H2OKMeansModel", representation(valid="h2o.frame", xval="list"), conta
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
 #    cat("Parsed Data Key:", object@data@key, "\n\n")
-    cat("K-Means Model Key:", object@key)
+    cat("K-means Model Key:", object@key)
 
     model = object@model
     cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
+    cat("\n\nCluster means:\n"); print(model$clusters)
+    cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
+    cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2), "%)\n")
 #    cat("\n\nCluster means:\n"); print(model$centers)
 #    cat("\nClustering vector:\n"); print(summary(model$clusters))
 #    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)

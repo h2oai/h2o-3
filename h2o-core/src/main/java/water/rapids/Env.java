@@ -702,7 +702,8 @@ public class Env extends Iced {
     Value v = DKV.get(Key.make(name));
     if (v == null) return NULL;
     if (v.get() instanceof Frame) return ARY;
-    else return AST;
+    if (v.get() instanceof Vec) return ARY;
+    return AST;
   }
 
   String getValue(String name, boolean search_global) {

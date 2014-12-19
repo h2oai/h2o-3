@@ -14,7 +14,7 @@ test <- function(h) {
 	# library(h2o)
 	# h <- h2o.init()
 
-	filePath <- normalizePath(locate("smalldata/BostonHousing.csv"))
+	filePath <- normalizePath(locate("smalldata/gbm_test/BostonHousing.csv"))
 	print(filePath)
 	#Import data into H2O
 	BostonHousing <- h2o.uploadFile(h, path = filePath, key = "BostonHousing")

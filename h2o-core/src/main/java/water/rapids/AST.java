@@ -76,7 +76,7 @@ abstract public class AST extends Iced {
         AST ast = e.lookup(id);
 //        e.put(id._id, ast.type(), id._id);
         ast.exec(e);
-      } else if (id.isSet()) {
+      } else if (id.isLocalSet() || id.isGlobalSet()) {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
@@ -87,9 +87,10 @@ abstract public class AST extends Iced {
     } else if(this instanceof ASTStatement) {
 
       if (this instanceof ASTIf) { this.exec(e); }
-      if (this instanceof ASTElse) { this.exec(e); }
-      if (this instanceof ASTFor) { throw H2O.unimpl("`for` loops are currently unsupported."); }
-      if (this instanceof ASTReturn) { this.exec(e); return e; }
+      else if (this instanceof ASTElse) { this.exec(e); }
+      else if (this instanceof ASTFor) { throw H2O.unimpl("`for` loops are currently unsupported."); }
+      else if (this instanceof ASTReturn) { this.exec(e); return e; }
+      else this.exec(e);
 
     // Check if we have a slice.
     } else if(this instanceof ASTSlice) {
@@ -132,7 +133,7 @@ class ASTRaft extends AST {
 
 class ASTId extends AST {
   final String _id;
-  final char _type; // either '$' or '!'
+  final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
     return new ASTId(_type, E.parseID());
@@ -141,9 +142,10 @@ class ASTId extends AST {
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
   @Override int type() { return Env.ID; }
   @Override String value() { return _id; }
-  boolean isSet() { return _type == '!'; }
-  boolean isLookup() { return _type == '$'; }
-  boolean isValid() { return isSet() || isLookup(); }
+  boolean isLocalSet() { return _type == '&'; }
+  boolean isGlobalSet() { return _type == '!'; }
+  boolean isLookup() { return _type == '%'; }
+  boolean isValid() { return isLocalSet() || isGlobalSet() || isLookup(); }
 }
 
 class ASTKey extends AST {
@@ -165,10 +167,11 @@ class ASTFrame extends AST {
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
-    Key<Frame> k = Key.make(key);
-    if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    Key k = Key.make(key);
+    Keyed val = DKV.getGet(k);
+    if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
-    _fr = k.get();
+    _fr = val instanceof Frame ? (Frame)val : new Frame((Vec)val);
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
@@ -618,7 +621,13 @@ class ASTNull extends AST {
  */
 class ASTAssign extends AST {
   ASTAssign parse_impl(Exec E) {
-    AST l = E.parse();            // parse the ID on the left, or could be a column, or entire frame, or a row
+    E.skipWS();
+    AST l;
+    if (E.isSpecial(E.peek())) {
+      boolean putkv = E.peek() == '!';
+      if (putkv) E._x++; // skip the !
+      l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
+    } else l = E.parse();
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();
@@ -812,16 +821,18 @@ class ASTAssign extends AST {
     // Check if lhs is ID, update the symbol table; Otherwise it's a slice!
     if( this._asts[0] instanceof ASTId ) {
       ASTId id = (ASTId)this._asts[0];
-      assert id.isSet() : "Expected to set result into the LHS!.";
+      assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
       // RHS is a frame
       if (e.isAry()) {
         Frame f = e.pop0Ary();  // pop without lowering counts
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
-        Futures fs = new Futures();
-        DKV.put(k, fr, fs);
-        fs.blockForPending();
+        if (id.isGlobalSet()) {
+          Futures fs = new Futures();
+          DKV.put(k, fr, fs);
+          fs.blockForPending();
+        }
         if (e._local_locked != null) {
           e._local_locked.add(fr._key);
           e._local_frames.add(fr._key);
@@ -969,7 +980,7 @@ class ASTAssign extends AST {
           }
         }
         fs.blockForPending();
-//        e.cleanup(rhs_ary);
+        e.cleanup(rhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");
@@ -998,7 +1009,7 @@ class ASTSlice extends AST {
     if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST cols = E.skipWS().parse();
-    if (cols instanceof ASTString) cols = new ASTNull();
+    if (cols instanceof ASTString) ;
     if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);
     if (cols instanceof ASTSeries) ((ASTSeries) cols).setSlice(false, true);
     ASTSlice res = (ASTSlice) clone();
@@ -1015,6 +1026,12 @@ class ASTSlice extends AST {
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = rows_type == Env.ARY ? env.pop0() : env.pop();
+    if( cols_type == Env.STR ) {
+      Frame ary = env.peekAry();
+      int idx = ary.find(((ValStr)cols)._s);
+      if( idx == -1 ) throw new IllegalArgumentException("Column name not in frame, "+cols);
+      cols = new ValNum(idx);  cols_type = Env.NUM;
+    }
 
     // Scalar load?  Throws AIIOOB if out-of-bounds
     if(cols_type == Env.NUM && rows_type == Env.NUM) {
@@ -1147,5 +1164,29 @@ class ASTSlice extends AST {
     if(  _asts[1]==null ) indent(sb,d+1).append("all");
     else _asts[1].toString(sb,d+1);
     return sb;
+  }
+}
+
+//-----------------------------------------------------------------------------
+class ASTDelete extends AST {
+  ASTDelete parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
+    AST cols = E.skipWS().parse();
+    ASTDelete res = (ASTDelete) clone();
+    res._asts = new AST[]{ary,cols};
+    return res;
+  }
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+  @Override public String toString() { return "(del)"; }
+  @Override void exec(Env env) {
+    // stack looks like:  [....,hex,cols]
+    Frame  ary = ((ASTFrame )_asts[0])._fr;
+    String col = ((ASTString)_asts[1])._s;
+    Vec vec = ary.remove(col);
+    vec.remove();
+    DKV.put(ary);
+    env.push(new ValFrame(ary));
   }
 }

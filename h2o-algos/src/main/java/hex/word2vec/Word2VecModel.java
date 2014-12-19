@@ -203,7 +203,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     Frame fr = new Frame(_w2vKey = Key.make("w2v"));
     //FIXME this ties the word count frame to this one which means
     //FIXME one can't be deleted without destroying the other
-    fr.add("Word", ((Frame) _parms._vocabKey.get()).vec(0));
+    fr.add("Word", (_parms._vocabKey.get()).vec(0));
     fr.add(colNames, vecs);
     DKV.put(_w2vKey, fr);
   }
@@ -266,7 +266,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       if(_parameters._vocabKey == null) {
         _parameters._vocabKey = (new WordCountTask(_parameters._minWordFreq)).doAll(_parameters.train())._wordCountKey;
       }
-      _vocabSize = (int) ((Frame) _parameters._vocabKey.get()).numRows();
+      _vocabSize = (int) (_parameters._vocabKey.get()).numRows();
       _trainFrameSize = getTrainFrameSize(_parameters.train());
 
       //initialize weights to random values
@@ -342,7 +342,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long vocabWordsPow = 0;
       _uniTable = new int[UNIGRAM_TABLE_SIZE];
 
-      Vec wCount = ((Frame)_parameters._vocabKey.get()).vec(1);
+      Vec wCount = (_parameters._vocabKey.get()).vec(1);
       for (int i=0; i < wCount.length(); i++) vocabWordsPow += Math.pow(wCount.at8(i), UNIGRAM_POWER);
       for (int i = 0, j =0; i < UNIGRAM_TABLE_SIZE; i++) {
         _uniTable[i] = j;
@@ -401,7 +401,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long[] count = new long[_vocabSize * 2 - 1];
       int[] binary = new int[_vocabSize * 2 - 1];
       int[] parent_node = new int[_vocabSize * 2 - 1];
-      Vec wCount = ((Frame) _parameters._vocabKey.get()).vec(1);
+      Vec wCount = (_parameters._vocabKey.get()).vec(1);
       _HBWTCode = new int[_vocabSize][];
       _HBWTPoint = new int[_vocabSize][];
 

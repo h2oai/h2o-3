@@ -273,7 +273,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, base_port=54333, java_heap_GB=28) 
+        h2o.init(1, base_port=54333, java_heap_GB=12) 
 
     @classmethod
     def tearDownClass(cls):
@@ -301,7 +301,7 @@ class Basic(unittest.TestCase):
             funs = '[(def anon {v} %s;;(sum $v $TRUE);;;)]' % execExpr1
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=5)
 
-            execExpr2 = '(h2o.ddply $r2 {#2;#3} $anon)'
+            execExpr2 = '(= !a h2o.ddply $r2 {#2;#3} $anon)'
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=120)
 
             # see if the execExpr had a lhs assign. If so, it better be in the storeview

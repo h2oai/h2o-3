@@ -3,7 +3,6 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
-import org.reflections.Reflections;
 import water.api.*;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
@@ -155,7 +154,7 @@ final public class H2O {
     public String ice_root;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public int nthreads=Math.max(99,10*NUMCPUS);
+    public int nthreads=Runtime.getRuntime().availableProcessors();
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -424,10 +423,8 @@ final public class H2O {
   // Convenience error
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
-  @Deprecated public static RuntimeException fail() { return new RuntimeException("do not call"); } // DO NOT USE: always return an actionable reason to the user
-  public static RuntimeException fail(String msg) {
-    return new RuntimeException(msg);
-  }
+  public static RuntimeException fail() { return new RuntimeException("do not call"); }  // Internal H2O fail; only interesting thing is the stack-trace
+  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }  // Internal H2O fail; only interesting thing is the stack-trace
   public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
 
   // --------------------------------------------------------------------------
@@ -482,7 +479,7 @@ final public class H2O {
     private final int _cap;
     FJWThrFact( int cap ) { _cap = cap; }
     @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-      int cap = _cap==-1 ? ARGS.nthreads : _cap;
+      int cap = 4 * NUMCPUS;
       return pool.getPoolSize() <= cap ? new FJWThr(pool) : null;
     }
   }
@@ -490,7 +487,13 @@ final public class H2O {
   // A standard FJ Pool, with an expected priority level.
   private static class ForkJoinPool2 extends ForkJoinPool {
     final int _priority;
-    private ForkJoinPool2(int p, int cap) { super(NUMCPUS,new FJWThrFact(cap),null,p<MIN_HI_PRIORITY); _priority = p; }
+    private ForkJoinPool2(int p, int cap) {
+      super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
+            new FJWThrFact(cap),
+            null,
+            p<MIN_HI_PRIORITY);
+      _priority = p;
+    }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
   }
 

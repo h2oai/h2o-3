@@ -64,6 +64,15 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   if(!is.null(ice_root) && !is.character(ice_root)) stop("ice_root must be of class character")
   if(!is.logical(strict_version_check)) stop("strict_version_check must be of class logical")
 
+  if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
+    warning("H2O is specifically not compatible with this exact")
+    warning("version of R 3.1.0.")
+    warning("Please change to a newer or older version of R.")
+    warning("(For technical details, search the r-devel mailing list")
+    warning("for type.convert changes in R 3.1.0.)")
+    stop("R 3.1.0 is not compatible with H2O!")
+  }
+
   if(!missing(Xmx)) {
     warning("Xmx is a deprecated parameter. Use `max_mem_size` and `min_mem_size` to set the memory boundaries. Using `Xmx` to set these.")
     max_mem_size <- Xmx
