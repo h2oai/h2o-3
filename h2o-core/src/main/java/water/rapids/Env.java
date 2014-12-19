@@ -168,6 +168,10 @@ public class Env extends Iced {
     if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr._key)) {
       for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
     }
+    // case for dummy frame wrapped on single vec
+    if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr.anyVec()._key)) {
+      for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
+    }
     for(Vec v: ((ValFrame) o)._fr.vecs()) delete &= subRef(v);
     if (delete) {
       Key k = ((ValFrame)o)._fr._key;
@@ -199,8 +203,12 @@ public class Env extends Iced {
     int cnt = _refcnt.get(v)._val - 1;
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       for (Key kg : _global_frames) {
-        if ( DKV.get(kg) !=null && Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
-          return false;
+        if (DKV.get(kg) != null) {
+          if (DKV.get(kg).get() instanceof Frame) {
+            if (Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) return false;
+          } else if (DKV.get(kg).get() instanceof Vec) {
+            if (v._key == ((Vec) DKV.get(kg).get())._key) return false;
+          }
         }
       }
       if (_local_frames != null) {
