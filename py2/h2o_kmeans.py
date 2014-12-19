@@ -3,6 +3,7 @@ import h2o_nodes
 import re, math, random
 from h2o_test import check_sandbox_for_errors
 from operator import itemgetter
+from h2o_test import OutputObj
 
 def pickRandKMeansParams(paramDict, params):
     randomGroupSize = random.randint(1,len(paramDict))
@@ -13,100 +14,92 @@ def pickRandKMeansParams(paramDict, params):
         params[randomKey] = randomValue
 
 
-class KMeansOutput(object):
-    def __init__(self, output):
-        assert isinstance(output, dict)
-        for k,v in output.iteritems():
-            setattr(self, k, v) # achieves self.k = v
-
-# parameters is what I sent to kmeans?
-# might not be full set?
-def simpleCheckKMeans(self, modelResult, parameters, numRows, numCols, labels):
+# FIX! what about ignored columns during kmeans
+def simpleCheckKMeans(modelResult, parameters, numRows, numCols, labels):
     # labels should have the ignored columns removed
     # numCols should be decremented by the ignored columns
     # the names order should then match the labels order
+    ko = KMeansObj(modelResult, parameters)
 
-    output = modelResult['models'][0]['output']
-    # print "model output:", dump_json(output)
-    # find out what results we get
-    ko = KMeansOutput(output)
-    if 1==0:
-        for attr, value in ko.__dict__.iteritems():
-            # create some python prints to use
-            print "%s = ko.%s # %s" % (attr, attr, value)
-
-    # these should sum to the rows in the dataset
-    rows = ko.rows # [78, 5, 41, 76]
-    model_category = ko.model_category # Clustering
-    iters = ko.iters # 11.0
-    # schema_version = ko.schema_version # 2
-    domains = ko.domains # [None, None, None, None, None, None, None, None, None, None, None, None, None, None]
-    # 
-    names = ko.names # [u'STR', u'OBS', u'AGMT', u'FNDX', u'HIGD', u'DEG', u'CHK', u'AGP1', u'AGMN', u'NLV', u'LIV', u'WT', u'AGLP', u'MST']
-    # schema_name = ko.schema_name # KMeansModelOutputV2
-    # schema_type = ko.schema_type # KMeansOutput
-    ncats = ko.ncats # 0
-    clusters = ko.clusters # [ 4 lists of centers ]
-    mse = ko.mse # 505.632581773
-    mses = ko.mses # [476.37866653867707, 563.7343365736649, 606.3007046232348, 477.5260498976912]
-
-    if numRows:
-        assert numRows==sum(rows)
-
-    if 'k' in parameters:
-        k = parameters['k']
-        assert len(mses) == k
-        assert len(clusters) == k
-        assert len(rows) == k
-
-    if numCols:
-        assert len(names) == numCols, \
-            "Need to pass correct numCols after ignored columns decrement %s %s" % (len(names), numCols)
-        for c in clusters:
-            assert len(c) == numCols, "%s %s" % (len(c), numCols)
-
-    # this should be true 
-    if labels:
-        assert len(labels) == numCols, \
-            "Need to pass correct labels and numCols after ignored columns removal %s %s" % (len(labels), numCols)
-        assert len(labels) == len(names), \
-            "Need to pass correct labels after ignored columns removal %s %s" % (len(labels), len(names))
-        assert labels == names
-
-    if 'max_iters' in parameters:
-        max_iters = parameters['max_iters']
-        assert max_iters >= iters
-
-    # we could check the centers are within the min/max of each column
-    for i,c in enumerate(clusters):
-        for n in c:
-            if math.isnan(float(n)):
-                raise Exception("cluster", i, "has NaN:", n, "center:", c)
-
-    # shouldn't have any errors
-    check_sandbox_for_errors()
-
-    # create a tuple for each cluster result, then sort by rows for easy comparison
-    # maybe should sort by centers?
-    # put a cluster index in there too, (leftmost) so we don't lose track
-    tuples = zip(range(len(clusters)), mses, rows, clusters)
-    tuplesSorted = sorted(tuples, key=itemgetter(3))
-
-    # undo for printing what the caller will see
-    ids, mses, rows, clusters = zip(*tuplesSorted)
-
-    print "\nmse:", mse
-    print "iters:", iters
-    print "ids:", ids
-    print "mses:", mses
-    print "rows:", rows
-    for i,c in enumerate(clusters):
-        print "cluster id %s (2 places):" % ids[i], h2o_util.twoDecimals(c)
-
-    
     # to unzip the tuplesSorted. zip with *
-    # ids, mses, rows, clusters = zip(*tuplesSorted)
-    return tuplesSorted, iters, mse, names
+    # ids, withinmse, rows, clusters = zip(*tuplesSorted)
+    return ko.tuplesSorted, ko.iters, ko.avgss, ko.names
+
+class KMeansObj(OutputObj):
+    def __init__(self, kmeansResult, parameters, numRows, numCols, labels, noPrint=False, **kwargs):
+        super(KMeansObj, self).__init__(kmeansResult['models'][0]['output'], "KMeans", noPrint=noPrint)
+
+        print self.withinmse # per cluster
+        print self.avgss
+        print self.avgwithinss
+        print self.avgbetweenss
+
+        # should model builder add this to the kmeansResult?
+        if 'python_elapsed' in kmeansResult:
+            self.python_elapsed = kmeansResult['python_elapsed']
+
+        rows = self.rows # [78, 5, 41, 76]
+        model_category = self.model_category # Clustering
+        iters = self.iters # 11.0
+        domains = self.domains # [None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+        names = self.names 
+        # [u'STR', u'OBS', u'AGMT', u'FNDX', u'HIGD', u'DEG', u'CHK', u'AGP1', u'AGMN', u'NLV', u'LIV', u'WT', u'AGLP', u'MST']
+        ncats = self.ncats # 0
+        clusters = self.clusters # [ 4 lists of centers ]
+        withinmse = self.withinmse
+        avgss = self.avgss
+
+        if numRows:
+            assert numRows==sum(rows)
+
+        if 'k' in parameters:
+            k = parameters['k']
+            assert len(clusters) == k
+            assert len(rows) == k
+
+        if numCols:
+            assert len(names) == numCols, \
+                "Need to pass correct numCols after ignored columns decrement %s %s" % (len(names), numCols)
+            for c in clusters:
+                assert len(c) == numCols, "%s %s" % (len(c), numCols)
+
+        # this should be true 
+        if labels:
+            assert len(labels) == numCols, \
+                "Need to pass correct labels and numCols after ignored columns removal %s %s" % (len(labels), numCols)
+            assert len(labels) == len(names), \
+                "Need to pass correct labels after ignored columns removal %s %s" % (len(labels), len(names))
+            assert labels == names
+
+        if 'max_iters' in parameters:
+            max_iters = parameters['max_iters']
+            assert max_iters >= iters
+
+        # we could check the centers are within the min/max of each column
+        for i,c in enumerate(clusters):
+            for n in c:
+                if math.isnan(float(n)):
+                    raise Exception("cluster", i, "has NaN:", n, "center:", c)
+
+        # shouldn't have any errors
+        check_sandbox_for_errors()
+
+        # create a tuple for each cluster result, then sort by rows for easy comparison
+        # maybe should sort by centers?
+        # put a cluster index in there too, (leftmost) so we don't lose track
+        tuples = zip(range(len(clusters)), withinmse, rows, clusters)
+        self.tuplesSorted = sorted(tuples, key=itemgetter(3))
+
+        # undo for printing what the caller will see
+        ids, withinmse, rows, clusters = zip(*self.tuplesSorted)
+        print "iters:", iters
+        print "ids:", ids
+        print "withinmse:", withinmse
+        print "rows:", rows
+        for i,c in enumerate(clusters):
+            print "cluster id %s (2 places):" % ids[i], h2o_util.twoDecimals(c)
+        
+        print "KMeansObj created for:", "???"# vars(self)
 
 
 def bigCheckResults(self, kmeans, csvPathname, parseResult, predictKey, **kwargs):

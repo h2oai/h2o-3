@@ -2,6 +2,7 @@ import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
+import h2o_kmeans
 
 
 class Basic(unittest.TestCase):
@@ -18,12 +19,6 @@ class Basic(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
-
-    class KmeansOutput(object):
-        def __init__(self, output):
-            assert isinstance(output, dict)
-            for k,v in output.iteritems():
-                setattr(self, k, v) # achieves self.k = v
 
     def test_kmeans_benign(self):
         importFolderPath = "logreg"
@@ -78,15 +73,12 @@ class Basic(unittest.TestCase):
                 timeoutSecs=10) 
 
             modelResult = h2o.n0.models(key=model_key)
+            km = h2o_kmeans.KMeansObj(modelResult, parameters, numRows, numColsUsed, labelListUsed)
 
-            # this prints too
-            tuplesSorted, iters, mse, names = \
-                h2o_kmeans.simpleCheckKMeans(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
-            
             h2o_cmd.runStoreView()
 
             # zip with * is it's own inverse here. It's sorted by centers for easy comparisons
-            ids, mses, rows, clusters = zip(*tuplesSorted)
+            ids, mses, rows, clusters = zip(*km.tuplesSorted)
 
             # create a tuple for each cluster, then sort by row
 
@@ -154,7 +146,7 @@ class Basic(unittest.TestCase):
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)
-            model = OutputObj(modelResult['models'][0]['output'], 'model')
+            km = h2o_kmeans.KMeansObj(modelResult, parameters, numRows, numColsUsed, labelListUsed)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
@@ -167,9 +159,6 @@ class Basic(unittest.TestCase):
 
             h2o_cmd.runStoreView()
 
-            tuplesSorted, iters, mse, names = \
-                h2o_kmeans.simpleCheckKMeans(self, modelResult, parameters, numRows, numColsUsed, labelListUsed)
-            ids, mses, rows, clusters = zip(*tuplesSorted)
 
             # (centers, tupleResultList) = h2o_kmeans.bigCheckResults(self, kmeans, csvPathname, parseResult, 'd', **kwargs)
             # h2o_kmeans.compareResultsToExpected(self, tupleResultList, expected, allowedDelta, trial=trial)

@@ -427,9 +427,11 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     start = time.time()
     result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
-
+    # make get overwritten after polling
+    elapsed = time.time() - start
     verboseprint("build_model result", dump_json(result1))
 
+      
     if noPoll:
         result = result1
     elif 'validation_error_count' in result1:
@@ -471,6 +473,7 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
 
     verboseprint("result:", result)
     h2o_sandbox.check_sandbox_for_errors()
+    result['python_elapsed'] = elapsed
     return result
 
 
