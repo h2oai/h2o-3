@@ -87,9 +87,10 @@ abstract public class AST extends Iced {
     } else if(this instanceof ASTStatement) {
 
       if (this instanceof ASTIf) { this.exec(e); }
-      if (this instanceof ASTElse) { this.exec(e); }
-      if (this instanceof ASTFor) { throw H2O.unimpl("`for` loops are currently unsupported."); }
-      if (this instanceof ASTReturn) { this.exec(e); return e; }
+      else if (this instanceof ASTElse) { this.exec(e); }
+      else if (this instanceof ASTFor) { throw H2O.unimpl("`for` loops are currently unsupported."); }
+      else if (this instanceof ASTReturn) { this.exec(e); return e; }
+      else this.exec(e);
 
     // Check if we have a slice.
     } else if(this instanceof ASTSlice) {
