@@ -76,7 +76,7 @@ abstract public class AST extends Iced {
         AST ast = e.lookup(id);
 //        e.put(id._id, ast.type(), id._id);
         ast.exec(e);
-      } else if (id.isSet()) {
+      } else if (id.isLocalSet() || id.isGlobalSet()) {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
@@ -132,7 +132,7 @@ class ASTRaft extends AST {
 
 class ASTId extends AST {
   final String _id;
-  final char _type; // either '$' or '!'
+  final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
     return new ASTId(_type, E.parseID());
@@ -141,9 +141,10 @@ class ASTId extends AST {
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
   @Override int type() { return Env.ID; }
   @Override String value() { return _id; }
-  boolean isSet() { return _type == '!'; }
+  boolean isLocalSet() { return _type == '&'; }
+  boolean isGlobalSet() { return _type == '!'; }
   boolean isLookup() { return _type == '$'; }
-  boolean isValid() { return isSet() || isLookup(); }
+  boolean isValid() { return isLocalSet() || isGlobalSet() || isLookup(); }
 }
 
 class ASTKey extends AST {
@@ -618,7 +619,13 @@ class ASTNull extends AST {
  */
 class ASTAssign extends AST {
   ASTAssign parse_impl(Exec E) {
-    AST l = E.parse();            // parse the ID on the left, or could be a column, or entire frame, or a row
+    E.skipWS();
+    AST l;
+    if (E.isSpecial(E.peek())) {
+      boolean putkv = E.peek() == '!';
+      if (putkv) E._x++; // skip the !
+      l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
+    } else l = E.parse();
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();
@@ -812,16 +819,18 @@ class ASTAssign extends AST {
     // Check if lhs is ID, update the symbol table; Otherwise it's a slice!
     if( this._asts[0] instanceof ASTId ) {
       ASTId id = (ASTId)this._asts[0];
-      assert id.isSet() : "Expected to set result into the LHS!.";
+      assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
       // RHS is a frame
       if (e.isAry()) {
         Frame f = e.pop0Ary();  // pop without lowering counts
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
-        Futures fs = new Futures();
-        DKV.put(k, fr, fs);
-        fs.blockForPending();
+        if (id.isGlobalSet()) {
+          Futures fs = new Futures();
+          DKV.put(k, fr, fs);
+          fs.blockForPending();
+        }
         if (e._local_locked != null) {
           e._local_locked.add(fr._key);
           e._local_frames.add(fr._key);
@@ -969,7 +978,7 @@ class ASTAssign extends AST {
           }
         }
         fs.blockForPending();
-//        e.cleanup(rhs_ary);
+        e.cleanup(rhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");
