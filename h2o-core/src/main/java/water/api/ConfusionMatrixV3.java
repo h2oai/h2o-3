@@ -1,6 +1,6 @@
 package water.api;
 
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 
-public class ConfusionMatrixV3 extends ConfusionMatrixBase<ConfusionMatrix2, ConfusionMatrixV3> {
+public class ConfusionMatrixV3 extends ConfusionMatrixBase<ConfusionMatrix, ConfusionMatrixV3> {
 }

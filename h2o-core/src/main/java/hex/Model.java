@@ -332,7 +332,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Log modest confusion matrices
     Vec mresp = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = mresp.domain(); // Domain of predictions (union of test and train)
-    ConfusionMatrix2 cm = ModelMetrics.getFromDKV(this,fr)._cm;
+    ConfusionMatrix cm = ModelMetrics.getFromDKV(this,fr)._cm;
     if (mdomain != null) { //don't print table for regression
       cm._cmTable = cm.toTable(mdomain);
       if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
