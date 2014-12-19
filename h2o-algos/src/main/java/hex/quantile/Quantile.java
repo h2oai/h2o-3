@@ -53,7 +53,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       QuantileModel model = null;
       try {
         Scope.enter();
-        _parms.lock_frames(Quantile.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(Quantile.this); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -95,7 +95,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        _parms.unlock_frames(Quantile.this);
+        _parms.read_unlock_frames(Quantile.this);
         Scope.exit(model == null ? null : model._key);
         done();                 // Job done!
       }

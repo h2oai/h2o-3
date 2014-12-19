@@ -14,7 +14,7 @@ public class ParseSetupHandler extends Handler {
 
   public ParseSetupV2 guessSetup(int version, ParseSetupV2 p) {
     if( DKV.get(p.srcs[0].key()) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset2.getByteVec(p.srcs[0].key()));
+    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(p.srcs[0].key()));
     ParseSetup ps = ParseSetup.guessSetup(bits, p.singleQuotes, p.checkHeader);
     // Update in-place
     assert ps._checkHeader != 0; // Need to fill in the guess
@@ -22,7 +22,7 @@ public class ParseSetupHandler extends Handler {
     // TODO: ParseSetup throws away the srcs list. . .
     PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "hex", "srcs" });
 
-    p.columnNames = ps._columnNames == null ? ParseDataset2.genericColumnNames(p.ncols) : ps._columnNames;
+    p.columnNames = ps._columnNames == null ? ParseDataset.genericColumnNames(p.ncols) : ps._columnNames;
     p.hexName = ParseSetup.hex(p.srcs[0].toString());
     if( p.checkHeader==1 ) p.data = Arrays.copyOfRange(p.data,1,p.data.length-1); // Drop header from the preview data
 

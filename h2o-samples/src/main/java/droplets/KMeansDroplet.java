@@ -36,7 +36,7 @@ public class KMeansDroplet {
     // Load and parse a file. Data is distributed to other nodes in a round-robin way
     File f = new File("smalldata/glm_test/gaussian.csv");
     NFSFileVec nfs = NFSFileVec.make(f);
-    Frame frame = water.parser.ParseDataset2.parse(Key.make(),nfs._key);
+    Frame frame = water.parser.ParseDataset.parse(Key.make(),nfs._key);
 
     // Optionally create a frame with fewer columns, e.g. skip first
     frame.remove(0);

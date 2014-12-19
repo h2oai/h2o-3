@@ -9,7 +9,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.parser.ParseDataset2;
+import water.parser.ParseDataset;
 import water.rapids.Env;
 import water.rapids.Exec;
 import water.util.Log;
@@ -36,9 +36,9 @@ public class DeepLearningProstateTest extends TestUtil {
     for (int i = 0; i < datasets.length; ++i) {
       final String dataset = datasets[i];
       NFSFileVec  nfs = NFSFileVec.make(find_test_file(dataset));
-      Frame  frame = ParseDataset2.parse(Key.make(), nfs._key);
+      Frame  frame = ParseDataset.parse(Key.make(), nfs._key);
       NFSFileVec vnfs = NFSFileVec.make(find_test_file(dataset));
-      Frame vframe = ParseDataset2.parse(Key.make(), vnfs._key);
+      Frame vframe = ParseDataset.parse(Key.make(), vnfs._key);
 
       try {
         for (boolean replicate : new boolean[]{

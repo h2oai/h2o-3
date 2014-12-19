@@ -115,7 +115,7 @@ public class AUC extends Iced {
     }
   }
 
-  // Compute CMs for different thresholds via MRTask2
+  // Compute CMs for different thresholds via MRTask
   private static class AUCTask extends MRTask<AUCTask> {
     /* @OUT CMs */ private ConfusionMatrix2[] getCMs() { return _cms; }
     private ConfusionMatrix2[] _cms;

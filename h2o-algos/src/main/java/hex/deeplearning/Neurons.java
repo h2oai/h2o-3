@@ -13,7 +13,7 @@ import org.apache.hadoop.util.hash.MurmurHash;
 
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
- * During training, every MRTask2 F/J thread is expected to create these neurons for every map call (Cheap to make).
+ * During training, every MRTask F/J thread is expected to create these neurons for every map call (Cheap to make).
  * These Neurons are NOT sent over the wire.
  * The weights connecting the neurons are in a separate class (DeepLearningModel.DeepLearningModelInfo), and will be shared per node.
  */

@@ -327,7 +327,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     }
     // Exception occurred when processing this task locally, set exception and
     // send it back to the caller.  Can be called lots of times (e.g., once per
-    // MRTask2.map call that throws).
+    // MRTask.map call that throws).
     @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
       if( _computed ) return false;
       synchronized(this) {    // Filter dup calls to onExCompletion

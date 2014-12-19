@@ -16,7 +16,7 @@ import water.util.FrameUtils;
 import water.util.PrettyPrint;
 import water.util.Log;
 
-public final class ParseDataset2 extends Job<Frame> {
+public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
@@ -31,8 +31,8 @@ public final class ParseDataset2 extends Job<Frame> {
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     return parse(okey,keys,delete_on_done,globalSetup,true).get();
   }
-  public static ParseDataset2 parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
-    ParseDataset2 job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
+  public static ParseDataset parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
+    ParseDataset job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
     try { if( blocking ) job.get(); return job; } 
     catch( Throwable ex ) {
 
@@ -71,7 +71,7 @@ public final class ParseDataset2 extends Job<Frame> {
   }
 
   // Same parse, as a backgroundable Job
-  public static ParseDataset2 forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean delete_on_done) {
+  public static ParseDataset forkParseDataset(final Key dest, final Key[] keys, final ParseSetup setup, boolean delete_on_done) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
@@ -92,7 +92,7 @@ public final class ParseDataset2 extends Job<Frame> {
       throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(sum)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
     // Fire off the parse
-    ParseDataset2 job = new ParseDataset2(dest);
+    ParseDataset job = new ParseDataset(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
@@ -101,19 +101,19 @@ public final class ParseDataset2 extends Job<Frame> {
   }
 
   // Setup a private background parse job
-  private ParseDataset2(Key dest) {
+  private ParseDataset(Key dest) {
     super(dest,"Parse");
   }
 
   // -------------------------------
   // Simple internal class doing background parsing, with trackable Job status
   public static class ParserFJTask extends water.H2O.H2OCountedCompleter {
-    final ParseDataset2 _job;
+    final ParseDataset _job;
     final Key[] _keys;
     final ParseSetup _setup;
     final boolean _delete_on_done;
 
-    public ParserFJTask( ParseDataset2 job, Key[] keys, ParseSetup setup, boolean delete_on_done) {
+    public ParserFJTask( ParseDataset job, Key[] keys, ParseSetup setup, boolean delete_on_done) {
       _job = job;
       _keys = keys;
       _setup = setup;
@@ -138,7 +138,7 @@ public final class ParseDataset2 extends Job<Frame> {
   }
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parse_impl(ParseDataset2 job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
+  private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._ncols > 0;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
@@ -864,7 +864,7 @@ public final class ParseDataset2 extends Job<Frame> {
 
   // ------------------------------------------------------------------------
   // Log information about the dataset we just parsed.
-  private static void logParseResults(ParseDataset2 job, Frame fr) {
+  private static void logParseResults(ParseDataset job, Frame fr) {
     try {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");

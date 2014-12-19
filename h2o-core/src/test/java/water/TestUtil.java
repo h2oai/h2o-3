@@ -11,6 +11,7 @@ import org.junit.rules.*;
 import org.junit.runners.model.Statement;
 import org.junit.runner.Description;
 import water.fvec.*;
+import water.parser.ParseDataset;
 import water.util.Log;
 import water.util.Timer;
 import water.parser.ValueString;
@@ -119,7 +120,7 @@ public class TestUtil extends Iced {
     File f = find_test_file(fname);
     assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
-    return water.parser.ParseDataset2.parse(outputKey,nfs._key);
+    return ParseDataset.parse(outputKey, nfs._key);
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
@@ -136,7 +137,7 @@ public class TestUtil extends Iced {
         keys.add(NFSFileVec.make(f)._key);
     Key[] res = new Key[keys.size()];
     keys.toArray(res);
-    return water.parser.ParseDataset2.parse(Key.make(),res);
+    return ParseDataset.parse(Key.make(), res);
   }
 
   /** A Numeric Vec from an array of ints

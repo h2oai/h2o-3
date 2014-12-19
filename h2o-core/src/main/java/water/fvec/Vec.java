@@ -19,11 +19,11 @@ import java.util.UUID;
  *  display), and functions to directly load elements without further
  *  indirections.  The data is compressed, or backed by disk or both.
  *
- *  <p>A Vec is a collection of {@link Chunk}s, each of which holds between 1e3
- *  and 1e6 elements.  Operations on a Chunk are intended to be
+ *  <p>A Vec is a collection of {@link Chunk}s, each of which holds between 1,000
+ *  and 1,000,000 elements.  Operations on a Chunk are intended to be
  *  single-threaded; operations on a Vec are intended to be parallel and
  *  distributed on Chunk granularities, with each Chunk being manipulated by a
- *  seperate CPU.  The standard Map/Reduce ({@link MRTask}) paradigm handles
+ *  separate CPU.  The standard Map/Reduce ({@link MRTask}) paradigm handles
  *  parallel and distributed Chunk access well.
  *
  *  <p>Individual elements can be directly accessed like a (very large and
@@ -68,7 +68,7 @@ import java.util.UUID;
  *  printouts will use the String mapping.  Time is another special integral
  *  type: it is represented as milliseconds since the unix epoch, and is mostly
  *  treated as an integral type when doing math but it has special time-based
- *  printout formating.  All types support the notion of a missing element; for
+ *  printout formatting.  All types support the notion of a missing element; for
  *  real types this is always NaN.  It is an error to attempt to fetch a
  *  missing integral type, and {@link #isNA} must be called first.  Integral
  *  types are losslessly compressed.  Real types may lose 1 or 2 ULPS due to

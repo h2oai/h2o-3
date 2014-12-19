@@ -9,6 +9,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.parser.ParseDataset;
 import water.persist.Persist;
 
 public class FrameUtils {
@@ -23,13 +24,13 @@ public class FrameUtils {
       throw new FileNotFoundException("File not found " + file);
     if(okey == null) okey = Key.make(file.getName());
     NFSFileVec nfs = NFSFileVec.make(file);
-    return water.parser.ParseDataset2.parse(okey, nfs._key);
+    return ParseDataset.parse(okey, nfs._key);
   }
 
   public static Frame parseFrame(Key okey, URI uri) throws IOException {
     Key ikey = Persist.anyURIToKey(uri);
     if(okey == null) okey = Key.make(uri.toString());
-    return water.parser.ParseDataset2.parse(okey, ikey);
+    return ParseDataset.parse(okey, ikey);
   }
 
   /**

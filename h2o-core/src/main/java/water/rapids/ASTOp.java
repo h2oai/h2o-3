@@ -792,7 +792,7 @@ class ASTScale extends ASTUniPrefixOp {
 //    Frame fr = env.popAry();
 //    String skey = env.key();
 //    final ASTTimeOp uni = this;  // Final 'this' so can use in closure
-//    Frame fr2 = new MRTask2() {
+//    Frame fr2 = new MRTask() {
 //      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
 //        MutableDateTime dt = new MutableDateTime(0);
 //        for( int i=0; i<nchks.length; i++ ) {
@@ -845,7 +845,7 @@ class ASTScale extends ASTUniPrefixOp {
 //    if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
 //      throw new IllegalArgumentException("diff takes a single numeric column vector");
 //
-//    Frame fr2 = new MRTask2() {
+//    Frame fr2 = new MRTask() {
 //      @Override public void map(Chunk chk, NewChunk nchk) {
 //        int rstart = (int)(diffs*lag - chk._start);
 //        if(rstart > chk._len) return;
@@ -3097,7 +3097,7 @@ class ASTXorSum extends ASTReducerOp {
 //      if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
 //        throw new IllegalArgumentException("First argument must be a numeric column vector");
 //
-//      Frame fr2 = new MRTask2() {
+//      Frame fr2 = new MRTask() {
 //        @Override public void map(Chunk chk, NewChunk nchk) {
 //          for(int r = 0; r < chk._len; r++) {
 //            double x = chk.at0(r);

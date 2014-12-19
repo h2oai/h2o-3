@@ -99,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model = null;            // Resulting model!
       try {
         Scope.enter();          // Cleanup temp keys
-        _parms.lock_frames(SharedTree.this); // Fetch & read-lock input frames
+        _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
         init(true);             // Do any expensive tests & conversions now
 
         // New Model?  Or continuing from a checkpoint?
@@ -185,7 +185,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         throw t;
       } finally {
         if( _model != null ) _model.unlock(_key);
-        _parms.unlock_frames(SharedTree.this);
+        _parms.read_unlock_frames(SharedTree.this);
         done();                 // Job done!
         if( _model==null ) Scope.exit();
         else {
@@ -216,7 +216,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
-      // nested MRTask2 ScoreBuildHistogram in ScoreBuildOneTree does not try
+      // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
       Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
       fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);

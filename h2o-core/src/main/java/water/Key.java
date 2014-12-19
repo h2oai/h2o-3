@@ -109,7 +109,7 @@ final public class Key<T extends Keyed> extends Iced implements Comparable {
   
     // Distribution of Fluid Vectors is a special case.
     // Fluid Vectors are grouped into vector groups, each of which must have
-    // the same distribution of chunks so that MRTask2 run over group of
+    // the same distribution of chunks so that MRTask run over group of
     // vectors will keep data-locality.  The fluid vecs from the same group
     // share the same key pattern + each has 4 bytes identifying particular
     // vector in the group.  Since we need the same chunks end up on the same

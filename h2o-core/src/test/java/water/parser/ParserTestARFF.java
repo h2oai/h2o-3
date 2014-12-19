@@ -26,34 +26,34 @@ public class ParserTestARFF extends TestUtil {
     for (String ds : dataset) sb1.append(ds).append(sep);
     Key k1 = makeByteVec(sb1.toString());
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k1);
+    ParseDataset.parse(r1, k1);
     Frame fr = DKV.get(r1).get();
     try {
       Assert.assertEquals(len, fr.numRows());
       Assert.assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
         Vec vec = fr.vecs()[j];
-        if (exp[j] == ParseDataset2.FVecDataOut.TCOL) { //Time
+        if (exp[j] == ParseDataset.FVecDataOut.TCOL) { //Time
           Assert.assertTrue(vec.isTime());
 //          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isEnum());
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.ECOL) { //Categorical
+        } else if (exp[j] == ParseDataset.FVecDataOut.ECOL) { //Categorical
           Assert.assertTrue(vec.isEnum());
 //          Assert.assertFalse(vec.isInt()); //FIXME enum is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.SCOL) { //String
+        } else if (exp[j] == ParseDataset.FVecDataOut.SCOL) { //String
           Assert.assertTrue(vec.isString());
           Assert.assertFalse(vec.isInt());
           Assert.assertFalse(vec.isEnum());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.NCOL) { //Numeric (can be Int or not)
+        } else if (exp[j] == ParseDataset.FVecDataOut.NCOL) { //Numeric (can be Int or not)
           Assert.assertTrue(!vec.isEnum() && !vec.isString() && !vec.isUUID() && !vec.isTime());
-        } else if (exp[j] == ParseDataset2.FVecDataOut.ICOL) { //UUID
+        } else if (exp[j] == ParseDataset.FVecDataOut.ICOL) { //UUID
           Assert.assertTrue(vec.isUUID());
 //          Assert.assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isEnum());
@@ -74,7 +74,7 @@ public class ParserTestARFF extends TestUtil {
     for (String ds : dataset) sb1.append(ds).append(sep);
     Key k1 = makeByteVec(sb1.toString());
     Key r1 = Key.make("r1");
-    ParseDataset2.parse(r1, k1);
+    ParseDataset.parse(r1, k1);
     Frame fr = DKV.get(r1).get();
     try {
       Assert.assertEquals(len, fr.numRows());
@@ -92,7 +92,7 @@ public class ParserTestARFF extends TestUtil {
    *  @return      Frame or NPE */
   private Frame parse_test_file_single_quotes( String fname ) {
     NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
-    return water.parser.ParseDataset2.parse(Key.make(),new Key[]{nfs._key}, true, true /*single quote*/, 0);
+    return ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, true /*single quote*/, 0);
   }
 
   // negative test to check the isBitIdentical
@@ -144,7 +144,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.NCOL
+            ParseDataset.FVecDataOut.NCOL
     };
     String[] exp_names = new String[]{
             "numeric"
@@ -172,7 +172,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.NCOL
+            ParseDataset.FVecDataOut.NCOL
     };
     String[] exp_names = new String[]{
             "numeric"
@@ -204,7 +204,7 @@ public class ParserTestARFF extends TestUtil {
             "10",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.ECOL
+            ParseDataset.FVecDataOut.ECOL
     };
     String[] exp_names = new String[]{
             "class"
@@ -232,7 +232,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.ECOL
+            ParseDataset.FVecDataOut.ECOL
     };
     String[] exp_names = new String[]{
             "enum"
@@ -260,7 +260,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.ECOL
+            ParseDataset.FVecDataOut.ECOL
     };
     String[] exp_names = new String[]{
             "enum"
@@ -289,7 +289,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.SCOL
+            ParseDataset.FVecDataOut.SCOL
     };
     String[] exp_names = new String[]{
             "col"
@@ -323,10 +323,10 @@ public class ParserTestARFF extends TestUtil {
             "2013-07-20,cat,7,N"
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.TCOL,
-            ParseDataset2.FVecDataOut.ECOL,
-            ParseDataset2.FVecDataOut.NCOL,
-            ParseDataset2.FVecDataOut.ECOL
+            ParseDataset.FVecDataOut.TCOL,
+            ParseDataset.FVecDataOut.ECOL,
+            ParseDataset.FVecDataOut.NCOL,
+            ParseDataset.FVecDataOut.ECOL
     };
     String[] exp_names = new String[]{
             "date",
@@ -363,10 +363,10 @@ public class ParserTestARFF extends TestUtil {
             "2013-07-20,cat,7,N"
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.TCOL,
-            ParseDataset2.FVecDataOut.ECOL,
-            ParseDataset2.FVecDataOut.ECOL,
-            ParseDataset2.FVecDataOut.ECOL
+            ParseDataset.FVecDataOut.TCOL,
+            ParseDataset.FVecDataOut.ECOL,
+            ParseDataset.FVecDataOut.ECOL,
+            ParseDataset.FVecDataOut.ECOL
     };
     String[] exp_names = new String[]{
             "date,yeah'!",
@@ -412,7 +412,7 @@ public class ParserTestARFF extends TestUtil {
             "7f79c2b5-da56-721f-22f9-fdd726b13daf8e8",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset2.FVecDataOut.ICOL
+            ParseDataset.FVecDataOut.ICOL
     };
     final int len = 4;
 
@@ -557,7 +557,7 @@ public class ParserTestARFF extends TestUtil {
             ard(-2)
     };
     Key k = ParserTest.makeByteVec(data);
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,3);
   }
 
   @Test public void testReal(){
@@ -576,7 +576,7 @@ public class ParserTestARFF extends TestUtil {
             ard(-2)
     };
     Key k = ParserTest.makeByteVec(data);
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,3);
   }
 
   @Test public void testNum(){
@@ -595,7 +595,7 @@ public class ParserTestARFF extends TestUtil {
             ard(-2)
     };
     Key k = ParserTest.makeByteVec(data);
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,3);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,3);
   }
 
   @Test public void testNumSplit(){
@@ -623,7 +623,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
-    ParserTest.testParsed(ParseDataset2.parse(Key.make(), k),exp,6);
+    ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,6);
   }
 
   @Test public void testEnumSplit(){
@@ -643,7 +643,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isString());
     Assert.assertTrue(fr.anyVec().cardinality() == 6);
@@ -667,7 +667,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isString());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isInt());
@@ -694,7 +694,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data2);
     Key[] k = new Key[]{k1, k2};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isUUID());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isString());
@@ -717,7 +717,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isInt());
@@ -746,7 +746,7 @@ public class ParserTestARFF extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data1);
     Key k2 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertFalse(fr.anyVec().isString());
     Assert.assertTrue(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isUUID());
@@ -775,7 +775,7 @@ public class ParserTestARFF extends TestUtil {
     Key k2 = ParserTest.makeByteVec(data1);
     Key k3 = ParserTest.makeByteVec(data1);
     Key[] k = new Key[]{k1, k2, k3};
-    Frame fr = ParseDataset2.parse(Key.make(), k);
+    Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertTrue(fr.anyVec().isString());
     Assert.assertFalse(fr.anyVec().isEnum());
     Assert.assertFalse(fr.anyVec().isInt());

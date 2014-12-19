@@ -66,7 +66,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       GrepModel model = null;
       try {
         Scope.enter();
-        _parms.lock_frames(Grep.this); // Fetch & read-lock source frame
+        _parms.read_lock_frames(Grep.this); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -93,7 +93,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
-        _parms.unlock_frames(Grep.this);
+        _parms.read_unlock_frames(Grep.this);
         Scope.exit(model == null ? null : model._key);
         done();                 // Job done!
       }

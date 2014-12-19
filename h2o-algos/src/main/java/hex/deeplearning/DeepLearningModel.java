@@ -1696,7 +1696,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //    for (int j=0; j<features; ++j) {
 //      adaptFrm.add("DF.C" + (j+1), vecs[j]);
 //    }
-//    new MRTask2() {
+//    new MRTask() {
 //      @Override public void map( Chunk chks[] ) {
 //        double tmp [] = new double[len];
 //        float df[] = new float [features];
