@@ -74,40 +74,40 @@ initList = [
 
 
         # can have space between ( and function
-        '= !x1 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2a ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x1 ( sum ([ %r1 "null" #0) %TRUE)',
+        '= !x2 ( sum ([ %r1 "null" #0) %TRUE)',
+        '= !x2a ( sum ([ %r1 "null" #0) %TRUE )',
 
         # can have space after (
-        '= !x3 ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3a ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )',
-        '= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )',
+        '= !x3 ( sum ([ %r1 "null" #0) %TRUE )',
+        '= !x3a ( sum ([ %r1 "null" #0) %TRUE )',
+        '= !x3b ( sum ([ %r1 "null" #0 ) %TRUE )',
+        '= !x4 ( sum ([ %r1 " null " #0 ) %TRUE )',
 
         # can have space after (
-        '(= !x3 ( sum ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( sum ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( sum ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( sum ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( sum ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( sum ([ %r1 " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( max ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( max ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( max ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( max ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( max ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( max ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( max ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( max ([ %r1 " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( min ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( min ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( min ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( min ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( min ([ %r1 " null " #0 ) %TRUE )))',
 
         '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3 ( min ([ %r1 "null" #0) %TRUE ))',
 
-        '(= !x3 (+ (sum ([ $r1 "null" #0) $TRUE) (sum ([ $r1 "null" #0) $TRUE) )',
-        '(= !x3 (+ (xorsum ([ $r1 "null" #0) $TRUE) (xorsum ([ $r1 "null" #0) $TRUE) )',
-        '(= !x3 (+ (max ([ $r1 "null" #0) $TRUE) (max ([ $r1 "null" #0) $TRUE) )',
-        '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
+        '(= !x3 (+ (sum ([ %r1 "null" #0) %TRUE) (sum ([ %r1 "null" #0) %TRUE) )',
+        '(= !x3 (+ (xorsum ([ %r1 "null" #0) %TRUE) (xorsum ([ %r1 "null" #0) %TRUE) )',
+        '(= !x3 (+ (max ([ %r1 "null" #0) %TRUE) (max ([ %r1 "null" #0) %TRUE) )',
+        '(= !x3 (+ (min ([ %r1 "null" #0) %TRUE) (min ([ %r1 "null" #0) %TRUE) )',
 
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
@@ -130,8 +130,8 @@ initList = [
 
         # c(1,2,3,4)
 
-        # '= !x (sum $r1 )'
-        # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
+        # '= !x (sum %r1 )'
+        # '(= !x (xorsum ([ %r1 "null" #0) %TRUE))', # works
 
         
         # 'cave=c(1.3,0,1,2,3,4,5)',
@@ -144,50 +144,50 @@ initList = [
 
 # single operand stuff
 exprList = [
-        '(= !x (cos ([ $r1 "null" #0) ))',
-        '(= !x (sin ([ $r1 "null" #0) ))',
-        '(= !x (tan ([ $r1 "null" #0) ))',
-        '(= !x (acos ([ $r1 "null" #0) ))',
-        '(= !x (asin ([ $r1 "null" #0) ))',
-        '(= !x (atan ([ $r1 "null" #0) ))',
-        '(= !x (cosh ([ $r1 "null" #0) ))',
-        '(= !x (sinh ([ $r1 "null" #0) ))',
-        '(= !x (tanh ([ $r1 "null" #0) ))',
-        '(= !x (abs ([ $r1 "null" #0) ))',
-        '(= !x (sign ([ $r1 "null" #0) ))',
-        '(= !x (sqrt ([ $r1 "null" #0) ))',
-        '(= !x (log ([ $r1 "null" #0) ))',
-        '(= !x (exp ([ $r1 "null" #0) ))',
-        '(= !x (is.na ([ $r1 "null" #0) ))',
+        '(= !x (cos ([ %r1 "null" #0) ))',
+        '(= !x (sin ([ %r1 "null" #0) ))',
+        '(= !x (tan ([ %r1 "null" #0) ))',
+        '(= !x (acos ([ %r1 "null" #0) ))',
+        '(= !x (asin ([ %r1 "null" #0) ))',
+        '(= !x (atan ([ %r1 "null" #0) ))',
+        '(= !x (cosh ([ %r1 "null" #0) ))',
+        '(= !x (sinh ([ %r1 "null" #0) ))',
+        '(= !x (tanh ([ %r1 "null" #0) ))',
+        '(= !x (abs ([ %r1 "null" #0) ))',
+        '(= !x (sign ([ %r1 "null" #0) ))',
+        '(= !x (sqrt ([ %r1 "null" #0) ))',
+        '(= !x (log ([ %r1 "null" #0) ))',
+        '(= !x (exp ([ %r1 "null" #0) ))',
+        '(= !x (is.na ([ %r1 "null" #0) ))',
 
         # FIX! these don't work in h2o-dev?
-        # '(= !x (ceil ([ $r1 "null" #0) ))',
-        # '(= !x (floor ([ $r1 "null" #0) ))',
+        # '(= !x (ceil ([ %r1 "null" #0) ))',
+        # '(= !x (floor ([ %r1 "null" #0) ))',
 
-        '(= !x (length ([ $r1 "null" #0) ))',
-        # '(= !x (scale ([ $r1 "null" #0) ))',
-        # '(= !x (table ([ $r1 "null" #0) ))',
-        # '(= !x (unique ([ $r1 "null" #0) ))',
-        # '(= !x (factor ([ $r1 "null" #0) ))',
-        # '(= !x (nrow ([ $r1 "null" #0) ))',
-        # '(= !x (sd ([ $r1 "null" #0) ))',
-        # '(= !x (ncol ([ $r1 "null" #0) ))',
-        '(= !x (is.factor ([ $r1 "null" #0) ))',
-        '(= !x (any.factor ([ $r1 "null" #0) ))',
-        '(= !x (any.na ([ $r1 "null" #0) ))',
-        # '(= !x (isTrue ([ $r1 "null" #0) ))',
-        # '(= !x (head ([ $r1 "null" #0) ))',
-        # '(= !x (tail ([ $r1 "null" #0) ))',
+        '(= !x (length ([ %r1 "null" #0) ))',
+        # '(= !x (scale ([ %r1 "null" #0) ))',
+        # '(= !x (table ([ %r1 "null" #0) ))',
+        # '(= !x (unique ([ %r1 "null" #0) ))',
+        # '(= !x (factor ([ %r1 "null" #0) ))',
+        # '(= !x (nrow ([ %r1 "null" #0) ))',
+        # '(= !x (sd ([ %r1 "null" #0) ))',
+        # '(= !x (ncol ([ %r1 "null" #0) ))',
+        '(= !x (is.factor ([ %r1 "null" #0) ))',
+        '(= !x (any.factor ([ %r1 "null" #0) ))',
+        '(= !x (any.na ([ %r1 "null" #0) ))',
+        # '(= !x (isTrue ([ %r1 "null" #0) ))',
+        # '(= !x (head ([ %r1 "null" #0) ))',
+        # '(= !x (tail ([ %r1 "null" #0) ))',
 
         # 1 operand
         # '(= !x (seq_len #0.1))',
         # 2 operands
-        '(= !x (round ([ $r1 "null" #0) #1))',
-        # '(= !x (trunc ([ $r1 "null" #0) #1))',
-        # '(= !x (signif ([ $r1 "null" #0) #1))',
+        '(= !x (round ([ %r1 "null" #0) #1))',
+        # '(= !x (trunc ([ %r1 "null" #0) #1))',
+        # '(= !x (signif ([ %r1 "null" #0) #1))',
 
         # FIX! gets AIOOBE
-        # '(= !x (cut ([ $r1 "null" #0) #2))',
+        # '(= !x (cut ([ %r1 "null" #0) #2))',
         # '(= !x (rep_len #0.1 #10))',
 ]
 

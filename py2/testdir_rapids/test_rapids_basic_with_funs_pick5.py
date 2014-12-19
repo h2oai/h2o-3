@@ -16,41 +16,41 @@ initList = [
         # '(= !x (c {(: #5 #0) }))',
 
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
-        '(= !v2 (+ $v $v))',
+        '(= !v2 (+ %v %v))',
 
         # FIX! test with space after { and before }
         '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);#45001085})',
         '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
 
-        # remember need $v to reference
+        # remember need %v to reference
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
-        '(= !v2 $v )',
+        '(= !v2 %v )',
 
         # FIX! if i use v here now, it has to be assigned within the function or an input to the function?
         # maybe always pass v for use in the function (in the latter function)
-        '(= !v2 (n $v $v))',
-        '(= !v2 (N $v $v))',
+        '(= !v2 (n %v %v))',
+        '(= !v2 (N %v %v))',
 
-        '(= !v2 (- $v $v))',
-        '(= !v2 (+ $v $v))',
+        '(= !v2 (- %v %v))',
+        '(= !v2 (+ %v %v))',
 
-        '(= !v2 (sum (+ $v $v) $TRUE)',
-        '(= !v2 (+ #1.0 (sum (+ $v $v) $TRUE))',
+        '(= !v2 (sum (+ %v %v) %TRUE)',
+        '(= !v2 (+ #1.0 (sum (+ %v %v) %TRUE))',
 
         # different dimensions?
-        '(= !v3 (+ $v (sum (+ $v $v) $TRUE))',
+        '(= !v3 (+ %v (sum (+ %v %v) %TRUE))',
 
         # can't return more than one col thru function
-        # '(= !v3 (cbind $v $v $v $v))',
+        # '(= !v3 (cbind %v %v %v %v))',
 
-        # '(= !v3 (rbind $v $v $v $v))',
+        # '(= !v3 (rbind %v %v %v %v))',
 
         # '(= !keys (ls))', # works
         # '(= !x #1)', # works
-        # '(= !x (sum ([ $r1 "null" #0) $TRUE))', # works
-        # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))', # bad r1
+        # '(= !x (sum ([ %r1 "null" #0) %TRUE))', # works
+        # '(= !x (sum ([ r1 "null" (: #0 #0)) %TRUE))', # bad r1
 
-        # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
+        # '(= !x (xorsum ([ %r1 "null" #0) %TRUE))', # works
 
         # 'a',  # AAIOBE
         # 'x', # AAIOBE
@@ -67,7 +67,7 @@ initList = [
         # '(= !x ())', # unimplemented
         # '(= !x #1)', # works
         # '(= !x #1 #2)',  # works, answer is 1?
-        # '(= !x (cbind (#1 #2) $TRUE))',  # ClassCast exception
+        # '(= !x (cbind (#1 #2) %TRUE))',  # ClassCast exception
         # '(= !x (cbind (#1 #2)))',  # ClassCast exception
         # '(= !x (cbind (#1)))',  # ClassCast exception
         # '(= !x (cbind #1))',  # ClassCast exception
@@ -78,7 +78,7 @@ initList = [
         # '(= !x (seq (#1) )',  # bad
         # '(= !x #1; = !x #2)', # no error but why answer is 1?
         # '(= !x #1) (=!x #2)', # no error but why answer is 1?
-        # '{(= !x #1); (=!y $x)', # AAIOBE
+        # '{(= !x #1); (=!y %x)', # AAIOBE
         # '{(= !x #1)', # AAIOBE
         # '({(= !x #1); (= !y #1))', # AAIOBE
         # '(1)',
@@ -156,41 +156,41 @@ initList = [
 
 
         # can have space between ( and function
-        '= !x1 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2 ( sum ([ $r1 "null" #0) $TRUE)',
-        '= !x2a ( sum ([ $r1 "null" #0) $TRUE )',
+        '= !x1 ( sum ([ %r1 "null" #0) %TRUE)',
+        '= !x2 ( sum ([ %r1 "null" #0) %TRUE)',
+        '= !x2a ( sum ([ %r1 "null" #0) %TRUE )',
 
         # can have space after (
-        '= !x3 ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3a ( sum ([ $r1 "null" #0) $TRUE )',
-        '= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )',
-        '= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )',
+        '= !x3 ( sum ([ %r1 "null" #0) %TRUE )',
+        '= !x3a ( sum ([ %r1 "null" #0) %TRUE )',
+        '= !x3b ( sum ([ %r1 "null" #0 ) %TRUE )',
+        '= !x4 ( sum ([ %r1 " null " #0 ) %TRUE )',
 
         # can have space after (
-        '(= !x3 ( sum ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( sum ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( sum ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( sum ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( sum ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( sum ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( sum ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( sum ([ %r1 " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( max ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( max ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( max ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( max ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( max ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( max ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( max ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( max ([ %r1 " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
-        '(= !x3a ( min ([ $r1 "null" #0) $TRUE ) )',
-        '(= !x3b ( min ([ $r1 "null" #0 ) $TRUE )  )',
-        '((= !x4 ( min ([ $r1 " null " #0 ) $TRUE )))',
+        '(= !x3 ( min ([ %r1 "null" #0) %TRUE ))',
+        '(= !x3a ( min ([ %r1 "null" #0) %TRUE ) )',
+        '(= !x3b ( min ([ %r1 "null" #0 ) %TRUE )  )',
+        '((= !x4 ( min ([ %r1 " null " #0 ) %TRUE )))',
 
 
-        '(= !x3 ( min ([ $r1 "null" #0) $TRUE ))',
+        '(= !x3 ( min ([ %r1 "null" #0) %TRUE ))',
 
-        '(= !x3 (+ (sum ([ $r1 "null" #0) $TRUE) (sum ([ $r1 "null" #0) $TRUE) )',
-        '(= !x3 (+ (xorsum ([ $r1 "null" #0) $TRUE) (xorsum ([ $r1 "null" #0) $TRUE) )',
+        '(= !x3 (+ (sum ([ %r1 "null" #0) %TRUE) (sum ([ %r1 "null" #0) %TRUE) )',
+        '(= !x3 (+ (xorsum ([ %r1 "null" #0) %TRUE) (xorsum ([ %r1 "null" #0) %TRUE) )',
 
         # FIX! these should be like sum
-        # '(= !x3 (+ (max ([ $r1 "null" #0) $TRUE) (max ([ $r1 "null" #0) $TRUE) )',
-        # '(= !x3 (+ (min ([ $r1 "null" #0) $TRUE) (min ([ $r1 "null" #0) $TRUE) )',
+        # '(= !x3 (+ (max ([ %r1 "null" #0) %TRUE) (max ([ %r1 "null" #0) %TRUE) )',
+        # '(= !x3 (+ (min ([ %r1 "null" #0) %TRUE) (min ([ %r1 "null" #0) %TRUE) )',
 
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
@@ -204,8 +204,8 @@ initList = [
 
         # c(1,2,3,4)
 
-        # '= !x (sum $r1 )'
-        # '(= !x (xorsum ([ $r1 "null" #0) $TRUE))', # works
+        # '= !x (sum %r1 )'
+        # '(= !x (xorsum ([ %r1 "null" #0) %TRUE))', # works
 
         
         # 'cave=c(1.3,0,1,2,3,4,5)',
@@ -293,11 +293,11 @@ class Basic(unittest.TestCase):
                 initList = []
             pick6 = ['(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})'] + pick5
             execExpr1 = ";;".join(pick6)
-            # always do a v assign first, as they may reference $v
+            # always do a v assign first, as they may reference %v
 
             funs = '[(def anon {x}  (%s);;;)]' % execExpr1
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=5)
-            execExpr2 = '(apply $r1 #2 $anon)'
+            execExpr2 = '(apply %r1 #2 %anon)'
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=15)
 
             # see if the execExpr had a lhs assign. If so, it better be in the storeview

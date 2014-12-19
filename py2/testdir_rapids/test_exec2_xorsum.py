@@ -4,20 +4,20 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd, h2o_
 from h2o_test import dump_json, verboseprint
 
 # new ...ability to reference cols
-# src[ src$age<17 && src$zip=95120 && ... , ]
+# src[ src%age<17 && src%zip=95120 && ... , ]
 # can specify values for enums ..values are 0 thru n-1 for n enums
 
 exprList = [
         # !x means assign to x
-        # $TRUE means remove NAs (this is default)
+        # %TRUE means remove NAs (this is default)
         # '',
         # '(= !keys (ls))',
         # '(= !x #1)',
-        # r1 is unimplemented $r1 works
-        # '(= !x (sum ([ $r1 "null" #0) $TRUE))',
-        # '(= !x (sum ([ r1 "null" (: #0 #0)) $TRUE))',
-        '(= !x (xorsum ([ $r1 "null" #0) $TRUE))',
-        # '(= !x (xorsum ([ $r1 "null" (: #0 #0)) $TRUE))',
+        # r1 is unimplemented %r1 works
+        # '(= !x (sum ([ %r1 "null" #0) %TRUE))',
+        # '(= !x (sum ([ r1 "null" (: #0 #0)) %TRUE))',
+        '(= !x (xorsum ([ %r1 "null" #0) %TRUE))',
+        # '(= !x (xorsum ([ %r1 "null" (: #0 #0)) %TRUE))',
         ]
 
 ROWS = 100000

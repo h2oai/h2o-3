@@ -46,25 +46,25 @@ class Basic(unittest.TestCase):
                 keys.append(execExpr)
 
             # change it to all 1s? v = v==0
-            execExpr = '(= !vint (N $vreal #0))'
+            execExpr = '(= !vint (N %vreal #0))'
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
 
             # comparing the sum times for int vs real..maybe the other guy isn't real. at least: different compression
-            # execExpr = '(= !v (+ (+ $v $v) (+ $v $v))'
+            # execExpr = '(= !v (+ (+ %v %v) (+ %v %v))'
 
 
             # recursively expand
-            execExpr = '(= !v2 (+ $vint <patt>))'
+            execExpr = '(= !v2 (+ %vint <patt>))'
             for j in range(3):
-                execExpr = re.sub('<patt>', '(+ $vint <patt>)', execExpr)
+                execExpr = re.sub('<patt>', '(+ %vint <patt>)', execExpr)
             # last one
-            execExpr = re.sub('<patt>', '(+ $vint $vint)', execExpr)
+            execExpr = re.sub('<patt>', '(+ %vint %vint)', execExpr)
 
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
             elapsed2 = time.time() - start
 
-            execExpr = '(= !v1 (+ $vreal $vreal))'
+            execExpr = '(= !v1 (+ %vreal %vreal))'
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=10)
             elapsed1 = time.time() - start

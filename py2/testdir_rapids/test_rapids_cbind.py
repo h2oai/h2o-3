@@ -42,7 +42,7 @@ class Basic(unittest.TestCase):
             if execResult['num_rows']:
                 keys.append(execExpr)
 
-            # execExpr = '(= !v (+ (+ $v $v) (+ $v $v))'
+            # execExpr = '(= !v (+ (+ %v %v) (+ %v %v))'
             # cols = 100
             xList = []
             eList = []
@@ -54,7 +54,7 @@ class Basic(unittest.TestCase):
                 col = 2 ** trial2
                 # assert col < 16384, "h2o can't take col == 16384 or more"
              
-                vString = ' '.join(['$v' for x in range(col)])
+                vString = ' '.join(['%v' for x in range(col)])
                 execExpr = '(= !v2 (cbind %s))' % vString
 
                 # FIX! check the colnames. 2 cols get C1 and C10? odd 
@@ -72,7 +72,7 @@ class Basic(unittest.TestCase):
 
                 if 1==0:
                     start = time.time()
-                    execExpr = '(sum $v2 $TRUE)'
+                    execExpr = '(sum %v2 %TRUE)'
                     execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=60)
                     elapsed1 = time.time() - start
 

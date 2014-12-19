@@ -68,18 +68,18 @@ class Basic(unittest.TestCase):
         rhs = a + b
         Assign(c, rhs)
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= !c1 (+ $a1 $b1))"
+        astExpected = "(= !c1 (+ %a1 %b1))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         rhs = a[0] + b[0]
         Assign(c[0], rhs)
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #0 #0)))"
+        astExpected = "(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #0 #0)))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         Assign(c[1], (a[2] + b[2]))
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= ([ $c1 #1 #0) (+ ([ $a1 #2 #0) ([ $b1 #2 #0)))"
+        astExpected = "(= ([ %c1 #1 #0) (+ ([ %a1 #2 #0) ([ %b1 #2 #0)))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         # assert ast = "(= !b1 (is.na (c {#0})))"

@@ -8,7 +8,7 @@ import re
 DO_ROLLUP = True
 #    '(= !e8 (c {#1;#2;#3}))',
 exprList = [
-    '(= !e8 ([ $p (& (& (& (& (& (& (& (n #0 ([ $p "null" #0)) (n #3 ([ $p "null" #1))) (n #0 ([ $p "null" #2))) (n #0 ([ $p "null" #3))) (n #2 ([ $p "null" #4))) (n #3 ([ $p "null" #5))) (n #1 ([ $p "null" #6))) (n #1 ([ $p "null" #9))) "null"))',
+    '(= !e8 ([ %p (& (& (& (& (& (& (& (n #0 ([ %p "null" #0)) (n #3 ([ %p "null" #1))) (n #0 ([ %p "null" #2))) (n #0 ([ %p "null" #3))) (n #2 ([ %p "null" #4))) (n #3 ([ %p "null" #5))) (n #1 ([ %p "null" #6))) (n #1 ([ %p "null" #9))) "null"))',
 ]
 
 

@@ -44,8 +44,8 @@ class Basic(unittest.TestCase):
             if execResult['num_rows']:
                 keys.append(execExpr)
 
-            # execExpr = '(= !v (+ (+ $v $v) (+ $v $v))'
-            execExpr = '(= !v (+ $v $v))'
+            # execExpr = '(= !v (+ (+ %v %v) (+ %v %v))'
+            execExpr = '(= !v (+ %v %v))'
             start = time.time()
             execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=30)
             elapsed2 = time.time() - start

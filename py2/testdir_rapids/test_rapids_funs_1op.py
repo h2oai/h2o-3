@@ -129,8 +129,8 @@ class Basic(unittest.TestCase):
                         a = Assign(result_key, Fcn(fun, KeyIndexed(data_key2, col=0), None))
                         bad.append(fun)
 
-                        # a = Fcn(fun, KeyIndexed(data_key, col=0), '$FALSE ')
-                        # a = Fcn(fun, data_key, '$FALSE')
+                        # a = Fcn(fun, KeyIndexed(data_key, col=0), '%FALSE ')
+                        # a = Fcn(fun, data_key, '%FALSE')
                         # a = Fcn(fun, data_key)
 
                     # scalars?
