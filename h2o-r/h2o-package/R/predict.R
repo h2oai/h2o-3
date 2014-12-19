@@ -11,7 +11,7 @@
 #' Model Predict Endpoint
 #'
 .h2o.__PREDICT <- function(modelKey, frameKey) {
-  'Predictions.json/models/' %p0% modelKey %p0% '/frames/' %p0% frameKey
+  paste0('Predictions.json/models/', modelKey, '/frames/', frameKey)
 }
 
 #'
@@ -19,9 +19,8 @@
 #'
 .validate.predict<-
 function(object, newdata, types) {
-  if( missing(object) ) stop('Must specify `object` as an ' %p0% types$object)
-  if(!(object %i% types$object)) stop("`object` must be an " %p0% types$object)
-  if( missing(newdata) ) {
+  if(!(object %i% types$object)) stop("`object` must be an ", types$object)
+  if(missing(newdata)) {
     newdata <- object@data # predicting on data used in train
     warning("predicting on training data.")
   }
@@ -38,7 +37,7 @@ predict.H2ODeepLearningModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
-  res <- res$model_metrics[[1]]$predictions
+  res <- res$model_metrics[[1L]]$predictions
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@h2o, res)
 }
@@ -54,7 +53,7 @@ predict.H2OKMeansModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
-  res <- res$model_metrics[[1]]$predictions
+  res <- res$model_metrics[[1L]]$predictions
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@h2o, res)
 }
@@ -66,7 +65,7 @@ predict.H2OGBMModel <- function(object, newdata, ...) {
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
-  res <- res$model_metrics[[1]]$predictions
+  res <- res$model_metrics[[1L]]$predictions
   # Grab info to make data frame
   .h2o.parsedPredData(newdata@h2o, res)
 }
@@ -85,7 +84,6 @@ predict.H2OGLMModel <- function(object, newdata, ...) {
 
 #  LEGACY PREDICT BELOW
 #h2o.predict <- function(object, newdata, ...) {
-#  if( missing(object) ) stop('Must specify object')
 #  if(!inherits(object, "h2o.model")) stop("object must be an H2O model")
 #  if( missing(newdata) ) newdata <- object@data
 #  if(class(newdata) != "h2o.frame") stop('newdata must be a H2O dataset')
