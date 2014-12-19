@@ -243,7 +243,7 @@ public class ConfusionMatrix2 extends Iced {
   }
 
   public String toASCII(String[] domain) {
-    if (_cm_json == null)
+    if (_cm_json == null && domain != null)
       _cm_json = toTable(domain);
     return _cm_json.toString();
   }
