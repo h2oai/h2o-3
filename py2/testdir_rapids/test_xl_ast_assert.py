@@ -61,19 +61,19 @@ class Basic(unittest.TestCase):
 
         h2p.yellow_print("Assign compare1")
         Assign(c[0], c[0] + 0)
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %c1 #0 #0) #0))")
 
         h2p.yellow_print("Assign compare2")
         Assign(c[0], c[0] - 0)
-        checkAst("(= ([ $c1 #0 #0) (- ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (- ([ %c1 #0 #0) #0))")
 
         h2p.yellow_print("Assign compare3")
         Assign(c[0], c[0] == 0)
-        checkAst("(= ([ $c1 #0 #0) (n ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (n ([ %c1 #0 #0) #0))")
 
         h2p.yellow_print("Assign compare4")
         Assign(c[0], c[0] != 0)
-        checkAst("(= ([ $c1 #0 #0) (N ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (N ([ %c1 #0 #0) #0))")
 
         # h2o_xl.debugPrintEnable = True
 
@@ -82,15 +82,15 @@ class Basic(unittest.TestCase):
 
         h2p.yellow_print("<<= compare1")
         c[0] <<= (c[0] + 0)
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %c1 #0 #0) #0))")
 
         h2p.yellow_print("<<= compare2")
         c[0] <<= (c[0] - 0)
-        checkAst("(= ([ $c1 #0 #0) (- ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (- ([ %c1 #0 #0) #0))")
 
         h2p.yellow_print("<<= compare3")
         c[0] <<= (c[0] == 0)
-        checkAst("(= ([ $c1 #0 #0) (n ([ $c1 #0 #0) #0))")
+        checkAst("(= ([ %c1 #0 #0) (n ([ %c1 #0 #0) #0))")
 
         #*****************************************
         c = DF('c1') # inits to -1
@@ -101,7 +101,7 @@ class Basic(unittest.TestCase):
         # .result could be a property that triggers a csv download, if we didn't cache the scalar/list result because it was small?
         # i.e. check if .result_cached was None, when .result property is used (property to avoid the need for ()
         result = Expr(c[0] == -1).result
-        checkAst("(n ([ $c1 #0 #0) #-1)")
+        checkAst("(n ([ %c1 #0 #0) #-1)")
         h2p.yellow_print("Expr result..Desire: python datatype/value if scalar or list,.else Key: %s %s" % (type(result), result))
         assert result == 1.0, "%s %s" % (type(result), result) # real result?
 
@@ -113,7 +113,7 @@ class Basic(unittest.TestCase):
         #*****************************************
         # difference is this goes to a temp key, so if not scalar, you can still get the results by looking at the key
         result = Assign(None, c[0]==-1).result
-        checkAst("(= !knon_0x1a34250 (n ([ $c1 #0 #0) #-1))")
+        checkAst("(= !knon_0x1a34250 (n ([ %c1 #0 #0) #-1))")
         h2p.yellow_print("Assign result..Desire: python datatype/value if scalar or list,.else Key: %s %s" % (type(result), result))
         assert result == 1.0, "%s %s" % (type(result), result) # real result?
 
@@ -157,11 +157,11 @@ class Basic(unittest.TestCase):
 
         # - doesn't exist? multiply by -1?
         Assign(c, ~c)
-        checkAst("(= !c1 (^ $c1 #1))") # not right if more than 1 col?
+        checkAst("(= !c1 (^ %c1 #1))") # not right if more than 1 col?
         Assign(c, -c)
-        checkAst("(= !c1 (_ $c1))")
+        checkAst("(= !c1 (_ %c1))")
         Assign(c, abs(c))
-        checkAst("(= !c1 (abs $c1))")
+        checkAst("(= !c1 (abs %c1))")
 
         # this needs to be an h2o int? because it expects int return
         # Assign(c, int(c))
@@ -182,10 +182,10 @@ class Basic(unittest.TestCase):
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
         Assign(c, a[0] + b[1])
-        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         Assign(c[0], (a[0] + b[1]))
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
@@ -227,10 +227,10 @@ class Basic(unittest.TestCase):
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
         c <<= a[0] + b[1]
-        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         c[0] <<= a[0] + b[1]
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
@@ -287,11 +287,11 @@ class Basic(unittest.TestCase):
             c = a[0] + b[1]
             # no .do() needed because of types on rhs? or ?
             c.do()
-            checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+            checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
             c[0] = a[0] + b[1]
             c.do()
-            checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+            checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:

@@ -9,22 +9,22 @@ initList = [
         # can only index v if it already exists. is the lhs addition before or after the indexed assign
         # if before, what does it add to. If after, does it add to the full key?
         # must be before.
-        '(= ([ (+ #5 ([ $v "null" "null"))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
-        '(= ([ (+ #5 ([ $v "null" #0))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        '(= ([ (+ #5 ([ %v "null" "null"))  {#0;#1;#2;#3;#4} #0) ([ %v (: #4 #8) #0))',
+        '(= ([ (+ #5 ([ %v "null" #0))  {#0;#1;#2;#3;#4} #0) ([ %v (: #4 #8) #0))',
         # wrong row count?
-        # '(= ([ (+ #5 ([ $v #0 "null"))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        # '(= ([ (+ #5 ([ %v #0 "null"))  {#0;#1;#2;#3;#4} #0) ([ %v (: #4 #8) #0))',
         # fails with exception
-        # '(= ([ (+ #5 ([ $v #0 #0))  {#0;#1;#2;#3;#4} #0) ([ $v (: #4 #8) #0))',
+        # '(= ([ (+ #5 ([ %v #0 #0))  {#0;#1;#2;#3;#4} #0) ([ %v (: #4 #8) #0))',
 
         # weird cases with lhs
         # dont need a rhs but should still modify?  
         # does this add 5 to v and then nothing?
 
         # why does this fail?
-        # '([ (+ #5 ([ $v "null" "null")) #0)',
+        # '([ (+ #5 ([ %v "null" "null")) #0)',
         # why does this fail?
-        # '([ (+ #6 ([ $v "null" #0)) #0)',
-        # '([ (+ #7 ([ $v #0)) #0))',
+        # '([ (+ #6 ([ %v "null" #0)) #0)',
+        # '([ (+ #7 ([ %v #0)) #0))',
 
         '(+ (* #2 #2) (* #5 #5))',
         '(* #1 (+ (* #2 #2) (* #5 #5)))',
@@ -37,36 +37,36 @@ initList = [
         # '(= !x (c {(: #5 #0) }))',
 
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
-        '(= !v2 (+ $v $v))',
+        '(= !v2 (+ %v %v))',
 
         # FIX! test with space after { and before }
         '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);#45001085})',
         '(= !v (c {#1;#4567;(: #91234 #9000209);(: #9000210 #45001045);45001085})',
 
-        # remember need $v to reference
+        # remember need %v to reference
         '(= !v (c {#1;#4567;(: #9 #90);(: #9 #45);#450})',
-        '(= !v2 $v )',
+        '(= !v2 %v )',
 
-        '(= !v2 (n $v $v))',
-        '(= !v2 (N $v $v))',
+        '(= !v2 (n %v %v))',
+        '(= !v2 (N %v %v))',
 
-        '(= !v2 (- $v $v))',
-        '(= !v2 (+ $v $v))',
+        '(= !v2 (- %v %v))',
+        '(= !v2 (+ %v %v))',
 
-        '(= !v2 (sum (+ $v $v) $TRUE)',
-        '(= !v2 (+ #1.0 (sum (+ $v $v) $TRUE))',
+        '(= !v2 (sum (+ %v %v) %TRUE)',
+        '(= !v2 (+ #1.0 (sum (+ %v %v) %TRUE))',
 
         # different dimensions?
-        '(= !v3 (+ $v (sum (+ $v $v) $TRUE))',
-        '(= !v3 (cbind $v $v $v $v))',
-        # '(= !v3 (rbind $v $v $v $v))',
+        '(= !v3 (+ %v (sum (+ %v %v) %TRUE))',
+        '(= !v3 (cbind %v %v %v %v))',
+        # '(= !v3 (rbind %v %v %v %v))',
 
         # '(= !keys (ls))', # works
         # '(= !x #1)', # works
-        # '(= !x (sum ([ $v "null" #0) $TRUE))', # works
-        # '(= !x (sum ([ v "null" (: #0 #0)) $TRUE))', # bad v
+        # '(= !x (sum ([ %v "null" #0) %TRUE))', # works
+        # '(= !x (sum ([ v "null" (: #0 #0)) %TRUE))', # bad v
 
-        # '(= !x (xorsum ([ $v "null" #0) $TRUE))', # works
+        # '(= !x (xorsum ([ %v "null" #0) %TRUE))', # works
 
         # 'a',  # AAIOBE
         # 'x', # AAIOBE
@@ -83,7 +83,7 @@ initList = [
         # '(= !x ())', # unimplemented
         # '(= !x #1)', # works
         # '(= !x #1 #2)',  # works, answer is 1?
-        # '(= !x (cbind (#1 #2) $TRUE))',  # ClassCast exception
+        # '(= !x (cbind (#1 #2) %TRUE))',  # ClassCast exception
         # '(= !x (cbind (#1 #2)))',  # ClassCast exception
         # '(= !x (cbind (#1)))',  # ClassCast exception
         # '(= !x (cbind #1))',  # ClassCast exception
@@ -94,7 +94,7 @@ initList = [
         # '(= !x (seq (#1) )',  # bad
         # '(= !x #1; = !x #2)', # no error but why answer is 1?
         # '(= !x #1) (=!x #2)', # no error but why answer is 1?
-        # '{(= !x #1); (=!y $x)', # AAIOBE
+        # '{(= !x #1); (=!y %x)', # AAIOBE
         # '{(= !x #1)', # AAIOBE
         # '({(= !x #1); (= !y #1))', # AAIOBE
         # '(1)',
@@ -172,41 +172,41 @@ initList = [
 
 
         # can have space between ( and function
-        '= !x1 ( sum ([ $v "null" #0) $TRUE)',
-        '= !x2 ( sum ([ $v "null" #0) $TRUE)',
-        '= !x2a ( sum ([ $v "null" #0) $TRUE )',
+        '= !x1 ( sum ([ %v "null" #0) %TRUE)',
+        '= !x2 ( sum ([ %v "null" #0) %TRUE)',
+        '= !x2a ( sum ([ %v "null" #0) %TRUE )',
 
         # can have space after (
-        '= !x3 ( sum ([ $v "null" #0) $TRUE )',
-        '= !x3a ( sum ([ $v "null" #0) $TRUE )',
-        '= !x3b ( sum ([ $v "null" #0 ) $TRUE )',
-        '= !x4 ( sum ([ $v " null " #0 ) $TRUE )',
+        '= !x3 ( sum ([ %v "null" #0) %TRUE )',
+        '= !x3a ( sum ([ %v "null" #0) %TRUE )',
+        '= !x3b ( sum ([ %v "null" #0 ) %TRUE )',
+        '= !x4 ( sum ([ %v " null " #0 ) %TRUE )',
 
         # can have space after (
-        '(= !x3 ( sum ([ $v "null" #0) $TRUE ))',
-        '(= !x3a ( sum ([ $v "null" #0) $TRUE ) )',
-        '(= !x3b ( sum ([ $v "null" #0 ) $TRUE )  )',
-        '((= !x4 ( sum ([ $v " null " #0 ) $TRUE )))',
+        '(= !x3 ( sum ([ %v "null" #0) %TRUE ))',
+        '(= !x3a ( sum ([ %v "null" #0) %TRUE ) )',
+        '(= !x3b ( sum ([ %v "null" #0 ) %TRUE )  )',
+        '((= !x4 ( sum ([ %v " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( max ([ $v "null" #0) $TRUE ))',
-        '(= !x3a ( max ([ $v "null" #0) $TRUE ) )',
-        '(= !x3b ( max ([ $v "null" #0 ) $TRUE )  )',
-        '((= !x4 ( max ([ $v " null " #0 ) $TRUE )))',
+        '(= !x3 ( max ([ %v "null" #0) %TRUE ))',
+        '(= !x3a ( max ([ %v "null" #0) %TRUE ) )',
+        '(= !x3b ( max ([ %v "null" #0 ) %TRUE )  )',
+        '((= !x4 ( max ([ %v " null " #0 ) %TRUE )))',
 
-        '(= !x3 ( min ([ $v "null" #0) $TRUE ))',
-        '(= !x3a ( min ([ $v "null" #0) $TRUE ) )',
-        '(= !x3b ( min ([ $v "null" #0 ) $TRUE )  )',
-        '((= !x4 ( min ([ $v " null " #0 ) $TRUE )))',
+        '(= !x3 ( min ([ %v "null" #0) %TRUE ))',
+        '(= !x3a ( min ([ %v "null" #0) %TRUE ) )',
+        '(= !x3b ( min ([ %v "null" #0 ) %TRUE )  )',
+        '((= !x4 ( min ([ %v " null " #0 ) %TRUE )))',
 
 
-        '(= !x3 ( min ([ $v "null" #0) $TRUE ))',
+        '(= !x3 ( min ([ %v "null" #0) %TRUE ))',
 
-        '(= !x3 (+ (sum ([ $v "null" #0) $TRUE) (sum ([ $v "null" #0) $TRUE) )',
-        '(= !x3 (+ (xorsum ([ $v "null" #0) $TRUE) (xorsum ([ $v "null" #0) $TRUE) )',
+        '(= !x3 (+ (sum ([ %v "null" #0) %TRUE) (sum ([ %v "null" #0) %TRUE) )',
+        '(= !x3 (+ (xorsum ([ %v "null" #0) %TRUE) (xorsum ([ %v "null" #0) %TRUE) )',
 
         # FIX! these should be like sum
-        # '(= !x3 (+ (max ([ $v "null" #0) $TRUE) (max ([ $v "null" #0) $TRUE) )',
-        # '(= !x3 (+ (min ([ $v "null" #0) $TRUE) (min ([ $v "null" #0) $TRUE) )',
+        # '(= !x3 (+ (max ([ %v "null" #0) %TRUE) (max ([ %v "null" #0) %TRUE) )',
+        # '(= !x3 (+ (min ([ %v "null" #0) %TRUE) (min ([ %v "null" #0) %TRUE) )',
 
         # '{ #1 #1 }',
         # '(= !x4 { #1 #1 })',
@@ -220,8 +220,8 @@ initList = [
 
         # c(1,2,3,4)
 
-        # '= !x (sum $v )'
-        # '(= !x (xorsum ([ $v "null" #0) $TRUE))', # works
+        # '= !x (sum %v )'
+        # '(= !x (xorsum ([ %v "null" #0) %TRUE))', # works
 
         
         # 'cave=c(1.3,0,1,2,3,4,5)',

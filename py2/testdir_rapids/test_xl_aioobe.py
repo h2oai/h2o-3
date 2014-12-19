@@ -48,7 +48,7 @@ class Basic(unittest.TestCase):
         # not any more..change it to legal case
         Assign(c[1], (a[2] + b[2]))
         ast = h2o_xl.Xbase.lastExecResult['ast']
-        astExpected = "(= ([ $c1 #1 #0) (+ ([ $a1 #2 #0) ([ $b1 #2 #0)))"
+        astExpected = "(= ([ %c1 #1 #0) (+ ([ %a1 #2 #0) ([ %b1 #2 #0)))"
         assert ast==astExpected, "Actual: %s    Expected: %s" % (ast, astExpected)
 
         # print "\nDoes the keyWriteHistoryList work?"

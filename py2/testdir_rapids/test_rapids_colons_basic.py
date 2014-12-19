@@ -10,7 +10,7 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # can (sum ..) migrate from rhs to lhs?
 # a <- hex[,1]
 # a[1:5,1] <- hex[5:9,1]
-# (= ([ ([ $iris.hex "null" #0)  {#0;#1;#2;#3;#4} #0) ([ $iris.hex (: #4 #8) #0)) 
+# (= ([ ([ %iris.hex "null" #0)  {#0;#1;#2;#3;#4} #0) ([ %iris.hex (: #4 #8) #0)) 
 exprList = [
         # fails
         # '(c {(+ (* #2 #2) (* #5 #5))})',
@@ -20,28 +20,28 @@ exprList = [
         # '(c {(: #0 #5) })',
         # '(c {(: #5 #5) })',
         # '(c {#1;#4567;(: #9 #90);(: #9 #45);#450}',
-        '(+ $v $v)',
+        '(+ %v %v)',
 
         # FIX! test with space after { and before }
         '(c {#1;#4567;(: #1234 #9000);(: #900 #4500);#4501}',
         '(c {#1;#4567;(: #1234 #9000);(: #900 #4500);4501}',
 
-        # remember need $v to reference
+        # remember need %v to reference
         '(c {#1;#4567;(: #9 #90);(: #9 #45);#450}',
-        '$v ',
+        '%v ',
 
-        '(n $v $v)',
-        '(N $v $v)',
+        '(n %v %v)',
+        '(N %v %v)',
 
-        '(- $v $v)',
-        '(+ $v $v)',
+        '(- %v %v)',
+        '(+ %v %v)',
 
-        '(sum (+ $v $v) $TRUE)',
-        '(+ #1.0 (sum (+ $v $v) $TRUE))',
+        '(sum (+ %v %v) %TRUE)',
+        '(+ #1.0 (sum (+ %v %v) %TRUE))',
 
         # different dimensions?
-        '(+ $v (sum (+ $v $v) $TRUE))',
-        '(cbind $v $v $v $v)',
+        '(+ %v (sum (+ %v %v) %TRUE))',
+        '(cbind %v %v %v %v)',
         '(#1)',
 
         # okay. not okay if comma separated. seems wrong
@@ -64,42 +64,42 @@ exprList = [
         '(** #1 (** #1 #1)))',
 
         # can have space between ( and function
-        '( sum ([ $v "null" #0) $TRUE)',
-        '( sum ([ $v "null" #0) $TRUE)',
-        '( sum ([ $v "null" #0) $TRUE )',
+        '( sum ([ %v "null" #0) %TRUE)',
+        '( sum ([ %v "null" #0) %TRUE)',
+        '( sum ([ %v "null" #0) %TRUE )',
 
         # can have space after (
-        '( sum ([ $v "null" #0) $TRUE )',
-        '( sum ([ $v "null" #0) $TRUE )',
-        '( sum ([ $v "null" #0 ) $TRUE )',
-        '( sum ([ $v " null " #0 ) $TRUE )',
+        '( sum ([ %v "null" #0) %TRUE )',
+        '( sum ([ %v "null" #0) %TRUE )',
+        '( sum ([ %v "null" #0 ) %TRUE )',
+        '( sum ([ %v " null " #0 ) %TRUE )',
 
         # can have space after (
-        '( sum ([ $v "null" #0) $TRUE )',
-        '( sum ([ $v "null" #0) $TRUE ) ',
-        '( sum ([ $v "null" #0 ) $TRUE )  ',
-        '( sum ([ $v " null " #0 ) $TRUE ))',
+        '( sum ([ %v "null" #0) %TRUE )',
+        '( sum ([ %v "null" #0) %TRUE ) ',
+        '( sum ([ %v "null" #0 ) %TRUE )  ',
+        '( sum ([ %v " null " #0 ) %TRUE ))',
 
-        '( max ([ $v "null" #0) $TRUE )',
-        '( max ([ $v "null" #0) $TRUE )',
-        '( max ([ $v "null" #0 ) $TRUE )',
-        '( max ([ $v " null " #0 ) $TRUE )',
+        '( max ([ %v "null" #0) %TRUE )',
+        '( max ([ %v "null" #0) %TRUE )',
+        '( max ([ %v "null" #0 ) %TRUE )',
+        '( max ([ %v " null " #0 ) %TRUE )',
 
-        '( min ([ $v "null" #0) $TRUE )',
-        '( min ([ $v "null" #0) $TRUE )',
-        '( min ([ $v "null" #0 ) $TRUE )',
-        '( min ([ $v " null " #0 ) $TRUE )',
+        '( min ([ %v "null" #0) %TRUE )',
+        '( min ([ %v "null" #0) %TRUE )',
+        '( min ([ %v "null" #0 ) %TRUE )',
+        '( min ([ %v " null " #0 ) %TRUE )',
 
-        '( min ([ $v "null" #0) $TRUE )',
+        '( min ([ %v "null" #0) %TRUE )',
 
         # two expressions in one ast is not legal
-        '((xorsum ([ $v "null" #0) $TRUE))',
-        '((max ([ $v "null" #0) $TRUE))',
-        '(+ (c {#1}) (sum ([ $v "null" #0) $TRUE))',
-        '(+ (c {#1}) (min ([ $v "null" #0) $TRUE))',
+        '((xorsum ([ %v "null" #0) %TRUE))',
+        '((max ([ %v "null" #0) %TRUE))',
+        '(+ (c {#1}) (sum ([ %v "null" #0) %TRUE))',
+        '(+ (c {#1}) (min ([ %v "null" #0) %TRUE))',
         # java type 6 exception on the seq without (c ..)
-        # '(+ {#1}) (sum ([ $v "null" #0) $TRUE)',
-        # '(+ {#1}) (min ([ $v "null" #0) $TRUE)',
+        # '(+ {#1}) (sum ([ %v "null" #0) %TRUE)',
+        # '(+ {#1}) (min ([ %v "null" #0) %TRUE)',
 
 ]
 
@@ -144,11 +144,11 @@ class Basic(unittest.TestCase):
                         # no colon 
                         '(= !%s %s)' % (t, execExpr),
                         # colon lhs
-                        # '(= ([ $%s %s) %s)' % (t, colon, execExpr),
+                        # '(= ([ %%s %s) %s)' % (t, colon, execExpr),
                         # colon rhs
                         # '(= !%s  ([ %s %s))' % (t, execExpr, colon),
                         # colon lhs and rhs
-                        '(= ([ $%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
+                        '(= ([ %%s %s) ([ %s %s))' % (t, colon, execExpr, colon),
                     ]
 
                     for case in cases:

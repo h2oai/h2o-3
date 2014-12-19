@@ -71,10 +71,10 @@ class Basic(unittest.TestCase):
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
         Assign(c, a[0] + b[1])
-        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         Assign(c[0], (a[0] + b[1]))
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
@@ -113,10 +113,10 @@ class Basic(unittest.TestCase):
         checkAst("(= !c1 (c {#0;#1;#2}))")
 
         c <<= a[0] + b[1]
-        checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         c[0] <<= a[0] + b[1]
-        checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+        checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:
@@ -170,11 +170,11 @@ class Basic(unittest.TestCase):
             c = a[0] + b[1]
             # no .do() needed because of types on rhs? or ?
             c.do()
-            checkAst("(= !c1 (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+            checkAst("(= !c1 (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
             c[0] = a[0] + b[1]
             c.do()
-            checkAst("(= ([ $c1 #0 #0) (+ ([ $a1 #0 #0) ([ $b1 #1 #0)))")
+            checkAst("(= ([ %c1 #0 #0) (+ ([ %a1 #0 #0) ([ %b1 #1 #0)))")
 
         # print "\nDoes the keyWriteHistoryList work?"
         for k in Xbase.keyWriteHistoryList:

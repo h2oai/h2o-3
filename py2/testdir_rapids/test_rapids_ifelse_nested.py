@@ -1,7 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
-# '(def anon {x} ( (var $x "null" $FALSE "null");;(var $x "null" $FALSE "null") );;;)',
+# '(def anon {x} ( (var %x "null" %FALSE "null");;(var %x "null" %FALSE "null") );;;)',
 
 from h2o_xl import Def, Fcn, Assign, KeyIndexed, If, IfElse, Return
 from h2o_test import dump_json, verboseprint

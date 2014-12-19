@@ -29,19 +29,19 @@ class Basic(unittest.TestCase):
                 # should never see v as a key from the function?
                 execExpr1 = '(= !v1 (c {#0}))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr1, resultKey='v1', timeoutSecs=5)
-                execExpr2 = '(= !v2 (cbind $v1 ))'
+                execExpr2 = '(= !v2 (cbind %v1 ))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey='v2', timeoutSecs=5)
             else:
                 # adding to v shouldn't hurt, but not required cause function output will update it
-                # execExpr1 = '(= !v (+ $v #1))'
-                # execExpr1 = '(+ $v #1)'
+                # execExpr1 = '(= !v (+ %v #1))'
+                # execExpr1 = '(+ %v #1)'
                 # add to itself?
-                execExpr1 = '(+ $v $v)'
+                execExpr1 = '(+ %v %v)'
                 funs = '[(def anon {v} %s;;;)]' % execExpr1
                 execResult, result = h2e.exec_expr(h2o.nodes[0], funs, resultKey=None, timeoutSecs=5, doFuns=True)
-                # execExpr2 = '(= !v2 (anon ([ $v2 "null" #0)))'
-                # execExpr2 = '(= !v2 (anon $v2))'
-                execExpr2 = '(= !v2 (+ $v2 #1))'
+                # execExpr2 = '(= !v2 (anon ([ %v2 "null" #0)))'
+                # execExpr2 = '(= !v2 (anon %v2))'
+                execExpr2 = '(= !v2 (+ %v2 #1))'
                 execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, resultKey='v2', timeoutSecs=15)
 
 

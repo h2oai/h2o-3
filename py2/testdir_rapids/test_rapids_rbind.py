@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
             # for trial2 in range(0, 16):
                 rows = ROWS * trial2
              
-                vString = ' '.join(['$v' for x in range(trial2)])
+                vString = ' '.join(['%v' for x in range(trial2)])
                 execExpr = '(= !v2 (rbind %s))' % vString
 
                 start = time.time()
@@ -65,7 +65,7 @@ class Basic(unittest.TestCase):
                 
                 if 1==1:
                     start = time.time()
-                    execExpr = '(sum $v2 $TRUE)'
+                    execExpr = '(sum %v2 %TRUE)'
                     execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr, resultKey=None, timeoutSecs=60)
                     elapsed1 = time.time() - start
 

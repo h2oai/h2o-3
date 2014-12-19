@@ -492,14 +492,14 @@ def translateValue(item="F"):
     # translate any common text abbreviations to the required long form
     # T and F can be translated? we shouldn't get key names when this is used?
     translate = {
-        'T': '$TRUE',
-        'F': '$FALSE',
-        'TRUE': '$TRUE',
-        'FALSE': '$FALSE',
-        'True': '$TRUE',
-        'False': '$FALSE',
-        'true': '$TRUE',
-        'false': '$FALSE',
+        'T': '%TRUE',
+        'F': '%FALSE',
+        'TRUE': '%TRUE',
+        'FALSE': '%FALSE',
+        'True': '%TRUE',
+        'False': '%FALSE',
+        'true': '%TRUE',
+        'false': '%FALSE',
         '"NULL"': '"null"',
         'NULL': '"null"',
         'null': '"null"',
@@ -507,9 +507,9 @@ def translateValue(item="F"):
     if item is None:
         return '"null"'
     elif item is True:
-        return '$TRUE'
+        return '%TRUE'
     elif item is False:
-        return '$FALSE'
+        return '%FALSE'
     elif isinstance(item, basestring) and  item in translate:
         return translate[item]
     else:
@@ -565,10 +565,10 @@ class Item(Xbase):
             if itemStr=="#":
                 raise Exception("Item is just #. Bad. %s" % item)
             # can be a number, or the start of a string with a number at the beginning
-        # elif string & starts with $, Done. Else if next char is a-zA-Z, done. Else Exception
-        elif start=="$":
-            if itemStr=="$":
-                raise Exception("Item is just $. Bad. %s" % item)
+        # elif string & starts with %, Done. Else if next char is a-zA-Z, done. Else Exception
+        elif start=="%":
+            if itemStr=="%":
+                raise Exception("Item is just %. Bad. %s" % item)
             # can be a ref , or the start of a string with a ref at the beginning
         # elif number, add #
         else:
@@ -576,10 +576,10 @@ class Item(Xbase):
                 # number!
                 itemStr = "#%s" % item # good number!
             else: # not number
-                # if it's just [a-zA-Z0-9_], tack on the $ for probable initial key reference
+                # if it's just [a-zA-Z0-9_], tack on the % for probable initial key reference
                 itemStr = "%s" % item
                 if re.match(r"[a-zA-Z0-9_]+$", itemStr):
-                    itemStr = "$%s" % item
+                    itemStr = "%{}".format(item)
 
         return itemStr
 
@@ -677,8 +677,8 @@ def unpackOperands(operands, parent=None, toItem=True):
 def legalKey(frame, parent):
     frameStr = str(frame)
     if 1==0:
-        if re.match('\$', frameStr):
-            raise Exception("%s: frame shouldn't start with '$' %s" % (parent, frameStr))
+        if re.match('\%', frameStr):
+            raise Exception("%s: frame shouldn't start with '%' %s" % (parent, frameStr))
         if re.match('c$', frameStr):
             raise Exception("%s: frame can't be 'c' %s" % (parent, frameStr))
         if not re.match('[\a-zA-Z0-9_]', frameStr):
@@ -768,8 +768,8 @@ class Key(Xbase):
 
     def __str__(self):
         frame = self.frame
-        if not re.match('\$', frame):
-            frame = '$%s' % self.frame
+        if not re.match('\%', frame):
+            frame = "%{}".format(self.frame)
         return '%s' % frame
 
     __repr__ = __str__
@@ -908,13 +908,13 @@ class KeyIndexed(Key):
         # detect the case where row/col say "everything"
         # have to use str() because they could be objects and don't want to use __eq__ (which is used for ast resolution?)
         if  str(row)=='"null"' and str(col)=='"null"':
-            return '$%s' % frame
+            return "%{}".format(frame)
 
-        # does it already start with '$' ?
-        # we always add $ to a here?. Suppose could detect whether it's already there
-        # does it already start with '$' ?
-        if not re.match('\$', frame):
-            frame = '$%s' % self.frame
+        # does it already start with '%' ?
+        # we always add % to a here?. Suppose could detect whether it's already there
+        # does it already start with '%' ?
+        if not re.match('\%', frame):
+            frame = "%{}".format(self.frame)
 
         # is a 1 dimensional frame all rows (1 col?)
         if self.dim==1:
@@ -969,7 +969,7 @@ class DF(Key):
 
     def __str__(self):
         frame = self.frame
-        # no $ prefix
+        # no % prefix
         return '%s' % frame
 
 #********************************************************************************
@@ -1123,22 +1123,22 @@ class Assign(Key):
             self.assignIfRoot()
 
 
-    # leading $ is illegal on lhs
+    # leading % is illegal on lhs
     # could check that it's a legal key name
-    # FIX! what about checking rhs references have $ for keys.
+    # FIX! what about checking rhs references have % for keys.
     def __str__(self):
         if self.assignDisable:
             return "%s" % self.rhs
         else:
             # if there is row/col for lhs, have to resolve here?
-            # hack: change the rhs reference '$' to the lhs '!'
+            # hack: change the rhs reference '%' to the lhs '!'
             # to be 'more correct', only replace the first character
             # can't assign to immutable string indices
             # this is all side-effect of having the lhs get indexing like the rhs, so treated equally
             # no...self.lhs is type KeyIndexed
-            # the $ may be in a ([ ...) ..so screw it, just do a translate
+            # the % may be in a ([ ...) ..so screw it, just do a translate
             # only if first?
-            lhsAssign = re.sub('^\$','',str(self.lhs))
+            lhsAssign = re.sub('^\%','',str(self.lhs))
 
             # only add the ! if Key..once indexed, you don't use !
             # KeyIndexed is also Key.
@@ -1216,7 +1216,7 @@ class Def(Xbase):
 
     def __str__(self):
         # could check that it's a legal key name
-        # FIX! what about checking rhs references have $ for keys.
+        # FIX! what about checking rhs references have % for keys.
         paramStr = " ".join(map(str, self.paramList))
         exprStr = ";;".join(map(str, self.exprList))
         return "(def %s {%s} %s;;;)" % (self.function, paramStr, exprStr)
@@ -1290,7 +1290,7 @@ class Cbind(Fcn):
 
 class Cut(Fcn):
     def __init__(self,
-        vector=None, breaks='#2', labels='$FALSE', include_lowest='$FALSE', right='$FALSE', dig_lab='#0'):
+        vector=None, breaks='#2', labels='%FALSE', include_lowest='%FALSE', right='%FALSE', dig_lab='#0'):
 
         vector = Item(vector)
         breaks = Item(breaks) # can be a Seq or a number?
@@ -1301,7 +1301,7 @@ class Cut(Fcn):
         super(Cut, self).__init__("cut", vector, breaks, labels, include_lowest, right, dig_lab)
 
     # cut(a, breaks = c(min(a), mean(a), max(a)), labels = c("a", "b"))
-    # (cut $a {4.3;5.84333333333333;7.9} {"a";"b"} $FALSE $TRUE #3))
+    # (cut $a {4.3;5.84333333333333;7.9} {"a";"b"} %FALSE %TRUE #3))
 
     # arg1: single column vector
     # arg2: the cuts to make in the vector
