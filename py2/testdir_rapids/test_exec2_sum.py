@@ -9,59 +9,48 @@ print "FIX!: need to test the && and || reduction operators"
 initList = [
         ]
 
-from h2o_xl import KeyIndexed, Fcn, Seq, Colon, Assign, Item, Col
+from h2o_xl import Key, AssignObj, Fcn
 
 DO_SUM = False
 
+r1 = Key('r1')
+
 if DO_SUM:
+    funstr = 'sum'
     exprList = [
-            # 'a=c(1); a = sum(r1[1,])',
-            Assign('a', Col(Seq(1)), do=False),
-            Assign('a', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'b=c(1); b = sum(r1[1,])',
-            Assign('b', Col(Seq(1)), do=False),
-            Assign('b', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'd=c(1); d = sum(r1[1,])'(, do=False),
-            Assign('d', Col(Seq(1)), do=False),
-            Assign('d', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'e=c(1); e = sum(r1[1,])',
-            Assign('e', Col(Seq(1)), do=False),
-            Assign('e', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'f=c(1); f = sum(r1[1,])',
-            Assign('f', Col(Seq(1)), do=False),
-            Assign('f', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'f=c(1); g = sum(r1[1,])',
-            Assign('g', Col(Seq(1)), do=False),
-            Assign('g', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
-            # 'h=c(1); h = sum(r1[1,])',
-            Assign('h', Col(Seq(1)), do=False),
-            Assign('h', Fcn('sum', KeyIndexed('r1', row=1)), do=False),
+            AssignObj('a', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('b', 1),
+            AssignObj('b', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('d', 1),
+            AssignObj('d', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('e', 1),
+            AssignObj('e', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('f', 1),
+            AssignObj('f', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('g', 1),
+            AssignObj('g', Fcn(funstr, r1[1], r1[2]) ),
+            AssignObj('h', 1),
+            AssignObj('h', Fcn(funstr, r1[1], r1[2]) ),
             ]
 else:
+    funstr = 'log'
     exprList = [
-            # 'a=c(1); a = log(r1[1,])',
-            Assign('a', Col(Seq(1)), do=False),
-            # can't force a scalar to have a key be created?
-            Assign('a', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'b=c(1); b = log(r1[1,])',
-            Assign('b', Col(Seq(1)), do=False),
-            Assign('b', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'd=c(1); d = log(r1[1,])'(, do=False),
-            Assign('d', Col(Seq(1)), do=False),
-            Assign('d', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'e=c(1); e = log(r1[1,])',
-            Assign('e', Col(Seq(1)), do=False),
-            Assign('e', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'f=c(1); f = log(r1[1,])',
-            Assign('f', Col(Seq(1)), do=False),
-            Assign('f', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'f=c(1); g = log(r1[1,])',
-            Assign('g', Col(Seq(1)), do=False),
-            Assign('g', Fcn('log', KeyIndexed('r1', row=1)), do=False),
-            # 'h=c(1); h = log(r1[1,])',
-            Assign('h', Col(Seq(1)), do=False),
-            Assign('h', Fcn('log', KeyIndexed('r1', row=1)), do=False),
+            AssignObj('a', Fcn(funstr, r1[1]) ),
+            AssignObj('b', 1),
+            AssignObj('b', Fcn(funstr, r1[1]) ),
+            AssignObj('d', 1),
+            AssignObj('d', Fcn(funstr, r1[1]) ),
+            AssignObj('e', 1),
+            AssignObj('e', Fcn(funstr, r1[1]) ),
+            AssignObj('f', 1),
+            AssignObj('f', Fcn(funstr, r1[1]) ),
+            AssignObj('g', 1),
+            AssignObj('g', Fcn(funstr, r1[1]) ),
+            AssignObj('h', 1),
+            AssignObj('h', Fcn(funstr, r1[1]) ),
             ]
+
+
 
 class Basic(unittest.TestCase):
     def tearDown(self):

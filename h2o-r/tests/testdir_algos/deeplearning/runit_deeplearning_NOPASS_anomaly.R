@@ -77,7 +77,7 @@ check.deeplearning_anomaly <- function(conn) {
   # by propagating them through the narrow neural net.
   
   # Convert the test data into its autoencoded representation (pass through narrow neural net)
-  test_recon <- h2o.predict(ae_model, test_hex)
+  test_recon <- predict(ae_model, test_hex)
 
   # The good
   # Let's plot the 25 digits with lowest reconstruction error.

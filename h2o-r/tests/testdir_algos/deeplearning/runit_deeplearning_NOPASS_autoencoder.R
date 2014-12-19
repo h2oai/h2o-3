@@ -48,13 +48,13 @@ check.deeplearning_autoencoder <- function(conn) {
      checkTrue(ncol(train_supervised_features) == nfeatures, "Dimensionality of reconstruction is wrong!")
 
      # Now train RF on extracted feature space, first need to add response back
-     train_supervised_rf <- cbind(train_supervised_features, train_supervised_labels)
+     train_supervised_rf <- h2o.cbind(train_supervised_features, train_supervised_labels)
      rf_model <- h2o.randomForest(data=train_supervised_rf, x=c(1:nfeatures), y=nfeatures+1, ntree=10, importance=T, seed=1234)
 
      # Now test the RF model on the test set (first need to process into the reduced feature space)
      test_features <- h2o.deepfeatures(test, ae_model, layer=1)
      test_preds <- h2o.predict(rf_model, test_features)
-     cm <- h2o.confusionMatrix(test_preds[,1], test_labels)
+     cm <- h2o.table(test_preds[,1], test_labels)
      cm
 
      checkTrue(cm[length(cm)] == 0.104) #10% test set error

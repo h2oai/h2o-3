@@ -3,6 +3,7 @@ package water.api;
 import water.api.KeyV1.FrameKeyV1;
 import water.Iced;
 import water.Key;
+import water.fvec.Vec;
 import water.parser.ParserType;
 import water.util.DocGen.HTML;
 
@@ -43,9 +44,21 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   @API(help="Block until the parse completes (as opposed to returning early and requiring polling")
   boolean blocking;
 
+  @API(help="Remove Frame after blocking parse, and return array of Vecs")
+  boolean removeFrame;
+
   // Output fields
   @API(help="Parse Job", direction=API.Direction.OUTPUT)
   JobV2 job;
+
+  // Zero if blocking==false; row-count if blocking==true
+  @API(help="Rows", direction=API.Direction.OUTPUT)
+  long rows;
+
+  // Only not-null if blocking==true and removeFrame=true
+  @API(help="Vec keys", direction=API.Direction.OUTPUT)
+  Key<Vec>[] vecKeys;
+
 
   //==========================
 

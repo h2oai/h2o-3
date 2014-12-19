@@ -60,9 +60,9 @@ test <- function(h) {
 	print("Summary of gbm on Boston Housing dataset, MSE reported on test set")
 	for(i in 1:3){
   		model_obj <- my_gbm@model[[i]]
-  		gbm_pred <- h2o.predict(object=model_obj,newdata=BH_test)
+  		gbm_pred <- predict(object=model_obj,newdata=BH_test)
   		#if a non grid job is run, then the command will be
-  		#gbm_pred = h2o.predict(my_gbm, newdata = BH_test)
+  		#gbm_pred = predict(my_gbm, newdata = BH_test)
   		gbm_pred
   		#Calculate the mean squared error for the test set
   		MSE <- mean(((BH_test$medv-gbm_pred)^2))
@@ -81,7 +81,7 @@ test <- function(h) {
   		model_obj <- my_rf@model[[i]]
   		rf_pred <- predict(object=model_obj,newdata=BH_test)
   		#if a non grid job is run, then the command will be
-  		#rf_pred = h2o.predict(my_rf, newdata = BH_test)
+  		#rf_pred = predict(my_rf, newdata = BH_test)
   		rf_pred
   		#Calculate the mean squared error on the test set
   		MSE  <- mean(((BH_test$medv-rf_pred)^2))

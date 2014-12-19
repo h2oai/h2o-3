@@ -52,7 +52,7 @@ func <- function(model_object) {
     head(pred)
     
     #Building confusion matrix for test set
-    CM <- h2o.confusionMatrix(pred$predict,air.test$IsDepDelayed)
+    CM <- h2o.table(pred$predict,air.test$IsDepDelayed)
     print(CM)
     
     #Plot ROC for test set

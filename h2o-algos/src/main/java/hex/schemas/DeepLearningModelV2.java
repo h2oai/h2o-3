@@ -5,12 +5,15 @@ import water.Key;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
+import water.util.TwoDimTable;
 
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
     @API(help="Scoring information")
     DeepLearningModel.Errors errors;
+    @API(help="Model summary")
+    TwoDimTable modelSummary;
   } // DeepLearningModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
