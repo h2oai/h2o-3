@@ -457,9 +457,9 @@ h2o.clusterInfo <- function(conn) {
 .h2o.__cloudSick <- function(node_name = NULL, conn) {
   url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
   m1 <- "Attempting to execute action on an unhealthy cluster!\n"
-  m2 <- ifelse(node_name != NULL, paste("The sick node is identified to be: ", node_name, "\n", sep = "", collapse = ""), "")
-  m3 <- paste("Check cloud status here: ", url, sep = "", collapse = "")
-  m <- paste(m1, m2, "\n", m3, sep = "")
+  m2 <- ifelse(node_name != NULL, paste0("The sick node is identified to be: ", node_name, "\n", collapse = ""), "")
+  m3 <- paste0("Check cloud status here: ", url, collapse = "")
+  m <- paste0(m1, m2, "\n", m3)
   warning(m)
 }
 
@@ -497,7 +497,7 @@ h2o.clusterInfo <- function(conn) {
   if(missing(keyName)) stop("keyName is missing!")
   if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
 
-  page <- 'Jobs.json/' %p0% keyName
+  page <- paste0('Jobs.json/', keyName)
   res <- .h2o.__remoteSend(client, page)
 
   res <- res$jobs
@@ -591,7 +591,7 @@ h2o.getVersion <- function(conn) {
     showVec <- durationVector[durationVector > 0]
   x1 = as.numeric(showVec)
   x2 = names(showVec)
-  return(paste(x1,x2))
+  paste(x1,x2)
 }
 
 .uri.exists <- function(uri) url.exists(uri)
@@ -600,6 +600,6 @@ h2o.getVersion <- function(conn) {
   result = ""
   items = strsplit(as.character(error),"\n")[[1]];
   for (i in 1:length(items))
-    result = paste(result,prefix,items[i],"\n",sep="")
+    result = paste0(result,prefix,items[i],"\n")
   result
 }
