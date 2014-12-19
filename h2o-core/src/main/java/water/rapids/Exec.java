@@ -208,7 +208,7 @@ public class Exec extends Iced {
     return this;
   }
 
-  private boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
+  boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '$' || c =='{'; }
 
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 

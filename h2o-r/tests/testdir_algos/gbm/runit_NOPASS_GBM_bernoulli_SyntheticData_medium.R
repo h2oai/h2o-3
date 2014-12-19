@@ -71,7 +71,7 @@ test.GBM.bernoulli.SyntheticData <- function(conn) {
                       shrinkage=tru.gbm@sumtable[[i]]$shrinkage,bag.fraction=1)                # R gbm model             
         mm_y <- predict.gbm(gg,newdata=test.data2,n.trees=tru.gbm@sumtable[[i]]$n.trees,type='response')  # R Predict
         R_auc <- round(gbm.roc.area(test.data2$y,mm_y), digits=3)
-        pred <- h2o.predict(model,test)                                                                #H2O Predict
+        pred <- predict(model,test)                                                                #H2O Predict
         H2O_perf <- h2o.performance(pred$'1',test$y,measure="F1")
         H2O_auc <- round(H2O_perf@model$auc, digits=3)
         print(paste ( tru.gbm@sumtable[[i]]$model_key,
