@@ -164,6 +164,7 @@ class ASTKey extends AST {
 class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
+  boolean isFrame;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
@@ -171,7 +172,7 @@ class ASTFrame extends AST {
     Keyed val = DKV.getGet(k);
     if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
-    _fr = val instanceof Frame ? (Frame)val : new Frame((Vec)val);
+    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
@@ -186,7 +187,7 @@ class ASTFrame extends AST {
       }
       if (H2O.containsKey(Key.make(_key))) e._locked.add(Key.make(_key));
     }
-    e.addKeys(_fr); e.push(new ValFrame(_fr));
+    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }

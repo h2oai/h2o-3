@@ -34,6 +34,7 @@ public class Env extends Iced {
   final static int SERIES=6;
   final static int LARY  =7;  // special value for arrays in _local_array
   final static int AST   =8;  // basically what we're calling RAFT objects...
+  final static int VEC   =9;
   final static int NULL  =99999;
 
   transient final ExecStack _stack;                      // The stack
@@ -169,7 +170,7 @@ public class Env extends Iced {
       for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
     }
     // case for dummy frame wrapped on single vec
-    if (((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr.anyVec()._key)) {
+    if (((ValFrame) o)._isVec && ((ValFrame) o)._fr != null && _locked.contains(((ValFrame) o)._fr.anyVec()._key)) {
       for (Vec v: ((ValFrame) o)._fr.vecs()) subRefLocked(v);
     }
     for(Vec v: ((ValFrame) o)._fr.vecs()) delete &= subRef(v);
@@ -768,7 +769,9 @@ abstract class Val extends Iced {
 class ValFrame extends Val {
   final String _key;
   final Frame _fr;
+  boolean _isVec;
   ValFrame(Frame fr) { _key = null; _fr = fr; }
+  ValFrame(Frame fr, boolean isVec) { _key = null; _fr = fr; _isVec = isVec; }
   ValFrame(String key) {
     Key<Frame> k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");

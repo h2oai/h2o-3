@@ -2304,7 +2304,7 @@ class ASTMean extends ASTUniPrefixOp {
         env.push(new ValNum(ave));
       }
     }
-    env.cleanup(fr);
+      env.cleanup(fr);
   }
 
   @Override double[] map(Env e, double[] in, double[] out, AST[] args) {
