@@ -3,7 +3,7 @@ h2o.prcomp <- function(data, tol=0, cols = "", max_pc = 5000, key = "", standard
   args <- .verify_datacols(data, cols)
 
   if(!is.character(key)) stop("key must be of class character")
-  if(nchar(key) > 0 && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1] == -1)
+  if(nchar(key) > 0L && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.numeric(tol)) stop('tol must be numeric')
   if(!is.logical(standardize)) stop('standardize must be TRUE or FALSE')
@@ -23,12 +23,12 @@ h2o.prcomp <- function(data, tol=0, cols = "", max_pc = 5000, key = "", standard
   result$num_pc = res2$num_pc
   result$standardized = standardize
   result$sdev = res2$sdev
-  nfeat = length(res2$eigVec[[1]])
+  nfeat = length(res2$eigVec[[1L]])
   if(max_pc > nfeat) max_pc = nfeat
-  temp = t(matrix(unlist(res2$eigVec), nrow = nfeat))[,1:max_pc]
+  temp = t(matrix(unlist(res2$eigVec), nrow = nfeat))[,seq_len(max_pc)]
   temp = as.data.frame(temp)
   rownames(temp) = res2$namesExp #'_names'
-  colnames(temp) = paste("PC", seq(0, ncol(temp)-1), sep="")
+  colnames(temp) = paste0("PC", 0L:(ncol(temp)-1L))
   result$rotation = temp
 
   if(retx) result$x = h2o.predict(new("H2OPCAModel", key=destKey, data=data, model=result), num_pc = max_pc)
@@ -40,28 +40,28 @@ h2o.pcr <- function(x, y, data, key = "", ncomp, family, nfolds = 10, alpha = 0.
   args <- .verify_dataxy(data, x, y)
 
   if(!is.character(key)) stop("key must be of class character")
-  if(nchar(key) > 0 && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1] == -1)
+  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-  if( !is.numeric(nfolds) ) stop('nfolds must be numeric')
-  if( nfolds < 0 ) stop('nfolds must be >= 0')
-  if( !is.numeric(alpha) ) stop('alpha must be numeric')
-  if( alpha < 0 ) stop('alpha must be >= 0')
-  if( !is.numeric(lambda) ) stop('lambda must be numeric')
-  if( lambda < 0 ) stop('lambda must be >= 0')
+  if(!is.numeric(nfolds)) stop('nfolds must be numeric')
+  if(nfolds < 0L) stop('nfolds must be >= 0')
+  if(!is.numeric(alpha)) stop('alpha must be numeric')
+  if(alpha < 0) stop('alpha must be >= 0')
+  if(!is.numeric(lambda)) stop('lambda must be numeric')
+  if(lambda < 0) stop('lambda must be >= 0')
 
   cc = colnames(data)
   y <- args$y
-  if( ncomp < 1 || ncomp > length(cc) ) stop("Number of components must be between 1 and ", ncol(data))
+  if(ncomp < 1L || ncomp > length(cc)) stop("Number of components must be between 1 and ", ncol(data))
 
   x_ignore <- args$x_ignore
   x_ignore <- ifelse( x_ignore=='', y, c(x_ignore,y) )
   myModel <- .h2o.prcomp.internal(data=data, x_ignore=x_ignore, dest="", max_pc=ncomp, tol=0, standardize=TRUE)
   myScore <- h2o.predict(myModel, num_pc = ncomp)
 
-  myScore[,ncomp+1] = data[,args$y_i]    # Bind response to frame of principal components
+  myScore[,ncomp+1L] = data[,args$y_i]    # Bind response to frame of principal components
   myGLMData = .h2o.exec2(myScore@key, h2o = data@h2o, myScore@key)
-  h2o.glm(x = 1:ncomp,
-          y = ncomp+1,
+  h2o.glm(x = seq_len(ncomp),
+          y = ncomp+1L,
           data = myGLMData,
           key = key,
           family = family,
@@ -86,18 +86,18 @@ h2o.pcr <- function(x, y, data, key = "", ncomp, family, nfolds = 10, alpha = 0.
   result$num_pc = res2$num_pc
   result$standardized = standardize
   result$sdev = res2$sdev
-  nfeat = length(res2$eigVec[[1]])
+  nfeat = length(res2$eigVec[[1L]])
   temp = t(matrix(unlist(res2$eigVec), nrow = nfeat))
   rownames(temp) = res2$'namesExp'
-  colnames(temp) = paste("PC", seq(1, ncol(temp)), sep="")
+  colnames(temp) = paste0("PC", seq_len(ncol(temp)))
   result$rotation = temp
   new("H2OPCAModel", key=destKey, data=data, model=result)
 }
 
 .get.pca.results <- function(data, json, destKey, params) {
   json$params <- params
-  json$rotation <- t(matrix(unlist(json$eigVec), nrow = length(json$eigVec[[1]])))
+  json$rotation <- t(matrix(unlist(json$eigVec), nrow = length(json$eigVec[[1L]])))
   rownames(json$rotation) <- json$'namesExp'
-  colnames(json$rotation) <- paste("PC", seq(1, ncol(json$rotation)), sep = "")
+  colnames(json$rotation) <- paste0("PC", seq_len(ncol(json$rotation)))
   new("H2OPCAModel", key = destKey, data = data, model = json)
 }
