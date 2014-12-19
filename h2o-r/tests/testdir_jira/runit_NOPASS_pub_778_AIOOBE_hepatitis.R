@@ -13,8 +13,7 @@ source('../h2o-runit.R')
 
 test.colapply <- function(conn) {
   Log.info('Uploading hepatitis data from jira web to H2O...')
-  path <- locate("smalldata/hepatitis.data.txt")
-  hep <- h2o.importFile(conn, "https://0xdata.atlassian.net/secure/attachment/16111/hepatitis.data.txt", "hep")
+  hep <- h2o.importFile(conn, path=locate("smalldata/hepatitis.data.txt"), "hep")
   
   Log.info('Print head of dataset')
   Log.info(head(hep))
