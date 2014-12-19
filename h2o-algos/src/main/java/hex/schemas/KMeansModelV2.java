@@ -20,7 +20,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     public double[/*k*/] withinmse;   // Within-cluster MSE, variance
 
     @API(help="Average within cluster Mean Square Error")
-    public double avgwithinmse;       // Average within-cluster MSE, variance
+    public double avgwithinss;       // Average within-cluster MSE, variance
 
     @API(help="Average Mean Square Error to grand mean")
     public double avgss;    // Total MSE to grand mean centroid
