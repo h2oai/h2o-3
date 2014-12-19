@@ -1931,7 +1931,7 @@ class ASTQtile extends ASTUniPrefixOp {
     // a little obtuse because reusing first pass object, if p has multiple thresholds
     // since it's always the same (always had same valStart/End seed = vec min/max
     // some MULTIPASS conditionals needed if we were going to make this work for approx or exact
-    final Quantiles[] qbins1 = new Quantiles.BinTask2(MAX_QBINS, xv.min(), xv.max()).doAll(xv)._qbins;
+    final Quantiles[] qbins1 = new Quantiles.BinningTask(MAX_QBINS, xv.min(), xv.max()).doAll(xv)._qbins;
     for( int i=0; i<p.length; i++ ) {
       double quantile = p[i];
       // need to pass a different threshold now for each finishUp!
@@ -1940,7 +1940,7 @@ class ASTQtile extends ASTUniPrefixOp {
         res.set(i,qbins1[0]._pctile[0]);
       } else {
         // the 2-N map/reduces are here (with new start/ends. MULTIPASS is implied
-        Quantiles[] qbinsM = new Quantiles.BinTask2(MAX_QBINS, qbins1[0]._newValStart, qbins1[0]._newValEnd).doAll(xv)._qbins;
+        Quantiles[] qbinsM = new Quantiles.BinningTask(MAX_QBINS, qbins1[0]._newValStart, qbins1[0]._newValEnd).doAll(xv)._qbins;
         for( int iteration = 2; iteration <= MAX_ITERATIONS; iteration++ ) {
           qbinsM[0].finishUp(xv, new double[]{quantile}, INTERPOLATION, MULTIPASS);
           if( qbinsM[0]._done ) {
@@ -1948,7 +1948,7 @@ class ASTQtile extends ASTUniPrefixOp {
             break;
           }
           // the 2-N map/reduces are here (with new start/ends. MULTIPASS is implied
-          qbinsM = new Quantiles.BinTask2(MAX_QBINS, qbinsM[0]._newValStart, qbinsM[0]._newValEnd).doAll(xv)._qbins;
+          qbinsM = new Quantiles.BinningTask(MAX_QBINS, qbinsM[0]._newValStart, qbinsM[0]._newValEnd).doAll(xv)._qbins;
         }
       }
     }

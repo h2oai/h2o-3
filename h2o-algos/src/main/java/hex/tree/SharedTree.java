@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.ConfusionMatrix;
 import hex.ModelMetrics;
 import hex.SupervisedModelBuilder;
 import hex.VarImp;
@@ -377,7 +378,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       Log.info("============================================================== ");
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
-      hex.ConfusionMatrix2 cm = mm._cm;
+      ConfusionMatrix cm = mm._cm;
       Log.info(cm.toASCII(vresponse().domain()));
       Log.info( (_nclass > 1 ? "Total of "+cm.errCount()+" errors" : "Reported")+ " on "+cm.totalRows()+" rows");
       _timeLastScoreEnd = System.currentTimeMillis();

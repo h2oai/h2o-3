@@ -1,12 +1,11 @@
 package hex.schemas;
 
 import hex.AUC;
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 import hex.VarImp;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import hex.tree.TreeStats;
-import water.api.API;
 import water.api.ModelParametersSchema;
 
 public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedTreeV2,SharedTreeV2.SharedTreeParametersV2> {
@@ -33,7 +32,7 @@ public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedT
     public double mse_valid[/*_ntrees+1*/];
 
     /** Confusion Matrix for classification models, or null otherwise */
-    public ConfusionMatrix2 cm;
+    public ConfusionMatrix cm;
 
     /** AUC for binomial models, or null otherwise */
     public AUC auc;

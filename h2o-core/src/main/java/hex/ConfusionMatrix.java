@@ -9,7 +9,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
-public class ConfusionMatrix2 extends Iced {
+public class ConfusionMatrix extends Iced {
   public TwoDimTable _cmTable;
   public long[][] _arr; // [actual][predicted]
   public final double[] _classErr;
@@ -18,7 +18,7 @@ public class ConfusionMatrix2 extends Iced {
   public enum ErrMetric {
     MAXC, SUMC, TOTAL;
 
-    public double computeErr(ConfusionMatrix2 cm) {
+    public double computeErr(ConfusionMatrix cm) {
       switch( this ) {
       case MAXC : return ArrayUtils.maxValue(cm.classErr());
       case SUMC : return ArrayUtils.sum(cm.classErr());
@@ -28,19 +28,19 @@ public class ConfusionMatrix2 extends Iced {
     }
   }
 
-  public ConfusionMatrix2(int n) {
+  public ConfusionMatrix(int n) {
     _arr = new long[n][n];
     _classErr = classErr();
     _predErr = err();
   }
 
-  public ConfusionMatrix2(long[][] value) {
+  public ConfusionMatrix(long[][] value) {
     _arr = value;
     _classErr = classErr();
     _predErr = err();
   }
 
-  public ConfusionMatrix2(long[][] value, int dim) {
+  public ConfusionMatrix(long[][] value, int dim) {
     _arr = new long[dim][dim];
     for (int i=0; i<dim; ++i)
       System.arraycopy(value[i], 0, _arr[i], 0, dim);
@@ -53,7 +53,7 @@ public class ConfusionMatrix2 extends Iced {
    *  print_threshold.  Actuals might have extra levels not trained on (hence
    *  never predicted).  Actuals with NAs are not scored, and their predictions
    *  ignored. */
-  public ConfusionMatrix2(Vec actuals, Frame predictions) {
+  public ConfusionMatrix(Vec actuals, Frame predictions) {
     this(new CM(actuals.domain().length).doAll(actuals,predictions.vecs()[0])._arr);
   }
   private static class CM extends MRTask<CM> {
@@ -109,7 +109,7 @@ public class ConfusionMatrix2 extends Iced {
     return n;
   }
 
-  public void add(ConfusionMatrix2 other) {
+  public void add(ConfusionMatrix other) {
     ArrayUtils.add(_arr, other._arr);
   }
 

@@ -3,7 +3,7 @@ package hex.glm;
 
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 import hex.AUC;
 import water.Iced;
 import water.Key;
@@ -27,7 +27,7 @@ public class GLMValidation extends Iced {
   private double _aic2;// internal aic used only for poisson family!
   final Key dataKey;
   public final float [] thresholds;
-  ConfusionMatrix2[] _cms;
+  ConfusionMatrix[] _cms;
   final GLMModel.GLMParameters _glm;
   final private int _rank;
 
@@ -56,9 +56,9 @@ public class GLMValidation extends Iced {
     _ymu = ymu;
     _glm = glm;
     if(_glm._family == Family.binomial){
-      _cms = new ConfusionMatrix2[thresholds.length];
+      _cms = new ConfusionMatrix[thresholds.length];
       for(int i = 0; i < _cms.length; ++i)
-        _cms[i] = new ConfusionMatrix2(2);
+        _cms[i] = new ConfusionMatrix(2);
     }
     this.dataKey = dataKey;
     this.thresholds = thresholds;
@@ -119,7 +119,7 @@ public class GLMValidation extends Iced {
 
   protected void computeAUC(){
     if(_glm._family == Family.binomial){
-      for(ConfusionMatrix2 cm:_cms)cm.reComputeErrors();
+      for(ConfusionMatrix cm:_cms)cm.reComputeErrors();
       AUC auc = new AUC(_cms,thresholds,/*TODO: add CM domain*/null);
       this.auc = auc.data().AUC();
       best_threshold = auc.data().threshold();

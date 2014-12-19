@@ -1,8 +1,8 @@
 package water.api;
 
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 
-public class ConfusionMatrixBase<I extends ConfusionMatrix2, S extends ConfusionMatrixBase> extends Schema<I, ConfusionMatrixBase<I, S>> {
+public class ConfusionMatrixBase<I extends ConfusionMatrix, S extends ConfusionMatrixBase> extends Schema<I, ConfusionMatrixBase<I, S>> {
   @API(help="Confusion matrix (Actual/Predicted)", direction=API.Direction.OUTPUT)
   public long[][] confusion_matrix; // [actual][predicted]
 
@@ -15,7 +15,7 @@ public class ConfusionMatrixBase<I extends ConfusionMatrix2, S extends Confusion
   // Version&Schema-specific filling into the implementation object
   public I createImpl() {
     // TODO: this is bogus. . .
-    ConfusionMatrix2 cm = new ConfusionMatrix2(this.confusion_matrix);
+    ConfusionMatrix cm = new ConfusionMatrix(this.confusion_matrix);
     return (I)cm;
   }
 
