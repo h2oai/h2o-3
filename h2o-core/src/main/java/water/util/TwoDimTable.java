@@ -22,7 +22,10 @@ public class TwoDimTable extends Iced {
 
     if (description == null) throw new IllegalArgumentException("description is missing.");
     if (colNames == null) throw new IllegalArgumentException("colNames are missing.");
-    if (colFormatStrings == null) throw new IllegalArgumentException("colFormatStrings are missing.");
+    if (colFormatStrings == null) {
+      colFormatStrings = new String[colNames.length];
+      Arrays.fill(colFormatStrings, "%s");
+    }
     if (rowHeaders == null) throw new IllegalArgumentException("rowHeaders are missing.");
     if (strings == null) throw new IllegalArgumentException("string values are missing.");
     if (strings.length != rowHeaders.length)
