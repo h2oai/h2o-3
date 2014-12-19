@@ -17,7 +17,7 @@
 #"
 #" Key points to a bonified object in the H2O cluster
 .get <- function(h2o.frame) {
-  if(.is.eval(h2o.frame)) return('$' %p0% h2o.frame@key)
+  if(.is.eval(h2o.frame)) return('%' %p0% h2o.frame@key)
   h2o.frame@ast
 }
 
@@ -34,7 +34,7 @@
 #" Cache Frame information on the client side: rows, cols, colnames
 #"
 .fill <- function(h2o, key) {
-  res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast="($" %p0% key %p0% ")")
+  res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast="(%" %p0% key %p0% ")")
   .h2o.parsedData(h2o, key, res$num_rows, res$num_cols, res$col_names)
 }
 

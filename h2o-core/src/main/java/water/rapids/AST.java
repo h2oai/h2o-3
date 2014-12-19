@@ -1009,7 +1009,7 @@ class ASTSlice extends AST {
     if (rows instanceof ASTSeries) ((ASTSeries) rows).setSlice(true, false);
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST cols = E.skipWS().parse();
-    if (cols instanceof ASTString) ;
+    cols = (cols instanceof ASTString && cols.value().equals("null")) ? new ASTNull() : cols;
     if (cols instanceof ASTSpan) ((ASTSpan) cols).setSlice(false, true);
     if (cols instanceof ASTSeries) ((ASTSeries) cols).setSlice(false, true);
     ASTSlice res = (ASTSlice) clone();
