@@ -63,6 +63,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("{", new ASTSeries(null, null));
     SYMBOLS.put(":", new ASTSpan(new ASTNum(0),new ASTNum(0)));
     SYMBOLS.put("not", new ASTNot());
+    SYMBOLS.put("_", new ASTNot());
     SYMBOLS.put("if", new ASTIf());
     SYMBOLS.put("else", new ASTElse());
     SYMBOLS.put("for", new ASTFor());

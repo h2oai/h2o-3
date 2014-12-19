@@ -38,13 +38,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public double[/*k*/] _withinmse;   // Within-cluster MSE, variance
 
     // Sum squared distance between each point and its cluster center, divided by total number of observations.
-    public double _avgwithinmse;      // Total within-cluster MSE, variance
+    public double _avgwithinss;      // Average within-cluster sum-of-square error
 
     // Sum squared distance between each point and grand mean, divided by total number of observations.
     public double _avgss;            // Total MSE to grand mean centroid
 
     // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
-    public double _avgbetweenss;    // Total between-cluster MSE (avgss - avgwithinmse)
+    public double _avgbetweenss;    // Total between-cluster MSE (avgss - avgwithinss)
 
     public KMeansOutput( KMeans b ) { super(b); }
 

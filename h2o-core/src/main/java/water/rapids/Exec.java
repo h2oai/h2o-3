@@ -27,7 +27,7 @@ import java.util.HashSet;
  *     'L'   signals &lt;=
  *     'n'   signals ==
  *     'N'   signals !=
- *     '_'   signals negation (!)
+ *     'not'   signals negation (!)
  *     '{'   signals the parser to begin parsing a ';'-separated array of flagged inputs (#, %, ", ') (ASTSeries is the resulting AST)
  *
  * In the above, attached_token signals that the special char has extra chars that must be parsed separately. These are
