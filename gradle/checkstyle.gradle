@@ -1,0 +1,10 @@
+apply plugin: 'checkstyle'
+
+checkstyle {
+  //configFile = new File(rootDir, "gradle/config/checkstyle.xml")
+  configFile = new File(rootDir, "gradle/config/google_checks.xml")
+  //configFile = new File(rootDir, "gradle/config/sun_checks.xml")
+  ignoreFailures = true
+  showViolations = true
+  toolVersion = "6.1.1"
+}

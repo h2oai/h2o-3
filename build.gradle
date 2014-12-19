@@ -161,6 +161,9 @@ subprojects {
         if (applyFindbugsPlugin) {
             apply from: "$rootDir/gradle/findbugs.gradle"
         }
+        if (project.hasProperty("doCheckStyle")) {
+            apply from: "$rootDir/gradle/checkstyle.gradle"
+        }
     }
 
     // Configure Scala projects
