@@ -333,9 +333,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Vec mresp = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = mresp.domain(); // Domain of predictions (union of test and train)
     ConfusionMatrix2 cm = ModelMetrics.getFromDKV(this,fr)._cm;
-    cm._cm_json = cm.toTable(mdomain);
-    if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-      water.util.Log.info(cm._cm_json.toString(1));
+    if (mdomain != null) { //don't print table for regression
+      cm._cm_json = cm.toTable(mdomain);
+      if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+        water.util.Log.info(cm._cm_json.toString(1));
+    }
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.  
