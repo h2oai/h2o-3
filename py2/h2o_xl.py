@@ -594,7 +594,7 @@ class Item(Xbase):
 
 #********************************************************************************
 
-xFcnXlate = { '>':'g', '>=':'G', '<':'l', '<=':'L', '==':'n', '!=':'N', '!':'_', '~':'_' }
+xFcnXlate = { '>':'g', '>=':'G', '<':'l', '<=':'L', '==':'n', '!=':'N', '!':'not', '~': 'not', '_': 'not'}
 
 # FIX! should we use weakref Dicts, to avoid inhibiting garbage collection by having it
 # in a list here?
@@ -609,7 +609,7 @@ xFcnOpBinSet = set([
 
 #'canbecoercedtological',
 xFcnOp1Set = set([
-'c', '_',
+'c', '_', 'not',
 'is.na', 'is.factor', 'any.factor', 'any.na',
 'nrow', 'ncol', 'length',
 'abs', 'sign', 'sqrt', 'ceiling', 'floor', 'log', 'exp', 'scale', 'factor',
