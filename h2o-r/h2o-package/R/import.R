@@ -36,14 +36,14 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
       assign("dd", rawData, globalenv())
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
+      h2o.rm(object, "nfs:/" %p0% path)
+      h2o.rm(object, "nfs://private" %p0% path)
     } else {
       myData = lapply(res$keys, function(x) { new("H2ORawData", h2o=object, key=x) })
       if(length(res$keys) == 1) ret <- myData[[1]] else ret <- myData
     }
   } else stop("All files failed to import!")
   path <- gsub("//", "/", path)
-  h2o.rm(object, "nfs:/" %p0% path)
-  h2o.rm(object, "nfs://private" %p0% path)
   ret
 }
 
