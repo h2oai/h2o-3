@@ -17,9 +17,9 @@ functiontest <- function(conn){
 
   Log.info('applying over 1, 2, 1:2')
   fn1 <- function(x){ sum(x) }
-  h2o.addFunction(conn, fn1)
+  # h2o.addFunction(conn, fn1)
   fn2 <- function(x){ x + 1 }
-  h2o.addFunction(conn, fn2)
+  # h2o.addFunction(conn, fn2)
 
   df.h.1 <- apply(df.h, 1, fn1)
   df.h.2 <- apply(df.h, 2, fn1)
