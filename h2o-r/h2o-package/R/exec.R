@@ -25,7 +25,7 @@ function(op, x) {
   else if (x %i% "ASTNode") x <- x
   else if (x %i% "numeric") x <- '#' %p0% x
   else if (x %i% "character") x <- deparse(eval(x))
-  else if (x %i% "ASTEmpty") x <- '$' %p0% x@key
+  else if (x %i% "ASTEmpty") x <- '%' %p0% x@key
   else stop("operand type not handled")
   ast <- new("ASTNode", root=op, children=list(x))
   new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
@@ -46,7 +46,7 @@ function(op, e1, e2) {
   else if (e1 %i% "ASTNode")       lhs <- e1
   else if (e1 %i% "numeric")       lhs <- '#' %p0% e1
   else if (e1 %i% "character")     lhs <- deparse(eval(e1))
-  else if (e1 %i% "ASTEmpty")      lhs <- '$' %p0% e1@key
+  else if (e1 %i% "ASTEmpty")      lhs <- '%' %p0% e1@key
   else stop("LHS operand type not handled")
 
   # Prep the RHS
@@ -54,7 +54,7 @@ function(op, e1, e2) {
   else if (e2 %i% "ASTNode")       rhs <- e2
   else if (e2 %i% "numeric")       rhs <- '#' %p0% e2
   else if (e2 %i% "character")     rhs <- deparse(eval(e2))
-  else if (e2 %i% "ASTEmpty")      rhs <- '$' %p0% e2@key
+  else if (e2 %i% "ASTEmpty")      rhs <- '%' %p0% e2@key
   else stop("RHS operand type not handled")
 
   # Return an ASTNode

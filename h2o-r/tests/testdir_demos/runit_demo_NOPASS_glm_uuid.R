@@ -51,13 +51,12 @@ test <- function(conn) {
     print("Head of UUIDs from test set: ")
     head(test.uuid)
   
-  print("Run GLM prediction on test set.")
-    airline.predict.uuid <- h2o.predict(object=airline.glm, newdata=airline.test.hex)
+  print("Run GLM prediction on test set.inairline.predict.uuid <- predict(object=airline.glm, newdata=airline.test.hex)
     print("Head of prediction on test set: ")
     head(airline.predict.uuid)
   
-  print("Splice UUIDs back to predictions with cbind()")
-    air.results <- h2o.assign(cbind(airline.predict.uuid, test.uuid), key="air.results")
+  print("Splice UUIDs back to predictions with h2o.cbind()")
+    air.results <- h2o.assign(h2o.cbind(airline.predict.uuid, test.uuid), key="air.results")
     print("Head of predictions with UUIDs: ")
     head(air.results)
     print("Tail of predictions with UUIDs: ")

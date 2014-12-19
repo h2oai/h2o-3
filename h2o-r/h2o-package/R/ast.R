@@ -186,9 +186,9 @@ function(a, name=NULL) {
   } else if (a %i% "ASTNode") {
     a
   } else if (a %i% "ASTFun") {
-    '$' %p0% a@name
+    '%' %p0% a@name
   } else if (a %i% "ASTEmpty") {
-    '$' %p0% a@key
+    '%' %p0% a@key
   } else {
     res <- eval(a)
     if (is.null(res)) return(deparse("null"))
@@ -199,7 +199,7 @@ function(a, name=NULL) {
         return('{' %p0%   tt  %p0% '}')
       } else {
         if (is.numeric(res)) return('#' %p0% res)
-        if (is.logical(res)) return('$' %p0% res)
+        if (is.logical(res)) return('%' %p0% res)
         else return(deparse(eval(a)))
       }
     } else {

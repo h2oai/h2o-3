@@ -80,7 +80,7 @@ test.exec2.demo <- function(conn) {
   print(prostate.gbm)
   
   Log.info("Generate GBM predictions on test set")
-  prostate.pred <- h2o.predict(prostate.gbm, prostate.test)
+  prostate.pred <- predict(prostate.gbm, prostate.test)
   summary(prostate.pred)
   head(prostate.pred)
   tail(prostate.pred)
