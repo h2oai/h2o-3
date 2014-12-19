@@ -24,7 +24,7 @@ test.apply_w_quantile <- function(conn) {
     # func6 = function(x) { quantile(x[,1] , c(0.9) ) }
     func6 <- function(x) { quantile(x , c(0.9) ) }
     # push the function to h2o also!, with same name
-    h2o.addFunction(conn, func6)
+    # h2o.addFunction(conn, func6)
     b = apply(a, c(2), func6)
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
     b.h2o = apply(a.h2o, c(2), func6)

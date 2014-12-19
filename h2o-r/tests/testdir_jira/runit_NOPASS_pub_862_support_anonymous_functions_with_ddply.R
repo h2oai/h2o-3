@@ -5,7 +5,7 @@ test.pub_862_support_anonymous_functions_with_ddply <- function(H2Oserver) {
 
 covtype.hex <- h2o.importFile(H2Oserver, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
-covtype.local = as.data.frame(covtype.hex)
+covtype.local <- as.data.frame(covtype.hex)
 
 # Are we in the right universe?
 expect_equal(20000, dim(covtype.local)[1])

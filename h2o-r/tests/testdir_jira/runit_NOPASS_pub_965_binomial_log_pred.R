@@ -27,7 +27,7 @@ test.linkFunctions <- function(conn) {
 	model.h2o.binomial.log <- h2o.glm(x=myX, y=myY, data=prostate.train, family="binomial", link="log",alpha=0.5, lambda=0, nfolds=0)
 	
 	print("Predict")
-	prediction.h2o.binomial.log <- h2o.predict(model.h2o.binomial.log, prostate.test)
+	prediction.h2o.binomial.log <- predict(model.h2o.binomial.log, prostate.test)
 	print(head(prediction.h2o.binomial.log))
 	
 	print("Check strength of predictions all within [0,1] domain")
