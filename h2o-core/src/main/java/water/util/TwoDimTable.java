@@ -81,14 +81,14 @@ public class TwoDimTable extends Iced {
    */
   private void checkConsistency() {
     for (int r=0; r<rowHeaders.length; ++r) {
+      if (doubles[r]==null) {
+        doubles[r] = new double[colNames.length];
+        Arrays.fill(doubles[r], emptyDouble);
+      }
+      if (strings[r]==null) {
+        strings[r] = new String[colNames.length];
+      }
       for (int c=0; c<colNames.length; ++c) {
-        if (doubles[r]==null) {
-          doubles[r] = new double[colNames.length];
-          Arrays.fill(doubles[r], emptyDouble);
-        }
-        if (strings[r]==null) {
-          strings[r] = new String[colNames.length];
-        }
         if (strings[r] != null && strings[r][c] != null && doubles[r] != null && !isEmpty(doubles[r][c]))
           throw new IllegalArgumentException("Cannot provide both a String and a Double at row idx " + r + " and column idx " + c + ".");
       }
