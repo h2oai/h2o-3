@@ -54,7 +54,7 @@ result_frame <- data.frame(id = 0,auc = 0 , key = 0)
 
 print("print performance for all models on test set")
 for(i in 1:100){
-  pred <- h2o.predict(my.glm@models[[i]],pros.test)
+  pred <- predict(my.glm@models[[i]],pros.test)
   perf <- h2o.performance(pred$'1',pros.test$CAPSULE )
   print ( paste ("  model number:", i, "  auc on test set: ", round(perf@model$auc, digits=4),  sep=''), quote=F)
   result_frame <- rbind(result_frame, c(i,round(perf@model$auc, digits=4),my.glm@models[[i]]@key))

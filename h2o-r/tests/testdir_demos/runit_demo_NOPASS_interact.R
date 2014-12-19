@@ -59,7 +59,7 @@ interaction.matrix <- interact(hex$RACE, hex$GLEASON)
 
 print(interaction.matrix)
 
-augmented_data_set <- h2o.assign(cbind(hex, interaction.matrix), "augmented")
+augmented_data_set <- h2o.assign(h2o.cbind(hex, interaction.matrix), "augmented")
 remove_tmps(h)
 
 print(augmented_data_set)
