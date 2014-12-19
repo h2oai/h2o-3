@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
-import hex.ConfusionMatrix2;
+import hex.ConfusionMatrix;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -222,7 +222,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           threshold = mm._aucdata.threshold();
                                           error = mm._aucdata.err();
                                           // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix2(mm._aucdata.cm()).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm()).err(), error, 1e-15);
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                           Assert.assertEquals(mm._cm.err(), error, 1e-15);
                                         }
@@ -230,7 +230,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         // Compute CM
                                         if (model2._output.nclasses() > 2)
                                           pred.replace(0, pred.vecs()[0].toEnum());
-                                        double CMerrorOrig= new ConfusionMatrix2(valid.vecs()[resp].toEnum(),pred).err();
+                                        double CMerrorOrig= new ConfusionMatrix(valid.vecs()[resp].toEnum(),pred).err();
                                         
                                         // confirm that orig CM was made with threshold 0.5
                                         // put pred2 into DKV, and allow access
@@ -249,7 +249,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             if (ev!=null) ev.remove_and_unlock();
                                           }
                                         
-                                          double threshErr= new ConfusionMatrix2(valid.vecs()[1].toEnum(),pred2).err();
+                                          double threshErr= new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
                                           Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
 
                                           // make labels with AUC-given threshold for best F1
@@ -261,7 +261,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           } finally {
                                             if (ev != null) ev.remove_and_unlock();
                                           }
-                                          double threshErr2 = new ConfusionMatrix2(valid.vecs()[1].toEnum(),pred2).err();
+                                          double threshErr2 = new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
                                           Assert.assertEquals(threshErr2, error, 1e-15);
                                         }
                                       } finally {

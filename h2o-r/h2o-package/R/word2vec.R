@@ -33,8 +33,8 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
-    if (negExCnt < 0) stop("`negExCnt` must be >= 0")
-    if (negExCnt != 0 && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received" %p% negExCnt)
+    if (negExCnt < 0L) stop("`negExCnt` must be >= 0")
+    if (negExCnt != 0L && normModel == "HSM") stop("Both hierarchical softmax and negative samples != 0 is not allowed for Word2Vec.  Expected value = 0, received ", negExCnt)
   }
   if (missing(vecSize) || !is.numeric(vecSize)) stop("`vecSize` must be numeric")
   if (missing(windowSize) || !is.numeric(windowSize)) stop("`windowSize` must be numeric")
@@ -57,7 +57,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
 
   res <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__W2V, .params = params)
   .h2o.__waitOnJob(trainingFrame@h2o, res$job)
-  dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste(.h2o.__JOBS, "/", res$job, sep = ""))$jobs[[1]]$dest$name
+  dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
   w2vmodel <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__INSPECT, key = dest_key)
   new("H2OW2V", h2o = trainingFrame@h2o, key = dest_key, train.data=trainingFrame)
 }
@@ -78,11 +78,10 @@ function(word2vec, target, count) {
   if (!is.numeric(count)) stop("`count` must be numeric")
 
   params <- list(key = word2vec@key, target=target, cnt=count)
-  if (length(target) == 1) {
+  if (length(target) == 1L) {
     res <- .h2o.__remoteSend(word2vec@h2o, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
-    fr <- fr[with(fr, order(-cosine.similarity)),]
-    return(fr)
+    fr[with(fr, order(-cosine.similarity)),]
   } else {
     stop("unimplemented")
 #    vecs <- lapply(target, h2o.transform, word2vec)

@@ -69,14 +69,14 @@ public final class Quantiles extends Iced {
   public long  hcnt2_high; // count above current binning
   public double hcnt2_high_min; // min above current binning
 
-  public static class BinTask2 extends MRTask<BinTask2> {
+  public static class BinningTask extends MRTask<BinningTask> {
     private final int _max_qbins;
     private final double _valStart;
     private final double _valEnd;
 
     public Quantiles _qbins[];
 
-    public BinTask2 (int max_qbins, double valStart, double valEnd) {
+    public BinningTask(int max_qbins, double valStart, double valEnd) {
       _max_qbins = max_qbins;
       _valStart = valStart;
       _valEnd = valEnd;
@@ -88,7 +88,7 @@ public final class Quantiles extends Iced {
         _qbins[i] = new Quantiles().setVecFields(_fr.vecs()[i], _max_qbins, _valStart, _valEnd).add(cs[i]);
     }
 
-    @Override public void reduce(BinTask2 other) {
+    @Override public void reduce(BinningTask other) {
       for (int i = 0; i < _qbins.length; i++)
         _qbins[i].add(other._qbins[i]);
       // will all the map memory get reclaimed now, since the reduce has gathered it?

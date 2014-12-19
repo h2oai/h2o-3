@@ -71,7 +71,7 @@ public class AUCData extends Iced {
   public double max_per_class_error() { return max_per_class_error(threshold_criterion); }
   public float threshold() { return threshold(threshold_criterion); }
   public long[][] cm() { return cm(threshold_criterion); }
-  public ConfusionMatrix2 CM() { return _cms[idxCriter[threshold_criterion.ordinal()]]; }
+  public ConfusionMatrix CM() { return _cms[idxCriter[threshold_criterion.ordinal()]]; }
 
   /* Return the best possible metrics */
   public double bestF1() { return F1(ThresholdCriterion.maximum_F1); }
@@ -81,11 +81,11 @@ public class AUCData extends Iced {
   private int[] idxCriter;
   private double[] _tprs;
   private double[] _fprs;
-  private ConfusionMatrix2[] _cms;
+  private ConfusionMatrix[] _cms;
 
   private static double trapezoid_area(double x1, double x2, double y1, double y2) { return Math.abs(x1-x2)*(y1+y2)/2.; }
 
-  public AUCData compute(ConfusionMatrix2[] cms, float[] thresh, String[] domain, ThresholdCriterion criter) {
+  public AUCData compute(ConfusionMatrix[] cms, float[] thresh, String[] domain, ThresholdCriterion criter) {
     _cms = cms;
     thresholds = thresh;
     threshold_criterion = criter;

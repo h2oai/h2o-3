@@ -699,8 +699,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     VarImp variable_importances;
 
     // classification
-    public ConfusionMatrix2 train_confusion_matrix;
-    public ConfusionMatrix2 valid_confusion_matrix;
+    public ConfusionMatrix train_confusion_matrix;
+    public ConfusionMatrix valid_confusion_matrix;
     public double train_err = 1;
     public double valid_err = 1;
     public AUCData trainAUC;
@@ -743,7 +743,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  final private static class ConfMat extends ConfusionMatrix2 {
+  final private static class ConfMat extends ConfusionMatrix {
     final private double _err;
     final private double _f1;
     public ConfMat(double err, double f1) {
@@ -758,10 +758,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   /** for grid search error reporting */
 //  @Override
-  public ConfusionMatrix2 cm() {
+  public ConfusionMatrix cm() {
     final Errors lasterror = last_scored();
     if (lasterror == null) return null;
-    ConfusionMatrix2 cm = lasterror.validation || lasterror.num_folds > 0 ?
+    ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
             lasterror.train_confusion_matrix;
     if (cm == null ) {
