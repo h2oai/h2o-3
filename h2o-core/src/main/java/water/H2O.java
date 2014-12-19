@@ -154,7 +154,7 @@ final public class H2O {
     public String ice_root;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public int nthreads=NUMCPUS;
+    public int nthreads=Runtime.getRuntime().availableProcessors();
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
