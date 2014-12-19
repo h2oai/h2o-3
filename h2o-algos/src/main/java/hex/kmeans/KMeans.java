@@ -132,7 +132,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             // Fill in sample clusters into the model
             if( !isRunning() ) return; // Stopped/cancelled
             model._output._clusters = destandardize(clusters, _ncats, means, mults);
-            model._output._mse = sqr._sqr/_train.numRows();
+            model._output._avgwithinmse = sqr._sqr/_train.numRows();
 
             model._output._iters++;     // One iteration done
 
@@ -184,15 +184,25 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
 
           // Fill in the model; destandardized centers
+          model._output._names = _train.names();
           model._output._clusters = destandardize(task._cMeans, _ncats, means, mults);
           model._output._rows = task._rows;
-          model._output._mses = task._cSqr;
+          model._output._withinmse = task._cSqr;
           double ssq = 0;       // sum squared error
           for( int i=0; i<_parms._k; i++ ) {
-            ssq += model._output._mses[i]; // sum squared error all clusters
-            model._output._mses[i] /= task._rows[i]; // mse per-cluster
+            ssq += model._output._withinmse[i]; // sum squared error all clusters
+            model._output._withinmse[i] /= task._rows[i]; // mse within-cluster
           }
-          model._output._mse = ssq/_train.numRows(); // mse total
+          model._output._avgwithinmse = ssq/_train.numRows(); // mse total
+
+          // Sum-of-square distance from single centroid
+          if(_parms._k == 1)
+            model._output._avgss = model._output._avgwithinmse;
+          else {
+            SumSqr totss = new SumSqr(new double[][] {means},means,mults,_ncats).doAll(vecs);
+            model._output._avgss = totss._sqr/_train.numRows(); // mse with respect to grand mean
+          }
+          model._output._avgbetweenss = model._output._avgss - model._output._avgwithinmse;  // mse between-cluster
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
@@ -206,7 +216,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           clusters = task._cMeans; // Update cluster centers
 
           StringBuilder sb = new StringBuilder();
-          sb.append("KMeans: iter: ").append(model._output._iters).append(", MSE=").append(model._output._mse);
+          sb.append("KMeans: iter: ").append(model._output._iters).append(", MSE=").append(model._output._avgwithinmse);
           for( int i=0; i<_parms._k; i++ )
             sb.append(", ").append(task._cSqr[i]).append("/").append(task._rows[i]);
           Log.info(sb);
