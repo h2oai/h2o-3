@@ -71,7 +71,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, java_heap_GB=28)
+        h2o.init(1, java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -83,9 +83,8 @@ class Basic(unittest.TestCase):
         if getpass.getuser()=='jenkins':
             csvPathname = 'standard/billion_rows.csv.gz'
         else:
-            csvPathname = '1B/reals_100000x1000_15f.data'
             csvPathname = '1B/reals_1B_15f.data'
-            csvPathname = '1B/reals_1000000x1000_15f.data'
+            csvPathname = '1B/reals_100000x1000_15f.data'
 
         hex_key = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local', 

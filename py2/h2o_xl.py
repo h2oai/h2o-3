@@ -1,5 +1,5 @@
 import h2o_exec as h2e, h2o_print as h2p, h2o_cmd
-import re
+import re, math
 from copy import copy
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
 
@@ -405,13 +405,18 @@ class Xbase(object):
                     print "Hack scalar to int for new key for scalar, because rapids doesn't take reals yet"
                     # doesn't like 0.0?
                     # we always want a key for the result, regardless of what h2o does.
-                    execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
+                    # what if self.scalar is NaN
+                    if math.isnan(float(self.scalar)):
+                        print "Rapids returned scalar result that's NaN. Using -1 instead: %s" % self.scalar
+                        execExpr2 = '(= !%s (c {#-1}))' % self.frame
+                    else:
+                        execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
 
                 self.numRows = 1
                 self.numCols = 1
 
                 execResult2, result2 = h2e.exec_expr(execExpr=execExpr2)
-                assert execResult2['key'] is not None
+                assert execResult2['key'] is not None, dump_json(execResult2)
                 assert self.numRows==execResult2['num_rows'], "%s %s" % (self.numRows, execResult2['num_rows'])
                 assert self.numCols==execResult2['num_cols'], "%s %s" % (self.numCols, execResult2['num_cols'])
 
@@ -787,6 +792,10 @@ class Key(Xbase):
                 debugprint("Key item Colon", Colon)
                 return item
 
+            elif isinstance(item, Fcn):
+                debugprint("Key item Fcn", Fcn)
+                return item
+
             # what if the indexer is a list/tuple, string, or Key?
             # well, use Seq to handle a list (hopefully not too big? check if > 1024)
             elif isinstance(item, (list, tuple)):
@@ -877,7 +886,6 @@ class KeyIndexed(Key):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -935,7 +943,6 @@ class KeyInit(Xbase):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -958,7 +965,6 @@ class DF(Key):
         # normal writes always work, even if it really wasn't existing.
 
         self.refcntInc()
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):
@@ -1029,7 +1035,6 @@ class Return(Xbase):
 
         if not noRefCnt:
             self.refcntInc(expr)
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
     def __str__(self):
@@ -1115,7 +1120,6 @@ class Assign(Key):
 
         if not noRefCnt:
             self.refcntInc()
-            # how do I know all references to me have done their refcntInc?
             self.assignIfRoot()
 
 
@@ -1144,6 +1148,11 @@ class Assign(Key):
                 lhsprefix = ''
             return "(= %s%s %s)" % (lhsprefix, lhsAssign, self.rhs)
 
+# same as Assign, just have do=False default
+# can never set do=True
+class AssignObj(Assign):
+    def __init__(self, *args, **kwargs):
+        super(AssignObj, self).__init__(*args, do=False, **kwargs)
 
 # can only do one expression/statement per ast.
 # Not currently used
@@ -1231,7 +1240,6 @@ class If(Xbase):
         self.clause = Item(clause)
         self.exprList = exprList
         self.refcntInc(clause, exprs)
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):
@@ -1254,7 +1262,6 @@ class IfElse(Xbase):
         self.ifExprList = ifExprList
         self.elseExprList = elseExprList
         self.refcntInc(iclause, ifExpr, elseExpr)
-        # how do I know all references to me have done their refcntInc?
         self.assignIfRoot()
 
     def __str__(self):

@@ -11,7 +11,7 @@ source('../h2o-runit.R')
 
 test.colapply <- function(conn) {
   Log.info('Uploading cebbinom.csv to H2O...')
-  cebH2O <- h2o.importFile(conn, normalizePath(locate('smalldata/cebbinom.csv')))
+  cebH2O <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/cebbinom.csv')))
   
   Log.info('Print head of dataset')
   Log.info(head(cebH2O))
@@ -23,7 +23,7 @@ test.colapply <- function(conn) {
   scaledH2O = apply(cebstdH2O[,2:16], 2, scale)
   Log.info(head(scaledH2O))
   
-  cebR <- read.csv(locate("smalldata/cebbinom.csv"))
+  cebR <- read.csv(locate("smalldata/jira/cebbinom.csv"))
   cebstdR <- cebR[,8:23]
   scaledR <- apply(cebstdR[,2:16], 2, scale)
   
