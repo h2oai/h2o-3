@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
+import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -26,15 +27,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
      */
     protected static Frame[] fetchAll() {
       // Get all the frames.
-      final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override
-        public boolean filter(KeySnapshot.KeyInfo k) {
-          return k.isSubclassOf(Frame.class);
-        }
-      }).keys();
+      final Key[] frameKeys = KeySnapshot.globalKeysOfClass(Frame.class);
       Frame[] frames = new Frame[frameKeys.length];
       for (int i = 0; i < frameKeys.length; i++) {
-        Frame frame = getFromDKV(frameKeys[i]);
+        Frame frame = getFromDKV("(none)", frameKeys[i]);
         frames[i] = frame;
       }
       return frames;
@@ -132,22 +128,22 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   // TODO: almost identical to ModelsHandler; refactor
-  public static Frame getFromDKV(String key_str) {
-    return getFromDKV(Key.make(key_str));
+  public static Frame getFromDKV(String param_name, String key_str) {
+    return getFromDKV(param_name, Key.make(key_str));
   }
 
   // TODO: almost identical to ModelsHandler; refactor
-  public static Frame getFromDKV(Key key) {
+  public static Frame getFromDKV(String param_name, Key key) {
     if (null == key)
-      throw new IllegalArgumentException("Got null key.");
+      throw new H2OIllegalArgumentException(param_name, "Frames.getFromDKV()", key);
 
     Value v = DKV.get(key);
     if (null == v)
-      throw new IllegalArgumentException("Did not find key: " + key.toString());
+      throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
     if (! (ice instanceof Frame))
-      throw new IllegalArgumentException("Expected a Frame for key: " + key.toString() + "; got a: " + ice.getClass());
+      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Frame.class, ice.getClass());
 
     return (Frame)ice;
   }
@@ -155,12 +151,12 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single column from the frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
-    Frame frame = getFromDKV(s.key.key());
+    Frame frame = getFromDKV("key", s.key.key());
 
-    // TODO: We really want to return a different schema here!
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new IllegalArgumentException("Did not find column: " + s.column + " in frame: " + s.key.toString());
+      throw new H2ONotFoundException("Did not find column: " + s.column + " in frame: " + s.key.toString(),
+                                     "Did not find column: " + s.column + " in frame: " + s.key.toString());
 
     Vec[] vecs = { vec };
     String[] names = { s.column };
@@ -173,10 +169,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
-    Frame frame = getFromDKV(s.key.key());
+    Frame frame = getFromDKV("key", s.key.key()); // safe
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new IllegalArgumentException("Did not find column: " + s.column + " in frame: " + s.key.toString());
+      throw new H2ONotFoundException("Did not find column: " + s.column + " in frame: " + s.key.toString(),
+                                     "Did not find column: " + s.column + " in frame: " + s.key.toString());
 
     // Compute second pass of rollups: the histograms.
     vec.bins();
@@ -197,7 +194,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 fetch(int version, FramesV3 s) {
     Frames f = s.createAndFillImpl();
 
-    Frame frame = getFromDKV(s.key.key());
+    Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV2[1];
     s.frames[0] = new FrameV2().fillFromImpl(frame);
 
@@ -224,7 +221,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 delete(int version, FramesV3 frames) {
-    Frame frame = getFromDKV(frames.key.key());
+    Frame frame = getFromDKV("key", frames.key.key()); // safe
     frame.delete();             // lock & remove
     return frames;
   }
@@ -235,23 +232,19 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 deleteAll(int version, FramesV3 frames) {
-    final Key[] frameKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override public boolean filter(KeySnapshot.KeyInfo k) {
-          return k._type == TypeMap.FRAME;
-        }
-      }).keys();
+    final Key[] keys = KeySnapshot.globalKeysOfClass(Frame.class);
 
-    String err=null;
+    ArrayList<String> missing = new ArrayList<>();
     Futures fs = new Futures();
-    for( int i = 0; i < frameKeys.length; i++ ) {
+    for( int i = 0; i < keys.length; i++ ) {
       try {
-        getFromDKV(frameKeys[i]).delete(null,fs);
+        getFromDKV("(none)", keys[i]).delete(null, fs);
       } catch( IllegalArgumentException iae ) {
-        err += iae.getMessage();
+        missing.add(keys[i].toString());
       }
     }
     fs.blockForPending();
-    if( err != null ) throw new IllegalArgumentException(err);
+    if( missing.size() != 0 ) throw new H2OKeysNotFoundArgumentException("(none)", missing.toArray(new String[missing.size()]));
     return frames;
   }
 }

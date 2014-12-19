@@ -63,6 +63,11 @@ abstract public class Iced<D extends Iced> implements Freezable, Externalizable 
    *  @return Returns the original {@link AutoBuffer} for flow-coding. */
   @Override final public D readJSON(AutoBuffer ab) { return icer().readJSON(ab,(D)this); }
 
+  /** Helper for folks that want a JSON String for this object. */
+  final public String toJsonString() {
+    return new String(this.writeJSON(new AutoBuffer()).buf());
+  }
+
   /** Returns a small dense integer, which is cluster-wide unique per-class.
    *  Useful as an array index.
    *  @return Small integer, unique per-type */

@@ -1,8 +1,10 @@
 package water.api;
 
-import water.AutoBuffer;
 import water.H2O;
+import water.H2OError;
 import water.NanoHTTPD;
+import water.exceptions.H2ONotFoundException;
+import water.exceptions.H2ORuntimeException;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
@@ -254,7 +256,7 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
-   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
+   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
@@ -498,21 +500,34 @@ public class RequestServer extends NanoHTTPD {
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
-        return getResource(uri);
+        return getResource(version, type, uri);
       else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
+        // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
         return wrap2(HTTP_OK, handle(type,route,version,parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
-    } catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
-      StringWriter sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      Log.warn(sw.toString());
-      if( e instanceof IllegalArgumentException ) // Common error for bad arguments
-        return wrap(HTTP_BADREQUEST,new HttpErrorV1(400, e.getMessage(),uri),type);
-      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HttpErrorV1(e),type);
+    }
+    catch (H2ORuntimeException e) {
+      H2OError error = e.toH2OError(uri);
+
+      Log.warn(error._dev_msg);
+      Log.warn(error._values.toJsonString());
+      Log.warn((Object[])error._stacktrace);
+
+      return wrap(error.httpStatusHeader(), Schema.schema(version, error).fillFromImpl(error), type);
+    }
+    // TODO: kill the server if someone called H2O.fail()
+    catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
+      H2OError error = new H2OError(e, uri);
+
+      Log.warn(error._dev_msg);
+      Log.warn(error._values.toJsonString());
+      Log.warn((Object[])error._stacktrace);
+
+      return wrap(error.httpStatusHeader(), Schema.schema(version, error).fillFromImpl(error), type);
     }
   }
 
@@ -535,17 +550,17 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( String http_code, Schema s, RequestType type ) {
+  private Response wrap( String http_response_header, Schema s, RequestType type ) {
     // Convert Schema to desired output flavor
     switch( type ) {
-    case json:   return new Response(http_code, MIME_JSON, new String(s.writeJSON(new AutoBuffer()).buf()));
+    case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
       throw H2O.unimpl();
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
-      return new Response(http_code, MIME_HTML, html.toString());
+      return new Response(http_response_header, MIME_HTML, html.toString());
     }
     default:
       throw H2O.fail("Unknown type to wrap(): " + type);
@@ -564,7 +579,7 @@ public class RequestServer extends NanoHTTPD {
   // cache of all loaded resources
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
   // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(String uri) {
+  private Response getResource(int version, RequestType request_type, String uri) {
     byte[] bytes = _cache.get(uri);
     if( bytes == null ) {
       // Try-with-resource
@@ -587,7 +602,9 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      return wrap(HTTP_NOTFOUND,new HttpErrorV1(400, "Resource "+uri+" not found",uri),RequestType.html);
+      throw new H2ONotFoundException("Resource " + uri + " not found",
+                                     "Resource " + uri + " not found");
+
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";

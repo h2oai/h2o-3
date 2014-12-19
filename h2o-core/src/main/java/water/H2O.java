@@ -3,7 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
-import water.api.*;
+import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
@@ -420,6 +420,7 @@ final public class H2O {
   public static long PID = -1L;
 
   // Convenience error
+  // TODO: throw an exception that will cause H2O to shut down (but tests can catch)
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }  // Internal H2O fail; only interesting thing is the stack-trace
