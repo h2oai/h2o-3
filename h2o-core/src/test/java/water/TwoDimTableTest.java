@@ -99,10 +99,10 @@ public class TwoDimTableTest extends TestUtil {
             new String[]{"R1", "R2", "R3", "R4"},
             new String[4][],
             new double[][]{
-                    new double[]{1.123,            3.42,    3200034.00001},
-                    new double[]{123.34,           emptyDouble,    1.0          },
-                    new double[]{emptyDouble,      emptyDouble,    3234.00001   },
-                    new double[]{3.33420923423423, 83.32,   3.40234234   }
+                    new double[]{1.123,            3.42,          3200034.00001},
+                    new double[]{123.34,           emptyDouble,   1.0          },
+                    new double[]{emptyDouble,      emptyDouble,   3234.00001   },
+                    new double[]{3.33420923423423, 83.32,         3.40234234   }
             }
     );
     String ts = table.toString();
@@ -141,7 +141,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run6() {
     TwoDimTable table = new TwoDimTable(
-            "All strings",
+            "Mixed",
             new String[]{"C0", "C1", "C2", "C3"},
             new String[]{"%s", "%s", "%s", "%s"},
             new String[]{"R0", "R1", "R2", "R3"},
@@ -163,7 +163,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(1, 3) == null);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"All strings\",\"colNames\":[\"C0\",\"C1\",\"C2\",\"C3\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R0\",\"R1\",\"R2\",\"R3\"],\"strings\":[[null,\"a01\",\"a02\",null],[null,null,null,null],[null,null,null,null],[\"a30\",null,null,\"a33\"]],\"doubles\":[[null,null,null,null],[null,null,1.2,null],[null,null,null,null],[null,null,null,null]]}"));
+    assertTrue(json.equals("{\"description\":\"Mixed\",\"colNames\":[\"C0\",\"C1\",\"C2\",\"C3\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R0\",\"R1\",\"R2\",\"R3\"],\"strings\":[[null,\"a01\",\"a02\",null],[null,null,null,null],[null,null,null,null],[\"a30\",null,null,\"a33\"]],\"doubles\":[[null,null,null,null],[null,null,1.2,null],[null,null,null,null],[null,null,null,null]]}"));
     Log.info(json);
 
   }
