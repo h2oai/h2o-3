@@ -1,6 +1,7 @@
 package water;
 
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -1550,7 +1551,10 @@ public final class AutoBuffer {
     return put1(']');
   }
 
-  AutoBuffer putJSON8d( double d ) { return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d)))); }
+  AutoBuffer putJSON8d( double d ) {
+    if (TwoDimTable.isEmpty(d)) return putJNULL();
+    return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d))));
+  }
   public AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
   public AutoBuffer putJSONA8d( double[] a ) {
     if( a == null ) return putJNULL();

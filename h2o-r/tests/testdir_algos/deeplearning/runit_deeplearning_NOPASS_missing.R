@@ -20,7 +20,7 @@ check.deeplearning_missing <- function(conn) {
     if (missing_ratios[i] > 0) {
       resp = data[,24]
       data_missing = h2o.insertMissingValues(data[,-24],fraction=missing_ratios[i])
-      data = cbind(data_missing, resp)
+      data = h2o.cbind(data_missing, resp)
     }
 
     # split into train + test datasets
