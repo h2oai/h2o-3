@@ -7,8 +7,10 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.TwoDimTable;
 
 public class ConfusionMatrix2 extends Iced {
+  public TwoDimTable _cm_json;
   public long[][] _arr; // [actual][predicted]
   public final double[] _classErr;
   public double _predErr;
@@ -230,7 +232,87 @@ public class ConfusionMatrix2 extends Iced {
     return sb.toString();
   }
 
+  private static String[] createConfusionMatrixHeader( long xs[], String ds[] ) {
+    String ss[] = new String[xs.length]; // the same length
+    for( int i=0; i<ds.length; i++ )
+      if( xs[i] >= 0 || (ds[i] != null && ds[i].length() > 0) && !Integer.toString(i).equals(ds[i]) )
+        ss[i] = ds[i];
+    if( ds.length == xs.length-1 && xs[xs.length-1] > 0 )
+      ss[xs.length-1] = "NA";
+    return ss;
+  }
+
   public String toASCII(String[] domain) {
-    return water.util.PrettyPrint.printConfusionMatrix(new StringBuilder(),_arr,domain,false).toString();
+    if (_cm_json == null)
+      _cm_json = toTable(domain);
+    return _cm_json.toString();
+  }
+
+  TwoDimTable toTable(String[] domain) {
+    assert (_arr != null && domain != null);
+    for (int i=0; i<_arr.length; ++i) assert(_arr.length == _arr[i].length);
+    // Sum up predicted & actuals
+    long acts [] = new long[_arr   .length];
+    long preds[] = new long[_arr[0].length];
+    for( int a=0; a<_arr.length; a++ ) {
+      long sum=0;
+      for( int p=0; p<_arr[a].length; p++ ) {
+        sum += _arr[a][p];
+        preds[p] += _arr[a][p];
+      }
+      acts[a] = sum;
+    }
+    String adomain[] = createConfusionMatrixHeader(acts , domain);
+    String pdomain[] = createConfusionMatrixHeader(preds, domain);
+    assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
+
+    String[] rowHeader = new String[adomain.length+1];
+    for (int i=0; i<adomain.length; ++i)
+      rowHeader[i] = adomain[i];
+    rowHeader[adomain.length] = "Totals";
+
+    String[] colNames = new String[pdomain.length+2];
+    for (int i=0; i<pdomain.length; ++i)
+      colNames[i] = pdomain[i];
+    colNames[colNames.length-2] = "Error";
+    colNames[colNames.length-1] = "";
+
+    String[] colFormat = new String[colNames.length];
+    for (int i=0; i<colFormat.length-1; ++i)
+      colFormat[i] = "%d";
+    colFormat[colFormat.length-2] = "%.4f";
+    colFormat[colFormat.length-1] = "= %15s";
+
+    TwoDimTable table = new TwoDimTable(
+            "Confusion Matrix (Act/Pred)", colNames, colFormat, rowHeader,
+            new String[rowHeader.length][], new double[rowHeader.length][]);
+
+    // Main CM Body
+    long terr = 0;
+    for (int a = 0; a < _arr.length; a++) {
+      if (adomain[a] == null) continue;
+      long correct = 0;
+      for (int p = 0; p < pdomain.length; p++) {
+        if (pdomain[p] == null) continue;
+        boolean onDiag = adomain[a].equals(pdomain[p]);
+        if (onDiag) correct = _arr[a][p];
+        table.set(a, p, _arr[a][p]);
+      }
+      long err = acts[a] - correct;
+      terr += err;
+      table.set(a, pdomain.length, (double) err / acts[a]);
+      table.set(a, pdomain.length + 1, String.format("%,d / %d", err, acts[a]));
+    }
+
+    // Last row of CM
+    for (int p = 0; p < pdomain.length; p++) {
+      if (pdomain[p] == null) continue;
+      table.set(adomain.length, p, preds[p]);
+    }
+    long nrows = 0;
+    for (long n : acts) nrows += n;
+    table.set(adomain.length, pdomain.length, (float) terr / nrows);
+    table.set(adomain.length, pdomain.length + 1, String.format("%,d / %,d", terr, nrows));
+    return table;
   }
 }
