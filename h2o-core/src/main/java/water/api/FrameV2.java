@@ -148,7 +148,8 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
         str_data = null;
       }
       _vec = vec;               // Better HTML display, not in the JSON
-      precision = vec.chunkForRow(0).precision();
+      if (len > 0)  // len == 0 is presumed to be a header file
+        precision = vec.chunkForRow(0).precision();
 
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
