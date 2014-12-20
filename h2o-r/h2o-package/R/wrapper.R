@@ -186,7 +186,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 # Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
 
 h2o.clusterStatus <- function(client) {
-  if(missing(client) || class(client) != "H2OConnection") stop("client must be a H2OConnection object")
+  if(!is(client, "H2OConnection")) stop("client must be a H2OConnection object")
   .h2o.__checkUp(client)
   myURL = paste0("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
