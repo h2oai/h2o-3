@@ -142,6 +142,41 @@ setMethod("show", "H2ORawData", function(object) {
 setClass("H2OW2V", representation(h2o="h2o.client", key="character", train.data="h2o.frame"))
 
 #'
+#'The h2o.2dtable object.
+#'
+#' This class represents a 2-dimensional table structure for displaying H2O output
+#' 
+setClass("h2o.2dtable", representation(description="character", data="data.frame"))
+
+setMethod("initialize", "h2o.2dtable", function(.Object, raw_json) {
+  # Merge doubles and strings (factors) (Note: R requires all entries in a column to be of same type)
+  doubles <- do.call(rbind.data.frame, raw_json$doubles)
+  strings <- do.call(rbind.data.frame, raw_json$strings)
+  idx_num <- !sapply(doubles, function(x) { is.null(x) })
+  idx_fac <- !sapply(strings, function(x) { is.null(x) })
+  
+  # Check if any of the arrays are NULL
+  if(is.data.frame(doubles) && any(idx_num)) {
+    .Object@data <- doubles
+    if(is.data.frame(strings) && any(idx_fac) && all(dim(strings) == dim(doubles)))
+      .Object@data[,idx_fac] <- strings[,idx_fac]
+  } else if(is.data.frame(strings) && any(idx_fac))
+    .Object@data <- strings
+  else
+    .Object@data <- NULL
+  
+  # Set row/column names only if specified
+  if(!is.null(.Object@data)) {
+    if(!is.null(raw_json$colNames)) colnames(.Object@data) <- raw_json$colNames
+    if(!is.null(raw_json$rowHeaders)) rownames(.Object@data) <- raw_json$rowHeaders
+  }
+  .Object@description <- raw_json$description
+  .Object
+})
+
+setMethod("show", "h2o.2dtable", function(object) { cat(object@description, "\n"); print(object@data) })
+
+#'
 #' The h2o.model object.
 #'
 #' This virtual class represents a model built by H2O.
@@ -531,7 +566,8 @@ setMethod("show", "H2OKMeansModel", function(object) {
 
     model = object@model
     cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
-    cat("\n\nCluster means:\n"); print(model$clusters)
+    # cat("\n\nCluster means:\n"); print(model$clusters)
+    cat("\n\n", model$centers@description, "\n", sep = ""); print(model$centers@data)
     cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
     cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2), "%)\n")
 #    cat("\n\nCluster means:\n"); print(model$centers)

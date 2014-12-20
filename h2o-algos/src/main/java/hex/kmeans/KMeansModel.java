@@ -4,6 +4,7 @@ import hex.Model;
 import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
+import water.util.TwoDimTable;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
@@ -23,13 +24,11 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Names of features clustered upon
-    public String[] _names;
-
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
     // is used during the building process, the *builders* clusters are standardized).
     public double[/*k*/][/*features*/] _clusters;
+    public TwoDimTable _centers;  // For JSON display purposes of _clusters
 
     // Rows per cluster
     public long[/*k*/] _rows;

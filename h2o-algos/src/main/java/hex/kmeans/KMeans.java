@@ -11,7 +11,9 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
+import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -184,8 +186,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
 
           // Fill in the model; destandardized centers
-          model._output._names = _train.names();
           model._output._clusters = destandardize(task._cMeans, _ncats, means, mults);
+          String[] rowHeaders = new String[_parms._k];
+          for(int i = 0; i < _parms._k; i++)
+            rowHeaders[i] = String.valueOf(i+1);
+          model._output._centers = new TwoDimTable("Cluster centers:", _train.names(), null, rowHeaders,
+                  new String[_parms._k][], model._output._clusters);
           model._output._rows = task._rows;
           model._output._withinmse = task._cSqr;
           double ssq = 0;       // sum squared error
@@ -195,7 +201,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
           model._output._avgwithinss = ssq/_train.numRows(); // mse total
 
-          // Sum-of-square distance from grand mean (since we auto-standardize data, this is just the origin)
+          // Sum-of-square distance from grand mean (since we auto-standardize the data, this is just the origin)
           if(_parms._k == 1)
             model._output._avgss = model._output._avgwithinss;
           else {
