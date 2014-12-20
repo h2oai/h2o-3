@@ -1,4 +1,4 @@
-import csv, requests, urllib
+import csv, requests, urllib, uuid
 
 ###############################################################################
 # Frame represents a 2-D array of data, uniform in each column.  The data may
@@ -12,7 +12,7 @@ class H2OFrame(object):
       if not H2OCONN: raise ValueError("No open h2o connection")
       rawkey = H2OCONN.ImportFile(remoteFName)
       setup  = H2OCONN.ParseSetup(rawkey)
-      parse  = H2OCONN.Parse(setup,"PY_TMP")
+      parse  = H2OCONN.Parse(setup,py_tmp_key())
       cols   = parse['columnNames']
       rows   = parse['rows']
       veckeys= parse['vecKeys']
@@ -37,7 +37,12 @@ class H2OFrame(object):
     else: raise ValueError("Frame made from CSV file or an array of Vecs only")
 
   # Print [col, cols...]
-  def __str__(self): return self._vecs.__repr__()
+  def show(self): 
+    s = ""
+    for vec in self._vecs: s += vec.show()
+    return s
+  # Comment out to help in debugging
+  def __str__(self): return self.show()
 
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
@@ -89,12 +94,17 @@ class Vec(object):
     try: __x__ = float(data)
     except ValueError: pass
     self._expr._data.append(__x__)
+    self._expr._len+=1
 
   # Print self
-  def __repr__(self): return self._name+" "+self._expr.__str__()
+  def show(self): return self._name+" "+self._expr.show()
+  # Comment out to help in debugging
+  def __str__(self): return self.show()
 
   # Basic indexed or sliced lookup
-  def __getitem__(self,i): return Expr("[",self,Expr(i));
+  def __getitem__(self,i):
+    e = Expr(i)
+    return Expr("[",self,e,length=len(e));
 
   # Basic (broadening) addition
   def __add__(self,i):
@@ -109,7 +119,7 @@ class Vec(object):
 
   def __radd__(self,i): return self+i  # Add is associative
 
-  def mean(self): return Expr("mean",self._expr,None)
+  def mean(self): return Expr("mean",self._expr,None,length=1)
 
   # Number of rows
   def __len__(self): return len(self._expr)
@@ -152,7 +162,7 @@ class Expr(object):
     elif self.isLocal():
       self._len = len(self._data) if isinstance(self._data,list) else 1
     else:
-      self._len = len(self._left)
+      self._len = length if length else len(self._left)
     assert self._len is not None
 
   def isLocal   (self): return isinstance(self._data,(list,int,float))
@@ -172,10 +182,15 @@ class Expr(object):
             " = "+str(type(self._data))+")")
 
   # Eval and print
-  def __repr__(self):
-    # Note that Big Data results are capped at first 200 columns, first 100 rows.
-    # Here we do a dumb print of that result.
-    return self.eager().__str__()
+  def show(self):
+    self.eager()
+    if isinstance(self._data,unicode):
+      j = H2OCONN.Frame(self._data)
+      data = j['frames'][0]['columns'][0]['data']
+      return str(data)
+    return self._data.__str__()
+  # Comment out to help in debugging
+  def __str__(self): return self.show()
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i): 
@@ -208,16 +223,16 @@ class Expr(object):
   def eager(self):
     if self.isComputed(): return self._data
     # Gather the computation path for remote work, or doit locally for local work
-    global _CMD; assert not _CMD;  
+    global _CMD; assert not _CMD;  assert not self._name.startswith("TMP_")
     _CMD = "";                  # Begin gathering rapids commands
     self._doit();               # Execute the command
     cmd = _CMD;  _CMD = None;   # Stop  gathering rapids commands
     if self.isLocal():  return self._data # Local computation, all done
-
-    # Remote computation - ship Rapids over wire, bring the result local
+    # Remote computation - ship Rapids over wire, assigning key to result
     j = H2OCONN.Rapids(cmd)
-    self._data = j['head'] if j['num_rows'] else j['scalar']
-    assert self._data is not None
+    if isinstance(self._data,unicode): pass  # Big Data Key is the result
+    # Small data result pulled locally
+    else: self._data = j['head'] if j['num_rows'] else j['scalar']
     return self._data
 
   # External API for eager; called by all top-level demanders (e.g. print)
@@ -226,39 +241,49 @@ class Expr(object):
     if self.isComputed(): return
     left = self._left
     rite = self._rite
-    if isinstance(rite,Expr): rite._doit()
     global _CMD
+    # See if this is not a temp and not a scalar; if so it needs a name
+    py_tmp = not self._name.startswith("TMP_") and self._len > 1
+    if py_tmp:
+      self._data = py_tmp_key() # Top-level key/name assignment
+      _CMD += "(= !"+self._data+" "
     _CMD += "("+self._op+" "
     if left: 
       if left.isPending():  left._doit()
-      elif isinstance(left._data,(int,float)): _CMD += "#"+str(left)
-      else: _CMD += "%"+str(left._data)
+      elif isinstance(left._data,(int,float)): _CMD += "#"+str(left._data)
+      elif isinstance(left._data,unicode):     _CMD += "%"+str(left._data)
+      else:                                    pass # Locally computed small data
     _CMD += " "
     if rite: 
       if rite.isPending():  rite._doit()
-      elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite)
-      else: _CMD += "%"+str(rite._data)
+      elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite._data)
+      elif isinstance(rite._data,unicode):     _CMD += "%"+str(rite._data)
+      else:                                    pass # Locally computed small data
 
     if self._op == "+":
       if isinstance(left._data,(int,float)):
-        if isinstance(rite._data,(int,float)):   self._data = left+rite
-        elif rite.isLocal():                     self._data = [left+x for x in rite._data]
-        else:                                    pass
+        if isinstance(rite._data,(int,float)):    self._data = left+rite
+        elif rite.isLocal():                      self._data = [left+x for x in rite._data]
+        else:                                     pass
       elif isinstance(rite._data,(int,float)):
-        if left.isLocal():                       self._data = [x+rite for x in left._data]
-        else:                                    pass
+        if left.isLocal():                        self._data = [x+rite for x in left._data]
+        else:                                     pass
       else:
-        if left.isLocal():         self._data = [x+y for x,y in zip(left._data,rite._data)]
-        else:                                    pass
+        if   left.isLocal () and rite.isLocal (): self._data = [x+y for x,y in zip(left._data,rite._data)]
+        elif (left.isRemote() or left._data is None) and \
+             (rite.isRemote() or rite._data is None): pass
+        else: raise NotImplementedError
     elif self._op == "[":
-      if left.isLocal():                               self._data = left._data[rite._data]
-      else:                                      _CMD += " #0"
+      if left.isLocal(): self._data = left._data[rite._data]
+      else: _CMD += " #0"       # Rapids column zero lookup
     elif self._op == "mean":
-      if left.isLocal():                      self._data = sum(left._data)/len(left._data)
-      else:                                      _CMD += " #0 %TRUE"
+      if left.isLocal(): self._data = sum(left._data)/len(left._data)
+      else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     else:
       raise NotImplementedError
     _CMD += ")"
+    if py_tmp:
+      _CMD += ")"
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
     return
@@ -339,6 +364,9 @@ class H2OConnection(object):
   def Rapids(self,expr):
     return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
 
+  def Frame(self,key):
+    return self.doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
+
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):
     r = requests.get(url)
@@ -375,3 +403,6 @@ def get_human_readable_size(num):
     i += 1
     rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
   return '%s %s' % (rounded_val, exp_str[i][1])
+
+# Return a unique h2o key obvious from python
+def py_tmp_key():  return unicode("py"+str(uuid.uuid4()))

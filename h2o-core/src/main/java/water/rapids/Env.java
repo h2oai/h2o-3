@@ -193,8 +193,11 @@ public class Env extends Iced {
     if (_refcnt.get(v) == null && !_locked.contains(v._key))  {
       if (_local_locked != null && _local_locked.contains(v._key)) return false;
       for (Key kg : _global_frames) {
-        if ( Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) {
-          return false;
+        Keyed keyed = DKV.getGet(kg);
+        if (keyed instanceof Frame) {
+          if (Arrays.asList(((Frame)keyed).keys()).contains(v._key)) return false;
+        } else if (keyed instanceof Vec) {
+          if (v._key == keyed._key) return false;
         }
       }
       removeVec(v, null);
@@ -205,10 +208,11 @@ public class Env extends Iced {
     if (cnt <= 0 && !_locked.contains(v._key) && DKV.get(v._key) != null) {
       for (Key kg : _global_frames) {
         if (DKV.get(kg) != null) {
-          if (DKV.get(kg).get() instanceof Frame) {
-            if (Arrays.asList(((Frame)DKV.get(kg).get()).keys()).contains(v._key)) return false;
-          } else if (DKV.get(kg).get() instanceof Vec) {
-            if (v._key == ((Vec) DKV.get(kg).get())._key) return false;
+          Keyed keyed = DKV.getGet(kg);
+          if (keyed instanceof Frame) {
+            if (Arrays.asList(((Frame)keyed).keys()).contains(v._key)) return false;
+          } else if (keyed instanceof Vec) {
+            if (v._key == keyed._key) return false;
           }
         }
       }
