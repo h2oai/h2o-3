@@ -33,8 +33,8 @@
 #' localH2O = h2o.init()
 #'
 #' # Run regression GBM on australia.hex data
-#' ausPath = system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex = h2o.importFile(localH2O, path = ausPath)
+#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
+#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
 #' independent <- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst", 
 #'                  "maxsoilmoist", "Max_czcs")
 #' dependent <- "runoffnew"

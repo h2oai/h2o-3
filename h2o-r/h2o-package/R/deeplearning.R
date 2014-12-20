@@ -60,13 +60,13 @@
 #' @seealso \code{\link{predict.H2ODeepLearningModel}} for prediction.
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' localH2O <- h2o.init()
 #'
-#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' indep <- names(iris.hex)[1:4]
 #' dep <- names(iris.hex)[5]
-#' iris.dl = h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
+#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
 
 h2o.deeplearning <- function(x, y, training_frame, key = "",
                              override_with_best_model,

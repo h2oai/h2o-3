@@ -9,59 +9,49 @@
 #   GET & POST
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__REST_API_VERSION = 3
+.h2o.__REST_API_VERSION <- 3L
 
 .skip_if_not_developer <- function() {
-  if (Sys.getenv("USER") %in% c("tomk", "amy")) {
+  if (Sys.getenv("USER") %in% c("tomk", "amy"))
     return()
-  }
-
   skip("Not a developer")
 }
 
 .h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
-  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
-  if (missing(urlSuffix)) stop()
-  stopifnot(class(urlSuffix) == "character")
+  stopifnot(is(conn, "h2o.client"))
+  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
+  stopifnot(is.character(urlSuffix))
 
-  if (missing(h2oRestApiVersion) || (h2oRestApiVersion < 0)) {
-    url = sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
-  } else {
-    url = sprintf("http://%s:%s/%d/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
-  }
-
-  return(url)
+  if (missing(h2oRestApiVersion) || (h2oRestApiVersion < 0L))
+    sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
+  else
+    sprintf("http://%s:%s/%d/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
 .h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
-  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
-  if (missing(urlSuffix)) stop()
-  stopifnot(class(urlSuffix) == "character")
-  if (! missing(parms)) { stopifnot(class(parms) == "list") }
-  if (missing(parms)) {
+  stopifnot(is(conn, "h2o.client"))
+  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
+  stopifnot(is.character(urlSuffix))
+  if (missing(parms))
     parms = list()
-  }
-  if (missing(method)) stop()
-  stopifnot(class(method) == "character")
-  if (! missing(fileUploadInfo)) { stopifnot(class(fileUploadInfo) == "FileUploadInfo") }
+  else
+    stopifnot(is.list(parms))
+  stopifnot(is.character(method))
+  if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
   url = .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
 
   queryString = ""
-  i = 1
+  i = 1L
   while (i <= length(parms)) {
     name = names(parms)[i]
     value = parms[i]
     escaped_value = curlEscape(value)
-    if (i > 1) {
+    if (i > 1L) {
       queryString = sprintf("%s&", queryString)
     }
     queryString = sprintf("%s%s=%s", queryString, name, escaped_value)
-    i = i + 1
+    i = i + 1L
   }
 
   postBody = ""
@@ -69,21 +59,19 @@
     # This is the typical case.
     if (method == "POST") {
       postBody = queryString
-    } else {
-      if (nchar(queryString) > 0) {
-        url = sprintf("%s?%s", url, queryString)
-      }
+    } else if (nzchar(queryString)) {
+      url = sprintf("%s?%s", url, queryString)
     }
   } else {
     stopifnot(method == "POST")
-    if (nchar(queryString) > 0) {
+    if (nzchar(queryString)) {
       url = sprintf("%s?%s", url, queryString)
     }
   }
 
   .__curlError = FALSE
   .__curlErrorMessage = ""
-  httpStatusCode = -1
+  httpStatusCode = -1L
   httpStatusMessage = ""
   payload = ""
 
@@ -96,7 +84,7 @@
     .h2o.logRest(sprintf("postBody: %s", postBody))
   }
 
-  beginTimeSeconds = as.numeric(proc.time())[3]
+  beginTimeSeconds = as.numeric(proc.time())[3L]
 
   if (method == "GET") {
     h = basicHeaderGatherer()
@@ -134,7 +122,7 @@
     stop(message)
   }
 
-  endTimeSeconds = as.numeric(proc.time())[3]
+  endTimeSeconds = as.numeric(proc.time())[3L]
   deltaSeconds = endTimeSeconds - beginTimeSeconds
   deltaMillis = deltaSeconds * 1000.0
 
@@ -150,15 +138,13 @@
     .h2o.logRest("")
   }
 
-  rv = list(url = url,
-            postBody = postBody,
-            curlError = .__curlError,
-            curlErrorMessage = .__curlErrorMessage,
-            httpStatusCode = httpStatusCode,
-            httpStatusMessage = httpStatusMessage,
-            payload = payload)
-
-  return(rv)
+  list(url = url,
+       postBody = postBody,
+       curlError = .__curlError,
+       curlErrorMessage = .__curlErrorMessage,
+       httpStatusCode = httpStatusCode,
+       httpStatusMessage = httpStatusMessage,
+       payload = payload)
 }
 
 #' Perform a low-level HTTP GET operation on an H2O instance
@@ -182,8 +168,8 @@
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
 h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "GET")
-  return(rv)
+  .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                 parms = parms, method = "GET")
 }
 
 #' Perform a low-level HTTP POST operation on an H2O instance
@@ -208,25 +194,22 @@ h2o.doRawGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return A list object as described above
 h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
-  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
-  return(rv)
+  .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                 parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
 }
 
 .h2o.doREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
-  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
-  if (missing(urlSuffix)) stop()
-  stopifnot(class(urlSuffix) == "character")
-  if (missing(method)) stop()
-  stopifnot(class(method) == "character")
+  stopifnot(is(conn, "h2o.client"))
+  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
+  stopifnot(is.character(urlSuffix))
+  stopifnot(is.character(method))
 
   if (missing(h2oRestApiVersion)) {
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
 
-  rv = .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method, fileUploadInfo)
-  return(rv)
+  .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                 parms = parms, method = method, fileUploadInfo)
 }
 
 #' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
@@ -237,8 +220,8 @@ h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadI
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
 h2o.doGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "GET")
-  return(rv)
+  .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+              parms = parms, method = "GET")
 }
 
 #' Just like doRawPOST but fills in the default h2oRestApiVersion if none is provided
@@ -249,21 +232,19 @@ h2o.doGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
 h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST")
-  return(rv)
+  .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+              parms = parms, method = "POST")
 }
 
 .h2o.doSafeREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
-  if (! missing(h2oRestApiVersion)) { stopifnot(class(h2oRestApiVersion) == "numeric") }
-  if (missing(urlSuffix)) stop()
-  stopifnot(class(urlSuffix) == "character")
-  if (missing(method)) stop()
-  stopifnot(class(method) == "character")
-  if (! missing(fileUploadInfo)) { stopifnot(class(fileUploadInfo) == "FileUploadInfo") }
+  stopifnot(is(conn, "h2o.client"))
+  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
+  stopifnot(is.character(urlSuffix))
+  stopifnot(is.character(method))
+  if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
-  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = method, fileUploadInfo = fileUploadInfo)
+  rv = .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                   parms = parms, method = method, fileUploadInfo = fileUploadInfo)
 
   if (rv$curlError) {
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
@@ -271,7 +252,7 @@ h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
     stop(sprintf("Unexpected HTTP Status code: %d %s (url = %s)", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
   }
 
-  return(rv$payload)
+  rv$payload
 }
 
 #' Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster.
@@ -286,8 +267,8 @@ h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param parms (Optional) Parameters to include in the request
 #' @return The raw response payload as a character vector
 h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
-  rv = .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "GET")
-  return(rv)
+  .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                  parms = parms, method = "GET")
 }
 
 #' Perform a safe (i.e. error-checked) HTTP POST request to an H2O cluster.
@@ -303,8 +284,8 @@ h2o.doSafeGET <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return The raw response payload as a character vector
 h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
-  rv = .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix, parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
-  return(rv)
+  .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
 }
 
 #----------------------------------------
@@ -315,20 +296,18 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #
 # @return JSON object converted from the response payload
 .h2o.__remoteSend <- function(conn, page, method = "GET", ..., .params = list()) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
-  stopifnot(class(method) == "character")
-  stopifnot(class(.params) == "list")
+  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is.character(method))
+  stopifnot(is.list(.params))
   
   .h2o.__checkConnectionHealth(conn)
 
-  if (length(.params) == 0) {
+  if (length(.params) == 0L) {
     .params <- list(...)
   }
 
   payload = .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
-  res = fromJSON(payload)
-  return(res)
+  fromJSON(payload)
 }
 
 
@@ -342,18 +321,11 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #' @return TRUE if the cluster is up; FALSE otherwise
 h2o.clusterIsUp <- function(conn) {
   if (missing(conn)) conn <- .retrieveH2O(parent.frame())
-  if (class(conn) != "h2o.client") stop("client must be a h2o.client object")
+  if (!is(conn, "h2o.client")) stop("conn must be a h2o.client object")
 
   rv = h2o.doRawGET(conn = conn, urlSuffix = "")
 
-  if (rv$curlError) {
-    return(FALSE)
-  }
-  if (rv$httpStatusCode != 200) {
-    return(FALSE)
-  }
-
-  return(TRUE)
+  !rv$curlError && (rv$httpStatusCode == 200)
 }
 
 #' Print H2O cluster info
@@ -361,35 +333,31 @@ h2o.clusterIsUp <- function(conn) {
 #' @param conn H2O connection object
 h2o.clusterInfo <- function(conn) {
   if(missing(conn)) conn <- .retrieveH2O(parent.frame())
-  stopifnot(class(conn) == "h2o.client")
+  stopifnot(is(conn, "h2o.client"))
   if(! h2o.clusterIsUp(conn)) {
     ip = conn@ip
     port = conn@port
-    message = sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn))
-    stop(message)
+    stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res = NULL
-  {
-    res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
-    nodeInfo <- res$nodes
-    numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
+  res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  nodeInfo <- res$nodes
+  numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
-    if (numCPU == 0) {
-      # If the cloud has not been up for a few seconds yet, then query again.
-      # Sometimes the heartbeat info with cores and memory has not had a chance
-      # to post its information yet.
-      threeSeconds = 3
-      Sys.sleep(threeSeconds)
-      res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
-    }
+  if (numCPU == 0L) {
+    # If the cloud has not been up for a few seconds yet, then query again.
+    # Sometimes the heartbeat info with cores and memory has not had a chance
+    # to post its information yet.
+    threeSeconds = 3L
+    Sys.sleep(threeSeconds)
+    res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   }
 
   nodeInfo <- res$nodes
   maxMem   <- sum(sapply(nodeInfo,function(x) as.numeric(x['max_mem']))) / (1024 * 1024 * 1024)
   numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
   allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
-  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy']))==TRUE)
+  clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
   cat("R is connected to H2O cluster:\n")
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")
@@ -401,7 +369,7 @@ h2o.clusterInfo <- function(conn) {
   cat("    H2O cluster allowed cores: ", allowedCPU, "\n")
   cat("    H2O cluster healthy:       ", clusterHealth, "\n")
 
-  cpusLimited = sapply(nodeInfo, function(x) { x[['num_cpus']] > 1 && x[['nthreads']] != 1 && x[['cpus_allowed']] == 1 })
+  cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
   if(any(cpusLimited))
     warning("Number of CPU cores allowed is limited to 1 on some nodes.  To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
 }
@@ -417,40 +385,36 @@ h2o.clusterInfo <- function(conn) {
       ip = conn@ip
       port = conn@port
       warning(rv$curlErrorMessage)
-      message = sprintf("H2O connection has been severed.  Cannot connect to instance at %s", h2o.getBaseURL(conn))
-      stop(message)
+      stop(sprintf("H2O connection has been severed.  Cannot connect to instance at %s", h2o.getBaseURL(conn)))
     }
 
-    if (rv$httpStatusCode != 200) {
+    if (rv$httpStatusCode != 200L) {
       ip = conn@ip
       port = conn@port
-      message = sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage)
-      warning(message)
-      message = sprintf("H2O connection has been severed.  Instance unhealthy at %s", h2o.getBaseURL(conn))
-      stop(message)
+      warning(sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
+      stop(sprintf("H2O connection has been severed.  Instance unhealthy at %s", h2o.getBaseURL(conn)))
     }
 
-    tmp = fromJSON(rv$payload)
-    return(tmp)
+    fromJSON(rv$payload)
   }
 
   checker <- function(node, conn) {
     status <- as.logical(node$healthy)
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
-    nport <- unlist(strsplit(node$h2o$node, ":"))[2]
+    nport <- unlist(strsplit(node$h2o$node, ":"))[2L]
     if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 10000) {
-        Sys.sleep(5)
+        Sys.sleep(5L)
         invisible(lapply(grabCloudStatus(conn)$nodes, checker, conn))
     }
-    return(0)
+    0L
   }
 
   cloudStatus <- grabCloudStatus(conn)
-  if(cloudStatus$bad_nodes != 0) .h2o.__cloudSick(node_name = NULL, conn = conn)
+  if(cloudStatus$bad_nodes != 0L) .h2o.__cloudSick(node_name = NULL, conn = conn)
   lapply(cloudStatus$nodes, checker, conn)
-  return(0)
+  0L
 }
 
 #' Helper method to issue a warning.
@@ -473,10 +437,13 @@ h2o.clusterInfo <- function(conn) {
 #'
 #' Poll the H2O server with the current job key `job_key` for completion.
 .h2o.__waitOnJob <- function(client, job_key, pollInterval = 1, progressBar = TRUE) {
-  if(!is.character(job_key) || nchar(job_key) == 0) stop("job_key must be a non-empty string")
+  if(!is.character(job_key) || !nzchar(job_key)) stop("job_key must be a non-empty string")
   if(progressBar) {
-    pb <- txtProgressBar(style = 3)
-    tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) { Sys.sleep(pollInterval); setTxtProgressBar(pb, prog$prog) },
+    pb <- txtProgressBar(style = 3L)
+    tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) {
+               Sys.sleep(pollInterval)
+               setTxtProgressBar(pb, prog$prog)
+             },
              error = function(e) { cat("\nPolling fails:\n"); print(e) },
              finally = setTxtProgressBar(pb, 1.0))
     if (!prog$DONE) {
@@ -492,25 +459,23 @@ h2o.clusterInfo <- function(conn) {
 #'
 #' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
-  if(missing(client)) stop("client is missing!")
-  if(class(client) != "h2o.client") stop("client must be a h2o.client object")
-  if(missing(keyName)) stop("keyName is missing!")
-  if(!is.character(keyName) || nchar(keyName) == 0) stop("keyName must be a non-empty string")
+  if(!is(client, "h2o.client")) stop("client must be a h2o.client object")
+  if(!is.character(keyName) || !nzchar(keyName)) stop("keyName must be a non-empty string")
 
   page <- paste0('Jobs.json/', keyName)
   res <- .h2o.__remoteSend(client, page)
 
   res <- res$jobs
-  if(length(res) == 0) stop("No jobs found in queue")
+  if(length(res) == 0L) stop("No jobs found in queue")
   prog <- list(prog = numeric(0), DONE = FALSE)
   jobRes <- NULL
-  for(i in 1:length(res)) {
+  for(i in seq_len(length(res))) {
     if(res[[i]]$key$name == keyName)
       jobRes <- res[[i]]
   }
   if(is.null(jobRes)) stop("Job key ", keyName, " not found in job queue")
   if(!is.null(jobRes$status) && jobRes$status == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
-  else if(!is.null(jobRes$exception) && jobRes$exception == 1) stop(jobRes$status)
+  else if(!is.null(jobRes$exception) && jobRes$exception == 1L) stop(jobRes$status)
   prog$prog <- jobRes$progress
   if (jobRes$status == "DONE") prog$DONE <- TRUE
   prog
@@ -521,9 +486,9 @@ h2o.clusterInfo <- function(conn) {
 .h2o.__cancelJob <- function(client, keyName) {
   res = .h2o.__remoteSend(client, .h2o.__JOBS)
   res = res$jobs
-  if(length(res) == 0) stop("No jobs found in queue")
+  if(length(res) == 0L) stop("No jobs found in queue")
   prog = NULL
-  for(i in 1:length(res)) {
+  for(i in seq_len(length(res))) {
     if(res[[i]]$key$name == keyName) {
       prog = res[[i]]; break
     }
@@ -540,7 +505,7 @@ h2o.clusterInfo <- function(conn) {
 #' Check if any jobs are still running.
 .h2o.__allDone <- function(client) {
   res = .h2o.__remoteSend(client, .h2o.__JOBS)
-  notDone = lapply(res$jobs, function(x) { !(x$progress == -1.0 || x$cancelled) })
+  notDone = lapply(res$jobs, function(x) !(x$progress == -1.0 || x$cancelled))
   !any(unlist(notDone))
 }
 
@@ -549,7 +514,7 @@ h2o.clusterInfo <- function(conn) {
 .h2o.__pollAll <- function(client, timeout) {
   start = Sys.time()
   while(!.h2o.__allDone(client)) {
-    Sys.sleep(1)
+    Sys.sleep(1L)
     if(as.numeric(difftime(Sys.time(), start)) > timeout)
       stop("Timeout reached! Check if any jobs have frozen in H2O.")
   }
@@ -557,21 +522,20 @@ h2o.clusterInfo <- function(conn) {
 
 #------------------------------------ Utilities ------------------------------------#
 .h2o.__checkForFactors <- function(object) {
-  if(class(object) != "h2o.frame") return(FALSE)
-  h2o.anyFactor(object)
+  if(is(object, "h2o.frame"))
+    h2o.anyFactor(object)
+  else
+    FALSE
 }
 
 h2o.getBaseURL <- function(conn) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
+  stopifnot(is(conn, "h2o.client"))
 
-  rv = .h2o.calcBaseURL(conn = conn, urlSuffix = "")
-  return(rv)
+  .h2o.calcBaseURL(conn = conn, urlSuffix = "")
 }
 
 h2o.getVersion <- function(conn) {
-  if (missing(conn)) stop()
-  stopifnot(class(conn) == "h2o.client")
+  stopifnot(is(conn, "h2o.client"))
 
   res = .h2o.__remoteSend(conn, .h2o.__CLOUD)
   res$version
@@ -585,10 +549,7 @@ h2o.getVersion <- function(conn) {
   milliseconds = (seconds-trunc(seconds))*1000
   durationVector = trunc(c(days,hours,minutes,seconds,milliseconds))
   names(durationVector) = c("days","hours","minutes","seconds","milliseconds")
-  if(length(durationVector[durationVector > 0]) > 1)
-    showVec <- durationVector[durationVector > 0][1:2]
-  else
-    showVec <- durationVector[durationVector > 0]
+  showVec <- head(durationVector[durationVector > 0], 2L)
   x1 = as.numeric(showVec)
   x2 = names(showVec)
   paste(x1,x2)
@@ -598,8 +559,8 @@ h2o.getVersion <- function(conn) {
 
 .h2o.__formatError <- function(error,prefix="  ") {
   result = ""
-  items = strsplit(as.character(error),"\n")[[1]];
-  for (i in 1:length(items))
+  items = strsplit(as.character(error),"\n")[[1L]]
+  for (i in seq_len(length(items)))
     result = paste0(result,prefix,items[i],"\n")
   result
 }

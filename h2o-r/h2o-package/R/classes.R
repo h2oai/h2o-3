@@ -105,7 +105,7 @@ setClass("h2o.frame",
 
 setMethod("show", "h2o.frame", function(object) {
   print(object@h2o)
-  cat("Key: " %p0% object@key, "\n")
+  cat("Key:", object@key, "\n")
   print(head(object))
   invisible(h2o.gc())
 })
@@ -185,15 +185,16 @@ setClass("H2OPerfModel", representation(cutoffs="numeric", measure="numeric", pe
 
 #' @rdname H2OPerfModel-class
 setMethod("show", "H2OPerfModel", function(object) {
-  model = object@model
-  tmp = t(data.frame(model[-length(model)]))
+  model <- object@model
+  tmp <- t(data.frame(model[-length(model)]))
 
   if(object@perf == "mcc")
-    criterion = "MCC"
+    criterion <- "MCC"
   else
-    criterion = paste(toupper(substring(object@perf, 1, 1)), substring(object@perf, 2), sep = "")
-  rownames(tmp) = c("AUC", "Gini", paste("Best Cutoff for", criterion), "F1", "Accuracy", "Error", "Precision", "Recall", "Specificity", "MCC", "Max per Class Error")
-  colnames(tmp) = "Value"; print(tmp)
+    criterion <- paste(toupper(substring(object@perf, 1L, 1L)), substring(object@perf, 2L), sep = "")
+  rownames(tmp) <- c("AUC", "Gini", paste("Best Cutoff for", criterion), "F1", "Accuracy", "Error",
+                     "Precision", "Recall", "Specificity", "MCC", "Max per Class Error")
+  colnames(tmp) <- "Value"; print(tmp)
   cat("\n\nConfusion matrix:\n"); print(model$confusion)
 })
 
@@ -213,32 +214,32 @@ setMethod("show", "H2OGLMModel", function(object) {
     cat("GLM2 Model Key:", object@key)
 
     model <- object@model
-    cat("\n\nCoefficients:\n"); print(round(model$coefficients,5))
+    cat("\n\nCoefficients:\n"); print(round(model$coefficients,5L))
     if(!is.null(model$normalized_coefficients)) {
-        cat("\nNormalized Coefficients:\n"); print(round(model$normalized_coefficients,5))
+        cat("\nNormalized Coefficients:\n"); print(round(model$normalized_coefficients,5L))
     }
     cat("\nDegrees of Freedom:", model$df.null, "Total (i.e. Null); ", model$df.residual, "Residual")
-    cat("\nNull Deviance:    ", round(model$null.deviance,1))
-    cat("\nResidual Deviance:", round(model$deviance,1), " AIC:", round(model$aic,1))
-    cat("\nDeviance Explained:", round(1-model$deviance/model$null.deviance,5), "\n")
-    # cat("\nAvg Training Error Rate:", round(model$train.err,5), "\n")
+    cat("\nNull Deviance:    ", round(model$null.deviance,1L))
+    cat("\nResidual Deviance:", round(model$deviance,1L), " AIC:", round(model$aic,1L))
+    cat("\nDeviance Explained:", round(1-model$deviance/model$null.deviance,5L), "\n")
+    # cat("\nAvg Training Error Rate:", round(model$train.err,5L), "\n")
 
     family <- model$params$family$family
     if(family == "binomial") {
-        cat("AUC:", round(model$auc,5), " Best Threshold:", round(model$best_threshold,5))
+        cat("AUC:", round(model$auc,5L), " Best Threshold:", round(model$best_threshold,5L))
         cat("\n\nConfusion Matrix:\n"); print(model$confusion)
     }
 
-    if(length(object@xval) > 0) {
+    if(length(object@xval) > 0L) {
         cat("\nCross-Validation Models:\n")
         if(family == "binomial") {
             modelXval <- t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$auc, 1-x@model$deviance/x@model$null.deviance) }))
-            colnames(modelXval) = c("Nonzeros", "AUC", "Deviance Explained")
+            colnames(modelXval) <- c("Nonzeros", "AUC", "Deviance Explained")
         } else {
             modelXval <- t(sapply(object@xval, function(x) { c(x@model$rank-1, x@model$aic, 1-x@model$deviance/x@model$null.deviance) }))
-            colnames(modelXval) = c("Nonzeros", "AIC", "Deviance Explained")
+            colnames(modelXval) <- c("Nonzeros", "AIC", "Deviance Explained")
         }
-        rownames(modelXval) <- paste("Model", 1:nrow(modelXval))
+        rownames(modelXval) <- paste("Model", seq_len(nrow(modelXval)))
         print(modelXval)
     }
 })
@@ -256,27 +257,27 @@ setClass("H2OGLMModelList", representation(models="list", best_model="numeric", 
 #' @rdname H2OGLMModelList-class
 setMethod("summary","H2OGLMModelList", function(object) {
     summary <- NULL
-    if(object@models[[1]]@model$params$family$family == 'binomial'){
+    if(object@models[[1L]]@model$params$family$family == 'binomial'){
         for(m in object@models) {
-            model = m@model
+            model <- m@model
             if(is.null(summary)) {
-                summary = t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2),round(model$auc,2))))
+                summary <- t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2L),round(model$auc,2L))))
             } else {
-                summary = rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2),round(model$auc,2)))
+                summary <- rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2L),round(model$auc,2L)))
             }
         }
-        summary = cbind(1:nrow(summary),summary)
+        summary <- cbind(seq_len(nrow(summary)),summary)
         colnames(summary) <- c("id","lambda","predictors","dev.ratio"," AUC ")
     } else {
         for(m in object@models) {
-            model = m@model
+            model <- m@model
             if(is.null(summary)) {
-                summary = t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2))))
+                summary <- t(as.matrix(c(model$lambda, model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2L))))
             } else {
-                summary = rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2)))
+                summary <- rbind(summary,c(model$lambda,model$df.null-model$df.residual,round((1-model$deviance/model$null.deviance),2L)))
             }
         }
-        summary = cbind(1:nrow(summary),summary)
+        summary <- cbind(seq_len(nrow(summary)),summary)
         colnames(summary) <- c("id","lambda","predictors","explained dev")
     }
     summary
@@ -299,37 +300,35 @@ setClass("H2ODeepLearningModel", representation(valid="h2o.frame", xval="list"),
 
 #' @rdname H2ODeepLearningModel-class
 setMethod("show", "H2ODeepLearningModel", function(object) {
-#  print(object@data@h2o)
-#  cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Deep Learning Model Key:", object@key)
 
- model = object@model
- cat("\n\nTraining classification error:", model$train_class_error)
- cat("\nTraining mean square error:", model$train_sqr_error)
- cat("\n\nValidation classification error:", model$valid_class_error)
- cat("\nValidation square error:", model$valid_sqr_error)
+  model <- object@model
+  cat("\n\nTraining classification error:", model$train_class_error)
+  cat("\nTraining mean square error:", model$train_sqr_error)
+  cat("\n\nValidation classification error:", model$valid_class_error)
+  cat("\nValidation square error:", model$valid_sqr_error)
 
- if(!is.null(model$confusion)) {
-   cat("\n\nConfusion matrix:\n")
-   if(is.na(object@valid@key)) {
-     if(model$params$nfolds == 0)
-       cat("Reported on", object@data@key, "\n")
-     else
-       cat("Reported on", paste(model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
-   } else
-     cat("Reported on", object@valid@key, "\n")
-   print(model$confusion)
- }
+  if(!is.null(model$confusion)) {
+    cat("\n\nConfusion matrix:\n")
+    if(is.na(object@valid@key)) {
+      if(model$params$nfolds == 0L)
+        cat("Reported on", object@data@key, "\n")
+      else
+        cat("Reported on ", model$params$nfolds, "-fold cross-validated data\n", sep="")
+    } else
+      cat("Reported on", object@valid@key, "\n")
+    print(model$confusion)
+  }
 
- if(!is.null(model$hit_ratios)) {
-   cat("\nHit Ratios for Multi-class Classification:\n")
-   print(model$hit_ratios)
- }
+  if(!is.null(model$hit_ratios)) {
+    cat("\nHit Ratios for Multi-class Classification:\n")
+    print(model$hit_ratios)
+  }
 
- if(!is.null(object@xval) && length(object@xval) > 0) {
-   cat("\nCross-Validation Models:\n")
-   temp = lapply(object@xval, function(x) { cat(" ", x@key, "\n") })
- }
+  if(!is.null(object@xval) && length(object@xval) > 0L) {
+    cat("\nCross-Validation Models:\n")
+    temp <- lapply(object@xval, function(x) cat(" ", x@key, "\n"))
+  }
   cat("\n")
   cat("\nAvailable components:\n\n"); print(names(model))
 })
@@ -358,7 +357,7 @@ setMethod("show", "H2ODRFModel", function(object) {
   if(model$params$classification) {
     cat("\nConfusion matrix:\n")
     if(is.na(object@valid@key))
-      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+      cat("Reported on ", object@model$params$nfolds, "-fold cross-validated data\n", sep="")
     else
       cat("Reported on", object@valid@key, "\n")
     print(model$confusion)
@@ -370,7 +369,7 @@ setMethod("show", "H2ODRFModel", function(object) {
     cat("\nVariable importance:\n"); print(model$varimp)
   }
   cat("\nMean-squared Error by tree:\n"); print(model$mse)
-  if(length(object@xval) > 0) {
+  if(length(object@xval) > 0L) {
     cat("\nCross-Validation Models:\n")
     print(sapply(object@xval, function(x) x@key))
   }
@@ -445,20 +444,20 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
   cat("Random Forest Model Key:", object@key)
   cat("\n\nSeed Used: ", object@model$params$seed)
 
-  model = object@model
+  model <- object@model
   cat("\n\nClassification:", model$params$classification)
   cat("\nNumber of trees:", model$params$ntree)
 
   if(FALSE){ #model$params$oobee) {
     cat("\nConfusion matrix:\n"); cat("Reported on oobee from", object@valid@key, "\n")
     if(is.na(object@valid@key))
-      cat("Reported on oobee from", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+      cat("Reported on oobee from ", object@model$params$nfolds, "-fold cross-validated data\n", sep="")
     else
       cat("Reported on oobee from", object@valid@key, "\n")
   } else {
     cat("\nConfusion matrix:\n");
     if(is.na(object@valid@key))
-      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
+      cat("Reported on ", object@model$params$nfolds, "-fold cross-validated data\n", sep="")
     else
       cat("Reported on", object@valid@key, "\n")
   }
@@ -474,7 +473,7 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
     cat("\nMean-squared Error from the",model$params$ntree, "trees: "); cat(model$mse, "\n")
   }
 
-  if(length(object@xval) > 0) {
+  if(length(object@xval) > 0L) {
     cat("\nCross-Validation Models:\n")
     print(sapply(object@xval, function(x) x@key))
   }
@@ -493,7 +492,7 @@ setMethod("show", "H2ONBModel", function(object) {
   cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Naive Bayes Model Key:", object@key)
 
-  model = object@model
+  model <- object@model
   cat("\n\nA-priori probabilities:\n"); print(model$apriori_prob)
   cat("\n\nConditional probabilities:\n"); print(model$tables)
 })
@@ -512,7 +511,7 @@ setMethod("show", "H2OPCAModel", function(object) {
   cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("PCA Model Key:", object@key)
 
-  model = object@model
+  model <- object@model
   cat("\n\nStandard deviations:\n", model$sdev)
   cat("\n\nRotation:\n"); print(model$rotation)
 })
@@ -529,11 +528,11 @@ setMethod("show", "H2OKMeansModel", function(object) {
 #    cat("Parsed Data Key:", object@data@key, "\n\n")
     cat("K-means Model Key:", object@key)
 
-    model = object@model
+    model <- object@model
     cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
     cat("\n\nCluster means:\n"); print(model$clusters)
     cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
-    cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2), "%)\n")
+    cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2L), "%)\n")
 #    cat("\n\nCluster means:\n"); print(model$centers)
 #    cat("\nClustering vector:\n"); print(summary(model$clusters))
 #    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
@@ -561,7 +560,7 @@ setMethod("show", "H2OGrid", function(object) {
   cat("Parsed Data Key:", object@data@key, "\n\n")
   cat("Grid Search Model Key:", object@key, "\n")
 
-  temp = data.frame(t(sapply(object@sumtable, c)))
+  temp <- data.frame(t(sapply(object@sumtable, c)))
   cat("\nSummary\n"); print(temp)
 })
 
@@ -618,21 +617,21 @@ function(env) {
     tryCatch(get(x, envir=env) %i% "h2o.client", error = function(e) FALSE)
              }))
   if (any(e_list)) {
-    if (sum(e_list) > 1) {
-      x <- e_list[1]
-      for (y in e_list[1])
+    if (sum(e_list) > 1L) {
+      x <- e_list[1L]
+      for (y in e_list[1L])
         if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
     }
-      return(get(ls(env)[which(e_list)[1]], envir=env))
+    return(get(ls(env)[which(e_list)[1L]], envir=env))
   }
   g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "h2o.client"))
   if (any(g_list)) {
-    if (sum(g_list) > 1) {
-      x <- g_list[1]
-      for (y in g_list[1])
+    if (sum(g_list) > 1L) {
+      x <- g_list[1L]
+      for (y in g_list[1L])
         if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
     }
-    return(get(ls(globalenv())[which(g_list)[1]], envir=globalenv()))
+    return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
   }
   stop("Could not find any h2o.client. Do you have an active connection to H2O from R? Please specify the h2o connection.")
 }

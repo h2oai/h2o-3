@@ -23,9 +23,9 @@ NULL
 #' @examples
 #'
 #' library(h2o)
-#' localH2O = h2o.init()
-#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' 
 #' h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
 #' h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
@@ -73,11 +73,11 @@ h2o.exportHDFS <- function(object, path) {
 #'        should be saved to.
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
-#' irisPath = system.file("extdata", "iris_wheader.csv", package = "h2o")
-#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package = "h2o")
+#' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #'
-#' myFile = paste(getwd(), "my_iris_file.csv", sep = .Platform$file.sep)
+#' myFile <- paste(getwd(), "my_iris_file.csv", sep = .Platform$file.sep)
 #' h2o.downloadCSV(iris.hex, myFile)
 #' file.info(myFile)
 #' file.remove(myFile)
@@ -122,10 +122,10 @@ h2o.downloadCSV <- function(data, filename) {
 #' @examples
 #' \dontrun{
 #' library(h2o)
-#' localH2O = h2o.init()
-#' prostate.hex = h2o.importFile(localH2O, path = paste("https://raw.github.com", 
+#' localH2O <- h2o.init()
+#' prostate.hex <- h2o.uploadFile(localH2O, path = paste("https://raw.github.com",
 #'   "0xdata/h2o/master/smalldata/logreg/prostate.csv", sep = "/"), key = "prostate.hex")
-#' prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
 #'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
 #' h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
 #' }

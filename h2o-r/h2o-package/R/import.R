@@ -14,36 +14,36 @@
 #' Import an entire directory of files. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
 h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
-  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
+  if(!is(object, "h2o.client")) stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
-  if(nchar(path) == 0) stop("path must be a non-empty string")
+  if(!nzchar(path)) stop("path must be a non-empty string")
   if(!is.character(pattern)) stop("pattern must be of class character")
   if(!is.character(key)) stop("key must be of class character")
-  if(nchar(key) > 0 && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1] == -1)
+  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.logical(parse)) stop("parse must be of class logical")
 
   res <- .h2o.__remoteSend(object, 'ImportFiles.json', path=path)
-  if(length(res$fails) > 0) {
-    for(i in 1:length(res$fails))
+  if(length(res$fails) > 0L) {
+    for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")
   }
-  ret <- NULL
   # Return only the files that successfully imported
-  if(length(res$files) > 0) {
+  if(length(res$files) > 0L) {
     if(parse) {
-      srcKey = res$keys
+      srcKey <- res$keys
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
-      assign("dd", rawData, globalenv())
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
-      h2o.rm(object, "nfs:/" %p0% path)
-      h2o.rm(object, "nfs://private" %p0% path)
+      h2o.rm(object, paste0("nfs:/", path))
+      h2o.rm(object, paste0("nfs://private", path))
     } else {
-      myData = lapply(res$keys, function(x) { new("H2ORawData", h2o=object, key=x) })
-      if(length(res$keys) == 1) ret <- myData[[1]] else ret <- myData
+      myData <- lapply(res$keys, function(x) new("H2ORawData", h2o=object, key=x))
+      if(length(res$keys) == 1L)
+        ret <- myData[[1L]]
+      else
+        ret <- myData
     }
-  } else stop("All files failed to import!")
-  path <- gsub("//", "/", path)
+  } else stop("all files failed to import")
   ret
 }
 
@@ -61,7 +61,7 @@ h2o.importFile <- function(object, path, key = "", parse = TRUE, header, sep = "
 #'
 #' Import a data source from a URL.
 h2o.importURL <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names) {
-  print("This function has been deprecated in FluidVecs. In the future, please use h2o.importFile with a http:// prefix instead.")
+  .Deprecated("h2o.importFolder")
   h2o.importFile(object, path, key, parse, header, sep, col.names)
 }
 
@@ -70,7 +70,7 @@ h2o.importURL <- function(object, path, key = "", parse = TRUE, header, sep = ""
 #'
 #' Import from an HDFS location.
 h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
-  print("This function has been deprecated in FluidVecs. In the future, please use h2o.importFolder with a hdfs:// prefix instead.")
+  .Deprecated("h2o.importFolder")
   h2o.importFolder(object, path, pattern, key, parse, header, sep, col.names)
 }
 
@@ -79,24 +79,24 @@ h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, h
 #'
 #' Upload local files to the H2O instance.
 h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names) {
-  if(class(object) != "h2o.client") stop("object must be of class h2o.client")
+  if(!is(object, "h2o.client")) stop("object must be of class h2o.client")
   if(!is.character(path)) stop("path must be of class character")
-  if(nchar(path) == 0) stop("path must be a non-empty string")
+  if(!nzchar(path)) stop("path must be a non-empty string")
   if(!is.character(key)) stop("key must be of class character")
-  if(nchar(key) > 0 && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1] == -1)
+  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.logical(parse)) stop("parse must be of class logical")
 
-  urlSuffix = sprintf("PostFile.json?destination_key=%s", curlEscape(path))
-  fileUploadInfo = fileUpload(normalizePath(path))
-  h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
+  urlSuffix <- sprintf("PostFile.json?destination_key=%s", curlEscape(path))
+  fileUploadInfo <- fileUpload(normalizePath(path))
+  h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
+                 fileUploadInfo = fileUploadInfo)
 
-  rawData = new("H2ORawData", h2o=object, key=path)
+  rawData <- new("H2ORawData", h2o=object, key=path)
   if (parse) {
-    destination_key = key
-    parsedData = h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names)
-    return(parsedData)
+    destination_key <- key
+    h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names)
   } else {
-    return(rawData)
+    rawData
   }
 }
