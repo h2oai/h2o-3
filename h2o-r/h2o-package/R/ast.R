@@ -194,6 +194,7 @@ function(a, name=NULL) {
     if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
       if (length(res) > 1) {
+        if (is.numeric(res)) res <- as.numeric(res)
         # wrap the vector up into a ';' separated {} thingy
         tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
         return('{' %p0%   tt  %p0% '}')

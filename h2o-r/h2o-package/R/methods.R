@@ -673,7 +673,7 @@ setMethod("head", "h2o.frame", function(x, n = 6L, ...) {
   if(n == 0L)
     data.frame()
   else {
-    tmp_head <- x[seq_len(n),]
+    tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
     h2o.rm(tmp_head@key)
     x.slice

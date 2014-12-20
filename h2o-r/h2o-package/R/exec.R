@@ -45,6 +45,7 @@ function(op, e1, e2) {
   if (e1 %i% "h2o.frame")      lhs <- .get(e1)
   else if (e1 %i% "ASTNode")   lhs <- e1
   else if (e1 %i% "numeric")   lhs <- '#' %p0% e1
+  else if (e2 %i% "integer")   lhs <- '#' %p0% as.numeric(e1)
   else if (e1 %i% "character") lhs <- deparse(eval(e1))
   else if (e1 %i% "ASTEmpty")  lhs <- '%' %p0% e1@key
   else stop("LHS operand type not handled")
@@ -53,9 +54,10 @@ function(op, e1, e2) {
   if (e2 %i% "h2o.frame")       rhs <- .get(e2)
   else if (e2 %i% "ASTNode")    rhs <- e2
   else if (e2 %i% "numeric")    rhs <- '#' %p0% e2
+  else if (e2 %i% "integer")    rhs <- '#' %p0% as.numeric(e2)
   else if (e2 %i% "character")  rhs <- deparse(eval(e2))
   else if (e2 %i% "ASTEmpty")   rhs <- '%' %p0% e2@key
-  else stop("RHS operand type not handled")
+  else stop("RHS operand type not handled: " %p% class(e2))
 
   # Return an ASTNode
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
