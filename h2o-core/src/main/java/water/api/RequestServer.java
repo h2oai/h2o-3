@@ -517,7 +517,8 @@ public class RequestServer extends NanoHTTPD {
       Log.warn(error._values.toJsonString());
       Log.warn((Object[])error._stacktrace);
 
-      return wrap(error.httpStatusHeader(), Schema.schema(version, error).fillFromImpl(error), type);
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
     }
     // TODO: kill the server if someone called H2O.fail()
     catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
@@ -527,7 +528,8 @@ public class RequestServer extends NanoHTTPD {
       Log.warn(error._values.toJsonString());
       Log.warn((Object[])error._stacktrace);
 
-      return wrap(error.httpStatusHeader(), Schema.schema(version, error).fillFromImpl(error), type);
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
     }
   }
 
