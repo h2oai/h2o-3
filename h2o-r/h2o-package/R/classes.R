@@ -81,18 +81,18 @@ setMethod("show", "H2OConnection", function(object) {
   cat("Port      :", object@port, "\n")
 })
 
-setClassUnion("H2OConnection.N", c("H2OConnection", "NULL"))
-setClassUnion("ast.node.N", c("ASTNode", "NULL"))
-setClassUnion("data.frame.N", c("data.frame", "NULL"))
+setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
+setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
+setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
 
 
 #'
 #' The H2OFrame class
 #'
 setClass("H2OFrame",
-         representation(h2o="H2OConnection.N", key="character", ast="ast.node.N",
+         representation(h2o="H2OConnectionOrNULL", key="character", ast="ASTNodeOrNULL",
          col_names="character", nrows="numeric", ncols="numeric", scalar="numeric",
-         factors="data.frame.N"),
+         factors="data.frameOrNULL"),
          prototype(h2o       = NULL,
                    key       = NA_character_,
                    ast       = NULL,
