@@ -1,7 +1,7 @@
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
-  paste0(tempdir(), "/rest.log", sep='')
+  paste0(tempdir(), "/rest.log")
 }
 
 .h2o.getLogFileName <- function() {
