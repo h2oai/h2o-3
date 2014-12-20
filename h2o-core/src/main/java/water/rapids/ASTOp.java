@@ -277,7 +277,7 @@ abstract class ASTUniOp extends ASTOp {
   @Override void exec(Env e, AST arg1, AST[] args) {
     if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
     arg1.exec(e);
-    if (e.isAry()) e._global._local_frames.put(Key.make().toString(), e.peekAry());
+    if (e.isAry()) e._global._frames.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -2269,7 +2269,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void exec(Env e, AST arg1, AST[] args) {
     arg1.exec(e);
-    e._global._local_frames.put(Key.make().toString(), e.peekAry());
+    e._global._frames.put(Key.make().toString(), e.peekAry());
     if (args != null) {
       if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
       for (AST a : args) {

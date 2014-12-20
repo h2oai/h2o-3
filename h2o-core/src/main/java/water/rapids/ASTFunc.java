@@ -94,10 +94,10 @@ public class ASTFunc extends ASTFuncDef {
           f = new Frame(Key.make(_arg_names[i]), cleanme.names(), cleanme.vecs());
           DKV.put(f._key, f); // block n put the key in the DKV
           _args[i] = new ASTFrame(f._key.toString());
-          _table._local_frames.put(_arg_names[i], f);
+          _table._frames.put(_arg_names[i], f);
         }
         _table.put(_arg_names[i], Env.LARY, _args[i].value());
-        _table._local_frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
+        _table._frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
       else throw new IllegalArgumentException("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
@@ -133,7 +133,7 @@ public class ASTFunc extends ASTFuncDef {
     fs.blockForPending();
     Key local_key = Key.make();
     Frame fr = new Frame(local_key, null, vecs);
-    _table._local_frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
+    _table._frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
 
     // execute the function on the row
     exec(env, new ASTFrame(fr), args);
