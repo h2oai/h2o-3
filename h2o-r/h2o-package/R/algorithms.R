@@ -1,26 +1,3 @@
-.checkargs <- function(message, ...) {
-  failed <- FALSE
-  tryCatch(stopifnot(...), error = function(e) {failed <<- TRUE; print(message)})
-  if (failed) error(message)
-}
-
-.convertFieldType <- function(json) {
-   x <- json$actual_value
-   switch(json$type,
-   'Key' = as.character(x),
-   'Frame' = as.character(x),
-   'int' = as.integer(x),
-   'boolean' = as.logical(x),
-   'long' = as.numeric(x),
-   'enum' = as.character(x),
-   'float' = as.numeric(x),
-   'double' = as.double(x)
-   # 'double[]'
-   # 'string[]'
-   )
-}
-
-
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things
 .verify_dataxy <- function(data, x, y) {
@@ -110,14 +87,6 @@
   cf_matrix
 }
 
-.get_roc <- function(cms) {
-  tmp <- sapply(cms, function(x) c(TN = x[[1L]][[1L]], FP = x[[1L]][[2L]], FN = x[[2L]][[1L]], TP = x[[2L]][[2L]]))
-  tmp <- data.frame(t(tmp))
-  tmp$TPR <- tmp$TP/(tmp$TP + tmp$FN)
-  tmp$FPR <- tmp$FP/(tmp$FP + tmp$TN)
-  tmp
-}
-
 .seq_to_string <- function(vec = as.numeric(NA)) {
   vec <- sort(vec)
   if(length(vec) > 2L) {
@@ -126,10 +95,6 @@
       return(paste(min(vec), max(vec), vec_diff[1], sep = ":"))
   }
   paste(vec, collapse = ",")
-}
-
-.toupperFirst <- function(str) {
-  paste0(toupper(substring(str, 1L, 1L)), substring(str, 2L))
 }
 
 .parms <- function(client, algo, m, envir) {
