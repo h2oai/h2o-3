@@ -1,32 +1,23 @@
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
-  fileName = paste(tempdir(), "/rest.log", sep='')
-  return(fileName)
+  paste0(tempdir(), "/rest.log", sep='')
 }
 
 .h2o.getLogFileName <- function() {
-  if (! is.null(.pkg.env$LOG_FILE_NAME)) {
-    return(.pkg.env$LOG_FILE_NAME)
-  }
-
-  return(.h2o.calcLogFileName())
+  if (!is.null(.pkg.env$LOG_FILE_NAME))
+    .pkg.env$LOG_FILE_NAME
+  else
+    .h2o.calcLogFileName()
 }
 
 .h2o.isLogging <- function() {
-  if (! .pkg.env$IS_LOGGING) {
-    return(FALSE)
-  }
-
-  return(TRUE)
+  .pkg.env$IS_LOGGING
 }
 
 .h2o.logRest <- function(message) {
-  if (! .h2o.isLogging()) {
-    return
-  }
-
-  write(x = message, file = .h2o.getLogFileName(), append = TRUE)
+  if (.h2o.isLogging())
+    write(x = message, file = .h2o.getLogFileName(), append = TRUE)
 }
 
 h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
@@ -34,11 +25,11 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 }
 
 h2o.startLogging <- function(file) {
-  if (! missing(file)) { stopifnot(class("file") == "character") }
   if (missing(file)) {
-    logFileName = .h2o.calcLogFileName()
+    logFileName <- .h2o.calcLogFileName()
   } else {
-    logFileName = file
+    stopifnot(is.character(file))
+    logFileName <- file
   }
   assign("LOG_FILE_NAME", logFileName, .pkg.env)
   assign("IS_LOGGING", TRUE, envir = .pkg.env)
@@ -62,9 +53,9 @@ h2o.openLog <- function(type) {
     stop(myFile, " does not exist")
 
   if(.Platform$OS.type == "windows")
-    shell.exec(paste("open '", myFile, "'", sep=""))
+    shell.exec(paste0("open '", myFile, "'"))
   else
-    system(paste("open '", myFile, "'", sep=""))
+    system(paste0("open '", myFile, "'"))
 }
 
 #' Log a message on the server-side logs
