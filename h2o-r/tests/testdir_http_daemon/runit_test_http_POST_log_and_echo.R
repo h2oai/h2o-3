@@ -8,7 +8,7 @@
 
 source('../h2o-runit.R')
 
-conn <- new("h2o.client", ip=myIP, port=myPort)
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 oneHundredChars <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 oneThousandChars <- paste(oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, oneHundredChars, sep="")

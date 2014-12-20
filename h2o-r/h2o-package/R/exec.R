@@ -6,7 +6,7 @@
 #' The workhorses of this front end are .h2o.unop, .h2o.binop, and .h2o.varop.
 #'
 #' Together, these three methods handle all of the available operations that can
-#' be done with h2o.frame objects (this includes h2o.frame objects and ASTNode objects).
+#' be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
 
 #'
 #' Rapids End point
@@ -16,25 +16,25 @@
 #'
 #' Prefix Operation With A Single Argument
 #'
-#' Operation on an object that inherits from h2o.frame.
+#' Operation on an object that inherits from H2OFrame.
 .h2o.unop<-
 function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
-  if (x %i% "h2o.frame") x <- .get(x)
+  if (x %i% "H2OFrame") x <- .get(x)
   else if (x %i% "ASTNode") x <- x
   else if (x %i% "numeric") x <- '#' %p0% x
   else if (x %i% "character") x <- deparse(eval(x))
   else if (x %i% "ASTEmpty") x <- '%' %p0% x@key
   else stop("operand type not handled")
   ast <- new("ASTNode", root=op, children=list(x))
-  new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
 }
 
 #'
 #' Binary Operation
 #'
-#' Operation between h2o.frame objects and/or base R objects.
+#' Operation between H2OFrame objects and/or base R objects.
 .h2o.binop<-
 function(op, e1, e2) {
 
@@ -42,7 +42,7 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
-  if (e1 %i% "h2o.frame")      lhs <- .get(e1)
+  if (e1 %i% "H2OFrame")      lhs <- .get(e1)
   else if (e1 %i% "ASTNode")   lhs <- e1
   else if (e1 %i% "numeric")   lhs <- '#' %p0% e1
   else if (e2 %i% "integer")   lhs <- '#' %p0% as.numeric(e1)
@@ -51,7 +51,7 @@ function(op, e1, e2) {
   else stop("LHS operand type not handled")
 
   # Prep the RHS
-  if (e2 %i% "h2o.frame")       rhs <- .get(e2)
+  if (e2 %i% "H2OFrame")       rhs <- .get(e2)
   else if (e2 %i% "ASTNode")    rhs <- e2
   else if (e2 %i% "numeric")    rhs <- '#' %p0% e2
   else if (e2 %i% "integer")    rhs <- '#' %p0% as.numeric(e2)
@@ -61,13 +61,13 @@ function(op, e1, e2) {
 
   # Return an ASTNode
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  new("h2o.frame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
 }
 
 #'
 #' Prefix Operation With Multiple Arguments
 #'
-#' Operation on an h2o.frame object with some extra parameters.
+#' Operation on an H2OFrame object with some extra parameters.
 .h2o.varop<-
 function(op, ..., .args=list(), useKey=NULL) {
   op <- new("ASTApply", op = op)
@@ -75,7 +75,7 @@ function(op, ..., .args=list(), useKey=NULL) {
   else ASTargs <- .args.to.ast(.args=.args)
   ast <- new("ASTNode", root=op, children=ASTargs)
   key <- if(is.null(useKey)) .key.make() else useKey
-  new("h2o.frame", ast = ast, key = key, h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = key, h2o = .retrieveH2O())
 }
 
 #'
@@ -83,7 +83,7 @@ function(op, ..., .args=list(), useKey=NULL) {
 #'
 #' Force the evaluation of the AST.
 #'
-#' @param h2o: an h2o.client object
+#' @param h2o: an H2OConnection object
 #' @param ast: an ast.node object
 #' @param h2o.ID: the name of the key in h2o (hopefully matches top-most level user-defined variable)
 #' @param parent.ID: the name of the object in the calling frame
@@ -113,7 +113,7 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.
     if (ret == "NaN") ret <- NA
   }
   if (!is.null(caller.ID) && exists(caller.ID, envir=env)) {
-    if (ret %i% "h2o.frame") {
+    if (ret %i% "H2OFrame") {
       assign(caller.ID, ret, env)
     } else {
       expr <- caller.ID %p0% "@ast" %p% "<- NULL"

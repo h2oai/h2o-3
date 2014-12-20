@@ -27,7 +27,7 @@
    .verify_dataxy_full(data, x, y, FALSE)
 }
 .verify_dataxy_full <- function(data, x, y, autoencoder) {
-  if(!is(data,  "h2o.frame"))
+  if(!is(data,  "H2OFrame"))
     stop('data must be an H2O parsed dataset')
   if(!is.character(x) && !is.numeric(x))
     stop('x must be column names or indices')
@@ -69,7 +69,7 @@
 }
 
 .verify_datacols <- function(data, cols) {
-  if(!is(data, "h2o.frame"))
+  if(!is(data, "H2OFrame"))
     stop('data must be an H2O parsed dataset')
   if(!is.character(cols) && !is.numeric(cols))
     stop('cols must be column names or indices')
@@ -180,7 +180,7 @@
 
   #---------- Create param list to pass ----------#
   p_val <- lapply(m, function(i) {
-    if( i %i% "h2o.frame" )
+    if( i %i% "H2OFrame" )
       i@key
     else
       i

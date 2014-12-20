@@ -14,10 +14,10 @@ exportMethods(
   "show", "%in%"
 )
 exportClasses(
-  "h2o.frame",
+  "H2OFrame",
   "H2OGLMModel",
   "H2OKMeansModel",
-  "h2o.model",
+  "H2OModel",
   "H2ORawData",
   "H2ODRFModel",
   "H2OPCAModel",

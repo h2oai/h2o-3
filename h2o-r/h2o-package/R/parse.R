@@ -16,7 +16,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!(missing(header) || is.logical(header))) stop("header cannot be of class ", class(header))
   if(!is.character(sep)) stop("sep must be of class character")
-  if(!(missing(col.names) || is(col.names, "h2o.frame"))) stop("col.names cannot be of class ", class(col.names))
+  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("col.names cannot be of class ", class(col.names))
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
   srcs <- data@key
@@ -46,7 +46,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   # Poll on job
   .h2o.__waitOnJob(data@h2o, res$job$key$name)
 
-  # Return a new h2o.frame object
+  # Return a new H2OFrame object
   nrows <- .h2o.fetchNRows(data@h2o, hex)
   o <- .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names)
   .pkg.env[[o@key]] <- o
@@ -81,19 +81,19 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #'
 #' Load a saved H2O model from disk.
 h2o.loadModel <- function(object, path="") {
-  if(!is(object, 'h2o.client')) stop('object must be of class h2o.client')
+  if(!is(object, 'H2OConnection')) stop('object must be of class H2OConnection')
   if(!is.character(path)) stop('path must be of class character')
   res <- .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
   h2o.getModel(object, res$model$'_key')
 }
 
 #'
-#' The h2o.frame Constructor
+#' The H2OFrame Constructor
 .h2o.parsedData <- function(h2o, key, nrow, ncol, col_names)
-  new("h2o.frame", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
+  new("H2OFrame", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 
 #'
-#' Create new h2o.frame object for predictions
+#' Create new H2OFrame object for predictions
 .h2o.parsedPredData<-
 function(client, predictions) {
   key <- predictions$key$name
@@ -103,7 +103,7 @@ function(client, predictions) {
   factors <- sapply(predictions$columns, function(column) column$type == "enum")
   names(factors) <- col_names
   factors <- as.data.frame(factors)
-  o <- new("h2o.frame", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  o <- new("H2OFrame", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
   .pkg.env[[o@key]] <- o
   o
 }

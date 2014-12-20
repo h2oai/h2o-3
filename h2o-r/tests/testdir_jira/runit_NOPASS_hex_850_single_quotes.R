@@ -9,7 +9,7 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 heading("BEGIN TEST")
-conn <- new("h2o.client", ip=myIP, port=myPort)
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 path = locate("smalldata/jira/850.csv")
 j.fv = h2o.importFile(conn, path, key="jira850.hex")

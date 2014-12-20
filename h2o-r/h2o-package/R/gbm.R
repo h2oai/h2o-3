@@ -6,7 +6,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param data An \code{\linkS4class{h2o.frame}} object containing the variables in the model.
+#' @param data An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param key (Optional) The unique hex key assigned to the resulting model. If none is given, a key will automatically
 #'        be generated.
 #' @param loss \code{Defaults to "AUTO"} A \code{character} string. The loss function to be implemented. Must be "AUTO"
@@ -18,7 +18,7 @@
 #' @param nbins \code{Defaults to 20} Number of bins to use in building histogram.
 #' @param group_split  #TODO NEED TO FINISH
 #' @param variable_importance #TODO: NEED TO FINISH
-#' @param validation_frame An \code{\link{h2o.frame}} object indicating the validation dataset used to contruct the
+#' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes \code{Defaults to FALSE} logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data)

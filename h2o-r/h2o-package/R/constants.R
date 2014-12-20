@@ -24,7 +24,7 @@
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
 "%<-%"   <- function(x,y) {
-  if ( x %i% "h2o.frame" ) x <- x@key
+  if ( x %i% "H2OFrame" ) x <- x@key
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = paste0('!', x), right = y))   # assignment node
 }
 
@@ -177,7 +177,7 @@
                "double[]" = "narray",
                "float" = "numeric",
                "float[]" = "narray",
-               "Key<Frame>" = "h2o.frame",
+               "Key<Frame>" = "H2OFrame",
                "int" = "numeric",
                "int[]" = "narray",
                "Key<Key>" = "character",

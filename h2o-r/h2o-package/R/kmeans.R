@@ -4,7 +4,7 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{h2o.frame} object containing the
+#' @param training_frame An \linkS4class{H2OFrame} object containing the
 #'        variables in the model.
 #' @param ignored_columns (Optional) A vector containing the data columns on
 #'        which k-means ignores.

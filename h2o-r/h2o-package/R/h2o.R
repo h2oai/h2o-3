@@ -18,7 +18,7 @@
 }
 
 .h2o.calcBaseURL <- function(conn, h2oRestApiVersion, urlSuffix) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
 
@@ -29,7 +29,7 @@
 }
 
 .h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   if (missing(parms))
@@ -199,7 +199,7 @@ h2o.doRawPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUploadI
 }
 
 .h2o.doREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
@@ -237,7 +237,7 @@ h2o.doPOST <- function(conn, h2oRestApiVersion, urlSuffix, parms) {
 }
 
 .h2o.doSafeREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
@@ -296,7 +296,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #
 # @return JSON object converted from the response payload
 .h2o.__remoteSend <- function(conn, page, method = "GET", ..., .params = list()) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
   
@@ -321,7 +321,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #' @return TRUE if the cluster is up; FALSE otherwise
 h2o.clusterIsUp <- function(conn) {
   if (missing(conn)) conn <- .retrieveH2O(parent.frame())
-  if (!is(conn, "h2o.client")) stop("conn must be a h2o.client object")
+  if (!is(conn, "H2OConnection")) stop("conn must be a H2OConnection object")
 
   rv = h2o.doRawGET(conn = conn, urlSuffix = "")
 
@@ -333,7 +333,7 @@ h2o.clusterIsUp <- function(conn) {
 #' @param conn H2O connection object
 h2o.clusterInfo <- function(conn) {
   if(missing(conn)) conn <- .retrieveH2O(parent.frame())
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
   if(! h2o.clusterIsUp(conn)) {
     ip = conn@ip
     port = conn@port
@@ -459,7 +459,7 @@ h2o.clusterInfo <- function(conn) {
 #'
 #' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
-  if(!is(client, "h2o.client")) stop("client must be a h2o.client object")
+  if(!is(client, "H2OConnection")) stop("client must be a H2OConnection object")
   if(!is.character(keyName) || !nzchar(keyName)) stop("keyName must be a non-empty string")
 
   page <- paste0('Jobs.json/', keyName)
@@ -522,20 +522,20 @@ h2o.clusterInfo <- function(conn) {
 
 #------------------------------------ Utilities ------------------------------------#
 .h2o.__checkForFactors <- function(object) {
-  if(is(object, "h2o.frame"))
+  if(is(object, "H2OFrame"))
     h2o.anyFactor(object)
   else
     FALSE
 }
 
 h2o.getBaseURL <- function(conn) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
 
   .h2o.calcBaseURL(conn = conn, urlSuffix = "")
 }
 
 h2o.getVersion <- function(conn) {
-  stopifnot(is(conn, "h2o.client"))
+  stopifnot(is(conn, "H2OConnection"))
 
   res = .h2o.__remoteSend(conn, .h2o.__CLOUD)
   res$version

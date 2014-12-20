@@ -16,18 +16,18 @@
 #" Get the key or AST
 #"
 #" Key points to a bonified object in the H2O cluster
-.get <- function(h2o.frame) {
-  if(.is.eval(h2o.frame))
-    paste0('%', h2o.frame@key)
+.get <- function(H2OFrame) {
+  if(.is.eval(H2OFrame))
+    paste0('%', H2OFrame@key)
   else
-    h2o.frame@ast
+    H2OFrame@ast
 }
 
 #"
 #" Check if key points to bonified object in H2O cluster.
 #"
-.is.eval <- function(h2o.frame) {
-  key <- h2o.frame@key
+.is.eval <- function(H2OFrame) {
+  key <- H2OFrame@key
   res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
   res$evaluated
 }

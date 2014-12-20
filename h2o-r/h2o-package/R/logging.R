@@ -66,12 +66,12 @@ h2o.openLog <- function(type) {
 #' 
 #' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
 #' 
-#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param message A character string with the message to write to the log.
-#' @seealso \code{\link{h2o.client}}
+#' @seealso \code{\link{H2OConnection}}
 h2o.logAndEcho <- function(conn, message) {
-  if(!is(conn, "h2o.client"))
-    stop("conn must be an h2o.client")
+  if(!is(conn, "H2OConnection"))
+    stop("conn must be an H2OConnection")
 
   if(!is.character(message))
     stop("message must be a character string")
@@ -84,13 +84,13 @@ h2o.logAndEcho <- function(conn, message) {
 #' 
 #' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
 #' 
-#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
 #' @param filename (Optional) A character string indicating the name that the log file should be saved to.
-#' @seealso \code{\link{h2o.client}}
+#' @seealso \code{\link{H2OConnection}}
 h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
-  if(!is(client, "h2o.client"))
-    stop("client must be of class h2o.client")
+  if(!is(client, "H2OConnection"))
+    stop("client must be of class H2OConnection")
 
   if(!is.character(dirname))
     stop("dirname must be of class character")

@@ -5,7 +5,7 @@ test.rdocasdataframe.golden <- function(H2Oserver) {
 
     prosPath <- system.file("extdata", "prostate.csv", package="h2o")
     prostate.hex <- h2o.importFile(H2Oserver, path = prosPath)
-    as.data.frame.h2o.frame(prostate.hex)
+    as.data.frame.H2OFrame(prostate.hex)
 
     testEnd()
 }

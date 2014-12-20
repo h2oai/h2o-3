@@ -18,7 +18,7 @@ NULL
 #'
 #' The Node class.
 #'
-#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' has as its ancestor this class.
 #'
 #' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
@@ -56,7 +56,7 @@ setClass("ASTFor",    representation(op="character", iterator  = "list",  body =
 setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
 
 #'
-#' The h2o.client class.
+#' The H2OConnection class.
 #'
 #' This class represents a connection to the H2O Cloud.
 #'
@@ -69,28 +69,28 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 #' is not found at port 54321.
 #' @slot ip Object of class \code{character} representing the IP address of the H2O server.
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
-#' @aliases h2o.client
-h2o.client <- setClass("h2o.client",
+#' @aliases H2OConnection
+H2OConnection <- setClass("H2OConnection",
                       representation(ip="character", port="numeric"),
                       prototype(ip=NA_character_, port=NA_integer_)
                       )
 
-#' @rdname h2o.client-class
-setMethod("show", "h2o.client", function(object) {
+#' @rdname H2OConnection-class
+setMethod("show", "H2OConnection", function(object) {
   cat("IP Address:", object@ip,   "\n")
   cat("Port      :", object@port, "\n")
 })
 
-setClassUnion("h2o.client.N", c("h2o.client", "NULL"))
+setClassUnion("H2OConnection.N", c("H2OConnection", "NULL"))
 setClassUnion("ast.node.N", c("ASTNode", "NULL"))
 setClassUnion("data.frame.N", c("data.frame", "NULL"))
 
 
 #'
-#' The h2o.frame class
+#' The H2OFrame class
 #'
-setClass("h2o.frame",
-         representation(h2o="h2o.client.N", key="character", ast="ast.node.N",
+setClass("H2OFrame",
+         representation(h2o="H2OConnection.N", key="character", ast="ast.node.N",
          col_names="character", nrows="numeric", ncols="numeric", scalar="numeric",
          factors="data.frame.N"),
          prototype(h2o       = NULL,
@@ -103,7 +103,7 @@ setClass("h2o.frame",
                    scalar    = NA_integer_)
          )
 
-setMethod("show", "h2o.frame", function(object) {
+setMethod("show", "H2OFrame", function(object) {
   print(object@h2o)
   cat("Key:", object@key, "\n")
   print(head(object))
@@ -121,10 +121,10 @@ setMethod("show", "h2o.frame", function(object) {
 #' memory.
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
-#' @slot h2o An \code{h2o.client} object containing the IP address and port number of the H2O server.
+#' @slot h2o An \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
 #' @aliases H2ORawData
-setClass("H2ORawData", representation(h2o="h2o.client", key="character"))
+setClass("H2ORawData", representation(h2o="H2OConnection", key="character"))
 
 #' @rdname H2ORawData-class
 setMethod("show", "H2ORawData", function(object) {
@@ -139,22 +139,22 @@ setMethod("show", "H2ORawData", function(object) {
 #'
 #' This class represents a h2o-word2vec object.
 #'
-setClass("H2OW2V", representation(h2o="h2o.client", key="character", train.data="h2o.frame"))
+setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.data="H2OFrame"))
 
 #'
-#' The h2o.model object.
+#' The H2OModel object.
 #'
 #' This virtual class represents a model built by H2O.
 #'
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
-#' the data used to build the model (an object of class h2o.frame).
+#' the data used to build the model (an object of class H2OFrame).
 
-#' @slot h2o Object of class \code{h2o.client}, which is the client object that was passed into the function call.
+#' @slot h2o Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @slot raw_json Object of class \code{list} containing the raw JSON response
-#' @aliases h2o.model
-setClass("h2o.model", representation(h2o="h2o.client", key="character", model="list", raw_json="list"), contains="VIRTUAL")
+#' @aliases H2OModel
+setClass("H2OModel", representation(h2o="H2OConnection", key="character", model="list", raw_json="list"), contains="VIRTUAL")
 
 # No show method for this type of object.
 #'
@@ -205,7 +205,7 @@ setMethod("show", "H2OPerfModel", function(object) {
 #'
 #' @slot xval List of objects of class \code{H2OGLMModel}, representing the n-fold cross-validation models.
 #' @aliases H2OGLMModel
-setClass("H2OGLMModel", representation(xval="list"), contains="h2o.model")
+setClass("H2OGLMModel", representation(xval="list"), contains="H2OModel")
 
 #' @rdname H2OGLMModel-class
 setMethod("show", "H2OGLMModel", function(object) {
@@ -293,10 +293,10 @@ setMethod("show", "H2OGLMModelList", function(object) {
 #' The H2ODeepLearningModel class.
 #'
 #' This class represents a deep learning model.
-#' @slot valid Object of class \code{h2o.frame}, representing the validation data set.
+#' @slot valid Object of class \code{H2OFrame}, representing the validation data set.
 #' @slot xval List of objects of class \code{H2ODeepLearningModel}, representing the n-fold cross-validation models.
 #' @aliases H2ODeepLearningModel
-setClass("H2ODeepLearningModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2ODeepLearningModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2ODeepLearningModel-class
 setMethod("show", "H2ODeepLearningModel", function(object) {
@@ -338,10 +338,10 @@ setMethod("show", "H2ODeepLearningModel", function(object) {
 #'
 #' This class represents a distributed random forest model.
 #'
-#' @slot valid Object of class \code{h2o.frame}, which is the data used for validating the model.
+#' @slot valid Object of class \code{H2OFrame}, which is the data used for validating the model.
 #' @slot xval List of objects of class \code{H2ODRFModel}, representing the n-fold cross-validation models.
 #' @aliases H2ODRFModel
-setClass("H2ODRFModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2ODRFModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2ODRFModel-class
 setMethod("show", "H2ODRFModel", function(object) {
@@ -379,10 +379,10 @@ setMethod("show", "H2ODRFModel", function(object) {
 #' The H2OGBMModel class.
 #'
 #' This class represents a gradient boosted machines model.
-#' @slot valid Object of class \code{\linkS4class{h2o.frame}}, which is the dataset used to validate the model.
+#' @slot valid Object of class \code{\linkS4class{H2OFrame}}, which is the dataset used to validate the model.
 #' @slot xval List of objects of class \code{H2OGBMModel}, representing the n-fold cross-validation models.
 #' @aliases H2OGBMModel
-setClass("H2OGBMModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2OGBMModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2OGBMModel-class
 setMethod("show", "H2OGBMModel", function(object) {
@@ -417,9 +417,9 @@ setMethod("show", "H2OGBMModel", function(object) {
 #' The H2OQuantileModel class.
 #'
 #' This class represents a quantile model.
-#' @slot valid Object of class \code{\linkS4class{h2o.frame}}, which is the dataset used to build the model.
+#' @slot valid Object of class \code{\linkS4class{H2OFrame}}, which is the dataset used to build the model.
 #' @aliases H2OQuantileModel
-setClass("H2OQuantileModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2OQuantileModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2OQuantileModel-class
 setMethod("show", "H2OQuantileModel", function(object) {
@@ -432,10 +432,10 @@ setMethod("show", "H2OQuantileModel", function(object) {
 #' The H2OSpeeDRFModel class.
 #'
 #' This class represents a speedrf model. Another random forest model variant.
-#' @slot valid Object of class \code{h2o.frame}, which is the data used for validating the model.
+#' @slot valid Object of class \code{H2OFrame}, which is the data used for validating the model.
 #' @slot list List of objects of class \code{H2OSpeeDRFModel}, representing the n-fold cross-validation models.
 #' @aliases H2OSpeeDRFModel
-setClass("H2OSpeeDRFModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2OSpeeDRFModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2OSpeeDRFModel-class
 setMethod("show", "H2OSpeeDRFModel", function(object) {
@@ -484,7 +484,7 @@ setMethod("show", "H2OSpeeDRFModel", function(object) {
 #'
 #' This class represents a naive bayes model.
 #' @aliases H2ONBModel
-setClass("H2ONBModel", contains="h2o.model")
+setClass("H2ONBModel", contains="H2OModel")
 
 #' @rdname H2ONBModel-class
 setMethod("show", "H2ONBModel", function(object) {
@@ -503,7 +503,7 @@ setMethod("show", "H2ONBModel", function(object) {
 #'
 #' This class represents the results from a pricnipal components analysis.
 #' @aliases H2OPCAModel
-setClass("H2OPCAModel", contains="h2o.model")
+setClass("H2OPCAModel", contains="H2OModel")
 
 #' @rdname H2OPCAModel-class
 setMethod("show", "H2OPCAModel", function(object) {
@@ -521,7 +521,7 @@ setMethod("show", "H2OPCAModel", function(object) {
 #'
 #' This class represents the results of a KMeans model.
 #' @aliases H2OKMeansModel
-setClass("H2OKMeansModel", representation(valid="h2o.frame", xval="list"), contains="h2o.model")
+setClass("H2OKMeansModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
 
 #' @rdname H2OKMeansModel-class
 setMethod("show", "H2OKMeansModel", function(object) {
@@ -548,11 +548,11 @@ setMethod("show", "H2OKMeansModel", function(object) {
 #'
 #' A grid search is an automated procedure for varying the parameters of a model and discovering the best tunings.
 #' @slot keys Object of class \code{character}, representing the unique hex key that identifies the model.
-#' @slot data Object of class \code{h2o.frame}, which is the input data used to build the model.
-#' @slot model Object of class \code{list} containing \code{h2o.model} objects representing the models returned by the grid search algorithm.
+#' @slot data Object of class \code{H2OFrame}, which is the input data used to build the model.
+#' @slot model Object of class \code{list} containing \code{H2OModel} objects representing the models returned by the grid search algorithm.
 #' @slot sumtable Object of class \code{list} containing summary statistics of all the models returned by the grid search algorithm.
 #' @aliases H2OGrid
-setClass("H2OGrid", representation(key="character",   data="h2o.frame", model="list", sumtable="list", "VIRTUAL"))
+setClass("H2OGrid", representation(key="character",   data="H2OFrame", model="list", sumtable="list", "VIRTUAL"))
 
 #' @rdname H2OGrid-class
 setMethod("show", "H2OGrid", function(object) {
@@ -610,11 +610,11 @@ setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
 
-.isH2O <- function(x) { x %i% "h2o.frame" || x %i% "h2o.client" || x %i% "H2ORawData" }
+.isH2O <- function(x) { x %i% "H2OFrame" || x %i% "H2OConnection" || x %i% "H2ORawData" }
 .retrieveH2O<-
 function(env) {
   e_list <- unlist(lapply(ls(env), function(x) {
-    tryCatch(get(x, envir=env) %i% "h2o.client", error = function(e) FALSE)
+    tryCatch(get(x, envir=env) %i% "H2OConnection", error = function(e) FALSE)
              }))
   if (any(e_list)) {
     if (sum(e_list) > 1L) {
@@ -624,7 +624,7 @@ function(env) {
     }
     return(get(ls(env)[which(e_list)[1L]], envir=env))
   }
-  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "h2o.client"))
+  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "H2OConnection"))
   if (any(g_list)) {
     if (sum(g_list) > 1L) {
       x <- g_list[1L]
@@ -633,5 +633,5 @@ function(env) {
     }
     return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
   }
-  stop("Could not find any h2o.client. Do you have an active connection to H2O from R? Please specify the h2o connection.")
+  stop("Could not find any H2OConnection. Do you have an active connection to H2O from R? Please specify the h2o connection.")
 }

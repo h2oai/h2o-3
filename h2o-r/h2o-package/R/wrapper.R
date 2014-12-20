@@ -20,7 +20,7 @@
 #' @param max_mem_size (Optional) A \code{character} string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param min_mem_size (Optional) A \code{character} string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.  This value is only used when R starts H2O.
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
-#' @return this method will load it and return a \code{h2o.client} object containing the IP address and port number of the H2O server.
+#' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
@@ -83,7 +83,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     ice_root <- tempdir()
 
   warnNthreads = FALSE
-  tmpConn = new("h2o.client", ip = ip, port = port)
+  tmpConn = new("H2OConnection", ip = ip, port = port)
   if (! h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -110,7 +110,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn = new("h2o.client", ip = ip, port = port)
+  conn = new("H2OConnection", ip = ip, port = port)
   cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
   h2o.clusterInfo(conn)
   cat("\n")
@@ -144,7 +144,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O instance.
 #'
 #' @section WARNING: All data, models, and other values stored on the server will be lost! Only call this function if you and all other clients connected to the H2O server are finished and have saved your work.
-#' @param client An \linkS4class{h2o.client} client containing the IP address and port of the server running H2O.
+#' @param client An \linkS4class{H2OConnection} client containing the IP address and port of the server running H2O.
 #' @param prompt A \code{logical} value indicating whether to prompt the user before shutting down the H2O server.
 #' @note Users must call h2o.shutdown explicitly in order to shut down the local H2O instance started by R. If R is closed before H2O, then an attempt will be made to automatically shut down H2O. This only applies to local instances started with h2o.init, not remote H2O servers.
 #' @seealso \code{\link{h2o.init}}
@@ -157,7 +157,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' }
 #'
 h2o.shutdown <- function(conn, prompt = TRUE) {
-  if(!is(conn, "h2o.client")) stop("conn must be of class h2o.client")
+  if(!is(conn, "H2OConnection")) stop("conn must be of class H2OConnection")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
   if(!is.logical(prompt)) stop("prompt must be of class logical")
@@ -186,7 +186,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 # Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
 
 h2o.clusterStatus <- function(client) {
-  if(missing(client) || class(client) != "h2o.client") stop("client must be a h2o.client object")
+  if(missing(client) || class(client) != "H2OConnection") stop("client must be a H2OConnection object")
   .h2o.__checkUp(client)
   myURL = paste0("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
@@ -259,7 +259,7 @@ h2o.clusterStatus <- function(client) {
             
     # require(RCurl); require(rjson)
     if(.h2o.startedH2O() && url.exists(myURL))
-      h2o.shutdown(new("h2o.client", ip=ip, port=port), prompt = FALSE)
+      h2o.shutdown(new("H2OConnection", ip=ip, port=port), prompt = FALSE)
   }, onexit = TRUE)
 }
 
@@ -269,7 +269,7 @@ h2o.clusterStatus <- function(client) {
   port  <- 54321
   myURL <- paste0("http://", ip, ":", port)
   if (url.exists(myURL)) {
-    tryCatch(h2o.shutdown(new("h2o.client", ip = ip, port = port), prompt = FALSE), error = function(e) {
+    tryCatch(h2o.shutdown(new("H2OConnection", ip = ip, port = port), prompt = FALSE), error = function(e) {
       msg = paste(
         "\n",
         "----------------------------------------------------------------------\n",
@@ -299,7 +299,7 @@ h2o.clusterStatus <- function(client) {
 #   
 #   require(RCurl); require(rjson)
 #   if(.h2o.startedH2O() && url.exists(myURL))
-#     h2o.shutdown(new("h2o.client", ip=ip, port=port), prompt = FALSE)
+#     h2o.shutdown(new("H2OConnection", ip=ip, port=port), prompt = FALSE)
 # }
 
 .h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, beta = FALSE, assertion = TRUE, forceDL = FALSE, license = NULL, ice_root) {

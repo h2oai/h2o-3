@@ -209,7 +209,7 @@ function(stmnt) {
       op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
-      else l <- formals(getMethod(as.character(op), "h2o.frame"))[-1]
+      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
       if (is.null(l)) stop("Could not find args for the op: " %p0% as.character(op))
       l <- lapply(l, function(i)
       if (length(i=="") != 0) {
@@ -448,7 +448,7 @@ function(s) {
   } else if (s %i% "character") {
     res %p% s
     return(res)
-  } else if (s %i% "h2o.frame") {
+  } else if (s %i% "H2OFrame") {
     tmp <- .get(s)
     if (tmp %i% "ASTNode") {
       res %p% visitor(s@ast)$ast
