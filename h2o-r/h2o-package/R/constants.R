@@ -12,11 +12,8 @@
 .pkg.env              <- new.env()
 
 # These may no longer be needed...
-.pkg.env$result_count <- 0
-.pkg.env$temp_count   <- 0
 .pkg.env$IS_LOGGING   <- FALSE
 .pkg.env$LOG_FILE_NAME<- NULL
-.pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
 
 # Some handy infix utilities
