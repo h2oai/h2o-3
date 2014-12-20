@@ -519,6 +519,14 @@ setMethod("[[<-", "h2o.frame", function(x, i, value) {
   do.call("$<-", list(x=x, name=i, value=value))
 })
 
+setMethod("colnames<-", signature(x="h2o.frame", value="h2o.frame"),
+  function(x, value) {
+    if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
+    colnames(x) <- value@col_names
+    x@col_names <- NA_character_
+    x
+})
+
 setMethod("colnames<-", signature(x="h2o.frame", value="character"),
   function(x, value) {
     if(any(nchar(value) == 0)) stop("Column names must be of non-zero length")
@@ -595,7 +603,7 @@ setMethod("colnames", "h2o.frame", function(x) {
   m.call <- match.call()
   ID <- as.list(m.call)$x
   if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-  if (is.na(x@nrows)) x <- h2o.getFrame(x@key)
+  if (is.na(x@col_names[1])) x <- h2o.getFrame(x@key)
   x@col_names
 })
 
