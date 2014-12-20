@@ -147,7 +147,7 @@ h2o.gc <- function(object) {
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(o %i% "H2OFrame" || o %i% "H2OModel") o@key
+      if(is(o, "H2OFrame") || is(o, "H2OModel")) o@key
     })
     Filter(Negate(is.null), l)
   }
@@ -171,7 +171,7 @@ h2o.gc <- function(object) {
 #' @param key The hex key to be associated with the H2O parsed data object
 #' 
 h2o.assign <- function(data, key) {
-  if(!(data %i% "H2OFrame")) stop("data must be of class H2OFrame")
+  if(!is(data, "H2OFrame")) stop("data must be of class H2OFrame")
   if(!is.character(key)) stop("key must be of class character")
   if(!nzchar(key)) stop("key cannot be an empty string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
@@ -290,8 +290,8 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
 #' head(h2o.table(prostate.hex[,c(3,4)]))
 #' h2o.table(prostate.hex[,c(3,4)])
 h2o.table <- function(x, y = NULL) {
-  if (!(x %i% "H2OFrame")) stop("`x` must be an H2O Frame.")
-  if (!is.null(y) && !(y %i% "H2OFrame")) stop("`y` must be an H2O Frame.")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
+  if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2O Frame.")
   ast <- .h2o.varop("table", x, y)
   .force.eval(asxt@ast)
 }
@@ -330,7 +330,7 @@ NULL
 #' @rdname h2o.cut
 cut.H2OFrame<-
 function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
-  if (!(x %i% "H2OFrame")) stop("`x` must be an H2O Frame.")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
   if(missing(breaks)) stop("`breaks` must be a numeric vector")
   .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
 }
@@ -398,7 +398,7 @@ h2o.runif <- function(x, seed = -1) {
 #'
 #' @return Returns a boolean.
 h2o.anyFactor <- function(x) {
-  if(!(x %i% "H2OFrame")) stop("x must be an H2O parsed data object")
+  if(!is(x, "H2OFrame")) stop("x must be an H2O parsed data object")
   ast <- .h2o.unop("any.factor", x)
   o <- new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
   .pkg.env[[o@key]] <- o
@@ -416,20 +416,20 @@ h2o.anyFactor <- function(x) {
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missing(i) && missing(j)) return(x)
-  if (!missing(i) && (i %i% "H2OFrame")) i <- eval(i@ast)
+  if (!missing(i) && is(i, "H2OFrame")) i <- eval(i@ast)
   if (!missing(j) && is.character(j)) {
     col_names <- colnames(x);
     if (! any(j %in% col_names)) stop("Undefined column names specified")
     j <- match(j, col_names)
   }
 
-  if (x %i% "H2OFrame") x <- .get(x)
+  if (is(x, "H2OFrame")) x <- .get(x)
   op <- new("ASTApply", op='[')
   if(missing(i))
     rows <- "\"null\""
-  else if (i %i% "H2OFrame")
+  else if (is(i, "H2OFrame"))
     rows <- .get(i)
-  else if (i %i% "ASTNode")
+  else if (is(i, "ASTNode"))
     rows <- i
   else
     rows <- .eval(substitute(i), parent.frame())
@@ -474,7 +474,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   }
 
   if (missing(i) && missing(j)) {
-    if (x %i% "H2OFrame") x <- .get(x)
+    if (is(x, "H2OFrame")) x <- .get(x)
     lhs <- x
   } else if (missing(i))
     lhs <- do.call("[", list(x=x, j=j))
@@ -483,7 +483,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   else
     lhs <- do.call("[", list(x=x, i=i, j=j))
 
-  if (value %i% "H2OFrame") rhs <- .get(value)
+  if (is(value, "H2OFrame")) rhs <- .get(value)
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
   op <- new("ASTApply", op='=')
@@ -505,7 +505,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   else idx <- match(name, col_names)                                # re-assign existing column
   lhs <- do.call("[", list(x=x, j=idx))                             # create the lhs ast
 
-  if (value %i% "H2OFrame") rhs <- .get(value)
+  if (is(value, "H2OFrame")) rhs <- .get(value)
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
   res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
   res <- new("H2OFrame", ast = res, key = x@key, h2o = .retrieveH2O())
@@ -516,7 +516,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 
 
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
-  if(!(value %i% "H2OFrame")) stop('Can only append H2O data to H2O data')
+  if(!is(value, "H2OFrame")) stop('Can only append H2O data to H2O data')
   do.call("$<-", list(x=x, name=i, value=value))
 })
 
@@ -675,7 +675,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   ID <- as.list(m.call)$x
   ret <- NULL
   if (!is.null(x@ast) && !.is.eval(x)) ret <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-  if (!is.null(ret) && (ret %i% "numeric")) return(ret)
+  if (!is.null(ret) && is.numeric(ret)) return(ret)
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   if(n == 0L)
@@ -763,7 +763,7 @@ quantile.H2OFrame <- function(x,
   parms <- list()
 
   # verify input parameters
-  if (!(x %i% "H2OFrame")) stop("argument \"x\" must be an H2OFrame object")
+  if (!is(x, "H2OFrame")) stop("argument \"x\" must be an H2OFrame object")
   if(ncol(x) != 1L) stop("quantile only operates on a single column")
   if(is.factor(x)) stop("factors are not allowed")
   #if(!na.rm && .h2o.__unop2("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
@@ -1015,7 +1015,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
 }
 
 .as.data.frame <- function(x, ...) {
-  if(!(x %i% "H2OFrame")) stop("x must be of class H2OFrame")
+  if(!is(x, "H2OFrame")) stop("x must be of class H2OFrame")
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
@@ -1181,7 +1181,7 @@ NULL
 
 #' @rdname h2o.cbind
 h2o.cbind <- function(...) {
-  klasses <- unlist(lapply(list(...), function(l) l %i% "H2OFrame"))
+  klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`cbind` must consist of H2O objects only.")
   .h2o.varop("cbind", ...)
 }
@@ -1209,11 +1209,11 @@ NULL
 h2o.rbind <- function(...) {
   l <- unlist(list(...))
   if (is.list(l)) {
-    klazzez <- unlist(lapply(l, function(i) i %i% "H2OFrame"))
+    klazzez <- unlist(lapply(l, function(i) is(i, "H2OFrame")))
     if (any(!klazzez)) stop("`rbind` must consist of H2O objects only.")
     .h2o.varop("rbind", .args=l)
   } else {
-    klasses <- unlist(lapply(list(...), function(l) l %i% "H2OFrame"))
+    klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
     if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
     .h2o.varop("rbind", ...)
   }
@@ -1253,7 +1253,7 @@ h2o.rbind <- function(...) {
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
   mm <- match.call()
   envir <- parent.frame()
-  if(!(.data %i% "H2OFrame")) stop('.data must be an h2o data object')
+  if(!is(.data, "H2OFrame")) stop('.data must be an h2o data object')
 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
@@ -1299,7 +1299,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
     extra_arg_names <- as.list(match.call())
     for (i in vars) {
       key <- as.character(extra_arg_names[[i]])
-      if (x %i% "H2OFrame") next
+      if (is(x, "H2OFrame")) next
       x <- l[vars]
       h2o.assign(x, key)
       l[vars] <- x
@@ -1404,7 +1404,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
     extra_arg_names <- as.list(match.call())
     for (i in idx) {
       key <- as.character(extra_arg_names[[i]])
-      if (x %i% "H2OFrame") next
+      if (is(x, "H2OFrame")) next
       x <- l[idx]
       h2o.assign(x, key)
       l[idx] <- x
@@ -1455,7 +1455,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
     extra_arg_names <- as.list(match.call())
     for (i in idx) {
       key <- as.character(extra_arg_names[[i]])
-      if (x %i% "H2OFrame") next
+      if (is(x, "H2OFrame")) next
       x <- l[idx]
       h2o.assign(x, key)
       l[idx] <- x

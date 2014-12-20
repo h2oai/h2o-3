@@ -610,11 +610,11 @@ setClass("H2OSpeeDRFGrid", contains="H2OGrid")
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
 
-.isH2O <- function(x) { x %i% "H2OFrame" || x %i% "H2OConnection" || x %i% "H2ORawData" }
+.isH2O <- function(x) { is(x, "H2OFrame") || is(x, "H2OConnection") || is(x, "H2ORawData") }
 .retrieveH2O<-
 function(env) {
   e_list <- unlist(lapply(ls(env), function(x) {
-    tryCatch(get(x, envir=env) %i% "H2OConnection", error = function(e) FALSE)
+    tryCatch(is(get(x, envir=env), "H2OConnection"), error = function(e) FALSE)
              }))
   if (any(e_list)) {
     if (sum(e_list) > 1L) {
@@ -624,7 +624,7 @@ function(env) {
     }
     return(get(ls(env)[which(e_list)[1L]], envir=env))
   }
-  g_list <- unlist(lapply(ls(globalenv()), function(x) get(x, envir=globalenv()) %i% "H2OConnection"))
+  g_list <- unlist(lapply(ls(globalenv()), function(x) is(get(x, envir=globalenv()), "H2OConnection")))
   if (any(g_list)) {
     if (sum(g_list) > 1L) {
       x <- g_list[1L]

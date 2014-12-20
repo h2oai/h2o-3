@@ -158,11 +158,11 @@
         "narray" = p_type[2L] <- "numeric")
       if(length(p_type) > 1L) {
         p_type <- p_type[2L]
-        if( !(m[[i$name]] %i% p_type) )
+        if(!inherits(m[[i$name]], p_type))
           e <- paste0(e, "array of ", i$name, " must be of type ", p_type, ", but got ", class(m[[i$name]]), ".\n")
         else
           m[[i$name]] <<- .collapse(m[[i$name]])
-      } else if( !((m[[i$name]]) %i% p_type)  )
+      } else if(!inherits(m[[i$name]], p_type))
         e <- paste0(e, " \"", i$name , "\" must be of type ", p_type, ", but got ", class(m[[i$name]]), ".\n")
       else if( length(i$values) > 1L)
         if( !(m[[i$name]] %in% i$values) ) {
@@ -180,7 +180,7 @@
 
   #---------- Create param list to pass ----------#
   p_val <- lapply(m, function(i) {
-    if( i %i% "H2OFrame" )
+    if(is(i, "H2OFrame"))
       i@key
     else
       i

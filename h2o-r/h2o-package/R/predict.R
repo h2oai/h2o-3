@@ -19,12 +19,12 @@
 #'
 .validate.predict<-
 function(object, newdata, types) {
-  if(!(object %i% types$object)) stop("`object` must be an ", types$object)
+  if(!inherits(object, types$object)) stop("`object` must be an ", types$object)
   if(missing(newdata)) {
     newdata <- object@data # predicting on data used in train
     warning("predicting on training data.")
   }
-  if(!(newdata %i% types$newdata)) stop('`newdata` must be a H2O dataset')
+  if(!inherits(newdata, types$newdata)) stop('`newdata` must be a H2O dataset')
 }
 
 #'

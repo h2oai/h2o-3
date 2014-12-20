@@ -29,7 +29,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
-  if (!(trainingFrame %i% "H2OFrame")) stop("`data` must be an H2OFrame")
+  if (!is(trainingFrame, "H2OFrame")) stop("`data` must be an H2OFrame")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
@@ -41,8 +41,8 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
   if (missing(sentSampleRate) || !is.numeric(sentSampleRate)) stop("`sentSampleRate` must be numeric")
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
-  if (!(trainingFrame %i% "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!(trainingFrame %i% "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
+  if (!is(trainingFrame, "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
+  if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
 
   params <- list(training_frame = trainingFrame@key,
                  wordModel = wordModel,
@@ -71,7 +71,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
 #'
 h2o.synonym<-
 function(word2vec, target, count) {
-  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")
+  if (!is(word2vec, "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")
   if (missing(target)) stop("`target` must be specified")
   if (!is.character(target)) stop("`target` must be character")
   if (missing(count)) stop("`count` must be specified")

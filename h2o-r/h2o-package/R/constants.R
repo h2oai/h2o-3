@@ -24,7 +24,7 @@
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
 "%<-%"   <- function(x,y) {
-  if ( x %i% "H2OFrame" ) x <- x@key
+  if (is(x, "H2OFrame")) x <- x@key
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = paste0('!', x), right = y))   # assignment node
 }
 
