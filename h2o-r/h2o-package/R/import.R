@@ -87,8 +87,9 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
     stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
   if(!is.logical(parse)) stop("parse must be of class logical")
 
+  path <- normalizePath(path, winslash = "/")
   urlSuffix <- sprintf("PostFile.json?destination_key=%s", curlEscape(path))
-  fileUploadInfo <- fileUpload(normalizePath(path))
+  fileUploadInfo <- fileUpload(path)
   h2o.doSafePOST(conn = object, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                  fileUploadInfo = fileUploadInfo)
 

@@ -979,8 +979,8 @@ function(x, center = TRUE, scale = TRUE) {
 #' @param key A string with the desired name for the H2O key.
 #' @param sep The field separator character.
 as.h2o <- function(client, object, key = "", header, sep = "") {
-  if(missing(client) || class(client) != "h2o.client") stop("client must be a h2o.client object")
-#  if(missing(object) || !is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
+  if(!is(client, "h2o.client")) stop("client must be a h2o.client object")
+#  if(!is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
   if(!is.character(key)) stop("key must be of class character")
   if((missing(key) || !nzchar(key))  && !is.atomic(object)) key <- deparse(substitute(object))
   else if (missing(key) || !nzchar(key)) key <- "Last.value"
