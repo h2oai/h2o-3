@@ -57,6 +57,11 @@ class RollupStats extends Iced {
   // Check for: Rollups available
   private boolean isReady() { return _naCnt>=0; }
 
+  private RollupStats() {
+    _mean = _sigma = Double.NaN;
+    _size = _naCnt = 0;
+  }
+
   private RollupStats( int mode ) { _naCnt = mode; }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
@@ -206,9 +211,15 @@ class RollupStats extends Iced {
   static RollupStats getOrNull(Vec vec) {
     final Key rskey = vec.rollupStatsKey();
     Value val = DKV.get(rskey);
-    if( val == null ) return null;
-    RollupStats rs = val.get(RollupStats.class);
-    return rs.isReady() ? rs : null;
+    if( val == null) {
+      if (vec.length() > 0)
+        return null;
+      else  // empty vec, presuming header file
+        return new RollupStats();
+    } else {
+      RollupStats rs = val.get(RollupStats.class);
+      return rs.isReady() ? rs : null;
+    }
   }
   // Histogram base & stride
   double h_base() { return _mins[0]; }
