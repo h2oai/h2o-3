@@ -32,13 +32,13 @@ NULL
 #' h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
 h2o.exportFile <- function(data, path, force = FALSE) {
   if (!is(data, "H2OFrame"))
-    stop("data must be an H2OFrame object")
+    stop("`data` must be an H2OFrame object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
-    stop("path must be a non-empty character string")
+    stop("`path` must be a non-empty character string")
 
   if(!is.logical(force) || length(force) != 1L || is.na(force))
-    stop("force must be TRUE or FALSE")
+    stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
 
   .h2o.__remoteSend(data@h2o, .h2o.__PAGE_EXPORTFILES, src_key = data@key, path = path, force = force)
@@ -54,10 +54,10 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 #'        filename.
 h2o.exportHDFS <- function(object, path) {
   if(!is(object, "H2OModel"))
-    stop("object must be an H2OModel object")
+    stop("`object` must be an H2OModel object")
 
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
-    stop("path must be a non-empty character string")
+    stop("`path` must be a non-empty character string")
 
   .h2o.__remoteSend(object@data@h2o, .h2o.__PAGE_EXPORTHDFS, source_key = object@key, path = path)
 }
@@ -83,7 +83,7 @@ h2o.exportHDFS <- function(object, path) {
 #' file.remove(myFile)
 h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
-    stop("data must be an H2OFrame object")
+    stop("`data` must be an H2OFrame object")
 
   str <- paste0('http://', data@h2o@ip, ':', data@h2o@port, '/2/DownloadDataset?src_key=', data@key)
   has_wget <- nzchar(Sys.which('wget'))
@@ -131,21 +131,21 @@ h2o.downloadCSV <- function(data, filename) {
 #' }
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is(object, "H2OModel"))
-    stop("object must be an H2OModel object")
+    stop("`object` must be an H2OModel object")
 
   if(!is.character(dir) || length(dir) != 1L || is.na(dir))
-    stop("dir must be a character string")
+    stop("`dir` must be a character string")
 
   if(!is.character(name) || length(name) != 1L || is.na(name))
-    stop("name must be a character string")
+    stop("`name` must be a character string")
   else if(!nzchar(name))
     name <- object@key
 
   if(!is.character(filename) || length(filename) != 1L || is.na(filename))
-    stop("filename must be a character string")
+    stop("`filename` must be a character string")
 
   if(!is.logical(force) || length(force) != 1L || is.na(force))
-    stop("force must be TRUE or FALSE")
+    stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
 
   if(nzchar(filename))

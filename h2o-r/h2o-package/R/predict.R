@@ -22,9 +22,9 @@ function(object, newdata, types) {
   if(!inherits(object, types$object)) stop("`object` must be an ", types$object)
   if(missing(newdata)) {
     newdata <- object@data # predicting on data used in train
-    warning("predicting on training data.")
+    warning("predicting on training data")
   }
-  if(!inherits(newdata, types$newdata)) stop('`newdata` must be a H2O dataset')
+  if(!inherits(newdata, types$newdata)) stop('`newdata` must be an H2OFrame object')
 }
 
 #'

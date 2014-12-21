@@ -132,8 +132,8 @@ h2o.rm <- function(object, keys) {
     keys <- object
     object <- .retrieveH2O(parent.frame())
   }
-  if(!is(object, "H2OConnection")) stop("object must be of class H2OConnection")
-  if(!is.character(keys)) stop("keys must be of class character")
+  if(!is(object, "H2OConnection")) stop("`object` must be of class H2OConnection")
+  if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
@@ -171,9 +171,8 @@ h2o.gc <- function(object) {
 #' @param key The hex key to be associated with the H2O parsed data object
 #' 
 h2o.assign <- function(data, key) {
-  if(!is(data, "H2OFrame")) stop("data must be of class H2OFrame")
-  if(!is.character(key)) stop("key must be of class character")
-  if(!nzchar(key)) stop("key cannot be an empty string")
+  if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
   ID <- as.list(match.call())$data
   ast <- .h2o.varop("rename", data, key)
@@ -220,9 +219,9 @@ h2o.getFrame <- function(h2o, key) {
 #}
 
 h2o.splitFrame <- function(data, ratios = 0.75) {
-  if(!is(data, "H2OFrame")) stop("data must be of class H2OFrame")
-  if(!is.numeric(ratios)) stop("ratios must be numeric")
-  if(any(ratios < 0 | ratios > 1)) stop("ratios must be between 0 and 1 exclusive")
+  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
+    stop("`ratios` must be between 0 and 1 exclusive")
   if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
   res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
@@ -290,8 +289,8 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
 #' head(h2o.table(prostate.hex[,c(3,4)]))
 #' h2o.table(prostate.hex[,c(3,4)])
 h2o.table <- function(x, y = NULL) {
-  if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
-  if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2O Frame.")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
+  if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
   ast <- .h2o.varop("table", x, y)
   .force.eval(asxt@ast)
 }
@@ -331,7 +330,8 @@ NULL
 cut.H2OFrame<-
 function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
-  if(missing(breaks)) stop("`breaks` must be a numeric vector")
+  if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
+    stop("`breaks` must be a numeric vector")
   .h2o.varop("cut", x, breaks, labels, include.lowest, right, dig.lab)
 }
 
@@ -377,8 +377,8 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 
 
 h2o.runif <- function(x, seed = -1) {
-  if(!is(x, "H2OFrame")) stop("data must be an H2O data set. Got ", class(x))
-  if(!is.numeric(seed)) stop("seed must be an integer >= 0")
+  if (!is(x, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   ast <- .h2o.varop("h2o.runif", x, seed)
   o <- new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
@@ -398,7 +398,7 @@ h2o.runif <- function(x, seed = -1) {
 #'
 #' @return Returns a boolean.
 h2o.anyFactor <- function(x) {
-  if(!is(x, "H2OFrame")) stop("x must be an H2O parsed data object")
+  if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   ast <- .h2o.unop("any.factor", x)
   o <- new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
   .pkg.env[[o@key]] <- o
@@ -464,8 +464,10 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
-  if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j))) stop("Row/column types not supported!")
-  if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value)) stop("value can only be numeric, character, or a H2OFrame object")
+  if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j)))
+    stop("Row/column types not supported!")
+  if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
+    stop("value can only be numeric, character, or an H2OFrame object")
   if(!missing(i) && is.numeric(i)) {
     if(any(i == 0L)) stop("Array index out of bounds")
   }
@@ -498,7 +500,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   if(missing(name) || !is.character(name) || !nzchar(name))
     stop("name must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
-    stop("value can only be numeric or a H2OFrame object")
+    stop("value can only be numeric or an H2OFrame object")
 
   col_names <- colnames(x);
   if (!(name %in% col_names)) idx <- length(col_names) + 1          # new column
@@ -763,12 +765,12 @@ quantile.H2OFrame <- function(x,
   parms <- list()
 
   # verify input parameters
-  if (!is(x, "H2OFrame")) stop("argument \"x\" must be an H2OFrame object")
+  if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if(ncol(x) != 1L) stop("quantile only operates on a single column")
   if(is.factor(x)) stop("factors are not allowed")
   #if(!na.rm && .h2o.__unop2("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
-  if(!is.numeric(probs)) stop("probs must be a numeric vector")
-  if(any(probs < 0 | probs > 1)) stop("probs must fall in the range of [0,1]")
+  if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
+    stop("`probs` must be between 0 and 1 exclusive")
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
 
@@ -979,9 +981,9 @@ function(x, center = TRUE, scale = TRUE) {
 #' @param key A string with the desired name for the H2O key.
 #' @param sep The field separator character.
 as.h2o <- function(client, object, key = "", header, sep = "") {
-  if(!is(client, "H2OConnection")) stop("client must be a H2OConnection object")
+  if(!is(client, "H2OConnection")) stop("`client` must be a H2OConnection object")
 #  if(!is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
-  if(!is.character(key)) stop("key must be of class character")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if((missing(key) || !nzchar(key))  && !is.atomic(object)) key <- deparse(substitute(object))
   else if (missing(key) || !nzchar(key)) key <- "Last.value"
 
@@ -1015,7 +1017,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
 }
 
 .as.data.frame <- function(x, ...) {
-  if(!is(x, "H2OFrame")) stop("x must be of class H2OFrame")
+  if(!is(x, "H2OFrame")) stop("`x` must be and H2OFrame object")
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
@@ -1150,7 +1152,7 @@ screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type 
   else if(type == "lines")
     lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
   else
-    stop("type must be either 'barplot' or 'lines'")
+    stop("`type` must be either \"barplot\" or \"lines\"")
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1182,7 +1184,7 @@ NULL
 #' @rdname h2o.cbind
 h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
-  if (any(!klasses)) stop("`cbind` must consist of H2O objects only.")
+  if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
   .h2o.varop("cbind", ...)
 }
 
@@ -1210,11 +1212,11 @@ h2o.rbind <- function(...) {
   l <- unlist(list(...))
   if (is.list(l)) {
     klazzez <- unlist(lapply(l, function(i) is(i, "H2OFrame")))
-    if (any(!klazzez)) stop("`rbind` must consist of H2O objects only.")
+    if (any(!klazzez)) stop("`h2o.rbind` accepts only of H2OFrame objects")
     .h2o.varop("rbind", .args=l)
   } else {
     klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
-    if (any(!klasses)) stop("`rbind` must consist of H2O objects only.")
+    if (any(!klasses)) stop("`h2o.rbind` must consist of H2O objects only.")
     .h2o.varop("rbind", ...)
   }
 }
@@ -1253,7 +1255,7 @@ h2o.rbind <- function(...) {
 h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') {
   mm <- match.call()
   envir <- parent.frame()
-  if(!is(.data, "H2OFrame")) stop('.data must be an h2o data object')
+  if(!is(.data, "H2OFrame")) stop('.data must be an H2OFrame object')
 
   # we accept eg .(col1, col2), c('col1', 'col2'), 1:2, c(1,2)
   # as column names.  This is a bit complicated
@@ -1384,7 +1386,6 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #'
 #'   Pass the additional by calling _fun.exec(env, _args)
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
-  if(!is(X, "H2OFrame")) stop("X must be a H2O parsed data object")
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
   if(missing(FUN)) stop("FUN must be an R function")
@@ -1442,7 +1443,6 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
 })
 
 setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
-  if(!is(X, "H2OFrame")) stop("X must be a H2O parsed data object")
   if(missing(FUN) || !is.function(FUN))
     stop("FUN must be an R function")
 

@@ -126,9 +126,9 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
 )
 {
 
-  if( missing(x) ) stop("argument \"x\" is missing, with no default")
-  if( missing(y) ) stop("argument \"y\" is missing, with no default")
-  if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
+  if( missing(x) ) stop("`x` is missing, with no default")
+  if( missing(y) ) stop("`y` is missing, with no default")
+  if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
 
   colargs <- .verify_dataxy_full(training_frame, x, y, autoencoder)
 

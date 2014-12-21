@@ -620,7 +620,7 @@ function(env) {
     if (sum(e_list) > 1L) {
       x <- e_list[1L]
       for (y in e_list[1L])
-        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
     }
     return(get(ls(env)[which(e_list)[1L]], envir=env))
   }
@@ -629,9 +629,9 @@ function(env) {
     if (sum(g_list) > 1L) {
       x <- g_list[1L]
       for (y in g_list[1L])
-        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
     }
     return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
   }
-  stop("Could not find any H2OConnection. Do you have an active connection to H2O from R? Please specify the h2o connection.")
+  stop("Could not find any active H2OConnection objects. Please specify an H2O connection.")
 }

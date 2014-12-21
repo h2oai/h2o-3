@@ -441,7 +441,7 @@ function(s) {
     res %p0% ')'
     return(res)
   } else if (s %i% "ASTFor") {
-    stop("unimplemented")
+    .NotYetImplemented()
   } else if (s %i% "ASTNode") {
     res %p% visitor(s)$ast
     return(res)
@@ -462,6 +462,6 @@ function(s) {
   } else {
     print(s)
     print(class(s))
-    stop("unimplemented")
+    .NotYetImplemented()
   }
 }

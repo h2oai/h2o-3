@@ -5,17 +5,17 @@
 }
 .verify_dataxy_full <- function(data, x, y, autoencoder) {
   if(!is(data,  "H2OFrame"))
-    stop('data must be an H2O parsed dataset')
+    stop('`data` must be an H2OFrame object')
   if(!is.character(x) && !is.numeric(x))
-    stop('x must be column names or indices')
+    stop('`x` must be column names or indices')
   if(!is.character(y) && !is.numeric(y))
-    stop('y must be a column name or index')
+    stop('`y` must be a column name or index')
 
   cc <- colnames(data)
 
   if(is.character(x)) {
     if(!all(x %in% cc))
-      stop(paste(x[!(x %in% cc)], collapse=','), ' is not a valid column name')
+      stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse=','))
     x_i <- match(x, cc)
   } else {
     if(any( x < 1L | x > length(cc)))
@@ -47,9 +47,9 @@
 
 .verify_datacols <- function(data, cols) {
   if(!is(data, "H2OFrame"))
-    stop('data must be an H2O parsed dataset')
+    stop('`data` must be an H2OFrame object')
   if(!is.character(cols) && !is.numeric(cols))
-    stop('cols must be column names or indices')
+    stop('`cols` must be column names or indices')
 
   cc <- colnames(data)
   if(length(cols) == 1L && cols == '')
