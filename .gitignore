@@ -26,6 +26,8 @@ out/
 *.ipr
 *.iws
 *.Rout
+*.Rd
+h2o-r/h2o-package/DESCRIPTION
 .settings/*
 gradle-app.setting
 .gradle
