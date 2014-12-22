@@ -16,8 +16,9 @@ public class TwoDimTable extends Iced {
   String[] colFormatStrings; //optional
   String[] rowHeaders;
   String[][] strings;
-  public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN
   double[][] doubles;
+
+  public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN
 
   /**
    * Check whether a double value is considered an "empty field".
