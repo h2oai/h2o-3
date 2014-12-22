@@ -79,20 +79,24 @@ Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
 
 
-Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), [devtools](http://cran.r-project.org/package=devtools), [roxygen2](http://cran.r-project.org/package=roxygen2) and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
     R CMD INSTALL RCurl_x.xx-x.x.zip
     R CMD INSTALL rjson_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
-    R CMD INSTALL bitops_x.x-x.zip
+    R CMD INSTALL devtools_x.x-x.zip
+    R CMD INSTALL roxygen2_x.x-x.zip
+    R CMD INSTALL testthat_x.x-x.zip
 
 You may alternatively install these packages from within an R session:
 
-> install.packages("rjson")
 > install.packages("RCurl")
+> install.packages("rjson")
 > install.packages("statmod")
-> install.packages("bitops")
+> install.packages("devtools")
+> install.packages("roxygen2")
+> install.packages("testthat")
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
@@ -132,13 +136,24 @@ Otherwise install from the [NodeJS website](http://nodejs.org/download/).
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
-Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), [devtools](http://cran.r-project.org/package=devtools), [roxygen2](http://cran.r-project.org/package=roxygen2) and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
     R CMD INSTALL RCurl_x.xx-x.x.tgz
     R CMD INSTALL rjson_x.x.xx.tgz
     R CMD INSTALL statmod_x.x.xx.tgz
-    R CMD INSTALL bitops_x.x-x.tgz
+    R CMD INSTALL devtools_x.x-x.tgz
+    R CMD INSTALL roxygen2_x.x-x.tgz
+    R CMD INSTALL testthat_x.x-x.tgz
+
+You may alternatively install these packages from within an R session:
+
+> install.packages("RCurl")
+> install.packages("rjson")
+> install.packages("statmod")
+> install.packages("devtools")
+> install.packages("roxygen2")
+> install.packages("testthat")
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
