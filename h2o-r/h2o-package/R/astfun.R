@@ -174,9 +174,9 @@ function(stmnt) {
   if (is.atomic(stmnt_list[[1]]) && is.null(stmnt_list[[1]])) return(deparse("null"))
 
   if (is.atomic(stmnt_list[[1]]))
-    if (stmnt_list[[1]] %i% "numeric"   ||  # Got atomic numeric
-        stmnt_list[[1]] %i% "character" ||  # Got atomic character
-        stmnt_list[[1]] %i% "logical")      # Got atomic logical
+    if (is.numeric(stmnt_list[[1]])   ||  # Got atomic numeric
+        is.character(stmnt_list[[1]]) ||  # Got atomic character
+        is.logical(stmnt_list[[1]]))      # Got atomic logical
         return(stmnt_list[[1]])
 
   # Got an Op
@@ -201,8 +201,8 @@ function(stmnt) {
     } else if(.is.varop(op)) {
       args <- lapply(stmnt_list[-1], .statement.to.ast.switchboard)
       arg1 <- args[1]
-      if (arg1[[1]] %i% "ASTEmpty") arg1[[1]] <- .get.value.from.arg(arg1[[1]])
-      if (arg1[[1]] %i% "ASTNode")  arg1[[1]] <- visitor(.get.value.from.arg(arg1[[1]]))$ast
+      if (is(arg1[[1]], "ASTEmpty")) arg1[[1]] <- .get.value.from.arg(arg1[[1]])
+      if (is(arg1[[1]], "ASTNode"))  arg1[[1]] <- visitor(.get.value.from.arg(arg1[[1]]))$ast
       args[[1]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
@@ -276,7 +276,7 @@ function(stmnt) {
   j <- stmnt_list[[4]]  # columns
   op <- new("ASTApply", op='[')
   x <- '%' %p0% deparse(stmnt_list[[2]])
-  rows <- if( missing(i)) deparse("null") else { if ( i %i% "ASTNode") eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
+  rows <- if( missing(i)) deparse("null") else { if (is(i, "ASTNode")) eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
 }
@@ -300,7 +300,7 @@ function(stmnt) {
   stmnt_list <- as.list(stmnt)
   s <- .statement.to.ast.switchboard(stmnt_list[[2]])
   lhs <- ""
-  if (s %i% "ASTNode") lhs <- s
+  if (is(s, "ASTNode")) lhs <- s
   else {
     x <- deparse(stmnt[[2]])
     lhs <- '' %p0% x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
@@ -424,8 +424,8 @@ function(astfun) {
 .stmnt.visitor<-
 function(s) {
   res <- ""
-  if (s %i% "ASTBody") return(.body.visitor(s))
-  if (s %i% "ASTIf") {
+  if (is(s, "ASTBody")) return(.body.visitor(s))
+  if (is(s, "ASTIf")) {
     res %p0% '('
     res %p0% s@op
     res %p% visitor(s@condition)$ast
@@ -433,31 +433,31 @@ function(s) {
     for (b in body) {res %p% b}
     res %p0% ')'
     return(res)
-  } else if (s %i% "ASTElse") {
+  } else if (is(s, "ASTElse")) {
     res %p0% '('
     res %p0% s@op
     body <- .body.visitor(s@body)
     for (b in body) {res %p% b}
     res %p0% ')'
     return(res)
-  } else if (s %i% "ASTFor") {
+  } else if (is(s, "ASTFor")) {
     .NotYetImplemented()
-  } else if (s %i% "ASTNode") {
+  } else if (is(s, "ASTNode")) {
     res %p% visitor(s)$ast
     return(res)
-  } else if (s %i% "character") {
+  } else if (is.character(s)) {
     res %p% s
     return(res)
-  } else if (s %i% "H2OFrame") {
+  } else if (is(s, "H2OFrame")) {
     tmp <- .get(s)
-    if (tmp %i% "ASTNode") {
+    if (is(tmp, "ASTNode")) {
       res %p% visitor(s@ast)$ast
       return(res)
     } else {
       res %p% s
       return(res)
     }
-  } else if (s %i% "ASTEmpty") {
+  } else if (is(s, "ASTEmpty")) {
     res %p% '%' %p0% s@key
   } else {
     print(s)

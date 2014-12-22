@@ -28,16 +28,16 @@ function(node) {
     res %p0% ')'
     list( ast = res)
 
-  } else if (node %i% "ASTSeries") {
+  } else if (is(node, "ASTSeries")) {
     res %p% node@op
     children <- unlist(lapply(node@children, visitor))
     children <- paste(children, collapse=";",sep="")
     res %p0% children
     res %p0% "}"
     res
-  } else if (node %i% "ASTEmpty") {
+  } else if (is(node, "ASTEmpty")) {
     node@key
-  } else if (node %i% "H2OFrame") {
+  } else if (is(node, "H2OFrame")) {
     .get(node)
   } else {
     node
@@ -181,13 +181,13 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (a %i% "H2OFrame") {
+  if (is(a, "H2OFrame")) {
     .get(a)
-  } else if (a %i% "ASTNode") {
+  } else if (is(a, "ASTNode")) {
     a
-  } else if (a %i% "ASTFun") {
+  } else if (is(a, "ASTFun")) {
     '%' %p0% a@name
-  } else if (a %i% "ASTEmpty") {
+  } else if (is(a, "ASTEmpty")) {
     '%' %p0% a@key
   } else {
     res <- eval(a)
