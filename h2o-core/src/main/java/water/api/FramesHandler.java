@@ -142,6 +142,9 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
+    if( ice instanceof Vec )
+      return new Frame((Vec)ice);
+
     if (! (ice instanceof Frame))
       throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Frame.class, ice.getClass());
 
