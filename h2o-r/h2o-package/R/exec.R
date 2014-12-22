@@ -101,7 +101,7 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.
   expr <- visitor(ast)
 
   res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=expr$ast)
-  if (!is.null(res$exception)) stop(res$exception, call.=FALSE)
+  if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {
     ret <- res$string
     if (ret == "TRUE")  ret <- TRUE
