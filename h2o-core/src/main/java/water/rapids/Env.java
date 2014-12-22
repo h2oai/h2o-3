@@ -1,6 +1,7 @@
 package water.rapids;
 
 import water.*;
+import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMap;
@@ -66,8 +67,8 @@ public class Env extends Iced {
     _stack  = e._stack;
     _refcnt = e._refcnt; // same ref cnter
     _sb     = null;
-    _locked = e._locked;
-    _global = e._global;
+    _locked = new HashSet<>();
+    _global = null;
     _local  = new SymbolTable();
     _parent = e;
     _isGlobal = false;
@@ -155,6 +156,12 @@ public class Env extends Iced {
     IcedInt I = _refcnt.get(v);
     assert I==null || I._val>=0;
     _refcnt.put(v,new IcedInt(I==null?1:I._val+1));
+    if (v instanceof EnumWrappedVec) {
+      Vec mv = ((EnumWrappedVec) v).masterVec();
+      IcedInt Imv = _refcnt.get(mv);
+      assert Imv==null || Imv._val>=0;
+      _refcnt.put(mv  ,new IcedInt(Imv==null?1:Imv._val+1));
+    }
   }
 
   private void subRef(Val o) {
@@ -194,8 +201,7 @@ public class Env extends Iced {
     if( p._locked.contains(f._key) ) { subRefLocked(f); bail=true; }
 
     // subRef vecs in _locked properly
-    for( Key k : f.keys() ) { if (!p._locked.contains(k)) { subRefLocked((Vec)DKV.getGet(k)); bail=true;} }
-
+    for( Key k : f.keys() ) { if (p._locked.contains(k)) { subRefLocked((Vec)DKV.getGet(k)); bail=true;} }
     return bail;
   }
 
@@ -245,8 +251,8 @@ public class Env extends Iced {
 
   private boolean checkTableFramesHelper(SymbolTable t, Vec v) {
     for( Frame f : t._frames.values() )
-      if( f.find(v)<0 ) return false;
-    return true;
+      if( f.find(v)>=0 ) return true;
+    return false;
   }
 
   private void subRefLocked(Vec v) {
@@ -319,14 +325,15 @@ public class Env extends Iced {
       }
     }
 
-//    for (String k : _global._frames.keySet()) {
-//      if (!_locked.contains(Key.make(k))) {
-//        Frame f = _global._frames.get(k);
-//        if (_locked.contains(f._key)) continue;
-//        for (Vec v : f.vecs()) removeVec(v, fs);
-//        f.delete();
-//      }
-//    }
+    for (String k : _global._frames.keySet()) {
+      boolean delete=true;
+      if (!_locked.contains(Key.make(k))) {
+        Frame f = _global._frames.get(k);
+        if (_locked.contains(f._key)) continue;
+        for (Vec v : f.vecs()) delete &= subRef(v);
+        if (delete) f.delete();
+      }
+    }
     fs.blockForPending();
   }
 
@@ -384,12 +391,13 @@ public class Env extends Iced {
     Futures fs = new Futures();
     // chop the local frames made in the scope
     for (String k : _local._frames.keySet()) {
+      boolean delete=true;
       if (isAry()) {
         if(peekAry()._key != null && peekAry()._key == _local._frames.get(k)._key) continue;
       }
       Frame f = _local._frames.get(k);
-      for (Vec v : f.vecs()) removeVec(v, fs);
-      f.delete();
+      for (Vec v : f.vecs()) delete &= subRef(v);
+      if(delete) f.delete();
     }
     _local._frames.clear();
     // zoop over the _local_locked hashset and hose down the KV store

@@ -2557,6 +2557,7 @@ class ASTIfElse extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
+    if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
     Frame tst = env.pop0Ary();
     if (tst.numCols() != 1)
       throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
