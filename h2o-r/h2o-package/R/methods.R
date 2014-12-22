@@ -292,7 +292,7 @@ h2o.table <- function(x, y = NULL) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
   ast <- .h2o.varop("table", x, y)
-  .force.eval(asxt@ast)
+  .force.eval(ast@ast)
 }
 
 
