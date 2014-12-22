@@ -381,7 +381,7 @@ h2o.runif <- function(x, seed = -1) {
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   ast <- .h2o.varop("h2o.runif", x, seed)
-  o <- new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  o <- new("H2OFrame", ast = ast@ast, key = .key.make(), h2o = .retrieveH2O())
   .pkg.env[[o@key]] <- o
   o
 }
