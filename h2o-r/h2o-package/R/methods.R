@@ -393,16 +393,24 @@ h2o.runif <- function(x, seed = -1) {
 #  if(length(min) > 1 || length(max) > 1) stop("Unimplemented")
 #  if(min > max) stop("min must be a number less than or equal to max")
 
+
+#' Check H2OFrame columns for factors
 #'
-#' Is any column of the H2OFrame object a enum column
+#' Determines if any column of an H2OFrame object contains categorical data.
 #'
-#' @return Returns a boolean.
+#' @name h2o.anyFactor
+#' @param x An \code{\linkS4class{H2OFrame}} object.
+#' @return Returns a logical value indicating whether any of the columns in \code{x} are factors.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris_wheader.csv", package="h2o")
+#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' h2o.anyFactor(iris.hex)
 h2o.anyFactor <- function(x) {
   if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   ast <- .h2o.unop("any.factor", x)
-  o <- new("H2OFrame", ast = ast@ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  .force.eval(ast@ast)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
