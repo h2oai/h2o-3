@@ -9,16 +9,10 @@ prostate.hex <- h2o.importFile(H2Oserver, path = prosPath, key = "prostate.hex")
 s <- h2o.runif(prostate.hex)
 summary(s)
 prostate.train <- prostate.hex[s <= 0.8,]
-prostate.train <- h2o.assign(prostate.train, "prostate.train")
 prostate.test <- prostate.hex[s > 0.8,]
-prostate.test <- h2o.assign(prostate.test, "prostate.test")
 nrow(prostate.train) + nrow(prostate.test)
 count <- nrow(prostate.train) + nrow(prostate.test)
 sum <- summary(prostate.test)
-
-Log.info("Print output from as.data.frame call")
-Log.info(paste("H2O Count  :" ,count))
-Log.info(paste("H2O Summary of HO Set  : " , sum))
 
 testEnd()
 }
