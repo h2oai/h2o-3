@@ -98,7 +98,7 @@ function(word2vec, target, count) {
 #' Use a pre-existing word2vec object to transform a target word
 #' into a numeric vector.
 #setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
-#  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
+#  if (!is(word2vec, "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
 #  if (missing(target)) stop("`target` must be specified")
 #  if (!is.character(target)) stop("`target` must be character")
 #  if (length(target) > 1) stop("`target` must be a single word")

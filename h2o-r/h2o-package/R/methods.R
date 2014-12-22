@@ -571,7 +571,7 @@ setMethod("nrow", "H2OFrame", function(x) {
   m.call <- match.call()
   ID <- as.list(m.call)$x
   if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-#  if (x %i% "numeric") return(length(x))
+#  if (is.numeric(x)) return(length(x))
   if (is.na(x@nrows)) x <- h2o.getFrame(x@key)
   x@nrows
 })
@@ -582,7 +582,7 @@ setMethod("ncol", "H2OFrame", function(x) {
   m.call <- match.call()
   ID <- as.list(m.call)$x
   if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-#  if (x %i% "numeric") return(length(x))
+#  if (is.numeric(x)) return(length(x))
   if (is.na(x@ncols)) x <- h2o.getFrame(x@key)
   x@ncols
 })
@@ -888,7 +888,7 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
 # TODO: figure out funcionality/use for documentation
 # h2o.mode <-
 # function(x) {
-#  if(!(x %i% "H2OFrame") || nrow(x) > 1) stop('x needs to be a H2OFrame object')
+#  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be a H2OFrame object')
 # tabularx = invisible(table(x))
 #  maxCount = max(tabularx$Count)
 #  modes = tabularx$row.names[tabularx$Count == maxCount]
@@ -1280,7 +1280,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
     stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
 
   # FUN <- deparse(substitute(.fun))
-  # if( .fun %i% 'ccharacter' ) FUN <- gsub("\"", "", FUN)
+  # if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
   # .FUN <- get(FUN)
   # if( !is.function(.FUN) ) stop("FUN must be an R function
   if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun))
