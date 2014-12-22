@@ -21,7 +21,7 @@ dependencies {
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn cpLibs, jar, testJar, testMultiNode
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
 
   // Defeat task 'test' by running no tests.
   exclude '**'
