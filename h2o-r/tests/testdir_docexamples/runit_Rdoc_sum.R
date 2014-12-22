@@ -6,7 +6,7 @@ test.rdocsum.golden <- function(H2Oserver) {
 ausPath <- system.file("extdata", "australia.csv", package="h2o")
 australia.hex <- h2o.importFile(H2Oserver, path = ausPath, key = "australia.hex")
 sum(australia.hex)
-sum(c(400, 1234, -1250), TRUE, australia.hex[,1:4])
+sum(australia.hex[,1:4], australia.hex[,5:8], na.rm=FALSE)
 
 testEnd()
 }
