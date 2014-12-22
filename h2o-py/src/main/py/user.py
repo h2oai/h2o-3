@@ -8,7 +8,7 @@ from h2o import H2OFrame
 # Connect to a pre-existing cluster
 cluster = H2OConnection()
 
-a = H2OFrame(remoteFName="smalldata/iris/iris_wheader.csv")[0:4]
+a = H2OFrame(remote_fname="smalldata/iris/iris_wheader.csv")[0:4]
 
 print a[0]._name    # Column header
 print a[0][2]       # column 0, row 2 value
@@ -21,7 +21,7 @@ print a["sepal_len"].mean()
 try: print a["Sepal_len"]   # Error, mispelt column name
 except ValueError,ex: pass  # Expected error
 
-b = H2OFrame(remoteFName="smalldata/iris/iris_wheader.csv")[0:4]
+b = H2OFrame(remote_fname="smalldata/iris/iris_wheader.csv")[0:4]
 c = a+b
 d = c+c+sum(a)
 e = c+a+1
