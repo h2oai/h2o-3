@@ -66,7 +66,6 @@
 #' Carefully examine an environment and determine if it's a user-defined closure.
 #'
 .is.closure <- function(e) {
-
   # if env is defined in the global environment --> it is user defined
   if (identical(e, .GlobalEnv)) return(TRUE)
 
@@ -93,43 +92,37 @@ function(fun) {
 
 .is.op<-
 function(o) {
-  if(.is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)) return(TRUE)
-  FALSE
+  .is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)
 }
 
 .is.unop<-
 function(o) {
   o <- deparse(o)
-  if (o %in% names(.unop.map)) return(TRUE)
-  FALSE
+  o %in% names(.unop.map)
 }
 
 .is.binop<-
 function(o) {
   o <- deparse(o)
-  if (o %in% names(.binop.map)) return(TRUE)
-  FALSE
+  o %in% names(.binop.map)
 }
 
 .is.varop<-
 function(o) {
   o <- deparse(o)
-  if (o %in% names(.varop.map)) return(TRUE)
-  FALSE
+  o %in% names(.varop.map)
 }
 
 .is.prefix<-
 function(o) {
   o <- deparse(o)
-  if (o %in% names(.prefix.map)) return(TRUE)
-  FALSE
+  o %in% names(.prefix.map)
 }
 
 .is.slice<-
 function(o) {
   o <- deparse(o)
-  if (o %in% c("[", "$")) return(TRUE)
-  FALSE
+  o %in% c("[", "$")
 }
 
 #'
@@ -166,59 +159,58 @@ function(o) {
 #' Each of the above types of statements will handle their own arguments and return an appropriate AST
 .process.stmnt<-
 function(stmnt) {
-
   # convenience variable
   stmnt_list <- as.list(stmnt)
 
   # is null
-  if (is.atomic(stmnt_list[[1]]) && is.null(stmnt_list[[1]])) return(deparse("null"))
+  if (is.atomic(stmnt_list[[1L]]) && is.null(stmnt_list[[1L]])) return(deparse("null"))
 
-  if (is.atomic(stmnt_list[[1]]))
-    if (is.numeric(stmnt_list[[1]])   ||  # Got atomic numeric
-        is.character(stmnt_list[[1]]) ||  # Got atomic character
-        is.logical(stmnt_list[[1]]))      # Got atomic logical
-        return(stmnt_list[[1]])
+  if (is.atomic(stmnt_list[[1L]]))
+    if (is.numeric(stmnt_list[[1L]])   ||  # Got atomic numeric
+        is.character(stmnt_list[[1L]]) ||  # Got atomic character
+        is.logical(stmnt_list[[1L]]))      # Got atomic logical
+        return(stmnt_list[[1L]])
 
   # Got an Op
-  if (.is.op(stmnt_list[[1]])) {
+  if (.is.op(stmnt_list[[1L]])) {
 
     # have an operator
-    op <- stmnt_list[[1]]
+    op <- stmnt_list[[1L]]
 
     # Case 2 from the comment above
     if (.is.binop(op)) {
-      e1 <- .statement.to.ast.switchboard(stmnt_list[[2]])
-      e2 <- .statement.to.ast.switchboard(stmnt_list[[3]])
+      e1 <- .statement.to.ast.switchboard(stmnt_list[[2L]])
+      e2 <- .statement.to.ast.switchboard(stmnt_list[[3L]])
       return(.h2o.binop(deparse(op), e1, e2))
 
     # Case 1, 3A above unless it's `log`, or `[`, or `$`
     } else if (.is.unop(op)) {
       if (.is.slice(op)) return(.process.slice.stmnt(stmnt))
-      x <- .statement.to.ast.switchboard(stmnt_list[[2]])
+      x <- .statement.to.ast.switchboard(stmnt_list[[2L]])
       return(.h2o.unop(deparse(op), x))
 
     # all varops
     } else if(.is.varop(op)) {
-      args <- lapply(stmnt_list[-1], .statement.to.ast.switchboard)
-      arg1 <- args[1]
-      if (is(arg1[[1]], "ASTEmpty")) arg1[[1]] <- .get.value.from.arg(arg1[[1]])
-      if (is(arg1[[1]], "ASTNode"))  arg1[[1]] <- visitor(.get.value.from.arg(arg1[[1]]))$ast
-      args[[1]] <- arg1
+      args <- lapply(stmnt_list[-1L], .statement.to.ast.switchboard)
+      arg1 <- args[1L]
+      if (is(arg1[[1L]], "ASTEmpty")) arg1[[1L]] <- .get.value.from.arg(arg1[[1L]])
+      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- visitor(.get.value.from.arg(arg1[[1L]]))$ast
+      args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
-      op_args <- (stmnt_list[-1])[-1]         # these are any additional args passed to this op
+      op_args <- (stmnt_list[-1L])[-1L]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
-      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1]
-      if (is.null(l)) stop("Could not find args for the op: " %p0% as.character(op))
+      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1L]
+      if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
       l <- lapply(l, function(i)
-      if (length(i=="") != 0) {
+      if (length(i) != 0L) {
         if(i == "") NULL else i
       } else i)
       add_args <- l[names(l) != "..."]        # remove any '...' args
 
       # if some args were passed in then update those values in add_args
-      if (length(op_args) != 0) {
+      if (length(op_args) != 0L) {
         for (a in names(add_args)) {
           if (a %in% names(op_args)) add_args[a] <- op_args[a]
         }
@@ -236,46 +228,46 @@ function(stmnt) {
 
     # prefix op, 1 arg
     } else if(.is.prefix(op)) {
-      arg <- .statement.to.ast.switchboard(stmnt_list[[2]])
+      arg <- .statement.to.ast.switchboard(stmnt_list[[2L]])
       return(.h2o.unop(deparse(op), arg))
 
     # should never get here
     } else {
-      print(paste("Fail in statement processing to AST. Failing statement was: ", stmnt))
-      stop("Please contact support@0xdata.com")
+      stop("Fail in statement processing to AST. Failing statement was: ", stmnt, "\n",
+           "Please contact support@0xdata.com")
     }
   }
 
   # Got a user-defined function
-  if (.is.udf(stmnt_list[[1]])) stop("fcn within a fcn unimplemented")
+  if (.is.udf(stmnt_list[[1L]])) stop("fcn within a fcn unimplemented")
 
   # otherwise just got a variable name to either return (if last statement) or skip (if not last statement)
   # this `if` is just to make us all feel good... it doesn't do any interesting checking
-  if (is.name(stmnt_list[[1]]) && is.symbol(stmnt_list[[1]]) && is.language(stmnt_list[[1]])) {
-    return(new("ASTEmpty", key = as.character(stmnt_list[[1]])))
+  if (is.name(stmnt_list[[1L]]) && is.symbol(stmnt_list[[1L]]) && is.language(stmnt_list[[1L]])) {
+    return(new("ASTEmpty", key = as.character(stmnt_list[[1L]])))
   }
 
-  if (length(stmnt) == 1) return(.process.stmnt(stmnt[[1]]))
-  stop(paste( "Don't know what to do with statement: ", stmnt))
+  if (length(stmnt) == 1L) return(.process.stmnt(stmnt[[1L]]))
+  stop("Don't know what to do with statement: ", stmnt)
 }
 
 .process.slice.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)
-  i <- stmnt_list[[3]]  # rows
-  if (length(stmnt_list) == 3) {
+  i <- stmnt_list[[3L]]  # rows
+  if (length(stmnt_list) == 3L) {
     if(missing(i)) return("")
     if(length(i) > 1) stop("[[]] may only select one column")
     if (!is.numeric(i)) stop("column selection within a function call must be numeric")
     op <- new("ASTApply", op='[')
-    x <- '%' %p0% deparse(stmnt_list[[2]])
+    x <- paste0('%', deparse(stmnt_list[[2L]]))
     rows <- deparse("null")
     cols <- .eval(substitute(i), parent.frame())
     return(new("ASTNode", root=op, children=list(x, rows, cols)))
   }
-  j <- stmnt_list[[4]]  # columns
+  j <- stmnt_list[[4L]]  # columns
   op <- new("ASTApply", op='[')
-  x <- '%' %p0% deparse(stmnt_list[[2]])
+  x <- paste0('%', deparse(stmnt_list[[2]]))
   rows <- if( missing(i)) deparse("null") else { if (is(i, "ASTNode")) eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
   cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
   new("ASTNode", root=op, children=list(x, rows, cols))
@@ -284,10 +276,10 @@ function(stmnt) {
 .process.if.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)         # drop the `if`
-  has_else <- length(stmnt_list) == 4  # more if-elses are glommed together into the 4th item in the list ... ALWAYS!
-  condition <- .statement.to.ast.switchboard(stmnt_list[[2]])
-  body <- .process.body(stmnt_list[[3]])
-  if (has_else) body <- c(body, .process.else.stmnt(stmnt_list[[4]]))
+  has_else <- length(stmnt_list) == 4L # more if-elses are glommed together into the 4th item in the list ... ALWAYS!
+  condition <- .statement.to.ast.switchboard(stmnt_list[[2L]])
+  body <- .process.body(stmnt_list[[3L]])
+  if (has_else) body <- c(body, .process.else.stmnt(stmnt_list[[4L]]))
   new("ASTIf", condition = condition, body = new("ASTBody", statements = body))
 }
 
@@ -298,14 +290,14 @@ function(stmnt) {
 .process.assign.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)
-  s <- .statement.to.ast.switchboard(stmnt_list[[2]])
+  s <- .statement.to.ast.switchboard(stmnt_list[[2L]])
   lhs <- ""
   if (is(s, "ASTNode")) lhs <- s
   else {
-    x <- deparse(stmnt[[2]])
-    lhs <- '' %p0% x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
+    x <- deparse(stmnt[[2L]])
+    lhs <- x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
   }
-  y <- .statement.to.ast.switchboard(stmnt_list[[3]])
+  y <- .statement.to.ast.switchboard(stmnt_list[[3L]])
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
 
@@ -336,16 +328,16 @@ function(stmnt) {
   stmnt_list <- as.list(stmnt)
 
   # check for `if`, `for`, `else`, `return`, `while` -- stop if `while`
-  if (identical(quote(`if`),     stmnt_list[[1]])) return(.process.if.stmnt(stmnt))
-  if (identical(quote(`for`),    stmnt_list[[1]])) return(.process.for.stmnt(stmnt))
-  if (identical(quote(`else`),   stmnt_list[[1]])) return(.process.else.stmnt(stmnt))
-  if (identical(quote(`return`), stmnt_list[[1]])) return(.process.return.stmnt(stmnt))
-  if (identical(quote(`while`),  stmnt_list[[1]])) stop("*Unimplemented* `while` loops are not supported by h2o")
+  if (identical(quote(`if`),     stmnt_list[[1L]])) return(.process.if.stmnt(stmnt))
+  if (identical(quote(`for`),    stmnt_list[[1L]])) return(.process.for.stmnt(stmnt))
+  if (identical(quote(`else`),   stmnt_list[[1L]])) return(.process.else.stmnt(stmnt))
+  if (identical(quote(`return`), stmnt_list[[1L]])) return(.process.return.stmnt(stmnt))
+  if (identical(quote(`while`),  stmnt_list[[1L]])) stop("*Unimplemented* `while` loops are not supported by h2o")
 
   # check assignment
-  if(identical(quote(`<-`), stmnt_list[[1]])) return(.process.assign.stmnt(stmnt))
-  if(identical(quote(`=`),  stmnt_list[[1]])) return(.process.assign.stmnt(stmnt))
-  if(identical(quote(`->`), stmnt_list[[1]])) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
+  if(identical(quote(`<-`), stmnt_list[[1L]])) return(.process.assign.stmnt(stmnt))
+  if(identical(quote(`=`),  stmnt_list[[1L]])) return(.process.assign.stmnt(stmnt))
+  if(identical(quote(`->`), stmnt_list[[1L]])) stop("Please use `<-` or `=` for assignment. Assigning to the right is not supported.")
 
   # everything else is a function call or operation
   .process.stmnt(stmnt)
@@ -358,7 +350,7 @@ function(stmnt) {
 function(b) {
   # strip off the '{' if it's there
   stmnts <- as.list(b)
-  if(identical(stmnts[[1]], quote(`{`))) stmnts <- stmnts[-1]
+  if(identical(stmnts[[1L]], quote(`{`))) stmnts <- stmnts[-1L]
   stmnts
 }
 
@@ -402,7 +394,7 @@ function(b, is.single = FALSE) {
 #' (def "f" {arg1;arg2;arg3} {(stmnt1);;(stmnt2);;(stmnt3);;(stmnt4)})
 .fun.to.ast<-
 function(fun, name) {
-  args <- '{' %p0% paste(names(formals(fun)), collapse = ";") %p0% '}'
+  args <- paste0('{', paste(names(formals(fun)), collapse = ";"), '}')
   b <- body(fun)
   stmnts <- .process.body(b)
   new("ASTFun", name = name, arguments = args, body = stmnts)
@@ -419,13 +411,14 @@ function(astfun) {
   list(ast = res)
 }
 
-.body.visitor <- function(b) stmnts <- lapply(b@statements, .stmnt.visitor)
+.body.visitor <- function(b) lapply(b@statements, .stmnt.visitor)
 
 .stmnt.visitor<-
 function(s) {
   res <- ""
-  if (is(s, "ASTBody")) return(.body.visitor(s))
-  if (is(s, "ASTIf")) {
+  if (is(s, "ASTBody")) {
+    return(.body.visitor(s))
+  } else if (is(s, "ASTIf")) {
     res %p0% '('
     res %p0% s@op
     res %p% visitor(s@condition)$ast
