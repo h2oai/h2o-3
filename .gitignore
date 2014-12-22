@@ -50,6 +50,7 @@ py2/testdir_single_jvm/h2o_fc-nodes.json
 
 # Data folders
 bigdata/
+smalldata/
 
 # Ignore Eclipse project settings
 .classpath
