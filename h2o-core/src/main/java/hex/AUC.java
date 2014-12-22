@@ -1,8 +1,6 @@
 package hex;
 
 import water.Iced;
-import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -108,57 +106,57 @@ public class AUC extends Iced {
   }
 
   // Compute CMs for different thresholds via MRTask
-  private static class AUCTask extends MRTask<AUCTask> {
-    /* @OUT CMs */ private ConfusionMatrix[] getCMs() { return _cms; }
-    private ConfusionMatrix[] _cms;
-    double nullDev;
-    double resDev;
-    final double ymu;
-
-    /* IN thresholds */ final private float[] _thresh;
-
-    AUCTask(float[] thresh, double mu) {
-      _thresh = thresh.clone();
-      ymu = mu;
-    }
-
-    static double y_log_y(double y, double mu) {
-      if(y == 0)return 0;
-      if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
-      return y * Math.log(y / mu);
-    }
-
-    public static double binomial_deviance(double yreal, double ymodel){
-      return 2 * ((y_log_y(yreal, ymodel)) + y_log_y(1 - yreal, 1 - ymodel));
-    }
-    @Override public void map( Chunk ca, Chunk cp ) {
-      _cms = new ConfusionMatrix[_thresh.length];
-      for (int i=0;i<_cms.length;++i)
-        _cms[i] = new ConfusionMatrix(2);
-      final int len = Math.min(ca._len, cp._len);
-      for( int i=0; i < len; i++ ) {
-        if (ca.isNA0(i))
-          throw new UnsupportedOperationException("Actual class label cannot be a missing value!");
-        final int a = (int)ca.at80(i); //would be a 0 if double was NaN
-        assert (a == 0 || a == 1) : "Invalid values in vactual: must be binary (0 or 1).";
-        if (cp.isNA0(i)) {
-//          Log.warn("Skipping predicted NaN."); //some models predict NaN!
-          continue;
-        }
-        final double pr = cp.at0(i);
-        for( int t=0; t < _cms.length; t++ ) {
-          final int p = pr >= _thresh[t]?1:0;
-          _cms[t].add(a, p);
-        }
-      }
-    }
-
-    @Override public void reduce( AUCTask other ) {
-      for( int i=0; i<_cms.length; ++i) {
-        _cms[i].add(other._cms[i]);
-      }
-      nullDev += other.nullDev;
-      resDev  += other.resDev;
-    }
-  }
+//  private static class AUCTask extends MRTask<AUCTask> {
+//    /* @OUT CMs */ private ConfusionMatrix[] getCMs() { return _cms; }
+//    private ConfusionMatrix[] _cms;
+//    double nullDev;
+//    double resDev;
+//    final double ymu;
+//
+//    /* IN thresholds */ final private float[] _thresh;
+//
+//    AUCTask(float[] thresh, double mu) {
+//      _thresh = thresh.clone();
+//      ymu = mu;
+//    }
+//
+//    static double y_log_y(double y, double mu) {
+//      if(y == 0)return 0;
+//      if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
+//      return y * Math.log(y / mu);
+//    }
+//
+//    public static double binomial_deviance(double yreal, double ymodel){
+//      return 2 * ((y_log_y(yreal, ymodel)) + y_log_y(1 - yreal, 1 - ymodel));
+//    }
+//    @Override public void map( Chunk ca, Chunk cp ) {
+//      _cms = new ConfusionMatrix[_thresh.length];
+//      for (int i=0;i<_cms.length;++i)
+//        _cms[i] = new ConfusionMatrix(2);
+//      final int len = Math.min(ca._len, cp._len);
+//      for( int i=0; i < len; i++ ) {
+//        if (ca.isNA0(i))
+//          throw new UnsupportedOperationException("Actual class label cannot be a missing value!");
+//        final int a = (int)ca.at80(i); //would be a 0 if double was NaN
+//        assert (a == 0 || a == 1) : "Invalid values in vactual: must be binary (0 or 1).";
+//        if (cp.isNA0(i)) {
+////          Log.warn("Skipping predicted NaN."); //some models predict NaN!
+//          continue;
+//        }
+//        final double pr = cp.at0(i);
+//        for( int t=0; t < _cms.length; t++ ) {
+//          final int p = pr >= _thresh[t]?1:0;
+//          _cms[t].add(a, p);
+//        }
+//      }
+//    }
+//
+//    @Override public void reduce( AUCTask other ) {
+//      for( int i=0; i<_cms.length; ++i) {
+//        _cms[i].add(other._cms[i]);
+//      }
+//      nullDev += other.nullDev;
+//      resDev  += other.resDev;
+//    }
+//  }
 }
