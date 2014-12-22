@@ -91,12 +91,12 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
 
 You may alternatively install these packages from within an R session:
 
-> install.packages("RCurl")
-> install.packages("rjson")
-> install.packages("statmod")
-> install.packages("devtools")
-> install.packages("roxygen2")
-> install.packages("testthat")
+    > install.packages("RCurl")
+    > install.packages("rjson")
+    > install.packages("statmod")
+    > install.packages("devtools")
+    > install.packages("roxygen2")
+    > install.packages("testthat")
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
@@ -148,12 +148,12 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
 
 You may alternatively install these packages from within an R session:
 
-> install.packages("RCurl")
-> install.packages("rjson")
-> install.packages("statmod")
-> install.packages("devtools")
-> install.packages("roxygen2")
-> install.packages("testthat")
+    > install.packages("RCurl")
+    > install.packages("rjson")
+    > install.packages("statmod")
+    > install.packages("devtools")
+    > install.packages("roxygen2")
+    > install.packages("testthat")
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
