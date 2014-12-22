@@ -400,7 +400,7 @@ h2o.runif <- function(x, seed = -1) {
 h2o.anyFactor <- function(x) {
   if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   ast <- .h2o.unop("any.factor", x)
-  o <- new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  o <- new("H2OFrame", ast = ast@ast, key = .key.make(), h2o = .retrieveH2O())
   .pkg.env[[o@key]] <- o
   o
 }
