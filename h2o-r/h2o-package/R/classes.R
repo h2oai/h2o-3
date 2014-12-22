@@ -70,10 +70,10 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 #' @slot ip Object of class \code{character} representing the IP address of the H2O server.
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
 #' @aliases H2OConnection
-H2OConnection <- setClass("H2OConnection",
-                      representation(ip="character", port="numeric"),
-                      prototype(ip=NA_character_, port=NA_integer_)
-                      )
+setClass("H2OConnection",
+         representation(ip="character", port="numeric"),
+         prototype(ip=NA_character_, port=NA_integer_)
+         )
 
 #' @rdname H2OConnection-class
 setMethod("show", "H2OConnection", function(object) {
