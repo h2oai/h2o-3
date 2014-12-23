@@ -35,7 +35,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"My foo bar table\",\"colNames\":[\"DoubleValue\",\"S2\",\"My Terrible Percent Value\"],\"colFormatStrings\":[\"%5.8e\",\"%s\",\"%5.8g %%\"],\"rowHeaders\":[\"First row\",\"R2\",\"Row #3\",\"Last row is here:\"],\"strings\":[[null,\"One\",null],[null,null,null],[null,\"Three\",null],[null,\"FooBar\",null]],\"doubles\":[[1.123,null,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,null,3.40234234]]}"));
+    assertTrue(json.equals("{\"tableHeader\":\"My foo bar table\",\"colHeaders\":[\"DoubleValue\",\"S2\",\"My Terrible Percent Value\"],\"colFormatStrings\":[\"%5.8e\",\"%s\",\"%5.8g %%\"],\"rowHeaders\":[\"First row\",\"R2\",\"Row #3\",\"Last row is here:\"],\"strCellValues\":[[null,\"One\",null],[null,null,null],[null,\"Three\",null],[null,\"FooBar\",null]],\"dblCellValues\":[[1.123,null,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,null,3.40234234]]}"));
     Log.info(json);
   }
 
@@ -86,7 +86,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"My foo bar table\",\"colNames\":[\"DoubleValue\",\"S2\",\"My Terrible Percent Value\"],\"colFormatStrings\":[\"%f\",\"%s\",\"%f\"],\"rowHeaders\":[\"First row\",\"R2\",\"Row #3\",\"Last row is here:\"],\"strings\":[[null,\"One\",null],[null,null,null],[null,\"Three\",null],[null,\"FooBar\",null]],\"doubles\":[[1.123,null,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,null,3.40234234]]}"));
+    assertTrue(json.equals("{\"tableHeader\":\"My foo bar table\",\"colHeaders\":[\"DoubleValue\",\"S2\",\"My Terrible Percent Value\"],\"colFormatStrings\":[\"%f\",\"%s\",\"%f\"],\"rowHeaders\":[\"First row\",\"R2\",\"Row #3\",\"Last row is here:\"],\"strCellValues\":[[null,\"One\",null],[null,null,null],[null,\"Three\",null],[null,\"FooBar\",null]],\"dblCellValues\":[[1.123,null,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,null,3.40234234]]}"));
     Log.info(json);
   }
 
@@ -110,7 +110,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"All numbers\",\"colNames\":[\"Num1\",\"Num2\",\"Num3\"],\"colFormatStrings\":[\"%f\",\"%f\",\"%f\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[[null,null,null],[null,null,null],[null,null,null],[null,null,null]],\"doubles\":[[1.123,3.42,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,83.32,3.40234234]]}"));
+    assertTrue(json.equals("{\"tableHeader\":\"All numbers\",\"colHeaders\":[\"Num1\",\"Num2\",\"Num3\"],\"colFormatStrings\":[\"%f\",\"%f\",\"%f\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strCellValues\":[[null,null,null],[null,null,null],[null,null,null],[null,null,null]],\"dblCellValues\":[[1.123,3.42,3200034.00001],[123.34,null,1.0],[null,null,3234.00001],[3.33420923423423,83.32,3.40234234]]}"));
     Log.info(json);
   }
 
@@ -134,7 +134,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"All strings\",\"colNames\":[\"S1\",\"S2\",\"S3\",\"S4\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strings\":[[\"a\",\"b\",\"c\",\"d\"],[\"a\",\"b\",\"c\",\"d\"],[\"a\",null,\"c\",\"d\"],[\"a\",\"b\",\"c\",null]],\"doubles\":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]]}"));
+    assertTrue(json.equals("{\"tableHeader\":\"All strings\",\"colHeaders\":[\"S1\",\"S2\",\"S3\",\"S4\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R1\",\"R2\",\"R3\",\"R4\"],\"strCellValues\":[[\"a\",\"b\",\"c\",\"d\"],[\"a\",\"b\",\"c\",\"d\"],[\"a\",null,\"c\",\"d\"],[\"a\",\"b\",\"c\",null]],\"dblCellValues\":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]]}"));
     Log.info(json);
   }
 
@@ -163,7 +163,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(1, 3) == null);
 
     String json = new String(table.writeJSON(new AutoBuffer()).buf());
-    assertTrue(json.equals("{\"description\":\"Mixed\",\"colNames\":[\"C0\",\"C1\",\"C2\",\"C3\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R0\",\"R1\",\"R2\",\"R3\"],\"strings\":[[null,\"a01\",\"a02\",null],[null,null,null,null],[null,null,null,null],[\"a30\",null,null,\"a33\"]],\"doubles\":[[null,null,null,null],[null,null,1.2,null],[null,null,null,null],[null,null,null,null]]}"));
+    assertTrue(json.equals("{\"tableHeader\":\"Mixed\",\"colHeaders\":[\"C0\",\"C1\",\"C2\",\"C3\"],\"colFormatStrings\":[\"%s\",\"%s\",\"%s\",\"%s\"],\"rowHeaders\":[\"R0\",\"R1\",\"R2\",\"R3\"],\"strCellValues\":[[null,\"a01\",\"a02\",null],[null,null,null,null],[null,null,null,null],[\"a30\",null,null,\"a33\"]],\"dblCellValues\":[[null,null,null,null],[null,null,1.2,null],[null,null,null,null],[null,null,null,null]]}"));
     Log.info(json);
 
   }
