@@ -35,6 +35,8 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
 }
 
+apply from: '../gradle/dataCheck.gradle'
+
 javadoc {
   exclude "**/fvec/C*Chunk.java/**"
   exclude "**/nbhm/**"

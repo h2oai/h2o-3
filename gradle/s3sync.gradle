@@ -21,11 +21,6 @@ import org.joda.time.format.ISODateTimeFormat
 
 import java.util.regex.Matcher
 
-task smalldataCheck << {
-    if (!file((new File(".")).getCanonicalPath() + File.separator +'smalldata').isDirectory()) 
-        throw new ResourceException('Please pull the required test data with ./gradlew syncSmalldata')
-}
-
 task syncSmalldata {
     group = "Datasets"
     description = "Downloads small test data sets from s3 bucket to a local directory.  Data set are small test cases for basic testing."
