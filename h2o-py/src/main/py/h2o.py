@@ -1,4 +1,4 @@
-import csv, requests, urllib, uuid
+import csv, requests, sys, urllib, uuid, traceback
 from tabulate import tabulate
 
 ###############################################################################
@@ -173,12 +173,6 @@ class Vec(object):
   # Number of rows
   def __len__(self): return len(self._expr)
 
-  def __del__(self):
-    # Vec is dead, so this Expr is unused by the python interpreter (but might
-    # be used in some other larger computation)
-    self._expr._name = "TMP_"+self._name
-
-
 ##############################################################################
 #
 # Exprs - 
@@ -271,9 +265,10 @@ class Expr(object):
     if _CMD is None:
       H2OCONN.Remove(self._data)
     else:
-      s = "DELE: "+self._name+" key="+self._rite+ "; "
-      _CMD += s  # Tell cluster to delete temp as part of larger expression
-      raise NotImplementedError
+      s = " (del "+self._data+")"
+      global _TMPS
+      if _TMPS is None: print "Lost deletes: ",s
+      else: _TMPS += s
 
   # This forces a top-level execution, as needed, and produces a top-level
   # result LOCALLY.  Frames are returned and truncated to the standard head()
@@ -281,12 +276,16 @@ class Expr(object):
   def eager(self):
     if self.isComputed(): return self._data
     # Gather the computation path for remote work, or doit locally for local work
-    global _CMD; assert not _CMD;  assert not self._name.startswith("TMP_")
-    _CMD = "";                  # Begin gathering rapids commands
-    self._doit();               # Execute the command
-    cmd = _CMD;  _CMD = None;   # Stop  gathering rapids commands
+    global _CMD, _TMPS
+    assert not _CMD and not _TMPS
+    _CMD = ""; _TMPS = ""       # Begin gathering rapids commands
+    self._doit()                # Symbolically execute the command
+    cmd  = _CMD;  tmps= _TMPS   # Stop  gathering rapids commands
+    _CMD = None; _TMPS= None
     if self.isLocal():  return self._data # Local computation, all done
     # Remote computation - ship Rapids over wire, assigning key to result
+    if tmps:
+      cmd = "(, "+cmd+tmps+")"
     j = H2OCONN.Rapids(cmd)
     if isinstance(self._data,unicode): pass  # Big Data Key is the result
     # Small data result pulled locally
@@ -301,7 +300,11 @@ class Expr(object):
     rite = self._rite
     global _CMD
     # See if this is not a temp and not a scalar; if so it needs a name
-    py_tmp = not self._name.startswith("TMP_") and self._len > 1
+    cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
+    # Magical count-of-4 is the depth of 4 interpreter stack
+    print "refcnt",self._name,cnt-4
+    py_tmp = cnt==4
+
     if py_tmp:
       self._data = py_tmp_key() # Top-level key/name assignment
       _CMD += "(= !"+self._data+" "
@@ -355,6 +358,7 @@ class Expr(object):
 
 # Global list of pending expressions and deletes to ship to the cluster
 _CMD = None
+_TMPS= None
 
 
 ##############################################################################
