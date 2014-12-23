@@ -133,19 +133,16 @@ subprojects {
     if (project in javaProjects) {
        apply from: "$rootDir/gradle/java.gradle"
        apply from: "$rootDir/gradle/cp.gradle"
-       apply from: "$rootDir/gradle/s3sync.gradle"
     }
 
     // Configure Scala projects
     if (project in scalaProjects) {
         apply from: "$rootDir/gradle/scala.gradle"
         apply from: "$rootDir/gradle/cp.gradle"
-        apply from: "$rootDir/gradle/s3sync.gradle"
     }
 
     if (project in rProjects) {
         apply from: "$rootDir/gradle/r.gradle"
-        apply from: "$rootDir/gradle/s3sync.gradle"
     }
 }
 
