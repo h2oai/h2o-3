@@ -21,7 +21,7 @@ task cleanPythonMultiJVMTests(type: Delete) {
     delete "$pythonMultiJVMTestsPath/results"
 }
 
-test.dependsOn smalldataCheck
+//test.dependsOn smalldataCheck
 test.dependsOn runPythonMultiJVMTests
 clean.dependsOn cleanPythonMultiJVMTests
 
