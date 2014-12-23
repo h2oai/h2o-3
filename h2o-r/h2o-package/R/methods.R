@@ -54,7 +54,7 @@
 #'             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
 #'    Line 5: assign from *this* scope, into the parent scope
 #'    Line 6: Do
-#' @name MethodsIntro
+#' @name Methods-descrip
 NULL
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -125,7 +125,22 @@ h2o.remoteSend <- function(client, page, method = "GET", ..., .params = list())
 #'
 #' @param object An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @param keys The hex key associated with the object to be removed.
+#' @note Users may wish to remove an H2O object on the server that is associated with an object in the R environment.
+#'       Recommended behavior is to also remove the object in the R environment. See the second example at the end 
+#'       of this section.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @examples
+#' # Remove an H2O object from the server where H2O is running.
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.uploadFile(localH2O, path = prosPath, key = "prostate.hex")
+#' 
+#' # Remove an H2O object from the server and from the R environment
+#' h2o.ls(localH2O)
+#' h2o.rm(object = localH2O, keys = "prostate.hex")
+#' remove(prostate.hex)
+#' h2o.ls(localH2O)
 h2o.rm <- function(object, keys) {
   # If only object is supplied, then assume this is keys vector.
   if(missing(keys) && !missing(object)) {
@@ -139,6 +154,9 @@ h2o.rm <- function(object, keys) {
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
 }
 
+#' H2O Garbage Collection
+#' 
+#' 
 h2o.gc <- function(object) {
   if(missing(object)) object <- .retrieveH2O(parent.frame())
 
@@ -169,7 +187,17 @@ h2o.gc <- function(object) {
 #'
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
-#' 
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate.hex = h2o.uploadFile(localH2O, path = prosPath)
+#' psa.qs = quantile(prostate.hex$PSA)
+#' PSA.outliers = prostate.hex[prostate.hex$PSA <= psa.qs[2] | prostate.hex$PSA >= psa.qs[10],]
+#' PSA.outliers = h2o.assign(PSA.outliers, "PSA.outliers")
+#' summary(PSA.outliers)
+#' head(prostate.hex)
+#' head(PSA.outliers)
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
@@ -182,7 +210,7 @@ h2o.assign <- function(data, key) {
   o
 }
 
-#'
+
 #' Get an R Reference to an H2O Dataset
 #'
 #' Get the reference to a frame with the given key in the H2O instance.
@@ -190,6 +218,15 @@ h2o.assign <- function(data, key) {
 #' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
 #'            of the server running H2O
 #' @param key A string indicating the unique hex key of the data set to retrieve
+#' @return Returns an \linkS4class{H2OFrame} object.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
+#' h2o.uploadFile(localH2O, path = irisPath, key = "iris.hex")
+#' h2o.ls(localH2O)
+#' iris.hex = h2o.getFrame(localH2O, "iris.hex")
+#' h2o.shutdown(localH2O)
 h2o.getFrame <- function(h2o, key) {
   if (missing(key)) {
     # means h2o is the one that's missing... retrieve it!
@@ -218,6 +255,21 @@ h2o.getFrame <- function(h2o, key) {
 #  .h2o.exec2(expr = key, h2o = object, dest_key = key)
 #}
 
+#' Split an H2O Data Set
+#' 
+#' Split an existing H2O data set according to user-specified ratios.
+#' 
+#' @param data An \linkS4class{H2OFrame} object representing the data set to split.
+#' @param ratios A numeric value or array indicating the ratio of total rows contained in each split.
+#' @return Returns a list of \linkS4class{H2OFrame} objects, each corresponding to one of the splits.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
+#' head(iris.split[[1]])
+#' summary(iris.split[[1]])
 h2o.splitFrame <- function(data, ratios = 0.75) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
@@ -301,7 +353,6 @@ h2o.table <- function(x, y = NULL) {
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
 #' leftmost interval corresponds to the level one, the next is level two, etc.
 #'
-#' @name h2o.cut
 #' @param x An \linkS4class{H2OFrame} object with numeric columns.
 #' @param breaks A numeric vector of two or more unique cut points.
 #' @param labels Labels for the levels of the resulting category. By default, labels are constructed sing "(a,b]"
@@ -324,11 +375,7 @@ h2o.table <- function(x, y = NULL) {
 #' sepal_len.cut = cut.H2OFrame(iris.hex$sepal_len, c(4.2, 4.8, 5.8, 6, 8))
 #' head(sepal_len.cut)
 #' summary(sepal_len.cut)
-NULL
-
-#' @rdname h2o.cut
-cut.H2OFrame<-
-function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
+cut.H2OFrame <- function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
   if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
     stop("`breaks` must be a numeric vector")
@@ -375,7 +422,22 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 #  new("H2OFrame", h2o=x@h2o, key=res$dest_key, logic=FALSE)
 #}
 
-
+#' Random Uniform Distribution in H2O
+#' 
+#' Produces a a vector of specified length containing random uniform numbers.
+#' 
+#' @param x An \linkS4class{H2OFrame} object with number of rows equal to the number of elements the vector
+#'        of random numbers should have.
+#' @param seed Random seed used to generate draws from the uniform distribution. The default of -1 results
+#'        in a seed equal to the current system time in milliseconds.
+#' @return Returns a vector of random, uniformly distributed numbers. The elements are between 0 and 1.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath, key = "prostate.hex")
+#' s = h2o.runif(prostate.hex)
+#' summary(s)
 h2o.runif <- function(x, seed = -1) {
   if (!is(x, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
@@ -562,6 +624,7 @@ setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
 #' Returns a count of the number of rows or columns in an \code{\linkS4class{H2OFrame}} object.
 #'
 #' @name h2o.nrow
+#' @aliases h2o.ncol
 #' @param x An \linkS4class{H2OFrame} object.
 #' @seealso \code{\link{dim}} for all the dimensions. \code{\link[base]{nrow}} for the default R method.
 #' @examples
@@ -601,6 +664,7 @@ setMethod("ncol", "H2OFrame", function(x) {
 #' Returns column names for an \linkS4class{H2OFrame} object.
 #'
 #' @name h2o.colnames
+#' @aliases h2o.names
 #' @param x An \linkS4class{H2OFrame} object.
 #' @seealso \code{\link[base]{colnames}} for the base R method.
 #' @examples
@@ -631,7 +695,7 @@ setMethod("names", "H2OFrame", function(x) {
 #'
 #' Returns the Length of a Parsed H2O Data Object.
 #'
-#' Returns the lenght of an \code{\linkS4class{H2OFrame}}
+#' Returns the lenght of an \linkS4class{H2OFrame}
 #'
 #' @name h2o.length
 #' @param x An \linkS4class{H2OFrame} object.
@@ -664,6 +728,7 @@ setMethod("dim", "H2OFrame", function(x) c(nrow(x), ncol(x)))
 #' Returns the first or last rows of an H2O parsed data object.
 #'
 #' @name h2o.head
+#' @aliases h2o.tail
 #' @param x An \linkS4class{H2OFrame} object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #' @param ... Arguments to be passed to or from other methods. ##(Currently unimplemented).
@@ -727,7 +792,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
 #' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
 #' calling scope).
-#' @name LazyEval
+#' @name LazyEval-descrip
 NULL
 
 #setMethod("levels", "H2OFrame", function(x) {
@@ -748,11 +813,10 @@ setMethod("is.factor", "H2OFrame", function(x) {
 #'
 #' Obtain and display quantiles for H2O parsed data.
 #'
-#' \code{quantile.H2OFrame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
-#' an \code{\linkS4class{H2OFrame}} object.
+#' A method for the \code{\link{quantile}} generic. Obtain and return quantiles for
+#' an \linkS4class{H2OFrame} object.
 #'
-#' @name quantile
-#' @param x An \code{\linkS4class{H2OFrame}} object with a single numeric column.
+#' @param x An \linkS4class{H2OFrame} object with a single numeric column.
 #' @param probs Numeric vector of probabilities with values in [0,1].
 #' @return A vector describing the percentiles at the given cutoffs for the \code{\linkS4class{H2OFrame}} object.
 #' @examples
@@ -1393,6 +1457,27 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 #'   FUN. Otherwise, throw an exception.
 #'
 #'   Pass the additional by calling _fun.exec(env, _args)
+#' @name Apply-descrip
+NULL
+
+#' Apply Functions Over an H2O Frame
+#' 
+#' Applies a function over an H2O Frame (an array).
+#' 
+#' @name h2o.apply
+#' @param X An \linkS4class{H2OFrame} object.
+#' @param MARGIN The margin along which the function should be applied
+#' @param FUN The function to be applied by H2O.
+#' @param \dots Optional arguments to \code{FUN}.
+#' @return Produces a new \linkS4class{H2OFrame} of the output of the applied 
+#'         function. The ouptu is stored in H2O so that it can be used in 
+#'         subsequent H2O processes.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package="h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath, key = "iris.hex")
+#' summary(apply(iris.hex, 1, sum))
 setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
