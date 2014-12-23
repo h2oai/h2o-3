@@ -154,9 +154,16 @@ h2o.rm <- function(object, keys) {
     .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
 }
 
+#'
 #' H2O Garbage Collection
-#' 
-#' 
+#'
+#' Cleanup Out of Scope Objects in H2O
+#'
+#' Useful method for deleting temporary big data objects that have fallen out of scope
+#' of the R session.
+#'
+#' @param object An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
+>>>>>>> Stashed changes
 h2o.gc <- function(object) {
   if(missing(object)) object <- .retrieveH2O(parent.frame())
 
