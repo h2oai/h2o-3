@@ -67,9 +67,11 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
     javac -version
 
 
-##### Step 2. Install Node.js and npm
+##### Step 2. Install Node.js, npm, and bower
 
-Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended.
+Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended. After you have installed Node.js, install bower using
+
+    npm install -g bower
 
 ##### Step 3. Install R and the required packages
 
@@ -124,13 +126,16 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
     javac -version
 
 
-##### Step 2. Install Node.js and npm
+##### Step 2. Install Node.js, npm, and bower
 
 Using Homebrew:
 
     brew install node
 
-Otherwise install from the [NodeJS website](http://nodejs.org/download/).
+Otherwise install from the [NodeJS website](http://nodejs.org/download/). After you have installed Node.js, install
+bower using
+
+    npm install -g bower
 
 ##### Step 3. Install R and the required packages
 
@@ -170,11 +175,11 @@ OS X should have come with Git installed, so just download and update h2o-dev so
 
 ### Setup on Ubuntu 14.04
 
-##### Step 1. Install Node.js and npm
+##### Step 1. Install Node.js, npm, and bower
 
     sudo apt-get install npm
     sudo ln -s /usr/bin/nodejs /usr/bin/node
-
+    npm install -g bower
 
 ##### Step 2. Install JDK
 
@@ -203,7 +208,7 @@ Download and update h2o-dev source codes:
 
 ### Setup on Ubuntu 13.10
 
-Step 1. Install Node.js and npm
+##### Step 1. Install Node.js, npm, and bower
 
 On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so we use a fresh install from the npm website.
 
@@ -212,8 +217,9 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
     wget http://npmjs.org/install.sh
     sudo apt-get install curl
     sudo sh install.sh
+    npm install -g bower
 
-Step 2-4. Follow steps 2-4 for Ubuntu 14.04
+##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 ### Setting up your preferred build environment
 
