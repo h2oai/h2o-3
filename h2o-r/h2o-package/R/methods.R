@@ -163,7 +163,6 @@ h2o.rm <- function(object, keys) {
 #' of the R session.
 #'
 #' @param object An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
->>>>>>> Stashed changes
 h2o.gc <- function(object) {
   if(missing(object)) object <- .retrieveH2O(parent.frame())
 

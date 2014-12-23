@@ -301,7 +301,7 @@ class Expr(object):
     rite = self._rite
     global _CMD
     # See if this is not a temp and not a scalar; if so it needs a name
-    py_tmp = not self._name.startswith("TMP_") and self._len > 1
+    py_tmp = True  # not self._name.startswith("TMP_") and self._len > 1
     if py_tmp:
       self._data = py_tmp_key() # Top-level key/name assignment
       _CMD += "(= !"+self._data+" "
