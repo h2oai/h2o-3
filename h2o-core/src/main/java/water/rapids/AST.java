@@ -819,8 +819,10 @@ class ASTAssign extends AST {
       assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
       // RHS is a frame
-      if (e.isAry()) {
-        Frame f = e.pop0Ary();  // pop without lowering counts
+      if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
+        Frame f = e.isAry()
+                ? e.pop0Ary() // pop without lowering counts
+                : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
         if (id.isGlobalSet()) DKV.put(k, fr);

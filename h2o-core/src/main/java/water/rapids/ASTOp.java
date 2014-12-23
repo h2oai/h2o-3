@@ -46,7 +46,7 @@ public abstract class ASTOp extends AST {
   static final String VARS2[] = new String[]{ "", "x","y"};
   static {
     // All of the special chars (see Exec.java)
-    SYMBOLS.put(";", new ASTStatement());
+    SYMBOLS.put(",", new ASTStatement());
     SYMBOLS.put("=", new ASTAssign());
     SYMBOLS.put("'", new ASTString('\'', ""));
     SYMBOLS.put("\"",new ASTString('\"', ""));
