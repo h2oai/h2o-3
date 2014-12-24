@@ -42,6 +42,7 @@ public class ASTApply extends ASTOp {
     final ASTOp op = ASTOp.get(_fun);
     Frame fr2 = null;  // results Frame
     Frame fr = env.pop0Ary();
+    env.addRef(fr);
     if( _margin == 2) {     // Work on columns?
       int ncols = fr.numCols();
       double[] row_result = new double[0];
@@ -55,7 +56,7 @@ public class ASTApply extends ASTOp {
       boolean isRow = false;
 
       // do the first column to determine the results type (isRow or not)
-      Frame tmp = new Frame(new String[]{fr.names()[0]}, new Vec[]{fr.vecs()[0].makeCopy()});
+      Frame tmp = new Frame(new String[]{fr.names()[0]}, new Vec[]{fr.vecs()[0]});
       op.exec(env, new ASTFrame(tmp), _fun_args);
       if (env.isNum()) isRow = true;
 
@@ -71,7 +72,6 @@ public class ASTApply extends ASTOp {
         vecs_result = new Vec[ncols];
         Frame v = env.pop0Ary();
         vecs_result[0] = v.anyVec().makeCopy();
-        env.cleanup(v);
       }
 
       // loop over the columns and collect the results.
@@ -84,7 +84,6 @@ public class ASTApply extends ASTOp {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
           Frame v = env.pop0Ary();
           vecs_result[i] = v.anyVec().makeCopy();
-          env.cleanup(v);
         }
       }
 
@@ -129,11 +128,7 @@ public class ASTApply extends ASTOp {
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-//    env.cleanup(fr);
-    if (op instanceof ASTFunc) {
-      // trash the captured env
-      ((ASTFunc)op).trash();
-    }
+    env.subRef(fr);
     env.push(new ValFrame(fr2));
   }
 }
