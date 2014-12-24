@@ -88,11 +88,7 @@ public abstract class DKV {
   /** Remove any mapping for <em>key</em>.  Blocking.  */
   static public Value remove( Key key ) { return put(key,null); }
   /** Remove any mapping for <em>key</em>.  */
-  static public Value remove( Key key, Futures fs ) {
-    System.out.println("DKV.remove "+key);
-    if( key._kb[0]==4 && key._kb[2]==1 )
-      System.out.println("crunk");
-    return put(key,null,fs); }
+  static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 
   /** Default caching call to {@link #DputIfMatch(Key,Value,Value,Futures,boolean)}  */
   static public Value DputIfMatch( Key key, Value val, Value old, Futures fs) { return DputIfMatch(key, val, old, fs, false);  }
