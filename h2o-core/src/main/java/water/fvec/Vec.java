@@ -887,7 +887,7 @@ public class Vec extends Keyed {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     // Right now, limited to small dense integers.
-    if( min() < 0 || max() > 1000000 ) 
+    if( min() < 0 || max() > 1000000 )
       throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
     long[] domain= new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )

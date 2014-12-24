@@ -12,6 +12,7 @@ import org.junit.runners.model.Statement;
 import org.junit.runner.Description;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
 import water.parser.ValueString;
@@ -185,6 +186,7 @@ public class TestUtil extends Iced {
   }
   public static Frame frame(double[]... rows) { return frame(null,rows); }
   public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(),names,rows); }
+  public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }

@@ -747,7 +747,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     final private double _err;
     final private double _f1;
     public ConfMat(double err, double f1) {
-      super(null);
+      super(null, null);
       _err=err;
       _f1=f1;
     }

@@ -35,8 +35,6 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
       srcKey <- res$keys
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
-      h2o.rm(object, paste0("nfs:/", path))
-      h2o.rm(object, paste0("nfs://private", path))
     } else {
       myData <- lapply(res$keys, function(x) new("H2ORawData", h2o=object, key=x))
       if(length(res$keys) == 1L)
