@@ -10,7 +10,7 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 heading("BEGIN TEST")
-conn <- new("h2o.client", ip=myIP, port=myPort)
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 path = locate("smalldata/iris/iris_wheader.nonspd.csv")
 iris.hex = h2o.importFile(conn, path, key="iris.hex")

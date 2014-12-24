@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.FramesHandler.Frames;
+import water.exceptions.*;
 import water.fvec.Frame;
 
 import java.util.*;
@@ -27,7 +28,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
       Model[] models = new Model[modelKeys.length];
       for (int i = 0; i < modelKeys.length; i++) {
-        Model model = getFromDKV(modelKeys[i]);
+        Model model = getFromDKV("(none)", modelKeys[i]);
         models[i] = model;
       }
 
@@ -93,22 +94,22 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   }
 
   // TODO: almost identical to ModelsHandler; refactor
-  public static Model getFromDKV(String key_str) {
-    return getFromDKV(Key.make(key_str));
+  public static Model getFromDKV(String param_name, String key_str) {
+    return getFromDKV(param_name, Key.make(key_str));
   }
 
   // TODO: almost identical to ModelsHandler; refactor
-  public static Model getFromDKV(Key key) {
+  public static Model getFromDKV(String param_name, Key key) {
     if (null == key)
-      throw new IllegalArgumentException("Got null key.");
+      throw new H2OIllegalArgumentException(param_name, "Models.getFromDKV()", key);
 
     Value v = DKV.get(key);
     if (null == v)
-      throw new IllegalArgumentException("Did not find key: " + key.toString());
+      throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
     if (! (ice instanceof Model))
-      throw new IllegalArgumentException("Expected a Model for key: " + key.toString() + "; got a: " + ice.getClass());
+      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Model.class, ice.getClass());
 
     return (Model)ice;
   }
@@ -116,7 +117,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 fetch(int version, ModelsV3 s) {
-    Model model = getFromDKV(s.key.key());
+    Model model = getFromDKV("key", s.key.key());
     s.models = new ModelSchema[1];
     s.models[0] = (ModelSchema)Schema.schema(version, model).fillFromImpl(model);
 
@@ -143,9 +144,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   /** Remove an unlocked model.  Fails if model is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 delete(int version, ModelsV3 s) {
-    Model model = getFromDKV(s.key.key());
-    if (null == model)
-      throw new IllegalArgumentException("Model key not found: " + s.key);
+    Model model = getFromDKV("key", s.key.key());
     model.delete();             // lock & remove
     return s;
   }
@@ -156,24 +155,19 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 deleteAll(int version, ModelsV3 models) {
-    final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override public boolean filter(KeySnapshot.KeyInfo k) {
-          return Value.isSubclassOf(k._type, Model.class);
-        }
-      }).keys();
+    final Key[] keys = KeySnapshot.globalKeysOfClass(Model.class);
 
-    String err=null;
+    ArrayList<String> missing = new ArrayList<>();
     Futures fs = new Futures();
-    for( int i = 0; i < modelKeys.length; i++ ) {
+    for( int i = 0; i < keys.length; i++ ) {
       try {
-        getFromDKV(modelKeys[i]).delete(null,fs);
+        getFromDKV("(none)", keys[i]).delete(null, fs);
       } catch( IllegalArgumentException iae ) {
-        err += iae.getMessage();
+        missing.add(keys[i].toString());
       }
     }
     fs.blockForPending();
-    if( err != null ) throw new IllegalArgumentException(err);
-
+    if( missing.size() != 0 ) throw new H2OKeysNotFoundArgumentException("(none)", missing.toArray(new String[missing.size()]));
     return models;
   }
 }

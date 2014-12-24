@@ -1,6 +1,7 @@
 package water.api;
 
 import water.DKV;
+import water.exceptions.H2ONotFoundException;
 import water.fvec.Frame;
 
 import java.io.InputStream;
@@ -12,7 +13,8 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV1 fetch(int version, DownloadDataV1 server) {
 
-    if (DKV.get(server.key.key()) == null) throw new IllegalArgumentException(server.key.toString() + " not found.");
+    if (DKV.get(server.key.key()) == null) throw new H2ONotFoundException(server.key.toString() + " not found.",
+                                                                          server.key.toString() + " not found.");
     Frame value = server.key.key().get();
 
     InputStream is = value.toCSV(true, server.hex_string);

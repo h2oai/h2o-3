@@ -1,32 +1,23 @@
 # Initialize functions for R logging
 
 .h2o.calcLogFileName <- function() {
-  fileName = paste(tempdir(), "/rest.log", sep='')
-  return(fileName)
+  paste0(tempdir(), "/rest.log")
 }
 
 .h2o.getLogFileName <- function() {
-  if (! is.null(.pkg.env$LOG_FILE_NAME)) {
-    return(.pkg.env$LOG_FILE_NAME)
-  }
-
-  return(.h2o.calcLogFileName())
+  if (!is.null(.pkg.env$LOG_FILE_NAME))
+    .pkg.env$LOG_FILE_NAME
+  else
+    .h2o.calcLogFileName()
 }
 
 .h2o.isLogging <- function() {
-  if (! .pkg.env$IS_LOGGING) {
-    return(FALSE)
-  }
-
-  return(TRUE)
+  .pkg.env$IS_LOGGING
 }
 
 .h2o.logRest <- function(message) {
-  if (! .h2o.isLogging()) {
-    return
-  }
-
-  write(x = message, file = .h2o.getLogFileName(), append = TRUE)
+  if (.h2o.isLogging())
+    write(x = message, file = .h2o.getLogFileName(), append = TRUE)
 }
 
 h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
@@ -34,11 +25,11 @@ h2o.logIt <- function(m, tmp, commandOrErr, isPost = TRUE) {
 }
 
 h2o.startLogging <- function(file) {
-  if (! missing(file)) { stopifnot(class("file") == "character") }
   if (missing(file)) {
-    logFileName = .h2o.calcLogFileName()
+    logFileName <- .h2o.calcLogFileName()
   } else {
-    logFileName = file
+    stopifnot(is.character(file))
+    logFileName <- file
   }
   assign("LOG_FILE_NAME", logFileName, .pkg.env)
   assign("IS_LOGGING", TRUE, envir = .pkg.env)
@@ -62,9 +53,9 @@ h2o.openLog <- function(type) {
     stop(myFile, " does not exist")
 
   if(.Platform$OS.type == "windows")
-    shell.exec(paste("open '", myFile, "'", sep=""))
+    shell.exec(paste0("open '", myFile, "'"))
   else
-    system(paste("open '", myFile, "'", sep=""))
+    system(paste0("open '", myFile, "'"))
 }
 
 #' Log a message on the server-side logs
@@ -75,15 +66,15 @@ h2o.openLog <- function(type) {
 #' 
 #' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
 #' 
-#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param message A character string with the message to write to the log.
-#' @seealso \code{\link{h2o.client}}
+#' @seealso \code{\link{H2OConnection}}
 h2o.logAndEcho <- function(conn, message) {
-  if(!is(conn, "h2o.client"))
-    stop("conn must be an h2o.client")
+  if(!is(conn, "H2OConnection"))
+    stop("`conn` must be an H2OConnection object")
 
   if(!is.character(message))
-    stop("message must be a character string")
+    stop("`message` must be a character string")
 
   res <- .h2o.__remoteSend(conn, .h2o.__LOGANDECHO, message = message)
   res$message
@@ -93,23 +84,19 @@ h2o.logAndEcho <- function(conn, message) {
 #' 
 #' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
 #' 
-#' @param client An \code{h2o.client} object pointing to a running H2O cluster.
+#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
 #' @param filename (Optional) A character string indicating the name that the log file should be saved to.
-#' @seealso \code{\link{h2o.client}}
+#' @seealso \code{\link{H2OConnection}}
 h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
-  if(!is(client, "h2o.client"))
-    stop("client must be of class h2o.client")
+  if(!is(client, "H2OConnection"))
+    stop("`client` must be an H2OConnection object")
 
-  if(!is.character(dirname))
-    stop("dirname must be of class character")
+  if(!is.character(dirname) || length(dirname) != 1L || is.na(dirname) || !nzchar(dirname))
+    stop("`dirname` must be a non-empty character string")
 
-  if(!is.null(filename)) {
-    if(!is.character(filename))
-      stop("filename must be of class character")
-    else if(!nzchar(filename))
-      stop("filename must be a non-empty string")
-  }
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename) || !nzchar(filename))
+    stop("`filename` must be a non-empty character string")
 
   url <- paste0("http://", client@ip, ":", client@port, "/", .h2o.__DOWNLOAD_LOGS)
   if(!file.exists(dirname))

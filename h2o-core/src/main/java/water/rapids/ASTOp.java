@@ -46,7 +46,7 @@ public abstract class ASTOp extends AST {
   static final String VARS2[] = new String[]{ "", "x","y"};
   static {
     // All of the special chars (see Exec.java)
-    SYMBOLS.put(";", new ASTStatement());
+    SYMBOLS.put(",", new ASTStatement());
     SYMBOLS.put("=", new ASTAssign());
     SYMBOLS.put("'", new ASTString('\'', ""));
     SYMBOLS.put("\"",new ASTString('\"', ""));
@@ -277,7 +277,7 @@ abstract class ASTUniOp extends ASTOp {
   @Override void exec(Env e, AST arg1, AST[] args) {
     if (args != null) throw new IllegalArgumentException("Too many arguments passed to `"+opStr()+"`");
     arg1.exec(e);
-    if (e.isAry()) e._global._local_frames.put(Key.make().toString(), e.peekAry());
+    if (e.isAry()) e._global._frames.put(Key.make().toString(), e.peekAry());
     apply(e);
   }
 
@@ -2269,7 +2269,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void exec(Env e, AST arg1, AST[] args) {
     arg1.exec(e);
-    e._global._local_frames.put(Key.make().toString(), e.peekAry());
+    e._global._frames.put(Key.make().toString(), e.peekAry());
     if (args != null) {
       if (args.length > 2) throw new IllegalArgumentException("Too many arguments passed to `mean`");
       for (AST a : args) {
@@ -2557,6 +2557,7 @@ class ASTIfElse extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
+    if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
     Frame tst = env.pop0Ary();
     if (tst.numCols() != 1)
       throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");

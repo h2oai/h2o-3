@@ -1,4 +1,5 @@
-import csv, requests, urllib
+import csv, requests, sys, urllib, uuid, traceback
+from tabulate import tabulate
 
 ###############################################################################
 # Frame represents a 2-D array of data, uniform in each column.  The data may
@@ -6,27 +7,27 @@ import csv, requests, urllib
 # and is either a python-process-local file or cluster-local file, or a list of
 # Vecs (columns of data).
 class H2OFrame(object):
-  def __init__(self, localFName=None, remoteFName=None, vecs=None):
+  def __init__(self, local_fname=None, remote_fname=None, vecs=None):
     # Read a CSV file
-    if remoteFName:             # Read remotely into cluster
+    if remote_fname:             # Read remotely into cluster
       if not H2OCONN: raise ValueError("No open h2o connection")
-      rawkey = H2OCONN.ImportFile(remoteFName)
+      rawkey = H2OCONN.ImportFile(remote_fname)
       setup  = H2OCONN.ParseSetup(rawkey)
-      parse  = H2OCONN.Parse(setup,"PY_TMP")
+      parse  = H2OCONN.Parse(setup,py_tmp_key())
       cols   = parse['columnNames']
       rows   = parse['rows']
       veckeys= parse['vecKeys']
       self._vecs = [Vec(str(col),Expr(op=veckey['name'],length=rows))  for idx,(col,veckey) in enumerate(zip(cols,veckeys))]
-      print "Imported",remoteFName,"into cluster with",rows,"rows and",len(cols),"cols"
-    elif localFName:            # Read locally into python process
-      with open(localFName, 'rb') as csvfile:
+      print "Imported",remote_fname,"into cluster with",rows,"rows and",len(cols),"cols"
+    elif local_fname:            # Read locally into python process
+      with open(local_fname, 'rb') as csvfile:
         self._vecs = []
         for name in csvfile.readline().split(','): 
           self._vecs.append(Vec(name.rstrip(), Expr([])))
         for row in csv.reader(csvfile):
           for i,data in enumerate(row):
             self._vecs[i].append(data)
-      print "Imported",localFName,"into local python process"
+      print "Imported",local_fname,"into local python process"
     # Construct from an array of Vecs already passed in
     elif vecs is not None:
       vlen = len(vecs[0])
@@ -37,7 +38,26 @@ class H2OFrame(object):
     else: raise ValueError("Frame made from CSV file or an array of Vecs only")
 
   # Print [col, cols...]
-  def __str__(self): return self._vecs.__repr__()
+  def show(self): 
+    s = ""
+    for vec in self._vecs: s += vec.show()
+    return s
+  # Comment out to help in debugging
+  #def __str__(self): return self.show()
+
+  # In-depth description of data frame
+  def describe(self):
+    print "Rows:",len(self._vecs[0]),"Cols:",len(self)
+    headers = [vec._name for vec in self._vecs]
+    table = [ 
+      row('missing',self._vecs,None),
+      row('mean'   ,self._vecs,None),
+      row('sigma'  ,self._vecs,None),
+      row('zeros'  ,self._vecs,None),
+      row('mins'   ,self._vecs,0),
+      row('maxs'   ,self._vecs,0)
+    ]
+    print tabulate(table,headers)
 
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
@@ -49,7 +69,24 @@ class H2OFrame(object):
       raise ValueError("Name "+i+" not in Frame")
     # Slice; return a Frame not a Vec
     if isinstance(i,slice): return H2OFrame(vecs=self._vecs[i])
+    # Row selection from a boolean Vec
+    if isinstance(i,Vec):
+      if len(i) != len(self._vecs[0]):
+        raise ValueError("Vec len()="+len(self._vecs[0])+" cannot be broadcast across len(i)="+len(i))
+      return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
     raise NotImplementedError
+
+
+  # Column selection via integer, string (name) returns a Vec
+  # Column selection via slice returns a subset Frame
+  def drop(self,i):
+    if isinstance(i,str):
+      for v in self._vecs:  
+        if i==v._name: 
+          return H2OFrame(vecs=[vec for vec in self._vecs if i!=vec._name])
+      raise ValueError("Name "+i+" not in Frame")
+    raise NotImplementedError
+    
 
   # Number of columns
   def __len__(self): return len(self._vecs)
@@ -82,6 +119,7 @@ class Vec(object):
     self._name = name  # String
     self._expr = expr  # Always an expr
     expr._name = name  # Pass name along to expr
+    self._summary = None
 
   # Append a value during CSV read, convert to float
   def append(self,data):
@@ -89,12 +127,24 @@ class Vec(object):
     try: __x__ = float(data)
     except ValueError: pass
     self._expr._data.append(__x__)
+    self._expr._len+=1
 
   # Print self
-  def __repr__(self): return self._name+" "+self._expr.__str__()
+  def show(self): return self._name+" "+self._expr.show()
+  # Comment out to help in debugging
+  #def __str__(self): return self.show()
+  # Compute rollup data
+  def summary(self):
+    if not self._summary: self._summary = self._expr.summary()
+    return self._summary
 
   # Basic indexed or sliced lookup
-  def __getitem__(self,i): return Expr("[",self,Expr(i));
+  def __getitem__(self,i):
+    e = Expr(i)
+    return Expr("[",self,e,length=len(e));
+
+  def row_select(self,vec):
+    return Vec(self._name+"["+vec._name+"]",Expr("[",self,vec))
 
   # Basic (broadening) addition
   def __add__(self,i):
@@ -104,21 +154,24 @@ class Vec(object):
       return Vec(self._name+"+"+i._name,Expr("+",self,i))
     if isinstance(i,(int,float)): # Vec+int
       if i==0: return self        # Additive identity
-      return Vec(self._name+"+"+str(i),Expr("+",self,Expr(i)))
+      return Vec(self._name+"+"+str(i) ,Expr("+",self,Expr(i)))
     raise NotImplementedError
 
   def __radd__(self,i): return self+i  # Add is associative
 
-  def mean(self): return Expr("mean",self._expr,None)
+  def mean(self): return Expr("mean",self._expr,None,length=1)
+
+  def __eq__(self,i):
+    if isinstance(i,Vec):
+      if len(i) != len(self):
+        raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
+      return Vec(self._name+"=="+i._name,Expr("==",self,i))
+    if isinstance(i,(int,float)): # Vec+int
+      return Vec(self._name+"=="+str(i) ,Expr("==",self,Expr(i)))
+    raise NotImplementedError
 
   # Number of rows
   def __len__(self): return len(self._expr)
-
-  def __del__(self):
-    # Vec is dead, so this Expr is unused by the python interpreter (but might
-    # be used in some other larger computation)
-    self._expr._name = "TMP_"+self._name
-
 
 ##############################################################################
 #
@@ -152,12 +205,12 @@ class Expr(object):
     elif self.isLocal():
       self._len = len(self._data) if isinstance(self._data,list) else 1
     else:
-      self._len = len(self._left)
+      self._len = length if length else len(self._left)
     assert self._len is not None
 
   def isLocal   (self): return isinstance(self._data,(list,int,float))
   def isRemote  (self): return isinstance(self._data,unicode)
-  def isPending (self): return self._data==None
+  def isPending (self): return self._data is None
   def isComputed(self): return not self.isPending()
 
   # Length, generally withOUT triggering an eager evaluation
@@ -172,10 +225,24 @@ class Expr(object):
             " = "+str(type(self._data))+")")
 
   # Eval and print
-  def __repr__(self):
-    # Note that Big Data results are capped at first 200 columns, first 100 rows.
-    # Here we do a dumb print of that result.
-    return self.eager().__str__()
+  def show(self):
+    self.eager()
+    if isinstance(self._data,unicode):
+      j = H2OCONN.Frame(self._data)
+      data = j['frames'][0]['columns'][0]['data']
+      return str(data)
+    return self._data.__str__()
+  # Comment out to help in debugging
+  #def __str__(self): return self.show()
+
+  # Compute summary data
+  def summary(self):
+    self.eager()
+    if self.isLocal():
+      raise NotImplementedError
+    j = H2OCONN.Frame(self._data)
+    summary = j['frames'][0]['columns'][0]
+    return summary
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i): 
@@ -198,9 +265,10 @@ class Expr(object):
     if _CMD is None:
       H2OCONN.Remove(self._data)
     else:
-      s = "DELE: "+self._name+" key="+self._rite+ "; "
-      _CMD += s  # Tell cluster to delete temp as part of larger expression
-      raise NotImplementedError
+      s = " (del "+self._data+")"
+      global _TMPS
+      if _TMPS is None: print "Lost deletes: ",s
+      else: _TMPS += s
 
   # This forces a top-level execution, as needed, and produces a top-level
   # result LOCALLY.  Frames are returned and truncated to the standard head()
@@ -208,16 +276,20 @@ class Expr(object):
   def eager(self):
     if self.isComputed(): return self._data
     # Gather the computation path for remote work, or doit locally for local work
-    global _CMD; assert not _CMD;  
-    _CMD = "";                  # Begin gathering rapids commands
-    self._doit();               # Execute the command
-    cmd = _CMD;  _CMD = None;   # Stop  gathering rapids commands
+    global _CMD, _TMPS
+    assert not _CMD and not _TMPS
+    _CMD = ""; _TMPS = ""       # Begin gathering rapids commands
+    self._doit()                # Symbolically execute the command
+    cmd  = _CMD;  tmps= _TMPS   # Stop  gathering rapids commands
+    _CMD = None; _TMPS= None
     if self.isLocal():  return self._data # Local computation, all done
-
-    # Remote computation - ship Rapids over wire, bring the result local
+    # Remote computation - ship Rapids over wire, assigning key to result
+    if tmps:
+      cmd = "(, "+cmd+tmps+")"
     j = H2OCONN.Rapids(cmd)
-    self._data = j['head'] if j['num_rows'] else j['scalar']
-    assert self._data is not None
+    if isinstance(self._data,unicode): pass  # Big Data Key is the result
+    # Small data result pulled locally
+    else: self._data = j['head'] if j['num_rows'] else j['scalar']
     return self._data
 
   # External API for eager; called by all top-level demanders (e.g. print)
@@ -226,45 +298,67 @@ class Expr(object):
     if self.isComputed(): return
     left = self._left
     rite = self._rite
-    if isinstance(rite,Expr): rite._doit()
     global _CMD
+    # See if this is not a temp and not a scalar; if so it needs a name
+    cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
+    # Magical count-of-4 is the depth of 4 interpreter stack
+    print "refcnt",self._name,cnt-4
+    py_tmp = cnt==4
+
+    if py_tmp:
+      self._data = py_tmp_key() # Top-level key/name assignment
+      _CMD += "(= !"+self._data+" "
     _CMD += "("+self._op+" "
     if left: 
       if left.isPending():  left._doit()
-      elif isinstance(left._data,(int,float)): _CMD += "#"+str(left)
-      else: _CMD += "%"+str(left._data)
+      elif isinstance(left._data,(int,float)): _CMD += "#"+str(left._data)
+      elif isinstance(left._data,unicode):     _CMD += "%"+str(left._data)
+      else:                                    pass # Locally computed small data
     _CMD += " "
     if rite: 
       if rite.isPending():  rite._doit()
-      elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite)
-      else: _CMD += "%"+str(rite._data)
+      elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite._data)
+      elif isinstance(rite._data,unicode):     _CMD += "%"+str(rite._data)
+      else:                                    pass # Locally computed small data
 
     if self._op == "+":
       if isinstance(left._data,(int,float)):
-        if isinstance(rite._data,(int,float)):   self._data = left+rite
-        elif rite.isLocal():                     self._data = [left+x for x in rite._data]
-        else:                                    pass
+        if isinstance(rite._data,(int,float)):    self._data = left+rite
+        elif rite.isLocal():                      self._data = [left+x for x in rite._data]
+        else:                                     pass
       elif isinstance(rite._data,(int,float)):
-        if left.isLocal():                       self._data = [x+rite for x in left._data]
-        else:                                    pass
+        if left.isLocal():                        self._data = [x+rite for x in left._data]
+        else:                                     pass
       else:
-        if left.isLocal():         self._data = [x+y for x,y in zip(left._data,rite._data)]
-        else:                                    pass
+        if   left.isLocal () and rite.isLocal (): self._data = [x+y for x,y in zip(left._data,rite._data)]
+        elif (left.isRemote() or left._data is None) and \
+             (rite.isRemote() or rite._data is None): pass
+        else: raise NotImplementedError
+    elif self._op == "==":
+      if isinstance(left._data,(int,float)):
+        raise NotImplementedError
+      elif isinstance(rite._data,(int,float)):
+        if left.isLocal():                        self._data = [x==rite for x in left._data]
+        else:                                     pass
+      else: raise NotImplementedError
     elif self._op == "[":
-      if left.isLocal():                               self._data = left._data[rite._data]
-      else:                                      _CMD += " #0"
+      if left.isLocal(): self._data = left._data[rite._data]
+      else: _CMD += " #0"       # Rapids column zero lookup
     elif self._op == "mean":
-      if left.isLocal():                      self._data = sum(left._data)/len(left._data)
-      else:                                      _CMD += " #0 %TRUE"
+      if left.isLocal(): self._data = sum(left._data)/len(left._data)
+      else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     else:
       raise NotImplementedError
     _CMD += ")"
+    if py_tmp:
+      _CMD += ")"
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
     return
 
 # Global list of pending expressions and deletes to ship to the cluster
 _CMD = None
+_TMPS= None
 
 
 ##############################################################################
@@ -339,6 +433,9 @@ class H2OConnection(object):
   def Rapids(self,expr):
     return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
 
+  def Frame(self,key):
+    return self.doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
+
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):
     r = requests.get(url)
@@ -375,3 +472,13 @@ def get_human_readable_size(num):
     i += 1
     rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
   return '%s %s' % (rounded_val, exp_str[i][1])
+
+# Return a unique h2o key obvious from python
+def py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
+
+def row(field,vecs,idx):
+  l = [field]
+  for vec in vecs:
+    tmp = vec.summary()[field]
+    l.append(tmp[idx] if idx is not None else tmp)
+  return l

@@ -11,8 +11,8 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
   String[] colFormatStrings; //optional
   @API(help="row headers", direction=API.Direction.OUTPUT)
   String[] rowHeaders;
-  @API(help="matrix of string values", direction=API.Direction.OUTPUT)
-  String[][] strings;
-  @API(help="matrix of numeric values", direction=API.Direction.OUTPUT)
-  double[][] doubles;
+  @API(help="row-major matrix of string values", direction=API.Direction.OUTPUT)
+  String[][] strCellValues;
+  @API(help="row-major matrix of numeric (double-precision) values", direction=API.Direction.OUTPUT)
+  double[][] dblCellValues;
 }

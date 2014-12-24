@@ -84,6 +84,7 @@ public class ASTApply extends ASTOp {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
           Frame v = env.pop0Ary();
           vecs_result[i] = v.anyVec().makeCopy();
+          env.cleanup(v);
         }
       }
 

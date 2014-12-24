@@ -1,0 +1,4 @@
+task smalldataCheck << {
+    if (!file((new File(".")).getCanonicalPath() + File.separator +'smalldata').isDirectory())
+        throw new ResourceException('Please pull the required test data with ./gradlew syncSmalldata')
+}

@@ -177,15 +177,9 @@ class ASTFrame extends AST {
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
     if (_key != null) {
-      if (e._local_locked != null) {
-        e._local_locked.add(Key.make(_key));
-        e._local_frames.add(Key.make(_key));
-      }
-      else {
-        e._locked.add(Key.make(_key));
-        e._global_frames.add(Key.make(_key));
-      }
-      if (H2O.containsKey(Key.make(_key))) e._locked.add(Key.make(_key));
+      e._locked.add(Key.make(_key));
+      if (e.isGlobal()) e._global._frames.put(_key, _fr);
+      else e._local._frames.put(_key, _fr);
     }
     e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame));
   }
@@ -825,23 +819,17 @@ class ASTAssign extends AST {
       assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
       // RHS is a frame
-      if (e.isAry()) {
-        Frame f = e.pop0Ary();  // pop without lowering counts
+      if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
+        Frame f = e.isAry()
+                ? e.pop0Ary() // pop without lowering counts
+                : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
-        if (id.isGlobalSet()) {
-          Futures fs = new Futures();
-          DKV.put(k, fr, fs);
-          fs.blockForPending();
-        }
-        if (e._local_locked != null) {
-          e._local_locked.add(fr._key);
-          e._local_frames.add(fr._key);
-        }
-        else  {
-          e._locked.add(fr._key);
-          e._global_frames.add(fr._key);
-        }
+        if (id.isGlobalSet()) DKV.put(k, fr);
+        e._locked.add(fr._key);
+        e.addKeys(fr);
+        if (!e.isGlobal()) e._local._frames.put(fr._key.toString(), fr);
+        else e._global._frames.put(fr._key.toString(), fr);
         e.push(new ValFrame(fr));
         e.put(id._id, Env.ARY, id._id);
       }

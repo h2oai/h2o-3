@@ -5,13 +5,13 @@ source('../h2o-runit.R')
 test.km2vanilla.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing iris.csv data...") 
-  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris.csv"), key = "irisH2O")
-  irisR <- read.csv(locate("smalldata/iris/iris.csv"), header = FALSE)
+  irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), key = "irisH2O")
+  irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
   
   # H2O automatically standardizes data (de-mean and scale so standard deviation is one)
   irisScale = scale(irisR[,1:4], center = TRUE, scale = TRUE)
   fitR <- kmeans(irisScale, centers = 3, iter.max = 1000, nstart = 10)
-  fitH2O <- h2o.kmeans(irisH2O, k = 3, x = c("C1", "C2", "C3", "C4"))
+  fitH2O <- h2o.kmeans(irisH2O[,1:4], k = 3)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
   wmseH2O <- sort.int(fitH2O@model$withinmse)

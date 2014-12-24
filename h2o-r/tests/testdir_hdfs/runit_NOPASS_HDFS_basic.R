@@ -29,7 +29,7 @@ if (running_inside_hexdata) {
 
 
 heading("BEGIN TEST")
-conn <- new("h2o.client", ip=myIP, port=myPort)
+conn <- new("H2OConnection", ip=myIP, port=myPort)
 
 #----------------------------------------------------------------------
 # Single file cases.
@@ -45,7 +45,7 @@ print(n)
 if (n != 150) {
     stop("FV nrows is wrong")
 }
-if (class(iris.hex) != "h2o.frame") {
+if (class(iris.hex) != "H2OFrame") {
     stop("iris.hex is the wrong type")
 }
 print ("FV import worked")
@@ -64,7 +64,7 @@ print(n)
 if (n != 150) {
     stop("FV nrows is wrong")
 }
-if (class(iris.dir.hex) != "h2o.frame") {
+if (class(iris.dir.hex) != "H2OFrame") {
     stop("iris.dir.hex is the wrong type")
 }
 print ("FV import worked")

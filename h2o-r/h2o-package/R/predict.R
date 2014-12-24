@@ -19,12 +19,12 @@
 #'
 .validate.predict<-
 function(object, newdata, types) {
-  if(!(object %i% types$object)) stop("`object` must be an ", types$object)
+  if(!inherits(object, types$object)) stop("`object` must be an ", types$object)
   if(missing(newdata)) {
     newdata <- object@data # predicting on data used in train
-    warning("predicting on training data.")
+    warning("predicting on training data")
   }
-  if(!(newdata %i% types$newdata)) stop('`newdata` must be a H2O dataset')
+  if(!inherits(newdata, types$newdata)) stop('`newdata` must be an H2OFrame object')
 }
 
 #'
@@ -33,7 +33,7 @@ function(object, newdata, types) {
 #' Predict with an object of class H2ODeepLearningModel
 predict.H2ODeepLearningModel <- function(object, newdata, ...) {
   .validate.predict(object, newdata, types=list(object="H2ODeepLearningModel", 
-                                                newdata="h2o.frame"))
+                                                newdata="H2OFrame"))
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
@@ -47,9 +47,9 @@ predict.H2ODeepLearningModel <- function(object, newdata, ...) {
 #'
 #' Predict with an object of class H2OKMeansModel
 predict.H2OKMeansModel <- function(object, newdata, ...) {
-  # Validate that the object is a h2o.model and the newdata is a h2o.frame
+  # Validate that the object is a H2OModel and the newdata is a H2OFrame
   .validate.predict(object, newdata, types = list(object = "H2OKMeansModel",
-                                                  newdata = "h2o.frame"))
+                                                  newdata = "H2OFrame"))
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
@@ -59,9 +59,9 @@ predict.H2OKMeansModel <- function(object, newdata, ...) {
 }
 
 predict.H2OGBMModel <- function(object, newdata, ...) {
-  # Validate that the object is a h2o.model and the newdata is a h2o.frame
+  # Validate that the object is a H2OModel and the newdata is a H2OFrame
   .validate.predict(object, newdata, types = list(object = "H2OGBMModel",
-                                                  newdata = "h2o.frame"))
+                                                  newdata = "H2OFrame"))
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
@@ -71,9 +71,9 @@ predict.H2OGBMModel <- function(object, newdata, ...) {
 }
 
 predict.H2OGLMModel <- function(object, newdata, ...) {
-  # Validate that the object is a h2o.model and the newdata is a h2o.frame
+  # Validate that the object is a H2OModel and the newdata is a H2OFrame
   .validate.predict(object, newdata, types = list(object = "H2OGLMModel",
-                                                  newdata = "h2o.frame"))
+                                                  newdata = "H2OFrame"))
   # Send keys to create predictions
   url <- .h2o.__PREDICT(object@key, newdata@key)
   res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
@@ -84,9 +84,9 @@ predict.H2OGLMModel <- function(object, newdata, ...) {
 
 #  LEGACY PREDICT BELOW
 #h2o.predict <- function(object, newdata, ...) {
-#  if(!inherits(object, "h2o.model")) stop("object must be an H2O model")
+#  if(!inherits(object, "H2OModel")) stop("object must be an H2O model")
 #  if( missing(newdata) ) newdata <- object@data
-#  if(class(newdata) != "h2o.frame") stop('newdata must be a H2O dataset')
+#  if(class(newdata) != "H2OFrame") stop('newdata must be a H2O dataset')
 #
 #  if(class(object) %in% c("H2OCoxPHModel", "H2OGBMModel", "H2OKMeansModel", "H2ODRFModel", "H2ONBModel",
 #                          "H2ODeepLearningModel", "H2OSpeeDRFModel")) {

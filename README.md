@@ -49,14 +49,12 @@ Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
-
 ### Common Setup for all Platforms
 
 ##### Step 1. Install required python packages
 
 	(possibly sudo)
 	pip install grip
-
 
 ### Setup on Windows
 
@@ -66,33 +64,40 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
+##### Step 2. Install Node.js, npm, and bower
 
-##### Step 2. Install Node.js and npm
+Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended. After you have installed Node.js, install bower using
 
-Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended.
+    npm install -g bower
 
-##### Step 3. Install R and the required packages
+##### Step 3. Install R, the required packages, and Rtools
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
-
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
 
-
-Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
+    R CMD INSTALL bitops_x.x-x.zip
     R CMD INSTALL RCurl_x.xx-x.x.zip
     R CMD INSTALL rjson_x.x.xx.zip
     R CMD INSTALL statmod_x.x.xx.zip
-    R CMD INSTALL bitops_x.x-x.zip
+    R CMD INSTALL Rcpp_x.xx.x.zip
+    R CMD INSTALL digest_x.x.x.zip
+    R CMD INSTALL testthat_x.x.x.zip
+    R CMD INSTALL stringr_x.x.x.zip
+    R CMD INSTALL roxygen2_x.x.x.zip
+    R CMD INSTALL devtools_x.x.x.zip
 
 You may alternatively install these packages from within an R session:
 
-> install.packages("rjson")
-> install.packages("RCurl")
-> install.packages("statmod")
-> install.packages("bitops")
+    R> install.packages("RCurl")
+    R> install.packages("rjson")
+    R> install.packages("statmod")
+    R> install.packages(c("devtools", "roxygen2", "testthat"))
+
+Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which are a collection of command line tools to facilitate R development on Windows.
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
@@ -119,26 +124,41 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-
-##### Step 2. Install Node.js and npm
+##### Step 2. Install Node.js, npm, and bower
 
 Using Homebrew:
 
     brew install node
 
-Otherwise install from the [NodeJS website](http://nodejs.org/download/).
+Otherwise install from the [NodeJS website](http://nodejs.org/download/). After you have installed Node.js, install
+bower using
+
+    npm install -g bower
 
 ##### Step 3. Install R and the required packages
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
-Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), and [bitops](http://cran.r-project.org/package=bitops).
+Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), [devtools](http://cran.r-project.org/package=devtools), [roxygen2](http://cran.r-project.org/package=roxygen2) and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
+    R CMD INSTALL bitops_x.x-x.tgz
     R CMD INSTALL RCurl_x.xx-x.x.tgz
     R CMD INSTALL rjson_x.x.xx.tgz
     R CMD INSTALL statmod_x.x.xx.tgz
-    R CMD INSTALL bitops_x.x-x.tgz
+    R CMD INSTALL Rcpp_x.xx.x.tgz
+    R CMD INSTALL digest_x.x.x.tgz
+    R CMD INSTALL testthat_x.x.x.tgz
+    R CMD INSTALL stringr_x.x.x.tgz
+    R CMD INSTALL roxygen2_x.x.x.tgz
+    R CMD INSTALL devtools_x.x.x.tgz
+
+You may alternatively install these packages from within an R session:
+
+    R> install.packages("RCurl")
+    R> install.packages("rjson")
+    R> install.packages("statmod")
+    R> install.packages(c("devtools", "roxygen2", "testthat"))
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
@@ -155,11 +175,11 @@ OS X should have come with Git installed, so just download and update h2o-dev so
 
 ### Setup on Ubuntu 14.04
 
-##### Step 1. Install Node.js and npm
+##### Step 1. Install Node.js, npm, and bower
 
     sudo apt-get install npm
     sudo ln -s /usr/bin/nodejs /usr/bin/node
-
+    npm install -g bower
 
 ##### Step 2. Install JDK
 
@@ -188,7 +208,7 @@ Download and update h2o-dev source codes:
 
 ### Setup on Ubuntu 13.10
 
-Step 1. Install Node.js and npm
+##### Step 1. Install Node.js, npm, and bower
 
 On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so we use a fresh install from the npm website.
 
@@ -197,8 +217,9 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
     wget http://npmjs.org/install.sh
     sudo apt-get install curl
     sudo sh install.sh
+    npm install -g bower
 
-Step 2-4. Follow steps 2-4 for Ubuntu 14.04
+##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 ### Setting up your preferred build environment
 
@@ -276,7 +297,6 @@ Blocking until the H2O cluster shuts down...
 H2O node 172.16.2.185:54321 reports H2O cluster size 3
 H2O node 172.16.2.184:54321 reports H2O cluster size 3
 ```
-
 
 Community
 ---------------------------------

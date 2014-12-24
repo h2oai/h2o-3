@@ -12,11 +12,8 @@
 .pkg.env              <- new.env()
 
 # These may no longer be needed...
-.pkg.env$result_count <- 0
-.pkg.env$temp_count   <- 0
 .pkg.env$IS_LOGGING   <- FALSE
 .pkg.env$LOG_FILE_NAME<- NULL
-.pkg.env$call_list    <- NULL
 .TEMP_KEY <- "Last.value"
 
 # Some handy infix utilities
@@ -24,8 +21,8 @@
 "%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
 "%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
 "%<-%"   <- function(x,y) {
-  if ( x %i% "h2o.frame" ) x <- x@key
-  new("ASTNode", root= new("ASTApply", op="="), children = list(left = '!' %p0% x, right = y))   # assignment node
+  if (is(x, "H2OFrame")) x <- x@key
+  new("ASTNode", root= new("ASTApply", op="="), children = list(left = paste0('!', x), right = y))   # assignment node
 }
 
 .uniq.id <- function(prefix = "") {
@@ -38,8 +35,8 @@
   tempE <- paste(sample(y_digits,1), collapse='')
   tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
   tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
-  temp <- tempA %p0% tempB %p0% tempC %p0% tempD %p0% tempE %p0% tempF %p0% tempG
-  prefix %p0% '_' %p0% temp
+  temp <- paste0(tempA, tempB, tempC, tempD, tempE, tempF, tempG)
+  paste0(prefix, '_', temp)
 }
 .key.make <- function() .uniq.id("rapids")
 
@@ -177,7 +174,7 @@
                "double[]" = "narray",
                "float" = "numeric",
                "float[]" = "narray",
-               "Key<Frame>" = "h2o.frame",
+               "Key<Frame>" = "H2OFrame",
                "int" = "numeric",
                "int[]" = "narray",
                "Key<Key>" = "character",
@@ -208,7 +205,7 @@
 #'
 #' Algorithm Endpoints
 #'
-.h2o.__MODEL_BUILDERS <- function(algo) "ModelBuilders/" %p0% algo %p0% '.json'
+.h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo, '.json')
 
 #'
 #' Algorithm Parameter Endpoints
@@ -236,4 +233,3 @@
 .h2o.__W2V          <- "Word2Vec.json"
 .h2o.__SYNONYMS     <- "Synonyms.json"
 .h2o.__TRANSFORM    <- "Transform.json"
-

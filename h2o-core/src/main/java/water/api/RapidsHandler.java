@@ -6,6 +6,8 @@ import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.Raft;
 import water.util.Log;
+import water.parser.ValueString;
+import water.util.PrettyPrint;
 
 class RapidsHandler extends Handler {
 
@@ -70,7 +72,14 @@ class RapidsHandler extends Handler {
         String[][] head = rapids.head = new String[Math.min(200,fr.numCols())][(int)Math.min(100,fr.numRows())];
         for (int r = 0; r < head[0].length; ++r) {
           for (int c = 0; c < head.length; ++c) {
-            head[c][r] = String.valueOf(fr.vec(c).at(r));
+            if (fr.vec(c).isNA(r))
+              head[c][r] = "";
+            else if (fr.vec(c).isUUID())
+              head[c][r] = PrettyPrint.UUID(fr.vec(c).at16l(r), fr.vec(c).at16h(r));
+            else if (fr.vec(c).isString())
+              head[c][r] = String.valueOf(fr.vec(c).atStr(new ValueString(), r));
+            else
+              head[c][r] = String.valueOf(fr.vec(c).at(r));
           }
         }
         //TODO: colSummary  cols = new Inspect2.ColSummary[num_cols];

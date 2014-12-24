@@ -55,7 +55,7 @@ public final class PersistS3 extends Persist {
     return _s3;
   }
   
-  //public static final class H2SO3InputStream extends RIStream {
+  //public static final class H2OS3InputStream extends RIStream {
   //  Key _k;
   //  long _to;
   //  String[] _bk;
@@ -80,7 +80,7 @@ public final class PersistS3 extends Persist {
   /** InputStream from a S3-based Key */
   public static InputStream openStream(Key k, Job pmon) throws IOException {
     throw H2O.unimpl();
-  //  return new H2SO3InputStream(k, pmon);
+  //  return new H2OS3InputStream(k, pmon);
   }
   //
   //public static Key loadKey(S3ObjectSummary obj) throws IOException {

@@ -3,7 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
-import water.api.*;
+import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
@@ -13,7 +13,6 @@ import water.util.PrettyPrint;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -421,6 +420,7 @@ final public class H2O {
   public static long PID = -1L;
 
   // Convenience error
+  // TODO: throw an exception that will cause H2O to shut down (but tests can catch)
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
   public static RuntimeException fail() { return new RuntimeException("do not call"); }  // Internal H2O fail; only interesting thing is the stack-trace
@@ -467,7 +467,7 @@ final public class H2O {
     public int _priority;
     FJWThr(ForkJoinPool pool) {
       super(pool);
-      _priority = ((ForkJoinPool2)pool)._priority;
+      _priority = ((PrioritizedForkJoinPool)pool)._priority;
       setPriority( _priority == Thread.MIN_PRIORITY
                    ? Thread.NORM_PRIORITY-1
                    : Thread. MAX_PRIORITY-1 );
@@ -485,9 +485,9 @@ final public class H2O {
   }
 
   // A standard FJ Pool, with an expected priority level.
-  private static class ForkJoinPool2 extends ForkJoinPool {
+  private static class PrioritizedForkJoinPool extends ForkJoinPool {
     final int _priority;
-    private ForkJoinPool2(int p, int cap) {
+    private PrioritizedForkJoinPool(int p, int cap) {
       super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
             new FJWThrFact(cap),
             null,
@@ -499,13 +499,13 @@ final public class H2O {
 
   // Hi-priority work, sorted into individual queues per-priority.
   // Capped at a small number of threads per pool.
-  private static final ForkJoinPool2 FJPS[] = new ForkJoinPool2[MAX_PRIORITY+1];
+  private static final PrioritizedForkJoinPool FJPS[] = new PrioritizedForkJoinPool[MAX_PRIORITY+1];
   static {
     // Only need 1 thread for the AckAck work, as it cannot block
-    FJPS[ACK_ACK_PRIORITY] = new ForkJoinPool2(ACK_ACK_PRIORITY,1);
+    FJPS[ACK_ACK_PRIORITY] = new PrioritizedForkJoinPool(ACK_ACK_PRIORITY,1);
     for( int i=MIN_HI_PRIORITY+1; i<MAX_PRIORITY; i++ )
-      FJPS[i] = new ForkJoinPool2(i,NUMCPUS); // All CPUs, but no more for blocking purposes
-    FJPS[GUI_PRIORITY] = new ForkJoinPool2(GUI_PRIORITY,2);
+      FJPS[i] = new PrioritizedForkJoinPool(i,NUMCPUS); // All CPUs, but no more for blocking purposes
+    FJPS[GUI_PRIORITY] = new PrioritizedForkJoinPool(GUI_PRIORITY,2);
   }
 
   // Easy peeks at the FJ queues
@@ -517,7 +517,7 @@ final public class H2O {
     int priority = task.priority();
     assert MIN_PRIORITY <= priority && priority <= MAX_PRIORITY:"priority " + priority + " is out of range, expected range is < " + MIN_PRIORITY + "," + MAX_PRIORITY + ">";
     if( FJPS[priority]==null )
-      synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new ForkJoinPool2(priority,-1); }
+      synchronized( H2O.class ) { if( FJPS[priority] == null ) FJPS[priority] = new PrioritizedForkJoinPool(priority,-1); }
     FJPS[priority].submit(task);
     return task;
   }
@@ -550,7 +550,7 @@ final public class H2O {
      *  Calls {@link #compute2} which contains actual work. */
     @Override public final void compute() {
       FJWThr t = (FJWThr)Thread.currentThread();
-      int pp = ((ForkJoinPool2)t.getPool())._priority;
+      int pp = ((PrioritizedForkJoinPool)t.getPool())._priority;
       // Drain the high priority queues before the normal F/J queue
       H2OCountedCompleter h2o = null;
       try {

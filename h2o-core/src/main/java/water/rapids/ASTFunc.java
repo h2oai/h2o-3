@@ -94,29 +94,26 @@ public class ASTFunc extends ASTFuncDef {
           f = new Frame(Key.make(_arg_names[i]), cleanme.names(), cleanme.vecs());
           DKV.put(f._key, f); // block n put the key in the DKV
           _args[i] = new ASTFrame(f._key.toString());
-          _table._local_frames.put(_arg_names[i], f);
+          _table._frames.put(_arg_names[i], f);
         }
         _table.put(_arg_names[i], Env.LARY, _args[i].value());
-        _table._local_frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
+        _table._frames.put(_arg_names[i], ((ASTFrame)_args[i])._fr);
       }
       else if (_args[i] instanceof ASTNull) _table.put(_arg_names[i], Env.STR, "null");
       else throw new IllegalArgumentException("Argument of type "+ _args[i].getClass()+" unsupported. Argument must be a String, number, Frame, or null.");
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
-//    e.cleanup(cleanme, f);
+    captured.popScope();
     _e = captured;
-//    captured.popScope();
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
   @Override void exec(Env e, AST arg1, AST[] args) {
     _args = new AST[args == null ? 1 :1 + args.length];
     _args[0] = arg1;
-//    Frame f = ((ASTFrame)_args[0])._fr;
     if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
-//    f.delete();
   }
 
   double[] map(Env env, double[] in, double[] out, AST[] args) {
@@ -133,7 +130,7 @@ public class ASTFunc extends ASTFuncDef {
     fs.blockForPending();
     Key local_key = Key.make();
     Frame fr = new Frame(local_key, null, vecs);
-    _table._local_frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
+    _table._frames.put(local_key.toString(), fr); // push fr, since not in DKV, into the _local_frames -> must trash this frame at some point ... during popScope()
 
     // execute the function on the row
     exec(env, new ASTFrame(fr), args);

@@ -2,13 +2,13 @@
 h2o.prcomp <- function(data, tol=0, cols = "", max_pc = 5000, key = "", standardize=TRUE, retx=FALSE) {
   args <- .verify_datacols(data, cols)
 
-  if(!is.character(key)) stop("key must be of class character")
-  if(nchar(key) > 0L && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-  if(!is.numeric(tol)) stop('tol must be numeric')
-  if(!is.logical(standardize)) stop('standardize must be TRUE or FALSE')
-  if(!is.logical(retx)) stop('retx must be TRUE or FALSE')
-  if(!is.numeric(max_pc)) stop('max_pc must be a numeric')
+  if(!is.numeric(tol)) stop("`tol` must be numeric")
+  if(!is.numeric(max_pc)) stop("`max_pc` must be numeric")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
+  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
+    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  if(!is.logical(standardize) || length(standardize) != 1L || is.na(standardize)) stop("`standardize` must be TRUE or FALSE")
+  if(!is.logical(retx) || length(retx) != 1L || is.na(retx)) stop("`retx` must be TRUE or FALSE")
 
   res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_PCA, source=data@key, destination_key=key, ignored_cols = args$cols_ignore, tolerance=tol, standardize=as.numeric(standardize))
   .h2o.__waitOnJob(data@h2o, res$job_key)
@@ -39,15 +39,15 @@ h2o.prcomp <- function(data, tol=0, cols = "", max_pc = 5000, key = "", standard
 h2o.pcr <- function(x, y, data, key = "", ncomp, family, nfolds = 10, alpha = 0.5, lambda = 1.0e-5, epsilon = 1.0e-5, tweedie.p = ifelse(family=="tweedie", 0, as.numeric(NA))) {
   args <- .verify_dataxy(data, x, y)
 
-  if(!is.character(key)) stop("key must be of class character")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-  if(!is.numeric(nfolds)) stop('nfolds must be numeric')
-  if(nfolds < 0L) stop('nfolds must be >= 0')
-  if(!is.numeric(alpha)) stop('alpha must be numeric')
-  if(alpha < 0) stop('alpha must be >= 0')
-  if(!is.numeric(lambda)) stop('lambda must be numeric')
-  if(lambda < 0) stop('lambda must be >= 0')
+    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  if(!is.numeric(nfolds)) stop('`nfolds` must be numeric')
+  if(nfolds < 0L) stop('`nfolds` must be >= 0')
+  if(!is.numeric(alpha)) stop('`alpha` must be numeric')
+  if(alpha < 0) stop('`alpha` must be >= 0')
+  if(!is.numeric(lambda)) stop('`lambda` must be numeric')
+  if(lambda < 0) stop('`lambda` must be >= 0')
 
   cc = colnames(data)
   y <- args$y

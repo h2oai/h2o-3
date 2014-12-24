@@ -31,7 +31,7 @@ test.slice.star <- function(conn) {
   Log.info("5 * sliced: ")
   print(head(fiveStarSliced))
 
-  Log.info("Checking the variation of h2o.frame * h2o.frame")
+  Log.info("Checking the variation of H2OFrame * H2OFrame")
 
   hexStarHex <- fiveStarSliced * slicedStarFive
 
