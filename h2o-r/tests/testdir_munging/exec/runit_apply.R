@@ -22,7 +22,7 @@ test.apply <- function(conn) {
   print(hex)
 
   Log.info("Now try some misc. apply calls")
-  apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/var(x[1:20,])*x ) })
+  print(apply(hex, 2, function(x) { abs( x*x - x*5*x ) - 55/x; abs(x*x*x - 999/var(x[1:20,])*x ) }))
 
   print(h2o.ls())
 

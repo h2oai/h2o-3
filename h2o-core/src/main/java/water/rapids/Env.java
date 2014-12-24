@@ -47,6 +47,8 @@ public class Env extends Iced {
   final Env _parent;
   final private boolean _isGlobal;
 
+  final HashSet<ValFrame> _trash;
+
   // Top-level Env object: This is the global Env object. To determine if we're in the global scope, _parent == null
   // and _local == null will always be true. The parent of a scope is the calling scope. All scopes inherit from the
   // global scope.
@@ -59,6 +61,7 @@ public class Env extends Iced {
     _local  = null;
     _parent = null;
     _isGlobal = true;
+    _trash = new HashSet<>();
   }
 
   // Capture the current environment & return it (for some closure's future execution).
@@ -72,6 +75,7 @@ public class Env extends Iced {
     _local  = new SymbolTable();
     _parent = e;
     _isGlobal = false;
+    _trash = e._trash;
   }
 
   public boolean isGlobal() { return _isGlobal && _parent == null && _local == null; }
@@ -87,13 +91,14 @@ public class Env extends Iced {
       addRef(o);
     }
     _stack.push(o);
+    clean();
   }
 
   public void framePut(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
 
   public Val pop() {
     Val o = _stack.pop();
-    if (o instanceof ValFrame) { subRef(o); }
+//    if (o instanceof ValFrame) { subRef(o); }
     return o;
   }
 
@@ -142,6 +147,14 @@ public class Env extends Iced {
     throw new IllegalArgumentException("Invalid use of pop2AST. Got bad type: "+peekType());
   }
 
+  public void toss(ValFrame f) { _trash.add(f); }
+  public void clean() {
+    if (_trash == null) return;
+    for (ValFrame f : _trash)
+      if (!f._g) cleanup(f._fr);
+    _trash.clear();
+  }
+
   /**
    *  Reference Counting API
    *
@@ -152,6 +165,8 @@ public class Env extends Iced {
     for (Vec v : ((ValFrame) o)._fr.vecs()) addRef(v);
   }
 
+  public void addRef(Frame f) { for (Vec v : f.vecs()) addRef(v); }
+  public void subRef(Frame f) { for (Vec v : f.vecs()) subRef(v); }
   private void addRef(Vec v) {
     IcedInt I = _refcnt.get(v);
     assert I==null || I._val>=0;
@@ -166,69 +181,31 @@ public class Env extends Iced {
 
   private void subRef(Val o) {
     assert o instanceof ValFrame;
+    boolean delete=true;
     Frame f = ((ValFrame)o)._fr;
-    boolean bail=false;  // slimeball boolean to bail after dowhile
-    boolean delete=true; // slimeball boolean to delete a frame...
-    boolean g;
-    Env p = this;
 
-    // only do something if `f` not null
-    if( f != null ) {
+    // subRef vecs that may (not) exist in DKV
+    for( Vec v : f.vecs() ) delete &= subRef(v);
 
-      // hike up to parent scope and check _locked along the way...
-      do {
-        bail |= checkLocked(p,f);
-        p = p._parent;
-        g = p == null || p.isGlobal();
-      } while( !g );
-      bail |= checkLocked(p==null?this:p,f);
-      if( bail ) return;
-
-      // subRef vecs that may (not) exist in DKV
-      for( Vec v : f.vecs() ) delete &= subRef(v);
-
-      // delete a Frame if no more vecs...
-      if( delete )
-        if( f._key != null && !_locked.contains(f._key) )
-          f.delete();
-    }
-  }
-
-  private boolean checkLocked(Env p, Frame f) {
-    boolean bail=false;
-
-    // subRef frame if the frame key is in _locked
-    if( p._locked.contains(f._key) ) { subRefLocked(f); bail=true; }
-
-    // subRef vecs in _locked properly
-    for( Key k : f.keys() ) { if (p._locked.contains(k)) { subRefLocked((Vec)DKV.getGet(k)); bail=true;} }
-    return bail;
+    // delete a Frame if delete is true
+    if( delete )
+      if( f._key != null && !_locked.contains(f._key) )
+        f.delete();
   }
 
   // subRef on a single vec, walk all Env objects to decide whether to kill the Vec or not.
   //
   // return false if the vec is not deleted via removeVec
   // return true otherwise
-  private boolean subRef(Vec v) {
+  public boolean subRef(Vec v) {
     if (v == null) return false;
-
-    Env p = this;
-    boolean g;
-    boolean delete=true;
-
-    // check global/local frames...
-    do {
-      if (!checkEnv(p, v)) delete = false;
-      p = p._parent;
-      g = p == null || p.isGlobal();
-    } while (!g);
-    if (!checkEnv(p==null?this:p, v)) delete = false;
+    boolean delete;
 
     if (_refcnt.get(v) == null) return false;
-
     int cnt = _refcnt.get(v)._val - 1;
     if( cnt > 0 ) {
       _refcnt.put(v, new IcedInt(cnt));
+      delete = false;
     } else {
       // safe to remove!;
       extinguishCounts(v);
@@ -237,33 +214,6 @@ public class Env extends Iced {
     if (delete) removeVec(v, null);
     return delete;
   }
-
-  private boolean checkEnv(Env p, Vec v) {
-    // check the _locked
-    if( p._locked.contains(v._key) ) return false;
-
-    // check global/local symbol tables
-    return !checkTableFrames(p, v);
-  }
-
-  // check symbol table _frames for uses of the vec
-  private boolean checkTableFrames(Env p, Vec v) { return checkTableFramesHelper(p.isGlobal() ? p._global : p._local, v); }
-
-  private boolean checkTableFramesHelper(SymbolTable t, Vec v) {
-    for( Frame f : t._frames.values() )
-      if( f.find(v)>=0 ) return true;
-    return false;
-  }
-
-  private void subRefLocked(Vec v) {
-    if (v == null) return;
-    if (_refcnt.get(v) == null) return;
-    int cnt = _refcnt.get(v)._val -1;
-    if (cnt <= 0) extinguishCounts(v);
-    else _refcnt.put(v, new IcedInt(cnt));
-  }
-
-  private void subRefLocked(Frame f) { for (Vec v : f.vecs()) subRefLocked(v); }
 
   // MUST be called in conjunction w/ push(frame) or addRef
   void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
@@ -290,12 +240,6 @@ public class Env extends Iced {
   }
 
   private void extinguishCounts(Vec v) { _refcnt.remove(v); }
-
-  boolean allAlive(Frame fr) {
-    for( Vec vec : fr.vecs() )
-      assert _refcnt.get(vec)._val > 0;
-    return true;
-  }
 
   /*
    * Utility & Cleanup
@@ -324,16 +268,6 @@ public class Env extends Iced {
         removeVec(v, fs);
       }
     }
-
-    for (String k : _global._frames.keySet()) {
-      boolean delete=true;
-      if (!_locked.contains(Key.make(k))) {
-        Frame f = _global._frames.get(k);
-        if (_locked.contains(f._key)) continue;
-        for (Vec v : f.vecs()) delete &= subRef(v);
-        if (delete) f.delete();
-      }
-    }
     fs.blockForPending();
   }
 
@@ -346,22 +280,22 @@ public class Env extends Iced {
     }
   }
 
-  void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
-  Futures subVec(Vec v, Futures fs) {
-    assert fs != null : "Future should not be null!";
-//    if ( v.masterVec() != null ) subRef(v.masterVec(), fs);
-    if (!_refcnt.containsKey(v)) return fs;
-    int cnt = _refcnt.get(v)._val-1;
-    if ( cnt > 0 ) {
-      _refcnt.put(v,new IcedInt(cnt));
-    } else {
-      if (!_locked.contains(v._key)) {
-        extinguishCounts(v);
-        fs = removeVec(v, fs);
-      } else { extinguishCounts(v); }
-    }
-    return fs;
-  }
+//  void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
+//  Futures subVec(Vec v, Futures fs) {
+//    assert fs != null : "Future should not be null!";
+////    if ( v.masterVec() != null ) subRef(v.masterVec(), fs);
+//    if (!_refcnt.containsKey(v)) return fs;
+//    int cnt = _refcnt.get(v)._val-1;
+//    if ( cnt > 0 ) {
+//      _refcnt.put(v,new IcedInt(cnt));
+//    } else {
+//      if (!_locked.contains(v._key)) {
+//        extinguishCounts(v);
+//        fs = removeVec(v, fs);
+//      } else { extinguishCounts(v); }
+//    }
+//    return fs;
+//  }
 
   void remove(Object o, boolean popped) {
     assert o instanceof ValFrame || o instanceof Frame || o == null;
@@ -577,6 +511,7 @@ public class Env extends Iced {
       if (isEmpty()) return null;
       Val o = peek();
       _stack.remove(_head--);
+      if (o instanceof ValFrame) toss((ValFrame)o);
       return o;
     }
 
@@ -794,13 +729,16 @@ class ValFrame extends Val {
   final String _key;
   final Frame _fr;
   boolean _isVec;
+  boolean _g; // are any vecs in the frame in the DKV ?
   ValFrame(Frame fr) { _key = null; _fr = fr; }
-  ValFrame(Frame fr, boolean isVec) { _key = null; _fr = fr; _isVec = isVec; }
+  ValFrame(Frame fr, boolean g) { this(fr); _g = g;}
+  ValFrame(Frame fr, boolean isVec, boolean g) { _key = null; _fr = fr; _isVec = isVec; _g = g; }
   ValFrame(String key) {
     Key<Frame> k = Key.make(key);
     if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = k.get();
+    _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override int type () { return Env.ARY; }

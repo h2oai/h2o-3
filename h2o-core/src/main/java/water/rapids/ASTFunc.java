@@ -154,7 +154,7 @@ public class ASTFunc extends ASTFuncDef {
     } else {
       throw H2O.unimpl();
     }
-    env.cleanup(fr);
+//    env.cleanup(fr);
     return out;
   }
 
@@ -164,15 +164,15 @@ public class ASTFunc extends ASTFuncDef {
     return indent(sb,d).append("}");
   }
 
-  void trash() {
-    if (_e == null) return;
-    // wipe the _local_frames
-    Futures fs = new Futures();
-    for (Vec v: _e._refcnt.keySet()) {
-      fs = _e._parent.subVec(v, fs);
-    }
-    fs.blockForPending();
-  }
+//  void trash() {
+//    if (_e == null) return;
+//    // wipe the _local_frames
+//    Futures fs = new Futures();
+//    for (Vec v: _e._refcnt.keySet()) {
+//      fs = _e._parent.subVec(v, fs);
+//    }
+//    fs.blockForPending();
+//  }
 }
 
 class ASTFuncDef extends ASTOp {

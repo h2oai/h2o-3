@@ -102,7 +102,9 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame) { this.exec(e); }
+            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTDelete )
+      { this.exec(e); }
 
     else { throw H2O.fail("Unknown AST: " + this.getClass());}
     return e;
@@ -165,6 +167,7 @@ class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
   boolean isFrame;
+  boolean _g;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
@@ -173,6 +176,7 @@ class ASTFrame extends AST {
     if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
+    _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
@@ -181,10 +185,11 @@ class ASTFrame extends AST {
       if (e.isGlobal()) e._global._frames.put(_key, _fr);
       else e._local._frames.put(_key, _fr);
     }
-    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame));
+    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
+  boolean isGlobal() { return _g; }
 }
 
 class ASTNum extends AST {
@@ -722,7 +727,7 @@ class ASTAssign extends AST {
             for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
         }.doAll(rr);
-        e.cleanup(rr, (Frame) rows);
+//        e.cleanup(rr, (Frame) rows);
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was a constant)");
@@ -765,7 +770,7 @@ class ASTAssign extends AST {
             }
           }
         }.doAll(lhs_ary);
-        e.cleanup(rhs_ary);
+//        e.cleanup(rhs_ary);
         e.push0(new ValFrame(lhs_ary));
         return;
 
@@ -803,7 +808,7 @@ class ASTAssign extends AST {
           }
         }.doAll(rr);
 
-        e.cleanup(pred, rr, (Frame) rows);
+//        e.cleanup(pred, rr, (Frame) rows);
         e.push0(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was Frame");
@@ -830,7 +835,7 @@ class ASTAssign extends AST {
         e.addKeys(fr);
         if (!e.isGlobal()) e._local._frames.put(fr._key.toString(), fr);
         else e._global._frames.put(fr._key.toString(), fr);
-        e.push(new ValFrame(fr));
+        e.push(new ValFrame(fr, id.isGlobalSet()));
         e.put(id._id, Env.ARY, id._id);
       }
 
@@ -946,22 +951,19 @@ class ASTAssign extends AST {
         Vec rvecs[] = rhs_ary.vecs();
         Futures fs = new Futures();
         for (int i = 0; i < cs.length; i++) {
-          boolean subit=true;
           int cidx = (int) cs[i];
           Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
           e.addVec(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
-              subit=false;
-              e.subVec(rv);
+              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
-              subit=false;
-              e.subVec(rv);
+              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
@@ -1037,7 +1039,7 @@ class ASTSlice extends AST {
         if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
-      env.cleanup(ary);
+//      env.cleanup(ary);
     } else {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
@@ -1049,7 +1051,8 @@ class ASTSlice extends AST {
       if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
+//      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
+      env.pop();
       env.push(new ValFrame(fr2));
     }
   }
@@ -1160,7 +1163,6 @@ class ASTSlice extends AST {
 class ASTDelete extends AST {
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     AST cols = E.skipWS().parse();
     ASTDelete res = (ASTDelete) clone();
     res._asts = new AST[]{ary,cols};
@@ -1171,11 +1173,7 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    Frame  ary = ((ASTFrame )_asts[0])._fr;
-    String col = ((ASTString)_asts[1])._s;
-    Vec vec = ary.remove(col);
-    vec.remove();
-    DKV.put(ary);
-    env.push(new ValFrame(ary));
+    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    env.push(new ValNum(0));
   }
 }
