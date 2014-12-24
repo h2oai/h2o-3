@@ -102,7 +102,9 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame) { this.exec(e); }
+            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTDelete )
+      { this.exec(e); }
 
     else { throw H2O.fail("Unknown AST: " + this.getClass());}
     return e;
@@ -1160,7 +1162,6 @@ class ASTSlice extends AST {
 class ASTDelete extends AST {
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     AST cols = E.skipWS().parse();
     ASTDelete res = (ASTDelete) clone();
     res._asts = new AST[]{ary,cols};
@@ -1171,11 +1172,7 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    Frame  ary = ((ASTFrame )_asts[0])._fr;
-    String col = ((ASTString)_asts[1])._s;
-    Vec vec = ary.remove(col);
-    vec.remove();
-    DKV.put(ary);
-    env.push(new ValFrame(ary));
+    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    env.push(new ValNum(0));
   }
 }

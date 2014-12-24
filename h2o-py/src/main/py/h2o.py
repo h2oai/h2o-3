@@ -265,7 +265,7 @@ class Expr(object):
     if _CMD is None:
       H2OCONN.Remove(self._data)
     else:
-      s = " (del "+self._data+")"
+      s = " (del %"+self._data+" #0)"
       global _TMPS
       if _TMPS is None: print "Lost deletes: ",s
       else: _TMPS += s
@@ -303,7 +303,7 @@ class Expr(object):
     cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
     # Magical count-of-4 is the depth of 4 interpreter stack
     print "refcnt",self._name,cnt-4
-    py_tmp = cnt==4
+    py_tmp = cnt!=4 and self._len > 1
 
     if py_tmp:
       self._data = py_tmp_key() # Top-level key/name assignment

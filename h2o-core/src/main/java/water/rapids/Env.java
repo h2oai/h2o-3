@@ -281,7 +281,7 @@ public class Env extends Iced {
     }
   }
 
-  void cleanup(Frame ... frames) { for (Frame f : frames) unload(f,true); }
+  void cleanup(Frame ... frames) { return; /*for (Frame f : frames) unload(f,true);*/ }
 
   private void extinguishCounts(Object o) {
     if (o instanceof Vec) { extinguishCounts((Vec) o); }
