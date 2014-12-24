@@ -4,7 +4,6 @@ import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -14,38 +13,31 @@ public class ConfusionMatrix extends Iced {
   public long[][] _arr; // [actual][predicted]
   public final double[] _classErr;
   public double _predErr;
+  public String[] _domain;
 
-  public enum ErrMetric {
-    MAXC, SUMC, TOTAL;
+//  public enum ErrMetric {
+//    MAXC, SUMC, TOTAL;
+//
+//    public double computeErr(ConfusionMatrix cm) {
+//      switch( this ) {
+//      case MAXC : return ArrayUtils.maxValue(cm.classErr());
+//      case SUMC : return ArrayUtils.sum(cm.classErr());
+//      case TOTAL: return cm.err();
+//      default   : throw water.H2O.unimpl();
+//      }
+//    }
+//  }
 
-    public double computeErr(ConfusionMatrix cm) {
-      switch( this ) {
-      case MAXC : return ArrayUtils.maxValue(cm.classErr());
-      case SUMC : return ArrayUtils.sum(cm.classErr());
-      case TOTAL: return cm.err();
-      default   : throw water.H2O.unimpl();
-      }
-    }
-  }
-
-  public ConfusionMatrix(int n) {
-    _arr = new long[n][n];
-    _classErr = classErr();
-    _predErr = err();
-  }
-
-  public ConfusionMatrix(long[][] value) {
+  /**
+   * Constructor for Confusion Matrix
+   * @param value 2D square matrix with co-occurrence counts for actual vs predicted class membership
+   * @param domain class labels (unified domain between actual and predicted class labels)
+   */
+  public ConfusionMatrix(long[][] value, String[] domain) {
     _arr = value;
     _classErr = classErr();
     _predErr = err();
-  }
-
-  public ConfusionMatrix(long[][] value, int dim) {
-    _arr = new long[dim][dim];
-    for (int i=0; i<dim; ++i)
-      System.arraycopy(value[i], 0, _arr[i], 0, dim);
-    _classErr = classErr();
-    _predErr = err();
+    _domain = domain;
   }
 
   /** Build the CM data from the actuals and predictions, using the default
@@ -53,13 +45,18 @@ public class ConfusionMatrix extends Iced {
    *  print_threshold.  Actuals might have extra levels not trained on (hence
    *  never predicted).  Actuals with NAs are not scored, and their predictions
    *  ignored. */
-  public ConfusionMatrix(Vec actuals, Frame predictions) {
-    this(new CM(actuals.domain().length).doAll(actuals,predictions.vecs()[0])._arr);
+  public static ConfusionMatrix buildCM(Vec actuals, Vec predictions) {
+    if (!actuals.isEnum()) throw new IllegalArgumentException("actuals must be enum.");
+    if (!predictions.isEnum()) throw new IllegalArgumentException("predictions must be enum.");
+    int len = predictions.domain().length;
+    CMBuilder cm = new CMBuilder(len).doAll(actuals,predictions);
+    return new ConfusionMatrix(cm._arr, predictions.domain());
   }
-  private static class CM extends MRTask<CM> {
+
+  private static class CMBuilder extends MRTask<CMBuilder> {
     final int _len;
     long _arr[/*actuals*/][/*predicted*/];
-    CM( int len ) { _len = len; }
+    CMBuilder(int len) { _len = len; }
     @Override public void map( Chunk ca, Chunk cp ) {
       // After adapting frames, the Actuals have all the levels in the
       // prediction results, plus any extras the model was never trained on.
@@ -69,7 +66,7 @@ public class ConfusionMatrix extends Iced {
         if( !ca.isNA0(i) ) 
           _arr[(int)ca.at80(i)][(int)cp.at80(i)]++;
     }
-    @Override public void reduce( CM cm ) { ArrayUtils.add(_arr,cm._arr); }
+    @Override public void reduce( CMBuilder cm ) { ArrayUtils.add(_arr,cm._arr); }
   }
 
 
@@ -242,16 +239,20 @@ public class ConfusionMatrix extends Iced {
     return ss;
   }
 
-  public String toASCII(String[] domain) {
-    if (_cmTable == null && domain != null) {
-      _cmTable = toTable(domain);
+  public String toASCII() {
+    if (_cmTable == null && _domain != null) {
+      _cmTable = toTable();
       return _cmTable.toString();
     }
     return "";
   }
 
-  TwoDimTable toTable(String[] domain) {
-    assert (_arr != null && domain != null);
+  /**
+   * Convert this ConfusionMatrix into a fully annotated TwoDimTable
+   * @return TwoDimTable
+   */
+  TwoDimTable toTable() {
+    assert (_arr != null && _domain != null);
     for (int i=0; i<_arr.length; ++i) assert(_arr.length == _arr[i].length);
     // Sum up predicted & actuals
     long acts [] = new long[_arr   .length];
@@ -264,8 +265,8 @@ public class ConfusionMatrix extends Iced {
       }
       acts[a] = sum;
     }
-    String adomain[] = createConfusionMatrixHeader(acts , domain);
-    String pdomain[] = createConfusionMatrixHeader(preds, domain);
+    String adomain[] = createConfusionMatrixHeader(acts , _domain);
+    String pdomain[] = createConfusionMatrixHeader(preds, _domain);
     assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
 
     String[] rowHeader = new String[adomain.length+1];
@@ -283,7 +284,7 @@ public class ConfusionMatrix extends Iced {
     for (int i=0; i<colFormat.length-1; ++i)
       colFormat[i] = "%d";
     colFormat[colFormat.length-2] = "%.4f";
-    colFormat[colFormat.length-1] = "= %15s";
+    colFormat[colFormat.length-1] = "= %s";
 
     TwoDimTable table = new TwoDimTable(
             "Confusion Matrix (Act/Pred)", colNames, colFormat, rowHeader,

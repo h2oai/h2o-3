@@ -379,7 +379,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Log.info("============================================================== ");
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
       ConfusionMatrix cm = mm._cm;
-      Log.info(cm.toASCII(vresponse().domain()));
+      Log.info(cm.toASCII());
       Log.info( (_nclass > 1 ? "Total of "+cm.errCount()+" errors" : "Reported")+ " on "+cm.totalRows()+" rows");
       _timeLastScoreEnd = System.currentTimeMillis();
     }
