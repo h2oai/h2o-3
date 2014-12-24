@@ -5,6 +5,28 @@ It supports indexed reads and writes of keys, with a robust definition of allowe
 No recursive function definition is allowed
 
 
+# multiple statements allowed now (what is put in the json response?)
+(, (...) (...) (...) ...)
+
+every (...) is a statement
+
+# this functionality is properly part of Rapids now. Strings are supported by surrounding characters with either " or '
+
+Currently not supported are ops like:
+
+a[,] = "asdf"
+
+(will/should blow with IAE)
+
+
+# colnames
+here's an example of how to do set colnames in Rapids
+
+(colnames= %asdf {cols} {names})
+
+
+
+
 # thinking about lhs
 ([ $a "null" "null" ])
 
