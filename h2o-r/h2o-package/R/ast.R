@@ -28,16 +28,16 @@ function(node) {
     res %p0% ')'
     list( ast = res)
 
-  } else if (node %i% "ASTSeries") {
+  } else if (is(node, "ASTSeries")) {
     res %p% node@op
     children <- unlist(lapply(node@children, visitor))
-    children <- paste(children, collapse=";",sep="")
+    children <- paste0(children, collapse=";")
     res %p0% children
     res %p0% "}"
     res
-  } else if (node %i% "ASTEmpty") {
+  } else if (is(node, "ASTEmpty")) {
     node@key
-  } else if (node %i% "H2OFrame") {
+  } else if (is(node, "H2OFrame")) {
     .get(node)
   } else {
     node
@@ -74,10 +74,8 @@ function(expr) {
 #' Useful when trying to unravel an expression
 .any.h2o<-
 function(expr, envir) {
-  l <- unlist(recursive = T, lapply(as.list(expr), .as_list))
-  a <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
-  b <- any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
-  any(a|b)
+  l <- unlist(lapply(as.list(expr), .as_list), recursive = TRUE)
+  any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
 }
 
 #'
@@ -106,60 +104,68 @@ function(x, envir, sub_one = TRUE) {
 #' TODO: this method needs to be cleaned up and re-written
 .ast.walker<-
 function(expr, envir, neg = FALSE, sub_one = TRUE) {
-  sub <- ifelse(sub_one, 1, 0)
-  if (length(expr) == 1) {
+  sub <- as.integer(sub_one)
+  if (length(expr) == 1L) {
     if (is.symbol(expr)) { expr <- get(deparse(expr), envir); return(.ast.walker(expr, envir, neg, sub_one)) }
-    if (is.numeric(expr[[1]])) return('#' %p0% (eval(expr[[1]], envir=envir) - sub))
-    if (is.character(expr[[1]])) return(deparse(expr[[1]]))
+    if (is.numeric(expr[[1L]])) return(paste0('#', eval(expr[[1L]], envir=envir) - sub))
+    if (is.character(expr[[1L]])) return(deparse(expr[[1L]]))
     if (is.character(expr)) return(deparse(expr))
   }
-  if (isGeneric(deparse(expr[[1]]))) {
+  if (isGeneric(deparse(expr[[1L]]))) {
     # Have a vector => ASTSeries
-    if ((expr[[1]]) == quote(`c`)) {
-      children <- lapply(expr[-1], .ast.walker, envir, neg, sub_one)
+    if ((expr[[1L]]) == quote(`c`)) {
+      children <- lapply(expr[-1L], .ast.walker, envir, neg, sub_one)
       return(new("ASTSeries", op="{", children = children))
 
     # handle the negative indexing cases
-    } else if (expr[[1]] == quote(`-`)) {
+    } else if (expr[[1L]] == quote(`-`)) {
       # got some negative indexing!
 
       # disallow binary ops here
-      if (length(expr) == 3) {  # have a binary operation, e.g. 50 - 1
+      if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
         stop("Unimplemented: binary operations (+, -, *, /) within a slice.")
       }
 
-      new_expr <- as.list(expr[-1])[[1]]
-      if (length(new_expr) == 1) {
+      new_expr <- as.list(expr[-1L])[[1L]]
+      if (length(new_expr) == 1L) {
         if (is.symbol(new_expr)) new_expr <- get(deparse(new_expr), envir)
-        if (is.numeric(new_expr[[1]])) return('#-' %p0% (eval(new_expr[[1]], envir=envir)))  # do not do the +1
+        if (is.numeric(new_expr[[1L]])) return(paste0('#-', eval(new_expr[[1L]], envir=envir)))  # do not do the +1
       }
 
-      if (isGeneric(deparse(new_expr[[1]]))) {
-        if ((new_expr[[1]]) == quote(`c`)) {
-          if (!identical(new_expr[[2]][[1]], quote(`:`))) {
-            children <- lapply(new_expr[-1], .ast.walker, envir, neg, sub_one)
-            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', '-' %p0% x) else -x) # scrape off the '#', put in the - and continue...
-            children <- lapply(children, function(x) '#' %p0% (as.numeric(as.character(x)) - sub))
+      if (isGeneric(deparse(new_expr[[1L]]))) {
+        if ((new_expr[[1L]]) == quote(`c`)) {
+          if (!identical(new_expr[[2L]][[1L]], quote(`:`))) {
+            children <- lapply(new_expr[-1L], .ast.walker, envir, neg, sub_one)
+            children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', paste0('-', x)) else -x) # scrape off the '#', put in the - and continue...
+            children <- lapply(children, function(x) paste0('#', as.numeric(as.character(x)) - sub))
             return(new("ASTSeries", op="{", children=children))
           } else {
-            if (length( as.list(new_expr[-1])) < 2) new_expr <- as.list(new_expr[-1])
+            if (length(as.list(new_expr[-1L])) < 2L) new_expr <- as.list(new_expr[-1L])
             else return(.ast.walker(substitute(new_expr), envir, neg=TRUE, sub_one))
           }
         }
       }
 
       # otherwise `:` with negative indexing
-      if (identical(new_expr[[1]][[1]], quote(`:`))) {
-        return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(new_expr[[1]][[2]],envir=envir)), '#-' %p0% (eval(new_expr[[1]][[3]],envir=envir)))))
+      if (identical(new_expr[[1L]][[1L]], quote(`:`))) {
+        return(new("ASTNode", root = new("ASTApply", op = ":"),
+               children = list(paste0('#-', eval(new_expr[[1L]][[2L]], envir = envir)),
+                               paste0('#-', eval(new_expr[[1L]][[3L]], envir = envir)))))
       }
     }
     # end negative expression cases
   }
 
   # Create a new ASTSpan
-  if (identical(expr[[1]], quote(`:`))) {
-    if (!neg) return(new("ASTNode", root=new("ASTApply", op=":"), children = list('#' %p0% (eval(expr[[2]],envir=envir) - 1), '#' %p0% (eval(expr[[3]],envir=envir) - 1))))
-    return(new("ASTNode", root=new("ASTApply", op=":"),children = list('#-' %p0% (eval(expr[[2]],envir=envir)), '#-' %p0% (eval(expr[[3]],envir=envir)))))
+  if (identical(expr[[1L]], quote(`:`))) {
+    if (neg)
+      return(new("ASTNode", root = new("ASTApply", op = ":"),
+                 children = list(paste0('#-', eval(expr[[2L]], envir = envir)),
+                                 paste0('#-', eval(expr[[3L]], envir = envir)))))
+    else
+      return(new("ASTNode", root = new("ASTApply", op = ":"),
+                 children = list(paste0('#', eval(expr[[2L]], envir = envir) - 1L),
+                                 paste0('#', eval(expr[[3L]], envir = envir) - 1L))))
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
@@ -181,26 +187,26 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
-  if (a %i% "H2OFrame") {
+  if (is(a, "H2OFrame")) {
     .get(a)
-  } else if (a %i% "ASTNode") {
+  } else if (is(a, "ASTNode")) {
     a
-  } else if (a %i% "ASTFun") {
-    '%' %p0% a@name
-  } else if (a %i% "ASTEmpty") {
-    '%' %p0% a@key
+  } else if (is(a, "ASTFun")) {
+    paste0('%', a@name)
+  } else if (is(a, "ASTEmpty")) {
+    paste0('%', a@key)
   } else {
     res <- eval(a)
     if (is.null(res)) return(deparse("null"))
     if (is.vector(res)) {
-      if (length(res) > 1) {
+      if (length(res) > 1L) {
         if (is.numeric(res)) res <- as.numeric(res)
         # wrap the vector up into a ';' separated {} thingy
         tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
-        return('{' %p0%   tt  %p0% '}')
+        return(paste0('{', tt, '}'))
       } else {
-        if (is.numeric(res)) return('#' %p0% res)
-        if (is.logical(res)) return('%' %p0% res)
+        if (is.numeric(res)) return(paste0('#', res))
+        if (is.logical(res)) return(paste0('%', res))
         else return(deparse(eval(a)))
       }
     } else {
@@ -212,8 +218,8 @@ function(a, name=NULL) {
 .args.to.ast<-
 function(..., .args = list()) {
   l <- list(...)
-  if (length(.args) != 0) l <- .args
-  arg.names <- names(as.list(substitute(l))[-1])
+  if (length(.args) != 0L) l <- .args
+  arg.names <- names(as.list(substitute(l))[-1L])
   arg_values <- NULL
   if ("fun_args" %in% arg.names) {
     arg_values <- lapply(seq_along(l), function(i) {
@@ -224,5 +230,5 @@ function(..., .args = list()) {
   } else {
     arg_values <- lapply(seq_along(l), function(i) { .get.value.from.arg(l[[i]], names(l)[i]) })
   }
-  return(arg_values)
+  arg_values
 }

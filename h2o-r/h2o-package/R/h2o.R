@@ -321,7 +321,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #' @return TRUE if the cluster is up; FALSE otherwise
 h2o.clusterIsUp <- function(conn) {
   if (missing(conn)) conn <- .retrieveH2O(parent.frame())
-  if (!is(conn, "H2OConnection")) stop("conn must be a H2OConnection object")
+  if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
   rv = h2o.doRawGET(conn = conn, urlSuffix = "")
 
@@ -371,7 +371,8 @@ h2o.clusterInfo <- function(conn) {
 
   cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
   if(any(cpusLimited))
-    warning("Number of CPU cores allowed is limited to 1 on some nodes.  To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
+    warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
+            "To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
 }
 
 #' Check H2O Server Health
@@ -384,15 +385,15 @@ h2o.clusterInfo <- function(conn) {
     if (rv$curlError) {
       ip = conn@ip
       port = conn@port
-      warning(rv$curlErrorMessage)
-      stop(sprintf("H2O connection has been severed.  Cannot connect to instance at %s", h2o.getBaseURL(conn)))
+      stop(sprintf("H2O connection has been severed. Cannot connect to instance at %s\n", h2o.getBaseURL(conn)),
+           rv$curlErrorMessage)
     }
 
     if (rv$httpStatusCode != 200L) {
       ip = conn@ip
       port = conn@port
-      warning(sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
-      stop(sprintf("H2O connection has been severed.  Instance unhealthy at %s", h2o.getBaseURL(conn)))
+      stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
+           sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
     }
 
     fromJSON(rv$payload)
@@ -437,7 +438,8 @@ h2o.clusterInfo <- function(conn) {
 #'
 #' Poll the H2O server with the current job key `job_key` for completion.
 .h2o.__waitOnJob <- function(client, job_key, pollInterval = 1, progressBar = TRUE) {
-  if(!is.character(job_key) || !nzchar(job_key)) stop("job_key must be a non-empty string")
+  if(!is.character(job_key) || length(job_key) != 1L || is.na(job_key) || !nzchar(job_key))
+    stop("`job_key` must be a non-empty string")
   if(progressBar) {
     pb <- txtProgressBar(style = 3L)
     tryCatch(while((prog <- .h2o.__poll(client, job_key))$prog != 1 && !prog$DONE) {
@@ -459,8 +461,9 @@ h2o.clusterInfo <- function(conn) {
 #'
 #' Return the progress so far and check if job is done
 .h2o.__poll <- function(client, keyName) {
-  if(!is(client, "H2OConnection")) stop("client must be a H2OConnection object")
-  if(!is.character(keyName) || !nzchar(keyName)) stop("keyName must be a non-empty string")
+  if(!is(client, "H2OConnection")) stop("`client` must be a H2OConnection object")
+  if(!is.character(keyName) || length(keyName) != 1L || is.na(keyName) || !nzchar(keyName))
+    stop("`keyName` must be a non-empty string")
 
   page <- paste0('Jobs.json/', keyName)
   res <- .h2o.__remoteSend(client, page)

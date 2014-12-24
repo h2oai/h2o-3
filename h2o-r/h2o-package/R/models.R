@@ -251,7 +251,7 @@ function(h2o, key, return_all_lambda = TRUE, data) {
 #' Construct a summary of the GLM.
 .h2o.__getGLMSummary<-
 function(model) {
-  if (class(model) == "H2OGLMModelList") model <- model@models[[model@best_model]]
+  if (is(model, "H2OGLMModelList")) model <- model@models[[model@best_model]]
   result <- list()
   result$model_key     <- model@key
   result$alpha         <- model@model$params$alpha

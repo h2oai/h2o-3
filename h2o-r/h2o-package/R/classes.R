@@ -70,10 +70,10 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 #' @slot ip Object of class \code{character} representing the IP address of the H2O server.
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
 #' @aliases H2OConnection
-H2OConnection <- setClass("H2OConnection",
-                      representation(ip="character", port="numeric"),
-                      prototype(ip=NA_character_, port=NA_integer_)
-                      )
+setClass("H2OConnection",
+         representation(ip="character", port="numeric"),
+         prototype(ip=NA_character_, port=NA_integer_)
+         )
 
 #' @rdname H2OConnection-class
 setMethod("show", "H2OConnection", function(object) {
@@ -81,18 +81,18 @@ setMethod("show", "H2OConnection", function(object) {
   cat("Port      :", object@port, "\n")
 })
 
-setClassUnion("H2OConnection.N", c("H2OConnection", "NULL"))
-setClassUnion("ast.node.N", c("ASTNode", "NULL"))
-setClassUnion("data.frame.N", c("data.frame", "NULL"))
+setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
+setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
+setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
 
 
 #'
 #' The H2OFrame class
 #'
 setClass("H2OFrame",
-         representation(h2o="H2OConnection.N", key="character", ast="ast.node.N",
+         representation(h2o="H2OConnectionOrNULL", key="character", ast="ASTNodeOrNULL",
          col_names="character", nrows="numeric", ncols="numeric", scalar="numeric",
-         factors="data.frame.N"),
+         factors="data.frameOrNULL"),
          prototype(h2o       = NULL,
                    key       = NA_character_,
                    ast       = NULL,
@@ -620,7 +620,7 @@ function(env) {
     if (sum(e_list) > 1L) {
       x <- e_list[1L]
       for (y in e_list[1L])
-        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
     }
     return(get(ls(env)[which(e_list)[1L]], envir=env))
   }
@@ -629,9 +629,9 @@ function(env) {
     if (sum(g_list) > 1L) {
       x <- g_list[1L]
       for (y in g_list[1L])
-        if (!identical(x, y)) stop("Found multiple h2o client connectors. Please specify the preferred h2o connection.")
+        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
     }
     return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
   }
-  stop("Could not find any H2OConnection. Do you have an active connection to H2O from R? Please specify the h2o connection.")
+  stop("Could not find any active H2OConnection objects. Please specify an H2O connection.")
 }

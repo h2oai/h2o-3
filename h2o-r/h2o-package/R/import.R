@@ -14,14 +14,15 @@
 #' Import an entire directory of files. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
 h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
-  if(!is(object, "H2OConnection")) stop("object must be of class H2OConnection")
-  if(!is.character(path)) stop("path must be of class character")
-  if(!nzchar(path)) stop("path must be a non-empty string")
-  if(!is.character(pattern)) stop("pattern must be of class character")
-  if(!is.character(key)) stop("key must be of class character")
+  if(!is(object, "H2OConnection")) stop("`object` must be of class H2OConnection")
+  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
+    stop("`path` must be a non-empty character string")
+  if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-  if(!is.logical(parse)) stop("parse must be of class logical")
+    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
+    stop("`parse` must be TRUE or FALSE")
 
   res <- .h2o.__remoteSend(object, 'ImportFiles.json', path=path)
   if(length(res$fails) > 0L) {
@@ -34,8 +35,6 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
       srcKey <- res$keys
       rawData <- new("H2ORawData", h2o=object, key=srcKey)
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
-      h2o.rm(object, paste0("nfs:/", path))
-      h2o.rm(object, paste0("nfs://private", path))
     } else {
       myData <- lapply(res$keys, function(x) new("H2ORawData", h2o=object, key=x))
       if(length(res$keys) == 1L)
@@ -79,13 +78,14 @@ h2o.importHDFS <- function(object, path, pattern = "", key = "", parse = TRUE, h
 #'
 #' Upload local files to the H2O instance.
 h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "", col.names) {
-  if(!is(object, "H2OConnection")) stop("object must be of class H2OConnection")
-  if(!is.character(path)) stop("path must be of class character")
-  if(!nzchar(path)) stop("path must be a non-empty string")
-  if(!is.character(key)) stop("key must be of class character")
+  if(!is(object, "H2OConnection")) stop("`object` must be of class H2OConnection")
+  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
+    stop("`path` must be a non-empty character string")
+  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("key must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
-  if(!is.logical(parse)) stop("parse must be of class logical")
+    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
+    stop("`parse` must be TRUE or FALSE")
 
   path <- normalizePath(path, winslash = "/")
   urlSuffix <- sprintf("PostFile.json?destination_key=%s", curlEscape(path))

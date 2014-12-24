@@ -58,7 +58,7 @@ public class GLMValidation extends Iced {
     if(_glm._family == Family.binomial){
       _cms = new ConfusionMatrix[thresholds.length];
       for(int i = 0; i < _cms.length; ++i)
-        _cms[i] = new ConfusionMatrix(2);
+        _cms[i] = new ConfusionMatrix(new long[2][2], null);
     }
     this.dataKey = dataKey;
     this.thresholds = thresholds;

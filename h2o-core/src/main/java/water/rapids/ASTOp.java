@@ -46,7 +46,7 @@ public abstract class ASTOp extends AST {
   static final String VARS2[] = new String[]{ "", "x","y"};
   static {
     // All of the special chars (see Exec.java)
-    SYMBOLS.put(";", new ASTStatement());
+    SYMBOLS.put(",", new ASTStatement());
     SYMBOLS.put("=", new ASTAssign());
     SYMBOLS.put("'", new ASTString('\'', ""));
     SYMBOLS.put("\"",new ASTString('\"', ""));
@@ -302,7 +302,7 @@ abstract class ASTUniOp extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.cleanup(fr);
+    env.clean();
     env.push(new ValFrame(fr2));
   }
 }
@@ -360,7 +360,8 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.cleanup(fr);
+//    env.cleanup(fr);
+    env.clean();
     env.push(new ValFrame(fr2));
   }
 }
@@ -409,7 +410,8 @@ class ASTasDate extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
-    env.cleanup(fr);
+    env.clean();
+//    env.cleanup(fr);
     env.push(new ValFrame(fr2));
   }
 }
@@ -455,7 +457,8 @@ class ASTRound extends ASTUniPrefixOp {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
-      env.cleanup(fr);
+//      env.cleanup(fr);
+      env.clean();
       env.push(new ValFrame(fr2));
     }
     else
@@ -511,7 +514,8 @@ class ASTSignif extends ASTUniPrefixOp {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
-      env.cleanup(fr);
+//      env.cleanup(fr);
+      env.clean();
       env.push(new ValFrame(fr2));
     }
     else
@@ -532,7 +536,8 @@ class ASTNrow extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numRows();
-    env.cleanup(fr);
+//    env.cleanup(fr);
+//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -544,7 +549,8 @@ class ASTNcol extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numCols();
-    env.cleanup(fr);
+//    env.cleanup(fr);
+//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -556,7 +562,8 @@ class ASTLength extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame fr = env.pop0Ary();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
-    env.cleanup(fr);
+//    env.cleanup(fr);
+//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -570,7 +577,8 @@ class ASTIsFactor extends ASTUniPrefixOp {
     String res = "FALSE";
     if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
     if (fr.anyVec().isEnum()) res = "TRUE";
-    env.cleanup(fr);
+//    env.//cleanup(fr);
+//    env.//clean();
     env.push(new ValStr(res));
   }
 }
@@ -585,7 +593,7 @@ class ASTAnyFactor extends ASTUniPrefixOp {
     String res = "FALSE";
     for (int i = 0; i < fr.vecs().length; ++i)
       if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
-    env.cleanup(fr);
+//    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -601,7 +609,7 @@ class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
     for (Vec aV : v)
       if (aV.isInt())
         if (aV.min() == 0 && aV.max() == 1) { res = "TRUE"; break; }
-    env.cleanup(fr);
+    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -615,7 +623,7 @@ class ASTAnyNA extends ASTUniPrefixOp {
     String res = "FALSE";
     for (int i = 0; i < fr.vecs().length; ++i)
       if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
-    env.cleanup(fr);
+    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -712,7 +720,7 @@ class ASTScale extends ASTUniPrefixOp {
     final double[] scales  = _scales;
     if (!_center && !_scale && (_centers == null) && (_scales == null)) {
       //nothing to do, return the frame as is
-      env.push0Ary(fr);
+      env.push(new ValFrame(fr));
       return;
     }
 
@@ -766,8 +774,8 @@ class ASTScale extends ASTUniPrefixOp {
         }
       }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
     }
-//    env.cleanup(fr);
-//    if (doScale) env.cleanup(centered);
+//    //cleanup(fr);
+//    if (doScale) //cleanup(centered);
     env.push(new ValFrame(scaled));
   }
 }
@@ -1023,8 +1031,9 @@ abstract class ASTBinOp extends ASTOp {
         }
       }
     }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
-    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
-    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
+    env.pop(); env.pop();
+//    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
+//    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
     env.push(new ValFrame(fr2));
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
@@ -1186,7 +1195,7 @@ abstract class ASTReducerOp extends ASTOp {
         Frame fr = env.pop0Ary(); // pop w/o lowering refcnts ... clean it up later
         for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
         sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
-        env.cleanup(fr);
+        //cleanup(fr);
       }
     env.push(new ValNum(sum));
   }
@@ -1422,7 +1431,7 @@ class ASTRbind extends ASTUniPrefixOp {
     }
     ParallelRbinds t;
     H2O.submitTask(t =new ParallelRbinds(env, argcnt)).join();
-    for (int i = 0; i < argcnt; ++i) env.cleanup(env.pop0Ary());
+    for (int i = 0; i < argcnt; ++i) env.pop0(); //env.cleanup(env.pop0Ary());
     env.push(new ValFrame(new Frame(f1.names(), t._vecs)));
   }
 }
@@ -1495,7 +1504,7 @@ class ASTMin extends ASTReducerOp {
         for (Vec v : fr.vecs())
           if (v.naCnt() > 0 && !_narm) { min = Double.NaN; break; }
           else min = Math.min(min, v.min());
-        env.cleanup(fr);
+//        env.cleanup(fr);
       }
     env.push(new ValNum(min));
   }
@@ -1518,7 +1527,7 @@ class ASTMax extends ASTReducerOp {
         for (Vec v : fr.vecs())
           if (v.naCnt() > 0 && !_narm) { max = Double.NaN; break; }
           else max = Math.max(max, v.max());
-        env.cleanup(fr);
+//        env.cleanup(fr);
       }
     env.push(new ValNum(max));
   }
@@ -1635,7 +1644,7 @@ class ASTMatch extends ASTUniPrefixOp {
         for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at80(r)]));
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
-    e.cleanup(fr);
+//    e.cleanup(fr);
     e.push(new ValFrame(rez));
   }
 
@@ -1804,7 +1813,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         }.doAll(v);
         v.setDomain(fr.anyVec().domain());
         Frame f = new Frame(new String[]{"C1"}, new Vec[]{v});
-        env.cleanup(fr);
+//        env.cleanup(fr);
         env.push(new ValFrame(f));
 
       } else {
@@ -1817,7 +1826,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         for (int i = 0; i < f.numCols(); ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
 
-        env.cleanup(fr);
+//        env.cleanup(fr);
         env.push(new ValFrame(f));
       }
     }
@@ -1959,7 +1968,7 @@ class ASTQtile extends ASTUniPrefixOp {
     Futures f = res.postWrite(new Futures());
     f.blockForPending();
     Frame fr = new Frame(new String[]{"P", "Q"}, new Vec[]{p_names, res});
-    env.cleanup(probs, x);
+//    env.cleanup(probs, x);
     env.push(new ValFrame(fr));
   }
 }
@@ -2042,7 +2051,7 @@ class ASTRunif extends ASTUniPrefixOp {
       }
     }.doAll(randVec);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{randVec});
-    env.cleanup(fr);
+//    env.cleanup(fr);
     env.push(new ValFrame(f));
   }
 }
@@ -2075,7 +2084,7 @@ class ASTSdev extends ASTUniPrefixOp {
         throw new IllegalArgumentException("sd only applies to numeric vector.");
 
       double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-      if (env.isAry()) env.cleanup(env.popAry());
+      if (env.isAry()) env.pop(); //env.cleanup(env.popAry());
       else env.pop();
       env.push(new ValNum(sig));
     }
@@ -2148,10 +2157,8 @@ class ASTVar extends ASTUniPrefixOp {
             ss += (fr.vecs()[r].at(0) - xmean) * (y.vecs()[r].at(0) - ymean);
           }
         }
-        if (env.isAry()) env.cleanup(env.popAry());
-        else env.pop();  // pop fr
-        if (env.isAry()) env.cleanup(env.popAry());
-        else env.pop(); // pop y
+        env.pop(); // pop fr
+        env.pop(); // pop y
         env.pop(); // pop use
 
         env.push(new ValNum(ss == Double.NaN ? ss : ss/divideby));
@@ -2174,14 +2181,12 @@ class ASTVar extends ASTUniPrefixOp {
         for (int c = 0; c < y.numCols(); c++)
           for (int r = 0; r < fr.numCols(); r++) {
             covars[c][r] = tsks[c][r].getResult()._ss / (fr.numRows() - 1);
-            env.cleanup(frs[c][r]); // cleanup
+//            env.cleanup(frs[c][r]); // cleanup
             frs[c][r] = null;
           }
 
-        if (env.isAry()) env.cleanup(env.popAry());
-        else env.pop();  // pop fr
-        if (env.isAry()) env.cleanup(env.popAry());
-        else env.pop(); // pop y
+        env.pop(); // pop fr
+        env.pop(); // pop y
         env.pop(); // pop use
 
         // Just push the scalar if input is a single col
@@ -2304,7 +2309,7 @@ class ASTMean extends ASTUniPrefixOp {
         env.push(new ValNum(ave));
       }
     }
-      env.cleanup(fr);
+//    env.cleanup(fr);
   }
 
   @Override double[] map(Env e, double[] in, double[] out, AST[] args) {
@@ -2435,7 +2440,7 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     Frame fr2 = new Frame(colnames, vecs);
-    env.cleanup(fr, one, two);
+//    env.cleanup(fr, one, two);
     env.push(new ValFrame(fr2));
   }
 
@@ -2540,7 +2545,7 @@ class ASTIfElse extends ASTUniPrefixOp {
         if (env!=null)env.unlock();
       }
       Frame ret = tgt.makeCompatible(res);
-      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
+//      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
       return ret;
     }
     src = DKV.remove(k).get();
@@ -2557,6 +2562,7 @@ class ASTIfElse extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
+    if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
     Frame tst = env.pop0Ary();
     if (tst.numCols() != 1)
       throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
@@ -2599,7 +2605,7 @@ class ASTIfElse extends ASTUniPrefixOp {
         }
       }
     }.doAll(yes==null?1:yes.numCols(),frtst).outputFrame(yes==null?(new String[]{"C1"}):yes.names(),null/*same as R: no domains*/);
-    env.cleanup(yes, no, a_yes, a_no, tst, frtst);
+//    env.cleanup(yes, no, a_yes, a_no, tst, frtst);
     env.push(new ValFrame(fr2));
   }
 }
@@ -2731,7 +2737,7 @@ class ASTCut extends ASTUniPrefixOp {
       }
     }.doAll(1, fr).outputFrame(fr.names(), domains);
 
-    env.cleanup(fr);
+//    env.cleanup(fr);
     env.push(new ValFrame(fr2));
   }
 }

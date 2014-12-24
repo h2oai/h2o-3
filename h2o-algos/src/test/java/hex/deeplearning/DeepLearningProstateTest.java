@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import static hex.ConfusionMatrix.buildCM;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.ConfusionMatrix;
 import org.junit.Assert;
@@ -222,15 +223,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                           threshold = mm._aucdata.threshold();
                                           error = mm._aucdata.err();
                                           // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm()).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm(), new String[]{"0", "1"}).err(), error, 1e-15);
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                           Assert.assertEquals(mm._cm.err(), error, 1e-15);
                                         }
                                         
                                         // Compute CM
-                                        if (model2._output.nclasses() > 2)
-                                          pred.replace(0, pred.vecs()[0].toEnum());
-                                        double CMerrorOrig= new ConfusionMatrix(valid.vecs()[resp].toEnum(),pred).err();
+                                        double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
                                         
                                         // confirm that orig CM was made with threshold 0.5
                                         // put pred2 into DKV, and allow access
@@ -238,32 +237,32 @@ public class DeepLearningProstateTest extends TestUtil {
                                         pred2.delete_and_lock(null);
                                         pred2.unlock(null);
                                         
-                                        if (model2._output.nclasses() == 2) {
-                                          // make labels with 0.5 threshold for binary classifier
-                                          // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
-                                          String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
-                                          Env ev = Exec.exec(ast);
-                                          try {
-                                            pred2 = ev.pop0Ary(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                          } finally {
-                                            if (ev!=null) ev.remove_and_unlock();
-                                          }
-                                        
-                                          double threshErr= new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
-                                          Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
-
-                                          // make labels with AUC-given threshold for best F1
-                                          // similar ast to the above
-                                          ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
-                                          ev = Exec.exec(ast);
-                                          try {
-                                            pred2 = ev.pop0Ary();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                          } finally {
-                                            if (ev != null) ev.remove_and_unlock();
-                                          }
-                                          double threshErr2 = new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
-                                          Assert.assertEquals(threshErr2, error, 1e-15);
-                                        }
+//                                        if (model2._output.nclasses() == 2) {
+//                                          // make labels with 0.5 threshold for binary classifier
+//                                          // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
+//                                          String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
+//                                          Env ev = Exec.exec(ast);
+//                                          try {
+//                                            pred2 = ev.pop0Ary(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+//                                          } finally {
+//                                            if (ev!=null) ev.remove_and_unlock();
+//                                          }
+//
+//                                          double threshErr = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
+//                                          Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
+//
+//                                          // make labels with AUC-given threshold for best F1
+//                                          // similar ast to the above
+//                                          ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
+//                                          ev = Exec.exec(ast);
+//                                          try {
+//                                            pred2 = ev.pop0Ary();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+//                                          } finally {
+//                                            if (ev != null) ev.remove_and_unlock();
+//                                          }
+//                                          double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
+//                                          Assert.assertEquals(threshErr2, error, 1e-15);
+//                                        }
                                       } finally {
                                         if (pred != null) pred.delete();
                                         if (pred2 != null) pred2.delete();

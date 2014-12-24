@@ -16,7 +16,7 @@
 .addStringParm <- function(parms, k, v) {
   if (!missing(v)) {
     if (!is.character(v))
-      stop(sprintf("%s must be of type character"), k)
+      stop(sprintf("`%s` must be of type character"), k)
     parms <- .addParm(parms, k, v)
   }
   parms
@@ -25,7 +25,7 @@
 .addBooleanParm <- function(parms, k, v) {
   if (!missing(v)) {
     if (!is.logical(v))
-      stop(sprintf("%s must be of type logical"), k)
+      stop(sprintf("`%s` must be of type logical"), k)
     parms <- .addParm(parms, k, as.numeric(v))
   }
   parms
@@ -34,7 +34,7 @@
 .addNumericParm <- function(parms, k, v) {
   if (!missing(v)) {
     if (!is.numeric(v))
-      stop(sprintf("%s must be of type numeric"), k)
+      stop(sprintf("`%s` must be of type numeric"), k)
     parms <- .addParm(parms, k, v)
   }
   parms
@@ -59,7 +59,7 @@
 .addNumericArrayParm <- function(parms, k, v) {
   if (!missing(v)) {
     if(!all(sapply(v, is.numeric)))
-      stop(sprintf("%s must contain all numeric elements"), k)
+      stop(sprintf("`%s` must contain all numeric elements"), k)
     arrAsString <- sapply(v, function(x) {
         if(length(x) <= 1L)
           x

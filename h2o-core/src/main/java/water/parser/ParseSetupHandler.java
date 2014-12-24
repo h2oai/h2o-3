@@ -16,8 +16,6 @@ public class ParseSetupHandler extends Handler {
     if( DKV.get(p.srcs[0].key()) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
     byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(p.srcs[0].key()));
     ParseSetup ps = ParseSetup.guessSetup(bits, p.singleQuotes, p.checkHeader);
-    // Update in-place
-    assert ps._checkHeader != 0; // Need to fill in the guess
 
     // TODO: ParseSetup throws away the srcs list. . .
     PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "hex", "srcs" });

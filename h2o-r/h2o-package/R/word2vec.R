@@ -29,7 +29,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
-  if (!is(trainingFrame, "H2OFrame")) stop("`data` must be an H2OFrame")
+  if (!is(trainingFrame, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
@@ -42,7 +42,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
   if (!is(trainingFrame, "H2OFrame")) invisible(nrow(trainingFrame))  # try to force the eval of the frame
-  if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2O data frame.")
+  if (!is(trainingFrame, "H2OFrame")) stop("Could not evaluate `trainingFrame` as an H2OFrame object")
 
   params <- list(training_frame = trainingFrame@key,
                  wordModel = wordModel,
@@ -83,7 +83,7 @@ function(word2vec, target, count) {
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
     fr[with(fr, order(-cosine.similarity)),]
   } else {
-    stop("unimplemented")
+    .NotYetImplemented()
 #    vecs <- lapply(target, h2o.transform, word2vec)
 #    vec <- colSums(as.data.frame(vecs))
 #    params$vec <- vec
@@ -98,7 +98,7 @@ function(word2vec, target, count) {
 #' Use a pre-existing word2vec object to transform a target word
 #' into a numeric vector.
 #setMethod("h2o.transform", "H2OW2V", function(word2vec, target) {
-#  if (!(word2vec %i% "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
+#  if (!is(word2vec, "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vecs")
 #  if (missing(target)) stop("`target` must be specified")
 #  if (!is.character(target)) stop("`target` must be character")
 #  if (length(target) > 1) stop("`target` must be a single word")

@@ -45,32 +45,49 @@
 #' }
 #'
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
-                     beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2, max_mem_size = NULL, min_mem_size = NULL,
-                     ice_root = NULL, strict_version_check = FALSE) {
-  if(!is.character(ip)) stop("ip must be of class character")
-  if(!is.numeric(port)) stop("port must be of class numeric")
-  if(!is.logical(startH2O)) stop("startH2O must be of class logical")
-  if(!is.logical(forceDL)) stop("forceDL must be of class logical")
-  if(!missing(Xmx) && !is.character(Xmx)) stop("Xmx must be of class character")
-  if(!is.numeric(nthreads)) stop("nthreads must be of class numeric")
-  if(!is.null(max_mem_size) && !is.character(max_mem_size)) stop("max_mem_size must be of class character")
-  if(!is.null(min_mem_size) && !is.character(min_mem_size)) stop("min_mem_size must be of class character")
-  if(!is.null(max_mem_size) && !regexpr("^[1-9][0-9]*[gGmM]$", max_mem_size)) stop("max_mem_size option must be like 1g or 1024m")
-  if(!is.null(min_mem_size) && !regexpr("^[1-9][0-9]*[gGmM]$", min_mem_size)) stop("min_mem_size option must be like 1g or 1024m")
-  if(!missing(Xmx) && !regexpr("^[1-9][0-9]*[gGmM]$", Xmx)) stop("Xmx option must be like 1g or 1024m")
-  if(!is.logical(beta)) stop("beta must be of class logical")
-  if(!is.logical(assertion)) stop("assertion must be of class logical")
-  if(!is.null(license) && !is.character(license)) stop("license must be of class character")
-  if(!is.null(ice_root) && !is.character(ice_root)) stop("ice_root must be of class character")
-  if(!is.logical(strict_version_check)) stop("strict_version_check must be of class logical")
+                     beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
+                     max_mem_size = NULL, min_mem_size = NULL,
+                     ice_root = tempdir(), strict_version_check = FALSE) {
+  if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
+    stop("`ip` must be a non-empty character string")
+  if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
+    stop("`port` must be an integer ranging from 0 to 65536")
+  if(!is.logical(startH2O) || length(startH2O) != 1L || is.na(startH2O))
+    stop("`startH2O` must be TRUE or FALSE")
+  if(!is.logical(forceDL) || length(forceDL) != 1L || is.na(forceDL))
+    stop("`forceDL` must be TRUE or FALSE")
+  if(!missing(Xmx) && !(is.character(Xmx) && length(Xmx) == 1L && !is.na(Xmx) && nzchar(Xmx)))
+    stop("`Xmx` must be missing or a non-empty character string")
+  if(!missing(Xmx) && !regexpr("^[1-9][0-9]*[gGmM]$", Xmx))
+    stop("`Xmx` option must be like 1g or 1024m")
+  if(!is.numeric(nthreads) || length(nthreads) != 1L || is.na(nthreads) || nthreads < -2)
+    stop("`nthreads` must an integer value greater than or equal to -2")
+  if(!is.null(max_mem_size) &&
+     !(is.character(max_mem_size) && length(max_mem_size) == 1L && !is.na(max_mem_size) && nzchar(max_mem_size)))
+    stop("`max_mem_size` must be NULL or a non-empty character string")
+  if(!is.null(max_mem_size) && !regexpr("^[1-9][0-9]*[gGmM]$", max_mem_size))
+    stop("`max_mem_size` option must be like 1g or 1024m")
+  if(!is.null(min_mem_size) &&
+     !(is.character(min_mem_size) && length(min_mem_size) == 1L && !is.na(min_mem_size) && nzchar(min_mem_size)))
+    stop("`min_mem_size` must be NULL or a non-empty character string")
+  if(!is.null(min_mem_size) && !regexpr("^[1-9][0-9]*[gGmM]$", min_mem_size))
+    stop("`min_mem_size` option must be like 1g or 1024m")
+  if(!is.logical(beta) || length(beta) != 1L || is.na(beta))
+    stop("`beta` must be TRUE or FALSE")
+  if(!is.logical(assertion) || length(assertion) != 1L || is.na(assertion))
+    stop("`assertion` must be TRUE or FALSE")
+  if(!is.null(license) && !is.character(license))
+    stop("`license` must be of class character")
+  if(!is.character(ice_root) || length(ice_root) != 1L || is.na(ice_root) || !nzchar(ice_root))
+    stop("`ice_root` must be a non-empty character string")
+  if(!is.logical(strict_version_check) || length(strict_version_check) != 1L || is.na(strict_version_check))
+    stop("`strict_version_check` must be TRUE or FALSE")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
-    warning("H2O is specifically not compatible with this exact")
-    warning("version of R 3.1.0.")
-    warning("Please change to a newer or older version of R.")
-    warning("(For technical details, search the r-devel mailing list")
-    warning("for type.convert changes in R 3.1.0.)")
-    stop("R 3.1.0 is not compatible with H2O!")
+    stop("H2O is not compatible with R 3.1.0\n",
+         "Please change to a newer or older version of R.\n",
+         "(For technical details, search the r-devel mailing list\n",
+         "for type.convert changes in R 3.1.0.)")
   }
 
   if(!missing(Xmx)) {
@@ -78,9 +95,6 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     max_mem_size <- Xmx
     min_mem_size <- Xmx
   }
-
-  if (is.null(ice_root))
-    ice_root <- tempdir()
 
   warnNthreads = FALSE
   tmpConn = new("H2OConnection", ip = ip, port = port)
@@ -157,10 +171,10 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' }
 #'
 h2o.shutdown <- function(conn, prompt = TRUE) {
-  if(!is(conn, "H2OConnection")) stop("conn must be of class H2OConnection")
+  if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
-  if(!is.logical(prompt)) stop("prompt must be of class logical")
+  if(!is.logical(prompt) || length(prompt) != 1L || is.na(prompt)) stop("`prompt` must be TRUE or FALSE")
   if(prompt) {
     message = sprintf("Are you sure you want to shutdown the H2O instance running at %s (Y/N)? ", h2o.getBaseURL(conn))
     ans = readline(message)
@@ -186,7 +200,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 # Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
 
 h2o.clusterStatus <- function(client) {
-  if(missing(client) || class(client) != "H2OConnection") stop("client must be a H2OConnection object")
+  if(!is(client, "H2OConnection")) stop("`client` must be a H2OConnection object")
   .h2o.__checkUp(client)
   myURL = paste0("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
@@ -197,7 +211,7 @@ h2o.clusterStatus <- function(client) {
   cat("Node name:", res$node_name, "\n")
   cat("Cloud size:", res$cloud_size, "\n")
   if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
-  if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found!")
+  if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found")
   
   # Calculate how many seconds ago we last contacted cloud
   cur_time <- Sys.time()
@@ -225,8 +239,10 @@ h2o.clusterStatus <- function(client) {
       # packageStartupMessage("Checking libcurl version...")
       curl_path <- Sys.which("curl-config")
       if(!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
-        stop("libcurl not found! Please install libcurl (version 7.14.0 or higher) from http://curl.haxx.se. On Linux systems, 
-              you will often have to explicitly install libcurl-devel to have the header files and the libcurl library.")
+        stop("libcurl not found. Please install libcurl\n",
+             "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
+             "On Linux systems you will often have to explicitly install\n",
+             "libcurl-devel to have the header files and the libcurl library.")
     }
   }
 }
@@ -312,7 +328,7 @@ h2o.clusterStatus <- function(client) {
   }
 
   if (missing(ice_root)) {
-    stop("ice_root must be specified for .h2o.startJar")
+    stop("`ice_root` must be specified for .h2o.startJar")
   }
 
   # Note: Logging to stdout and stderr in Windows only works for R version 3.0.2 or later!
@@ -326,17 +342,15 @@ h2o.clusterStatus <- function(client) {
   # Throw an error if GNU Java is being used
   jver <- system2(command, "-version", stdout = TRUE, stderr = TRUE)
   if(any(grepl("GNU libgcj", jver))) {
-    stop("
-Sorry, GNU Java is not supported for H2O.
-Please download the latest Java SE JDK 7 from the following URL:
-http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+    stop("Sorry, GNU Java is not supported for H2O.\n",
+         "Please download the latest Java SE JDK 7 from the following URL:\n",
+         "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
   }
 
   if(any(grepl("Client VM", jver))) {
-    warning("
-You have a 32-bit version of Java.  H2O works best with 64-bit Java.
-Please download the latest Java SE JDK 7 from the following URL:
-http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+    warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
+            "Please download the latest Java SE JDK 7 from the following URL:\n",
+            "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
@@ -439,11 +453,12 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     # Check for existence of JRE and warn user
     for(prog in prog_folder) {
       path <- file.path("C:", prog, "Java", "jre7", "bin", "java.exe")
-      if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run.")
+      if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run")
     }
   }
   else
-    stop("Cannot find Java. Please install the latest JDK from http://www.oracle.com/technetwork/java/javase/downloads/index.html")
+    stop("Cannot find Java. Please install the latest JDK from\n",
+         "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
 .h2o.downloadJar <- function(branch, version, overwrite = FALSE) {
@@ -469,8 +484,8 @@ http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.h
     version <- readLines(buildnumFile)
   }
 
-  if(!is.logical(overwrite)) stop("overwrite must be TRUE or FALSE")
-  
+  if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
+
   dest_folder <- file.path(pkg_path, "java")
   if(!file.exists(dest_folder)) dir.create(dest_folder)
   dest_file <- file.path(dest_folder, "h2o.jar")

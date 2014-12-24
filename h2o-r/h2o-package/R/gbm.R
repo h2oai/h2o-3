@@ -61,9 +61,9 @@ h2o.gbm <- function(x, y, training_frame,
   parms <- list()
 
   # Required args: x, y, training_frame
-  if( missing(x) ) stop("argument \"x\" is missing, with no default")
-  if( missing(y) ) stop("argument \"y\" is missing, with no default")
-  if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
+  if( missing(x) ) stop("`x` is missing, with no default")
+  if( missing(y) ) stop("`y` is missing, with no default")
+  if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
 
   parms <- as.list(match.call()[-1L])
   args <- .verify_dataxy(training_frame, x, y)
