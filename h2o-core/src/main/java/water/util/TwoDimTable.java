@@ -191,15 +191,15 @@ public class TwoDimTable extends Iced {
     for (int c=0; c< colHeaders.length; ++c) {
       colLen[c] = colHeaders[c].length();
       for (int r=0; r<rowHeaders.length; ++r) {
-        String format = colFormatStrings[c];
-        String x = "";          // Empty field
-        if (strCellValues[r] != null && strCellValues[r][c] != null) {
-          x = strCellValues[r][c];
-        } else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
-          x = format.equals("%d") ? String.format(format, (int)dblCellValues[r][c]) : String.format(format, dblCellValues[r][c]);
-          format = "%" + colLen[c] + "s";
+        if (strCellValues[r] != null && strCellValues[r][c] != null)
+          colLen[c] = Math.max(colLen[c], String.format(colFormatStrings[c], strCellValues[r][c]).length());
+        else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
+          if (colFormatStrings[c].equals("%d")) {
+            colLen[c] = Math.max(colLen[c], String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int)(double) dblCellValues[r][c])).length());
+          } else {
+            colLen[c] = Math.max(colLen[c], String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], dblCellValues[r][c])).length());
+          }
         }
-        colLen[c] = Math.max(colLen[c], String.format(format, x).length());
       }
       colLen[c] += pad;
     }
@@ -215,14 +215,17 @@ public class TwoDimTable extends Iced {
     for (int r=0; r<rowHeaders.length; ++r) {
       if (rowHeaders[r] != null) sb.append(String.format("%" + maxRowNameLen + "s", rowHeaders[r]));
       for (int c=0; c< colHeaders.length; ++c) {
-        final String format = colFormatStrings[c];
-        String x = "";          // Empty field
-        if (strCellValues[r] != null && strCellValues[r][c] != null) {
-          x = String.format(format, strCellValues[r][c]);
-        } else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
-          x = format.equals("%d") ? String.format(format, (int) dblCellValues[r][c]) : String.format(format, dblCellValues[r][c]);
+        if (strCellValues[r] != null && strCellValues[r][c] != null)
+          sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], strCellValues[r][c])));
+        else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
+          if (colFormatStrings[c].equals("%d")) {
+            sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int) (double) dblCellValues[r][c])));
+          } else {
+            sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], dblCellValues[r][c])));
+          }
+        } else {
+          sb.append(String.format("%" + colLen[c] + "s", "")); //empty field
         }
-        sb.append(String.format("%" + colLen[c] + "s", x));
       }
       sb.append("\n");
     }
