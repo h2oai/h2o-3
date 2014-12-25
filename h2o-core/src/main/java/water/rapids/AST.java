@@ -1048,8 +1048,8 @@ class ASTSlice extends AST {
       Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
-      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
-      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
+      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) env.subVec(v);
+      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) env.subVec(v);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
 //      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
       env.pop();

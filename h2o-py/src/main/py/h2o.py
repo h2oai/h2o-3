@@ -140,11 +140,24 @@ class Vec(object):
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i):
+    if isinstance(i,Vec):  return self.row_select(i)
     e = Expr(i)
     return Expr("[",self,e,length=len(e));
 
+  # Boolean column select lookup
   def row_select(self,vec):
     return Vec(self._name+"["+vec._name+"]",Expr("[",self,vec))
+
+  # Basic indexed set
+  def __setitem__(self,b,c):
+    if len(b) != len(self):
+      raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(b)="+len(b))
+    if c and len(c) != 1 and len(c) != len(self):
+      raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(c)="+len(c))
+    if isinstance(b,Vec):                   # row-wise assignment
+      self._expr = Expr("=",Expr("[",self._expr,b),c) # Update in-place
+      return self
+    raise NotImplementedError
 
   # Basic (broadening) addition
   def __add__(self,i):
@@ -193,7 +206,7 @@ class Expr(object):
   def __init__(self,op,left=None,rite=None,length=None):
     self._op,self._data = (op,None) if isinstance(op,str) else ("rawdata",op)
     self._name = self._op       # Set an initial name, generally overwritten
-    assert self.isLocal() or self.isRemote() or self.isPending()
+    assert self.isLocal() or self.isRemote() or self.isPending(), str(self._name)+str(self._data)
     self._left = left._expr if isinstance(left,Vec) else left
     self._rite = rite._expr if isinstance(rite,Vec) else rite
     assert self._left is None or isinstance(self._left,Expr) or isinstance(self._data,unicode), self.debug()
@@ -296,30 +309,34 @@ class Expr(object):
   # May trigger (recursive) big-data eval.
   def _doit(self):
     if self.isComputed(): return
-    left = self._left
-    rite = self._rite
+
     global _CMD
     # See if this is not a temp and not a scalar; if so it needs a name
     cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
     # Magical count-of-4 is the depth of 4 interpreter stack
-    print "refcnt",self._name,cnt-4
     py_tmp = cnt!=4 and self._len > 1
 
     if py_tmp:
       self._data = py_tmp_key() # Top-level key/name assignment
       _CMD += "(= !"+self._data+" "
     _CMD += "("+self._op+" "
+
+    left = self._left
     if left: 
       if left.isPending():  left._doit()
       elif isinstance(left._data,(int,float)): _CMD += "#"+str(left._data)
       elif isinstance(left._data,unicode):     _CMD += "%"+str(left._data)
       else:                                    pass # Locally computed small data
     _CMD += " "
+
+    rite = self._rite
     if rite: 
       if rite.isPending():  rite._doit()
       elif isinstance(rite._data,(int,float)): _CMD += "#"+str(rite._data)
       elif isinstance(rite._data,unicode):     _CMD += "%"+str(rite._data)
       else:                                    pass # Locally computed small data
+
+    print "CRUNK",self._op
 
     if self._op == "+":
       if isinstance(left._data,(int,float)):
@@ -347,6 +364,11 @@ class Expr(object):
     elif self._op == "mean":
       if left.isLocal(): self._data = sum(left._data)/len(left._data)
       else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
+    elif self._op == "=":
+      if left.isLocal(): raise NotImplementedError
+      else: 
+        # Needs rite here, also got a "null" vs zero issue
+        raise NotImplementedError
     else:
       raise NotImplementedError
     _CMD += ")"

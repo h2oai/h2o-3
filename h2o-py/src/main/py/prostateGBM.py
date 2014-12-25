@@ -14,7 +14,12 @@ df = H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
 train = df.drop("ID")
 print train.describe()
 
-print train[df['VOL']==0].show()
+# For VOL, a zero realls means "missing"
+vol = df['VOL']
+print vol[vol==0].show()
+vol[vol==0] = None
+print vol.show()
+print train.describe()
 
 #train[df['VOL'] == 0] = None
 
