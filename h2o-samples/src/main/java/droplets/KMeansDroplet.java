@@ -41,17 +41,17 @@ public class KMeansDroplet {
     // Optionally create a frame with fewer columns, e.g. skip first
     frame.remove(0);
 
-    // Create k clusters as arrays of doubles
+    // Create k centers as arrays of doubles
     int k = 7;
-    double[][] clusters = new double[k][frame.vecs().length];
+    double[][] centers = new double[k][frame.vecs().length];
 
-    // Initialize first cluster to random row
+    // Initialize first cluster center to random row
     Random rand = new Random();
-    for( int cluster = 0; cluster < clusters.length; cluster++ ) {
+    for( int cluster = 0; cluster < centers.length; cluster++ ) {
       long row = Math.max(0, (long) (rand.nextDouble() * frame.vecs().length) - 1);
       for( int i = 0; i < frame.vecs().length; i++ ) {
         Vec v = frame.vecs()[i];
-        clusters[cluster][i] = v.at(row);
+        centers[cluster][i] = v.at(row);
       }
     }
 
@@ -59,25 +59,25 @@ public class KMeansDroplet {
     int NUM_ITERS = 10;
     for( int i = 0; i < NUM_ITERS; i++ ) {
       KMeans task = new KMeans();
-      task._clusters = clusters;
+      task._centers = centers;
       task.doAll(frame);
 
-      for( int c = 0; c < clusters.length; c++ ) {
+      for( int c = 0; c < centers.length; c++ ) {
         if( task._counts[c] > 0 ) {
           for( int v = 0; v < frame.vecs().length; v++ ) {
             double value = task._sums[c][v] / task._counts[c];
-            clusters[c][v] = value;
+            centers[c][v] = value;
           }
         }
       }
       System.out.println("Error is " + task._error);
     }
 
-    System.out.println("Clusters:");
+    System.out.println("Cluster Centers:");
     DecimalFormat df = new DecimalFormat("#.00");
-    for (double[] cluster : clusters) {
+    for (double[] center : centers) {
       for (int v = 0; v < frame.vecs().length; v++)
-        System.out.print(df.format(cluster[v]) + ", ");
+        System.out.print(df.format(center[v]) + ", ");
       System.out.println("");
     }
 
@@ -91,24 +91,24 @@ public class KMeansDroplet {
    * task is done using them, so that they do not get serialized back to the caller.
    */
   public static class KMeans extends MRTask<KMeans> {
-    double[][] _clusters; // IN:  Centroids/clusters
+    double[][] _centers; // IN:  Centroids/cluster centers
 
     double[][] _sums;     // OUT: Sum of features in each cluster
     int[] _counts;        // OUT: Count of rows in cluster
     double _error;        // OUT: Total sqr distance
 
     @Override public void map(Chunk[] chunks) {
-      _sums = new double[_clusters.length][chunks.length];
-      _counts = new int[_clusters.length];
+      _sums = new double[_centers.length][chunks.length];
+      _counts = new int[_centers.length];
 
       // Find nearest cluster for each row
       for( int row = 0; row < chunks[0]._len; row++ ) {
         int nearest = -1;
         double minSqr = Double.MAX_VALUE;
-        for( int cluster = 0; cluster < _clusters.length; cluster++ ) {
+        for( int cluster = 0; cluster < _centers.length; cluster++ ) {
           double sqr = 0;           // Sum of dimensional distances
           for( int column = 0; column < chunks.length; column++ ) {
-            double delta = chunks[column].at0(row) - _clusters[cluster][column];
+            double delta = chunks[column].at0(row) - _centers[cluster][column];
             sqr += delta * delta;
           }
           if( sqr < minSqr ) {
@@ -123,7 +123,7 @@ public class KMeansDroplet {
           _sums[nearest][column] += chunks[column].at0(row);
         _counts[nearest]++;
       }
-      _clusters = null;
+      _centers = null;
     }
 
     @Override public void reduce(KMeans task) {

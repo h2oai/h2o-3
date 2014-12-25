@@ -329,10 +329,10 @@ function(model) {
 }
 
 .kmeans.builder <- function(json, client) {
-  if(!is.na(json$output$clusters) && !is.null(json$output$clusters)) {
-    json$output$clusters = do.call(rbind.data.frame, json$output$clusters)
-    if(!is.null(json$output$names) && ncol(json$output$clusters) == length(json$output$names))
-      names(json$output$clusters) = json$output$names
+  if(!is.na(json$output$centers) && !is.null(json$output$centers)) {
+    json$output$centers = do.call(rbind.data.frame, json$output$centers)
+    if(!is.null(json$output$names) && ncol(json$output$centers) == length(json$output$names))
+      names(json$output$centers) = json$output$names
   }
   new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("H2OFrame", h2o = client, key="NA"))

@@ -28,7 +28,7 @@ public class KMeansRandomTest extends TestUtil {
       Frame frame = parse_test_file(dataset);
 
       try {
-        for (int clusters : new int[]{2, 10, 100}) {
+        for (int centers : new int[]{2, 10, 100}) {
           for (int max_iter : new int[]{1, 10, 100}) {
             for (boolean standardize : new boolean[]{false, true}) {
               for (KMeans.Initialization init : new KMeans.Initialization[]{
@@ -41,7 +41,7 @@ public class KMeansRandomTest extends TestUtil {
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
                 parms._train = frame._key;
-                parms._k = clusters;
+                parms._k = centers;
                 parms._seed = rng.nextLong();
                 parms._max_iters = max_iter;
                 parms._standardize = standardize;
@@ -60,12 +60,12 @@ public class KMeansRandomTest extends TestUtil {
                   for (double d : m._output._withinmse) Assert.assertFalse(Double.isNaN(d));
                   Assert.assertFalse(Double.isNaN(m._output._avgwithinss));
                   for (long o : m._output._rows) Assert.assertTrue(o > 0); //have at least one point per centroid
-                  for (double[] dc : m._output._clusters) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
+                  for (double[] dc : m._output._centers) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
 
                   // make prediction (cluster assignment)
                   score = m.score(frame);
                   for (long j = 0; j < score.numRows(); ++j)
-                    Assert.assertTrue(score.anyVec().at8(j) >= 0 && score.anyVec().at8(j) < clusters);
+                    Assert.assertTrue(score.anyVec().at8(j) >= 0 && score.anyVec().at8(j) < centers);
 
                   Log.info("Parameters combination " + count + ": PASS");
                   testcount++;

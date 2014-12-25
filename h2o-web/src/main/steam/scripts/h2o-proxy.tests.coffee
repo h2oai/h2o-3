@@ -242,7 +242,7 @@ test 'airlines ingest and model building flow', (t) ->
         else
           t.pass 'got model inspect reply'
           #result.schema.parameters[3].actual_value = "(random)"
-          #tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          #tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.centers', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
           tdiff t, (readGoldJson 'inspect-kmeans-allyears2k_headers-zip.json'), result, exclude: [ 'key.name', 'schema.key' ]
           go null
 
@@ -288,7 +288,7 @@ test 'airlines ingest and model building flow', (t) ->
           t.pass 'got model inspect reply'
           seedParameter = find result.schema.parameters, (parameter) -> parameter.name is 'seed'
           seedParameter.default_value = seedParameter.actual_value = 'random'
-          #tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.clusters', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
+          #tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'schema.output.centers', 'schema.output.rows', 'schema.output.mses', 'schema.output.mse', 'schema.output.iters' ]
           tdiff t, (readGoldJson 'inspect-deeplearning-allyears2k_headers-zip.json'), result, exclude: [ 'key.name', 'schema.key' ]
           go null, modelKey
     

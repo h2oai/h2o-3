@@ -270,7 +270,7 @@
       null
     ],
     "model_category": "Clustering",
-    "clusters": [
+    "centers": [
       [
         2960.901954165522,
         156.07608705157628,

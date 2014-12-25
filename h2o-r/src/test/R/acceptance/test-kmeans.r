@@ -19,7 +19,7 @@ model <- h2o.kmeans(data=hex, centers=5)
 
 if(is(model, "H2OKMeansModel")) {
 	test_that("Correct # of centers returned: ", {
-		expect_equal(5, length(model@model$clusters))
+		expect_equal(5, length(model@model$centers))
 	})
 } else {
 	test_that("Input permutation foo: ", fail(message=toString(model)))

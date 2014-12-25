@@ -117,8 +117,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Model-specific output class.  Each model sub-class contains an instance
    *  of one of these containing its "output": the pieces of the model needed
    *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
-   *  which contains the clusters.  The output also includes the names, domains
-   *  and other fields which are determined at training time.  */
+   *  which contains the cluster centers.  The output also includes the names,
+   *  domains and other fields which are determined at training time.  */
   public abstract static class Output extends Iced {
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */

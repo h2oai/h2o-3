@@ -75,9 +75,9 @@ class Basic(unittest.TestCase):
             modelResult = h2o.n0.models(key=model_key)
             km = h2o_kmeans.KMeansObj(modelResult, parameters, numRows, numColsUsed, labelListUsed)
             # zip with * is it's own inverse here. It's sorted by centers for easy comparisons
-            # changed..old order: ids, mses, rows, clusters = zip(*km.tuplesSorted)
+            # changed..old order: ids, mses, rows, centers = zip(*km.tuplesSorted)
             # new order:
-            # ids, clusters, rows, errors = zip(*km.tuplesSorted)
+            # ids, centers, rows, errors = zip(*km.tuplesSorted)
             # create a tuple for each cluster, then sort by row
 
             # old. this was going to do a predict and a summary (histogram) (old h2o1 needed this for more info)

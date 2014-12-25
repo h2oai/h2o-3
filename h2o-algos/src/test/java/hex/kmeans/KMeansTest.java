@@ -131,15 +131,15 @@ public class KMeansTest extends TestUtil {
 
       for( int i=0; i<10; i++ ) {
         KMeansModel kmm = doSeed(parms, System.nanoTime());
-        Assert.assertTrue(kmm._output._clusters.length == 3);
+        Assert.assertTrue(kmm._output._centers.length == 3);
 
         boolean gotit = false;
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp1[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp2[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp3[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp4[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp5[j], kmm._output._clusters[j]);
-        for (int j = 0; j < parms._k; ++j) gotit |= close(exp6[j], kmm._output._clusters[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp1[j], kmm._output._centers[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp2[j], kmm._output._centers[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp3[j], kmm._output._centers[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp4[j], kmm._output._centers[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp5[j], kmm._output._centers[j]);
+        for (int j = 0; j < parms._k; ++j) gotit |= close(exp6[j], kmm._output._centers[j]);
         Assert.assertTrue(gotit);
 
         kmm.delete();
@@ -162,7 +162,7 @@ public class KMeansTest extends TestUtil {
 
       for( int i=0; i<10; i++ ) {
         KMeansModel kmm = doSeed(parms, System.nanoTime());
-        Assert.assertTrue(kmm._output._clusters.length == 2);
+        Assert.assertTrue(kmm._output._centers.length == 2);
         kmm.delete();
       }
 

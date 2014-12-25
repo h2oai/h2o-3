@@ -32,7 +32,7 @@ prostate.data = as.data.frame(prostate.hex)
 
 # Plot k-means centers
 par(mfrow = c(1,2))
-prostate.ctrs = as.data.frame(prostate.km@model$clusters)
+prostate.ctrs = as.data.frame(prostate.km@model$centers)
 plot(prostate.ctrs[,1:2])
 plot(prostate.ctrs[,3:4])
 title("K-Means Centers for k = 10", outer = TRUE, line = -2.0)

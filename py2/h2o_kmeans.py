@@ -22,7 +22,7 @@ def simpleCheckKMeans(modelResult, parameters, numRows, numCols, labels):
     ko = KMeansObj(modelResult, parameters)
 
     # to unzip the tuplesSorted. zip with *
-    # ids, withinmse, rows, clusters = zip(*tuplesSorted)
+    # ids, withinmse, rows, centers = zip(*tuplesSorted)
     return ko.tuplesSorted, ko.iters, ko.avgss, ko.names
 
 class KMeansObj(OutputObj):
@@ -44,7 +44,7 @@ class KMeansObj(OutputObj):
         domains = self.domains 
         names = self.names 
         ncats = self.ncats # 0
-        clusters = self.clusters # [ 4 lists of centers ]
+        centers = self.centers # [ 4 lists of centers ]
         withinmse = self.withinmse
         avgss = self.avgss
 
@@ -53,13 +53,13 @@ class KMeansObj(OutputObj):
 
         if 'k' in parameters:
             k = parameters['k']
-            assert len(clusters) == k
+            assert len(centers) == k
             assert len(rows) == k
 
         if numCols:
             assert len(names) == numCols, \
                 "Need to pass correct numCols after ignored columns decrement %s %s" % (len(names), numCols)
-            for c in clusters:
+            for c in centers:
                 assert len(c) == numCols, "%s %s" % (len(c), numCols)
 
         # this should be true 
@@ -75,7 +75,7 @@ class KMeansObj(OutputObj):
             assert max_iters >= iters
 
         # we could check the centers are within the min/max of each column
-        for i,c in enumerate(clusters):
+        for i,c in enumerate(centers):
             for n in c:
                 if math.isnan(float(n)):
                     raise Exception("cluster", i, "has NaN:", n, "center:", c)
@@ -83,14 +83,14 @@ class KMeansObj(OutputObj):
         # create a tuple for each cluster result, then sort by rows for easy comparison
         # maybe should sort by centers?
         # put a cluster index in there too, (leftmost) so we don't lose track
-        tuples = zip(range(len(clusters)), clusters, rows, withinmse)
+        tuples = zip(range(len(centers)), centers, rows, withinmse)
         # can we sort on the sum of the centers?
         self.tuplesSorted = sorted(tuples, key=lambda tup: sum(tup[1]))
 
         print "iters:", iters
         # undo for printing what the caller will see
-        ids, clusters, rows, withinmse = zip(*self.tuplesSorted)
-        for i,c in enumerate(clusters):
+        ids, centers, rows, withinmse = zip(*self.tuplesSorted)
+        for i,c in enumerate(centers):
             print "cluster id %s (2 places):" % ids[i], h2o_util.twoDecimals(c)
             print "rows_per_cluster[%s]: " % i, rows[i]
             print "withinmse[%s]: " % i, withinmse[i]
@@ -192,19 +192,19 @@ def showClusterDistribution(tupleResultList, expected=None, allowedDelta=None, a
             print actCenter, "pctRows: %0.2f" % (actRows/(totalRows+0.0)), "pctError: %0.2f" % (actError/(totalError+0.0))
 
 
-# compare this clusters to last one. since the files are concatenations, 
+# compare this cluster centers to last one. since the files are concatenations,
 # the results should be similar? 10% of first is allowed delta
-def compareToFirstKMeans(self, clusters, firstclusters):
-    # clusters could be a list or not. if a list, don't want to create list of that list
-    # so use extend on an empty list. covers all cases?
-    if type(clusters) is list:
-        kList  = clusters
-        firstkList = firstclusters
-    elif type(clusters) is dict:
+def compareToFirstKMeans(self, centers, firstcenters):
+    # cluster centers could be a list or not. if a list, don't want to create list
+    # of that list so use extend on an empty list. covers all cases?
+    if type(centers) is list:
+        kList  = centers
+        firstkList = firstcenters
+    elif type(centers) is dict:
         raise Exception("compareToFirstKMeans: Not expecting dict for " + key)
     else:
-        kList  = [clusters]
-        firstkList = [firstclusters]
+        kList  = [centers]
+        firstkList = [firstcenters]
 
     print "kList:", kList, "firstkList:", firstkList
     for k, firstk in zip(kList, firstkList):
@@ -213,7 +213,7 @@ def compareToFirstKMeans(self, clusters, firstclusters):
         for k1, firstk1 in zip(k, firstk):
             delta = .1 * abs(float(firstk1))
             print "k1:", k1, "firstk1:", firstk1
-            msg = "Too large a delta (>" + str(delta) + ") comparing current and first clusters: " + \
+            msg = "Too large a delta (>" + str(delta) + ") comparing current and first cluster centers: " + \
                 str(float(k1)) + ", " + str(float(firstk1))
             self.assertAlmostEqual(float(k1), float(firstk1), delta=delta, msg=msg)
             self.assertGreaterEqual(abs(float(k1)), 0.0, str(k1) + " abs not >= 0.0 in current")
