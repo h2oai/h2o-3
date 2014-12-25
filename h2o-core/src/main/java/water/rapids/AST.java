@@ -1045,11 +1045,11 @@ class ASTSlice extends AST {
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
       Frame ary= env.peekAry(); // Get without popping
-      Object colSelect = select(ary.numCols(), cols, env, true);
+      Object colSelect = select(ary.numCols(),cols,env, true );
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
-      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) env.subVec(v);
-      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) env.subVec(v);
+      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) env.subRef(v);
+      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) env.subRef(v);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
 //      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
       env.pop();
@@ -1132,7 +1132,7 @@ class ASTSlice extends AST {
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
     Frame ary = env.pop0Ary();  // get it off the stack!!!!
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+Arrays.toString(ary.names()));
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.
     if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
@@ -1173,7 +1173,7 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    Keyed.remove(Key.make(((ASTId)_asts[0])._id));
     env.push(new ValNum(0));
   }
 }

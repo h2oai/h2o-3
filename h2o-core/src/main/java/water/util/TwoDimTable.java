@@ -195,7 +195,7 @@ public class TwoDimTable extends Iced {
           colLen[c] = Math.max(colLen[c], String.format(colFormatStrings[c], strCellValues[r][c]).length());
         else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
           if (colFormatStrings[c].equals("%d")) {
-            colLen[c] = Math.max(colLen[c], String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int)(double) dblCellValues[r][c])).length());
+            colLen[c] = Math.max(colLen[c], String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int)dblCellValues[r][c])).length());
           } else {
             colLen[c] = Math.max(colLen[c], String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], dblCellValues[r][c])).length());
           }
@@ -219,7 +219,7 @@ public class TwoDimTable extends Iced {
           sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], strCellValues[r][c])));
         else if (dblCellValues[r] != null && !isEmpty(dblCellValues[r][c])) {
           if (colFormatStrings[c].equals("%d")) {
-            sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int) (double) dblCellValues[r][c])));
+            sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], (int) dblCellValues[r][c])));
           } else {
             sb.append(String.format("%" + colLen[c] + "s", String.format(colFormatStrings[c], dblCellValues[r][c])));
           }

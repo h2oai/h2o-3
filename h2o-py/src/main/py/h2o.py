@@ -150,11 +150,11 @@ class Vec(object):
 
   # Basic indexed set
   def __setitem__(self,b,c):
-    if len(b) != len(self):
-      raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(b)="+len(b))
     if c and len(c) != 1 and len(c) != len(self):
       raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(c)="+len(c))
     if isinstance(b,Vec):                   # row-wise assignment
+      if len(b) != len(self):
+        raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(b)="+len(b))
       self._expr = Expr("=",Expr("[",self._expr,b),c) # Update in-place
       return self
     raise NotImplementedError
@@ -360,15 +360,14 @@ class Expr(object):
       else: raise NotImplementedError
     elif self._op == "[":
       if left.isLocal(): self._data = left._data[rite._data]
-      else: _CMD += " #0"       # Rapids column zero lookup
+      else: _CMD +=  ' "null"'       # Rapids column zero lookup
     elif self._op == "mean":
       if left.isLocal(): self._data = sum(left._data)/len(left._data)
       else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     elif self._op == "=":
       if left.isLocal(): raise NotImplementedError
       else: 
-        # Needs rite here, also got a "null" vs zero issue
-        raise NotImplementedError
+        if rite is None: _CMD += "#NaN"
     else:
       raise NotImplementedError
     _CMD += ")"

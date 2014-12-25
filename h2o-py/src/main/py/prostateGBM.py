@@ -14,13 +14,11 @@ df = H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
 train = df.drop("ID")
 print train.describe()
 
-# For VOL, a zero realls means "missing"
+# For VOL, a zero really means "missing"
 vol = df['VOL']
-print vol[vol==0].show()
+# (= ([ %vec (== %vec #0) "null") #NaN
 vol[vol==0] = None
 print vol.show()
 print train.describe()
-
-#train[df['VOL'] == 0] = None
 
 #gbm = H2OGBM(dataset=train,ntrees=10,a)
