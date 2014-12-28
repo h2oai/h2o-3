@@ -87,28 +87,18 @@ public class Env extends Iced {
 
   public void push(Val o) {
     if (o instanceof ValFrame) {
-      framePut(o, _isGlobal ? _global : _local);
+      push_helper(o, _isGlobal ? _global : _local);
       addRef(o);
     }
     _stack.push(o);
     clean();
   }
 
-  public void framePut(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
-
-  public Val pop() {
-    Val o = _stack.pop();
-//    if (o instanceof ValFrame) { subRef(o); }
-    return o;
-  }
-
-  // pop w/o lowering ref counts
-  public Val pop0() { return _stack.pop(); }
-  // push w/0 raising ref counts
-  public void push0(Val v) { _stack.push(v); }
+  public void pushAry(Frame fr) { push(new ValFrame(fr)); }
+  // helper for push(Val o)
+  public void push_helper(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }
-
   public Val peek() { return _stack.peek(); }
   public Val peekAt(int i) { return _stack.peekAt(i); }
   public int peekType() {return _stack.peekType(); }
@@ -130,6 +120,10 @@ public class Env extends Iced {
   public boolean isSpan(){ return peekType() == SPAN;}
   public boolean isSeries(){ return peekType() == SERIES;}
 
+
+  public Val pop() { return _stack.pop(); }
+  public void pop(int n) { for (int i = 0; i < n; ++i) pop(); }
+  public void poppush(int n, Val v) { pop(n); push(v);}
   public Frame popAry () { return ((ValFrame)pop())._fr; }
   public double popDbl() { return ((ValNum)pop())._d;    }
   public String popStr() { return ((ValStr)pop())._s;    }
@@ -137,10 +131,8 @@ public class Env extends Iced {
   public ValSpan popSpan() { return (ValSpan)pop();      }
   public Frame peekAry() {return ((ValFrame)peek())._fr; }
   public double peekDbl() {return ((ValNum)peek())._d;   }
-  public Frame pop0Ary() { return ((ValFrame)pop0())._fr;  }
-  public void push0Ary(Frame fr) { push0(new ValFrame(fr)); }
   public AST pop2AST() {
-    if (isAry()) return new ASTFrame(pop0Ary());
+    if (isAry()) return new ASTFrame(popAry());
     if (isNum()) return new ASTNum(popDbl());
     if (isStr()) return new ASTString('\"', popStr());
     if (isNul()) {pop(); return new ASTNull(); }
@@ -279,23 +271,6 @@ public class Env extends Iced {
       } else _stack.pop();
     }
   }
-
-//  void subVec(Vec v) { IcedInt I = _refcnt.get(v); _refcnt.put(v,new IcedInt(I._val-1)); }
-//  Futures subVec(Vec v, Futures fs) {
-//    assert fs != null : "Future should not be null!";
-////    if ( v.masterVec() != null ) subRef(v.masterVec(), fs);
-//    if (!_refcnt.containsKey(v)) return fs;
-//    int cnt = _refcnt.get(v)._val-1;
-//    if ( cnt > 0 ) {
-//      _refcnt.put(v,new IcedInt(cnt));
-//    } else {
-//      if (!_locked.contains(v._key)) {
-//        extinguishCounts(v);
-//        fs = removeVec(v, fs);
-//      } else { extinguishCounts(v); }
-//    }
-//    return fs;
-//  }
 
   void remove(Object o, boolean popped) {
     assert o instanceof ValFrame || o instanceof Frame || o == null;

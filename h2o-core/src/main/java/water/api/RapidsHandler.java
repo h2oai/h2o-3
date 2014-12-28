@@ -63,7 +63,7 @@ class RapidsHandler extends Handler {
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
-        Frame fr = env.pop0Ary();
+        Frame fr = env.popAry();
         if (fr.numRows() == 1 && fr.numCols() == 1) {
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];

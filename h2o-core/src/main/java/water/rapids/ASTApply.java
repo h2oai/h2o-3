@@ -41,7 +41,7 @@ public class ASTApply extends ASTOp {
     // Peek everything from the stack
     final ASTOp op = ASTOp.get(_fun);
     Frame fr2 = null;  // results Frame
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     env.addRef(fr);
     if( _margin == 2) {     // Work on columns?
       int ncols = fr.numCols();
@@ -70,7 +70,7 @@ public class ASTApply extends ASTOp {
       else {
         if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
         vecs_result = new Vec[ncols];
-        Frame v = env.pop0Ary();
+        Frame v = env.popAry();
         vecs_result[0] = v.anyVec().makeCopy();
       }
 
@@ -82,7 +82,7 @@ public class ASTApply extends ASTOp {
         if (isRow) row_result[i] = env.popDbl();
         else {
           if (env.peekAry().numCols() != 1) throw new UnsupportedOperationException(err);
-          Frame v = env.pop0Ary();
+          Frame v = env.popAry();
           vecs_result[i] = v.anyVec().makeCopy();
         }
       }
@@ -129,7 +129,7 @@ public class ASTApply extends ASTOp {
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
     env.subRef(fr);
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
