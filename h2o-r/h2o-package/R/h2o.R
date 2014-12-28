@@ -290,6 +290,11 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 
 #----------------------------------------
 
+.h2o.fromJSON <- function(txt, ...) {
+  txt <- fromJSON(txt, ...)
+  txt
+}
+
 # Make an HTTP request to the H2O backend.
 # 
 # Error checking is performed.
@@ -306,8 +311,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
     .params <- list(...)
   }
 
-  payload = .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
-  fromJSON(payload)
+  .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method))
 }
 
 
@@ -340,7 +344,7 @@ h2o.clusterInfo <- function(conn) {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -350,7 +354,7 @@ h2o.clusterInfo <- function(conn) {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+    res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   }
 
   nodeInfo <- res$nodes
@@ -396,7 +400,7 @@ h2o.clusterInfo <- function(conn) {
            sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
     }
 
-    fromJSON(rv$payload)
+    .h2o.fromJSON(rv$payload)
   }
 
   checker <- function(node, conn) {

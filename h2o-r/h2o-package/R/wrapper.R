@@ -204,7 +204,7 @@ h2o.clusterStatus <- function(client) {
   .h2o.__checkUp(client)
   myURL = paste0("http://", client@ip, ":", client@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
-  res = fromJSON(h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
+  res = .h2o.fromJSON(h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
   
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")

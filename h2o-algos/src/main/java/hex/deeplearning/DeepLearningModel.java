@@ -972,16 +972,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers",
+              new String[neurons.length + 2],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
                       (get_params()._adaptive_rate ? "" : "Momentum"),
                       "Weight (Mean,RMS)",
                       "Bias (Mean,RMS)"
               },
-              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"},
-              new String[neurons.length + 2],
-              new String[neurons.length + 2][],
-              new double[neurons.length + 2][]
+              new String[]{"integer", "integer", "string", "double", "double", "double",
+                           "string", "string", "string", "string"},
+              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"}
       );
 
       final String format = "%7g";
