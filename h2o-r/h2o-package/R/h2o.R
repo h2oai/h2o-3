@@ -291,8 +291,73 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #----------------------------------------
 
 .h2o.fromJSON <- function(txt, ...) {
-  txt <- fromJSON(txt, ...)
-  txt
+  processResults <- function(x) {
+    tableElementNames <- c("tableHeader", "rowHeaders", "colHeaders", "colTypes", "colFormats", "cellValues")
+    if (is.list(x)) {
+      nms <- names(x)
+      if (is.null(nms) &&
+          (length(x) > 1L) &&
+          all(unlist(lapply(x, is.atomic))) &&
+          (length(unique(unlist(lapply(x, length)))) == 1L)) {
+        x <- do.call(rbind, x)
+      } else if (all(tableElementNames %in% nms)) {
+        tbl <- do.call(rbind, x$cellValues)
+        dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+        tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
+        for (j in seq_along(tbl)) {
+          switch(x$colTypes[j],
+                 integer = {
+                   tbl[[j]] <- as.integer(tbl[[j]])
+                 },
+                 long   =,
+                 float  =,
+                 double = {
+                   tbl[[j]] <- as.double(tbl[[j]])
+                 },
+                 string = {},
+                 {})
+        }
+        attr(tbl, "header")  <- x$tableHeader
+        attr(tbl, "formats") <- x$colFormats
+        oldClass(tbl) <- c("H2OTable", "data.frame")
+        x <- tbl
+      }
+      else
+        x <- lapply(x, processResults)
+    }
+    x
+  }
+  res <- fromJSON(txt, ...)
+  processResults(res)
+}
+
+#' Print method for H2OTable objects
+#'
+#' @param x An H2OTable object
+#' @param ... Additional arguments to print method for data.frame objects
+#' @return The original x object
+print.H2OTable <- function(x, ...) {
+  # format columns
+  formats <- attr(x, "formats")
+  xx <- x
+  for (j in seq_along(x))
+    xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+
+  # drop empty columns
+  nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
+  xx <- xx[nz]
+  # drop empty rows
+  nz <- apply(xx, 1L, function(y) any(nzchar(y)))
+  xx <- xx[nz, , drop = FALSE]
+
+  # use data.frame print method
+  xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
+  if (!is.null(attr(x, "header")))
+    cat(attr(x, "header"), ":\n", sep = "")
+  print(xx, ...)
+
+  # return original object
+  invisible(x)
 }
 
 # Make an HTTP request to the H2O backend.
