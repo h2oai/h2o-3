@@ -295,7 +295,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
     if (is.list(x)) {
       if (is.null(names(x)) &&
           ((nrow <- length(x)) > 1L) &&
-          all(unlist(lapply(x, is.atomic))) &&
+          all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
           (length(ncol <- unique(unlist(lapply(x, length)))) == 1L))
         x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
       else
