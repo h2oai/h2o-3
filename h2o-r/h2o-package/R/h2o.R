@@ -291,18 +291,36 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 #----------------------------------------
 
 .h2o.fromJSON <- function(txt, ...) {
-  processResults <- function(x) {
-    tableElementNames <- c("tableHeader", "rowHeaders", "colHeaders", "colTypes", "colFormats", "cellValues")
+  processMatrices <- function(x) {
     if (is.list(x)) {
-      nms <- names(x)
-      if (is.null(nms) &&
-          (length(x) > 1L) &&
+      if (is.null(names(x)) &&
+          ((nrow <- length(x)) > 1L) &&
           all(unlist(lapply(x, is.atomic))) &&
-          (length(unique(unlist(lapply(x, length)))) == 1L)) {
-        x <- do.call(rbind, x)
-      } else if (all(tableElementNames %in% nms)) {
-        tbl <- do.call(rbind, x$cellValues)
-        dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+          (length(ncol <- unique(unlist(lapply(x, length)))) == 1L))
+        x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
+      else
+        x <- lapply(x, processMatrices)
+    }
+    x
+  }
+  processTables <- function(x) {
+    tableElements <- c("tableHeader", "rowHeaders", "colHeaders",
+                       "colTypes",    "colFormats", "cellValues")
+    if (is.list(x)) {
+      if ((length(tableElements) == length(x)) &&
+          all(tableElements %in% names(x))) {
+        tbl <- x$cellValues
+        if (is.vector(tbl)) {
+          if (any(nzchar(x$rowHeaders)))
+            tbl <- matrix(tbl, nrow = 1L, dimnames = list(x$rowHeaders, x$colHeaders))
+          else
+            names(tbl) <- x$colHeaders
+        } else {
+          if (any(nzchar(x$rowHeaders)))
+            dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+          else
+            dimnames(tbl) <- list(NULL, x$colHeaders)
+        }
         tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
         for (j in seq_along(tbl)) {
           switch(x$colTypes[j],
@@ -323,12 +341,12 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
         x <- tbl
       }
       else
-        x <- lapply(x, processResults)
+        x <- lapply(x, processTables)
     }
     x
   }
-  res <- fromJSON(txt, ...)
-  processResults(res)
+  res <- processMatrices(fromJSON(txt, ...))
+  processTables(res)
 }
 
 #' Print method for H2OTable objects
