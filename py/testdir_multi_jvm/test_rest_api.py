@@ -632,9 +632,9 @@ assert 'training_frame' == parameters_validation['validation_messages'][0]['fiel
 # (note: testing with null training_frame)
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
-assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result."
+assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (input_dropout_ratio)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 2 == parameters_validation['validation_error_count'], "FAIL: 2 != validation_error_count in bad-parameters parameters validation result."
+assert 2 == parameters_validation['validation_error_count'], "FAIL: 2 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
 assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
 
 found_expected_error = False
@@ -642,6 +642,16 @@ for validation_message in parameters_validation['validation_messages']:
     if validation_message['message_type'] == 'ERROR' and validation_message['field_name'] == 'input_dropout_ratio':
         found_expected_error = True
 assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
+
+# Bad parameters (no response_column):
+dl_test_parameters = {'hidden': "[10, 20, 10]" }
+parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
+assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (response_column)."
+h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
+assert 2 == parameters_validation['validation_error_count'], "FAIL: 2 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
+assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
+assert 'response_column' == parameters_validation['validation_messages'][1]['field_name'], "FAIL: Second validation message is about missing training frame."
+
 
 #######################################
 # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
