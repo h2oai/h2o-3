@@ -95,8 +95,7 @@ h2o.uploadFile <- function(object, path, key = "", parse = TRUE, header, sep = "
 
   rawData <- new("H2ORawData", h2o=object, key=path)
   if (parse) {
-    destination_key <- key
-    h2o.parseRaw(data=rawData, key=destination_key, header=header, sep=sep, col.names=col.names)
+    h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
   } else {
     rawData
   }
