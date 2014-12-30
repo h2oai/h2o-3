@@ -158,8 +158,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new H2ONotFoundException("Did not find column: " + s.column + " in frame: " + s.key.toString(),
-                                     "Did not find column: " + s.column + " in frame: " + s.key.toString());
+      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
 
     Vec[] vecs = { vec };
     String[] names = { s.column };
@@ -175,8 +174,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     Vec vec = frame.vec(s.column);
     if (null == vec)
-      throw new H2ONotFoundException("Did not find column: " + s.column + " in frame: " + s.key.toString(),
-                                     "Did not find column: " + s.column + " in frame: " + s.key.toString());
+      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
     vec.bins();
