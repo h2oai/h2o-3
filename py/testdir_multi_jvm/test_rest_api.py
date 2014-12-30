@@ -648,9 +648,8 @@ dl_test_parameters = {'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (response_column)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 2 == parameters_validation['validation_error_count'], "FAIL: 2 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
-assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
-assert 'response_column' == parameters_validation['validation_messages'][1]['field_name'], "FAIL: Second validation message is about missing training frame."
+assert 1 == parameters_validation['validation_error_count'], "FAIL: 1 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
+assert 'response_column' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
 
 
 #######################################
