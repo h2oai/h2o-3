@@ -4,26 +4,27 @@ import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 # '(def anon {x} ( (var %x "null" %FALSE "null");;(var %x "null" %FALSE "null") );;;)',
 
 from copy import copy
-from h2o_xl import Def, Fcn, Assign, KeyIndexed, If, IfElse, Return
+from h2o_xl import Assign, If, IfElse, Return, Xbase, Key, Expr
+from h2o_test import dump_json
 
 print "Trying a different way, listing Rapids objects, rather than .ast() strings"
 
 # 'c' allowed
 # should be able to take a list of statements
-objList = [
-    If(1,2),
-    Return(3),
-    Return('r1'),
-    IfElse(1, 2, 3),
-    Assign('a', If(1, 2), do=False),
-    Assign('d', IfElse(1, 2, 3), do=False),
-    Assign('e', If(1, 2), do=False), 
-    Assign('f', IfElse(1, 'r1', 3), do=False),
-    Assign('h', IfElse(1, 2, Return('r1')), do=False),
-    Assign('i', IfElse(1, Return('r1'), 3), do=False),
-    Assign('g', IfElse('r1', 2, 3), do=False),
-    Assign('g', IfElse('r1', 'r1', 3), do=False),
-    Assign('g', IfElse('r1', 2, 'r1'), do=False),
+exprList = [
+    "Expr(If(1,2))",
+    "Expr(Return(3))",
+    "Expr(Return(r))",
+    "Expr(IfElse(1, 2, 3))",
+    "Assign('a', If(1, 2) )",
+    "Assign('d', IfElse(1, 2, 3) )",
+    "Assign('e', If(1, 2) )",
+    "Assign('f', IfElse(1, r, 3) )",
+    "Assign('h', IfElse(1, 2, Return(r)) )",
+    "Assign('i', IfElse(1, Return(r), 3) )",
+    "Assign('g', IfElse(r, 2, 3) )",
+    "Assign('g', IfElse(r, r, 3) )",
+    "Assign('g', IfElse(r, 2, r) )",
 ]
 
 class Basic(unittest.TestCase):
@@ -47,14 +48,17 @@ class Basic(unittest.TestCase):
         hexKey = 'r1'
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='put', hex_key=hexKey)
 
+        r = Key('r1')
         keys = []
         for trial in range(2):
-            for execObj in objList:
-                freshObj = copy(execObj)
-                result = freshObj.do()
+            for execExpr in exprList:
+                exec(execExpr)
+                result = Xbase.lastResult
+                execResult = Xbase.lastExecResult
+                print dump_json(execResult)
                 # rows might be zero!
-                if freshObj.execResult['num_rows'] or freshObj.execResult['num_cols']:
-                    keys.append(freshObj.execExpr)
+                if execResult['num_rows'] or execResult['num_cols']:
+                    keys.append(execExpr)
 
         print "\nExpressions that created keys"
         for k in keys:

@@ -42,7 +42,8 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
     # "funs": null, 
     # "ast": "(= !x (xorsum ([ $r1 \"null\" #0) $TRUE))", 
 
-    if (resultExec['num_cols']!=0 or resultExec['num_rows']!=0) and 'key' in resultExec and resultExec['key']:
+    # can have zero rows and non-zero cols
+    if (resultExec['num_rows']!=0) and 'key' in resultExec and resultExec['key']:
         if 'name' not in resultExec['key']:
             raise Exception("'name' not in 'key'" % dump_json(resultExec))
         resultKey = resultExec['key']['name']
@@ -54,14 +55,6 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             if resultKey is None:
                 raise Exception("\nWhy is key.name null when it looks like a frame result? %s" % dump_json(resultExec))
                 
-            # if test said to look at a resultKey, it's should be in h2o k/v store
-            # inspect a result key?
-            # Should we get the key name from the exec return?
-            if 1==0:
-                kwargs = {'ast': resultKey} 
-                resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
-                print "exec key result:", dump_json(resultExec)
-
             # FIX! don't look for it if it starts with "_"..spencer deletes?
             if resultKey[0]=='_':
                 print "WARNING: key/name in result, but leading '_' means it's deleted, so can't view. %s" % resultKey
@@ -70,13 +63,24 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
                 # handles the 1x1 data frame result. Not really interesting if bigger than 1x1?
                 inspect = h2o_cmd.runInspect(key=resultKey)
                 # print "inspect key of result:", dump_json(inspect)
+                # zero row  is possible in the inspect. But why would it have zero rows if the first resultExec didn't have
+                rows = inspect['frames'][0]['rows']
+                if rows==0:
+                    raise Exception("Inspect of resultKey %s has zero rows %s But resultExec didn't have zero rows %s" % \
+                        (resultKey, resultExec['num_rows'], rows))
+                
                 result = inspect['frames'][0]['columns'][0]['mins'][0]
         
     else: 
-        if 'funstr' in resultExec and resultExec['funstr']: # not null
+        if (resultExec['num_rows']==0) and 'key' in resultExec and resultExec['key']:
+            print "zero row key return"
+            result = None
+
+        elif 'funstr' in resultExec and resultExec['funstr']: # not null
             print "function return"
             result = resultExec['funstr']
         else:
+            # empty num_rows=0 will come thru here?
             print "scalar return"
             result = resultExec['scalar']
             
