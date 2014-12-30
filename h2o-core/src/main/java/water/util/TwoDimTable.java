@@ -117,6 +117,8 @@ public class TwoDimTable extends Iced {
     for (int c = 0; c < colDim; ++c) {
       if (colTypes[c].equalsIgnoreCase("string")) {
         for (String[] vec : strCellValues) {
+          if (vec == null)
+            throw new IllegalArgumentException("Null string in strCellValues");
           if (vec.length != colDim)
             throw new IllegalArgumentException("Each row in strCellValues must have the same length as colHeaders");
         }
