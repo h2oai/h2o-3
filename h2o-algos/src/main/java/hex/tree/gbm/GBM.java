@@ -19,12 +19,11 @@ import water.util.ArrayUtils;
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
-  @Override
-  public Model.ModelCategory[] can_build() {
+  @Override public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-            Model.ModelCategory.Regression,
-            Model.ModelCategory.Binomial,
-            Model.ModelCategory.Multinomial,
+      Model.ModelCategory.Regression,
+      Model.ModelCategory.Binomial,
+      Model.ModelCategory.Multinomial,
     };
   }
 
