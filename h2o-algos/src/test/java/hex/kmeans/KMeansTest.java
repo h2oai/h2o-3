@@ -27,7 +27,7 @@ public class KMeansTest extends TestUtil {
       if (job != null) job.remove();
     }
     for( int i=0; i<parms._k; i++ )
-      Assert.assertTrue( "Seed: "+seed, kmm._output._rows[i] != 0 );
+      Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
   }
 

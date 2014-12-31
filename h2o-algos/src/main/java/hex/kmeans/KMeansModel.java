@@ -31,8 +31,8 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // is used during the building process, the *builders* cluster centers are standardized).
     public double[/*k*/][/*features*/] _centers;
 
-    // Rows per cluster
-    public long[/*k*/] _rows;
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
 
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _withinmse;   // Within-cluster MSE, variance

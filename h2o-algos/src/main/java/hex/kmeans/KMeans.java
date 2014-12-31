@@ -160,7 +160,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           // per iteration ('cause we only tracked the 1 worst row)
           boolean badrow=false;
           for( int clu=0; clu<_parms._k; clu++ ) {
-            if (task._rows[clu] == 0) {
+            if (task._size[clu] == 0) {
               // If we see 2 or more bad rows, just re-run Lloyds to get the
               // next-worst row.  We don't count this as an iteration, because
               // we're not really adjusting the centers, we're trying to get
@@ -178,7 +178,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
               long row = task._worst_row;
               Log.warn("KMeans: Re-initializing cluster " + clu + " to row " + row);
               data(centers[clu] = task._cMeans[clu], vecs, row, means, mults);
-              task._rows[clu] = 1;
+              task._size[clu] = 1;
               badrow = true;
             }
           }
@@ -186,12 +186,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           // Fill in the model; destandardized centers
           model._output._names = _train.names();
           model._output._centers = destandardize(task._cMeans, _ncats, means, mults);
-          model._output._rows = task._rows;
+          model._output._size = task._size;
           model._output._withinmse = task._cSqr;
           double ssq = 0;       // sum squared error
           for( int i=0; i<_parms._k; i++ ) {
             ssq += model._output._withinmse[i]; // sum squared error all clusters
-            model._output._withinmse[i] /= task._rows[i]; // mse within-cluster
+            model._output._withinmse[i] /= task._size[i]; // mse within-cluster
           }
           model._output._avgwithinss = ssq/_train.numRows(); // mse total
 
@@ -218,7 +218,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           StringBuilder sb = new StringBuilder();
           sb.append("KMeans: iter: ").append(model._output._iters).append(", MSE=").append(model._output._avgwithinss);
           for( int i=0; i<_parms._k; i++ )
-            sb.append(", ").append(task._cSqr[i]).append("/").append(task._rows[i]);
+            sb.append(", ").append(task._cSqr[i]).append("/").append(task._size[i]);
           Log.info(sb);
         }
 
@@ -333,7 +333,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     double[][] _cMeans;         // Means for each cluster
     long[/*k*/][/*ncats*/][] _cats; // Histogram of cat levels
     double[] _cSqr;             // Sum of squares for each cluster
-    long[] _rows;               // Rows per cluster
+    long[] _size;               // Number of rows in each cluster
     long _worst_row;            // Row with max err
     double _worst_err;          // Max-err-row's max-err
 
@@ -350,7 +350,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       assert _centers[0].length==N;
       _cMeans = new double[_k][N];
       _cSqr = new double[_k];
-      _rows = new long[_k];
+      _size = new long[_k];
       // Space for cat histograms
       _cats = new long[_k][_ncats][];
       for( int clu=0; clu< _k; clu++ )
@@ -373,21 +373,21 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           _cats[clu][col][(int)values[col]]++; // Histogram the cats
         for( int col = _ncats; col < N; col++ )
           _cMeans[clu][col] += values[col];
-        _rows[clu]++;
+        _size[clu]++;
         // Track worst row
         if( cd._dist > _worst_err) { _worst_err = cd._dist; _worst_row = cs[0].start()+row; }
       }
       // Scale back down to local mean
       for( int clu = 0; clu < _k; clu++ )
-        if( _rows[clu] != 0 ) ArrayUtils.div(_cMeans[clu],_rows[clu]);
+        if( _size[clu] != 0 ) ArrayUtils.div(_cMeans[clu], _size[clu]);
       _centers = null;
       _means = _mults = null;
     }
 
     @Override public void reduce(Lloyds mr) {
       for( int clu = 0; clu < _k; clu++ ) {
-        long ra =    _rows[clu];
-        long rb = mr._rows[clu];
+        long ra =    _size[clu];
+        long rb = mr._size[clu];
         double[] ma =    _cMeans[clu];
         double[] mb = mr._cMeans[clu];
         for( int c = 0; c < ma.length; c++ ) // Recursive mean
@@ -395,7 +395,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
       ArrayUtils.add(_cats, mr._cats);
       ArrayUtils.add(_cSqr, mr._cSqr);
-      ArrayUtils.add(_rows, mr._rows);
+      ArrayUtils.add(_size, mr._size);
       // track global worst-row
       if( _worst_err < mr._worst_err) { _worst_err = mr._worst_err; _worst_row = mr._worst_row; }
     }
