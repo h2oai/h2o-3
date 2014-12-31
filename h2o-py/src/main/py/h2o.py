@@ -336,8 +336,6 @@ class Expr(object):
       elif isinstance(rite._data,unicode):     _CMD += "%"+str(rite._data)
       else:                                    pass # Locally computed small data
 
-    print "CRUNK",self._op
-
     if self._op == "+":
       if isinstance(left._data,(int,float)):
         if isinstance(rite._data,(int,float)):    self._data = left+rite
@@ -461,6 +459,7 @@ class H2OConnection(object):
     p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':dataset}
     j = H2OCONN.doSafeGet(self.buildURL("GBM",p))
     print j
+    if 'validation_error_count' in j: raise ValueError("GBM argument error:"+str(j['validation_messages']))
     if j['job']['status'] != 'DONE': raise ValueError("GBM status expected to be DONE, instead is "+j['job']['status'])
     if j['job']['progress'] != 1.0: raise ValueError("GBM progress expected to be 1.0, instead is "+j['job']['progress'])
     return j
@@ -517,7 +516,14 @@ class H2OGBM(object):
 
     self.distribution = distribution
 
-    j = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,dataset)
+    fr = py_tmp_key()
+    cbind = "(= !"+fr+" (cbind "
+    for vec in dataset._vecs:
+      cbind += "%" + vec._expr.eager() + " "
+    cbind += "))"
+    H2OCONN.Rapids(cbind)
+    j = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr)
+    H2OCONN.Remove(fr)
     print j
     
 
