@@ -23,9 +23,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Names of features clustered upon
-    public String[] _names;
-
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
     // is used during the building process, the *builders* cluster centers are standardized).

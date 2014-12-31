@@ -184,7 +184,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
 
           // Fill in the model; destandardized centers
-          model._output._names = _train.names();
           model._output._centers = destandardize(task._cMeans, _ncats, means, mults);
           model._output._size = task._size;
           model._output._withinmse = task._cSqr;
