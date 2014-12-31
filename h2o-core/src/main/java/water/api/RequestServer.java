@@ -605,7 +605,7 @@ public class RequestServer extends NanoHTTPD {
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
       throw new H2ONotFoundArgumentException("Resource " + uri + " not found",
-                                     "Resource " + uri + " not found");
+                                             "Resource " + uri + " not found");
 
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
