@@ -49,14 +49,14 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
       super.fillFromImpl(parms);
 
       loss = GBMParameters.Family.AUTO; // TODO: Why? Defaults should NOT go into the schemas!
-      variable_importance = parms._importance;
+      variable_importance = parms._variable_importance;
       return this;
     }
 
     public GBMParameters fillImpl(GBMParameters impl) {
       super.fillImpl(impl);
 
-      impl._importance = this.variable_importance;
+      impl._variable_importance = this.variable_importance;
       return impl;
     }
   }

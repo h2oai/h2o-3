@@ -385,7 +385,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Compute variable importance for this tree if asked; must be done on each tree however
-    if( _parms._importance && _model._output._ntrees > 0 ) { // compute this tree votes but skip the first scoring call which is done over empty forest
+    if( _parms._variable_importance && _model._output._ntrees > 0 ) { // compute this tree votes but skip the first scoring call which is done over empty forest
       if( !updated ) _model.update(_key);  updated = true;
       Timer vi_timer = new Timer();
       _model._output._varimp = doVarImpCalc(false);

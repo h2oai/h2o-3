@@ -1,5 +1,6 @@
 from h2o import H2OConnection
 from h2o import H2OFrame
+from h2o import H2OGBM
 
 ######################################################
 #
@@ -18,7 +19,7 @@ print train.describe()
 vol = df['VOL']
 # (= ([ %vec (== %vec #0) "null") #NaN
 vol[vol==0] = None
-print vol.show()
+#print vol.show()
 print train.describe()
 
-#gbm = H2OGBM(dataset=train,ntrees=10,a)
+gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,shrinkage=0.1)

@@ -457,6 +457,15 @@ class H2OConnection(object):
   def Frame(self,key):
     return self.doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
 
+  def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,dataset):
+    p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':dataset}
+    j = H2OCONN.doSafeGet(self.buildURL("GBM",p))
+    print j
+    if j['job']['status'] != 'DONE': raise ValueError("GBM status expected to be DONE, instead is "+j['job']['status'])
+    if j['job']['progress'] != 1.0: raise ValueError("GBM progress expected to be 1.0, instead is "+j['job']['progress'])
+    return j
+
+
   # "Safe" REST calls.  Check for errors in a common way
   def doSafeGet(self,url):
     r = requests.get(url)
@@ -484,6 +493,33 @@ class H2OConnection(object):
       sep = '&'
     return s
 
+
+##############################################################################
+#
+# Simple GBM Wrapper
+#
+class H2OGBM(object):
+  def __init__(self,dataset,x,ntrees=50,shrinkage=0.1,interaction_depth=5,distribution="AUTO"):
+    if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
+    self.dataset = dataset
+
+    if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
+    self.x = x
+
+    if not (0 <= ntrees <= 1000000): raise ValueError("ntrees must be between 0 and a million")
+    self.ntrees = ntrees
+
+    if not (0.0 <= shrinkage <= 1.0): raise ValueError("shrinkage must be between 0 and 1")
+    self.shrinkage = 0.1
+
+    if not (1 <= interaction_depth): raise ValueError("interaction_depth must be at least 1")
+    self.interaction_depth = interaction_depth
+
+    self.distribution = distribution
+
+    j = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,dataset)
+    print j
+    
 
 # Simple stackoverflow pretty-printer for big numbers
 def get_human_readable_size(num):

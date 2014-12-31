@@ -81,7 +81,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //}
 
       // Initialize gbm-specific data structures
-      if( _parms._importance ) _improvPerVar = new float[_nclass];
+      if( _parms._variable_importance ) _improvPerVar = new float[_nclass];
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
