@@ -27,8 +27,8 @@ public class  H2OKeyNotFoundArgumentException extends H2ONotFoundArgumentExcepti
 
   public H2OKeyNotFoundArgumentException(String name) {
     super("Key not found: " + name.toString(),
-            "Key not found: " + name.toString());
-    this.values = new IcedHashMap<enum>();
+          "Key not found: " + name.toString());
+    this.values = new IcedHashMap<>();
     this.values.put("name", name);
   }
 
