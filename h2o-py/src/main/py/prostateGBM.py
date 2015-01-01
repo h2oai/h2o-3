@@ -18,7 +18,7 @@ print train.describe()
 # For VOL, a zero really means "missing"
 vol = df['VOL']
 # (= ([ %vec (== %vec #0) "null") #NaN
-vol[vol==0] = None
+#vol[vol==0] = None
 #print vol.show()
 print train.describe()
 

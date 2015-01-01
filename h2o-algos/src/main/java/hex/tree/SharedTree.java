@@ -102,6 +102,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Scope.enter();          // Cleanup temp keys
         _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
         init(true);             // Do any expensive tests & conversions now
+        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
 
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
