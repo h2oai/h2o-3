@@ -290,6 +290,94 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
 
 #----------------------------------------
 
+.h2o.fromJSON <- function(txt, ...) {
+  processMatrices <- function(x) {
+    if (is.list(x)) {
+      if (is.null(names(x)) &&
+          ((nrow <- length(x)) > 1L) &&
+          all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
+          (length(ncol <- unique(unlist(lapply(x, length)))) == 1L))
+        x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
+      else
+        x <- lapply(x, processMatrices)
+    }
+    x
+  }
+  processTables <- function(x) {
+    tableElements <- c("tableHeader", "rowHeaders", "colHeaders",
+                       "colTypes",    "colFormats", "cellValues")
+    if (is.list(x)) {
+      if ((length(tableElements) == length(x)) &&
+          all(tableElements %in% names(x))) {
+        tbl <- x$cellValues
+        if (is.vector(tbl)) {
+          if (any(nzchar(x$rowHeaders)))
+            tbl <- matrix(tbl, nrow = 1L, dimnames = list(x$rowHeaders, x$colHeaders))
+          else
+            names(tbl) <- x$colHeaders
+        } else {
+          if (any(nzchar(x$rowHeaders)))
+            dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+          else
+            dimnames(tbl) <- list(NULL, x$colHeaders)
+        }
+        tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
+        for (j in seq_along(tbl)) {
+          switch(x$colTypes[j],
+                 integer = {
+                   tbl[[j]] <- as.integer(tbl[[j]])
+                 },
+                 long   =,
+                 float  =,
+                 double = {
+                   tbl[[j]] <- as.double(tbl[[j]])
+                 },
+                 string = {},
+                 {})
+        }
+        attr(tbl, "header")  <- x$tableHeader
+        attr(tbl, "formats") <- x$colFormats
+        oldClass(tbl) <- c("H2OTable", "data.frame")
+        x <- tbl
+      }
+      else
+        x <- lapply(x, processTables)
+    }
+    x
+  }
+  res <- processMatrices(fromJSON(txt, ...))
+  processTables(res)
+}
+
+#' Print method for H2OTable objects
+#'
+#' @param x An H2OTable object
+#' @param ... Additional arguments to print method for data.frame objects
+#' @return The original x object
+print.H2OTable <- function(x, ...) {
+  # format columns
+  formats <- attr(x, "formats")
+  xx <- x
+  for (j in seq_along(x))
+    xx[[j]] <- ifelse(is.na(x[[j]]), "", sprintf(formats[j], x[[j]]))
+
+  # drop empty columns
+  nz <- unlist(lapply(xx, function(y) any(nzchar(y))), use.names = FALSE)
+  xx <- xx[nz]
+  # drop empty rows
+  nz <- apply(xx, 1L, function(y) any(nzchar(y)))
+  xx <- xx[nz, , drop = FALSE]
+
+  # use data.frame print method
+  xx <- data.frame(xx, check.names = FALSE, stringsAsFactors = FALSE)
+  if (!is.null(attr(x, "header")))
+    cat(attr(x, "header"), ":\n", sep = "")
+  print(xx, ...)
+
+  # return original object
+  invisible(x)
+}
+
 # Make an HTTP request to the H2O backend.
 # 
 # Error checking is performed.
@@ -306,8 +394,7 @@ h2o.doSafePOST <- function(conn, h2oRestApiVersion, urlSuffix, parms, fileUpload
     .params <- list(...)
   }
 
-  payload = .h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method)
-  fromJSON(payload)
+  .h2o.fromJSON(.h2o.doSafeREST(conn = conn, urlSuffix = page, parms = .params, method = method))
 }
 
 
@@ -340,7 +427,7 @@ h2o.clusterInfo <- function(conn) {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -350,7 +437,7 @@ h2o.clusterInfo <- function(conn) {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+    res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   }
 
   nodeInfo <- res$nodes
@@ -396,7 +483,7 @@ h2o.clusterInfo <- function(conn) {
            sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
     }
 
-    fromJSON(rv$payload)
+    .h2o.fromJSON(rv$payload)
   }
 
   checker <- function(node, conn) {

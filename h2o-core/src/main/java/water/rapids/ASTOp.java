@@ -285,7 +285,7 @@ abstract class ASTUniOp extends ASTOp {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
 //    if( env.isStr() ) { env.push(new ASTString(op(env.popStr()))); return; }
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     final ASTUniOp uni = this;  // Final 'this' so can use in closure
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk[] chks, NewChunk[] nchks ) {
@@ -302,8 +302,7 @@ abstract class ASTUniOp extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-    env.clean();
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
@@ -348,7 +347,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
     if( env.isNum() ) { env.push(new ValNum(op(env.popDbl()))); return; }
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         for( int i=0; i<nchks.length; i++ ) {
@@ -360,9 +359,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
-//    env.cleanup(fr);
-    env.clean();
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
@@ -388,7 +385,7 @@ class ASTasDate extends ASTOp {
     if (format.isEmpty()) throw new IllegalArgumentException("as.Date requires a non-empty format string");
     // check the format string more?
 
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
 
     if( fr.vecs().length != 1 || !fr.vecs()[0].isEnum() )
       throw new IllegalArgumentException("as.Date requires a single column of factors");
@@ -410,9 +407,7 @@ class ASTasDate extends ASTOp {
         }
       }
     }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
-    env.clean();
-//    env.cleanup(fr);
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
@@ -441,7 +436,7 @@ class ASTRound extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     final int digits = _digits;
     if(env.isAry()) {
-      Frame fr = env.pop0Ary();
+      Frame fr = env.popAry();
       for(int i = 0; i < fr.vecs().length; i++) {
         if(fr.vecs()[i].isEnum())
           throw new IllegalArgumentException("Non-numeric column " + String.valueOf(i+1) + " in data frame");
@@ -457,9 +452,7 @@ class ASTRound extends ASTUniPrefixOp {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
-//      env.cleanup(fr);
-      env.clean();
-      env.push(new ValFrame(fr2));
+      env.pushAry(fr2);
     }
     else
       env.push(new ValNum(roundDigits(env.popDbl(), digits)));
@@ -498,7 +491,7 @@ class ASTSignif extends ASTUniPrefixOp {
       throw new IllegalArgumentException("Error in signif: argument digits must be a non-negative integer");
 
     if(env.isAry()) {
-      Frame fr = env.pop0Ary();
+      Frame fr = env.popAry();
       for(int i = 0; i < fr.vecs().length; i++) {
         if(fr.vecs()[i].isEnum())
           throw new IllegalArgumentException("Non-numeric column " + String.valueOf(i+1) + " in data frame");
@@ -514,9 +507,7 @@ class ASTSignif extends ASTUniPrefixOp {
           }
         }
       }.doAll(fr.numCols(),fr).outputFrame(fr.names(),fr.domains());
-//      env.cleanup(fr);
-      env.clean();
-      env.push(new ValFrame(fr2));
+      env.pushAry(fr2);
     }
     else
       env.push(new ValNum(signifDigits(env.popDbl(), digits)));
@@ -534,10 +525,8 @@ class ASTNrow extends ASTUniPrefixOp {
   @Override String opStr() { return "nrow"; }
   @Override ASTOp make() {return new ASTNrow();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     double d = fr.numRows();
-//    env.cleanup(fr);
-//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -547,10 +536,8 @@ class ASTNcol extends ASTUniPrefixOp {
   @Override String opStr() { return "ncol"; }
   @Override ASTOp make() {return new ASTNcol();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     double d = fr.numCols();
-//    env.cleanup(fr);
-//    env.clean();
     env.push(new ValNum(d));
   }
 }
@@ -560,7 +547,7 @@ class ASTLength extends ASTUniPrefixOp {
   @Override String opStr() { return "length"; }
   @Override ASTOp make() { return new ASTLength(); }
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     double d = fr.numCols() == 1 ? fr.numRows() : fr.numCols();
 //    env.cleanup(fr);
 //    env.clean();
@@ -573,12 +560,10 @@ class ASTIsFactor extends ASTUniPrefixOp {
   @Override String opStr() { return "is.factor"; }
   @Override ASTOp make() {return new ASTIsFactor();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     String res = "FALSE";
     if (fr.numCols() != 1) throw new IllegalArgumentException("is.factor applies to a single column.");
     if (fr.anyVec().isEnum()) res = "TRUE";
-//    env.//cleanup(fr);
-//    env.//clean();
     env.push(new ValStr(res));
   }
 }
@@ -589,11 +574,10 @@ class ASTAnyFactor extends ASTUniPrefixOp {
   @Override String opStr() { return "any.factor"; }
   @Override ASTOp make() {return new ASTAnyFactor();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     String res = "FALSE";
     for (int i = 0; i < fr.vecs().length; ++i)
       if (fr.vecs()[i].isEnum()) { res = "TRUE"; break; }
-//    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -603,13 +587,12 @@ class ASTCanBeCoercedToLogical extends ASTUniPrefixOp {
   @Override String opStr() { return "canBeCoercedToLogical"; }
   @Override ASTOp make() {return new ASTCanBeCoercedToLogical();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     String res = "FALSE";
     Vec[] v = fr.vecs();
     for (Vec aV : v)
       if (aV.isInt())
         if (aV.min() == 0 && aV.max() == 1) { res = "TRUE"; break; }
-    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -619,11 +602,10 @@ class ASTAnyNA extends ASTUniPrefixOp {
   @Override String opStr() { return "any.na"; }
   @Override ASTOp make() {return new ASTAnyNA();}
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     String res = "FALSE";
     for (int i = 0; i < fr.vecs().length; ++i)
       if (fr.vecs()[i].naCnt() > 0) { res = "TRUE"; break; }
-    //cleanup(fr);
     env.push(new ValStr(res));
   }
 }
@@ -709,7 +691,7 @@ class ASTScale extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     for (int i = 0; i < fr.numCols(); ++i) if (fr.vecs()[i].isEnum()) throw new IllegalArgumentException(("All columns must be numeric."));
     if (!(_centers == null) && _centers.length != fr.numCols()) throw new IllegalArgumentException("`centers` must be logical or have length equal to the number of columns in the dataset.");
     if (!(_scales  == null) && _scales.length  != fr.numCols()) throw new IllegalArgumentException("`scales` must be logical or have length equal to the number of columns in the dataset.");
@@ -720,7 +702,7 @@ class ASTScale extends ASTUniPrefixOp {
     final double[] scales  = _scales;
     if (!_center && !_scale && (_centers == null) && (_scales == null)) {
       //nothing to do, return the frame as is
-      env.push(new ValFrame(fr));
+      env.pushAry(fr);
       return;
     }
 
@@ -774,9 +756,7 @@ class ASTScale extends ASTUniPrefixOp {
         }
       }.doAll(centered.numCols(), centered).outputFrame(centered.names(), centered.domains());
     }
-//    //cleanup(fr);
-//    if (doScale) //cleanup(centered);
-    env.push(new ValFrame(scaled));
+    env.pushAry(scaled);
   }
 }
 //
@@ -1031,10 +1011,7 @@ abstract class ASTBinOp extends ASTOp {
         }
       }
     }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
-    env.pop(); env.pop();
-//    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
-//    if (env.isAry()) env.cleanup(env.popAry()); else env.pop();
-    env.push(new ValFrame(fr2));
+    env.poppush(2, new ValFrame(fr2));
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
 }
@@ -1192,10 +1169,9 @@ abstract class ASTReducerOp extends ASTOp {
     for( int i=0; i<argcnt; i++ )
       if( env.isNum() ) sum = op(sum,env.popDbl());
       else {
-        Frame fr = env.pop0Ary(); // pop w/o lowering refcnts ... clean it up later
+        Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
         for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
         sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
-        //cleanup(fr);
       }
     env.push(new ValNum(sum));
   }
@@ -1431,8 +1407,7 @@ class ASTRbind extends ASTUniPrefixOp {
     }
     ParallelRbinds t;
     H2O.submitTask(t =new ParallelRbinds(env, argcnt)).join();
-    for (int i = 0; i < argcnt; ++i) env.pop0(); //env.cleanup(env.pop0Ary());
-    env.push(new ValFrame(new Frame(f1.names(), t._vecs)));
+    env.poppush(argcnt, new ValFrame(new Frame(f1.names(), t._vecs)));
   }
 }
 
@@ -1476,14 +1451,14 @@ class ASTCbind extends ASTUniPrefixOp {
     // loop over frames and combine
     Frame fr = new Frame(new String[0],new Vec[0]);
     for(int i = 0; i < argcnt; i++) {
-      Frame f = env.pop0Ary();
+      Frame f = env.popAry();
       Frame ff = f.deepSlice(null,null);  // deep copy the frame, R semantics...
       Frame new_frame = fr.makeCompatible(ff);
       if (f.numCols() == 1) fr.add(f.names()[0], new_frame.anyVec());
       else fr.add(new_frame);
     }
 
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 }
 
@@ -1499,12 +1474,11 @@ class ASTMin extends ASTReducerOp {
     for( int i=0; i<argcnt; i++ )
       if( env.isNum() ) min = Math.min(min, env.popDbl());
       else {
-        Frame fr = env.pop0Ary();
+        Frame fr = env.popAry();
         for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
         for (Vec v : fr.vecs())
           if (v.naCnt() > 0 && !_narm) { min = Double.NaN; break; }
           else min = Math.min(min, v.min());
-//        env.cleanup(fr);
       }
     env.push(new ValNum(min));
   }
@@ -1522,12 +1496,11 @@ class ASTMax extends ASTReducerOp {
     for( int i=0; i<argcnt; i++ )
       if( env.isNum() ) max = Math.max(max, env.popDbl());
       else {
-        Frame fr = env.pop0Ary();
+        Frame fr = env.popAry();
         for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
         for (Vec v : fr.vecs())
           if (v.naCnt() > 0 && !_narm) { max = Double.NaN; break; }
           else max = Math.max(max, v.max());
-//        env.cleanup(fr);
       }
     env.push(new ValNum(max));
   }
@@ -1589,7 +1562,7 @@ class ASTRename extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env e) {
-    Frame fr = e.pop0Ary();
+    Frame fr = e.popAry();
     Futures fs = new Futures();
     Frame ff = DKV.remove(fr._key, fs).get();
     fs.blockForPending();
@@ -1597,7 +1570,7 @@ class ASTRename extends ASTUniPrefixOp {
     Futures fs2 = new Futures();
     DKV.put(Key.make(_newname), fr2, fs2);
     fs2.blockForPending();
-    e.push0(new ValFrame(fr2));  // the vecs have not changed and their refcnts remain the same
+    e.pushAry(fr2);  // the vecs have not changed and their refcnts remain the same
   }
 }
 
@@ -1632,7 +1605,7 @@ class ASTMatch extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env e) {
-    Frame fr = e.pop0Ary();
+    Frame fr = e.popAry();
     if (fr.numCols() != 1) throw new IllegalArgumentException("can only match on a single categorical column.");
     if (!fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
     Key tmp = Key.make();
@@ -1644,8 +1617,7 @@ class ASTMatch extends ASTUniPrefixOp {
         for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at80(r)]));
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
-//    e.cleanup(fr);
-    e.push(new ValFrame(rez));
+    e.pushAry(rez);
   }
 
 }
@@ -1663,31 +1635,28 @@ class ASTOR extends ASTBinOp {
   @Override void apply(Env env) {
     double op1 = (env.isNum()) ? env.peekDbl()
             : (env.isAry() ? env.peekAry().vecs()[0].at(0) : Double.NaN);
-    env.pop();
     // op1 is NaN ? push NaN
     if (Double.isNaN(op1)) {
-      env.pop();
-      env.push(new ValNum(Double.NaN));
+      env.poppush(2, new ValNum(Double.NaN));
       return;
     }
     double op2 = !Double.isNaN(op1) && op1!=0 ? 1 : (env.isNum()) ? env.peekDbl()
                     : (env.isAry()) ? env.peekAry().vecs()[0].at(0) : Double.NaN;
-    env.pop();
 
     // op2 is NaN ? push NaN
     if (Double.isNaN(op2)) {
-      env.push(new ValNum(op2));
+      env.poppush(2, new ValNum(op2));
       return;
     }
 
     // both 0 ? push False
     if (op1 == 0 && op2 == 0) {
-      env.push(new ValNum(0.0));
+      env.poppush(2, new ValNum(0.0));
       return;
     }
 
     // else push True
-    env.push(new ValNum(1.0));
+    env.poppush(2, new ValNum(1.0));
   }
 }
 
@@ -1714,7 +1683,7 @@ class ASTSeqLen extends ASTUniPrefixOp {
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" +len+"): argument must be coercible to positive integer");
     Frame fr = new Frame(new String[]{"c"}, new Vec[]{Vec.makeSeq(len)});
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 }
 
@@ -1785,7 +1754,7 @@ class ASTSeq extends ASTUniPrefixOp {
         Vec vec = av.close(fs);
         fs.blockForPending();
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{vec});
-        env.push(new ValFrame(fr));
+        env.pushAry(fr);
       }
     }
   }
@@ -1800,7 +1769,7 @@ class ASTRepLen extends ASTUniPrefixOp {
 
     // two cases if x is a frame: x is a single vec, x is a list of vecs
     if (env.isAry()) {
-      final Frame fr = env.pop0Ary();
+      final Frame fr = env.popAry();
       if (fr.numCols() == 1) {
 
         // In this case, create a new vec of length _length using the elements of x
@@ -1813,8 +1782,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         }.doAll(v);
         v.setDomain(fr.anyVec().domain());
         Frame f = new Frame(new String[]{"C1"}, new Vec[]{v});
-//        env.cleanup(fr);
-        env.push(new ValFrame(f));
+        env.pushAry(f);
 
       } else {
 
@@ -1825,9 +1793,7 @@ class ASTRepLen extends ASTUniPrefixOp {
         Frame f = new Frame(col_names, new Vec[(int)_length]);
         for (int i = 0; i < f.numCols(); ++i)
           f.add(Frame.defaultColName(f.numCols()), fr.vec( i % fr.numCols() ));
-
-//        env.cleanup(fr);
-        env.push(new ValFrame(f));
+        env.pushAry(f);
       }
     }
 
@@ -1840,10 +1806,10 @@ class ASTRepLen extends ASTUniPrefixOp {
         // make a constant enum vec with domain[] = []{env.popStr()}
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(0, len)});
         fr.anyVec().setDomain(new String[]{env.popStr()});
-        env.push(new ValFrame(fr));
+        env.pushAry(fr);
       } else if (env.isNum()) {
         Frame fr = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(env.popDbl(), len)});
-        env.push(new ValFrame(fr));
+        env.pushAry(fr);
       } else throw new IllegalArgumentException("Unkown input. Type: "+env.peekType() + " Stack: " + env.toString());
     }
   }
@@ -1901,10 +1867,10 @@ class ASTQtile extends ASTUniPrefixOp {
 
 
   @Override void apply(Env env) {
-    final Frame probs = _probs == null ? env.pop0Ary() : null;
+    final Frame probs = _probs == null ? env.popAry() : null;
     if (probs != null && probs.numCols() != 1) throw new IllegalArgumentException("Probs must be a single vector.");
 
-    Frame x = env.pop0Ary();
+    Frame x = env.popAry();
     if (x.numCols() != 1) throw new IllegalArgumentException("Must specify a single column in quantile. Got: "+ x.numCols() + " columns.");
     Vec xv  = x.anyVec();
     if ( xv.isEnum() ) {
@@ -1968,8 +1934,7 @@ class ASTQtile extends ASTUniPrefixOp {
     Futures f = res.postWrite(new Futures());
     f.blockForPending();
     Frame fr = new Frame(new String[]{"P", "Q"}, new Vec[]{p_names, res});
-//    env.cleanup(probs, x);
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 }
 
@@ -2009,10 +1974,10 @@ class ASTSetColNames extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
-    Frame f = env.pop0Ary();
+    Frame f = env.popAry();
     for (int i=0; i < _names.length; ++i)
       f._names[(int)_idxs[i]] = _names[i];
-    env.push0Ary(f);
+    env.pushAry(f);
   }
 }
 
@@ -2041,7 +2006,7 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     Vec randVec = fr.anyVec().makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
@@ -2051,8 +2016,7 @@ class ASTRunif extends ASTUniPrefixOp {
       }
     }.doAll(randVec);
     Frame f = new Frame(new String[]{"rnd"}, new Vec[]{randVec});
-//    env.cleanup(fr);
-    env.push(new ValFrame(f));
+    env.pushAry(f);
   }
 }
 
@@ -2074,8 +2038,7 @@ class ASTSdev extends ASTUniPrefixOp {
   }
   @Override void apply(Env env) {
     if (env.isNum()) {
-      env.pop();
-      env.push(new ValNum(Double.NaN));
+      env.poppush(1, new ValNum(Double.NaN));
     } else {
       Frame fr = env.peekAry();
       if (fr.vecs().length > 1)
@@ -2084,9 +2047,7 @@ class ASTSdev extends ASTUniPrefixOp {
         throw new IllegalArgumentException("sd only applies to numeric vector.");
 
       double sig = Math.sqrt(ASTVar.getVar(fr.anyVec(), _narm));
-      if (env.isAry()) env.pop(); //env.cleanup(env.popAry());
-      else env.pop();
-      env.push(new ValNum(sig));
+      env.poppush(1, new ValNum(sig));
     }
   }
 }
@@ -2157,11 +2118,7 @@ class ASTVar extends ASTUniPrefixOp {
             ss += (fr.vecs()[r].at(0) - xmean) * (y.vecs()[r].at(0) - ymean);
           }
         }
-        env.pop(); // pop fr
-        env.pop(); // pop y
-        env.pop(); // pop use
-
-        env.push(new ValNum(ss == Double.NaN ? ss : ss/divideby));
+        env.poppush(3, new ValNum(ss == Double.NaN ? ss : ss/divideby));
 
       } else {
 
@@ -2181,16 +2138,11 @@ class ASTVar extends ASTUniPrefixOp {
         for (int c = 0; c < y.numCols(); c++)
           for (int r = 0; r < fr.numCols(); r++) {
             covars[c][r] = tsks[c][r].getResult()._ss / (fr.numRows() - 1);
-//            env.cleanup(frs[c][r]); // cleanup
             frs[c][r] = null;
           }
 
-        env.pop(); // pop fr
-        env.pop(); // pop y
-        env.pop(); // pop use
-
         // Just push the scalar if input is a single col
-        if (covars.length == 1 && covars[0].length == 1) env.push(new ValNum(covars[0][0]));
+        if (covars.length == 1 && covars[0].length == 1) env.poppush(3, new ValNum(covars[0][0]));
         else {
           // Build output vecs for var-cov matrix
           Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
@@ -2202,7 +2154,7 @@ class ASTVar extends ASTUniPrefixOp {
             c.close(0, null);
             vecs[i] = v.close(null);
           }
-          env.push(new ValFrame(new Frame(colnames, vecs)));
+          env.poppush(3, new ValFrame(new Frame(colnames, vecs)));
         }
       }
     }
@@ -2290,7 +2242,7 @@ class ASTMean extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (env.isNum()) return;
-    Frame fr = env.pop0Ary(); // get the frame w/o sub-reffing
+    Frame fr = env.popAry(); // get the frame w/o sub-reffing
     if (fr.numCols() > 1 && fr.numRows() > 1)
       throw new IllegalArgumentException("mean does not apply to multiple cols.");
     for (Vec v : fr.vecs()) if (v.isEnum())
@@ -2309,7 +2261,6 @@ class ASTMean extends ASTUniPrefixOp {
         env.push(new ValNum(ave));
       }
     }
-//    env.cleanup(fr);
   }
 
   @Override double[] map(Env e, double[] in, double[] out, AST[] args) {
@@ -2382,9 +2333,9 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
-    Frame two = env.peekType() == Env.NULL ? null : env.pop0Ary();
+    Frame two = env.peekType() == Env.NULL ? null : env.popAry();
     if (two == null) env.pop();
-    Frame one = env.pop0Ary();
+    Frame one = env.popAry();
 
     // Rules: two != null => two.numCols == one.numCols == 1
     //        two == null => one.numCols == 1 || one.numCols == 2
@@ -2440,8 +2391,7 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     Frame fr2 = new Frame(colnames, vecs);
-//    env.cleanup(fr, one, two);
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 
   protected static class Tabularize extends MRTask<Tabularize> {
@@ -2537,7 +2487,7 @@ class ASTIfElse extends ASTUniPrefixOp {
       Frame res;
       try {
         env = Exec.exec(sb.toString());
-        res = env.pop0Ary();
+        res = env.popAry();
         res.unlock_all();
       } catch (Exception e) {
         throw H2O.fail();
@@ -2563,13 +2513,13 @@ class ASTIfElse extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
-    Frame tst = env.pop0Ary();
+    Frame tst = env.popAry();
     if (tst.numCols() != 1)
       throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
     Frame yes=null; double dyes=0;
     Frame no=null; double dno=0;
-    if (env.isAry()) yes = env.pop0Ary(); else dyes = env.popDbl();
-    if (env.isAry()) no  = env.pop0Ary(); else dno  = env.popDbl();
+    if (env.isAry()) yes = env.popAry(); else dyes = env.popDbl();
+    if (env.isAry()) no  = env.popAry(); else dno  = env.popDbl();
 
     if (yes != null && no != null) {
       if (yes.numCols() != no.numCols())
@@ -2605,8 +2555,7 @@ class ASTIfElse extends ASTUniPrefixOp {
         }
       }
     }.doAll(yes==null?1:yes.numCols(),frtst).outputFrame(yes==null?(new String[]{"C1"}):yes.names(),null/*same as R: no domains*/);
-//    env.cleanup(yes, no, a_yes, a_no, tst, frtst);
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
@@ -2679,7 +2628,7 @@ class ASTCut extends ASTUniPrefixOp {
   private String left() { return _right ? "(" : "["; }
   private String rite() { return _right ? "]" : ")"; }
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();
+    Frame fr = env.popAry();
     if(fr.vecs().length != 1 || fr.vecs()[0].isEnum())
       throw new IllegalArgumentException("First argument must be a numeric column vector");
 
@@ -2736,9 +2685,7 @@ class ASTCut extends ASTUniPrefixOp {
         }
       }
     }.doAll(1, fr).outputFrame(fr.names(), domains);
-
-//    env.cleanup(fr);
-    env.push(new ValFrame(fr2));
+    env.pushAry(fr2);
   }
 }
 
@@ -2754,13 +2701,12 @@ class ASTFactor extends ASTUniPrefixOp {
     return res;
   }
   @Override void apply(Env env) {
-    Frame ary = env.pop0Ary(); // pop w/o lowering refs
+    Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
-//    env.cleanup(ary);
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 }
 
@@ -2776,13 +2722,12 @@ class ASTCharacter extends ASTUniPrefixOp {
     return res;
   }
   @Override void apply(Env env) {
-    Frame ary = env.pop0Ary(); // pop w/o lowering refs
+    Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
-//    env.cleanup(ary);
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 }
 
@@ -2816,8 +2761,7 @@ class ASTLs extends ASTOp {
     String[] key_domain = new String[domain.size()];
     for (int i = 0; i < key_domain.length; ++i) key_domain[i] = domain.get(i);
     c0.setDomain(key_domain);
-    Frame ls = new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0});
-    env.push(new ValFrame(ls));
+    env.pushAry(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }
 
   private double getSize(Key k) {
@@ -2885,7 +2829,7 @@ class ASTCat extends ASTUniPrefixOp {
       }
     }.doAll(Vec.makeZero(len))._fr;
 
-    env.push(new ValFrame(fr));
+    env.pushAry(fr);
   }
 
   private long maprow(long cur, ValSeries ids, ValSeries s) {
@@ -3058,7 +3002,7 @@ class ASTXorSum extends ASTReducerOp {
 //    if(env.isNum()) {
 //      final double cutoff = _x;
 //
-//      Frame fr = env.pop0Ary();
+//      Frame fr = env.popAry();
 //      if(fr.numCols() != 1 || fr.vecs()[0].isEnum())
 //        throw new IllegalArgumentException("Argument must be a single numeric column vector. Got an array with " + fr.numCols() + " columns. Column was an enum: " + fr.vecs()[0].isEnum());
 //

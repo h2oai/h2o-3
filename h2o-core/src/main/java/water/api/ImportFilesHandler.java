@@ -5,6 +5,7 @@ package water.api;
 //import com.amazonaws.services.s3.model.S3ObjectSummary;
 //import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.Path;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.persist.PersistHdfs;
 import water.util.FileIntegrityChecker;
 import water.util.Log;
@@ -77,7 +78,7 @@ public class ImportFilesHandler extends Handler {
 //    String prefix = bend < path.length()?path.substring(bend+1):"";
 //    AmazonS3 s3 = PersistS3.getClient();
 //    if( !s3.doesBucketExist(bucket) )
-//      throw new IllegalArgumentException("S3 Bucket " + bucket + " not found!");;
+//      throw new H2ONotFoundException("S3 Bucket " + bucket + " not found!");;
 //    ArrayList<String> succ = new ArrayList<String>();
 //    ArrayList<String> fail = new ArrayList<String>();
 //    ObjectListing currentList = s3.listObjects(bucket, prefix);
@@ -102,7 +103,8 @@ public class ImportFilesHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   private ImportFilesV2 serveLocalDisk(int version, ImportFilesV2 importFiles) {
     File f = new File(importFiles.path);
-    if( !f.exists() ) throw new IllegalArgumentException("File " + importFiles.path + " does not exist!");
+    if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + importFiles.path + " does not exist",
+                                                             "File " + importFiles.path + " does not exist");
     ArrayList<String> afiles = new ArrayList();
     ArrayList<String> akeys  = new ArrayList();
     ArrayList<String> afails = new ArrayList();

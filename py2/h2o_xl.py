@@ -2,6 +2,7 @@ import h2o_exec as h2e, h2o_print as h2p, h2o_cmd
 import re, math
 from copy import copy
 # from h2o_xl import Fcn, Seq, Cbind, Colon, Assign, Item, Exec, KeyIndexed, Cut
+from h2o_test import dump_json
 
 # can set this in a test to disable the actual exec, just debugprint()
 debugPrintEnable = False

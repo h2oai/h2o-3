@@ -3,7 +3,7 @@ package water.exceptions;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import water.util.IcedHashMap;
 
-public class H2OIllegalArgumentException extends H2ORuntimeException {
+public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
   protected int HTTP_RESPONSE_CODE() { return HttpResponseStatus.PRECONDITION_FAILED.getCode(); }
 
   public H2OIllegalArgumentException(String argument, String function, Object value) {

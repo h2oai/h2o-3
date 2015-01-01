@@ -3,7 +3,7 @@ package water.api;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
-import water.exceptions.H2ONotFoundException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -38,7 +38,7 @@ public abstract class Handler extends H2OCountedCompleter {
   final Schema handle(int version, Route route, Properties parms) throws Exception {
     // TODO: remove:
     if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
-      throw new H2ONotFoundException("Version " + version + " is not in range " + min_ver() + "- " + max_ver(),
+      throw new H2ONotFoundArgumentException("Version " + version + " is not in range " + min_ver() + "- " + max_ver(),
                                      "Version " + version + " is not in range " + min_ver() + "- " + max_ver() + " for route: " + route);
 
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);

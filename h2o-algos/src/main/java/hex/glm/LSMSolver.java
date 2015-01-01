@@ -83,10 +83,10 @@ public abstract class LSMSolver extends Iced{
    *                  = 0.5*y'y - (X'y)'*b + 0.5*b'*X'X*b) + l1 + l2
    *    l1 = alpha*lambda_value*l1norm(beta)
    *    l2 = (1-alpha)*lambda_value*l2norm(beta)/2
-   * @param xy:   X'y
-   * @param yy:   0.5*y'y
-   * @param beta: b (vector of coefficients)
-   * @param xb: X'X*beta
+   * @param xy   X'y
+   * @param yy   0.5*y'y
+   * @param beta vector of coefficients
+   * @param xb   X'X*beta
    * @return 0.5*(y - X*b)'*(y - X*b) + l1 + l2
    */
   protected double objectiveVal(double[] xy, double yy, double[] beta, double [] xb) {
@@ -105,11 +105,11 @@ public abstract class LSMSolver extends Iced{
    *   lsm_obj(beta) = 0.5 * (y - X*b)' * (y - X*b)
    *                 = 0.5 * y'y - (X'y)'*b + 0.5*b'*X'X*b)
    *                 = 0.5yy + b*(0.5*X'X*b - X'y)
-   * @param xy X'y
-   * @param yy y'y
-   * @param beta
-   * @param xb X'X*beta
-   * @return
+   * @param xy   X'y
+   * @param yy   y'y
+   * @param beta vector of coefficients
+   * @param xb   X'X*beta
+   * @return the objective function value
    */
   protected double lsm_objectiveVal(double[] xy, double yy, double[] beta, double [] xb) {
     double res = 0.5*yy;
@@ -466,7 +466,8 @@ public abstract class LSMSolver extends Iced{
      * @param newB
      * @param oldObj
      * @param oldB
-     * @param
+     * @param xb
+     * @param xy
      * @param t
      * @return
      */

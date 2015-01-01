@@ -182,58 +182,13 @@ class Basic(unittest.TestCase):
                 parameters=parameters,
                 timeoutSecs=timeoutSecs)
 
-            start = time.time()
             modelResult = h2o.n0.models(key=model_key)
-            elapsed = time.time() - start
-            print "kmeans end on ", csvPathname, 'took', elapsed, 'seconds.',\
-                "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
-
-            # this prints too
             km = h2o_kmeans.KMeansObj(modelResult, parameters, numRows, numColsUsed, labelListUsed)
-            h2o_cmd.runStoreView()
 
-            # zip with * is it's own inverse here. It's sorted by centers for easy comparisons
-            ids, mses, rows, clusters = zip(*km.tuplesSorted)
-
-
-            # the way we create the centers above, if we sort on the sum of xyz
-            # we should get the order the same as when they were created.
-            # to be safe, we'll sort the centers that were generated too, the same way
-            clustersSorted = sorted(clusters, key=sum)
-            centersSorted  = sorted(centersList, key=sum)
-
-            kmeansResult = modelResult
-            ### print clustersSorted
-
-            print "\ntrial #", trial, "h2o result, centers (sorted by key=sum)"
-            cf = '{0:6.2f}'
-            for c in clustersSorted:
-                print ' '.join(map(cf.format,c))
-
-            print "\ngenerated centers (sorted by key=sum)"
-            for c in centersSorted:
-                print ' '.join(map(cf.format,c))
-            
-            for i,center in enumerate(centersSorted):
-                # Doing the compare of gen'ed/actual centers is kind of a hamming distance problem.
-                # Assuming that the difference between adjacent sums of all center values, 
-                # is greater than 2x the sum of all max allowed variance on each value, 
-                # Then the sums will be unique and non-overlapping with allowed variance.
-                # So a sort of the centers, keyed on sum of all values for a center.
-                # will create an ordering that can be compared. 
-                # sort gen'ed and actual separately.
-                # Adjacent center hamming distance check is done during gen above.
-                a = center
-                b = clustersSorted[i]
-                print "\nexpected:", a
-                print "h2o:", b # h2o result
-                aStr = ",".join(map(str,a))
-                bStr = ",".join(map(str,b))
-                iStr = str(i)
-
-                for i, v in enumerate(a):
-                    emsg = aStr+" != "+bStr+". Sorted cluster center "+iStr+" axis "+str(i)+" not correct."
-                    self.assertAlmostEqual(a[i], b[i], delta=ALLOWED_CENTER_DELTA, msg=emsg)
+            # no expected row/error?
+            expected = [(None, c, None, None) for c in centersList] 
+            expected.sort(key=lambda tup: sum(tup[1]))
+            h2o_kmeans.compareResultsToExpected(km.tuplesSorted, expected, allowedDelta=[.01, .01, .01])
 
             print "Trial #", trial, "completed"
 

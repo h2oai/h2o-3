@@ -793,7 +793,7 @@ public class Vec extends Keyed {
    * vw.set(2, 5.32);
    * vw.close();
    */
-  final static class Writer implements java.io.Closeable {
+  public final static class Writer implements java.io.Closeable {
     final Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
     public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
@@ -996,7 +996,7 @@ public class Vec extends Keyed {
     final Key _key;
     private VectorGroup(Key key, int len){_key = key;_len = len;}
 
-    VectorGroup() {
+    public VectorGroup() {
       byte[] bits = new byte[26];
       bits[0] = Key.GRP;
       bits[1] = -1;

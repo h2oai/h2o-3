@@ -3,16 +3,16 @@ package water.api;
 import water.util.TwoDimTable;
 
 public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
-  @API(help="description", direction=API.Direction.OUTPUT)
-  String description;
-  @API(help="column names", direction=API.Direction.OUTPUT)
-  String[] colNames;
-  @API(help="column printf format strings", direction=API.Direction.OUTPUT)
-  String[] colFormatStrings; //optional
-  @API(help="row headers", direction=API.Direction.OUTPUT)
-  String[] rowHeaders;
-  @API(help="row-major matrix of string values", direction=API.Direction.OUTPUT)
-  String[][] strCellValues;
-  @API(help="row-major matrix of numeric (double-precision) values", direction=API.Direction.OUTPUT)
-  double[][] dblCellValues;
+  @API(help="Table Header", direction=API.Direction.OUTPUT)
+  public String tableHeader;
+  @API(help="Row Headers", direction=API.Direction.OUTPUT)
+  public String[] rowHeaders;
+  @API(help="Column Headers", direction=API.Direction.OUTPUT)
+  public String[] colHeaders;
+  @API(help="Column Types", direction=API.Direction.OUTPUT)
+  public String[] colTypes;
+  @API(help="Column sprintf Format Strings", direction=API.Direction.OUTPUT)
+  public String[] colFormats;
+  @API(help="Row-Major Matrix", direction=API.Direction.OUTPUT)
+  public String[][] cellValues;
 }

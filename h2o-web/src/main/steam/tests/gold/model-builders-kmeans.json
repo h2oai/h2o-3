@@ -26,8 +26,8 @@
           "values": []
         },
         {
-          "name": "K",
-          "label": "K",
+          "name": "k",
+          "label": "k",
           "help": "Number of clusters",
           "required": true,
           "type": "int",
@@ -48,9 +48,9 @@
           "values": []
         },
         {
-          "name": "normalize",
-          "label": "normalize",
-          "help": "Normalize columns",
+          "name": "standardize",
+          "label": "standardize",
+          "help": "Standardize columns",
           "required": false,
           "type": "boolean",
           "default_value": "true",

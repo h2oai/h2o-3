@@ -286,57 +286,22 @@ function(model) {
 
 #-----------------------------------------------------------------------------------------------------------------------
 #
-#       GBM Model Getter
-#
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-#
 #       KMeans Model Getter
 #
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__getKM2Summary <- function(res) {
-  mySum = list()
-  mySum$model_key = res$'_key'
-  mySum$k = res$k
-  mySum$max_iter = res$iterations
-  mySum$error = res$error
-  return(mySum)
-}
-
-.h2o.__getKM2Results <- function(res, data, params) {
-  clusters_key <- paste(res$'_clustersKey', sep = "")
-
-  result = list()
-  params$centers = res$k
-  params$iter.max = res$max_iter
-  result$params = params
-
-  result$cluster = .h2o.exec2(clusters_key, h2o = data@h2o, clusters_key)
-  feat = res$'_names'[-length(res$'_names')]     # Get rid of response column name
-  result$centers = t(matrix(unlist(res$centers), ncol = res$k))
-  dimnames(result$centers) = list(seq(1,res$k), feat)
-  result$totss <- res$total_SS
-  result$withinss <- res$within_cluster_variances
-  result$tot.withinss <- res$total_within_SS
-  result$betweenss <- res$between_cluster_SS
-  result$size <- res$size
-  result$iter <- res$iterations
-  return(result)
-}
-
 .kmeans.builder <- function(json, client) {
-  if(!is.na(json$output$clusters) && !is.null(json$output$clusters)) {
-    json$output$clusters = do.call(rbind.data.frame, json$output$clusters)
-    if(!is.null(json$output$names) && ncol(json$output$clusters) == length(json$output$names))
-      names(json$output$clusters) = json$output$names
-  }
+  if(NCOL(json$output$centers) == length(json$output$names))
+    colnames(json$output$centers) <- json$output$names
   new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
       valid = new("H2OFrame", h2o = client, key="NA"))
 }
+
+#-----------------------------------------------------------------------------------------------------------------------
+#
+#       GBM Model Getter
+#
+#-----------------------------------------------------------------------------------------------------------------------
 
 .gbm.builder <- function(json, client) {
   new("H2OGBMModel", h2o = client, key = json$key$name, model = json$output,

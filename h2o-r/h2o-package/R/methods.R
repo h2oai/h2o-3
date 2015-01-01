@@ -990,13 +990,10 @@ function(x, center = TRUE, scale = TRUE) {
 #' @param sep The field separator character.
 as.h2o <- function(client, object, key = "", header, sep = "") {
   if(!is(client, "H2OConnection")) stop("`client` must be a H2OConnection object")
-#  if(!is.numeric(object) && !is.data.frame(object)) stop("object must be numeric or a data frame")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
-  if((missing(key) || !nzchar(key))  && !is.atomic(object)) key <- deparse(substitute(object))
-  else if (missing(key) || !nzchar(key)) key <- "Last.value"
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(is.numeric(object) && is.vector(object)) {
+  if(!is.data.frame(object)) {
     object <- as.data.frame(object)
   }
   tmpf <- tempfile(fileext=".csv")

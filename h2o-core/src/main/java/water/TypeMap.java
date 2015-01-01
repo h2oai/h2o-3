@@ -176,11 +176,11 @@ public class TypeMap {
     }
   }
 
-  static Iced newInstance(int id) { return (Iced)newFreezable(id); }
+  static Iced newInstance(int id) { return (Iced) newFreezable(id); }
   static Freezable newFreezable(int id) {
     Freezable iced = theFreezable(id);
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
-    return iced.clone();
+    return (Freezable) iced.clone();
   }
   // The single golden instance of an Iced, used for cloning and instanceof tests
   static Freezable theFreezable(int id) {

@@ -530,11 +530,11 @@ setMethod("show", "H2OKMeansModel", function(object) {
 
     model <- object@model
     cat("\n\nK-means clustering with", length(model$rows), "clusters of sizes "); cat(model$rows, sep=", ")
-    cat("\n\nCluster means:\n"); print(model$clusters)
+    cat("\n\nCluster means:\n"); print(model$centers)
     cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
     cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2L), "%)\n")
 #    cat("\n\nCluster means:\n"); print(model$centers)
-#    cat("\nClustering vector:\n"); print(summary(model$clusters))
+#    cat("\nClustering vector:\n"); print(summary(model$centers))
 #    cat("\nWithin cluster sum of squares by cluster:\n"); print(model$withinss)
 #    cat("(between_SS / total_SS = ", round(100*sum(model$betweenss)/model$totss, 1), "%)\n")
     cat("\nAvailable components:\n\n"); print(names(model))

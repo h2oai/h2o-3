@@ -23,16 +23,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Names of features clustered upon
-    public String[] _names;
-
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
-    // is used during the building process, the *builders* clusters are standardized).
-    public double[/*k*/][/*features*/] _clusters;
+    // is used during the building process, the *builders* cluster centers are standardized).
+    public double[/*k*/][/*features*/] _centers;
 
-    // Rows per cluster
-    public long[/*k*/] _rows;
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
 
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _withinmse;   // Within-cluster MSE, variance
@@ -59,7 +56,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._clusters,data,_output._ncats);
+    preds[0] = KMeans.closest(_output._centers,data,_output._ncats);
     return preds;
   }
 }

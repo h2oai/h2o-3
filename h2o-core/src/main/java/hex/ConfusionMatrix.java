@@ -274,21 +274,24 @@ public class ConfusionMatrix extends Iced {
       rowHeader[i] = adomain[i];
     rowHeader[adomain.length] = "Totals";
 
-    String[] colNames = new String[pdomain.length+2];
+    String[] colHeader = new String[pdomain.length+2];
     for (int i=0; i<pdomain.length; ++i)
-      colNames[i] = pdomain[i];
-    colNames[colNames.length-2] = "Error";
-    colNames[colNames.length-1] = "";
+      colHeader[i] = pdomain[i];
+    colHeader[colHeader.length-2] = "Error";
+    colHeader[colHeader.length-1] = "";
 
-    String[] colFormat = new String[colNames.length];
-    for (int i=0; i<colFormat.length-1; ++i)
+    String[] colType = new String[colHeader.length];
+    String[] colFormat = new String[colHeader.length];
+    for (int i=0; i<colFormat.length-1; ++i) {
+      colType[i]   = "integer";
       colFormat[i] = "%d";
+    }
+    colType[colFormat.length-2]   = "double";
     colFormat[colFormat.length-2] = "%.4f";
+    colType[colFormat.length-1]   = "string";
     colFormat[colFormat.length-1] = "= %s";
 
-    TwoDimTable table = new TwoDimTable(
-            "Confusion Matrix (Act/Pred)", colNames, colFormat, rowHeader,
-            new String[rowHeader.length][], new double[rowHeader.length][]);
+    TwoDimTable table = new TwoDimTable("Confusion Matrix (Act/Pred)", rowHeader, colHeader, colType, colFormat);
 
     // Main CM Body
     long terr = 0;

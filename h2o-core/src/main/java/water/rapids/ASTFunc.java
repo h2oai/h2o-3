@@ -140,7 +140,7 @@ public class ASTFunc extends ASTFuncDef {
       if (out==null || out.length<1) out= new double[1];
       out[0] = env.popDbl();
     } else if (env.isAry()) {
-      fr = env.pop0Ary();
+      fr = env.popAry();
       if (fr.numCols() > 1 && fr.numRows() != 1) throw H2O.unimpl("Number of rows returned is > 1");
 //      if (fr.numRows() > 1<<8) throw H2O.unimpl("Too many rows!");
       if (fr.numCols() > 1) {

@@ -3,8 +3,8 @@ package water.api;
 import water.H2O;
 import water.H2OError;
 import water.NanoHTTPD;
-import water.exceptions.H2ONotFoundException;
-import water.exceptions.H2ORuntimeException;
+import water.exceptions.H2ONotFoundArgumentException;
+import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
@@ -510,7 +510,7 @@ public class RequestServer extends NanoHTTPD {
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
     }
-    catch (H2ORuntimeException e) {
+    catch (H2OAbstractRuntimeException e) {
       H2OError error = e.toH2OError(uri);
 
       Log.warn(error._dev_msg);
@@ -604,8 +604,8 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      throw new H2ONotFoundException("Resource " + uri + " not found",
-                                     "Resource " + uri + " not found");
+      throw new H2ONotFoundArgumentException("Resource " + uri + " not found",
+                                             "Resource " + uri + " not found");
 
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
