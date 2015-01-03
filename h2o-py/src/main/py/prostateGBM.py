@@ -17,9 +17,7 @@ print train.describe()
 
 # For VOL, a zero really means "missing"
 vol = df['VOL']
-# (= ([ %vec (== %vec #0) "null") #NaN
-#vol[vol==0] = None
-#print vol.show()
+vol[vol==0] = None
 print train.describe()
 
 gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,shrinkage=0.1)

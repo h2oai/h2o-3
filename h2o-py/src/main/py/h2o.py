@@ -13,7 +13,7 @@ class H2OFrame(object):
       if not H2OCONN: raise ValueError("No open h2o connection")
       rawkey = H2OCONN.ImportFile(remote_fname)
       setup  = H2OCONN.ParseSetup(rawkey)
-      parse  = H2OCONN.Parse(setup,py_tmp_key())
+      parse  = H2OCONN.Parse(setup,_py_tmp_key())
       cols   = parse['columnNames']
       rows   = parse['rows']
       veckeys= parse['vecKeys']
@@ -50,12 +50,12 @@ class H2OFrame(object):
     print "Rows:",len(self._vecs[0]),"Cols:",len(self)
     headers = [vec._name for vec in self._vecs]
     table = [ 
-      row('missing',self._vecs,None),
-      row('mean'   ,self._vecs,None),
-      row('sigma'  ,self._vecs,None),
-      row('zeros'  ,self._vecs,None),
-      row('mins'   ,self._vecs,0),
-      row('maxs'   ,self._vecs,0)
+      _row('missing',self._vecs,None),
+      _row('mean'   ,self._vecs,None),
+      _row('sigma'  ,self._vecs,None),
+      _row('zeros'  ,self._vecs,None),
+      _row('mins'   ,self._vecs,0),
+      _row('maxs'   ,self._vecs,0)
     ]
     print tabulate(table,headers)
 
@@ -108,6 +108,13 @@ class H2OFrame(object):
 
   def __radd__(self,i): return self+i  # Add is associative
 
+def _row(field,vecs,idx):
+  l = [field]
+  for vec in vecs:
+    tmp = vec.summary()[field]
+    l.append(tmp[idx] if idx is not None else tmp)
+  return l
+
 
 ##############################################################################
 # A single column of uniform data, possibly lazily computed
@@ -119,7 +126,6 @@ class Vec(object):
     self._name = name  # String
     self._expr = expr  # Always an expr
     expr._name = name  # Pass name along to expr
-    self._summary = None
 
   # Append a value during CSV read, convert to float
   def append(self,data):
@@ -134,9 +140,7 @@ class Vec(object):
   # Comment out to help in debugging
   #def __str__(self): return self.show()
   # Compute rollup data
-  def summary(self):
-    if not self._summary: self._summary = self._expr.summary()
-    return self._summary
+  def summary(self):  return self._expr.summary()
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i):
@@ -220,6 +224,7 @@ class Expr(object):
     else:
       self._len = length if length else len(self._left)
     assert self._len is not None
+    self._summary = None        # Computed lazily
 
   def isLocal   (self): return isinstance(self._data,(list,int,float))
   def isRemote  (self): return isinstance(self._data,unicode)
@@ -253,9 +258,10 @@ class Expr(object):
     self.eager()
     if self.isLocal():
       raise NotImplementedError
+    if self._summary: return self._summary
     j = H2OCONN.Frame(self._data)
-    summary = j['frames'][0]['columns'][0]
-    return summary
+    self._summary = j['frames'][0]['columns'][0]
+    return self._summary
 
   # Basic indexed or sliced lookup
   def __getitem__(self,i): 
@@ -310,14 +316,20 @@ class Expr(object):
   def _doit(self):
     if self.isComputed(): return
 
+    # Slice assignments are a 2-nested deep structure, returning the left-left
+    # vector.  Must fetch it now, before it goes dead after eval'ing the slice.
+    # Shape: (= ([ %vec bool_slice_expr) vals_to_assign)
+    # Need to fetch %vec out
+    assign_vec = self._left._left if self._op=="=" and self._left._op=="[" else None
+
     global _CMD
     # See if this is not a temp and not a scalar; if so it needs a name
     cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
     # Magical count-of-4 is the depth of 4 interpreter stack
-    py_tmp = cnt!=4 and self._len > 1
+    py_tmp = cnt!=4 and self._len > 1 and not assign_vec
 
     if py_tmp:
-      self._data = py_tmp_key() # Top-level key/name assignment
+      self._data = _py_tmp_key() # Top-level key/name assignment
       _CMD += "(= !"+self._data+" "
     _CMD += "("+self._op+" "
 
@@ -368,11 +380,20 @@ class Expr(object):
         if rite is None: _CMD += "#NaN"
     else:
       raise NotImplementedError
+    # End of expression... wrap up parens
     _CMD += ")"
     if py_tmp:
       _CMD += ")"
+    # Free children expressions; might flag some subexpresions as dead
     self._left = None # Trigger GC/ref-cnt of temps
     self._rite = None
+    # Keep LHS alive
+    if assign_vec:
+      if assign_vec._op!="rawdata": # Need to roll-up nested exprs
+        raise NotImplementedError
+      self._left = assign_vec
+      self._data = assign_vec._data
+
     return
 
 # Global list of pending expressions and deletes to ship to the cluster
@@ -395,7 +416,7 @@ class H2OConnection(object):
     for n in cld['nodes']:
       ncpus += n['num_cpus']
       mmax  += n['max_mem']
-    print "Connected to cloud '"+cld['cloud_name']+"' size",cld['cloud_size'],"ncpus",ncpus,"maxmem",get_human_readable_size(mmax)
+    print "Connected to cloud '"+cld['cloud_name']+"' size",cld['cloud_size'],"ncpus",ncpus,"maxmem",_get_human_readable_size(mmax)
     global H2OCONN
     H2OCONN = self              # Default connection is last openned
 
@@ -406,7 +427,7 @@ class H2OConnection(object):
   # reached, is of a certain size, and is taking basic status commands
   def connect(self,size=1):
     while True:
-      cld = self.doSafeGet(self.buildURL("Cloud",{}))
+      cld = self._doSafeGet(self.buildURL("Cloud",{}))
       if not cld['cloud_healthy']:
         raise ValueError("Cluster reports unhealthy status",cld)
       if cld['cloud_size'] >= size and cld['consensus']: return cld
@@ -416,7 +437,7 @@ class H2OConnection(object):
   # Import a single file; very basic error checking
   # Returns h2o Key
   def ImportFile(self,path):
-    j = self.doSafeGet(self.buildURL("ImportFiles",{'path':path}))
+    j = self._doSafeGet(self.buildURL("ImportFiles",{'path':path}))
     if j['fails']:  raise ValueError("ImportFiles of "+path+" failed on "+j['fails'])
     return j['keys'][0]
 
@@ -424,7 +445,7 @@ class H2OConnection(object):
   def ParseSetup(self,rawkey):
     # Unable to use 'requests.params=' syntax because it flattens array
     # parameters, but ParseSetup really expects a real array of Keys.
-    j = self.doSafeGet(self.buildURL("ParseSetup",{'srcs':[rawkey]}))
+    j = self._doSafeGet(self.buildURL("ParseSetup",{'srcs':[rawkey]}))
     if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
@@ -439,25 +460,25 @@ class H2OConnection(object):
     p['srcs'] = [src['name'] for src in setup['srcs']]
     # Request blocking parse
     # TODO: POST vs GET
-    j = self.doSafeGet(self.buildURL("Parse",p))
+    j = self._doSafeGet(self.buildURL("Parse",p))
     if j['job']['status'] != 'DONE': raise ValueError("Parse status expected to be DONE, instead is "+j['job']['status'])
     if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
     return j
 
   # Remove a Key (probably just a Vec)
   def Remove(self,key):
-    return self.doSafeGet(self.buildURL("Remove",{"key":key}))
+    return self._doSafeGet(self.buildURL("Remove",{"key":key}))
 
   # Fire off a Rapids expression
   def Rapids(self,expr):
-    return self.doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
+    return self._doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
 
   def Frame(self,key):
-    return self.doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
+    return self._doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
 
   def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,dataset):
     p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':dataset}
-    j = H2OCONN.doSafeGet(self.buildURL("GBM",p))
+    j = self._doSafeGet(self.buildURL("GBM",p))
     print j
     if 'validation_error_count' in j: raise ValueError("GBM argument error:"+str(j['validation_messages']))
     if j['job']['status'] != 'DONE': raise ValueError("GBM status expected to be DONE, instead is "+j['job']['status'])
@@ -466,7 +487,7 @@ class H2OConnection(object):
 
 
   # "Safe" REST calls.  Check for errors in a common way
-  def doSafeGet(self,url):
+  def _doSafeGet(self,url):
     r = requests.get(url)
     # Missing a non-json response check, e.g. 404 check here
     j = r.json()
@@ -516,19 +537,26 @@ class H2OGBM(object):
 
     self.distribution = distribution
 
-    fr = py_tmp_key()
+    # Send over the frame
+    fr = _py_tmp_key()
     cbind = "(= !"+fr+" (cbind "
     for vec in dataset._vecs:
       cbind += "%" + vec._expr.eager() + " "
     cbind += "))"
     H2OCONN.Rapids(cbind)
+    # And frame columns
+    colnames = "(colnames= %"+fr+" {(: #0 #"+str(len(dataset._vecs)-1)+")} {"
+    for vec in dataset._vecs:
+      colnames += vec._name+";"
+    colnames = colnames[:-1]+"})"
+    H2OCONN.Rapids(colnames)
+    # Start job
     j = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr)
     H2OCONN.Remove(fr)
-    print j
     
 
 # Simple stackoverflow pretty-printer for big numbers
-def get_human_readable_size(num):
+def _get_human_readable_size(num):
   exp_str = [ (0, 'B'), (10, 'KB'),(20, 'MB'),(30, 'GB'),(40, 'TB'), (50, 'PB'),]               
   i = 0
   while i+1 < len(exp_str) and num >= (2 ** exp_str[i+1][0]):
@@ -537,11 +565,8 @@ def get_human_readable_size(num):
   return '%s %s' % (rounded_val, exp_str[i][1])
 
 # Return a unique h2o key obvious from python
-def py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
+def _py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
 
-def row(field,vecs,idx):
-  l = [field]
-  for vec in vecs:
-    tmp = vec.summary()[field]
-    l.append(tmp[idx] if idx is not None else tmp)
-  return l
+# Dump out a progress bar
+def update_progress(progress):
+    print '\r[{0}] {1}%'.format('#'*(progress/10), progress)
