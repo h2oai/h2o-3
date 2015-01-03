@@ -50,12 +50,13 @@ class H2OFrame(object):
     print "Rows:",len(self._vecs[0]),"Cols:",len(self)
     headers = [vec._name for vec in self._vecs]
     table = [ 
-      _row('min'    ,self._vecs,0),
+      _row('type'   ,self._vecs,None),
+      _row('mins'   ,self._vecs,0),
       _row('mean'   ,self._vecs,None),
-      _row('max'    ,self._vecs,0)
+      _row('maxs'   ,self._vecs,0),
       _row('sigma'  ,self._vecs,None),
       _row('zeros'  ,self._vecs,None),
-      _row('missing',self._vecs,None),
+      _row('missing',self._vecs,None)
     ]
     print tabulate(table,headers)
 
@@ -76,6 +77,19 @@ class H2OFrame(object):
       return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
     raise NotImplementedError
 
+  # Set a column
+  def __setitem__(self,b,c):
+    if isinstance(b,str):
+      for i,v in enumerate(self._vecs):
+        if b==v._name: break
+      else: raise ValueError("Name "+i+" not in Frame")
+      if len(c) != len(v):
+        raise ValueError("Vec len()="+len(c)+" not compatible with Frame len()="+len(v))
+      c._name = b
+      self._vecs[i] = c
+      return self
+    raise NotImplementedError
+    
 
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
@@ -176,8 +190,6 @@ class Vec(object):
 
   def __radd__(self,i): return self+i  # Add is associative
 
-  def mean(self): return Expr("mean",self._expr,None,length=1)
-
   def __eq__(self,i):
     if isinstance(i,Vec):
       if len(i) != len(self):
@@ -189,6 +201,10 @@ class Vec(object):
 
   # Number of rows
   def __len__(self): return len(self._expr)
+
+  def mean(self): return Expr("mean",self._expr,None,length=1)
+
+  def asfactor(self): return Vec(self._name,Expr("as.factor",self._expr,None))
 
 ##############################################################################
 #
@@ -371,13 +387,16 @@ class Expr(object):
     elif self._op == "[":
       if left.isLocal(): self._data = left._data[rite._data]
       else: _CMD +=  ' "null"'       # Rapids column zero lookup
-    elif self._op == "mean":
-      if left.isLocal(): self._data = sum(left._data)/len(left._data)
-      else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     elif self._op == "=":
       if left.isLocal(): raise NotImplementedError
       else: 
         if rite is None: _CMD += "#NaN"
+    elif self._op == "mean":
+      if left.isLocal(): self._data = sum(left._data)/len(left._data)
+      else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
+    elif self._op == "as.factor":
+      if left.isLocal(): raise NotImplementedError
+      else: pass
     else:
       raise NotImplementedError
     # End of expression... wrap up parens

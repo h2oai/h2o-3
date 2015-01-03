@@ -16,8 +16,13 @@ train = df.drop("ID")
 print train.describe()
 
 # For VOL, a zero really means "missing"
-vol = df['VOL']
+vol = train['VOL']
 vol[vol==0] = None
+
+# Convert CAPSULE to a logical factor
+train['CAPSULE'] = train['CAPSULE'].asfactor()
+
+# See that the data is ready
 print train.describe()
 
 # Run GBM
