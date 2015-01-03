@@ -19,29 +19,18 @@
 #TODO: this must become hidden. visitor -> .visitor
 visitor<-
 function(node) {
-  res <- ""
-  if (.hasSlot(node, "root")) {
-    res %p0% '('
-    res %p0% node@root@op
-    children <- lapply(node@children, visitor)
-    for (child in children) res %p% visitor(child)
-    res %p0% ')'
-    list( ast = res)
-
-  } else if (is(node, "ASTSeries")) {
-    res %p% node@op
-    children <- unlist(lapply(node@children, visitor))
-    children <- paste0(children, collapse=";")
-    res %p0% children
-    res %p0% "}"
-    res
-  } else if (is(node, "ASTEmpty")) {
+  if (is.list(node))
+    unlist(lapply(node, visitor), use.names = FALSE)
+  else if (is(node, "ASTNode") || is(node, "ASTSpan"))
+    paste0("(", node@root@op, " ", paste0(visitor(node@children), collapse = " "), ")")
+  else if (is(node, "ASTSeries"))
+    paste0(" ", node@op, paste0(visitor(node@children), collapse = ";"), "}")
+  else if (is(node, "ASTEmpty"))
     node@key
-  } else if (is(node, "H2OFrame")) {
-    .get(node)
-  } else {
+  else if (is(node, "H2OFrame"))
+    visitor(.get(node))
+  else
     node
-  }
 }
 
 #'

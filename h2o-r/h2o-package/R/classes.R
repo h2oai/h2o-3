@@ -36,7 +36,7 @@ setClass("Node", contains="VIRTUAL")
 setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
 
 #' @rdname ASTNode-class
-setMethod("show", "ASTNode", function(object) cat(visitor(object)$ast, "\n") )
+setMethod("show", "ASTNode", function(object) cat(visitor(object), "\n") )
 
 #'
 #' The ASTApply class.
