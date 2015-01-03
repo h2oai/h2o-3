@@ -20,4 +20,7 @@ vol = df['VOL']
 vol[vol==0] = None
 print train.describe()
 
+# Run GBM
 gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,shrinkage=0.1)
+print gbm._model
+

@@ -1,4 +1,4 @@
-import csv, requests, sys, urllib, uuid, traceback
+import csv, requests, sys, urllib, uuid, traceback, time
 from tabulate import tabulate
 
 ###############################################################################
@@ -50,12 +50,12 @@ class H2OFrame(object):
     print "Rows:",len(self._vecs[0]),"Cols:",len(self)
     headers = [vec._name for vec in self._vecs]
     table = [ 
-      _row('missing',self._vecs,None),
+      _row('min'    ,self._vecs,0),
       _row('mean'   ,self._vecs,None),
+      _row('max'    ,self._vecs,0)
       _row('sigma'  ,self._vecs,None),
       _row('zeros'  ,self._vecs,None),
-      _row('mins'   ,self._vecs,0),
-      _row('maxs'   ,self._vecs,0)
+      _row('missing',self._vecs,None),
     ]
     print tabulate(table,headers)
 
@@ -478,13 +478,28 @@ class H2OConnection(object):
 
   def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,dataset):
     p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':dataset}
-    j = self._doSafeGet(self.buildURL("GBM",p))
-    print j
-    if 'validation_error_count' in j: raise ValueError("GBM argument error:"+str(j['validation_messages']))
-    if j['job']['status'] != 'DONE': raise ValueError("GBM status expected to be DONE, instead is "+j['job']['status'])
-    if j['job']['progress'] != 1.0: raise ValueError("GBM progress expected to be 1.0, instead is "+j['job']['progress'])
-    return j
+    j = self._doJob(self._doSafeGet(self.buildURL("GBM",p)))
+    j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
+    return j['models'][0]
 
+  def Job(self,jobkey):
+    return self._doSafeGet(self.buildURL("Jobs/"+jobkey,{}))
+
+  # Block until a job is done
+  def _doJob(self,j):
+    if 'validation_error_count' in j: raise ValueError("Argument errors:"+str(j['validation_messages']))
+    print                       # Blank line for progress bar
+    job = j['jobs'][0]
+    jobkey = job['key']['name']
+    sleep = 0.1
+    while job['status']=="RUNNING":
+      _update_progress(job['progress'])
+      time.sleep(sleep)
+      if sleep < 1.0: sleep += 0.1
+      j = self.Job(jobkey)
+      job = j['jobs'][0]
+    return job
+  
 
   # "Safe" REST calls.  Check for errors in a common way
   def _doSafeGet(self,url):
@@ -550,8 +565,8 @@ class H2OGBM(object):
       colnames += vec._name+";"
     colnames = colnames[:-1]+"})"
     H2OCONN.Rapids(colnames)
-    # Start job
-    j = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr)
+    # Do the big job
+    self._model = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr)
     H2OCONN.Remove(fr)
     
 
@@ -568,5 +583,5 @@ def _get_human_readable_size(num):
 def _py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
 
 # Dump out a progress bar
-def update_progress(progress):
-    print '\r[{0}] {1}%'.format('#'*(progress/10), progress)
+def _update_progress(progress):
+    print '\r[{0}] {1}%'.format('#'*int(progress*100), progress)
