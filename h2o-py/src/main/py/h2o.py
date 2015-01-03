@@ -517,6 +517,7 @@ class H2OConnection(object):
       if sleep < 1.0: sleep += 0.1
       j = self.Job(jobkey)
       job = j['jobs'][0]
+    _update_progress(job['progress'])
     return job
   
 
@@ -603,4 +604,4 @@ def _py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
 
 # Dump out a progress bar
 def _update_progress(progress):
-    print '\r[{0}] {1}%'.format('#'*int(progress*100), progress)
+  print '\r[{0}] {1}%'.format('#'*int(progress*100), progress*100)

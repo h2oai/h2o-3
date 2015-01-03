@@ -10,14 +10,16 @@ from h2o import H2OGBM
 cluster = H2OConnection()
 
 df = H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
+print df.describe()
 
 # Remove ID from training frame
 train = df.drop("ID")
-print train.describe()
 
-# For VOL, a zero really means "missing"
+# For VOL & GLEASON, a zero really means "missing"
 vol = train['VOL']
 vol[vol==0] = None
+gle = train['GLEASON']
+gle[gle==0] = None
 
 # Convert CAPSULE to a logical factor
 train['CAPSULE'] = train['CAPSULE'].asfactor()
