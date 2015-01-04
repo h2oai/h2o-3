@@ -332,6 +332,7 @@ Anna Chavez
 Anand Avati
 Joel Horwitz
 Jessica Lanford
+Yan Zou
 ```
 
 Advisors
