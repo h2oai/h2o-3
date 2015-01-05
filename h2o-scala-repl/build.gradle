@@ -1,0 +1,17 @@
+//
+// H2O Scala Module
+//
+description = "H2O Scala REPL"
+
+dependencies {
+  compile project(":h2o-core")
+  compile project(":h2o-scala")
+  compile "org.scala-lang:scala-library:$scalaVersion"
+  compile "org.scala-lang:scala-compiler:$scalaVersion"
+
+  runtime "org.scala-lang:jline:$scalaVersion"
+  
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile "junit:junit:${junitVersion}"
+}
+

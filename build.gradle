@@ -54,7 +54,8 @@ ext {
     ]
 
     scalaProjects = [
-      project(':h2o-scala')
+      project(':h2o-scala'),
+      project(':h2o-scala-repl')
     ]
 
     rProjects = [
