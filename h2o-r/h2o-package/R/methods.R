@@ -487,6 +487,33 @@ setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
     x[,i]
 })
 
+subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
+  missingSubset <- missing(subset)
+  missingSelect <- missing(select)
+
+  if (!missingSubset) {
+    env  <- as.environment(x)
+    rows <- eval(substitute(subset), env, parent.frame())
+  }
+
+  if (!missingSelect) {
+    env  <- new.env()
+    cnms <- colnames(x)
+    for (j in seq_along(x))
+      assign(cnms[j], j, env)
+    cols <- eval(substitute(select), env, parent.frame())
+  }
+
+  if (missingSubset && missingSelect)
+    x
+  else if (missingSelect)
+    x[rows,]
+  else if (missingSubset)
+    x[,cols]
+  else
+    x[rows, cols]
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1118,11 +1145,17 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' head(prostate.matrix)
 NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable with H2OFrame/Frame
 
-
 #' @rdname as.matrix.h2o
 as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
-setMethod("as.factor", "H2OFrame",    function(x) .h2o.unop("as.factor", x))
+setMethod("as.environment", "H2OFrame", function(x) {
+  env <- new.env()
+  for (j in colnames(x))
+    assign(j, x[[j]], env)
+  env
+})
+
+setMethod("as.factor",    "H2OFrame", function(x) .h2o.unop("as.factor", x))
 setMethod("as.character", "H2OFrame", function(x) .h2o.unop("as.character", x))
 
 #-----------------------------------------------------------------------------------------------------------------------
