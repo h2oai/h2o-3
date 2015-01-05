@@ -107,7 +107,7 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.
     if (ret == "FALSE") ret <- FALSE
   } else if (res$result == "") {
     ret <- .h2o.parsedData(h2o, res$key$name, res$num_rows, res$num_cols, res$col_names)
-    ret@key <- h2o.ID
+    ret@key <- if(is.null(h2o.ID)) NA_character_ else h2o.ID
   } else {
     ret <- res$scalar
     if (ret == "NaN") ret <- NA
