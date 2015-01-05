@@ -102,6 +102,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Scope.enter();          // Cleanup temp keys
         _parms.read_lock_frames(SharedTree.this); // Fetch & read-lock input frames
         init(true);             // Do any expensive tests & conversions now
+        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
 
         // New Model?  Or continuing from a checkpoint?
         if( _parms._checkpoint && DKV.get(_parms._destination_key) != null ) {
@@ -385,7 +386,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Compute variable importance for this tree if asked; must be done on each tree however
-    if( _parms._importance && _model._output._ntrees > 0 ) { // compute this tree votes but skip the first scoring call which is done over empty forest
+    if( _parms._variable_importance && _model._output._ntrees > 0 ) { // compute this tree votes but skip the first scoring call which is done over empty forest
       if( !updated ) _model.update(_key);  updated = true;
       Timer vi_timer = new Timer();
       _model._output._varimp = doVarImpCalc(false);
