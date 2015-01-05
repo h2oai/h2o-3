@@ -1124,7 +1124,7 @@ class ASTSlice extends AST {
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
     Frame ary = env.popAry();
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.
     if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
@@ -1137,6 +1137,12 @@ class ASTSlice extends AST {
       cols[i] = vec.at8(i);
     }
     return cols;
+  }
+
+  private static String AtoS(String[] s) {
+    StringBuilder sb = new StringBuilder();
+    for (String ss : s) sb.append(ss).append(',');
+    return sb.toString();
   }
 
   @Override public String toString() { return "[,]"; }
