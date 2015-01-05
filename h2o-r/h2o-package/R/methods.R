@@ -444,7 +444,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (!missingJ) {
     if (is.character(j)) {
       j <- match(j, colnames(x))
-      if (anyNA(j))
+      if (any(is.na(j)))
         stop("undefined column names specified")
     }
     cols <- .eval(substitute(j), parent.frame())
