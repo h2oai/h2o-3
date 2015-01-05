@@ -34,67 +34,82 @@
 #' More precicely, the group divisions follow the S4 divisions: Ops, Math, Math2, Summary.
 #'
 #' See also groupGeneric.
-#'
-#'
-#'
-#' Ops Generics:
-#'
-#' ‘"+"’, ‘"-"’, ‘"*"’, ‘"^"’, ‘"%%"’, ‘"%/%"’, ‘"/"’
-#' ‘"=="’, ‘">"’, ‘"<"’, ‘"!="’, ‘"<="’, ‘">="’
-#' ‘"&"’, ‘"|"’
-#'
-#' Bonus Operators: ‘"**"’
-#' @name OpsIntro
+
+#' @name OpsIntro-descrip
 NULL
 
-#' @describeIn H2OFrame
+# Ops Generic
+
+#' @describeIn H2OFrame For \code{'missing','H2OFrame'}
+#'
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,0,e2))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'H2OFrame','missing'}
+#'
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binop(.Generic,e1,0))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'H2OFrame','H2OFrame'}
+#' 
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'numeric','H2OFrame'}
+#' 
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'H2OFrame','numeric'}
+#' 
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'H2OFrame','character'}
+#' 
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .h2o.binop(.Generic,e1,e2))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame For \code{'character','H2OFrame'}
+#' 
+#' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
+#' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
+#' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o.binop(.Generic,e1,e2))
 
-#'
-#' Math Generics:
-#'
-#' ‘"abs"’,   ‘"sign"’,   ‘"sqrt"’,   ‘"ceiling"’, ‘"floor"’,
-#' ‘"trunc"’, ‘"cummax"’, ‘"cummin"’, ‘"cumprod"’, ‘"cumsum"’,
-#' ‘"log"’,   ‘"log10"’,  ‘"log2"’,   ‘"log1p"’,   ‘"acos"’, ‘"acosh"’,
-#' ‘"asin"’,  ‘"asinh"’,  ‘"atan"’,   ‘"atanh"’,   ‘"exp"’,  ‘"expm1"’,
-#' ‘"cos"’,   ‘"cosh"’,   ‘"cospi"’,  ‘"sin"’,     ‘"sinh"’, ‘"sinpi"’,
-#' ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
-#' ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’
-#' @name MathGenerics
-NULL
-
-#' @describeIn H2OFrame
+# Math Generics
+#
+#' @describeIn H2OFrame Generics
+#' 
+#'             \code{"abs"}, \code{"sign"}, \code{"sqrt"}, \code{"ceiling"}, \code{"floor"},
+#'             \code{"trunc"}, \code{"cummax"}, \code{"cummin"}, \code{"cumprod"}, \code{"cumsum"}, 
+#'             \code{"log"}, \code{"log10"}, \code{"log2"}, \code{"log1p"}, \code{"acos"}, \code{"acosh"}, 
+#'             \code{"asin"}, \code{"asinh"}, \code{"atan"}, \code{"atanh"}, \code{"exp"}, \code{"expm1"}, 
+#'             \code{"cos"}, \code{"cosh"}, \code{"cospi"}, \code{"sin"}, \code{"sinh"}, \code{"sinpi"}, 
+#'             \code{"tan"}, \code{"tanh"}, \code{"tanpi"}, 
+#'             \code{"gamma"}, \code{"lgamma"}, \code{"digamma"}, \code{"trigamma"}
+#' @include classes.R
 setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unop(.Generic,x) })
 
-#'
-#' Math2 Generics:
-#'
-#' ‘"round"’, ‘"signif"’
-#' @name MathGenerics2
-NULL
-#' @describeIn H2OFrame
+# Math2 Generics
+#
+#' @describeIn H2OFrame Generics
+#' 
+#'             \code{"round"}, \code{"signif"}
 setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.varop(.Generic,x,digits))
 
-#'
-#' Summary Generics:
-#'
-#' ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
-#' @name SummaryGenerics
 
-NULL
-#' @describeIn H2OFrame
+# Summary Generics:
+
+#' @describeIn H2OFrame Generics
+#' 
+#'             \code{"max"}, \code{"min"}, \code{"range"}, \code{"prod"}, \code{"sum"}, \code{"any"}, \code{"all"}
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
   ast <- .h2o.varop(.Generic, x, ..., na.rm)
   .force.eval(ast@ast)
@@ -106,18 +121,18 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 #' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
 #'
 #' ‘"!"’, ‘"is.na"’, ‘"t"’, ‘"trunc"’
-#' @name MethodsMisc
+#' @name MethodsMisc-descrip
 NULL
 
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame Generic \code{"!"}
 setMethod("!",     "H2OFrame", function(x) .h2o.unop("!", x))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame Generic \code{"is.na"}
 setMethod("is.na", "H2OFrame", function(x) .h2o.unop("is.na", x) )
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame Generic \code{"t"}
 setMethod("t",     "H2OFrame", function(x) .h2o.unop("t", x) )
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame Generic \code{"log"}
 setMethod("log",   "H2OFrame", function(x, ...) .h2o.varop("log", x, ...))
-#' @describeIn H2OFrame
+#' @describeIn H2OFrame Generic \code{"trunc"}
 setMethod("trunc", "H2OFrame", function(x, ...) .h2o.varop("trunc", x, ...))
 
 ## WORK IN PROGRESS: Get these to work? (if possible...)
