@@ -522,7 +522,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j)))
     stop("Row/column types not supported!")
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
-    stop("value can only be numeric, character, or an H2OFrame object")
+    stop("`value` can only be numeric, character, or an H2OFrame object")
   if(!missing(i) && is.numeric(i)) {
     if(any(i == 0L)) stop("Array index out of bounds")
   }
@@ -546,19 +546,19 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   op <- new("ASTApply", op='=')
   ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
   o <- new("H2OFrame", ast = ast, key = x@key, h2o = .retrieveH2O())
-  .force.eval(o@ast,new.assign=F)
+  .force.eval(o@ast, new.assign = FALSE)
   o
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   m.call <- match.call()
   if(missing(name) || !is.character(name) || !nzchar(name))
-    stop("name must be a non-empty string")
+    stop("`name` must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
-    stop("value can only be numeric or an H2OFrame object")
+    stop("`value` can only be numeric or an H2OFrame object")
 
   col_names <- colnames(x);
-  if (!(name %in% col_names)) idx <- length(col_names) + 1          # new column
+  if (!(name %in% col_names)) idx <- length(col_names) + 1L         # new column
   else idx <- match(name, col_names)                                # re-assign existing column
   lhs <- x[,idx]                                                    # create the lhs ast
 
@@ -573,7 +573,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
 
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
-  `$<-`(x = x, name = i, value = value)
+  do.call(`$<-`, list(x = x, name = i, value = value))
 })
 
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
