@@ -1962,10 +1962,8 @@ class ASTSetColNames extends ASTUniPrefixOp {
       _idxs = new long[]{(long)((ASTNum) a).dbl()};
     } else throw new IllegalArgumentException("Bad AST: Expected a span, series, or number for the column indices.");
 
-    // col names may ONLY be ASTSeries
-    _names = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').replaceAll("\"","").split(";") : null;
-    if (_names == null) throw new IllegalArgumentException("Bad AST: Expected names to not be null.");
-
+    // col names must either be an ASTSeries or a single string
+    _names = E.skipWS().peek() == '{' ? E.xpeek('{').parseString('}').replaceAll("\"","").split(";") : new String[]{E.parseString(E.peekPlus())};
     if (_names.length != _idxs.length)
       throw new IllegalArgumentException("Mismatch! Number of columns to change ("+(_idxs.length)+") does not match number of names given ("+(_names.length)+").");
 
