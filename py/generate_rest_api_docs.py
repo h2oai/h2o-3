@@ -56,6 +56,7 @@ for num in range(len(endpoints)):
     markdown = string.replace(markdown, '\\n', '\n')
     
     save_name = url_pattern
+    save_name = string.replace(save_name, '^(/\\d+)?', '/N')
     save_name = string.replace(save_name, '^(/v?\\d+)?', '/N')
     save_name = string.replace(save_name, '(?<', '{')
     save_name = string.replace(save_name, '>.*)', '}')
