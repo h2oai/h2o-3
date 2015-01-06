@@ -1033,18 +1033,19 @@ class ASTSlice extends AST {
         if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
-//      env.cleanup(ary);
     } else {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
-      Frame ary= env.peekAry(); // Get without popping
+      Frame ary = env.peekAry(); // Get without popping
+      if (rows_type == Env.ARY) env.addRef(((ValFrame)rows)._fr);
       Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
       if (colSelect instanceof Frame && cols_type != Env.ARY) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
       if (rowSelect instanceof Frame && rows_type != Env.ARY) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
+      if (rows_type == Env.ARY) env.subRef(((ValFrame)rows)._fr);
       env.poppush(1, new ValFrame(fr2));
     }
   }
