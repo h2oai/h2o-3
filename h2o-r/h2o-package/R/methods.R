@@ -587,7 +587,7 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     if(!all(nzchar(value))) stop("Column names must be of non-zero length")
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
-    idxs <- 0L:(length(x) - 1L)
+    idxs <- 0L:(ncol(x) - 1L)
     ast <- .h2o.varop("colnames=", x, idxs, value, useKey=x@key)
     .force.eval(ast@ast,new.assign=FALSE)
     x
