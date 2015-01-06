@@ -85,45 +85,23 @@
 .is.udf<-
 function(fun) {
   if (.is.op(fun)) return(FALSE)
-  e <- tryCatch( environment(eval(fun)), error = function(x) FALSE) # get the environment of `fun`
-  if (is.logical(e)) return(FALSE)                                  # if e is logical -> no environment found
+  e <- tryCatch( environment(eval(fun)), error = function(x) FALSE)  # get the environment of `fun`
+  if (is.logical(e)) return(FALSE)                                   # if e is logical -> no environment found
   tryCatch(.is.closure(e), error = function(x) FALSE)                # environment found, but then has no parent.env
 }
 
-.is.op<-
-function(o) {
-  .is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)
+.is.in<-
+function(o, map) {
+  o <- deparse(o)
+  o %in% names(map)
 }
 
-.is.unop<-
-function(o) {
-  o <- deparse(o)
-  o %in% names(.unop.map)
-}
-
-.is.binop<-
-function(o) {
-  o <- deparse(o)
-  o %in% names(.binop.map)
-}
-
-.is.varop<-
-function(o) {
-  o <- deparse(o)
-  o %in% names(.varop.map)
-}
-
-.is.prefix<-
-function(o) {
-  o <- deparse(o)
-  o %in% names(.prefix.map)
-}
-
-.is.slice<-
-function(o) {
-  o <- deparse(o)
-  o %in% c("[", "$")
-}
+.is.unop   <- function(o) .is.in(o, .unop.map)
+.is.binop  <- function(o) .is.in(o, .binop.map)
+.is.varop  <- function(o) .is.in(o, .varop.map)
+.is.prefix <- function(o) .is.in(o, .prefix.map)
+.is.slice  <- function(o) .is.in(o, .slice.map)
+.is.op     <- function(o) .is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)
 
 #'
 #' Statement Processor

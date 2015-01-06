@@ -437,10 +437,9 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     }
   }
 
-  # TODO: Fix server to support a single ASTNode for row and column subsetting
   ast <- .get(x)
   op  <- new("ASTApply", op = "[")
-
+  rows <- cols <- "\"null\""
   if (!missingJ) {
     if (is.character(j)) {
       j <- match(j, colnames(x))
@@ -448,7 +447,6 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
         stop("undefined column names specified")
     }
     cols <- .eval(substitute(j), parent.frame())
-    ast <- new("ASTNode", root = op, children = list(ast, "\"null\"", cols))
   }
 
   if (!missingI) {
@@ -458,9 +456,8 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
       rows <- i
     else
       rows <- .eval(substitute(i), parent.frame())
-    ast <- new("ASTNode", root = op, children = list(ast, rows, "\"null\""))
   }
-
+  ast <- new("ASTNode", root = op, children = list(ast, rows, cols))
   new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 

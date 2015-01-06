@@ -359,7 +359,7 @@ public class Env extends Iced {
   @Override public String toString() {
     int sp = sp();
     String s="{";
-    for( int i=0; i<sp; i++ ) s += toString(i)+",";
+    for( int i=-sp+1; i <= 0; i++ ) s += toString(i)+",";
     return s+"}";
   }
 

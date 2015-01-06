@@ -87,6 +87,8 @@
                '$' = '[',
                '[' = '[')
 
+.slice.map <- c('$' = '$', '[' = '[')
+
 #'
 #' A list of prefix operations. 1:1 map for now, may add more to the map as needed.
 #'
