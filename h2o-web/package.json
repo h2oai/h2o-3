@@ -1,24 +1,15 @@
 {
-  "name": "Steam",
+  "name": "h2o-web",
   "version": "0.0.0",
   "description": "H2O Web Client",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
-  "scripts": {
-    "build": "gulp",
-    "clean": "gulp clean",
-    "watch": "gulp watch",
-    "launch": "java -Dwebdev=1 -Xmx4g -jar ../h2o-app/build/libs/h2o-app.jar",
-    "unit-test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -u | faucet",
-    "test-raw": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s",
-    "test": "gulp build-test-script && node src/main/resources/www/steam/js/steam-tests.js -s --usecloud=127.0.0.1:54321",
-    "coverage": "mkdir -p src/main/resources/www/steam/coverage && gulp build-test-script && istanbul cover --dir src/main/resources/www/steam/coverage -x \"**/lib/**\" src/main/resources/www/steam/js/steam-tests.js && istanbul report --dir src/main/resources/www/steam/coverage cobertura"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xdata/h2o"
+    "url": "https://github.com/h2oai/h2o-dev"
   },
   "keywords": [
     "H2O",
@@ -27,42 +18,11 @@
   "author": "Prithvi Prabhu <prithvi@0xdata.com>",
   "license": "Apache License Version 2.0",
   "bugs": {
-    "url": "https://github.com/0xdata/h2o/issues"
+    "url": "https://github.com/h2oai/h2o-dev/issues"
   },
-  "homepage": "https://github.com/0xdata/h2o",
+  "homepage": "https://github.com/h2oai/h2o-dev",
   "devDependencies": {
-    "gulp": "~3.8.2",
-    "bower": "~1.3.8",
-    "coffee-script": "~1.7.1",
-    "istanbul": "~0.2.7",
-    "uglify-js": "~2.4.13",
-    "jade": "~1.3.1",
-    "stylus": "~0.43.0",
-    "coffeelint": "~1.1.0",
-    "nib": "~1.0.2",
-    "groc": "~0.6.3",
-    "lodash": "~2.4.1",
-    "watchy": "~0.4.3",
-    "request": "~2.34.0",
-    "tape": "~2.12.3",
-    "browserify": "~3.44.2",
-    "faucet": "0.0.1",
-    "jshint": "~2.5.0",
-    "gulp-clean": "~0.3.1",
-    "gulp-concat": "~2.2.0",
-    "gulp-task-listing": "~0.3.0",
-    "gulp-util": "~2.2.18",
-    "gulp-header": "~1.0.2",
-    "gulp-footer": "~1.0.4",
-    "gulp-coffee": "~2.0.1",
-    "gulp-jade": "~0.6.0",
-    "gulp-stylus": "~1.0.2",
-    "gulp-order": "~1.1.1",
-    "gulp-if": "~1.2.1",
-    "gulp-ignore": "~1.1.0",
-    "through2": "~0.6.1",
-    "minimist": "~1.1.0",
-    "async": "~0.9.0"
+    "bower": "~1.3.8"
   },
   "dependencies": {}
 }
