@@ -194,7 +194,7 @@ function(stmnt) {
       args <- lapply(stmnt_list[-1L], .statement.to.ast.switchboard)
       arg1 <- args[1L]
       if (is(arg1[[1L]], "ASTEmpty")) arg1[[1L]] <- .get.value.from.arg(arg1[[1L]])
-      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- visitor(.get.value.from.arg(arg1[[1L]]))$ast
+      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- visitor(.get.value.from.arg(arg1[[1L]]))
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
@@ -256,21 +256,27 @@ function(stmnt) {
   stmnt_list <- as.list(stmnt)
   i <- stmnt_list[[3L]]  # rows
   if (length(stmnt_list) == 3L) {
-    if(missing(i)) return("")
-    if(length(i) > 1) stop("[[]] may only select one column")
+    if (missing(i)) return("")
+    if (length(i) > 1L) stop("`[[` can only select one column")
     if (!is.numeric(i)) stop("column selection within a function call must be numeric")
-    op <- new("ASTApply", op='[')
-    x <- paste0('%', deparse(stmnt_list[[2L]]))
-    rows <- deparse("null")
+    rows <- "\"null\""
     cols <- .eval(substitute(i), parent.frame())
-    return(new("ASTNode", root=op, children=list(x, rows, cols)))
+  } else {
+    j <- stmnt_list[[4L]]  # columns
+    if (missing(i))
+      rows <- "\"null\""
+    else if (is(i, "ASTNode"))
+      rows <- eval(i, parent.frame())
+    else
+      rows <- .eval(substitute(i), parent.frame())
+    if (missing(j))
+      cols <- "\"null\""
+    else
+      cols <- .eval(substitute(j), parent.frame())
   }
-  j <- stmnt_list[[4L]]  # columns
-  op <- new("ASTApply", op='[')
-  x <- paste0('%', deparse(stmnt_list[[2]]))
-  rows <- if( missing(i)) deparse("null") else { if (is(i, "ASTNode")) eval(i, parent.frame()) else .eval(substitute(i), parent.frame()) }
-  cols <- if( missing(j)) deparse("null") else .eval(substitute(j), parent.frame())
-  new("ASTNode", root=op, children=list(x, rows, cols))
+  op <- new("ASTApply", op = "[")
+  x <- paste0("%", deparse(stmnt_list[[2L]]))
+  new("ASTNode", root = op, children = list(x, rows, cols))
 }
 
 .process.if.stmnt<-
@@ -421,7 +427,7 @@ function(s) {
   } else if (is(s, "ASTIf")) {
     res %p0% '('
     res %p0% s@op
-    res %p% visitor(s@condition)$ast
+    res %p% visitor(s@condition)
     body <- .body.visitor(s@body)
     for (b in body) {res %p% b}
     res %p0% ')'
@@ -436,7 +442,7 @@ function(s) {
   } else if (is(s, "ASTFor")) {
     .NotYetImplemented()
   } else if (is(s, "ASTNode")) {
-    res %p% visitor(s)$ast
+    res %p% visitor(s)
     return(res)
   } else if (is.character(s)) {
     res %p% s
@@ -444,7 +450,7 @@ function(s) {
   } else if (is(s, "H2OFrame")) {
     tmp <- .get(s)
     if (is(tmp, "ASTNode")) {
-      res %p% visitor(s@ast)$ast
+      res %p% visitor(s@ast)
       return(res)
     } else {
       res %p% s

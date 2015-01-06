@@ -37,7 +37,8 @@
 #"
 .fill <- function(h2o, key) {
   res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
-  .h2o.parsedData(h2o, key, res$num_rows, res$num_cols, res$col_names)
+  cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
+  .h2o.parsedData(h2o, key, res$num_rows, res$num_cols, cnames)
 }
 
 #"

@@ -8,7 +8,7 @@ import water.api.ModelSchema;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters {
-    public int _k = 2;                     // Number of clusters
+    public int _k;                         // Number of clusters
     public int _max_iters = 1000;          // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
@@ -23,16 +23,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Names of features clustered upon
-    public String[] _names;
-
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
     // is used during the building process, the *builders* cluster centers are standardized).
     public double[/*k*/][/*features*/] _centers;
 
-    // Rows per cluster
-    public long[/*k*/] _rows;
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
 
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _withinmse;   // Within-cluster MSE, variance

@@ -87,7 +87,7 @@ public class Env extends Iced {
 
   public void push(Val o) {
     if (o instanceof ValFrame) {
-      push_helper(o, _isGlobal ? _global : _local);
+      pushHelper(o, _isGlobal ? _global : _local);
       addRef(o);
     }
     _stack.push(o);
@@ -96,7 +96,7 @@ public class Env extends Iced {
 
   public void pushAry(Frame fr) { push(new ValFrame(fr)); }
   // helper for push(Val o)
-  public void push_helper(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
+  public void pushHelper(Val o, SymbolTable t) { t._frames.put(Key.make().toString(), ((ValFrame)o)._fr); }
 
   public boolean isEmpty() { return _stack.isEmpty(); }
   public Val peek() { return _stack.peek(); }

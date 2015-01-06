@@ -31,7 +31,7 @@ test.head_empty <- function(conn) {
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
 
     # now we'll create an empty b.h2o in h2o
-    b.h2o <- a.h2o[a.h2o$C1==32]
+    b.h2o <- a.h2o[a.h2o$C1==32,]
     print(b.h2o)
 
     # note the row expression is legal for the non-empty data frame

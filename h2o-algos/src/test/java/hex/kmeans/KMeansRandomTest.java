@@ -54,12 +54,12 @@ public class KMeansRandomTest extends TestUtil {
                 Frame score = null;
                 try {
                   for (int j = 0; j < parms._k; j++)
-                    Assert.assertTrue(m._output._rows[j] != 0);
+                    Assert.assertTrue(m._output._size[j] != 0);
 
                   Assert.assertTrue(m._output._iters <= max_iter);
                   for (double d : m._output._withinmse) Assert.assertFalse(Double.isNaN(d));
                   Assert.assertFalse(Double.isNaN(m._output._avgwithinss));
-                  for (long o : m._output._rows) Assert.assertTrue(o > 0); //have at least one point per centroid
+                  for (long o : m._output._size) Assert.assertTrue(o > 0); //have at least one point per centroid
                   for (double[] dc : m._output._centers) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
 
                   // make prediction (cluster assignment)

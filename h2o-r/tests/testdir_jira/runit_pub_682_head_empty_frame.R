@@ -8,7 +8,7 @@ test.head_empty_frame <- function(conn) {
   a.h2o <- as.h2o(conn, a_initial, key="A.hex")
   
   # now we'll create an empty b.h2o in h2o 
-  b.h2o = a.h2o[a.h2o$V1==32]
+  b.h2o = a.h2o[a.h2o$V1==32,]
   
   head(b.h2o[,1]) 
   head(b.h2o[1,]) 

@@ -727,7 +727,6 @@ class ASTAssign extends AST {
             for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
         }.doAll(rr);
-//        e.cleanup(rr, (Frame) rows);
         e.push(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was a constant)");
@@ -770,7 +769,6 @@ class ASTAssign extends AST {
             }
           }
         }.doAll(lhs_ary);
-//        e.cleanup(rhs_ary);
         e.push(new ValFrame(lhs_ary));
         return;
 
@@ -807,8 +805,6 @@ class ASTAssign extends AST {
             }
           }
         }.doAll(rr);
-
-//        e.cleanup(pred, rr, (Frame) rows);
         e.push(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was Frame");
@@ -1046,8 +1042,8 @@ class ASTSlice extends AST {
       Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
-      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
-      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
+      if (colSelect instanceof Frame && cols_type != Env.ARY) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
+      if (rowSelect instanceof Frame && rows_type != Env.ARY) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
       env.poppush(1, new ValFrame(fr2));
     }
@@ -1127,8 +1123,8 @@ class ASTSlice extends AST {
     }
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
-    Frame ary = env.popAry();  // get it off the stack!!!!
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
+    Frame ary = env.popAry();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.
     if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
@@ -1141,6 +1137,12 @@ class ASTSlice extends AST {
       cols[i] = vec.at8(i);
     }
     return cols;
+  }
+
+  private static String AtoS(String[] s) {
+    StringBuilder sb = new StringBuilder();
+    for (String ss : s) sb.append(ss).append(',');
+    return sb.toString();
   }
 
   @Override public String toString() { return "[,]"; }

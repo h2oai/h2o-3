@@ -38,7 +38,7 @@ class KMeansObj(OutputObj):
         if 'python_elapsed' in kmeansResult:
             self.python_elapsed = kmeansResult['python_elapsed']
 
-        rows = self.rows # [78, 5, 41, 76]
+        size = self.size # [78, 5, 41, 76]
         model_category = self.model_category # Clustering
         iters = self.iters # 11.0
         domains = self.domains 
@@ -49,12 +49,12 @@ class KMeansObj(OutputObj):
         avgss = self.avgss
 
         if numRows:
-            assert numRows==sum(rows)
+            assert numRows==sum(size)
 
         if 'k' in parameters:
             k = parameters['k']
             assert len(centers) == k
-            assert len(rows) == k
+            assert len(size) == k
 
         if numCols:
             assert len(names) == numCols, \
@@ -83,18 +83,18 @@ class KMeansObj(OutputObj):
         # create a tuple for each cluster result, then sort by rows for easy comparison
         # maybe should sort by centers?
         # put a cluster index in there too, (leftmost) so we don't lose track
-        tuples = zip(range(len(centers)), centers, rows, withinmse)
+        tuples = zip(range(len(centers)), centers, size, withinmse)
         # can we sort on the sum of the centers?
         self.tuplesSorted = sorted(tuples, key=lambda tup: sum(tup[1]))
 
         print "iters:", iters
         # undo for printing what the caller will see
-        ids, centers, rows, withinmse = zip(*self.tuplesSorted)
+        ids, centers, size, withinmse = zip(*self.tuplesSorted)
         for i,c in enumerate(centers):
             print "cluster id %s (2 places):" % ids[i], h2o_util.twoDecimals(c)
-            print "rows_per_cluster[%s]: " % i, rows[i]
+            print "rows_per_cluster[%s]: " % i, size[i]
             print "withinmse[%s]: " % i, withinmse[i]
-            print "rows[%s]:" % i, rows[i]
+            print "size[%s]:" % i, size[i]
 
         print "KMeansObj created for:", "???"# vars(self)
 

@@ -22,7 +22,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
 
-    public boolean _importance = false; // compute variable importance
+    public boolean _variable_importance = false; // compute variable importance
 
     public long _seed;          // Seed for psuedo-random redistribution
 

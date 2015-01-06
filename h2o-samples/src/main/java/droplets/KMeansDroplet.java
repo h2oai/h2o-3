@@ -63,9 +63,9 @@ public class KMeansDroplet {
       task.doAll(frame);
 
       for( int c = 0; c < centers.length; c++ ) {
-        if( task._counts[c] > 0 ) {
+        if( task._size[c] > 0 ) {
           for( int v = 0; v < frame.vecs().length; v++ ) {
-            double value = task._sums[c][v] / task._counts[c];
+            double value = task._sums[c][v] / task._size[c];
             centers[c][v] = value;
           }
         }
@@ -93,13 +93,13 @@ public class KMeansDroplet {
   public static class KMeans extends MRTask<KMeans> {
     double[][] _centers; // IN:  Centroids/cluster centers
 
-    double[][] _sums;     // OUT: Sum of features in each cluster
-    int[] _counts;        // OUT: Count of rows in cluster
-    double _error;        // OUT: Total sqr distance
+    double[][] _sums;    // OUT: Sum of features in each cluster
+    int[]  _size;        // OUT: Row counts in each cluster
+    double _error;       // OUT: Total sqr distance
 
     @Override public void map(Chunk[] chunks) {
       _sums = new double[_centers.length][chunks.length];
-      _counts = new int[_centers.length];
+      _size = new int[_centers.length];
 
       // Find nearest cluster for each row
       for( int row = 0; row < chunks[0]._len; row++ ) {
@@ -121,16 +121,16 @@ public class KMeansDroplet {
         // Add values and increment counter for chosen cluster
         for( int column = 0; column < chunks.length; column++ )
           _sums[nearest][column] += chunks[column].at0(row);
-        _counts[nearest]++;
+        _size[nearest]++;
       }
       _centers = null;
     }
 
     @Override public void reduce(KMeans task) {
-      for( int cluster = 0; cluster < _counts.length; cluster++ ) {
+      for( int cluster = 0; cluster < _size.length; cluster++ ) {
         for( int column = 0; column < _sums[0].length; column++ )
           _sums[cluster][column] += task._sums[cluster][column];
-        _counts[cluster] += task._counts[cluster];
+        _size[cluster] += task._size[cluster];
       }
       _error += task._error;
     }

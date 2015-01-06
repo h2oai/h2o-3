@@ -6,15 +6,16 @@ import water.util.IcedHashMap;
 
 /**
  * RuntimeException which results in an http 400 error, and serves as a base class for other error types.
+ * NOTE: don't use this directly; use more specific types.
  */
-public class H2ORuntimeException extends RuntimeException {
+abstract public class H2OAbstractRuntimeException extends RuntimeException {
   protected int HTTP_RESPONSE_CODE() { return HttpResponseStatus.BAD_REQUEST.getCode(); }
 
   public long timestamp;
   public String dev_message;
   public IcedHashMap<String, Object> values;
 
-  public H2ORuntimeException(String message, String dev_message, IcedHashMap values) {
+  public H2OAbstractRuntimeException(String message, String dev_message, IcedHashMap values) {
     super(message);
 
     this.timestamp = System.currentTimeMillis();
@@ -22,7 +23,7 @@ public class H2ORuntimeException extends RuntimeException {
     this.values = values;
   }
 
-  public H2ORuntimeException(String msg, String dev_msg) {
+  public H2OAbstractRuntimeException(String msg, String dev_msg) {
     this(msg, dev_msg, new IcedHashMap());
   }
 

@@ -174,10 +174,10 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  ID <- as.list(match.call())$data
+  ID <- deparse(substitute(data), width.cutoff = 500L)
   ast <- .h2o.varop("rename", data, key)
-  .force.eval(ast@ast, as.character(ID), parent.frame(), NULL)
-  o <- get(as.character(ID), parent.frame())
+  .force.eval(ast@ast, ID, parent.frame(), NULL)
+  o <- get(ID, parent.frame())
   o@key <- key
   o
 }
@@ -423,49 +423,94 @@ h2o.anyFactor <- function(x) {
 
 # i are the rows, j are the columns
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
-  if (missing(i) && missing(j)) return(x)
-  if (!missing(i) && is(i, "H2OFrame")) i <- eval(i@ast)
-  if (!missing(j) && is.character(j)) {
-    col_names <- colnames(x);
-    if (! any(j %in% col_names)) stop("Undefined column names specified")
-    j <- match(j, col_names)
+  missingI <- missing(i)
+  missingJ <- missing(j)
+
+  if (missingJ) {
+    if (missingI)
+      return(x)
+
+    if ((nargs() - !missing(drop)) < 3L) {
+      j <- i
+      missingI <- TRUE
+      missingJ <- FALSE
+    }
   }
 
-  if (is(x, "H2OFrame")) x <- .get(x)
-  op <- new("ASTApply", op='[')
-  if(missing(i))
-    rows <- "\"null\""
-  else if (is(i, "H2OFrame"))
-    rows <- .get(i)
-  else if (is(i, "ASTNode"))
-    rows <- i
-  else
-    rows <- .eval(substitute(i), parent.frame())
-  cols <- if(missing(j)) "\"null\"" else .eval(substitute(j), parent.frame())
-  ast <- new("ASTNode", root=op, children=list(x, rows, cols))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  # TODO: Fix server to support a single ASTNode for row and column subsetting
+  ast <- .get(x)
+  op  <- new("ASTApply", op = "[")
+
+  if (!missingJ) {
+    if (is.character(j)) {
+      j <- match(j, colnames(x))
+      if (any(is.na(j)))
+        stop("undefined column names specified")
+    }
+    cols <- .eval(substitute(j), parent.frame())
+    ast <- new("ASTNode", root = op, children = list(ast, "\"null\"", cols))
+  }
+
+  if (!missingI) {
+    if (is(i, "H2OFrame"))
+      rows <- .get(i)
+    else if (is(i, "ASTNode"))
+      rows <- i
+    else
+      rows <- .eval(substitute(i), parent.frame())
+    ast <- new("ASTNode", root = op, children = list(ast, rows, "\"null\""))
+  }
+
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 
 setMethod("$", "H2OFrame", function(x, name) {
-  col_names <- colnames(x)
-  if (!(name %in% col_names))
-    NULL
-  else {
-    idx <- match(name, col_names)
-    do.call("[", list(x=x, j=idx))
-  }
+  x[[name, exact = FALSE]]
 })
 
 setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
-  if(missing(i)) return(x)
-  if(length(i) > 1) stop("[[]] may only select one column")
-  if(!(i %in% colnames(x)))
-    NULL
-  else {
-    col_names <- colnames(x)
-    do.call("[", list(x = x, j = match(i, col_names)))
+  if(missing(i))
+    return(x)
+  if(length(i) > 1L)
+    stop("`[[` can only select one column")
+  if (is.character(i)) {
+    if (exact)
+      i <- match(i, colnames(x))
+    else
+      i <- pmatch(i, colnames(x))
   }
+  if (is.na(i))
+    NULL
+  else
+    x[,i]
 })
+
+subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
+  missingSubset <- missing(subset)
+  missingSelect <- missing(select)
+
+  if (!missingSubset) {
+    env  <- as.environment(x)
+    rows <- eval(substitute(subset), env, parent.frame())
+  }
+
+  if (!missingSelect) {
+    env  <- new.env()
+    cnms <- colnames(x)
+    for (j in seq_along(x))
+      assign(cnms[j], j, env)
+    cols <- eval(substitute(select), env, parent.frame())
+  }
+
+  if (missingSubset && missingSelect)
+    x
+  else if (missingSelect)
+    x[rows,]
+  else if (missingSubset)
+    x[,cols]
+  else
+    x[rows, cols]
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
@@ -475,7 +520,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j)))
     stop("Row/column types not supported!")
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
-    stop("value can only be numeric, character, or an H2OFrame object")
+    stop("`value` can only be numeric, character, or an H2OFrame object")
   if(!missing(i) && is.numeric(i)) {
     if(any(i == 0L)) stop("Array index out of bounds")
   }
@@ -487,11 +532,11 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     if (is(x, "H2OFrame")) x <- .get(x)
     lhs <- x
   } else if (missing(i))
-    lhs <- do.call("[", list(x=x, j=j))
+    lhs <- x[,j]
   else if (missing(j))
-    lhs <- do.call("[", list(x=x, i=i))
+    lhs <- x[i,]
   else
-    lhs <- do.call("[", list(x=x, i=i, j=j))
+    lhs <- x[i,j]
 
   if (is(value, "H2OFrame")) rhs <- .get(value)
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)
@@ -499,21 +544,21 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   op <- new("ASTApply", op='=')
   ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
   o <- new("H2OFrame", ast = ast, key = x@key, h2o = .retrieveH2O())
-  .force.eval(o@ast,new.assign=F)
+  .force.eval(o@ast, new.assign = FALSE)
   o
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   m.call <- match.call()
   if(missing(name) || !is.character(name) || !nzchar(name))
-    stop("name must be a non-empty string")
+    stop("`name` must be a non-empty string")
   if(!inherits(value, "H2OFrame") && !is.numeric(value))
-    stop("value can only be numeric or an H2OFrame object")
+    stop("`value` can only be numeric or an H2OFrame object")
 
   col_names <- colnames(x);
-  if (!(name %in% col_names)) idx <- length(col_names) + 1          # new column
+  if (!(name %in% col_names)) idx <- length(col_names) + 1L         # new column
   else idx <- match(name, col_names)                                # re-assign existing column
-  lhs <- do.call("[", list(x=x, j=idx))                             # create the lhs ast
+  lhs <- x[,idx]                                                    # create the lhs ast
 
   if (is(value, "H2OFrame")) rhs <- .get(value)
   else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
@@ -524,10 +569,9 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   res
 })
 
-
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
-  if(!is(value, "H2OFrame")) stop('Can only append H2O data to H2O data')
-  do.call("$<-", list(x=x, name=i, value=value))
+  if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
+  do.call(`$<-`, list(x = x, name = i, value = value))
 })
 
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
@@ -576,22 +620,22 @@ NULL
 #'
 #' @rdname h2o.nrow
 setMethod("nrow", "H2OFrame", function(x) {
-  m.call <- match.call()
-  ID <- as.list(m.call)$x
-  if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-#  if (is.numeric(x)) return(length(x))
-  if (is.na(x@nrows)) x <- h2o.getFrame(x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+  if (!is.null(x@ast) && !.is.eval(x))
+    x <- .force.eval(x@ast, ID, parent.frame(), x@key)
+  if (is.na(x@nrows))
+    x <- h2o.getFrame(x@key)
   x@nrows
 })
 
 #'
 #' @rdname h2o.nrow
 setMethod("ncol", "H2OFrame", function(x) {
-  m.call <- match.call()
-  ID <- as.list(m.call)$x
-  if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-#  if (is.numeric(x)) return(length(x))
-  if (is.na(x@ncols)) x <- h2o.getFrame(x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+  if (!is.null(x@ast) && !.is.eval(x))
+    x <- .force.eval(x@ast, ID, parent.frame(), x@key)
+  if (is.na(x@ncols))
+    x <- h2o.getFrame(x@key)
   x@ncols
 })
 
@@ -611,20 +655,22 @@ setMethod("ncol", "H2OFrame", function(x) {
 #' summary(iris.hex)
 #' colnames(iris.hex)
 setMethod("colnames", "H2OFrame", function(x) {
-  m.call <- match.call()
-  ID <- as.list(m.call)$x
-  if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-  if (is.na(x@col_names[1])) x <- h2o.getFrame(x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+  if (!is.null(x@ast) && !.is.eval(x))
+    x <- .force.eval(x@ast, ID, parent.frame(), x@key)
+  if (is.na(x@col_names[1L]))
+    x <- h2o.getFrame(x@key)
   x@col_names
 })
 
 #'
 #' @rdname h2o.colnames
 setMethod("names", "H2OFrame", function(x) {
-  m.call <- match.call()
-  ID <- as.list(m.call)$x
-  if (!is.null(x@ast) && !.is.eval(x)) x <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-  if (is.na(x@nrows)) x <- h2o.getFrame(x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+  if (!is.null(x@ast) && !.is.eval(x))
+    x <- .force.eval(x@ast, ID, parent.frame(), x@key)
+  if (is.na(x@nrows))
+    x <- h2o.getFrame(x@key)
   x@col_names
 })
 
@@ -681,11 +727,12 @@ NULL
 #' @rdname h2o.head
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  m.call <- match.call(call = sys.call(sys.parent(1L)))
-  ID <- as.list(m.call)$x
+  ID <- deparse(substitute(x), width.cutoff = 500L)
   ret <- NULL
-  if (!is.null(x@ast) && !.is.eval(x)) ret <- .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
-  if (!is.null(ret) && is.numeric(ret)) return(ret)
+  if (!is.null(x@ast) && !.is.eval(x))
+    ret <- .force.eval(x@ast, ID, parent.frame(), x@key)
+  if (!is.null(ret) && is.numeric(ret))
+    return(ret)
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   if(n == 0L)
@@ -702,9 +749,9 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 #'  @rdname h2o.head
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  m.call <- match.call(call = sys.call(sys.parent(1L)))
-  ID <- as.list(m.call)$x
-  if (!is.null(x@ast) && !.is.eval(x)) .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+  if (!is.null(x@ast) && !.is.eval(x))
+    .force.eval(x@ast, ID, parent.frame(), x@key)
 
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
@@ -1016,8 +1063,9 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' as.data.frame.H2OFrame(prostate.hex)
 as.data.frame.H2OFrame <- function(x, ...) {
-  ID <- as.list(match.call())$x
-   if (!is.null(x@ast) && !.is.eval(x)) .force.eval(x@ast, as.character(ID), parent.frame(), x@key)
+  ID <- deparse(substitute(x), width.cutoff = 500L)
+   if (!is.null(x@ast) && !.is.eval(x))
+     .force.eval(x@ast, ID, parent.frame(), x@key)
   .as.data.frame(x, ...)
 }
 
@@ -1095,11 +1143,17 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' head(prostate.matrix)
 NULL # TODO: possibly find cleaner method to show 'as.matrix' base is usable with H2OFrame/Frame
 
-
 #' @rdname as.matrix.h2o
 as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 
-setMethod("as.factor", "H2OFrame",    function(x) .h2o.unop("as.factor", x))
+setMethod("as.environment", "H2OFrame", function(x) {
+  env <- new.env()
+  for (j in colnames(x))
+    assign(j, x[[j]], env)
+  env
+})
+
+setMethod("as.factor",    "H2OFrame", function(x) .h2o.unop("as.factor", x))
 setMethod("as.character", "H2OFrame", function(x) .h2o.unop("as.character", x))
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1284,11 +1338,11 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   if(vars < 0L || vars > (ncol(.data)-1L))
     stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
 
-  # FUN <- deparse(substitute(.fun))
+  # FUN <- deparse(substitute(.fun), width.cutoff = 500L)
   # if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
   # .FUN <- get(FUN)
   # if( !is.function(.FUN) ) stop("FUN must be an R function
-  if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun))
+  if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun), width.cutoff = 500L)
   else FUN <- .fun
   .FUN <- NULL
   if (is.character(FUN)) .FUN <- get(FUN, envir = envir)
@@ -1314,7 +1368,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  myfun <- deparse(substitute(FUN))
+  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
@@ -1418,7 +1472,7 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  myfun <- deparse(substitute(FUN))
+  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
@@ -1468,7 +1522,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
-  myfun <- deparse(substitute(FUN))
+  myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
