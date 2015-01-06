@@ -452,11 +452,9 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   }
 
   if (!missingI) {
-    if (is(i, "H2OFrame")) {
-      rows <- eval(i@ast)
-      if (ncol(i) != 1L)
-        stop("an H2OFrame used for row selection must contain one column")
-    } else if (is(i, "ASTNode"))
+    if (is(i, "H2OFrame"))
+      rows <- .get(i)
+    else if (is(i, "ASTNode"))
       rows <- i
     else
       rows <- .eval(substitute(i), parent.frame())
