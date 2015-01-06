@@ -437,11 +437,21 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     }
   }
 
-  ast <- .get(x)
-  op  <- new("ASTApply", op = "[")
-  rows <- cols <- "\"null\""
-  if (!missingJ) {
-    if (is.character(j)) {
+  if (missingI)
+    rows <- "\"null\""
+  else if (is(i, "H2OFrame"))
+    rows <- .get(i)
+  else if (is(i, "ASTNode"))
+    rows <- i
+  else
+    rows <- .eval(substitute(i), parent.frame())
+
+  if (missingJ)
+    cols <- "\"null\""
+  else {
+    if (is.logical(j))
+      j <- which(rep(j, length.out = ncol(x)))
+    else if (is.character(j)) {
       j <- match(j, colnames(x))
       if (any(is.na(j)))
         stop("undefined column names specified")
@@ -449,15 +459,8 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     cols <- .eval(substitute(j), parent.frame())
   }
 
-  if (!missingI) {
-    if (is(i, "H2OFrame"))
-      rows <- .get(i)
-    else if (is(i, "ASTNode"))
-      rows <- i
-    else
-      rows <- .eval(substitute(i), parent.frame())
-  }
-  ast <- new("ASTNode", root = op, children = list(ast, rows, cols))
+  op  <- new("ASTApply", op = "[")
+  ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
   new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 
@@ -514,55 +517,64 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
-  if(!(missing(i) || is.numeric(i)) || !(missing(j) || is.numeric(j) || is.character(j)))
-    stop("Row/column types not supported!")
+  missingI <- missing(i)
+  missingJ <- missing(j)
+
+  if(!missingI && !is.numeric(i))
+    stop("`i` must be missing or a numeric vector")
+  if(!missingJ && !is.numeric(j) && !is.character(j))
+    stop("`j` must be missing or a numeric or character vector")
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
-    stop("`value` can only be numeric, character, or an H2OFrame object")
-  if(!missing(i) && is.numeric(i)) {
-    if(any(i == 0L)) stop("Array index out of bounds")
-  }
-  if(!missing(j) && is.numeric(j)) {
-    if(any(j == 0L)) stop("Array index out of bounds")
-  }
+    stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
-  if (missing(i) && missing(j)) {
-    if (is(x, "H2OFrame")) x <- .get(x)
-    lhs <- x
-  } else if (missing(i))
-    lhs <- x[,j]
-  else if (missing(j))
-    lhs <- x[i,]
+  if (missingI && missingJ)
+    lhs <- .get(x)
+  else if (missingI)
+    lhs <- .get(x[,j])
+  else if (missingJ)
+    lhs <- .get(x[i,])
   else
-    lhs <- x[i,j]
+    lhs <- .get(x[i, j])
 
-  if (is(value, "H2OFrame")) rhs <- .get(value)
-  else rhs <- .eval(substitute(value), parent.frame(), FALSE)
+  if (is(value, "H2OFrame"))
+    rhs <- .get(value)
+  else
+    rhs <- .eval(substitute(value), parent.frame(), FALSE)
 
-  op <- new("ASTApply", op='=')
-  ast <- new("ASTNode", root=op, children=list(lhs@ast, rhs))
+  op  <- new("ASTApply", op = "=")
+  ast <- new("ASTNode", root = op, children = list(lhs, rhs))
   o <- new("H2OFrame", ast = ast, key = x@key, h2o = .retrieveH2O())
   .force.eval(o@ast, new.assign = FALSE)
   o
 })
 
 setMethod("$<-", "H2OFrame", function(x, name, value) {
-  m.call <- match.call()
-  if(missing(name) || !is.character(name) || !nzchar(name))
+  if(!is.character(name) || length(name) != 1L || !nzchar(name))
     stop("`name` must be a non-empty string")
-  if(!inherits(value, "H2OFrame") && !is.numeric(value))
-    stop("`value` can only be numeric or an H2OFrame object")
 
-  col_names <- colnames(x);
-  if (!(name %in% col_names)) idx <- length(col_names) + 1L         # new column
-  else idx <- match(name, col_names)                                # re-assign existing column
-  lhs <- x[,idx]                                                    # create the lhs ast
+  idx <- match(name, colnames(x))
+  if (is.null(value)) {
+    if (is.na(idx))
+      res <- x
+    else
+      res <- x[,-idx]
+  } else {
+    if (is.na(idx))
+      idx <- ncol(x) + 1L
+    lhs <- x[,idx]
 
-  if (is(value, "H2OFrame")) rhs <- .get(value)
-  else rhs <- .eval(substitute(value), parent.frame(), FALSE)                       # rhs is R generic
-  res <- new("ASTNode", root=new("ASTApply", op='='), children=list(lhs, rhs))      # create the rhs ast
-  res <- new("H2OFrame", ast = res, key = x@key, h2o = .retrieveH2O())
-  .force.eval(res@ast,new.assign=F)
-  colnames(res)[idx] <- name
+    if (is(value, "H2OFrame"))
+      rhs <- .get(value)
+    else if (is.numeric(value))
+      rhs <- .eval(substitute(value), parent.frame(), FALSE)
+    else
+      stop("`value` can only be an H2OFrame object, numeric or NULL")
+
+    res <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
+    res <- new("H2OFrame", ast = res, key = x@key, h2o = .retrieveH2O())
+    .force.eval(res@ast, new.assign = FALSE)
+    colnames(res)[idx] <- name
+  }
   res
 })
 
@@ -593,6 +605,77 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
 setMethod("names", "H2OFrame", function(x) colnames(x))
 setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
 
+#-----------------------------------------------------------------------------------------------------------------------
+# Transformation Functions: transform, within
+#-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Transform Columns in an H2OFrame Object.
+#'
+#' Functions that facilitate column transformations of an \linkS4class{H2OFrame} object.
+#'
+#' @name transform.H2OFrame
+#' @param `_data`, data An \linkS4class{H2OFrame} object.
+#' @param expr For \code{within} method, column transformations specified as an expression.
+#' @param ... For \code{transform} method, column transformations in the form \code{tag=value}.
+#' @seealso \code{\link[base]{transform}}, \code{\link[base]{within}} for the base R methods.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' iris.hex <- as.h2o(localH2O, iris)
+#' transformed1 <- transform(iris.hex,
+#'                           Sepal.Ratio = Sepal.Length / Sepal.Width,
+#'                           Petal.Ratio = Petal.Length / Petal.Width )
+#' transformed1
+#' transformed2 <- within(iris.hex,
+#'                        {Sepal.Product <- Sepal.Length * Sepal.Width
+#'                         Petal.Product <- Petal.Length * Petal.Width
+#'                         Sepal.Petal.Ratio <- Sepal.Product / Petal.Product
+#'                         Sepal.Length <- Sepal.Width <- NULL
+#'                         Petal.Length <- Petal.Width <- NULL
+#'                         })
+#' transformed2
+transform.H2OFrame <- function(`_data`, ...) {
+  newcols <- eval(substitute(list(...)), as.environment(`_data`), parent.frame())
+  null <- unlist(lapply(newcols, is.null))
+  newcols <- newcols[!null]
+  null <- names(null)[null]
+  keep <- !(colnames(`_data`) %in% null)
+  if (!all(keep))
+    `_data` <- `_data`[,keep]
+  if (length(newcols) > 0L) {
+    newnames <- names(newcols)
+    for (j in newnames)
+      colnames(newcols[[j]]) <- j
+    newcols <- do.call(h2o.cbind, unname(newcols))
+    overwrite <- newnames %in% colnames(`_data`)
+    if (any(overwrite))
+      `_data`[,newnames[overwrite]] <- newcols[,overwrite]
+    if (!all(overwrite))
+      `_data` <- h2o.cbind(`_data`, newcols[,!overwrite])
+  }
+  `_data`
+}
+
+#'
+#' @rdname transform.H2OFrame
+within.H2OFrame <- function(data, expr, ...) {
+  env <- as.environment(data)
+  eval(substitute(expr), env, parent.frame())
+  null <- unlist(eapply(env, is.null))
+  null <- names(null)[null]
+  remove(list = null, envir = env)
+  newcols <- as.list(env)
+  if (length(newcols) == 0L)
+    NULL
+  else {
+    ord <- order(factor(names(newcols), levels = colnames(data)))
+    newcols <- newcols[ord]
+    for (j in names(newcols))
+      colnames(newcols[[j]]) <- j
+    do.call(h2o.cbind, unname(newcols))
+  }
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Inspection/Summary Operations
