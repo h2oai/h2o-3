@@ -1,12 +1,12 @@
 {
-  "name": "Steam",
+  "name": "h2o-web",
   "version": "0.0.0",
-  "homepage": "https://github.com/0xdata/h2o",
+  "homepage": "https://github.com/h2oai/h2o-dev",
   "authors": [
     "Prithvi Prabhu <prithvi@0xdata.com>"
   ],
   "description": "H2O Web Client",
-  "main": "steam.js",
+  "main": "index.html",
   "moduleType": [
     "globals"
   ],
@@ -24,18 +24,7 @@
     "tests"
   ],
   "dependencies": {
-    "jquery": "~2.1.0",
-    "d3": "~3.4.4",
-    "bootstrap": "~3.1.1",
-    "knockout": "0x-x0/knockout",
-    "lodash": "~2.4.1",
-    "chai": "~1.9.1",
-    "hasher": "~1.2.0",
-    "crossroads": "~0.12.0",
-    "stacktrace": "~0.6.0",
-    "momentjs": "~2.6.0",
-    "typeahead.js": "~0.10.2",
-    "fontawesome": "~4.2.0"
+    "h2o-flow": "~0.2.12"
   },
   "devDependencies": {}
 }
