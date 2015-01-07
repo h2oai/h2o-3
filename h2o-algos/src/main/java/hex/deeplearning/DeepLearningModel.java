@@ -332,27 +332,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
     public boolean _quiet_mode = false;
 
-  /*Imbalanced Classes*/
-    /**
-     * For imbalanced data, balance training data class counts via
-     * over/under-sampling. This can result in improved predictive accuracy.
-     */
-    public boolean _balance_classes = false;
-
-
-    /**
-     * Desired over/under-sampling ratios per class (lexicographic order).
-     * Only when balance_classes is enabled.
-     * If not specified, they will be automatically computed to obtain class balance during training.
-     */
-    public float[] _class_sampling_factors;
-
-    /**
-     * When classes are balanced, limit the resulting dataset size to the
-     * specified multiple of the original dataset size.
-     */
-    public float _max_after_balance_size = 5.0f;
-
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */

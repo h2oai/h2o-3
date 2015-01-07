@@ -27,7 +27,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  the decision to do a classification vs regression. */
     public boolean _convert_to_enum = false;
 
-    /** Should the minority classes be upsampled to balance the class
+    /** Should all classes be over/under-sampled to balance the class
      *  distribution? */
     public boolean _balance_classes = false;
 
@@ -36,6 +36,13 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  size of the training data after balancing class counts (can be less
      *  than 1.0) */
     public float _max_after_balance_size = Float.POSITIVE_INFINITY;
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    public float[] _class_sampling_factors;
 
     /** The maximum number (top K) of predictions to use for hit ratio
      *  computation (for multi-class only, 0 to disable) */

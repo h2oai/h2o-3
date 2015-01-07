@@ -33,7 +33,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        destination_key,                   #h2o generates its own default parameters
                        max_iters = 1000,
                        standardize = TRUE,
-                       init = c("Furthest","None", "PlusPlus"),
+                       init = c("Furthest","Random", "PlusPlus"),
                        seed)
 {
   # Required args: training_frame
@@ -44,6 +44,29 @@ h2o.kmeans <- function(training_frame, x, k,
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.kmeans.map) ) i <- .kmeans.map[[i]]; i })
 
   if( !(missing(x)) ) parms[["ignored_columns"]] <- .verify_datacols(training_frame, x)$cols_ignore
+
+  # Check if init is an acceptable set of user-specified starting points
+  if( is.data.frame(init) || is.matrix(init) || is.list(init) || inherits(init, "H2OFrame") ) {
+    parms[["init"]] <- "User"
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
+        parms[["user_points"]] <- as.h2o(training_frame@h2o, init)
+    }
+    else {
+        parms[["user_points"]] <- init
+    }
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
+        print("Warning: Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+    }
+    parms[["k"]] <- as.integer(nrow(init))
+  }
+  else if ( is.character(init) ) { # Furthest, Random, PlusPlus
+    parms[["user_points"]] <- NULL
+  }
+  else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  }
 
   # Error check and build model
   .run(training_frame@h2o, 'kmeans', parms, parent.frame())

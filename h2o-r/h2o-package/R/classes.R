@@ -153,9 +153,8 @@ setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.da
 #' @slot h2o Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
-#' @slot raw_json Object of class \code{list} containing the raw JSON response
 #' @aliases H2OModel
-setClass("H2OModel", representation(h2o="H2OConnection", key="character", model="list", raw_json="list"), contains="VIRTUAL")
+setClass("H2OModel", representation(h2o="H2OConnection", key="character", model="list"), contains="VIRTUAL")
 
 # No show method for this type of object.
 #'

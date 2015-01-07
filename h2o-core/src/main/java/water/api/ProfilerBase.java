@@ -7,7 +7,7 @@ import water.util.DocGen;
 abstract class ProfilerBase<I extends Iced, S extends Schema<I, S>> extends Schema<I, S> {
   // Input
   @API(help="Stack trace depth", required=true)
-  public int depth = 5;
+  public int depth = 10;
 
   // Output
   @API(help="Array of Profiles, one per Node in the Cluster", direction=API.Direction.OUTPUT)

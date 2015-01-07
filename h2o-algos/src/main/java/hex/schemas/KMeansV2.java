@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
+import water.Key;
 import water.api.API;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
@@ -9,9 +10,12 @@ import water.fvec.Frame;
 public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
   public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
-    static public String[] own_fields = new String[] { "k", "max_iters", "standardize", "seed", "init" };
+    static public String[] own_fields = new String[] { "user_points", "k", "max_iters", "standardize", "seed", "init" };
 
     // Input fields
+    @API(help = "User-specified points", required = false)
+    public Key<Frame> user_points;
+
     @API(help = "Number of clusters", required = true)
     public int k;
 
@@ -24,7 +28,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"k", "max_iters"} */ )
     public long seed;
 
-    @API(help = "Initialization mode", values = { "None", "PlusPlus", "Furthest" }) // TODO: pull out of enum class. . .
+    @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
 
     @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
