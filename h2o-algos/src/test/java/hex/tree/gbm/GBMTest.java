@@ -194,7 +194,7 @@ public class GBMTest extends TestUtil {
       parms._response_column = "Angaus"; // Train on the outcome
       parms._convert_to_enum = true;
       parms._ntrees = 5;
-      parms._max_depth = 10;
+      parms._max_depth = 5;
       parms._min_rows = 10;
       parms._nbins = 100;
       parms._learn_rate = .2f;
@@ -211,9 +211,9 @@ public class GBMTest extends TestUtil {
       hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(gbm,parms.valid());
 
       double auc = mm._aucdata.AUC();
-      Assert.assertTrue(0.80 <= auc && auc < 0.83); // Sanely good model
+      Assert.assertTrue(0.83 <= auc && auc < 0.85); // Sanely good model
       ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(311,82),ar(32,75)),cmf1._arr);
+      Assert.assertArrayEquals(ar(ar(324,69),ar(35,72)),cmf1._arr);
 
     } finally {
       parms._train.remove();

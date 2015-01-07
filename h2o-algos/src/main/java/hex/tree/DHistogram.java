@@ -136,8 +136,8 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  abstract void incr0( int b, double y );
-  final void incr( float col_data, double y ) {
+  abstract void incr0( int b, float y );
+  final void incr( float col_data, float y ) {
     assert Float.isNaN(col_data) || Float.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
     water.util.AtomicUtils.IntArray.incr(_bins,b); // Bump count in bin

@@ -23,6 +23,12 @@ public abstract class AtomicUtils {
       while( max > old && !_unsafe.compareAndSwapInt(fs,rawIndex(fs,i), Float.floatToRawIntBits(old), Float.floatToRawIntBits(max) ) )
         old = fs[i];
     }
+    static public void add( float ds[], int i, float y ) {
+      long adr = rawIndex(ds,i);
+      float old = ds[i];
+      while( !_unsafe.compareAndSwapInt(ds,adr, Float.floatToRawIntBits(old), Float.floatToRawIntBits(old+y) ) )
+        old = ds[i];
+    }
     static public String toString( float fs[] ) {
       SB sb = new SB();
       sb.p('[');
