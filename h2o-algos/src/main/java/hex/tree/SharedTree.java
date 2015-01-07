@@ -136,6 +136,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           float[] trainSamplingFactors;
           if( _parms._balance_classes ) {
             trainSamplingFactors = new float[domain.length]; //leave initialized to 0 -> will be filled up below
+            if (_parms._class_sampling_factors != null) {
+              if (_parms._class_sampling_factors.length != domain.length)
+                throw new IllegalArgumentException("class_sampling_factors must have " + domain.length + " elements");
+              trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
+            }
             Frame stratified = water.util.MRUtils.sampleFrameStratified(fr, fr.lastVec(), trainSamplingFactors, (long)(_parms._max_after_balance_size*fr.numRows()), _parms._seed, true, false);
             if (stratified != fr) {
               throw H2O.unimpl();
