@@ -546,7 +546,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
   /**
    * get beta coefficients in a map indexed by name
-   * @return
+   * @return the estimated coefficients
    */
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<String, Double>();

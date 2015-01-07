@@ -793,7 +793,7 @@ public class Vec extends Keyed {
    * vw.set(2, 5.32);
    * vw.close();
    */
-  final static class Writer implements java.io.Closeable {
+  public final static class Writer implements java.io.Closeable {
     final Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
     public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
@@ -887,7 +887,7 @@ public class Vec extends Keyed {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     // Right now, limited to small dense integers.
-    if( min() < 0 || max() > 1000000 ) 
+    if( min() < 0 || max() > 1000000 )
       throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
     long[] domain= new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
@@ -996,7 +996,7 @@ public class Vec extends Keyed {
     final Key _key;
     private VectorGroup(Key key, int len){_key = key;_len = len;}
 
-    VectorGroup() {
+    public VectorGroup() {
       byte[] bits = new byte[26];
       bits[0] = Key.GRP;
       bits[1] = -1;

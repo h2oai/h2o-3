@@ -120,7 +120,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     ColV2(String name, Vec vec, long off, int len) {
       label=name;
       missing = vec.naCnt();
-      zeros = vec.length()-vec.nzCnt();
+      zeros = vec.length()-vec.nzCnt()-missing;
       pinfs = vec.pinfs();
       ninfs = vec.ninfs();
       mins  = vec.mins();

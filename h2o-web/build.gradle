@@ -85,21 +85,13 @@ task installBowerPackages(type: Exec) {
   }
 }
 
-task buildClientWithGulp(type: Exec) {
-  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    commandLine 'cmd', '/c', 'node_modules\\.bin\\gulp'
-  } else {
-    commandLine 'node_modules/.bin/gulp'
-  }
+task buildClientWithGulp(type: Copy) {
+  from 'lib/h2o-flow/build'
+  into 'src/main/resources/www/flow'
 }
 
-task cleanClientWithGulp(type: Exec) {
-  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-    commandLine 'cmd', '/c', 'node_modules\\.bin\\gulp', 'clean'
-  } else {
-    commandLine 'node_modules/.bin/gulp', 'clean'
-  }
-  ignoreExitValue = true
+task cleanClientWithGulp(type: Delete) {
+  delete 'src/main/resources/www/flow'
 }
 
 installNpmPackages.dependsOn checkClientPrerequisites

@@ -13,7 +13,7 @@ test_that(".h2o.calcBaseURL works", {
   .skip_if_not_developer()
   prologue()
   
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   
   url = .h2o.calcBaseURL(conn = h, urlSuffix = "")
   expect_equal(url, "http://www.omegahat.org:80/")  
@@ -29,14 +29,14 @@ test_that("doRawGET works", {
   .skip_if_not_developer()
   prologue()
   
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   rv = h2o.doRawGET(conn = h, urlSuffix = "")
   expect_equal(rv$url, "http://www.omegahat.org:80/")
   expect_equal(rv$curlError, FALSE)
   expect_equal(rv$httpStatusCode, 200)
   expect_equal(nchar(rv$payload) >= 500, TRUE)
 
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   parms = list(arg1="hi", arg2="there")
   rv = h2o.doRawGET(conn = h, urlSuffix = "", parms = parms)
   expect_equal(rv$url, "http://www.omegahat.org:80/?arg1=hi&arg2=there")
@@ -44,7 +44,7 @@ test_that("doRawGET works", {
   expect_equal(rv$httpStatusCode, 200)
   expect_equal(nchar(rv$payload) >= 500, TRUE)
   
-  h = new("h2o.client", ip="www.doesnotexistblahblah.org", port=80)
+  h = new("H2OConnection", ip="www.doesnotexistblahblah.org", port=80)
   rv = h2o.doRawGET(conn = h, urlSuffix = "")
   expect_equal(rv$curlError, TRUE)
   expect_equal(rv$curlErrorMessage, "Could not resolve host: www.doesnotexistblahblah.org")
@@ -54,7 +54,7 @@ test_that("doGET works", {
   .skip_if_not_developer()
   prologue()
   
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   rv = h2o.doGET(conn = h, urlSuffix = "")
   expect_equal(rv$curlError, FALSE)
   expect_equal(rv$curlErrorMessage, "")
@@ -65,7 +65,7 @@ test_that("doSafeGET works", {
   .skip_if_not_developer()
   prologue()
   
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   payload = h2o.doSafeGET(conn = h, h2oRestApiVersion = -1, urlSuffix = "")
   expect_equal(nchar(payload) >= 500, TRUE)
 
@@ -79,7 +79,7 @@ test_that("doSafePOST works", {
   .skip_if_not_developer()
   prologue()
 
-  h = new("h2o.client", ip="www.omegahat.org", port=80)
+  h = new("H2OConnection", ip="www.omegahat.org", port=80)
   payload = h2o.doSafePOST(conn = h, h2oRestApiVersion = -1, urlSuffix = "")
   expect_equal(nchar(payload) >= 500, TRUE)
 

@@ -39,10 +39,15 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     if( _train.numCols() <= 1 )
       error("_train", "Training data must have at least 2 features (incl. response).");
 
+    if( null == _parms._response_column ) {
+      error("_response_column", "Response column parameter not set.");
+      return;
+    }
+
     // put response to the end (if not already), and convert to an enum
     int ridx = _train.find(_parms._response_column);
     if( ridx == -1 ) { // Actually, think should not get here either (cutout at higher layer)
-      error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms.train() + ".");
+      error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms._train + ".");
     } else {
       _response  = _train.remove(ridx);
       _vresponse = _valid == null ? null : _valid.remove(ridx);
@@ -66,4 +71,3 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     }
   }    
 }
-

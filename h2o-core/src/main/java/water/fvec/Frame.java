@@ -165,6 +165,10 @@ public class Frame extends Lockable<Frame> {
    *  @return the array of column names */
   public String[] names() { return _names; }
 
+  /** A single column name.
+   *  @return the column name */
+  public String name(int i) { return _names[i]; }
+
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
    */
@@ -398,7 +402,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Replace one column with another 
-   *  @return The new column, for flow-coding */
+   *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     assert DKV.get(nv._key)!=null; // Already in DKV
     Vec rv = vecs()[col];

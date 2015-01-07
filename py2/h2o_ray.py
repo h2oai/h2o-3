@@ -430,7 +430,6 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     # make get overwritten after polling
     elapsed = time.time() - start
     verboseprint("build_model result", dump_json(result1))
-
       
     if noPoll:
         result = result1
@@ -439,6 +438,7 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
         result = result1
+        # don't bother printing a time message
     else:
         job_result = result1['jobs'][0]
         job_key = job_result['key']['name']
@@ -448,7 +448,7 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
         verboseprint(job_result)
 
         elapsed = time.time() - start
-        print "ModelBuilders end on ", training_frame, 'took', time.time() - start, 'seconds'
+        print "ModelBuilders", algo,  "end on", training_frame, 'took', time.time() - start, 'seconds'
         print "%d pct. of timeout" % ((elapsed/timeoutSecs) * 100)
 
         if job_result:

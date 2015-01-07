@@ -4,6 +4,7 @@ import water.*;
 import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.ModelUtils;
 
 import java.util.ArrayList;
@@ -116,8 +117,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Model-specific output class.  Each model sub-class contains an instance
    *  of one of these containing its "output": the pieces of the model needed
    *  for scoring.  E.g. KMeansModel has a KMeansOutput extending Model.Output
-   *  which contains the clusters.  The output also includes the names, domains
-   *  and other fields which are determined at training time.  */
+   *  which contains the cluster centers.  The output also includes the names,
+   *  domains and other fields which are determined at training time.  */
   public abstract static class Output extends Iced {
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
@@ -325,16 +326,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public Frame score(Frame fr) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    Vec sresp = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
+    Vec actual = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
     adaptTestForTrain(adaptFr,true);   // Adapt
     Frame output = scoreImpl(fr,adaptFr); // Score
 
     // Log modest confusion matrices
-    Vec mresp = output.vecs()[0]; // Modeled/predicted response
-    String mdomain[] = mresp.domain(); // Domain of predictions (union of test and train)
+    Vec predicted = output.vecs()[0]; // Modeled/predicted response
+    String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
+    if (_output.isClassifier()) assert(mdomain != null); // label must be enum
+
     ConfusionMatrix cm = ModelMetrics.getFromDKV(this,fr)._cm;
-    if (mdomain != null) { //don't print table for regression
-      cm._cmTable = cm.toTable(mdomain);
+    if (cm._domain != null) { //don't print table for regression
+      assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
+      cm._cmTable = cm.toTable();
       if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
         water.util.Log.info(cm._cmTable.toString(1));
     }
@@ -342,9 +346,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.  
     if( _output.isClassifier() ) {
-      String sdomain[] = sresp.domain(); // Scored/test domain; can be null
-      if( mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
-        output.replace(0,new EnumWrappedVec(sresp.group().addVec(),sresp.get_espc(),sdomain,mresp._key));
+      String sdomain[] = actual.domain(); // Scored/test domain; can be null
+      if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
+        output.replace(0,new EnumWrappedVec(actual.group().addVec(),actual.get_espc(),sdomain,predicted._key));
     }
     
     // Remove temp keys.  TODO: Really should use Scope but Scope does not

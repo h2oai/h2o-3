@@ -70,7 +70,7 @@ public class ASTddply extends ASTOp {
   }
 
   @Override void apply(Env env) {
-    Frame fr = env.pop0Ary();    // The Frame to work on
+    Frame fr = env.popAry();    // The Frame to work on
 
     // sanity check cols some moar
     for (long l : _cols) {
@@ -197,7 +197,7 @@ public class ASTddply extends ASTOp {
       ff.delete();
     }
     // Delete the group row vecs
-    env.push(new ValFrame(res));
+    env.pushAry(res);
   }
 
   // ---
@@ -483,7 +483,7 @@ public class ASTddply extends ASTOp {
 
         // Inspect the results; figure the result column count
         Frame fr = null;
-        if (env.isAry() && (fr = env.pop0Ary()).numRows() != 1)
+        if (env.isAry() && (fr = env.popAry()).numRows() != 1)
           throw new IllegalArgumentException("Result of ddply can only return 1 row but instead returned " + fr.numRows());
         _ncols = fr == null ? 1 : fr.numCols();
 

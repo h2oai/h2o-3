@@ -21,12 +21,12 @@ test <- function(conn) {
   
   #print("Set memory benchmark with strong rules off.")
   #print("Model successfully created for arcene data with 5000 columns")
-    #h2o.model.noSR.pass <- h2o.glm(x=c(1:5000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=FALSE,alpha=1, nfolds=0, use_all_factor_levels=1)
+    #H2OModel.noSR.pass <- h2o.glm(x=c(1:5000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=FALSE,alpha=1, nfolds=0, use_all_factor_levels=1)
   #print("Model fails to be created for arcene data with 7000 columns due to memory error, without strong rules.")
-   # assertError(h2o.model.noSR.fail <- h2o.glm(x=c(1:7000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=FALSE,alpha=1, nfolds=0, use_all_factor_levels=1))
+   # assertError(H2OModel.noSR.fail <- h2o.glm(x=c(1:7000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=FALSE,alpha=1, nfolds=0, use_all_factor_levels=1))
   
   print("Model successfully created for arcene data with 7000 columns with strong rules on.")
-    h2o.model.SR.pass <- h2o.glm(x=c(1:7000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=T,alpha=1, nfolds=0, use_all_factor_levels=TRUE)
+    H2OModel.SR.pass <- h2o.glm(x=c(1:7000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=T,alpha=1, nfolds=0, use_all_factor_levels=TRUE)
   
   testEnd()
 }

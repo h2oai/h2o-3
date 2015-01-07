@@ -9,7 +9,7 @@ import water.util.TwoDimTable;
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
   public static class KMeansParameters extends Model.Parameters {
-    public int _k = 2;                     // Number of clusters
+    public int _k;                         // Number of clusters
     public int _max_iters = 1000;          // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
@@ -26,12 +26,12 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
     // Cluster centers.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
-    // is used during the building process, the *builders* clusters are standardized).
-    public double[/*k*/][/*features*/] _clusters;
-    public TwoDimTable _centers;  // For JSON display purposes of _clusters
+    // is used during the building process, the *builders* cluster centers are standardized).
+    public double[/*k*/][/*features*/] _centers;
+      public TwoDimTable _centers2d;
 
-    // Rows per cluster
-    public long[/*k*/] _rows;
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
 
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _withinmse;   // Within-cluster MSE, variance
@@ -58,7 +58,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._clusters,data,_output._ncats);
+    preds[0] = KMeans.closest(_output._centers,data,_output._ncats);
     return preds;
   }
 }

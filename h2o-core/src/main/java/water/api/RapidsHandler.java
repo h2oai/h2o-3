@@ -6,6 +6,8 @@ import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.Raft;
 import water.util.Log;
+import water.parser.ValueString;
+import water.util.PrettyPrint;
 
 class RapidsHandler extends Handler {
 
@@ -61,16 +63,34 @@ class RapidsHandler extends Handler {
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
-        Frame fr = env.pop0Ary();
-        rapids.key = new KeyV1.FrameKeyV1(fr._key);
-        rapids.num_rows = fr.numRows();
-        rapids.num_cols = fr.numCols();
-        rapids.col_names = fr.names();
-        rapids.string = null;
-        String[][] head = rapids.head = new String[Math.min(200,fr.numCols())][(int)Math.min(100,fr.numRows())];
-        for (int r = 0; r < head[0].length; ++r) {
-          for (int c = 0; c < head.length; ++c) {
-            head[c][r] = String.valueOf(fr.vec(c).at(r));
+        Frame fr = env.popAry();
+        if (fr.numRows() == 1 && fr.numCols() == 1) {
+          if (fr.anyVec().isEnum()) {
+            rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
+            sb.append(rapids.string);
+          } else {
+            rapids.scalar = fr.anyVec().at(0);
+            sb.append(Double.toString(rapids.scalar));
+            rapids.string = null;
+          }
+        } else {
+          rapids.key = new KeyV1.FrameKeyV1(fr._key);
+          rapids.num_rows = fr.numRows();
+          rapids.num_cols = fr.numCols();
+          rapids.col_names = fr.names();
+          rapids.string = null;
+          String[][] head = rapids.head = new String[Math.min(200, fr.numCols())][(int) Math.min(100, fr.numRows())];
+          for (int r = 0; r < head[0].length; ++r) {
+            for (int c = 0; c < head.length; ++c) {
+              if (fr.vec(c).isNA(r))
+                head[c][r] = "";
+              else if (fr.vec(c).isUUID())
+                head[c][r] = PrettyPrint.UUID(fr.vec(c).at16l(r), fr.vec(c).at16h(r));
+              else if (fr.vec(c).isString())
+                head[c][r] = String.valueOf(fr.vec(c).atStr(new ValueString(), r));
+              else
+                head[c][r] = String.valueOf(fr.vec(c).at(r));
+            }
           }
         }
         //TODO: colSummary  cols = new Inspect2.ColSummary[num_cols];

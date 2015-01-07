@@ -14,7 +14,7 @@ import water.util.IcedBitSet;
    @author Cliff Click
 */
 public class DBinomHistogram extends DHistogram<DBinomHistogram> {
-  private long _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
+  private int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
 
   public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit ) {
     super(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
@@ -22,25 +22,25 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   @Override boolean isBinom() { return true; }
 
   @Override public double mean(int b) {
-    long n = _bins[b];
+    int n = _bins[b];
     return n>0 ? (double)_sums[b]/n : 0;
   }
   @Override public double var (int b) {
-    long n = _bins[b];
+    int n = _bins[b];
     if( n<=1 ) return 0;
     return (_sums[b] - (double)_sums[b]*_sums[b]/n)/(n-1);
   }
 
   // Big allocation of arrays
   @Override void init0() {
-    _sums = MemoryManager.malloc8(_nbin);
+    _sums = MemoryManager.malloc4(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  @Override void incr0( int b, double y ) {
-    water.util.AtomicUtils.LongArray.incr(_sums,b);
+  @Override void incr0( int b, float y ) {
+    water.util.AtomicUtils.IntArray.incr(_sums,b);
   }
 
   // Merge two equal histograms together.  Done in a F/J reduce, so no

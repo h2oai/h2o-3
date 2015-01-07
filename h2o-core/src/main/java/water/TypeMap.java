@@ -12,8 +12,8 @@ public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, KEY;
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
-    "[B",                 // 1 -
-    "water.Iced",         // 2 - Base serialization class
+    "[B",                               // 1 -
+    water.Iced.class.getName(),         // 2 - Base serialization class
     water.H2O.H2OCountedCompleter.class.getName(),  // 3 - Base serialization class
     water.HeartBeat.class.getName(),    // Used to Paxos up a cloud & leader
     water.H2ONode.class.getName(),      // Needed to write H2ONode target/sources
@@ -30,7 +30,9 @@ public class TypeMap {
     // Status pages looked at without locking the cloud
     water.api.CloudV1.class.getName(),
     water.api.CloudV1.NodeV1.class.getName(),
-    water.api.HttpErrorV1.class.getName(),
+    water.H2OError.class.getName(),
+    water.api.H2OErrorV1.class.getName(),
+    water.util.IcedHashMap.class.getName(),
     water.api.Schema.class.getName(),
     water.api.Schema.Meta.class.getName(),
     water.api.TutorialsV1.class.getName(),
@@ -174,11 +176,11 @@ public class TypeMap {
     }
   }
 
-  static Iced newInstance(int id) { return (Iced)newFreezable(id); }
+  static Iced newInstance(int id) { return (Iced) newFreezable(id); }
   static Freezable newFreezable(int id) {
     Freezable iced = theFreezable(id);
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
-    return iced.clone();
+    return (Freezable) iced.clone();
   }
   // The single golden instance of an Iced, used for cloning and instanceof tests
   static Freezable theFreezable(int id) {

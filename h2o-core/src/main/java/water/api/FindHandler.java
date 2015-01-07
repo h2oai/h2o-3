@@ -2,12 +2,14 @@ package water.api;
 
 import water.H2O;
 import water.MRTask;
+import water.exceptions.H2OColumnNotFoundArgumentException;
+import water.exceptions.H2OEnumLevelNotFoundArgumentException;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-
-import java.util.Arrays;
+import water.util.IcedHashMap;
 
 class FindHandler extends Handler {
 
@@ -17,7 +19,7 @@ class FindHandler extends Handler {
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
       Vec vec = frame.vec(find.column);
-      if( vec==null ) throw new IllegalArgumentException("Column "+find.column+" not found in frame "+find.key);
+      if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
       find.key = new FrameV2(new Frame(new String[]{find.column}, new Vec[]{vec}));
     }
 
@@ -27,7 +29,7 @@ class FindHandler extends Handler {
     for( int i=0; i<vecs.length; i++ ) {
       if( vecs[i].isEnum() ) {
         int idx = ArrayUtils.find(vecs[i].domain(),find.match);
-        if( idx==-1 && vecs.length==1 ) throw new IllegalArgumentException("Not one of "+Arrays.toString(vecs[i].domain()));
+        if( idx==-1 && vecs.length==1 ) throw new H2OEnumLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
         ds[i] = idx;
       } else if( vecs[i].isUUID() ) {
         throw H2O.unimpl();
@@ -39,7 +41,15 @@ class FindHandler extends Handler {
         try {
           ds[i] = find.match==null ? Double.NaN : Double.parseDouble(find.match);
         } catch( NumberFormatException e ) {
-          if( vecs.length==1 ) throw new IllegalArgumentException("Not a number: "+find.match);
+          if( vecs.length==1 ) {
+            // There's only one Vec and it's a numeric Vec and our search string isn't a number
+            IcedHashMap<String, Object> values = new IcedHashMap<>();
+            String msg = "Frame: " + frame._key.toString() + " as only one column, it is numeric, and the find pattern is not numeric: " + find.match;
+            values.put("frame_name", frame._key.toString());
+            values.put("column_name", frame.name(i));
+            values.put("pattern", find.match);
+            throw new H2OIllegalArgumentException(msg, msg, values);
+          }
           ds[i] = Double.longBitsToDouble(0xcafebabe); // Do not match
         }
       }

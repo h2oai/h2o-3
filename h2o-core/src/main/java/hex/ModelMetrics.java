@@ -127,12 +127,12 @@ public final class ModelMetrics extends Keyed {
       ConfusionMatrix cm;
       if( _cms.length > 1 ) {
         ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
-        for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i]);
+        for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
         aucdata = new AUC(cms,_thresholds,_domain).data();
         cm = aucdata.CM();
       } else {
         aucdata = null;
-        cm = new ConfusionMatrix(_cms[0]);
+        cm = new ConfusionMatrix(_cms[0], _domain);
       }
       double mse = _sumsqe / cm.totalRows();
       HitRatio hr = null;       // TODO

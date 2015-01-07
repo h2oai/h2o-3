@@ -2,6 +2,7 @@ package water.api;
 
 import hex.Model;
 import water.*;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 
 public class InspectHandler extends Handler {
@@ -47,7 +48,7 @@ public class InspectHandler extends Handler {
 
     if( i._val.isKey() ) {        // Peek thru a Key
       i._val = DKV.get((Key) i._val.get());
-      if( i._val == null ) throw new IllegalArgumentException("Key is missing");
+      if( i._val == null ) throw new H2OKeyNotFoundArgumentException("key", s.key.name);
     }
 
     if( i._val.isFrame() ) {

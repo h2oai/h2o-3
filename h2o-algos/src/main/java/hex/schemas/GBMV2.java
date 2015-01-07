@@ -17,7 +17,8 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "learn_rate",
         "loss",
         "variable_importance",
-        "seed"
+        "seed",
+        "group_split"
     };
 
     // Input fields
@@ -45,18 +46,21 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
     @API(help = "Compute variable importance", level = API.Level.critical)
     public boolean variable_importance;
 
+    @API(help = "Perform Group Splitting Categoricals")
+    public boolean group_split;
+
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
 
       loss = GBMParameters.Family.AUTO; // TODO: Why? Defaults should NOT go into the schemas!
-      variable_importance = parms._importance;
+      variable_importance = parms._variable_importance;
       return this;
     }
 
     public GBMParameters fillImpl(GBMParameters impl) {
       super.fillImpl(impl);
 
-      impl._importance = this.variable_importance;
+      impl._variable_importance = this.variable_importance;
       return impl;
     }
   }

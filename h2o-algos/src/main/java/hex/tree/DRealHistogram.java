@@ -6,12 +6,12 @@ import water.util.AtomicUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
- *  <p>Sums and sums-of-squares of doubles
+ *  <p>Sums and sums-of-squares of floats
  *
  *  @author Cliff Click
  */
 public class DRealHistogram extends DHistogram<DRealHistogram> {
-  private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
+  private float _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
   public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit ) {
     super(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
@@ -19,32 +19,32 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   @Override boolean isBinom() { return false; }
 
   @Override public double mean(int b) {
-    long n = _bins[b];
+    int n = _bins[b];
     return n>0 ? _sums[b]/n : 0;
   }
   @Override public double var (int b) {
-    long n = _bins[b];
+    int n = _bins[b];
     if( n<=1 ) return 0;
     return (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1);
   }
 
   // Big allocation of arrays
   @Override void init0() {
-    _sums = MemoryManager.malloc8d(_nbin);
-    _ssqs = MemoryManager.malloc8d(_nbin);
+    _sums = MemoryManager.malloc4f(_nbin);
+    _ssqs = MemoryManager.malloc4f(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  @Override void incr0( int b, double y ) {
-    AtomicUtils.DoubleArray.add(_sums,b,y);
-    AtomicUtils.DoubleArray.add(_ssqs,b,y*y);
+  @Override void incr0( int b, float y ) {
+    AtomicUtils.FloatArray.add(_sums,b,y);
+    AtomicUtils.FloatArray.add(_ssqs,b,y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, double y, double yy ) {
-    AtomicUtils.DoubleArray.add(_sums,b,y);
-    AtomicUtils.DoubleArray.add(_ssqs,b,yy);
+  void incr1( int b, float y, float yy ) {
+    AtomicUtils.FloatArray.add(_sums,b,y);
+    AtomicUtils.FloatArray.add(_ssqs,b,yy);
   }
 
   // Merge two equal histograms together.

@@ -2,6 +2,8 @@ package water.api;
 
 import water.*;
 import water.api.InspectHandler.InspectPojo;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.DocGen.HTML;
 
 class InspectV1 extends Schema<InspectPojo, InspectV1> {
@@ -30,9 +32,9 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
 
   @Override public InspectPojo fillImpl(InspectPojo impl) {
     _val = DKV.get(key.key());
-    if( _val == null ) throw new IllegalArgumentException("Key not found");
-    if( off < 0 ) throw new IllegalArgumentException("Offset must not be negative");
-    if( len < 0 ) throw new IllegalArgumentException("Length must not be negative");
+    if( _val == null ) throw new H2OKeyNotFoundArgumentException("key", key.name);
+    if( off < 0 ) throw new H2OIllegalArgumentException("Offset must not be negative", "Offset must not be negative");
+    if( len < 0 ) throw new H2OIllegalArgumentException("Length must not be negative", "Length must not be negative");
     impl.init(_val,off, len);
     return impl;
   }

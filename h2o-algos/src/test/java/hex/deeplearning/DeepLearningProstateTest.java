@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.ConfusionMatrix;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -16,6 +16,7 @@ import water.util.Log;
 
 import java.util.Random;
 
+import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
@@ -222,15 +223,13 @@ public class DeepLearningProstateTest extends TestUtil {
                                           threshold = mm._aucdata.threshold();
                                           error = mm._aucdata.err();
                                           // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm()).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm(), new String[]{"0", "1"}).err(), error, 1e-15);
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                           Assert.assertEquals(mm._cm.err(), error, 1e-15);
                                         }
                                         
                                         // Compute CM
-                                        if (model2._output.nclasses() > 2)
-                                          pred.replace(0, pred.vecs()[0].toEnum());
-                                        double CMerrorOrig= new ConfusionMatrix(valid.vecs()[resp].toEnum(),pred).err();
+                                        double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
                                         
                                         // confirm that orig CM was made with threshold 0.5
                                         // put pred2 into DKV, and allow access
@@ -244,12 +243,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                           String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
                                           Env ev = Exec.exec(ast);
                                           try {
-                                            pred2 = ev.pop0Ary(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                            pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                           } finally {
                                             if (ev!=null) ev.remove_and_unlock();
                                           }
-                                        
-                                          double threshErr= new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
+
+                                          double threshErr = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
                                           Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
 
                                           // make labels with AUC-given threshold for best F1
@@ -257,11 +256,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                           ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                           ev = Exec.exec(ast);
                                           try {
-                                            pred2 = ev.pop0Ary();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
+                                            pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                           } finally {
                                             if (ev != null) ev.remove_and_unlock();
                                           }
-                                          double threshErr2 = new ConfusionMatrix(valid.vecs()[1].toEnum(),pred2).err();
+                                          double threshErr2 = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
                                           Assert.assertEquals(threshErr2, error, 1e-15);
                                         }
                                       } finally {

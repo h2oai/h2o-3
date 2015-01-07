@@ -78,7 +78,7 @@ class FramesV2 extends FramesBase<Frames, FramesV2> {
 
       int i = 0;
       for (FrameSummaryV2 frame : this.frames.values()) {
-        f.frames[i++] = FramesHandler.getFromDKV(frame.key);
+        f.frames[i++] = FramesHandler.getFromDKV("key", frame.key);
       }
     }
     return f;

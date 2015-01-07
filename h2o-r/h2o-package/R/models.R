@@ -2,7 +2,7 @@
 #' Retrieve Model Data
 #'
 #' After a model is constructed by H2O, R must create a view of the model. All views are backed by S4 objects that
-#' subclass the h2o.model object (see classes.R for class specifications).
+#' subclass the H2OModel object (see classes.R for class specifications).
 #'
 #' This file contains the set of model getters that fill out and return the appropriate S4 object.
 #'
@@ -251,7 +251,7 @@ function(h2o, key, return_all_lambda = TRUE, data) {
 #' Construct a summary of the GLM.
 .h2o.__getGLMSummary<-
 function(model) {
-  if (class(model) == "H2OGLMModelList") model <- model@models[[model@best_model]]
+  if (is(model, "H2OGLMModelList")) model <- model@models[[model@best_model]]
   result <- list()
   result$model_key     <- model@key
   result$alpha         <- model@model$params$alpha
@@ -286,78 +286,39 @@ function(model) {
 
 #-----------------------------------------------------------------------------------------------------------------------
 #
-#       GBM Model Getter
-#
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-#
 #       KMeans Model Getter
 #
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__getKM2Summary <- function(res) {
-  mySum = list()
-  mySum$model_key = res$'_key'
-  mySum$k = res$k
-  mySum$max_iter = res$iterations
-  mySum$error = res$error
-  return(mySum)
-}
-
-.h2o.__getKM2Results <- function(res, data, params) {
-  clusters_key <- paste(res$'_clustersKey', sep = "")
-
-  result = list()
-  params$centers = res$k
-  params$iter.max = res$max_iter
-  result$params = params
-
-  result$cluster = .h2o.exec2(clusters_key, h2o = data@h2o, clusters_key)
-  feat = res$'_names'[-length(res$'_names')]     # Get rid of response column name
-  result$centers = t(matrix(unlist(res$centers), ncol = res$k))
-  dimnames(result$centers) = list(seq(1,res$k), feat)
-  result$totss <- res$total_SS
-  result$withinss <- res$within_cluster_variances
-  result$tot.withinss <- res$total_within_SS
-  result$betweenss <- res$between_cluster_SS
-  result$size <- res$size
-  result$iter <- res$iterations
-  return(result)
-}
-
 .kmeans.builder <- function(json, client) {
-#   clus = json$output$clusters
-#   nams = json$output$names
-#   if(!is.null(clus) && !is.na(clus)) {
-#     clus = do.call(rbind.data.frame, clus)
-#     if(!is.null(nams) && ncol(clus) == length(nams))
-#       names(clus) = nams
-#   }
-#   json$output$clusters = clus
-  json$output$centers = new("h2o.2dtable", json$output$centers)
+  if(NCOL(json$output$centers) == length(json$output$names))
+    colnames(json$output$centers) <- json$output$names
   new("H2OKMeansModel", h2o = client, key = json$key$name, model = json$output,
-      valid = new("h2o.frame", h2o = client, key="NA"))
+      valid = new("H2OFrame", h2o = client, key="NA"))
 }
+
+#-----------------------------------------------------------------------------------------------------------------------
+#
+#       GBM Model Getter
+#
+#-----------------------------------------------------------------------------------------------------------------------
 
 .gbm.builder <- function(json, client) {
   new("H2OGBMModel", h2o = client, key = json$key$name, model = json$output,
-      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
 }
 
 .glm.builder <- function(json, client) {
   new("H2OGLMModel", h2o = client, key = json$key$name, model = json$output,
-      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
 }
 
 .deeplearning.builder <- function(json, client) {
   new("H2ODeepLearningModel", h2o = client, key = json$key$name, model = json$output,
-      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
 }
 
 .quantile.builder <- function(json, client) {
   new("H2OQuantileModel", h2o = client, key = json$key$name, model = json$output,
-      valid = new("h2o.frame", h2o=client, key="NA"), xval = list())
+      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
 }

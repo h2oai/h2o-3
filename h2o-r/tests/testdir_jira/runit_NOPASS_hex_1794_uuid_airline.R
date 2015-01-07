@@ -54,7 +54,7 @@ test <- function(conn) {
 	#	print("Summary of predictions with UUIDs: ") ; summary(air.results) 
 
 	#print("Show distribution of predictions with quantile.")
-	#	quantile.h2o.frame(air.results$NO)
+	#	quantile.H2OFrame(air.results$NO)
 
 	#print("Extract strongest predictions.")
 	#	top.air <- h2o.assign(air.results[air.results$NO > 0.75],key="top.air")

@@ -101,11 +101,37 @@ public class KeySnapshot {
   /**
    @return array of all keys in this snapshot.
    */
-  public Key [] keys(){
+  public Key[] keys(){
     Key [] res = new Key[_keyInfos.length];
     for(int i = 0; i < _keyInfos.length; ++i)
       res[i] = _keyInfos[i]._key;
     return res;
+  }
+
+  /**
+   * Return all the keys of the given hardcoded type.
+   * @param typemapType Short type constant known by TypeMap, such as TypeMap.FRAME
+   * @return array of keys in this snapshot with the given type
+   */
+  public static Key[] globalKeysOfType(final short typemapType) {
+    return KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override public boolean filter(KeySnapshot.KeyInfo k) {
+        return k._type == typemapType;
+      }
+    }).keys();
+  }
+
+  /**
+   * Return all the keys of the given class.
+   * @param clz Class
+   * @return array of keys in this snapshot with the given class
+   */
+  public static Key[] globalKeysOfClass(final Class clz) {
+    return KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override public boolean filter(KeySnapshot.KeyInfo k) {
+        return Value.isSubclassOf(k._type, clz);
+      }
+    }).keys();
   }
 
   /**

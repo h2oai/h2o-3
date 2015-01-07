@@ -166,22 +166,22 @@ public final class Gram extends Iced<Gram> {
     return cholesky(chol,true,"");
   }
   /**
-   * Compute the cholesky decomposition.
+   * Compute the Cholesky decomposition.
    *
    * In case our gram starts with diagonal submatrix of dimension N, we exploit this fact to reduce the complexity of the problem.
-   * We use the standard decomposition of the cholesky factorization into submatrices.
+   * We use the standard decomposition of the Cholesky factorization into submatrices.
    *
    * We split the Gram into 3 regions (4 but we only consider lower diagonal, sparse means diagonal region in this context):
    *     diagonal
    *     diagonal*dense
    *     dense*dense
-   * Then we can solve the cholesky in 3 steps:
-   *  1. We solve the diagnonal part right away (just do the sqrt of the elements).
+   * Then we can solve the Cholesky in 3 steps:
+   *  1. We solve the diagonal part right away (just do the sqrt of the elements).
    *  2. The diagonal*dense part is simply divided by the sqrt of diagonal.
-   *  3. Compute Cholesky of dense*dense - outer product of cholesky of diagonal*dense computed in previous step
+   *  3. Compute Cholesky of dense*dense - outer product of Cholesky of diagonal*dense computed in previous step
    *
    * @param chol
-   * @return
+   * @return the Cholesky decomposition
    */
   public Cholesky cholesky(Cholesky chol, boolean parallelize,String id) {
     long start = System.currentTimeMillis();

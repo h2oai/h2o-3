@@ -102,7 +102,9 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame) { this.exec(e); }
+            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTDelete )
+      { this.exec(e); }
 
     else { throw H2O.fail("Unknown AST: " + this.getClass());}
     return e;
@@ -165,6 +167,7 @@ class ASTFrame extends AST {
   final String _key;
   final Frame _fr;
   boolean isFrame;
+  boolean _g;
   ASTFrame(Frame fr) { _key = fr._key == null ? null : fr._key.toString(); _fr = fr; }
   ASTFrame(Key key) { this(key.toString()); }
   ASTFrame(String key) {
@@ -173,6 +176,7 @@ class ASTFrame extends AST {
     if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
     _key = key;
     _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
+    _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
   @Override void exec(Env e) {
@@ -181,10 +185,11 @@ class ASTFrame extends AST {
       if (e.isGlobal()) e._global._frames.put(_key, _fr);
       else e._local._frames.put(_key, _fr);
     }
-    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame));
+    e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
+  boolean isGlobal() { return _g; }
 }
 
 class ASTNum extends AST {
@@ -425,7 +430,7 @@ class ASTStatement extends AST {
         return;
       }
       _asts[i].treeWalk(env);  // Execute the statements by walking the ast
-      if (env.isAry()) cleanup.add(env.pop0Ary()); else env.pop();  // Pop all intermediate results; needed results will be looked up.
+      env.pop();
     }
     _asts[_asts.length-1].treeWalk(env); // Return final statement as result
     for (Frame f : cleanup) f.delete();
@@ -705,7 +710,7 @@ class ASTAssign extends AST {
               if (Arrays.asList(rows0).contains(row)) replaceRow(chks, row, d0, s0, cols0);
           }
         }.doAll(lhs_ary);
-        e.push0(new ValFrame(lhs_ary));
+        e.push(new ValFrame(lhs_ary));
         return;
 
         // Case: rows is a Frame -- in this case it's expected to be a predicate vec
@@ -722,8 +727,7 @@ class ASTAssign extends AST {
             for (int r = 0; r < rows; ++r) if (pred.at0(r) != 0) replaceRow(cs, r, d0, s0, cols0);
           }
         }.doAll(rr);
-        e.cleanup(rr, (Frame) rows);
-        e.push0(new ValFrame(lhs_ary));
+        e.push(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was a constant)");
 
@@ -734,7 +738,7 @@ class ASTAssign extends AST {
       // LHS.numCols() == RHS.numCols()
       // mismatch in types results in NA
 
-      final Frame rhs_ary = e.pop0Ary();
+      final Frame rhs_ary = e.popAry();
       if ( ( cols == null && rhs_ary.numCols() != lhs_ary.numCols()) || (cols != null && rhs_ary.numCols() != ((long[]) cols).length ) )
         throw new IllegalArgumentException("Right-hand frame has does not match the number of columns required in the assignment to the left-hand side." );
       if (rhs_ary.numRows() > lhs_ary.numRows()) throw new IllegalArgumentException("Right-hand side frame has more rows than the left-hand side.");
@@ -765,8 +769,7 @@ class ASTAssign extends AST {
             }
           }
         }.doAll(lhs_ary);
-        e.cleanup(rhs_ary);
-        e.push0(new ValFrame(lhs_ary));
+        e.push(new ValFrame(lhs_ary));
         return;
 
         // case where rows is a Frame
@@ -802,9 +805,7 @@ class ASTAssign extends AST {
             }
           }
         }.doAll(rr);
-
-        e.cleanup(pred, rr, (Frame) rows);
-        e.push0(new ValFrame(lhs_ary));
+        e.push(new ValFrame(lhs_ary));
         return;
       } else throw new IllegalArgumentException("Invalid row selection. (note: RHS was Frame");
     }
@@ -819,8 +820,10 @@ class ASTAssign extends AST {
       assert id.isGlobalSet() || id.isLocalSet() : "Expected to set result into the LHS!.";
 
       // RHS is a frame
-      if (e.isAry()) {
-        Frame f = e.pop0Ary();  // pop without lowering counts
+      if (e.isAry() || (id.isGlobalSet() && e.isNum())) {
+        Frame f = e.isAry()
+                ? e.popAry() // pop without lowering counts
+                : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Frame fr = new Frame(k, f.names(), f.vecs());
         if (id.isGlobalSet()) DKV.put(k, fr);
@@ -828,7 +831,7 @@ class ASTAssign extends AST {
         e.addKeys(fr);
         if (!e.isGlobal()) e._local._frames.put(fr._key.toString(), fr);
         else e._global._frames.put(fr._key.toString(), fr);
-        e.push(new ValFrame(fr));
+        e.push(new ValFrame(fr, id.isGlobalSet()));
         e.put(id._id, Env.ARY, id._id);
       }
 
@@ -847,7 +850,7 @@ class ASTAssign extends AST {
       if (e.isNum() && e.peekTypeAt(-1) == Env.NUM) {
         int col = (int) e.popDbl();
         long row = (long) e.popDbl();
-        Frame ary = e.pop0Ary();
+        Frame ary = e.popAry();
         if (Math.abs(row) > ary.numRows())
           throw new IllegalArgumentException("New rows would leave holes after existing rows.");
         if (Math.abs(col) > ary.numCols())
@@ -858,7 +861,7 @@ class ASTAssign extends AST {
           double d = e.popDbl();
           if (ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set numeric columns");
           ary.vecs()[col].set(row, d);
-          e.push0(new ValFrame(ary));
+          e.push(new ValFrame(ary));
           return;
         } else if (e.isStr()) {
           if (!ary.vecs()[col].isEnum())
@@ -867,7 +870,7 @@ class ASTAssign extends AST {
           String[] dom = ary.vecs()[col].domain();
           if (in(s, dom)) ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
           else ary.vecs()[col].set(row, Double.NaN);
-          e.push0(new ValFrame(ary));
+          e.push(new ValFrame(ary));
           return;
         } else
           throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
@@ -875,13 +878,12 @@ class ASTAssign extends AST {
 
       // Get the LHS slicing rows/cols. This is a more complex case than the simple 1x1 re-assign
       Val colSelect = e.pop();
-      int rows_type = e.peekType();
-      Val rowSelect = rows_type == Env.ARY ? e.pop0() : e.pop();
+      Val rowSelect = e.pop();
 
       Frame lhs_ary = e.peekAry(); // Now the stack looks like [ ..., RHS, LHS_FRAME]
       Object cols = ASTSlice.select(lhs_ary.numCols(), colSelect, e, true);
       Object rows = ASTSlice.select(lhs_ary.numRows(), rowSelect, e, false);
-      lhs_ary = e.pop0Ary(); // Now the stack looks like [ ..., RHS]
+      lhs_ary = e.popAry(); // Now the stack looks like [ ..., RHS]
 
       long[] cs1;
       long[] rs1;
@@ -902,7 +904,7 @@ class ASTAssign extends AST {
           if (lhs_ary.vecs()[col].isEnum())
             throw new IllegalArgumentException("Currently can only set numeric columns");
           lhs_ary.vecs()[col].set(row, e.popDbl());
-          e.push0(new ValFrame(lhs_ary));
+          e.pushAry(lhs_ary);
           return;
         } else if (e.isStr()) {
           if (!lhs_ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set categorical columns.");
@@ -910,7 +912,7 @@ class ASTAssign extends AST {
           String[] dom = lhs_ary.vecs()[col].domain();
           if (in(s, dom)) lhs_ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
           else lhs_ary.vecs()[col].set(row, Double.NaN);
-          e.push0(new ValFrame(lhs_ary));
+          e.pushAry(lhs_ary);
           return;
         } else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
       }
@@ -933,7 +935,7 @@ class ASTAssign extends AST {
         // convert constant into a whole vec
         if (e.isNum()) rhs_ary = new Frame(lhs_ary.anyVec().makeCon(e.popDbl()));
         else if (e.isStr()) rhs_ary = new Frame(lhs_ary.anyVec().makeZero(new String[]{e.popStr()}));
-        else if (e.isAry()) rhs_ary = e.pop0Ary();
+        else if (e.isAry()) rhs_ary = e.popAry();
         else throw new IllegalArgumentException("Bad RHS on the stack: " + e.peekType() + " : " + e.toString());
 
         long[] cs = (long[]) cols;
@@ -944,22 +946,19 @@ class ASTAssign extends AST {
         Vec rvecs[] = rhs_ary.vecs();
         Futures fs = new Futures();
         for (int i = 0; i < cs.length; i++) {
-          boolean subit=true;
           int cidx = (int) cs[i];
           Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
           e.addVec(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
-              subit=false;
-              e.subVec(rv);
+              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
-              subit=false;
-              e.subVec(rv);
+              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
               e.addVec(rv);
             }
@@ -967,8 +966,7 @@ class ASTAssign extends AST {
           }
         }
         fs.blockForPending();
-//        e.cleanup(rhs_ary);
-        e.push0(new ValFrame(lhs_ary));
+        e.pushAry(lhs_ary);
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");
     }
@@ -1012,7 +1010,7 @@ class ASTSlice extends AST {
     // stack looks like:  [....,hex,rows,cols], so pop, pop !
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
-    Val rows = rows_type == Env.ARY ? env.pop0() : env.pop();
+    Val rows = env.pop();
     if( cols_type == Env.STR ) {
       Frame ary = env.peekAry();
       int idx = ary.find(((ValStr)cols)._s);
@@ -1035,20 +1033,20 @@ class ASTSlice extends AST {
         if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
-      env.cleanup(ary);
     } else {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
-      Frame ary= env.peekAry(); // Get without popping
+      Frame ary = env.peekAry(); // Get without popping
+      if (rows_type == Env.ARY) env.addRef(((ValFrame)rows)._fr);
       Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
       Frame fr2 = ary.deepSlice(rowSelect,colSelect);
-      if (colSelect instanceof Frame) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
-      if (rowSelect instanceof Frame) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
+      if (colSelect instanceof Frame && cols_type != Env.ARY) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
+      if (rowSelect instanceof Frame && rows_type != Env.ARY) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
       if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      env.cleanup(ary, env.pop0Ary(), rows_type == Env.ARY ? ((ValFrame)rows)._fr : null);
-      env.push(new ValFrame(fr2));
+      if (rows_type == Env.ARY) env.subRef(((ValFrame)rows)._fr);
+      env.poppush(1, new ValFrame(fr2));
     }
   }
 
@@ -1126,8 +1124,8 @@ class ASTSlice extends AST {
     }
     // Got a frame/list of results.
     // Decide if we're a toss-out or toss-in list
-    Frame ary = env.pop0Ary();  // get it off the stack!!!!
-    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+ary.names());
+    Frame ary = env.popAry();
+    if( ary.numCols() != 1 ) throw new IllegalArgumentException("Selector must be a single column: "+AtoS(ary.names()));
     Vec vec = ary.anyVec();
     // Check for a matching column of bools.
     if( ary.numRows() == len && vec.min()>=0 && vec.max()<=1 && vec.isInt() )
@@ -1140,6 +1138,12 @@ class ASTSlice extends AST {
       cols[i] = vec.at8(i);
     }
     return cols;
+  }
+
+  private static String AtoS(String[] s) {
+    StringBuilder sb = new StringBuilder();
+    for (String ss : s) sb.append(ss).append(',');
+    return sb.toString();
   }
 
   @Override public String toString() { return "[,]"; }
@@ -1158,7 +1162,6 @@ class ASTSlice extends AST {
 class ASTDelete extends AST {
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     AST cols = E.skipWS().parse();
     ASTDelete res = (ASTDelete) clone();
     res._asts = new AST[]{ary,cols};
@@ -1169,11 +1172,7 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    Frame  ary = ((ASTFrame )_asts[0])._fr;
-    String col = ((ASTString)_asts[1])._s;
-    Vec vec = ary.remove(col);
-    vec.remove();
-    DKV.put(ary);
-    env.push(new ValFrame(ary));
+    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    env.push(new ValNum(0));
   }
 }

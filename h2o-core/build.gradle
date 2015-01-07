@@ -35,6 +35,8 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
 }
 
+apply from: '../gradle/dataCheck.gradle'
+
 javadoc {
   exclude "**/fvec/C*Chunk.java/**"
   exclude "**/nbhm/**"
@@ -56,7 +58,7 @@ jar {
 // complete cluster of free-running JVMs and redirect all output (at the OS
 // level) to files - then scrape the files later for test results.
 test {
-  dependsOn cpLibs, testMultiNode, testJar
+  dependsOn smalldataCheck, cpLibs, testMultiNode, testJar
 
   // Defeat task 'test' by running no tests.
   exclude '**'

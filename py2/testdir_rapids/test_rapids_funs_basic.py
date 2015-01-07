@@ -3,13 +3,26 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 funsList = [
-    '(def anon {x}  (- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;  (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)',
+    '(def anon {x}  (, ((- x x ) )))',
+
+    '(def anon {x}  (, ((- (abs (- (* %x %x) (* (* %x #5) %x))) )) ))',
+
+
+
+    '(def anon {x}  (, ((- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x))) ) ((abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x))) ))',
+
     '(def anon {x} (- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;  (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)',
+
     '(def anon {x}(- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;  (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)',
+
 # need space after function name
+
     '(def anon {x}(- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;  (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)',
+
     '(def anon {x}(- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));; (abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x)));;;)',
+
     '(def anon {x}(- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;(abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x))) ;;;)',
+
     '(def anon {x}(- (abs (- (* %x %x) (* (* %x #5) %x))) (/ #55 %x));;(abs (- (* (* %x %x) %x) (* (/ #999 (var ([ %x (: #0 #19) "null") "null" %FALSE "null")) %x))) ;;; )',
 ]
 # https://github.com/0xdata/h2o-dev/blob/master/h2o-r/tests/testdir_munging/exec/runit_apply.R

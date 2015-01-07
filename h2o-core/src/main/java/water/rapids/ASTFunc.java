@@ -104,19 +104,16 @@ public class ASTFunc extends ASTFuncDef {
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
-//    e.cleanup(cleanme, f);
+    captured.popScope();
     _e = captured;
-//    captured.popScope();
   }
 
   // used by methods that pass their args to FUN (e.g. apply, sapply, ddply); i.e. args are not parsed here.
   @Override void exec(Env e, AST arg1, AST[] args) {
     _args = new AST[args == null ? 1 :1 + args.length];
     _args[0] = arg1;
-//    Frame f = ((ASTFrame)_args[0])._fr;
     if (args != null) System.arraycopy(args, 0, _args, 1, args.length);
     apply(e);
-//    f.delete();
   }
 
   double[] map(Env env, double[] in, double[] out, AST[] args) {
@@ -143,7 +140,7 @@ public class ASTFunc extends ASTFuncDef {
       if (out==null || out.length<1) out= new double[1];
       out[0] = env.popDbl();
     } else if (env.isAry()) {
-      fr = env.pop0Ary();
+      fr = env.popAry();
       if (fr.numCols() > 1 && fr.numRows() != 1) throw H2O.unimpl("Number of rows returned is > 1");
 //      if (fr.numRows() > 1<<8) throw H2O.unimpl("Too many rows!");
       if (fr.numCols() > 1) {
@@ -157,7 +154,7 @@ public class ASTFunc extends ASTFuncDef {
     } else {
       throw H2O.unimpl();
     }
-    env.cleanup(fr);
+//    env.cleanup(fr);
     return out;
   }
 
@@ -167,15 +164,15 @@ public class ASTFunc extends ASTFuncDef {
     return indent(sb,d).append("}");
   }
 
-  void trash() {
-    if (_e == null) return;
-    // wipe the _local_frames
-    Futures fs = new Futures();
-    for (Vec v: _e._refcnt.keySet()) {
-      fs = _e._parent.subVec(v, fs);
-    }
-    fs.blockForPending();
-  }
+//  void trash() {
+//    if (_e == null) return;
+//    // wipe the _local_frames
+//    Futures fs = new Futures();
+//    for (Vec v: _e._refcnt.keySet()) {
+//      fs = _e._parent.subVec(v, fs);
+//    }
+//    fs.blockForPending();
+//  }
 }
 
 class ASTFuncDef extends ASTOp {

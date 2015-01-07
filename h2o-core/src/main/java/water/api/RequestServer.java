@@ -1,20 +1,24 @@
 package water.api;
 
-import water.AutoBuffer;
-import water.H2O;
-import water.NanoHTTPD;
+import water.*;
+import water.exceptions.H2ONotFoundArgumentException;
+import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
+import water.util.GetLogsFromNode;
 import water.util.Log;
 import water.util.RString;
 
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -254,7 +258,7 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
-   * @param uri_pattern regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
+   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
@@ -488,6 +492,12 @@ public class RequestServer extends NanoHTTPD {
       return r;
     }
 
+    // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
+    if (uri.endsWith("/Logs/download")) {
+      maybeLogRequest(path, versioned_path, "", parms);
+      return downloadLogs();
+    }
+
     // Load resources, or dispatch on handled requests
     try {
       // Find handler for url
@@ -498,21 +508,36 @@ public class RequestServer extends NanoHTTPD {
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null )
-        return getResource(uri);
+        return getResource(version, type, uri);
       else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
+        // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
         return wrap2(HTTP_OK, handle(type,route,version,parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(HTTP_OK,handle(type,route,version,parms),type);
       }
-    } catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
-      StringWriter sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      Log.warn(sw.toString());
-      if( e instanceof IllegalArgumentException ) // Common error for bad arguments
-        return wrap(HTTP_BADREQUEST,new HttpErrorV1(400, e.getMessage(),uri),type);
-      return wrap("unimplemented".equals(e.getMessage())? HTTP_NOTIMPLEMENTED : HTTP_INTERNALERROR, new HttpErrorV1(e),type);
+    }
+    catch (H2OAbstractRuntimeException e) {
+      H2OError error = e.toH2OError(uri);
+
+      Log.warn(error._dev_msg);
+      Log.warn(error._values.toJsonString());
+      Log.warn((Object[])error._stacktrace);
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
+    }
+    // TODO: kill the server if someone called H2O.fail()
+    catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
+      H2OError error = new H2OError(e, uri);
+
+      Log.warn(error._dev_msg);
+      Log.warn(error._values.toJsonString());
+      Log.warn((Object[])error._stacktrace);
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
     }
   }
 
@@ -535,17 +560,17 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( String http_code, Schema s, RequestType type ) {
+  private Response wrap( String http_response_header, Schema s, RequestType type ) {
     // Convert Schema to desired output flavor
     switch( type ) {
-    case json:   return new Response(http_code, MIME_JSON, new String(s.writeJSON(new AutoBuffer()).buf()));
+    case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
       throw H2O.unimpl();
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
-      return new Response(http_code, MIME_HTML, html.toString());
+      return new Response(http_response_header, MIME_HTML, html.toString());
     }
     default:
       throw H2O.fail("Unknown type to wrap(): " + type);
@@ -564,7 +589,7 @@ public class RequestServer extends NanoHTTPD {
   // cache of all loaded resources
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
   // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(String uri) {
+  private Response getResource(int version, RequestType request_type, String uri) {
     byte[] bytes = _cache.get(uri);
     if( bytes == null ) {
       // Try-with-resource
@@ -587,7 +612,9 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      return wrap(HTTP_NOTFOUND,new HttpErrorV1(400, "Resource "+uri+" not found",uri),RequestType.html);
+      throw new H2ONotFoundArgumentException("Resource " + uri + " not found",
+                                             "Resource " + uri + " not found");
+
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )
       mime = "text/css";
@@ -695,5 +722,97 @@ public class RequestServer extends NanoHTTPD {
       catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }
     return al.toArray(new String[al.size()]);
+  }
+
+  // ---------------------------------------------------------------------
+  // Download logs support
+  // ---------------------------------------------------------------------
+
+  private String getOutputLogStem() {
+    String pattern = "yyyyMMdd_hhmmss";
+    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
+    String now = formatter.format(new Date());
+
+    return "h2ologs_" + now;
+  }
+
+  private byte[] zipLogs(byte[][] results, String topDir) throws IOException {
+    int l = 0;
+    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
+    for (int i = 0; i<results.length;l+=results[i++].length);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
+
+    // Add top-level directory.
+    ZipOutputStream zos = new ZipOutputStream(baos);
+    {
+      ZipEntry zde = new ZipEntry (topDir + File.separator);
+      zos.putNextEntry(zde);
+    }
+
+    try {
+      // Add zip directory from each cloud member.
+      for (int i =0; i<results.length; i++) {
+        String filename =
+                topDir + File.separator +
+                        "node" + i +
+                        H2O.CLOUD._memary[i].toString().replace(':', '_').replace('/', '_') +
+                        ".zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(results[i]);
+        zos.closeEntry();
+      }
+
+      // Close the top-level directory.
+      zos.closeEntry();
+    } finally {
+      // Close the full zip file.
+      zos.close();
+    }
+
+    return baos.toByteArray();
+  }
+
+  private Response downloadLogs() {
+    Log.info("\nCollecting logs.");
+
+    H2ONode[] members = H2O.CLOUD.members();
+    byte[][] perNodeZipByteArray = new byte[members.length][];
+
+    for (int i = 0; i < members.length; i++) {
+      byte[] bytes;
+
+      try {
+        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
+        boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
+        if (healthy) {
+          GetLogsFromNode g = new GetLogsFromNode();
+          g.nodeidx = 0;
+          g.doIt();
+          bytes = g.bytes;
+        } else {
+          bytes = "Node not healthy".getBytes();
+        }
+      }
+      catch (Exception e) {
+        bytes = e.toString().getBytes();
+      }
+
+      perNodeZipByteArray[i] = bytes;
+    }
+
+    String outputFileStem = getOutputLogStem();
+    byte[] finalZipByteArray;
+    try {
+      finalZipByteArray = zipLogs(perNodeZipByteArray, outputFileStem);
+    }
+    catch (Exception e) {
+      finalZipByteArray = e.toString().getBytes();
+    }
+
+    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK,NanoHTTPD.MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
+    res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
+    res.addHeader("Content-Disposition", "attachment; filename="+outputFileStem + ".zip");
+    return res;
   }
 }

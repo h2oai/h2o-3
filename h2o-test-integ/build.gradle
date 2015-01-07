@@ -21,6 +21,9 @@ task cleanPythonMultiJVMTests(type: Delete) {
     delete "$pythonMultiJVMTestsPath/results"
 }
 
+apply from: '../gradle/dataCheck.gradle'
+
+test.dependsOn smalldataCheck
 test.dependsOn runPythonMultiJVMTests
 clean.dependsOn cleanPythonMultiJVMTests
 

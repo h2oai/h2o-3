@@ -88,7 +88,7 @@ public class RapidsTest extends TestUtil {
     Env env = Exec.exec(tree);
     System.out.println(env.toString());
     if (env.isAry()) {
-      Frame f2 = env.pop0Ary();
+      Frame f2 = env.popAry();
       for (int i = 0; i < f2.numCols(); ++i) System.out.println(f2.vecs()[i].at(0));
       f2.delete();
     } else if (env.isNum()) {

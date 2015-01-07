@@ -131,6 +131,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   public transient int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
   int set_len(int len) { return _len = len; }
+  /** Read-only length of chunk (number of rows). */
+  public int len() { return _len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
   private transient Chunk _chk2;

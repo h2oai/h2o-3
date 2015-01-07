@@ -4,16 +4,16 @@
 #' Performs k-means clustering on an H2O dataset.
 #'
 #'
-#' @param training_frame An \linkS4class{h2o.frame} object containing the
+#' @param training_frame An \linkS4class{H2OFrame} object containing the
 #'        variables in the model.
 #' @param ignored_columns (Optional) A vector containing the data columns on
 #'        which k-means ignores.
-#' @param k \code{Defaults to 2} The number of clusters. Must be between 2 and
-#'        1e7.
+#' @param k \code{Defaults to 2} The number of clusters. Must be between 1 and
+#'        1e7 inclusive.
 #' @param destination_key (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
-#' @param max_iters The maximum number of iterations allowed. Must be between 1
-#         and 1e6.
+#' @param max_iters The maximum number of iterations allowed. Must be between 0
+#         and 1e6 inclusive.
 #' @param standardize Logical, indicates whether the data should be
 #'        standardized before running k-means.
 #' @param init A character string that selects the initial set of k cluster

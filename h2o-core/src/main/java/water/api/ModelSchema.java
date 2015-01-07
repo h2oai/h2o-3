@@ -28,7 +28,7 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
   protected ModelParametersSchema parameters;
 
-  @API(help="The build output for the model (e.g. the clusters for KMeans).", direction=API.Direction.OUTPUT)
+  @API(help="The build output for the model (e.g. the cluster centers for KMeans).", direction=API.Direction.OUTPUT)
   protected ModelOutputSchema output;
 
   @API(help="Compatible frames, if requested", direction=API.Direction.OUTPUT)
