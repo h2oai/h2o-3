@@ -493,7 +493,7 @@ public class RequestServer extends NanoHTTPD {
     }
 
     // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
-    if (uri.endsWith("/DownloadLogs")) {
+    if (uri.endsWith("/Logs/download")) {
       maybeLogRequest(path, versioned_path, "", parms);
       return downloadLogs();
     }

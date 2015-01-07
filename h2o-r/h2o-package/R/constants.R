@@ -203,6 +203,7 @@
 .h2o.__JOBS         <- "Jobs.json"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
 .h2o.__CLOUD        <- "Cloud.json"
 .h2o.__SHUTDOWN     <- "Shutdown.json"
+.h2o.__DOWNLOAD_LOGS <- "/Logs/download"
 
 #'
 #' Algorithm Endpoints
