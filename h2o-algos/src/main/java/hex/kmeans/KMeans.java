@@ -29,7 +29,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   }
 
   public enum Initialization {
-    None, PlusPlus, Furthest
+    Random, PlusPlus, Furthest, User
   }
 
   // Number of categorical columns
@@ -64,6 +64,11 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     if( _parms._max_iters < 0 || _parms._max_iters > 1000000) error("_max_iters", " max_iters must be between 0 and 1e6");
     if( _train == null ) return; // Nothing more to check
     if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows.");
+    if( null != _parms._user_points ){ // Check dimensions of user-specified centers
+      if( _parms._user_points.get().numCols() != _train.numCols() ) {
+        error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      }
+    }
 
     for( Vec v : _train.vecs() )
       if( v.isEnum() ) _ncats++;
@@ -114,37 +119,53 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         // Initialize standardized cluster centers
         Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
         double centers[][];    // Standardized cluster centers
-        if( _parms._init == Initialization.None ) {
-          // Initialize all cluster centers to random rows
-          centers = new double[_parms._k][_train.numCols()];
-          for( double[] center : centers )
-            randomRow(vecs, rand, center, means, mults);
-        } else {
-          centers = new double[1][nvecs];
-          // Initialize first cluster center to random row
-          randomRow(vecs, rand, centers[0], means, mults);
-
-          while( model._output._iters < 5 ) {
-            // Sum squares distances to cluster center
-            SumSqr sqr = new SumSqr(centers,means,mults,_ncats).doAll(vecs);
-
-            // Sample with probability inverse to square distance
-            Sampler sampler = new Sampler(centers, means, mults, _ncats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
-            centers = ArrayUtils.append(centers,sampler._sampled);
-
-            // Fill in sample centers into the model
-            if( !isRunning() ) return; // Stopped/cancelled
-            model._output._centers = destandardize(centers, _ncats, means, mults);
-            model._output._avgwithinss = sqr._sqr/_train.numRows();
-
-            model._output._iters++;     // One iteration done
-
-            model.update(_key); // Make early version of model visible, but don't update progress using update(1)
+        if( null != _parms._user_points ) { // User-specified starting points
+          int numCenters = _parms._k;
+          int numCols = _parms._user_points.get().numCols();
+          centers = new double[numCenters][numCols];
+          Vec[] centersVecs = _parms._user_points.get().vecs();
+          // Get the centers and standardize them
+          for (int r=0; r<numCenters; r++) {
+            for (int c=0; c<numCols; c++){
+              centers[r][c] = centersVecs[c].at(r);
+              centers[r][c] = data(centers[r][c], c, means, mults, vecs[c].cardinality());
+            }
           }
-          // Recluster down to k standardized cluster centers
-          centers = recluster(centers, rand);
+        }
+        else { // Random, Furthest, or PlusPlus initialization
+          if (_parms._init == Initialization.Random) {
+            // Initialize all cluster centers to random rows
+            centers = new double[_parms._k][_train.numCols()];
+            for (double[] center : centers)
+              randomRow(vecs, rand, center, means, mults);
+          } else {
+            centers = new double[1][nvecs];
+            // Initialize first cluster center to random row
+            randomRow(vecs, rand, centers[0], means, mults);
+
+            while (model._output._iters < 5) {
+              // Sum squares distances to cluster center
+              SumSqr sqr = new SumSqr(centers, means, mults, _ncats).doAll(vecs);
+
+              // Sample with probability inverse to square distance
+              Sampler sampler = new Sampler(centers, means, mults, _ncats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
+              centers = ArrayUtils.append(centers, sampler._sampled);
+
+              // Fill in sample centers into the model
+              if (!isRunning()) return; // Stopped/cancelled
+              model._output._centers = destandardize(centers, _ncats, means, mults);
+              model._output._avgwithinss = sqr._sqr / _train.numRows();
+
+              model._output._iters++;     // One iteration done
+
+              model.update(_key); // Make early version of model visible, but don't update progress using update(1)
+            }
+            // Recluster down to k standardized cluster centers
+            centers = recluster(centers, rand);
+          }
         }
         model._output._iters = -1;    // Reset iteration count
+        //model._output._initial_centers = centers;
 
         // Average change in standardized cluster centers
         double average_change = Double.POSITIVE_INFINITY;
@@ -490,7 +511,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     int count = 1;
     ClusterDist cd = new ClusterDist();
     switch( _parms._init ) {
-    case None:
+    case Random:
       break;
     case PlusPlus: { // k-means++
       while( count < res.length ) {

@@ -176,6 +176,7 @@
                "double[]" = "narray",
                "float" = "numeric",
                "float[]" = "narray",
+               "Key" = "H2OFrame",
                "Key<Frame>" = "H2OFrame",
                "int" = "numeric",
                "int[]" = "narray",
