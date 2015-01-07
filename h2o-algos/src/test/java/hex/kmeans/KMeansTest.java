@@ -42,7 +42,7 @@ public class KMeansTest extends TestUtil {
       parms._k = 3;
       parms._standardize = true;
       parms._max_iters = 10;
-      parms._init = KMeans.Initialization.None;
+      parms._init = KMeans.Initialization.Random;
       kmm = doSeed(parms,0);
 
       // Done building model; produce a score column with cluster choices
@@ -66,7 +66,7 @@ public class KMeansTest extends TestUtil {
       parms._k = 3;
       parms._standardize = true;
       parms._max_iters = 10;
-      parms._init = KMeans.Initialization.None;
+      parms._init = KMeans.Initialization.Random;
 
       doSeed(parms,341534765239617L).delete(); // Seed triggers an empty cluster on iris
       doSeed(parms,341579128111283L).delete(); // Seed triggers an empty cluster on iris
@@ -92,7 +92,7 @@ public class KMeansTest extends TestUtil {
       parms._k = 7;
       parms._standardize = true;
       parms._max_iters = 100;
-      parms._init = KMeans.Initialization.None;
+      parms._init = KMeans.Initialization.Random;
 
       for( int i=0; i<10; i++ )
         doSeed(parms,System.nanoTime()).delete();
@@ -120,7 +120,7 @@ public class KMeansTest extends TestUtil {
       parms._k = 3;
       parms._standardize = true;
       parms._max_iters = 100;
-      parms._init = KMeans.Initialization.None;
+      parms._init = KMeans.Initialization.Random;
 
       double[][] exp1 = new double[][]{ d(1, 0, 0), d(0, 1, 0), d(0, 0, 1), };
       double[][] exp2 = new double[][]{ d(0, 1, 0), d(1, 0, 0), d(0, 0, 1), };

@@ -32,7 +32,7 @@ public class KMeansRandomTest extends TestUtil {
           for (int max_iter : new int[]{1, 10, 100}) {
             for (boolean standardize : new boolean[]{false, true}) {
               for (KMeans.Initialization init : new KMeans.Initialization[]{
-                      KMeans.Initialization.None,
+                      KMeans.Initialization.Random,
                       KMeans.Initialization.Furthest,
                       KMeans.Initialization.PlusPlus,
               }) {

@@ -1,22 +1,24 @@
 package water.api;
 
-import water.H2O;
-import water.H2OError;
-import water.NanoHTTPD;
+import water.*;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
+import water.util.GetLogsFromNode;
 import water.util.Log;
 import water.util.RString;
 
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -490,6 +492,12 @@ public class RequestServer extends NanoHTTPD {
       return r;
     }
 
+    // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
+    if (uri.endsWith("/Logs/download")) {
+      maybeLogRequest(path, versioned_path, "", parms);
+      return downloadLogs();
+    }
+
     // Load resources, or dispatch on handled requests
     try {
       // Find handler for url
@@ -714,5 +722,97 @@ public class RequestServer extends NanoHTTPD {
       catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }
     return al.toArray(new String[al.size()]);
+  }
+
+  // ---------------------------------------------------------------------
+  // Download logs support
+  // ---------------------------------------------------------------------
+
+  private String getOutputLogStem() {
+    String pattern = "yyyyMMdd_hhmmss";
+    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
+    String now = formatter.format(new Date());
+
+    return "h2ologs_" + now;
+  }
+
+  private byte[] zipLogs(byte[][] results, String topDir) throws IOException {
+    int l = 0;
+    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
+    for (int i = 0; i<results.length;l+=results[i++].length);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
+
+    // Add top-level directory.
+    ZipOutputStream zos = new ZipOutputStream(baos);
+    {
+      ZipEntry zde = new ZipEntry (topDir + File.separator);
+      zos.putNextEntry(zde);
+    }
+
+    try {
+      // Add zip directory from each cloud member.
+      for (int i =0; i<results.length; i++) {
+        String filename =
+                topDir + File.separator +
+                        "node" + i +
+                        H2O.CLOUD._memary[i].toString().replace(':', '_').replace('/', '_') +
+                        ".zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(results[i]);
+        zos.closeEntry();
+      }
+
+      // Close the top-level directory.
+      zos.closeEntry();
+    } finally {
+      // Close the full zip file.
+      zos.close();
+    }
+
+    return baos.toByteArray();
+  }
+
+  private Response downloadLogs() {
+    Log.info("\nCollecting logs.");
+
+    H2ONode[] members = H2O.CLOUD.members();
+    byte[][] perNodeZipByteArray = new byte[members.length][];
+
+    for (int i = 0; i < members.length; i++) {
+      byte[] bytes;
+
+      try {
+        // Skip nodes that aren't healthy, since they are likely to cause the entire process to hang.
+        boolean healthy = (System.currentTimeMillis() - members[i]._last_heard_from) < HeartBeatThread.TIMEOUT;
+        if (healthy) {
+          GetLogsFromNode g = new GetLogsFromNode();
+          g.nodeidx = 0;
+          g.doIt();
+          bytes = g.bytes;
+        } else {
+          bytes = "Node not healthy".getBytes();
+        }
+      }
+      catch (Exception e) {
+        bytes = e.toString().getBytes();
+      }
+
+      perNodeZipByteArray[i] = bytes;
+    }
+
+    String outputFileStem = getOutputLogStem();
+    byte[] finalZipByteArray;
+    try {
+      finalZipByteArray = zipLogs(perNodeZipByteArray, outputFileStem);
+    }
+    catch (Exception e) {
+      finalZipByteArray = e.toString().getBytes();
+    }
+
+    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK,NanoHTTPD.MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
+    res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
+    res.addHeader("Content-Disposition", "attachment; filename="+outputFileStem + ".zip");
+    return res;
   }
 }

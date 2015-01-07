@@ -4,6 +4,7 @@ import hex.Model;
 import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
+import water.fvec.Frame;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
@@ -13,6 +14,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
+    Key<Frame> _user_points;
   }
 
   public static class KMeansOutput extends Model.Output {
