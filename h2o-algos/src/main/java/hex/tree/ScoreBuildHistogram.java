@@ -163,7 +163,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
-          nhs[col].incr((float)chks[col].at0(row),wrks.at0(row)); // Histogram row/col
+          nhs[col].incr((float)chks[col].at0(row),(float)wrks.at0(row)); // Histogram row/col
       }
     }
   }
@@ -240,7 +240,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         rh.setMax(max);
         for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
           if( bins[b] != 0 ) { AtomicUtils.IntArray.add(rh._bins,b,bins[b]); bins[b]=0; }
-          if( ssqs[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
+          if( ssqs[b] != 0 ) { rh.incr1(b,(float)sums[b],(float)ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }
     }
