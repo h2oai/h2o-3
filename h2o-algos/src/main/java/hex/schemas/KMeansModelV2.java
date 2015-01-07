@@ -13,7 +13,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModel.KMeansPa
     // Output fields; input fields are in the parameters list
     @API(help="Cluster Centers[k][features]")
     public double[/*k*/][/*features*/] centers;
-      public TwoDimTable centers2d;
+    public TwoDimTable centers2d;
 
     @API(help="Cluster Size[k]")
     public long[/*k*/] size;
