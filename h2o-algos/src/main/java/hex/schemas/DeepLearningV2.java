@@ -54,9 +54,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "quiet_mode",
         "max_confusion_matrix_size",
         "max_hit_ratio_k",
-        "balance_classes",
-        "class_sampling_factors",
-        "max_after_balance_size",
         "score_validation_sampling",
         "diagnostics",
         "variable_importances",
@@ -431,29 +428,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      */
     @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", /* lmin=0, */ level = API.Level.expert, direction=API.Direction.INOUT)
     public int max_hit_ratio_k = 10;
-
-    /*Imbalanced Classes*/
-    /**
-     * For imbalanced data, balance training data class counts via
-     * over/under-sampling. This can result in improved predictive accuracy.
-     */
-    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data)", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean balance_classes = false;
-
-    /**
-     * Desired over/under-sampling ratios per class (lexicographic order).
-     * Only when balance_classes is enabled.
-     * If not specified, they will be automatically computed to obtain class balance during training.
-     */
-    @API(help="Desired over/under-sampling ratios per class (in lexicographic order).  If not specified, they will be automatically computed to obtain class balance during training.", direction=API.Direction.INOUT)
-    public float[] class_sampling_factors;
-
-    /**
-     * When classes are balanced, limit the resulting dataset size to the
-     * specified multiple of the original dataset size.
-     */
-    @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0)", /* dmin=1e-3, */ level = API.Level.expert, direction=API.Direction.INOUT)
-    public float max_after_balance_size = 5.0f;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.

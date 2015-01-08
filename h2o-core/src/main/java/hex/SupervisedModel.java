@@ -35,7 +35,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  the specified multiple of the original dataset size.  Maximum relative
      *  size of the training data after balancing class counts (can be less
      *  than 1.0) */
-    public float _max_after_balance_size = Float.POSITIVE_INFINITY;
+    public float _max_after_balance_size = 5.0f;
 
     /**
      * Desired over/under-sampling ratios per class (lexicographic order).
