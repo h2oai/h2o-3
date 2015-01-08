@@ -61,6 +61,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Scope.enter();
         _parms.read_lock_frames(DeepLearning.this);
         init(true);
+        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
         buildModel();
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {

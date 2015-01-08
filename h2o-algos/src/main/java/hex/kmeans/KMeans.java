@@ -96,6 +96,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       try {
         _parms.read_lock_frames(KMeans.this); // Fetch & read-lock input frames
         init(true);
+        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
 
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
