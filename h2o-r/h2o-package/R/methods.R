@@ -176,7 +176,7 @@ h2o.assign <- function(data, key) {
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
   ID <- deparse(substitute(data), width.cutoff = 500L)
   ast <- .h2o.varop("rename", data, key)
-  .force.eval(ast@ast, ID, parent.frame(), NULL)
+  .force.eval(ast@ast, ID, parent.frame())
   o <- get(ID, parent.frame())
   o@key <- key
   o
@@ -452,21 +452,19 @@ h2o.anyFactor <- function(x) {
 # Slicing
 #-----------------------------------------------------------------------------------------------------------------------
 
-# i are the rows, j are the columns
-#' Extract or Replace Parts of an H2O Object
+#' Extract or Replace Parts of an H2OFrame Object
 #' 
-#' Operators acting on H2O parsed data objects to extract or replace parts.
+#' Operators to extract or replace parts of H2OFrame objects.
 #' 
-#' @name h2o.extract
-#' @aliases [, $, [[,[<-, $<-, [[<-
-#' @param \code{x, object} object from which to extract element(s) or in which to replace element(s).
-#' @param \code{i, j, ...} indices specifying elements to extract or replace. Indices are numeric or character vectors or
-#'        empty (missing) or will be matched to the names.
+#' @name H2OFrame-Extract
+#' @param x object from which to extract element(s) or in which to replace element(s).
+#' @param i,j,... indices specifying elements to extract or replace. Indices are numeric or
+#'        character vectors or empty (missing) or will be matched to the names.
 #' @param name
 #' @param drop
 NULL
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -509,12 +507,12 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("$", "H2OFrame", function(x, name) {
   x[[name, exact = FALSE]]
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(missing(i))
     return(x)
@@ -562,7 +560,7 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
 #-----------------------------------------------------------------------------------------------------------------------
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -595,7 +593,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   o
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   if(!is.character(name) || length(name) != 1L || !nzchar(name))
     stop("`name` must be a non-empty string")
@@ -626,7 +624,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   res
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
   do.call(`$<-`, list(x = x, name = i, value = value))
@@ -648,8 +646,8 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
-    ast <- .h2o.varop("colnames=", x, idxs, value, useKey=x@key)
-    .force.eval(ast@ast,new.assign=FALSE)
+    ast <- .h2o.varop("colnames=", x, idxs, value, .key = x@key)
+    .force.eval(ast@ast, new.assign = FALSE)
     x
 })
 
