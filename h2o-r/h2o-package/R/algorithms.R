@@ -1,9 +1,6 @@
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things
-.verify_dataxy <- function(data, x, y) {
-   .verify_dataxy_full(data, x, y, FALSE)
-}
-.verify_dataxy_full <- function(data, x, y, autoencoder) {
+.verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
   if(!is(data,  "H2OFrame"))
     stop('`data` must be an H2OFrame object')
   if(!is.character(x) && !is.numeric(x))
@@ -35,7 +32,7 @@
     y <- cc[y]
   }
 
-  if(!missing(autoencoder) && !autoencoder && (y %in% x)) {
+  if(!autoencoder && (y %in% x)) {
     warning('removing response variable from the explanatory variables')
     x <- setdiff(x,y)
   }
@@ -183,7 +180,6 @@
   res_model <- res_model$models
 
   if( delete ) h2o.rm(m$training_frame@key)
-  .newModel(algo, res_model, client)
-}
 
-.newModel <- function(algo, json, client) do.call(.algo.map[[algo]], list(json, client))
+  do.call(.algo.map[[algo]], list(res_model, client))
+}
