@@ -3,6 +3,7 @@ package hex;
 import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -48,9 +49,15 @@ public class ConfusionMatrix extends Iced {
   public static ConfusionMatrix buildCM(Vec actuals, Vec predictions) {
     if (!actuals.isEnum()) throw new IllegalArgumentException("actuals must be enum.");
     if (!predictions.isEnum()) throw new IllegalArgumentException("predictions must be enum.");
-    int len = predictions.domain().length;
-    CMBuilder cm = new CMBuilder(len).doAll(actuals,predictions);
-    return new ConfusionMatrix(cm._arr, predictions.domain());
+    Scope.enter();
+    try {
+      Vec adapted = predictions.adaptTo(actuals.domain());
+      int len = actuals.domain().length;
+      CMBuilder cm = new CMBuilder(len).doAll(actuals, adapted);
+      return new ConfusionMatrix(cm._arr, actuals.domain());
+    } finally {
+      Scope.exit();
+    }
   }
 
   private static class CMBuilder extends MRTask<CMBuilder> {

@@ -82,18 +82,6 @@ public class ConfusionMatrixTest extends TestUtil {
             debug, false);
 
     simpleCMTest(
-            "smalldata/junit/cm/v4.csv",
-            "smalldata/junit/cm/v1.csv",
-            ar("B", "C"),
-            ar("A", "B", "C"),
-            ar("B", "C", "A"),
-            ar( ar(0L, 0L, 2L),
-                    ar(2L, 1L, 0L),
-                    ar(0L, 0L, 0L)
-            ),
-            debug, false);
-
-    simpleCMTest(
             "smalldata/junit/cm/v2.csv",
             "smalldata/junit/cm/v4.csv",
             ar("A", "B", "C"),
@@ -160,17 +148,6 @@ public class ConfusionMatrixTest extends TestUtil {
             ),
             debug, true);
 
-    simpleCMTest(
-            "smalldata/junit/cm/v4n.csv",
-            "smalldata/junit/cm/v1n.csv",
-            ar("1", "2"),
-            ar("0", "1", "2"),
-            ar("1", "2", "0"),
-            ar( ar(0L, 0L, 2L),
-                    ar(2L, 1L, 0L),
-                    ar(0L, 0L, 0L)
-            ),
-            debug, true);
   }
 
   /** Test for PUB-216:
@@ -191,17 +168,6 @@ public class ConfusionMatrixTest extends TestUtil {
             ),
             debug, false);
 
-    simpleCMTest(
-            frame("v1", vec(ar("B","C"), ari(0,0,1,1) )), // B B C C actual
-            frame("v1", vec(ar("A","B"), ari(1,1,0,0) )), // B B A A predicted
-            ar("B","C"),
-            ar("A","B"),
-            ar("B","C","A"),
-            ar( ar(2L, 0L, 0L), // B
-                    ar(0L, 0L, 2L), // C
-                    ar(0L, 0L, 0L)  // A
-            ),
-            debug, false);
   }
 
   @Test public void testBadModelPrect2() {
@@ -217,85 +183,6 @@ public class ConfusionMatrixTest extends TestUtil {
             ),
             debug, false);
 
-    simpleCMTest(
-            frame("v1", vec(ar("-1", "0"),ari(0,0,1,1) )),
-            frame("v1", vec(ar("0", "1"), ari(1,1,0,0) )),
-            ar("-1","0"),
-            ar("0","1"),
-            ar("-1","0","1"),
-            ar( ar(0L, 0L, 2L),
-                    ar(0L, 2L, 0L),
-                    ar(0L, 0L, 0L)
-            ),
-            debug, false);
-
-    // The case found by Nidhi on modified covtype dataset
-    simpleCMTest(
-            frame("v1", vec(ar(      "1","2","3","4","5","6","7"), ari( 0, 1, 2, 3, 4, 5, 6) )),
-            frame("v1", vec(ar("-1", "1","2","3","4","5","6","7"), ari( 2, 3, 4, 5, 6, 7, 1) )),
-            ar(      "1","2","3","4","5","6","7"),
-            ar("-1", "1","2","3","4","5","6"),
-            ar("1","2","3","4","5","6","7","-1"),
-            ar( ar( 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L), // "1"
-                    ar( 0L, 0L, 1L, 0L, 0L, 0L, 0L, 0L), // "2"
-                    ar( 0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L), // "3"
-                    ar( 0L, 0L, 0L, 0L, 1L, 0L, 0L, 0L), // "4"
-                    ar( 0L, 0L, 0L, 0L, 0L, 1L, 0L, 0L), // "5"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 1L, 0L), // "6"
-                    ar( 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), // "7"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)  // "-1"
-            ),
-            debug, false);
-
-    // Another case
-    simpleCMTest(
-            frame("v1", vec(ar("7","8", "9","10","11"),ari( 0, 1, 2, 3, 4) )),
-            frame("v1", vec(ar("7","8","10","11","13"),ari( 0, 1, 4, 2, 3) )),
-            ar("7","8", "9","10","11"),
-            ar("7","8","10","11","13"),
-            ar("7","8","9","10","11","13"),
-            ar( ar( 1L, 0L, 0L, 0L, 0L, 0L), // "7"
-                    ar( 0L, 1L, 0L, 0L, 0L, 0L), // "8"
-                    ar( 0L, 0L, 0L, 0L, 0L, 1L), // "9"
-                    ar( 0L, 0L, 0L, 1L, 0L, 0L), // "10"
-                    ar( 0L, 0L, 0L, 0L, 1L, 0L), // "11"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L)  // "13"
-            ),
-            debug, false);
-
-    // Mixed case
-    simpleCMTest(
-            frame("v1", vec(ar("-1", "1", "A"), ari( 0, 1, 2) )),
-            frame("v1", vec(ar( "0", "1", "B"), ari( 0, 1, 2) )),
-            ar("-1", "1", "A"),
-            ar( "0", "1", "B"),
-            ar( "-1", "1", "A", "0", "B"),
-            ar( ar( 0L, 0L, 0L, 1L, 0L), // "-1"
-                    ar( 0L, 1L, 0L, 0L, 0L), // "1"
-                    ar( 0L, 0L, 0L, 0L, 1L), // "A"
-                    ar( 0L, 0L, 0L, 0L, 0L), // "0"
-                    ar( 0L, 0L, 0L, 0L, 0L)  // "B"
-            ),
-            debug, false);
-
-    // Mixed case with change of numeric ordering 1, 10, 9 -> 1,9,10
-    simpleCMTest(
-            frame("v1", vec(ar("-1", "1", "10", "9", "A"), ari( 0, 1, 2, 3, 4) )),
-            frame("v1", vec(ar( "0", "2",  "8", "9", "B"), ari( 0, 1, 2, 3, 4) )),
-            ar("-1", "1", "10", "9", "A"),
-            ar( "0", "2",  "8", "9", "B"),
-            ar( "-1", "1", "10", "9", "A", "0", "2", "8", "B"),
-            ar( ar( 0L, 0L, 0L, 0L, 0L, 1L, 0L, 0L, 0L), // "-1"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 1L, 0L, 0L), // "1"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L, 0L), // "10"
-                    ar( 0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L, 0L), // "9"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L), // "A"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), // "0"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), // "2"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), // "8"
-                    ar( 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)  // "B"
-            ),
-            debug, false);
   }
 
   private void simpleCMTest(String f1, String f2, String[] expectedActualDomain, String[] expectedPredictDomain, String[] expectedDomain, long[][] expectedCM, boolean debug, boolean toEnum) {
@@ -311,21 +198,9 @@ public class ConfusionMatrixTest extends TestUtil {
 
   /** Delete v1, v2 after potential modifying operations during processing: enums and/or train/test adaptation. */
   private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, long[][] expectedCM, boolean debug, boolean toEnum) {
-    Vec old1 = null;
-    Vec old2 = null;
-    Vec oldv2 = null;
+    Scope.enter();
     try {
-      // Way to simulate labels coming out of predict - those are always enums.
-      if (toEnum) {
-        old1 = v1.replace(0, v1.vecs()[0].toEnum()); //keep reference for mem cleanup
-        old2 = v2.replace(0, v2.vecs()[0].toEnum());
-      }
-      oldv2 = v2.vecs()[0]; // keep reference for mem cleanup - this vec might be used as MasterVec for EnumWrapped Vecs!
-
-      // this call can modify v2 vecs during adaptation, that's why we need to keep the old oldv1/oldv2
-      String[] ignoredwarnings = adaptTestForTrain(v1._names, v1.domains(), v2, Double.NaN, true);
-
-      ConfusionMatrix cm = buildCM(v1.vecs()[0], v2.vecs()[0]);
+      ConfusionMatrix cm = buildCM(v1.vecs()[0].toEnum(), v2.vecs()[0].toEnum());
 
       // -- DEBUG --
       if (debug) {
@@ -343,9 +218,7 @@ public class ConfusionMatrixTest extends TestUtil {
     } finally {
       if (v1 != null) v1.delete();
       if (v2 != null) v2.delete();
-      if (old1 != null) old1.remove();
-      if (old2 != null) old2.remove();
-      if (oldv2 != null) oldv2.remove();
+      Scope.exit();
     }
   }
 

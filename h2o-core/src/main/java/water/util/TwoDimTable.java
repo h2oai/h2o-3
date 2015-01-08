@@ -1,5 +1,6 @@
 package water.util;
 
+import water.AutoBuffer;
 import water.Iced;
 
 import java.util.Arrays;
@@ -18,7 +19,7 @@ public class TwoDimTable extends Iced {
   private String[]   colFormats;
   private String[][] cellValues;
 
-  public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN
+  public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN (0x7ff8000000000000)
 
   /**
    * Check whether a double value is considered an "empty field".
@@ -108,8 +109,9 @@ public class TwoDimTable extends Iced {
     this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats);
 
     assert(Double.isNaN(emptyDouble));
-    assert(isEmpty(emptyDouble));
-    assert(!isEmpty(Double.NaN));
+    assert (isEmpty(emptyDouble));
+//    assert (!isEmpty(Double.NaN));
+//    assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
 
     final int rowDim = rowHeaders.length;
     final int colDim = colHeaders.length;
