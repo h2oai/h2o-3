@@ -154,7 +154,7 @@ setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.da
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
-setClass("H2OModel", representation(h2o="H2OConnection", key="character", model="list"), contains="VIRTUAL")
+setClass("H2OModel", representation(h2o="H2OConnection", key="character", algo="character", parameters="list", model="list"), contains="VIRTUAL")
 
 # No show method for this type of object.
 #'
