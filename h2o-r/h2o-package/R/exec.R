@@ -85,7 +85,7 @@ function(op, ..., .args=list(), useKey=NULL) {
 #' Force the evaluation of the AST.
 #'
 #' @param h2o: an H2OConnection object
-#' @param ast: an ast.node object
+#' @param ast: an ASTNode object
 #' @param h2o.ID: the name of the key in h2o (hopefully matches top-most level user-defined variable)
 #' @param parent.ID: the name of the object in the calling frame
 #' @param env: the environment back to which we assign

@@ -6,10 +6,13 @@
 #'
 #' @param training_frame An \linkS4class{H2OFrame} object containing the
 #'        variables in the model.
-#' @param ignored_columns (Optional) A vector containing the data columns on
-#'        which k-means ignores.
-#' @param k \code{Defaults to 2} The number of clusters. Must be between 1 and
-#'        1e7 inclusive.
+#' @param x (Optional) A vector containing the data columns on
+#'        which k-means operates.
+#' @param k The number of clusters. Must be between 1 and
+#'        1e7 inclusive. k may be omitted if the user specifies the
+#'        initial centers in the init parameter. If k is not omitted,
+#'        in this case, then it should be equal to the number of
+#'        user-specified centers.
 #' @param destination_key (Optional) The unique hex key assigned to the
 #'        resulting model. Automatically generated if none is provided.
 #' @param max_iters The maximum number of iterations allowed. Must be between 0
@@ -17,14 +20,19 @@
 #' @param standardize Logical, indicates whether the data should be
 #'        standardized before running k-means.
 #' @param init A character string that selects the initial set of k cluster
-#'        centroids. Possible values are "None": for random initialization,
-#'        "PlusPlus": for k-means plus initialization, and "Furthest": for
-#'        initialization at the furthest point from each successive centroid.
+#'        centers. Possible values are "Random": for random initialization,
+#'        "PlusPlus": for k-means plus initialization, or "Furthest": for
+#'        initialization at the furthest point from each successive center.
+#'        Additionally, the user may specify a the initial centers as a
+#'        matrix, data.frame, H2OFrame, or list of vectors. For matrices,
+#'        data.frames, and H2OFrames, each row of the respective structure
+#'        is an initial center. For lists of vectors, each vector is an
+#'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
 #' @return Returns an object of class \linkS4class{H2OKMeansModel}.
 #' @examples
 #' library(h2o)
-#' localH2O = h2o.init()
+#' localH2O <- h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
@@ -50,6 +58,7 @@ h2o.kmeans <- function(training_frame, x, k,
     parms[["init"]] <- "User"
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
+        if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
         parms[["user_points"]] <- as.h2o(training_frame@h2o, init)
     }
     else {

@@ -130,7 +130,7 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
   if( missing(y) ) stop("`y` is missing, with no default")
   if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
 
-  colargs <- .verify_dataxy_full(training_frame, x, y, autoencoder)
+  colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
 
   parms <- as.list(match.call()[-1L])
   parms$y <- colargs$y
