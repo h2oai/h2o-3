@@ -114,10 +114,10 @@
 
   #---------- Check user parameter types ----------#
   error <- lapply(ALL_PARAMS, function(i) {
+    e <- ""
     if (i$required && !(i$name %in% names(params)))
       e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
     else if (i$name %in% names(params)) {
-      e <- ""
       # changing Java types to R types
       mapping <- .type.map[i$type,]
       type    <- mapping[1L, 1L]
