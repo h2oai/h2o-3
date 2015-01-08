@@ -110,8 +110,8 @@ public class TwoDimTable extends Iced {
 
     assert(Double.isNaN(emptyDouble));
     assert (isEmpty(emptyDouble));
-    assert (!isEmpty(Double.NaN));
-    assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
+//    assert (!isEmpty(Double.NaN));
+//    assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
 
     final int rowDim = rowHeaders.length;
     final int colDim = colHeaders.length;
