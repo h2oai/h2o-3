@@ -7,11 +7,12 @@ test.km2vanilla.golden <- function(H2Oserver) {
   Log.info("Importing iris.csv data...") 
   irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), key = "irisH2O")
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
+  startIdx <- sample(1:nrow(irisR), 3)
   
   # H2O automatically standardizes data (de-mean and scale so standard deviation is one)
   irisScale = scale(irisR[,1:4], center = TRUE, scale = TRUE)
-  fitR <- kmeans(irisScale, centers = 3, iter.max = 1000, nstart = 10)
-  fitH2O <- h2o.kmeans(irisH2O[,1:4], k = 3)
+  fitR <- kmeans(irisScale, centers = irisScale[startIdx,1:4], iter.max = 1000, nstart = 10)
+  fitH2O <- h2o.kmeans(irisH2O[,1:4], k = 3, init = irisH2O[startIdx,1:4])
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
   wmseH2O <- sort.int(fitH2O@model$withinmse)
