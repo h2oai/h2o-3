@@ -32,10 +32,10 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public String type;
 
   @API(help="default value, e.g. 1", direction=API.Direction.OUTPUT)
-  public String default_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .  Problem is Icer serialization blows up if the field is an Object
+  public Iced default_value;
 
   @API(help="actual value as set by the user and / or modified by the ModelBuilder, e.g., 10", direction=API.Direction.OUTPUT)
-  public String actual_value; // TODO: we would like this to be a primitive so that the client doesn't have to parse it. . .
+  public Iced actual_value;
 
   @API(help="the importance of the parameter, used by the UI, e.g. \"critical\", \"extended\" or \"expert\"", direction=API.Direction.OUTPUT)
   public String level;

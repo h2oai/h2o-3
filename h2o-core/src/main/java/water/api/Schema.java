@@ -712,7 +712,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                     field_meta.level.name(),
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
-                    field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
+                    field_meta.is_schema ? field_meta.schema_name : "", (null == field_meta.value ? "(null)" : field_meta.value.toString()), // Something better for toString()?
                     field_meta.help,
                     (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
                     (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
@@ -738,7 +738,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
                     field_meta.is_schema ? field_meta.schema_name : "",
-                    field_meta.value,
+                    (null == field_meta.value ? "(null)" : field_meta.value.toString()), // something better than toString()?
                     field_meta.help,
                     (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
                     (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),

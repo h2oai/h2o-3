@@ -1367,8 +1367,9 @@ public final class AutoBuffer {
     }
     return putA1(b,off,b.length);
   }
+  public AutoBuffer putJSONStrUnquoted ( String s ) { return s==null ? putJNULL() : putJStr(s); }
   public AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
-  private AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
+  public AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
   public AutoBuffer putJSONAStr(String[] ss) {
     if( ss == null ) return putJNULL();
     put1('[');
@@ -1428,7 +1429,7 @@ public final class AutoBuffer {
     return putA1(b,b.length);
   }
 
-  private AutoBuffer putJSON1( byte b ) { return putJInt(b); }
+  public AutoBuffer putJSON1( byte b ) { return putJInt(b); }
   private AutoBuffer putJSONA1( byte ary[] ) {
     if( ary == null ) return putJNULL();
     put1('[');
