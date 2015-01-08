@@ -188,8 +188,8 @@ h2o.assign <- function(data, key) {
 #' Get the reference to a frame with the given key in the H2O instance.
 #'
 #' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
-#'            of the server running H2O
-#' @param key A string indicating the unique hex key of the data set to retrieve
+#'            of the server running H2O.
+#' @param key A string indicating the unique hex key of the dataset to retrieve.
 h2o.getFrame <- function(h2o, key) {
   if (missing(key)) {
     # means h2o is the one that's missing... retrieve it!
@@ -197,6 +197,36 @@ h2o.getFrame <- function(h2o, key) {
     h2o <- .retrieveH2O(parent.frame())
   }
   .fill(h2o, key)
+}
+
+#' Get an R reference to an H2O model
+#' 
+#' Returns a reference to an existing model in the H2O instance.
+#' 
+#' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
+#'            of the server running H2O.
+#' @param key A string indicating the unique hex key of the model to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' 
+#' iris.hex <- as.h2o(localH2O, iris, "iris.hex")
+#' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
+#' model.retrieved <- h2o.getMode(localH2O, key)
+h2o.getModel <- function(h2o, key)
+{
+  if (missing(key)) {
+    # means h2o is the one that's missing... retrieve it!
+    key <- h2o
+    h2o <- .retrieveH2O(parent.frame())
+  }
+  
+  res <- .h2o.__remoteSend(h2o, method = "GET", paste0(.h2o.__MODELS, "/", key))
+  res <- unlist(res, recursive = FALSE)
+  res_model <- res$model
+  algo <- res_model$algo
+  .newModel(algo, res_model, h2o)
 }
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
@@ -422,6 +452,20 @@ h2o.anyFactor <- function(x) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 # i are the rows, j are the columns
+#' Extract or Replace Parts of an H2O Object
+#' 
+#' Operators acting on H2O parsed data objects to extract or replace parts.
+#' 
+#' @name h2o.extract
+#' @aliases [, $, [[,[<-, $<-, [[<-
+#' @param \code{x, object} object from which to extract element(s) or in which to replace element(s).
+#' @param \code{i, j, ...} indices specifying elements to extract or replace. Indices are numeric or character vectors or
+#'        empty (missing) or will be matched to the names.
+#' @param name
+#' @param drop
+NULL
+
+#' @rdname h2o.extract
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -464,10 +508,12 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 
+#' @rdname h2o.extract
 setMethod("$", "H2OFrame", function(x, name) {
   x[[name, exact = FALSE]]
 })
 
+#' @rdname h2o.extract
 setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(missing(i))
     return(x)
@@ -515,7 +561,7 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
 #-----------------------------------------------------------------------------------------------------------------------
-
+#' @rdname h2o.extract
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -548,6 +594,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   o
 })
 
+#' @rdname h2o.extract
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   if(!is.character(name) || length(name) != 1L || !nzchar(name))
     stop("`name` must be a non-empty string")
@@ -578,11 +625,13 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   res
 })
 
+#' @rdname h2o.extract
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
   do.call(`$<-`, list(x = x, name = i, value = value))
 })
 
+#' @rdname h2o.colnames
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
   function(x, value) {
     if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
@@ -591,6 +640,7 @@ setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
     x
 })
 
+#' @rdname h2o.colnames
 setMethod("colnames<-", signature(x="H2OFrame", value="character"),
   function(x, value) {
     if(!all(nzchar(value))) stop("Column names must be of non-zero length")
@@ -602,7 +652,9 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     x
 })
 
+#' @rdname h2o.colnames
 setMethod("names", "H2OFrame", function(x) colnames(x))
+#' @rdname h2o.colnames
 setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -734,6 +786,9 @@ setMethod("ncol", "H2OFrame", function(x) {
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' summary(iris.hex)
 #' colnames(iris.hex)
+NULL
+
+#' @rdname h2o.colnames
 setMethod("colnames", "H2OFrame", function(x) {
   ID <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
@@ -743,7 +798,7 @@ setMethod("colnames", "H2OFrame", function(x) {
   x@col_names
 })
 
-#'
+
 #' @rdname h2o.colnames
 setMethod("names", "H2OFrame", function(x) {
   ID <- deparse(substitute(x), width.cutoff = 500L)
@@ -767,6 +822,9 @@ setMethod("names", "H2OFrame", function(x) {
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' length(iris.hex)
+NULL
+
+#' @rdname h2o.length
 setMethod("length", "H2OFrame", function(x) if (ncol(x) == 1L) nrow(x) else ncol(x))
 
 #'
