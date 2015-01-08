@@ -270,8 +270,7 @@ public final class SchemaMetadata extends Iced {
         return (Iced)o;
 
       if (clz.isArray()) {
-        // TODO
-        return null;
+        return new IcedWrapper(o);
       }
 
 /*

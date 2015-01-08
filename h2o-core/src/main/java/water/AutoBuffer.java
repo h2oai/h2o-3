@@ -1430,7 +1430,7 @@ public final class AutoBuffer {
   }
 
   public AutoBuffer putJSON1( byte b ) { return putJInt(b); }
-  private AutoBuffer putJSONA1( byte ary[] ) {
+  public AutoBuffer putJSONA1( byte ary[] ) {
     if( ary == null ) return putJNULL();
     put1('[');
     for( int i=0; i<ary.length; i++ ) {

@@ -58,7 +58,6 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers.
    *  @param ab <code>AutoBuffer</code> to read this object from.
-   *  @param <D> Type of returned object
    *  @return Returns a new instance of object reconstructed from AutoBuffer.
    */
   //noninspection UnusedDeclaration

@@ -496,9 +496,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if( !classification || !_balance_classes )
           dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
 
-        if (classification && !_balance_classes || !classification)
-          dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
-
 
         if (!classification && _valid != null || _valid == null)
           dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
