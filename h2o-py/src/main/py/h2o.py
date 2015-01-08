@@ -1,5 +1,6 @@
 import csv, requests, sys, urllib, uuid, traceback, time
 from tabulate import tabulate
+from math import sqrt,isnan
 
 ###############################################################################
 # Frame represents a 2-D array of data, uniform in each column.  The data may
@@ -273,7 +274,19 @@ class Expr(object):
   def summary(self):
     self.eager()
     if self.isLocal():
-      raise NotImplementedError
+      x = self._data[0]
+      t = 'int' if isinstance(x,int) else ('enum' if isinstance(x,str) else 'real')
+      mins = [min(self._data)]
+      maxs = [max(self._data)]
+      n = len(self._data)
+      mean = sum(self._data)/n if t!='enum' else None
+      ssq=0; zeros=0; missing=0
+      for x in self._data:  
+        if t!='enum': ssq += (x-mean)*(x-mean)
+        if x==0:  zeros+=1
+        if x is None or (t!='enum' and isnan(x)): missing+=1
+      stddev = sqrt(ssq/(n-1)) if t!='enum' else None
+      return {'type':t,'mins':mins,'maxs':maxs,'mean':mean,'sigma':stddev,'zeros':zeros,'missing':missing}
     if self._summary: return self._summary
     j = H2OCONN.Frame(self._data)
     self._summary = j['frames'][0]['columns'][0]
@@ -381,12 +394,12 @@ class Expr(object):
       if isinstance(left._data,(int,float)):
         raise NotImplementedError
       elif isinstance(rite._data,(int,float)):
-        if left.isLocal():                        self._data = [x==rite for x in left._data]
+        if left.isLocal():                        self._data = [x==rite._data for x in left._data]
         else:                                     pass
       else: raise NotImplementedError
     elif self._op == "[":
-      if left.isLocal(): self._data = left._data[rite._data]
-      else: _CMD +=  ' "null"'       # Rapids column zero lookup
+      if left.isLocal():                          self._data = left._data[rite._data]
+      else:                                       _CMD +=  ' "null"' # Rapids column zero lookup
     elif self._op == "=":
       if left.isLocal(): raise NotImplementedError
       else: 
@@ -395,8 +408,8 @@ class Expr(object):
       if left.isLocal(): self._data = sum(left._data)/len(left._data)
       else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     elif self._op == "as.factor":
-      if left.isLocal(): raise NotImplementedError
-      else: pass
+      if left.isLocal():                          self._data = map(str,left._data)
+      else:                                       pass
     else:
       raise NotImplementedError
     # End of expression... wrap up parens
@@ -495,8 +508,9 @@ class H2OConnection(object):
   def Frame(self,key):
     return self._doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
 
-  def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,dataset):
-    p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':dataset}
+  def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,train_frame,test_frame=None):
+    p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':train_frame}
+    if test_frame: p['validation_frame'] = test_frame
     j = self._doJob(self._doSafeGet(self.buildURL("GBM",p)))
     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
     return j['models'][0]
@@ -527,6 +541,8 @@ class H2OConnection(object):
     # Missing a non-json response check, e.g. 404 check here
     j = r.json()
     if 'errmsg' in j: raise ValueError(j['errmsg'])
+    if 'http_status' in j:
+      if j['http_status']==404 or j['http_status']==500: raise ValueError(j['msg'])
     return j
 
   # function to build a URL from a base and a dictionary of params.  'request'
@@ -554,7 +570,7 @@ class H2OConnection(object):
 # Simple GBM Wrapper
 #
 class H2OGBM(object):
-  def __init__(self,dataset,x,ntrees=50,shrinkage=0.1,interaction_depth=5,distribution="AUTO"):
+  def __init__(self,dataset,x,ntrees=50,shrinkage=0.1,interaction_depth=5,distribution="AUTO",validation_dataset=None):
     if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
     self.dataset = dataset
 
@@ -573,20 +589,12 @@ class H2OGBM(object):
     self.distribution = distribution
 
     # Send over the frame
-    fr = _py_tmp_key()
-    cbind = "(= !"+fr+" (cbind "
-    for vec in dataset._vecs:
-      cbind += "%" + vec._expr.eager() + " "
-    cbind += "))"
-    H2OCONN.Rapids(cbind)
-    # And frame columns
-    colnames = "(colnames= %"+fr+" {(: #0 #"+str(len(dataset._vecs)-1)+")} {"
-    for vec in dataset._vecs:
-      colnames += vec._name+";"
-    colnames = colnames[:-1]+"})"
-    H2OCONN.Rapids(colnames)
+    fr = _send_frame(dataset)
+    # And Validationm if any
+    if validation_dataset:
+      vfr = _send_frame(validation_dataset)
     # Do the big job
-    self._model = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr)
+    self._model = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr,vfr)
     H2OCONN.Remove(fr)
     
 
@@ -598,6 +606,23 @@ def _get_human_readable_size(num):
     i += 1
     rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
   return '%s %s' % (rounded_val, exp_str[i][1])
+
+# Send over a frame description to H2O
+def _send_frame(dataset):
+  # Send over the frame
+  fr = _py_tmp_key()
+  cbind = "(= !"+fr+" (cbind "
+  for vec in dataset._vecs:
+    cbind += "%" + vec._expr.eager() + " "
+  cbind += "))"
+  H2OCONN.Rapids(cbind)
+  # And frame columns
+  colnames = "(colnames= %"+fr+" {(: #0 #"+str(len(dataset._vecs)-1)+")} {"
+  for vec in dataset._vecs:
+    colnames += vec._name+";"
+  colnames = colnames[:-1]+"})"
+  H2OCONN.Rapids(colnames)
+  return fr
 
 # Return a unique h2o key obvious from python
 def _py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
