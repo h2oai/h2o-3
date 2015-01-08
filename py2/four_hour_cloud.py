@@ -1,7 +1,7 @@
 #!/usr/bin/python
-import unittest, time, sys, random, datetime
+import unittest, time, sys, datetime
 sys.path.extend(['.','..','py','../h2o/py','../../h2o/py'])
-import h2o, h2o_hosts, h2o_cmd, h2o_browse as h2b
+import h2o, h2o_hosts
 import h2o_print as h2p
 
 beginning = time.time()
@@ -19,13 +19,15 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED, localhost
         SEED = h2o.setup_random_seed()
-        localhost = h2o.decide_if_localhost()
+        # localhost = h2o.decide_if_localhost()
+        # always require a config file for now..don't have h2o.decide_if_localhost() here
+        localhost = False
         if (localhost):
             # h2o.nodes[0].delete_keys_at_teardown should cause the testdir_release
             # tests to delete keys after each test completion (not cloud teardown, don't care then)
-            h2o.build_cloud(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
+            h2o.init(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
         else:
-            h2o_hosts.build_cloud_with_hosts(create_json=True, delete_keys_at_teardown=True)
+            h2o.init(create_json=True, delete_keys_at_teardown=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -63,7 +65,7 @@ class Basic(unittest.TestCase):
 
 
         while (totalTime<maxTime): # die after 4 hours
-            h2o.sleep(incrTime)
+            time.sleep(incrTime)
             totalTime += incrTime
             # good to touch all the nodes to see if they're still responsive
             # give them up to 120 secs to respond (each individually)
