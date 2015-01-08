@@ -515,6 +515,14 @@ class H2OConnection(object):
     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
     return j['models'][0]
 
+  def DeepLearning(self,x,train_frame,test_frame=None,**kwargs):
+    kwargs['response_column'] = x
+    kwargs['training_frame'] = train_frame
+    if test_frame: kwargs['validation_frame'] = test_frame
+    j = self._doJob(self._doSafeGet(self.buildURL("DeepLearning",kwargs)))
+    j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
+    return j['models'][0]
+
   def Job(self,jobkey):
     return self._doSafeGet(self.buildURL("Jobs/"+jobkey,{}))
 
@@ -598,14 +606,29 @@ class H2OGBM(object):
     H2OCONN.Remove(fr)
     
 
-# Simple stackoverflow pretty-printer for big numbers
-def _get_human_readable_size(num):
-  exp_str = [ (0, 'B'), (10, 'KB'),(20, 'MB'),(30, 'GB'),(40, 'TB'), (50, 'PB'),]               
-  i = 0
-  while i+1 < len(exp_str) and num >= (2 ** exp_str[i+1][0]):
-    i += 1
-    rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
-  return '%s %s' % (rounded_val, exp_str[i][1])
+##############################################################################
+#
+# Simple DeepLearning Wrapper
+#
+class H2ODeepLearning(object):
+  def __init__(self,dataset,x,validation_dataset=None,**kwargs):
+    if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
+    self.dataset = dataset
+
+    if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
+    self.x = x
+
+    # Send over the frame
+    fr = _send_frame(dataset)
+    # And Validationm if any
+    if validation_dataset:
+      vfr = _send_frame(validation_dataset)
+    # Do the big job
+    self._model = H2OCONN.DeepLearning(x,fr,vfr,**kwargs)
+    H2OCONN.Remove(fr)
+    
+
+##############################################################################
 
 # Send over a frame description to H2O
 def _send_frame(dataset):
@@ -630,3 +653,13 @@ def _py_tmp_key():  return unicode("py"+str(uuid.uuid4()))
 # Dump out a progress bar
 def _update_progress(progress):
   print '\r[{0}] {1}%'.format('#'*int(progress*100), progress*100)
+
+# Simple stackoverflow pretty-printer for big numbers
+def _get_human_readable_size(num):
+  exp_str = [ (0, 'B'), (10, 'KB'),(20, 'MB'),(30, 'GB'),(40, 'TB'), (50, 'PB'),]               
+  i = 0
+  while i+1 < len(exp_str) and num >= (2 ** exp_str[i+1][0]):
+    i += 1
+    rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
+  return '%s %s' % (rounded_val, exp_str[i][1])
+

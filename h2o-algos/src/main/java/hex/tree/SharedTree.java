@@ -76,7 +76,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // even as the CM is good.  That's because we want the predictions for the
     // common class to be large and positive, and the rare class to be negative
     // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metrix is typically negative (usually it's
+    // is so bad, that the R^2 metric is typically negative (usually it's
     // between 0 and 1).
 
     // If instead you guess the mean (reversed through the loss function), then
