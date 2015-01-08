@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-# Test k-means clustering on benign.csv
+# Test k-means clustering on R's iris dataset
 test.km.iris <- function(conn) {
   iris.hex <- as.h2o(conn, iris)
   start <- iris[c(2,70,148),1:4]
