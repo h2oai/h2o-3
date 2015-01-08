@@ -3,9 +3,7 @@ package hex.schemas;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
 import water.Job;
-import water.api.Handler;
-import water.api.JobV2;
-import water.api.Schema;
+import water.api.*;
 
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */
 @Deprecated
@@ -17,13 +15,12 @@ public class DeepLearningHandler extends Handler {
 
   // TODO: move this into a new ModelBuilderHandler superclass
   // TODO: also add a score method in the new ModelBuilderHandler superclass
-  public DeepLearningV2 train(int version, DeepLearningV2 s) {
+  public Schema train(int version, DeepLearningV2 s) {
     DeepLearning builder = s.createAndFillImpl();
-    DeepLearningModel.DeepLearningParameters parms = builder._parms;
-    assert parms != null; /* impl._job = */
-    builder.trainModel();
-    s.parameters = new DeepLearningV2.DeepLearningParametersV2();
-    s.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(builder);
-    return s;
+    if (builder.error_count() > 0)
+      return Schema.schema(version, builder).fillFromImpl(builder);
+    assert builder._parms != null; /* impl._job = */
+    Job j = builder.trainModel();
+    return new JobsV2().fillFromImpl(new JobsHandler.Jobs(j)); // TODO: version
   }
 }
