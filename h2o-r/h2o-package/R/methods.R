@@ -226,7 +226,8 @@ h2o.getModel <- function(h2o, key)
   res <- unlist(res, recursive = FALSE)
   res_model <- res$model
   algo <- res_model$algo
-  .newModel(algo, res_model, h2o)
+  
+  do.call(.algo.map[[algo]], list(res_model, h2o))
 }
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
