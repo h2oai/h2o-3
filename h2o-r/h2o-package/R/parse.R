@@ -77,7 +77,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
 #Inspect.json?key
 
-.h2o.fetchNRows <- function(h2o, key) .h2o.__remoteSend(h2o, paste0('Inspect.json?key=', key))$schema$rows
+.h2o.fetchNRows <- function(conn, key) .h2o.__remoteSend(conn, paste0('Inspect.json?key=', key))$schema$rows
 
 #'
 #' Load H2O Model from HDFS or Local Disk
@@ -93,13 +93,13 @@ h2o.loadModel <- function(object, path="") {
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(h2o, key, nrow, ncol, col_names)
-  new("H2OFrame", h2o=h2o, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
+.h2o.parsedData <- function(conn, key, nrow, ncol, col_names)
+  new("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 
 #'
 #' Create new H2OFrame object for predictions
 .h2o.parsedPredData<-
-function(client, predictions) {
+function(conn, predictions) {
   key <- predictions$key$name
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows
@@ -107,7 +107,7 @@ function(client, predictions) {
   factors <- sapply(predictions$columns, function(column) column$type == "enum")
   names(factors) <- col_names
   factors <- as.data.frame(factors)
-  o <- new("H2OFrame", h2o = client, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  o <- new("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
   .pkg.env[[o@key]] <- o
   o
 }

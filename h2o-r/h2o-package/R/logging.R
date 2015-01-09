@@ -66,7 +66,7 @@ h2o.openLog <- function(type) {
 #' 
 #' \code{h2o.logAndEcho} sends a message to H2O for logging. Generally used for debugging purposes.
 #' 
-#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
+#' @param conn An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param message A character string with the message to write to the log.
 #' @seealso \code{\link{H2OConnection}}
 h2o.logAndEcho <- function(conn, message) {
@@ -84,13 +84,13 @@ h2o.logAndEcho <- function(conn, message) {
 #' 
 #' \code{h2o.downloadAllLogs} downloads all H2O log files to local disk. Generally used for debugging purposes.
 #' 
-#' @param client An \code{H2OConnection} object pointing to a running H2O cluster.
+#' @param conn An \code{H2OConnection} object pointing to a running H2O cluster.
 #' @param dirname (Optional) A character string indicating the directory that the log file should be saved in.
 #' @param filename (Optional) A character string indicating the name that the log file should be saved to.
 #' @seealso \code{\link{H2OConnection}}
-h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
-  if(!is(client, "H2OConnection"))
-    stop("`client` must be an H2OConnection object")
+h2o.downloadAllLogs <- function(conn, dirname = ".", filename = NULL) {
+  if(!is(conn, "H2OConnection"))
+    stop("`conn` must be an H2OConnection object")
 
   if(!is.character(dirname) || length(dirname) != 1L || is.na(dirname) || !nzchar(dirname))
     stop("`dirname` must be a non-empty character string")
@@ -98,7 +98,7 @@ h2o.downloadAllLogs <- function(client, dirname = ".", filename = NULL) {
   if(!is.character(filename) || length(filename) != 1L || is.na(filename) || !nzchar(filename))
     stop("`filename` must be a non-empty character string")
 
-  url <- paste0("http://", client@ip, ":", client@port, "/", .h2o.__DOWNLOAD_LOGS)
+  url <- paste0("http://", conn@ip, ":", conn@port, "/", .h2o.__DOWNLOAD_LOGS)
   if(!file.exists(dirname))
     dir.create(dirname)
 

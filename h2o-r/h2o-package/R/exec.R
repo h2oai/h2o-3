@@ -80,29 +80,30 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #'
 #' Force the evaluation of the AST.
 #'
-#' @param h2o: an H2OConnection object
-#' @param ast: an ASTNode object
-#' @param h2o.ID: the name of the key in h2o (hopefully matches top-most level user-defined variable)
-#' @param parent.ID: the name of the object in the calling frame
-#' @param env: the environment back to which we assign
+#' @param ast an ASTNode object
+#' @param caller.ID the name of the object in the calling frame
+#' @param env the environment back to which we assign
+#' @param h2o.ID the name of the key in h2o (hopefully matches top-most level user-defined variable)
+#' @param conn an H2OConnection object
+#' @param new.assign a logical flag
 #'
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.assign=TRUE) {
-  if (is.null(h2o)) h2o <- .retrieveH2O(parent.frame())
+function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=NULL, new.assign=TRUE) {
+  if (is.null(conn)) conn <- .retrieveH2O(parent.frame())
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
   if (new.assign) ast <- h2o.ID %<-% ast
   ast <- visitor(ast)
-  res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=ast)
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {
     ret <- res$string
     if (ret == "TRUE")  ret <- TRUE
     if (ret == "FALSE") ret <- FALSE
   } else if (res$result == "") {
-    ret <- .h2o.parsedData(h2o, res$key$name, res$num_rows, res$num_cols, res$col_names)
+    ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names)
     ret@key <- if(is.null(h2o.ID)) NA_character_ else h2o.ID
   } else {
     ret <- res$scalar
