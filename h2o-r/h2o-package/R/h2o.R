@@ -116,6 +116,16 @@
       httpStatusMessage = h$value()["statusMessage"]
       payload = t$value()
     }
+  } else if (method == "DELETE") {
+    h = basicHeaderGatherer()
+    t = basicTextGatherer()
+    tmp = tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, verbose = TRUE),
+                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    if (! .__curlError) {
+      httpStatusCode = as.numeric(h$value()["status"])
+      httpStatusMessage = h$value()["statusMessage"]
+      payload = t$value()
+    }
   }
   else {
     message = sprintf("Unknown HTTP method %s", method)
@@ -379,7 +389,7 @@ print.H2OTable <- function(x, ...) {
 }
 
 # Make an HTTP request to the H2O backend.
-# 
+#
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
@@ -387,7 +397,7 @@ print.H2OTable <- function(x, ...) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
-  
+
   .h2o.__checkConnectionHealth(conn)
 
   if (length(.params) == 0L) {

@@ -212,9 +212,9 @@ public class RequestServer extends NanoHTTPD {
     register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.  DEPRECATED: Use POST because of its higher data limit.");
     register("/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
-    register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
-    register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
-    register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
+    register("/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
+    register("/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
+    register("/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
 
   }
