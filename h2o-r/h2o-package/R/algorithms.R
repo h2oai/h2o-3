@@ -183,6 +183,8 @@
 
   model <- h2o.getModel(conn, dest_key)
 
+  .pkg.env$des_key <- model  # stuff into env so that models are safe from GC
+
   if (delete_train) 
     h2o.rm(temp_train_key)
   if (!is.null(params$validation_frame))

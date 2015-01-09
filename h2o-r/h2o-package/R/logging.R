@@ -76,7 +76,7 @@ h2o.logAndEcho <- function(conn, message) {
   if(!is.character(message))
     stop("`message` must be a character string")
 
-  res <- .h2o.__remoteSend(conn, .h2o.__LOGANDECHO, message = message)
+  res <- .h2o.__remoteSend(conn, .h2o.__LOGANDECHO, message = message, method = "POST")
   res$message
 }
 

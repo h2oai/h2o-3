@@ -9,7 +9,7 @@ test.kmstand.golden <- function(H2Oserver) {
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
   startIdx <- sort(sample(1:nrow(irisR), 3))
   
-  # H2O automatically standardizes data (de-mean and scale so standard deviation is one)
+  # H2O standardizes data (de-mean and scale so standard deviation is one)
   irisScale = scale(irisR[,1:4], center = TRUE, scale = TRUE)
   Log.info("Initial cluster centers:"); print(irisScale[startIdx,])
   fitR <- kmeans(irisScale, centers = irisScale[startIdx,], iter.max = 1000, algorithm = "Lloyd")

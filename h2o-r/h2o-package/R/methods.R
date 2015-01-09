@@ -102,7 +102,7 @@ h2o.ls <- function(object) {
 h2o.removeAll<-
 function(object) {
   if (missing(object)) object <- .retrieveH2O(parent.frame())
-  invisible(.h2o.__remoteSend(object, .h2o.__REMOVEALL))
+  invisible(.h2o.__remoteSend(object, .h2o.__REMOVEALL, method = "DELETE"))
 }
 
 #'
@@ -136,7 +136,7 @@ h2o.rm <- function(object, keys) {
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]])
+    .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
 }
 
 h2o.gc <- function(object) {
