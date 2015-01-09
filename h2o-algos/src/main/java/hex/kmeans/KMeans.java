@@ -228,11 +228,13 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           }
           model._output._avgwithinss = ssq/_train.numRows(); // mse total
 
-          // Sum-of-square distance from grand mean (since we auto-standardize the data, this is just the origin)
+          // Sum-of-square distance from grand mean
           if(_parms._k == 1)
             model._output._avgss = model._output._avgwithinss;
           else {
-            SumSqr totss = new SumSqr(new double[1][means.length],means,mults,_ncats).doAll(vecs);
+            double[][] orig = new double[1][means.length];
+            if(!_parms._standardize) orig[0] = means;  // If data standardized, grand mean is just the origin
+            SumSqr totss = new SumSqr(orig,means,mults,_ncats).doAll(vecs);
             model._output._avgss = totss._sqr/_train.numRows(); // mse with respect to grand mean
           }
           model._output._avgbetweenss = model._output._avgss - model._output._avgwithinss;  // mse between-cluster
@@ -582,9 +584,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     double[][] value = new double[K][N];
     for( int clu = 0; clu < K; clu++ ) {
       System.arraycopy(centers[clu],0,value[clu],0,N);
-      if( mults!=null )         // Reverse standardization
-        for( int col = ncats; col < N; col++ )
+      if( mults!=null ) {        // Reverse standardization
+        for (int col = ncats; col < N; col++)
           value[clu][col] = value[clu][col] / mults[col] + means[col];
+      }
     }
     return value;
   }
