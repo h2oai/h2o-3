@@ -839,7 +839,9 @@ class ASTAssign extends AST {
     } else {
 
       // Peel apart a slice assignment
-      ASTSlice lhs_slice = (ASTSlice) this._asts[0];  // asts of ASTSlice => AST[]{hex, rows, cols}
+      AST x = _asts[0];
+      while( x instanceof ASTAssign ) x = x._asts[1];
+      ASTSlice lhs_slice = (ASTSlice) x;  // asts of ASTSlice => AST[]{hex, rows, cols}
 
       // push the slice onto the stack
       lhs_slice._asts[0].treeWalk(e);   // push hex

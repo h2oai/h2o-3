@@ -1981,8 +1981,6 @@ class ASTSetColNames extends ASTUniPrefixOp {
 }
 
 class ASTRunif extends ASTUniPrefixOp {
-  protected static double _min;
-  protected static double _max;
   protected static long   _seed;
   @Override String opStr() { return "h2o.runif"; }
   public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }

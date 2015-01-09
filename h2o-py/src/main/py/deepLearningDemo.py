@@ -9,7 +9,7 @@ cluster = h2o.H2OConnection()
 
 # Training data
 train_data = h2o.H2OFrame(remote_fname="smalldata/gbm_test/ecology_model.csv")
-train_data = train_data.drop('Site')
+del train_data['Site']
 train_data['Angaus'] = train_data['Angaus'].asfactor()
 print train_data.describe()
 

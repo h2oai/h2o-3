@@ -47,11 +47,16 @@ h2o.getModel <- function(conn, key)
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
 {
   output <- data.frame()
+  dots <- list(...)
   
-  l <- list(...)
-  
-  if( is.null(l$envir) ) l$envir <- parent.frame()
-  
+  for(type in dots)
+    if (is.environment(type))
+    {
+      dots$envir <- type
+      type <- NULL
+    }
+  if (is.null(dots$envir)) 
+    dots$envir <- parent.frame()
 #   params$envir <- l$envir
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
@@ -60,16 +65,16 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   {
     if(model.type == "gbm") model.type = "h2o.gbm"
     else if(model.type == "glm") model.type = "h2o.glm"
-    else if(model.type == "deeplearninng") model.type = "h2o.deeplearning"
+    else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
     
-    model <- do.call(model.type, c(params, l$envir))
+    model <- do.call(model.type, c(params, envir = dots$envir))
   }
   output[1, "fold_num"] <- -1
   output[1, "model_key"] <- model@key
   # output[1, "model"] <- model@model$mse_valid
   
   data <- params$training_frame
-  data <- eval(data, l$envir)
+  data <- eval(data, dots$envir)
   data.len <- nrow(data)
 
   # nfold_vec <- h2o.sample(fr, 1:nfolds)
@@ -81,15 +86,14 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   xval <- lapply(1:nfolds, function(i) {
       params$training_frame <- data[fnum_id$object != i, ]
       params$validation_frame <- data[fnum_id$object != i, ]
-      fold <- do.call(model.type, c(params, l$envir))
+      fold <- do.call(model.type, c(params, envir = dots$envir))
       output[(i+1), "fold_num"] <<- i - 1
       output[(i+1), "model_key"] <<- fold@key
-      output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
+      # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
       fold
     })
   print(output)
   
-  model@xval <- xval
   model
 }
 
