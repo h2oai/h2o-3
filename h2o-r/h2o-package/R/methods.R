@@ -1044,11 +1044,6 @@ quantile.H2OFrame <- function(x,
 # Summary Statistics Operations
 #-----------------------------------------------------------------------------------------------------------------------
 
-## Replaced by setMethod
-# mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
-# var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else stats::var(x,y,na.rm,use)
-# sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
-
 #'
 #' Mean of a column
 #'
