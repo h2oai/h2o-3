@@ -1,6 +1,7 @@
 from h2o import H2OConnection
 from h2o import H2OFrame
 from h2o import H2OGBM
+from tabulate import tabulate
 
 ######################################################
 #
@@ -24,6 +25,7 @@ gle[gle==0] = None
 # Convert CAPSULE to a logical factor
 df['CAPSULE'] = df['CAPSULE'].asfactor()
 
+# Test/train split
 r = vol.runif()
 train = df[r< 0.8]
 test  = df[r>=0.8]
@@ -34,5 +36,11 @@ print test .describe()
 
 # Run GBM
 gbm = H2OGBM(dataset=train,x="CAPSULE",validation_dataset=test,ntrees=50,max_depth=5,learn_rate=0.1)
-print gbm._model
-print gbm.metrics()
+#print gbm._model
+mm = gbm.metrics()
+mm0 = mm[0]
+cm = mm0['cm']
+conf = cm['confusion_matrix']
+print tabulate(conf)
+
+
