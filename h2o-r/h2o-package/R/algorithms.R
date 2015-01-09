@@ -94,92 +94,91 @@
   paste(vec, collapse = ",")
 }
 
-.parms <- function(client, algo, m, envir) {
-  P <- .h2o.__remoteSend(client, method = "GET",  .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
-  p_val <- list()     # list for all of the algo arguments
-  m <- as.list(m)
+.run <- function(client, algo, params, envir) {
+  params$training_frame <- get("training_frame", parent.frame())
 
-  m <- lapply(m, function(i)  {
-                                if( is.name(i) ) i <- get(deparse(i), envir)
-                                if( is.call(i) ) i <- eval(i, envir)
-                                if( is.integer(i) ) i <- as.numeric(i)
-                                i
-                                })
+  delete <- !.is.eval(params$training_frame)
+  if (delete) {
+    temp_key <- params$training_frame@key
+    .force.eval(ast = params$training_frame@ast, h2o.ID = temp_key)
+  }
 
-  #---------- Check user param types ----------#
-  error <- lapply(P, function(i) {
+  ALL_PARAMS <- .h2o.__remoteSend(client, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+
+  params <- lapply(as.list(params), function(i) {
+                     if (is.name(i))    i <- get(deparse(i), envir)
+                     if (is.call(i))    i <- eval(i, envir)
+                     if (is.integer(i)) i <- as.numeric(i)
+                     i
+                   })
+
+  #---------- Check user parameter types ----------#
+  error <- lapply(ALL_PARAMS, function(i) {
     e <- ""
-    if( i$required && !(i$name %in% names(m)) )
-      e <- paste0(e, "argument \"", i$name, "\" is missing, with no default\n")
-    else if( i$name %in% names(m) ) {
+    if (i$required && !(i$name %in% names(params)))
+      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
+    else if (i$name %in% names(params)) {
       # changing Java types to R types
-      tryCatch(p_type <- .type.map[[i$type]], error = function(e) stop("Cannot find type ", i$type, " in .type.map."))
-      switch(p_type, #create two type parameters for arrays
-        "sarray" = p_type[2L] <- "character",
-        "barray" = p_type[2L] <- "logical",
-        "narray" = p_type[2L] <- "numeric")
-      if(length(p_type) > 1L) {
-        p_type <- p_type[2L]
-        if(!inherits(m[[i$name]], p_type))
-          e <- paste0(e, "array of ", i$name, " must be of type ", p_type, ", but got ", class(m[[i$name]]), ".\n")
-        else
-          m[[i$name]] <<- .collapse(m[[i$name]])
-      } else if(!inherits(m[[i$name]], p_type))
-        e <- paste0(e, " \"", i$name , "\" must be of type ", p_type, ", but got ", class(m[[i$name]]), ".\n")
-      else if( length(i$values) > 1L)
-        if( !(m[[i$name]] %in% i$values) ) {
-          e <- paste0(e, "\"", i$name,"\" must be in")
-          for(fact in i$values)
+      mapping <- .type.map[i$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+      if (is.na(type))
+        stop("Cannot find type ", i$type, " in .type.map")
+      if (scalar) {
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
+          e <- paste0("\"", i$name,"\" must be in")
+          for (fact in i$values)
             e <- paste0(e, " \"", fact, "\",")
-          e <- paste(e, "but got", m[[i$name]])
+          e <- paste(e, "but got", params[[i$name]])
         }
+      } else {
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else
+          params[[i$name]] <<- .collapse(params[[i$name]])
       }
+    }
     e
   })
-
   if(any(nzchar(error)))
     stop(error)
 
-  #---------- Create param list to pass ----------#
-  p_val <- lapply(m, function(i) {
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
     if(is(i, "H2OFrame"))
       i@key
     else
       i
   })
-  #---------- Verify Params ----------#
-  rj <- .h2o.__remoteSend(client, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = p_val)
 
-  if(length(rj$validation_messages) != 0L)
-    error <- lapply(rj$validation_messages, function(i) {
+  #---------- Validate parameters ----------#
+  validation <- .h2o.__remoteSend(client, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  if(length(validation$validation_messages) != 0L) {
+    error <- lapply(validation$validation_messages, function(i) {
       if( !(i$message_type %in% c("HIDE","INFO")) )
         paste0(i$message, ".\n")
       else
         ""
     })
-  if(any(nzchar(error)))
-    stop(error)
+    if(any(nzchar(error)))
+      stop(error)
+  }
 
-  #---------- Return Params ----------#
-  p_val
-}
+  res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
 
-.run <- function(client, algo, m, envir) {
-  m$training_frame <- get("training_frame", parent.frame())
-  if( delete <- !((.is.eval(m$training_frame)))) .force.eval(ast = m$training_frame@ast, h2o.ID = m$training_frame@key)
-  p_val <- .parms(client, algo, m, envir)
-
-  res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = p_val)
-
-  job_key <- res$job[[1L]]$key$name
+  job_key  <- res$job[[1L]]$key$name
   dest_key <- res$jobs[[1L]]$dest$name
   .h2o.__waitOnJob(client, job_key)
+
   # Grab model output and flatten one level
   res_model <- .h2o.__remoteSend(client, method = "GET", paste0(.h2o.__MODELS, "/", dest_key))
   res_model <- unlist(res_model, recursive = FALSE)
   res_model <- res_model$models
 
-  if( delete ) h2o.rm(m$training_frame@key)
+  if (delete)
+    h2o.rm(temp_key)
 
   do.call(.algo.map[[algo]], list(res_model, client))
 }

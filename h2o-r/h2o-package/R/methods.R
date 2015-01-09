@@ -176,7 +176,7 @@ h2o.assign <- function(data, key) {
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
   ID <- deparse(substitute(data), width.cutoff = 500L)
   ast <- .h2o.varop("rename", data, key)
-  .force.eval(ast@ast, ID, parent.frame(), NULL)
+  .force.eval(ast@ast, ID, parent.frame())
   o <- get(ID, parent.frame())
   o@key <- key
   o
@@ -452,21 +452,19 @@ h2o.anyFactor <- function(x) {
 # Slicing
 #-----------------------------------------------------------------------------------------------------------------------
 
-# i are the rows, j are the columns
-#' Extract or Replace Parts of an H2O Object
+#' Extract or Replace Parts of an H2OFrame Object
 #' 
-#' Operators acting on H2O parsed data objects to extract or replace parts.
+#' Operators to extract or replace parts of H2OFrame objects.
 #' 
-#' @name h2o.extract
-#' @aliases [, $, [[,[<-, $<-, [[<-
-#' @param \code{x, object} object from which to extract element(s) or in which to replace element(s).
-#' @param \code{i, j, ...} indices specifying elements to extract or replace. Indices are numeric or character vectors or
-#'        empty (missing) or will be matched to the names.
+#' @name H2OFrame-Extract
+#' @param x object from which to extract element(s) or in which to replace element(s).
+#' @param i,j,... indices specifying elements to extract or replace. Indices are numeric or
+#'        character vectors or empty (missing) or will be matched to the names.
 #' @param name
 #' @param drop
 NULL
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -509,12 +507,12 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   new("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o)
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("$", "H2OFrame", function(x, name) {
   x[[name, exact = FALSE]]
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[[", "H2OFrame", function(x, i, exact = TRUE) {
   if(missing(i))
     return(x)
@@ -562,7 +560,7 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #-----------------------------------------------------------------------------------------------------------------------
 # Assignment Operations: [<-, $<-, [[<-, colnames<-, names<-
 #-----------------------------------------------------------------------------------------------------------------------
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   missingI <- missing(i)
   missingJ <- missing(j)
@@ -595,7 +593,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   o
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("$<-", "H2OFrame", function(x, name, value) {
   if(!is.character(name) || length(name) != 1L || !nzchar(name))
     stop("`name` must be a non-empty string")
@@ -626,7 +624,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
   res
 })
 
-#' @rdname h2o.extract
+#' @rdname H2OFrame-Extract
 setMethod("[[<-", "H2OFrame", function(x, i, value) {
   if(!is(value, "H2OFrame")) stop("Can only append an H2OFrame to an H2OFrame")
   do.call(`$<-`, list(x = x, name = i, value = value))
@@ -648,8 +646,8 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
-    ast <- .h2o.varop("colnames=", x, idxs, value, useKey=x@key)
-    .force.eval(ast@ast,new.assign=FALSE)
+    ast <- .h2o.varop("colnames=", x, idxs, value, .key = x@key)
+    .force.eval(ast@ast, new.assign = FALSE)
     x
 })
 
@@ -1046,11 +1044,6 @@ quantile.H2OFrame <- function(x,
 # Summary Statistics Operations
 #-----------------------------------------------------------------------------------------------------------------------
 
-## Replaced by setMethod
-# mean <- function(x, trim = 0, na.rm = FALSE, ...) if (.isH2O(x)) UseMethod("mean") else base::mean(x,trim,na.rm,...)
-# var  <- function(x, y = NULL, na.rm = FALSE, use) if (.isH2O(x)) UseMethod("var")  else stats::var(x,y,na.rm,use)
-# sd   <- function(x, na.rm = FALSE)                if (.isH2O(x)) UseMethod("sd")   else stats::sd(x,na.rm)
-
 #'
 #' Mean of a column
 #'
@@ -1294,64 +1287,6 @@ setMethod("as.environment", "H2OFrame", function(x) {
 
 setMethod("as.factor",    "H2OFrame", function(x) .h2o.unop("as.factor", x))
 setMethod("as.character", "H2OFrame", function(x) .h2o.unop("as.character", x))
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Model Plot/Summary Operations: PCA model summary and screeplot
-#-----------------------------------------------------------------------------------------------------------------------
-#' Summarizes an H2O PCA Model
-#'
-#' Summarizes the importance of each principal component returned by \code{\link{h2o.prcomp}}.
-#'
-#' @param object An \linkS4class{H2OPCAModel} object.
-#' @param \dots Additional argument affecting the summary produced. #TODO: (Currently unimplemented)
-#' @return Returns a matrix displaying the standard deviation, proportion of variance explained and cumulative
-#'         proportion of variance explained by each principal component.
-#' @seealso \code{\link[base]{summary}} for the generic {R} summary method.
-#' @examples
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package="h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
-#' australia.pca <- h2o.prcomp(data = australia.hex, standardize = TRUE)
-#' summary.H2OPCAModel(australia.pca)
-summary.H2OPCAModel <- function(object, ...) {
-  # TODO: Save propVar and cumVar from the Java output instead of computing here
-  myVar <- object@model$sdev^2
-  myProp <- myVar/sum(myVar)
-  result <- rbind(object@model$sdev, myProp, cumsum(myProp))   # Need to limit decimal places to 4
-  colnames(result) <- paste0("PC", seq_len(length(myVar)))
-  rownames(result) <- c("Standard deviation", "Proportion of Variance", "Cumulative Proportion")
-
-  cat("Importance of components:\n")
-  print(result)
-}
-
-#' Screeplots in H2O
-#'
-#' Plots the variances against the number of the principal component generated by \code{\link{h2o.prcomp}}.
-#'
-#' @param x an \linkS4class{H2OPCAModel} object.
-#' @param npcs Number of components to be plotted.
-#' @param type Type of plot, must be either \code{barplot} or \code{lines}.
-#' @param main Title of the plot.
-#' @param \dots Additional parameters to be passed to the plotting function
-#' @seealso \code{\link[stats]{screeplot}} for the base \code{stats} method.
-#' @examples
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' ausPath <- system.file("extdata", "australia.csv", package = "h2o")
-#' australia.hex <- h2o.uploadFile(localH2O, path = ausPath)
-#' australia.pca <- h2o.prcomp(data = australia.hex, standardize = TRUE)
-#' screeplot(australia.pca)
-screeplot.H2OPCAModel <- function(x, npcs = min(10, length(x@model$sdev)), type = "barplot",
-                                  main = paste0("h2o.prcomp(", x@data@key, ")"), ...) {
-  if(type == "barplot")
-    barplot(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-  else if(type == "lines")
-    lines(x@model$sdev[1:npcs]^2, main = main, ylab = "Variances", ...)
-  else
-    stop("`type` must be either \"barplot\" or \"lines\"")
-}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge

@@ -68,15 +68,11 @@ function(op, e1, e2) {
 #'
 #' Operation on an H2OFrame object with some extra parameters.
 .h2o.varop<-
-function(op, ..., .args=list(), useKey=NULL) {
+function(op, ..., .args = list(...), .key = .key.make()) {
   op <- new("ASTApply", op = op)
-
-  if (length(.args) == 0L) ASTargs <- .args.to.ast(...)
-  else ASTargs <- .args.to.ast(.args=.args)
-
-  ast <- new("ASTNode", root=op, children=ASTargs)
-  key <- if(is.null(useKey)) .key.make() else useKey
-  new("H2OFrame", ast = ast, key = key, h2o = .retrieveH2O())
+  children <- .args.to.ast(.args = .args)
+  ast <- new("ASTNode", root = op, children = children)
+  new("H2OFrame", ast = ast, key = .key, h2o = .retrieveH2O())
 }
 
 #'
