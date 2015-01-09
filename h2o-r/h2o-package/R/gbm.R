@@ -56,13 +56,16 @@ h2o.gbm <- function(x, y, training_frame, ...,
                     max_after_balance_size = 1,
                     seed)
 {
-  l <- list(...)
+  dots <- list(...)
   
-  for(type in l)
-    if (is.environment(type)) 
-      l$envir <- type
-  if (is.null(l$envir)) 
-    l$envir <- parent.frame()
+  for(type in dots)
+    if (is.environment(type))
+    {
+      dots$envir <- type
+      type <- NULL
+    }
+  if (is.null(dots$envir)) 
+    dots$envir <- parent.frame()
   
   # Required args: x, y, training_frame
   if( missing(x) ) stop("`x` is missing, with no default")
@@ -84,7 +87,7 @@ h2o.gbm <- function(x, y, training_frame, ...,
 
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
-  .run(training_frame@h2o, 'gbm', parms, l$envir )
+  .run(training_frame@h2o, 'gbm', parms, dots$envir )
 }
 
 # Function call for R sided cross validation of h2o objects
