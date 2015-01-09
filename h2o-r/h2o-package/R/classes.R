@@ -257,6 +257,20 @@ setMethod("show", "H2OKMeansModel", function(object) {
     cat("\nAvailable components:\n\n"); print(names(model))
 })
 
+#' The H2OQuantileModel class.
+#'
+#' This class represents a quantile model.
+#' @slot valid Object of class \code{\linkS4class{H2OFrame}}, which is the dataset used to build the model.
+#' @aliases H2OQuantileModel
+setClass("H2OQuantileModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
+
+#' @rdname H2OQuantileModel-class
+setMethod("show", "H2OQuantileModel", function(object) {
+# print(object@data@h2o)
+#  cat("Parsed Data Key:", object@data@key, "\n\n")
+  cat("Quantile Model Key:", object@key, "\n")
+})
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Utils
 #-----------------------------------------------------------------------------------------------------------------------
