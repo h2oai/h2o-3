@@ -2,8 +2,8 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
-import water.Key;
 import water.api.API;
+import water.api.KeySchema;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 
@@ -14,7 +14,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
     // Input fields
     @API(help = "User-specified points", required = false)
-    public Key<Frame> user_points;
+    public KeySchema user_points;
 
     @API(help = "Number of clusters", required = true)
     public int k;
