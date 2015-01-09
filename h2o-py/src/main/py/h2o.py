@@ -508,20 +508,16 @@ class H2OConnection(object):
   def Frame(self,key):
     return self._doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
 
-  def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,train_frame,test_frame=None):
-    p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':train_frame}
-    if test_frame: p['validation_frame'] = test_frame
-    j = self._doJob(self._doSafeGet(self.buildURL("GBM",p)))
-    j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
-    return j['models'][0]
-
-  def DeepLearning(self,x,train_frame,test_frame=None,**kwargs):
+  def doModel(self,model,x,train_frame,test_frame=None,**kwargs):
     kwargs['response_column'] = x
     kwargs['training_frame'] = train_frame
     if test_frame: kwargs['validation_frame'] = test_frame
-    j = self._doJob(self._doSafeGet(self.buildURL("DeepLearning",kwargs)))
+    j = self._doJob(self._doSafeGet(self.buildURL(model,kwargs)))
     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
     return j['models'][0]
+
+  def Metrics(self,model,dataset):
+    return self._doSafeGet(self.buildURL("3/ModelMetrics/models/"+model,{}))['model_metrics']
 
   def Job(self,jobkey):
     return self._doSafeGet(self.buildURL("Jobs/"+jobkey,{}))
@@ -550,7 +546,11 @@ class H2OConnection(object):
     j = r.json()
     if 'errmsg' in j: raise ValueError(j['errmsg'])
     if 'http_status' in j:
-      if j['http_status']==404 or j['http_status']==500: raise ValueError(j['msg'])
+      if j['http_status']==404 or j['http_status']==500: 
+        if j['msg']: raise ValueError(j['msg'])
+        if 'stacktrace' in j: 
+          raise ValueError(j['stacktrace'])
+        raise ValueError(j)
     return j
 
   # function to build a URL from a base and a dictionary of params.  'request'
@@ -575,60 +575,36 @@ class H2OConnection(object):
 
 ##############################################################################
 #
-# Simple GBM Wrapper
+# Simple Model Wrapper
 #
-class H2OGBM(object):
-  def __init__(self,dataset,x,ntrees=50,shrinkage=0.1,interaction_depth=5,distribution="AUTO",validation_dataset=None):
+class H2OModel(object):
+  def __init__(self,model,dataset,x,validation_dataset=None,**kwargs):
     if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
     self.dataset = dataset
-
     if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
     self.x = x
-
-    if not (0 <= ntrees <= 1000000): raise ValueError("ntrees must be between 0 and a million")
-    self.ntrees = ntrees
-
-    if not (0.0 <= shrinkage <= 1.0): raise ValueError("shrinkage must be between 0 and 1")
-    self.shrinkage = 0.1
-
-    if not (1 <= interaction_depth): raise ValueError("interaction_depth must be at least 1")
-    self.interaction_depth = interaction_depth
-
-    self.distribution = distribution
-
-    # Send over the frame
-    fr = _send_frame(dataset)
-    # And Validationm if any
-    if validation_dataset:
-      vfr = _send_frame(validation_dataset)
+    # Send over the frame, and validation frame if any
+    fr  = _send_frame(dataset)
+    vfr = _send_frame(validation_dataset) if validation_dataset else None
     # Do the big job
-    self._model = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr,vfr)
+    self._model = H2OCONN.doModel(model,x,fr,vfr,**kwargs)
     H2OCONN.Remove(fr)
-    
+    if validation_dataset:
+      H2OCONN.Remove(vfr)
+
+  def metrics(self,dataset=None):
+    return H2OCONN.Metrics(self._model['key']['name'],dataset)
 
 ##############################################################################
-#
-# Simple DeepLearning Wrapper
-#
-class H2ODeepLearning(object):
+class H2OGBM(H2OModel):
   def __init__(self,dataset,x,validation_dataset=None,**kwargs):
-    if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
-    self.dataset = dataset
+    H2OModel.__init__(self,"GBM",dataset,x,validation_dataset,**kwargs)
 
-    if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
-    self.x = x
+class H2ODeepLearning(H2OModel):
+  def __init__(self,dataset,x,validation_dataset=None,**kwargs):
+    H2OModel.__init__(self,"DeepLearning",dataset,x,validation_dataset,**kwargs)
 
-    # Send over the frame
-    fr = _send_frame(dataset)
-    # And Validationm if any
-    if validation_dataset:
-      vfr = _send_frame(validation_dataset)
-    # Do the big job
-    self._model = H2OCONN.DeepLearning(x,fr,vfr,**kwargs)
-    H2OCONN.Remove(fr)
-    
-
-##############################################################################
+##########################################################################
 
 # Send over a frame description to H2O
 def _send_frame(dataset):
