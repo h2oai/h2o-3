@@ -68,6 +68,7 @@ h2o.kmeans <- function(training_frame, x, k,
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
         print("Warning: Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
+    parms[["user_points"]] <- parms[["user_points"]]@key
     parms[["k"]] <- as.integer(nrow(init))
   }
   else if ( is.character(init) ) { # Furthest, Random, PlusPlus
