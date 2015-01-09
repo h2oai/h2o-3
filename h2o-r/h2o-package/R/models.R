@@ -29,8 +29,9 @@ h2o.getModel <- function(h2o, key)
 
   json <- .h2o.__remoteSend(h2o, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
   model_category <- json$output$model_category
-  if (is.null(model_category) ||
-      !(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
+  if (is.null(model_category))
+     model_category <- "Unknown"
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
     stop("model_category missing in the output")
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
