@@ -347,6 +347,31 @@ public class ArrayUtils {
     a[change] = helper;
   }
 
+  /**
+   * Extract a shuffled array of integers
+   * @param a input array
+   * @param n number of elements to extract
+   * @param result array to store the results into (will be of size n)
+   * @param seed random number seed
+   * @param startIndex offset into a
+   * @return result
+   */
+  public static int[] shuffleArray(int[] a, int n, int result[], long seed, int startIndex) {
+    if (n<=0) return result;
+    Random random = getDeterRNG(seed);
+    if (result == null || result.length != n)
+      result = new int[n];
+    result[0] = a[startIndex];
+    for (int i = 1; i < n; i++) {
+      int j = random.nextInt(i+1);
+      if (j!=i) result[i] = result[j];
+      result[j] = a[startIndex+i];
+    }
+    for (int i = 0; i < n; ++i)
+      assert(ArrayUtils.contains(result, a[startIndex+i]));
+    return result;
+  }
+
   public static void shuffleArray(long[] a, long seed) {
     int n = a.length;
     Random random = getDeterRNG(seed);
