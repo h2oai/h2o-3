@@ -4,10 +4,18 @@
 description = "H2O Scala REPL"
 
 dependencies {
-  compile project(":h2o-core")
+  compile (project(":h2o-core")) {
+    exclude group: "javax.servlet", module: "servlet-api"
+  }
   compile project(":h2o-scala")
   compile "org.scala-lang:scala-library:$scalaVersion"
   compile "org.scala-lang:scala-compiler:$scalaVersion"
+
+  // Jetty dependency
+  compile("org.eclipse.jetty:jetty-webapp:8.1.16.v20140903")
+  compile "org.eclipse.jetty:jetty-websocket:8.1.16.v20140903"
+
+  //compile "javax.servlet:servlet-api:2.5"
 
   runtime "org.scala-lang:jline:$scalaVersion"
   
