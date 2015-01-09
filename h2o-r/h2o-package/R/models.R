@@ -8,8 +8,8 @@
 #'
 #' Returns a reference to an existing model in the H2O instance.
 #'
-#' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
-#'            of the server running H2O.
+#' @param conn \linkS4class{H2OConnection} object containing the IP address and port
+#'             of the server running H2O.
 #' @param key A string indicating the unique hex key of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
@@ -19,15 +19,15 @@
 #' iris.hex <- as.h2o(localH2O, iris, "iris.hex")
 #' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
 #' model.retrieved <- h2o.getMode(localH2O, key)
-h2o.getModel <- function(h2o, key)
+h2o.getModel <- function(conn, key)
 {
   if (missing(key)) {
     # means h2o is the one that's missing... retrieve it!
-    key <- h2o
-    h2o <- .retrieveH2O(parent.frame())
+    key <- conn
+    conn <- .retrieveH2O(parent.frame())
   }
 
-  json <- .h2o.__remoteSend(h2o, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
+  json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
      model_category <- "Unknown"
@@ -36,7 +36,7 @@ h2o.getModel <- function(h2o, key)
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   new(Class      = Class,
-      h2o        = h2o,
+      h2o        = conn,
       key        = json$key$name,
       algorithm  = json$algo,
       parameters = json$parameters,

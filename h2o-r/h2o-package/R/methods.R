@@ -110,13 +110,13 @@ function(object) {
 #'
 #' Useful for sending a REST command to H2O that is not currently supported by R.
 #'
-#' @param client An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @param page An endpoint not supplied by the h2o package. See constants.R.
 #' @param method Either "GET", "POST", or "HTTPPOST".
 #' @param ... Arguements to pass down
 #' @param .params
-h2o.remoteSend <- function(client, page, method = "GET", ..., .params = list())
-  .h2o.__remoteSend(client, page, method, ..., .params)
+h2o.remoteSend <- function(conn, page, method = "GET", ..., .params = list())
+  .h2o.__remoteSend(conn, page, method, ..., .params)
 
 #
 #' Delete Objects In H2O
@@ -187,16 +187,16 @@ h2o.assign <- function(data, key) {
 #'
 #' Get the reference to a frame with the given key in the H2O instance.
 #'
-#' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
-#'            of the server running H2O.
+#' @param conn \linkS4class{H2OConnection} object containing the IP address and port
+#'             of the server running H2O.
 #' @param key A string indicating the unique hex key of the dataset to retrieve.
-h2o.getFrame <- function(h2o, key) {
+h2o.getFrame <- function(conn, key) {
   if (missing(key)) {
-    # means h2o is the one that's missing... retrieve it!
-    key <- h2o
-    h2o <- .retrieveH2O(parent.frame())
+    # means conn is the one that's missing... retrieve it!
+    key <- conn
+    conn <- .retrieveH2O(parent.frame())
   }
-  .fill(h2o, key)
+  .fill(conn, key)
 }
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
@@ -215,7 +215,7 @@ h2o.getFrame <- function(h2o, key) {
 #
 #  res <- .h2o.__remoteSend(object, .h2o.__PAGE_CreateFrame, key = key, rows = rows, cols = cols, seed = seed, randomize = as.numeric(randomize), value = value, real_range = real_range,
 #                          categorical_fraction = categorical_fraction, factors = factors, integer_fraction = integer_fraction, integer_range = integer_range, missing_fraction = missing_fraction, response_factors = response_factors)
-#  .h2o.exec2(expr = key, h2o = object, dest_key = key)
+#  .h2o.exec2(expr = key, conn = object, dest_key = key)
 #}
 
 h2o.splitFrame <- function(data, ratios = 0.75) {
@@ -225,7 +225,7 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
   if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
   res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-  .h2o.__waitOnJob(client, .get.job(res))
+  .h2o.__waitOnJob(conn, .get.job(res))
 
   model.view <- .model.view(.get.dest(res))
   # must put empty H2OFrame objects into .pkg.env so that GC doesn't nab them up
@@ -1131,13 +1131,13 @@ function(x, center = TRUE, scale = TRUE) {
 #'
 #' Import a local R data frame to the H2O cloud.
 #'
-#' @param client An \linkS4class{H2OConnection} object containing the IP address and port number
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
 #' @param object An \code{R} data frame.
 #' @param key A string with the desired name for the H2O key.
 #' @param sep The field separator character.
-as.h2o <- function(client, object, key = "", header, sep = "") {
-  if(!is(client, "H2OConnection")) stop("`client` must be a H2OConnection object")
+as.h2o <- function(conn, object, key = "", header, sep = "") {
+  if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
@@ -1146,7 +1146,7 @@ as.h2o <- function(client, object, key = "", header, sep = "") {
   }
   tmpf <- tempfile(fileext=".csv")
   write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-  h2f <- h2o.uploadFile(client, tmpf, key = key, header = header, sep = sep)
+  h2f <- h2o.uploadFile(conn, tmpf, key = key, header = header, sep = sep)
   unlink(tmpf)
   h2f
 }

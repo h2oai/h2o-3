@@ -35,13 +35,13 @@
 #"
 #" Cache Frame information on the client side: rows, cols, colnames
 #"
-.fill <- function(h2o, key) {
-  res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
+.fill <- function(conn, key) {
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
-  .h2o.parsedData(h2o, key, res$num_rows, res$num_cols, cnames)
+  .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames)
 }
 
 #"
 #" Get the raw JSON of a model
 #"
-.model.view <- function(dest) .h2o.__remoteSend(client, method="GET", paste0(.h2o.__MODELS, "/", dest))
+.model.view <- function(dest) .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", dest))
