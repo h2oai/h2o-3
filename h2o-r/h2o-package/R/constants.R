@@ -188,7 +188,8 @@
 
 .algo.map <- c("deeplearning" = ".deeplearning.builder",
                "gbm" = ".gbm.builder",
-               "kmeans" = ".kmeans.builder")
+               "kmeans" = ".kmeans.builder",
+               "quantile" = ".quantile.builder")
 
 #'
 #' Inspect/Summary Endpoints

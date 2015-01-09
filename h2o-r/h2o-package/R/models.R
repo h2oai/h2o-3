@@ -22,3 +22,8 @@
   new("H2OKMeansModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
       valid = new("H2OFrame", h2o = client, key="NA"))
 }
+
+.quantile.builder <- function(json, client) {
+  new("H2OQuantileModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
+      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
+}
