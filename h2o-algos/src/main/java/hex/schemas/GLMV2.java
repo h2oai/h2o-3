@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Link;
 import water.api.API;
 import water.api.API.Level;
 import water.api.SupervisedModelParametersSchema;
@@ -38,7 +39,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     public GLMParameters.Family family;
 
     @API(help = "", level= Level.secondary, values={ "family_default", "identity", "logit", "log", "inverse", "tweedie" })
-    public GLMParameters.Link link;
+    public GLMParameters.Link link = Link.family_default;
 
     @API(help = "Tweedie variance power", level=Level.secondary)
     public double tweedie_variance_power;
