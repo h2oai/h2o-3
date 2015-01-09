@@ -30,25 +30,25 @@ class CreateFrameV2 extends JobV2<CreateFrameV2> {
   public double categorical_fraction;
 
   @API(help = "Factor levels for categorical variables", json=true)
-  public int factors = 100;
+  public int factors;
 
   @API(help = "Fraction of integer columns (for randomize=true)", json=true)
-  public double integer_fraction = 0.2;
+  public double integer_fraction;
 
   @API(help = "Range for integer variables (-range ... range)", json=true)
-  public long integer_range = 100;
+  public long integer_range;
 
   @API(help = "Fraction of binary columns (for randomize=true)", json=true)
-  public double binary_fraction = 0.1;
+  public double binary_fraction;
 
   @API(help = "Fraction of 1's in binary columns", json=true)
-  public double binary_ones_fraction = 0.02;
+  public double binary_ones_fraction;
 
   @API(help = "Fraction of missing values", json=true)
-  public double missing_fraction = 0.01;
+  public double missing_fraction;
 
   @API(help = "Number of factor levels of the first column (1=real, 2=binomial, N=multinomial)", json=true)
-  public int response_factors = 2;
+  public int response_factors;
 
   @Override public Job createImpl( ) { return new CreateFrame(Key.make(), null); }
 }
