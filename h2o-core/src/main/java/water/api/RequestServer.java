@@ -167,13 +167,13 @@ public class RequestServer extends NanoHTTPD {
     // TODO: filtering isn't working for these first four; we get all results:
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"},
       "Return the saved scoring metrics for the specified Model and Frame.");
-    register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"model"},
+    register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"model"},
       "Return the saved scoring metrics for the specified Model.");
     register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"},
       "Return the saved scoring metrics for the specified Model and Frame.");
-    register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"frame"},
+    register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"frame"},
       "Return the saved scoring metrics for the specified Frame.");
-    register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "list",
+    register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "fetch",
       "Return all the saved scoring metrics.");
 
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"},

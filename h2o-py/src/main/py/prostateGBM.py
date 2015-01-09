@@ -28,6 +28,6 @@ train['CAPSULE'] = train['CAPSULE'].asfactor()
 print train.describe()
 
 # Run GBM
-gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,shrinkage=0.1)
+gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,learn_rate=0.1)
 print gbm._model
-
+print gbm.metrics()

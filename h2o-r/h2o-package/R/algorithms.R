@@ -97,10 +97,19 @@
 .run <- function(client, algo, params, envir) {
   params$training_frame <- get("training_frame", parent.frame())
 
-  delete <- !.is.eval(params$training_frame)
-  if (delete) {
-    temp_key <- params$training_frame@key
-    .force.eval(ast = params$training_frame@ast, h2o.ID = temp_key)
+  #---------- Force evaluate temporary ASTs ----------#
+  delete_train <- !.is.eval(params$training_frame)
+  if (delete_train) {
+    temp_train_key <- params$training_frame@key
+    .force.eval(ast = params$training_frame@ast, h2o.ID = temp_train_key)
+  }
+  if (!is.null(params$validation_frame)){
+    params$validation_frame <- get("validation_frame", parent.frame())
+    delete_valid <- !.is.eval(params$validation_frame)
+    if (delete_valid) {
+      temp_valid_key <- params$validation_frame@key
+      .force.eval(ast = params$validation_frame@ast, h2o.ID = temp_valid_key)
+    }
   }
 
   ALL_PARAMS <- .h2o.__remoteSend(client, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
@@ -177,8 +186,11 @@
   res_model <- unlist(res_model, recursive = FALSE)
   res_model <- res_model$models
 
-  if (delete)
-    h2o.rm(temp_key)
-
+  if (delete_train) 
+    h2o.rm(temp_train_key)
+  if (!is.null(params$validation_frame))
+    if (delete_valid)
+      h2o.rm(temp_valid_key)
+  
   do.call(.algo.map[[algo]], list(res_model, client))
 }
