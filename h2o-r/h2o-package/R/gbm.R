@@ -69,6 +69,11 @@ h2o.gbm <- function(x, y, training_frame, ...,
   if( missing(y) ) stop("`y` is missing, with no default")
   if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
 
+  #required map for params with different names, assuming it will change in the RESTAPI end
+  .gbm.map <- c("x" = "ignored_columns",
+                "y" = "response_column",
+                "key" = "destination_key")
+
   parms <- as.list(match.call(expand.dots = FALSE)[-1L])
   parms$... <- NULL
 
@@ -76,16 +81,11 @@ h2o.gbm <- function(x, y, training_frame, ...,
   parms$x <- args$x_ignore
   parms$y <- args$y
   if(!missing(max_after_balance_size) ) parms$max_after_balance_size <- max_after_balance_size #hard-code due to Inf bug
-  
+
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
   .run(training_frame@h2o, 'gbm', parms, l$envir )
 }
-
-#required map for params with different names, assuming it will change in the RESTAPI end
-.gbm.map <- c("x" = "ignored_columns",
-              "y" = "response_column",
-              "key" = "destination_key")
 
 # Function call for R sided cross validation of h2o objects
 h2o.gbm.cv <- function(x, y, training_frame, nfolds = 2,

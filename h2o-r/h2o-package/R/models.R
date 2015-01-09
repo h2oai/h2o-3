@@ -2,30 +2,44 @@
 #' Retrieve Model Data
 #'
 #' After a model is constructed by H2O, R must create a view of the model. All views are backed by S4 objects that
-#' subclass the H2OModel object (see classes.R for class specifications).
+#' subclass the H2OModel.
+
+#' Get an R reference to an H2O model
 #'
-#' This file contains the set of model getters that fill out and return the appropriate S4 object.
+#' Returns a reference to an existing model in the H2O instance.
+#'
+#' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
+#'            of the server running H2O.
+#' @param key A string indicating the unique hex key of the model to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#'
+#' iris.hex <- as.h2o(localH2O, iris, "iris.hex")
+#' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
+#' model.retrieved <- h2o.getMode(localH2O, key)
+h2o.getModel <- function(h2o, key)
+{
+  if (missing(key)) {
+    # means h2o is the one that's missing... retrieve it!
+    key <- h2o
+    h2o <- .retrieveH2O(parent.frame())
+  }
 
-.deeplearning.builder <- function(json, client) {
-  new("H2ODeepLearningModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
-      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
-}
-
-.gbm.builder <- function(json, client) {
-  new("H2OGBMModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
-      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
-}
-
-.kmeans.builder <- function(json, client) {
-  if(NCOL(json$output$centers) == length(json$output$names))
-    colnames(json$output$centers) <- json$output$names
-  new("H2OKMeansModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
-      valid = new("H2OFrame", h2o = client, key="NA"))
-}
-
-.quantile.builder <- function(json, client) {
-  new("H2OQuantileModel", h2o = client, key = json$key$name, algo= json$algo, model = json$output,
-      valid = new("H2OFrame", h2o=client, key="NA"), xval = list())
+  json <- .h2o.__remoteSend(h2o, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
+  model_category <- json$output$model_category
+  if (is.null(model_category) ||
+      !(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
+    stop("model_category missing in the output")
+  Class <- paste0("H2O", model_category, "Model")
+  model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  new(Class      = Class,
+      h2o        = h2o,
+      key        = json$key$name,
+      algorithm  = json$algo,
+      parameters = json$parameters,
+      model      = model)
 }
 
 #' Cross Validate an H2O Model

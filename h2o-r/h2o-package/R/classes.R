@@ -154,122 +154,21 @@ setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.da
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
-setClass("H2OModel", representation(h2o="H2OConnection", key="character", algo="character", parameters="list", model="list"), contains="VIRTUAL")
+setClass("H2OModel",
+         representation(h2o="H2OConnection", key="character", algorithm="character", parameters="list", model="list"),
+         contains="VIRTUAL")
 
-#'
-#' The H2ODeepLearningModel class.
-#'
-#' This class represents a deep learning model.
-#' @slot valid Object of class \code{H2OFrame}, representing the validation data set.
-#' @slot xval List of objects of class \code{H2ODeepLearningModel}, representing the n-fold cross-validation models.
-#' @aliases H2ODeepLearningModel
-setClass("H2ODeepLearningModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
-
-#' @rdname H2ODeepLearningModel-class
-setMethod("show", "H2ODeepLearningModel", function(object) {
-  cat("Deep Learning Model Key:", object@key)
-
-  model <- object@model
-  cat("\n\nTraining classification error:", model$train_class_error)
-  cat("\nTraining mean square error:", model$train_sqr_error)
-  cat("\n\nValidation classification error:", model$valid_class_error)
-  cat("\nValidation square error:", model$valid_sqr_error)
-
-  if(!is.null(model$confusion)) {
-    cat("\n\nConfusion matrix:\n")
-    if(is.na(object@valid@key)) {
-      if(model$params$nfolds == 0L)
-        cat("Reported on", object@data@key, "\n")
-      else
-        cat("Reported on ", model$params$nfolds, "-fold cross-validated data\n", sep="")
-    } else
-      cat("Reported on", object@valid@key, "\n")
-    print(model$confusion)
-  }
-
-  if(!is.null(model$hit_ratios)) {
-    cat("\nHit Ratios for Multi-class Classification:\n")
-    print(model$hit_ratios)
-  }
-
-  if(!is.null(object@xval) && length(object@xval) > 0L) {
-    cat("\nCross-Validation Models:\n")
-    temp <- lapply(object@xval, function(x) cat(" ", x@key, "\n"))
-  }
-  cat("\n")
-  cat("\nAvailable components:\n\n"); print(names(model))
+setMethod("show", "H2OModel", function(object) {
+  cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
+  cat("Model Details\n")
+  print(object@model)
 })
 
-#'
-#' The H2OGBMModel class.
-#'
-#' This class represents a gradient boosted machines model.
-#' @slot valid Object of class \code{\linkS4class{H2OFrame}}, which is the dataset used to validate the model.
-#' @slot xval List of objects of class \code{H2OGBMModel}, representing the n-fold cross-validation models.
-#' @aliases H2OGBMModel
-setClass("H2OGBMModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
-
-#' @rdname H2OGBMModel-class
-setMethod("show", "H2OGBMModel", function(object) {
-# print(object@data@h2o)
-#  cat("Parsed Data Key:", object@data@key, "\n\n")
-  cat("GBM Model Key:", object@key, "\n")
-
-#  model = object@model
-#  if(model$params$distribution %in% c("multinomial", "bernoulli")) {
-#    cat("\nConfusion matrix:\n")
-#    if(is.na(object@valid@key))
-#      cat("Reported on", paste(object@model$params$nfolds, "-fold cross-validated data", sep = ""), "\n")
-#    else
-#      cat("Reported on", object@valid@key, "\n")
-#    print(model$confusion)
-#
-#    if(!is.null(model$auc) && !is.null(model$gini))
-#      cat("\nAUC:", model$auc, "\nGini:", model$gini, "\n")
-#  }
-
-#  if(!is.null(model$varimp)) {
-#    cat("\nVariable importance:\n"); print(model$varimp)
-#  }
-#  cat("\nMean-squared Error by tree:\n"); print(model$err)
-#  if(length(object@xval) > 0) {
-#    cat("\nCross-Validation Models:\n")
-#    print(sapply(object@xval, function(x) x@key))
-#  }
-})
-
-#'
-#' The H2OKMeansModel class.
-#'
-#' This class represents the results of a KMeans model.
-#' @aliases H2OKMeansModel
-setClass("H2OKMeansModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
-
-#' @rdname H2OKMeansModel-class
-setMethod("show", "H2OKMeansModel", function(object) {
-    cat("K-means Model Key:", object@key)
-
-    model <- object@model
-    cat("\n\nK-means clustering with", length(model$size), "clusters of sizes "); cat(model$size, sep=", ")
-    cat("\n\n"); print(model$centers2d)
-    cat("\nWithin cluster mean squared error by cluster:\n"); print(model$withinmse)
-    cat("(between_SS / total_SS = ", round(100*model$avgbetweenss/model$avgss, 2L), "%)\n")
-    cat("\nAvailable components:\n\n"); print(names(model))
-})
-
-#' The H2OQuantileModel class.
-#'
-#' This class represents a quantile model.
-#' @slot valid Object of class \code{\linkS4class{H2OFrame}}, which is the dataset used to build the model.
-#' @aliases H2OQuantileModel
-setClass("H2OQuantileModel", representation(valid="H2OFrame", xval="list"), contains="H2OModel")
-
-#' @rdname H2OQuantileModel-class
-setMethod("show", "H2OQuantileModel", function(object) {
-# print(object@data@h2o)
-#  cat("Parsed Data Key:", object@data@key, "\n\n")
-  cat("Quantile Model Key:", object@key, "\n")
-})
+setClass("H2OUnknownModel",     contains="H2OModel")
+setClass("H2OBinomialModel",    contains="H2OModel")
+setClass("H2OMultinomialModel", contains="H2OModel")
+setClass("H2ORegressionModel",  contains="H2OModel")
+setClass("H2OClusteringModel",  contains="H2OModel")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Class Utils

@@ -199,37 +199,6 @@ h2o.getFrame <- function(h2o, key) {
   .fill(h2o, key)
 }
 
-#' Get an R reference to an H2O model
-#' 
-#' Returns a reference to an existing model in the H2O instance.
-#' 
-#' @param h2o \linkS4class{H2OConnection} object containing the IP address and port
-#'            of the server running H2O.
-#' @param key A string indicating the unique hex key of the model to retrieve.
-#' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
-#' @examples
-#' library(h2o)
-#' localH2O <- h2o.init()
-#' 
-#' iris.hex <- as.h2o(localH2O, iris, "iris.hex")
-#' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
-#' model.retrieved <- h2o.getMode(localH2O, key)
-h2o.getModel <- function(h2o, key)
-{
-  if (missing(key)) {
-    # means h2o is the one that's missing... retrieve it!
-    key <- h2o
-    h2o <- .retrieveH2O(parent.frame())
-  }
-  
-  res <- .h2o.__remoteSend(h2o, method = "GET", paste0(.h2o.__MODELS, "/", key))
-  res <- unlist(res, recursive = FALSE)
-  res_model <- res$model
-  algo <- res_model$algo
-  
-  do.call(.algo.map[[algo]], list(res_model, h2o))
-}
-
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
 #  if(!is.numeric(rows)) stop("rows must be a numeric value")
 #  if(!is.numeric(cols)) stop("rows must be a numeric value")

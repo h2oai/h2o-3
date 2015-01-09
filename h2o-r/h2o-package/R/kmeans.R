@@ -47,6 +47,8 @@ h2o.kmeans <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
 
+  .kmeans.map <- c("x" = "ignored_columns")
+
   # Gather user input
   parms <- as.list(match.call()[-1L])
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.kmeans.map) ) i <- .kmeans.map[[i]]; i })
@@ -82,5 +84,3 @@ h2o.kmeans <- function(training_frame, x, k,
   .run(training_frame@h2o, 'kmeans', parms, parent.frame())
 
 }
-
-.kmeans.map <- c("x" = "ignored_columns")

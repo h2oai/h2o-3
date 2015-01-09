@@ -17,7 +17,9 @@ exportClasses(
   "H2ORawData",
   "H2OFrame",
   "H2OModel",
-  "H2ODeepLearningModel",
-  "H2OGBMModel",
-  "H2OKMeansModel"
+  "H2OUnknownModel",
+  "H2OBinomialModel",
+  "H2OMultinomialModel",
+  "H2ORegressionModel",
+  "H2OClusteringModel"
 )

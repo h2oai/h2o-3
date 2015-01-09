@@ -45,5 +45,4 @@ Collate:
          'kmeans.R'
          'gbm.R'
          'deeplearning.R'
-         'pca.R'
          'word2vec.R'

@@ -94,7 +94,7 @@
   paste(vec, collapse = ",")
 }
 
-.run <- function(client, algo, params, envir) {
+.run <- function(h2o, algo, params, envir) {
   params$training_frame <- get("training_frame", parent.frame())
 
   #---------- Force evaluate temporary ASTs ----------#
@@ -112,7 +112,7 @@
     }
   }
 
-  ALL_PARAMS <- .h2o.__remoteSend(client, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+  ALL_PARAMS <- .h2o.__remoteSend(h2o, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   params <- lapply(as.list(params), function(i) {
                      if (is.name(i))    i <- get(deparse(i), envir)
@@ -163,7 +163,7 @@
   })
 
   #---------- Validate parameters ----------#
-  validation <- .h2o.__remoteSend(client, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  validation <- .h2o.__remoteSend(h2o, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
   if(length(validation$validation_messages) != 0L) {
     error <- lapply(validation$validation_messages, function(i) {
       if( !(i$message_type %in% c("HIDE","INFO")) )
@@ -175,16 +175,13 @@
       stop(error)
   }
 
-  res <- .h2o.__remoteSend(client, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
+  res <- .h2o.__remoteSend(h2o, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
 
   job_key  <- res$job[[1L]]$key$name
   dest_key <- res$jobs[[1L]]$dest$name
-  .h2o.__waitOnJob(client, job_key)
+  .h2o.__waitOnJob(h2o, job_key)
 
-  # Grab model output and flatten one level
-  res_model <- .h2o.__remoteSend(client, method = "GET", paste0(.h2o.__MODELS, "/", dest_key))
-  res_model <- unlist(res_model, recursive = FALSE)
-  res_model <- res_model$models
+  model <- h2o.getModel(h2o, dest_key)
 
   if (delete_train) 
     h2o.rm(temp_train_key)
@@ -192,5 +189,5 @@
     if (delete_valid)
       h2o.rm(temp_valid_key)
   
-  do.call(.algo.map[[algo]], list(res_model, client))
+  model
 }

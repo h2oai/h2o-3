@@ -186,11 +186,6 @@
                    data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE))
 
-.algo.map <- c("deeplearning" = ".deeplearning.builder",
-               "gbm" = ".gbm.builder",
-               "kmeans" = ".kmeans.builder",
-               "quantile" = ".quantile.builder")
-
 #'
 #' Inspect/Summary Endpoints
 #'
