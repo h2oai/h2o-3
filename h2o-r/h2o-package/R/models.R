@@ -35,11 +35,64 @@ h2o.getModel <- function(conn, key)
     stop("model_category missing in the output")
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
+  parameters <- list()
+  lapply(json$parameters, function(param) {
+    if (!is.null(param$actual_value))
+    {
+      name <- param$name
+      if (is.null(param$default_value) || param$default_value != param$actual_value){
+        value <- param$actual_value
+        mapping <- .type.map[param$type,]
+        type    <- mapping[1L, 1L]
+        scalar  <- mapping[1L, 2L]
+        
+        # Change Java Array to R list
+        if (!scalar) {
+          arr <- gsub("\\[", "", gsub("]", "", value))
+          value <- unlist(strsplit(arr, split=", "))
+        }
+        
+        # Prase frame information to a key
+        if (type == "H2OFrame") {
+          toParse <- unlist(strsplit(value, split=","))
+          key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
+          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
+          value <- gsub("\\\"", "", key)
+        } else if (type == "numeric")
+          value <- as.numeric(value)
+        else if (type == "logical")
+          value <- as.logical(value)
+        
+        # Response column needs to be parsed
+        if (name == "response_column")
+        {
+          toParse <- unlist(strsplit(value, split=","))
+          key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
+          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
+          value <- gsub("\\\"", "", key)
+        }
+        parameters[[name]] <<- value
+      }
+    }
+  })
+  
+  # Convert ignored_columns/response_column to valid R x/y
+  if (!is.null(parameters$ignored_columns))
+    parameters$x <- .verify_datacols(h2o.getFrame(conn, parameters$training_frame), parameters$ignored_columns)$cols_ignore
+  if (!is.null(parameters$response_column))
+  {
+    parameters$y <- parameters$response_column
+    parameters$x <- setdiff(parameters$x, parameters$y)
+  }
+  
+  parameters$ignored_columns <- NULL
+  parameters$response_column <- NULL
+  
   new(Class      = Class,
       h2o        = conn,
       key        = json$key$name,
       algorithm  = json$algo,
-      parameters = json$parameters,
+      parameters = parameters,
       model      = model)
 }
 
