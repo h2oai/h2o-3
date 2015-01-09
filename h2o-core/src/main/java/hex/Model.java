@@ -96,7 +96,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  @return real-valued number (can be NaN)  */
     protected double missingColumnsType() { return Double.NaN; }
 
-    public long checksum() {
+    long checksum_impl() {
       return 
         (_dropNA20Cols?17:1) *
         train().checksum() *
@@ -190,7 +190,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return mm;                // Flow coding
     }
 
-    public long checksum() {
+    long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
@@ -433,5 +433,5 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return fs;
   }
 
-  @Override public long checksum() { return _parms.checksum() * _output.checksum(); }
+  @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }
 }

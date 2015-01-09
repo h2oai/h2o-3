@@ -535,7 +535,7 @@ public class Vec extends Keyed {
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
-  public long checksum() { return rollupStats()._checksum;}
+  @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
 
   /** Begin writing into this Vec.  Immediately clears all the rollup stats

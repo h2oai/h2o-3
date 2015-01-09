@@ -91,8 +91,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     public Frame _adaptedFrame;
     public int _responses; // number of responses
 
-    @Override
-    public long checksum() {throw H2O.unimpl();} // don't really need checksum
+    @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
     public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE }
     public TransformType _predictor_transform;

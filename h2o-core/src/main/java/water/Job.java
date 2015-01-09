@@ -22,7 +22,7 @@ public class Job<T extends Keyed> extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
     private JobList(Key<Job>[]jobs) { super(LIST); _jobs = jobs; }
-    public long checksum() { /* TODO: something better? */ return (long) Arrays.hashCode(_jobs);}
+    @Override protected long checksum_impl() { throw H2O.fail("Joblist checksum does not exist by definition"); }
   }
 
   /** The list of all Jobs, past and present.
@@ -312,9 +312,5 @@ public class Job<T extends Keyed> extends Keyed {
   }
 
   /** Default checksum; not really used by Jobs.  */
-  @Override public long checksum() {
-    // Not really sure what should go here. . .
-    // This isn't really being used for Job right now, so it's non-critical.
-    return _description.hashCode() * (_dest == null ? 1 : _dest.hashCode()) * _start_time;
-  }
+  @Override protected long checksum_impl() { throw H2O.fail("Job checksum does not exist by definition"); }
 }
