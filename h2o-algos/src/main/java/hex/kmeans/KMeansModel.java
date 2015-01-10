@@ -26,11 +26,11 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Iterations executed
     public int _iters;
 
-    // Cluster centers.  During model init, might be null or might have a "k"
+    // Cluster centersraw.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
-    // is used during the building process, the *builders* cluster centers are standardized).
-    public double[/*k*/][/*features*/] _centers;
-      public TwoDimTable _centers2d;
+    // is used during the building process, the *builders* cluster centersraw are standardized).
+    public TwoDimTable _centers;
+    public double[/*k*/][/*features*/] _centersraw;
 
     // Cluster size. Defined as the number of rows in each cluster.
     public long[/*k*/] _size;
@@ -60,7 +60,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._centers,data,_output._ncats);
+    preds[0] = KMeans.closest(_output._centersraw,data,_output._ncats);
     return preds;
   }
 }

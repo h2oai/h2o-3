@@ -142,7 +142,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             
             // Fill in sample centers into the model
             if (!isRunning()) return null; // Stopped/cancelled
-            model._output._centers = destandardize(centers, _ncats, means, mults);
+            model._output._centersraw = destandardize(centers, _ncats, means, mults);
             model._output._avgwithinss = sqr._sqr / _train.numRows();
             
             model._output._iters++;     // One iteration done
@@ -195,13 +195,13 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      model._output._centers = destandardize(centers, _ncats, means, mults);
+      model._output._centersraw = destandardize(centers, _ncats, means, mults);
       String[] rowHeaders = new String[_parms._k];
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers2d = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers);
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centersraw);
       model._output._size = task._size;
       model._output._withinmse = task._cSqr;
       double ssq = 0;       // sum squared error
