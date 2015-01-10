@@ -46,7 +46,7 @@ h2o.kmeans <- function(training_frame, x, k,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
-  
+
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -68,7 +68,7 @@ h2o.kmeans <- function(training_frame, x, k,
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
         if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-        parms[["user_points"]] <- as.h2o(training_frame@h2o, init)
+        parms[["user_points"]] <- as.h2o(init, training_frame@h2o)
     }
     else {
         parms[["user_points"]] <- init

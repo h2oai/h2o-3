@@ -30,7 +30,7 @@ function(op, x) {
   else stop("operand type not handled: ", class(x))
 
   ast <- new("ASTNode", root=op, children=list(x))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
 }
 
 #'
@@ -60,7 +60,7 @@ function(op, e1, e2) {
 
   # Return an ASTNode
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
 }
 
 #'
@@ -72,7 +72,7 @@ function(op, ..., .args = list(...), .key = .key.make()) {
   op <- new("ASTApply", op = op)
   children <- .args.to.ast(.args = .args)
   ast <- new("ASTNode", root = op, children = children)
-  new("H2OFrame", ast = ast, key = .key, h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key, h2o = h2o.getConnection())
 }
 
 #'
@@ -90,8 +90,7 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=NULL, new.assign=TRUE) {
-  if (is.null(conn)) conn <- .retrieveH2O(parent.frame())
+function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE) {
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
   if (new.assign) ast <- h2o.ID %<-% ast
@@ -129,5 +128,5 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=NULL, new
 .h2o.post.function<-
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
-  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS, funs=.collapse(expr))
+  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr))
 }

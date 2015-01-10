@@ -28,14 +28,14 @@
 #"
 .is.eval <- function(H2OFrame) {
   key <- H2OFrame@key
-  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
+  res <- .h2o.__remoteSend(h2o.getConnection(), paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
   res$evaluated
 }
 
 #"
 #" Cache Frame information on the client side: rows, cols, colnames
 #"
-.fill <- function(conn, key) {
+.fill <- function(conn = h2o.getConnection(), key) {
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
   .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames)

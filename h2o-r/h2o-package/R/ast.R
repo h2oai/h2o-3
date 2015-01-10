@@ -71,7 +71,7 @@ function(expr, envir) {
 #' Assign the value into the correct environment.
 .eval.assign<-
 function(x, ID, top_level_envir, calling_envir) {
-  .force.eval(.retrieveH2O(top_level_envir), x, ID = ID, rID = 'x')
+  .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')
   ID <- ifelse(ID == "Last.value", ID, x@key)
   assign(ID, x, top_level_envir)
   ID

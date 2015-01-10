@@ -94,7 +94,7 @@
   paste(vec, collapse = ",")
 }
 
-.run <- function(conn, algo, params, envir) {
+.run <- function(conn = h2o.getConnection(), algo, params, envir) {
   params$training_frame <- get("training_frame", parent.frame())
 
   #---------- Force evaluate temporary ASTs ----------#
@@ -181,9 +181,7 @@
   dest_key <- res$jobs[[1L]]$dest$name
   .h2o.__waitOnJob(conn, job_key)
 
-  model <- h2o.getModel(conn, dest_key)
-
-  .pkg.env$des_key <- model  # stuff into env so that models are safe from GC
+  model <- h2o.getModel(dest_key, conn)
 
   if (delete_train) 
     h2o.rm(temp_train_key)

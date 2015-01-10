@@ -10,10 +10,11 @@
 #' The H2O Package Environment
 #'
 .pkg.env              <- new.env()
+assign("SERVER",        NULL,  .pkg.env)
+assign("SESSION_ID",    NULL,  .pkg.env)
+assign("IS_LOGGING",    FALSE, .pkg.env)
+assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
-# These may no longer be needed...
-.pkg.env$IS_LOGGING   <- FALSE
-.pkg.env$LOG_FILE_NAME<- NULL
 .TEMP_KEY <- "Last.value"
 
 # Some handy infix utilities

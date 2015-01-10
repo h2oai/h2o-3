@@ -147,8 +147,26 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("\n")
   }
   assign("SESSION_ID", .h2o.session.id(conn), .pkg.env)
-  conn@session_key <- .pkg.env$SESSION_ID
+  conn@session_key <- get("SESSION_ID", .pkg.env)
   assign("SERVER", conn, .pkg.env)
+  conn
+}
+
+h2o.getConnection <- function() {
+  conn <- get("SERVER", .pkg.env)
+  if (is.null(conn)) {
+    # Try to recover an H2OConnection object from a saved session
+    for (objname in ls(globalenv(), all.names = TRUE)) {
+      object <- get(objname, globalenv())
+      if (is(object, "H2OConnection")) {
+        conn <- object
+        assign("SERVER", conn, .pkg.env)
+        break
+      }
+    }
+    if (is.null(conn))
+      stop("no active connection to an H2O cluster")
+  }
   conn
 }
 
@@ -171,7 +189,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
 #' h2o.shutdown(localH2O)
 #' }
 #'
-h2o.shutdown <- function(conn, prompt = TRUE) {
+h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
 
@@ -200,7 +218,7 @@ h2o.shutdown <- function(conn, prompt = TRUE) {
 # but if a user tries to do any remoteSend, they will get a "cloud sick warning"
 # Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
 
-h2o.clusterStatus <- function(conn) {
+h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   .h2o.__checkUp(conn)
   myURL = paste0("http://", conn@ip, ":", conn@port, "/", .h2o.__PAGE_CLOUD)
@@ -231,6 +249,12 @@ h2o.clusterStatus <- function(conn) {
 .h2o.session.id <- function(conn) {
   res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
   res$session_key
+}
+
+.get.session.id <- function() {
+  conn <- h2o.getConnection()
+  if (is.na(conn@session_key)) stop("Missing session_key! Please perform h2o.init.")
+  conn@session_key
 }
 
 #---------------------------- H2O Jar Initialization -------------------------------#

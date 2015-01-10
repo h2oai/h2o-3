@@ -8,25 +8,23 @@
 #'
 #' Returns a reference to an existing model in the H2O instance.
 #'
+#' @param key A string indicating the unique hex key of the model to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param key A string indicating the unique hex key of the model to retrieve.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
 #'
-#' iris.hex <- as.h2o(localH2O, iris, "iris.hex")
+#' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
-#' model.retrieved <- h2o.getMode(localH2O, key)
-h2o.getModel <- function(conn, key)
-{
-  if (missing(key)) {
-    # means h2o is the one that's missing... retrieve it!
+#' model.retrieved <- h2o.getModel(key, localH2O)
+h2o.getModel <- function(key, conn = h2o.getConnection()) {
+  if (is(key, "H2OConnection")) {
+    temp <- key
     key <- conn
-    conn <- .retrieveH2O(parent.frame())
+    conn <- temp
   }
-
   json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
@@ -149,4 +147,3 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   
   model
 }
-

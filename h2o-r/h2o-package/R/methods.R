@@ -36,7 +36,7 @@
 #'       ncol.H2OFrame <- function(x) {
 #'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
 #'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
-#'         .force.eval(.retrieveH2O(parent.frame()), x, ID = ID, rID = 'x')  # call the force eval
+#'         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
 #'         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
 #'         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
 #'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
@@ -46,7 +46,7 @@
 #'    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
 #'    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
 #'    Line 3:
-#'          1. Get a handle to h2o (see classes.R::.retrieveH2O)
+#'          1. Get a handle to h2o (h2o.getConnection())
 #'          2. x is the ast we want to eval
 #'          3. ID is the identifier we want the eventual object to have at the end of the day
 #'          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
@@ -66,7 +66,7 @@ NULL
 #'
 #' Accesses a list of object keys in the running instance of H2O.
 #'
-#' @param object An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @return Returns a list of hex keys in the current H2O instance.
 #' @examples
 #' library(h2o)
@@ -74,10 +74,9 @@ NULL
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.ls(localH2O)
-h2o.ls <- function(object) {
-  if (missing(object)) object <- .retrieveH2O(parent.frame())
+h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
-  fr <- new("H2OFrame", ast=ast, key=.key.make(), h2o=object)
+  fr <- new("H2OFrame", ast=ast, key=.key.make(), h2o=conn)
   ret <- as.data.frame(fr)
   h2o.rm(fr@key)
   ret
@@ -88,7 +87,7 @@ h2o.ls <- function(object) {
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
 #'
-#' @param object An \linkS4class{H2OConnection} object containing the IP address and port number
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
@@ -100,9 +99,8 @@ h2o.ls <- function(object) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 h2o.removeAll<-
-function(object) {
-  if (missing(object)) object <- .retrieveH2O(parent.frame())
-  invisible(.h2o.__remoteSend(object, .h2o.__REMOVEALL, method = "DELETE"))
+function(conn = h2o.getConnection()) {
+  invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE"))
 }
 
 #'
@@ -115,7 +113,7 @@ function(object) {
 #' @param method Either "GET", "POST", or "HTTPPOST".
 #' @param ... Arguements to pass down
 #' @param .params
-h2o.remoteSend <- function(conn, page, method = "GET", ..., .params = list())
+h2o.remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list())
   .h2o.__remoteSend(conn, page, method, ..., .params)
 
 #
@@ -123,48 +121,48 @@ h2o.remoteSend <- function(conn, page, method = "GET", ..., .params = list())
 #'
 #' Remove the h2o Big Data object(s) having the key name(s) from keys.
 #'
-#' @param object An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @param keys The hex key associated with the object to be removed.
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
-h2o.rm <- function(object, keys) {
-  # If only object is supplied, then assume this is keys vector.
-  if(missing(keys) && !missing(object)) {
-    keys <- object
-    object <- .retrieveH2O(parent.frame())
+h2o.rm <- function(keys, conn = h2o.getConnection()) {
+  if (is(keys, "H2OConnection")) {
+    temp <- keys
+    keys <- conn
+    conn <- temp
   }
-  if(!is(object, "H2OConnection")) stop("`object` must be of class H2OConnection")
+  if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(object, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
+    .h2o.__remoteSend(conn, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
 }
 
-h2o.gc <- function(object) {
-  if(missing(object)) object <- .retrieveH2O(parent.frame())
-
-  frame_keys <- as.vector(h2o.ls()[,1L])
-
-  # subset keys for this session ID
-  frame_keys <- frame_keys[grepl(object@session_key, frame_keys)]
-  # no reference? then destroy!
-  f <- function(env) {
-    l <- lapply(ls(env), function(x) {
-      o <- get(x, envir=env)
-      if( (is(o, "H2OFrame") || is(o, "H2OModel"))) o@key
-    })
-    Filter(Negate(is.null), l)
-  }
-  p_list  <- f(.pkg.env)
-  g_list  <- f(globalenv())
-  f1_list <- f(parent.frame())
-
-  g_list <- unlist(c(p_list, g_list, f1_list))
-  if (!is.null(g_list)) {
-    l <- setdiff(seq_len(length(frame_keys)),
-               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
-    if( length(l) != 0L) h2o.rm(frame_keys[l])
-  }
-}
+#h2o.gc <- function(object) {
+#  if(missing(object)) object <- h2o.getConnection()
+#
+#  frame_keys <- as.vector(h2o.ls()[,1L])
+#
+#  # subset keys for this session ID
+#  frame_keys <- frame_keys[grepl(object@session_key, frame_keys)]
+#  # no reference? then destroy!
+#  f <- function(env) {
+#    l <- lapply(ls(env), function(x) {
+#      o <- get(x, envir=env)
+#      if( (is(o, "H2OFrame") || is(o, "H2OModel"))) o@key
+#    })
+#    Filter(Negate(is.null), l)
+#  }
+#  p_list  <- f(.pkg.env)
+#  g_list  <- f(globalenv())
+#  f1_list <- f(parent.frame())
+#
+#  g_list <- unlist(c(p_list, g_list, f1_list))
+#  if (!is.null(g_list)) {
+#    l <- setdiff(seq_len(length(frame_keys)),
+#               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
+#    if( length(l) != 0L) h2o.rm(frame_keys[l])
+#  }
+#}
 
 #'
 #' Rename an H2O object.
@@ -191,14 +189,14 @@ h2o.assign <- function(data, key) {
 #'
 #' Get the reference to a frame with the given key in the H2O instance.
 #'
+#' @param key A string indicating the unique hex key of the dataset to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-#' @param key A string indicating the unique hex key of the dataset to retrieve.
-h2o.getFrame <- function(conn, key) {
-  if (missing(key)) {
-    # means conn is the one that's missing... retrieve it!
+h2o.getFrame <- function(key, conn = h2o.getConnection()) {
+  if (is(key, "H2OConnection")) {
+    temp <- key
     key <- conn
-    conn <- .retrieveH2O(parent.frame())
+    conn <- temp
   }
   .fill(conn, key)
 }
@@ -232,9 +230,6 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
   .h2o.__waitOnJob(conn, .get.job(res))
 
   model.view <- .model.view(.get.dest(res))
-  # must put empty H2OFrame objects into .pkg.env so that GC doesn't nab them up
-  lapply(model.view$models[[1L]]$output$splits,
-         function(l) .pkg.env[[l$`_key`$name]] <- new("H2OFrame", key=l$`_key`$name))
   splits <- lapply(model.view$models[[1]]$output$splits, function(l) h2o.getFrame(l$`_key`$name))
   names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
   splits
@@ -385,9 +380,7 @@ h2o.runif <- function(x, seed = -1) {
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   ast <- .h2o.varop("h2o.runif", x, seed)
-  o <- new("H2OFrame", ast = ast@ast, key = .key.make(), h2o = .retrieveH2O())
-  .pkg.env[[o@key]] <- o
-  o
+  new("H2OFrame", ast = ast@ast, key = .key.make(), h2o = h2o.getConnection())
 }
 
 
@@ -561,7 +554,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  o <- new("H2OFrame", ast = ast, key = x@key, h2o = .retrieveH2O())
+  o <- new("H2OFrame", ast = ast, key = x@key, h2o = h2o.getConnection())
   .force.eval(o@ast, new.assign = FALSE)
   o
 })
@@ -590,7 +583,7 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
       stop("`value` can only be an H2OFrame object, numeric or NULL")
 
     res <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
-    res <- new("H2OFrame", ast = res, key = x@key, h2o = .retrieveH2O())
+    res <- new("H2OFrame", ast = res, key = x@key, h2o = h2o.getConnection())
     .force.eval(res@ast, new.assign = FALSE)
     colnames(res)[idx] <- name
   }
@@ -646,7 +639,7 @@ setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#' iris.hex <- as.h2o(localH2O, iris)
+#' iris.hex <- as.h2o(iris, localH2O)
 #' transformed1 <- transform(iris.hex,
 #'                           Sepal.Ratio = Sepal.Length / Sepal.Width,
 #'                           Petal.Ratio = Petal.Length / Petal.Width )
@@ -872,7 +865,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
     x.slice <- as.data.frame(tmp_tail)
-    h2o.rm(tmp_tail@h2o, tmp_tail@key)
+    h2o.rm(tmp_tail@key, tmp_tail@h2o)
     rownames(x.slice) <- idx
     x.slice
   }
@@ -1135,12 +1128,16 @@ function(x, center = TRUE, scale = TRUE) {
 #'
 #' Import a local R data frame to the H2O cloud.
 #'
+#' @param object An \code{R} data frame.
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
-#' @param object An \code{R} data frame.
 #' @param key A string with the desired name for the H2O key.
-#' @param sep The field separator character.
-as.h2o <- function(conn, object, key = "", header, sep = "") {
+as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
+  if (is(object, "H2OConnection")) {
+    temp <- object
+    object <- conn
+    conn <- temp
+  }
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
 
@@ -1148,10 +1145,10 @@ as.h2o <- function(conn, object, key = "", header, sep = "") {
   if(!is.data.frame(object)) {
     object <- as.data.frame(object)
   }
-  tmpf <- tempfile(fileext=".csv")
-  write.csv(object, file=tmpf, quote = TRUE, row.names = FALSE)
-  h2f <- h2o.uploadFile(conn, tmpf, key = key, header = header, sep = sep)
-  unlink(tmpf)
+  tmpf <- tempfile(fileext = ".csv")
+  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE)
+  h2f <- h2o.uploadFile(conn, tmpf, key = key)
+  file.remove(tmpf)
   h2f
 }
 

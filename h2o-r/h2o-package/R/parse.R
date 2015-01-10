@@ -47,26 +47,11 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   .h2o.__waitOnJob(data@h2o, res$job$key$name)
 
   # Remove keys to unparsed data
-  h2o.rm(data@h2o, res$srcs[[1]]$name)
+  h2o.rm(res$srcs[[1L]]$name, data@h2o)
 
   # Return a new H2OFrame object
   nrows <- .h2o.fetchNRows(data@h2o, hex)
-  o <- .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names)
-  .pkg.env[[o@key]] <- o
-  o
-
-  # If both header and column names missing, then let H2O guess if header exists
-#  sepAscii <- ifelse(nzchar(sep), strtoi(charToRaw(sep), 16L), sep)
-#  if(missing(header) && missing(col.names))
-#  else if(missing(header) && !missing(col.names))
-#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=1, header_from_file=col.names@key)
-#  else if(!missing(header) && missing(col.names))
-#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header))
-#  else
-#    res = .h2o.__remoteSend(data@h2o, .h2o.__PARSE, source_key=data@key, destination_key=key, separator=sepAscii, header=as.numeric(header), header_from_file=col.names@key)
-
-#  .h2o.parsedData(data@h2o,
-#  .h2o.exec2(expr = res$destination_key, h2o = data@h2o, dest_key = res$destination_key)
+  .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names)
 }
 
 #'
@@ -77,7 +62,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
 #Inspect.json?key
 
-.h2o.fetchNRows <- function(conn, key) .h2o.__remoteSend(conn, paste0('Inspect.json?key=', key))$schema$rows
+.h2o.fetchNRows <- function(conn = h2o.getConnection(), key) .h2o.__remoteSend(conn, paste0('Inspect.json?key=', key))$schema$rows
 
 #'
 #' Load H2O Model from HDFS or Local Disk
@@ -88,18 +73,17 @@ h2o.loadModel <- function(object, path="") {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   res <- .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
-  h2o.getModel(object, res$model$'_key')
+  h2o.getModel(res$model$'_key', object)
 }
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn, key, nrow, ncol, col_names)
+.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names)
   new("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
 
 #'
 #' Create new H2OFrame object for predictions
-.h2o.parsedPredData<-
-function(conn, predictions) {
+.h2o.parsedPredData <- function(conn = h2o.getConnection(), predictions) {
   key <- predictions$key$name
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows
@@ -107,7 +91,5 @@ function(conn, predictions) {
   factors <- sapply(predictions$columns, function(column) column$type == "enum")
   names(factors) <- col_names
   factors <- as.data.frame(factors)
-  o <- new("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
-  .pkg.env[[o@key]] <- o
-  o
+  new("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
 }

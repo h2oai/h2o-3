@@ -107,9 +107,8 @@ setClass("H2OFrame",
 setMethod("show", "H2OFrame", function(object) {
   print(object@h2o)
   cat("Key:", object@key, "\n")
-  tmp_R_value <- object
-  print(head(tmp_R_value))
-  h2o.gc()
+  print(head(object))
+  invisible(object)
 })
 
 #'
@@ -162,12 +161,13 @@ setClass("H2OModel",
 setMethod("show", "H2OModel", function(object) {
   cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
   cat("Model Details:\n")
-  # print(object@model)
-  sub = intersect(names(object@model), names(object@model$help))
-  val = object@model[sub]; lab = object@model$help[sub]
-  val = val[match(names(val), names(lab))]
-  val = val[names(val) != "help"]; lab = lab[names(lab) != "help"]
-  tmp = mapply(function(val, lab) { cat("\n", lab, "\n"); print(val) }, val, lab)
+  sub <- intersect(names(object@model), names(object@model$help))
+  val <- object@model[sub]
+  lab <- object@model$help[sub]
+  lab <- lab[names(lab) != "help"]
+  val <- val[names(lab)]
+  mapply(function(val, lab) { cat("\n", lab, "\n"); print(val) }, val, lab)
+  invisible(object)
 })
 
 setClass("H2OUnknownModel",     contains="H2OModel")
@@ -175,38 +175,3 @@ setClass("H2OBinomialModel",    contains="H2OModel")
 setClass("H2OMultinomialModel", contains="H2OModel")
 setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Class Utils
-#-----------------------------------------------------------------------------------------------------------------------
-
-.retrieveH2O<-
-function(env) {
-  e_list <- unlist(lapply(ls(env), function(x) {
-    tryCatch(is(get(x, envir=env), "H2OConnection"), error = function(e) FALSE)
-             }))
-  if (any(e_list)) {
-    if (sum(e_list) > 1L) {
-      x <- e_list[1L]
-      for (y in e_list[1L])
-        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
-    }
-    return(get(ls(env)[which(e_list)[1L]], envir=env))
-  }
-  g_list <- unlist(lapply(ls(globalenv()), function(x) is(get(x, envir=globalenv()), "H2OConnection")))
-  if (any(g_list)) {
-    if (sum(g_list) > 1L) {
-      x <- g_list[1L]
-      for (y in g_list[1L])
-        if (!identical(x, y)) stop("Found multiple H2OConnection objects. Please specify the preferred H2O connection.")
-    }
-    return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
-  }
-  stop("Could not find any active H2OConnection objects. Please specify an H2O connection.")
-}
-
-.get.session.id <- function() {
-  h <- .retrieveH2O(parent.frame())
-  if (is.na(h@session_key)) stop("Missing session_key! Please perform h2o.init.")
-  h@session_key
-}
