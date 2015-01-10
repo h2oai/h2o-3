@@ -30,7 +30,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   parse.params <- list(
         srcs = srcs,
-        hex  = ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName),
+        hex  = paste0(ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName), data@h2o@session_key),
         columnNames = .collapse(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,

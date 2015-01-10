@@ -117,9 +117,9 @@
       payload = t$value()
     }
   } else if (method == "DELETE") {
-    h = basicHeaderGatherer()
-    t = basicTextGatherer()
-    tmp = tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, verbose = TRUE),
+    h <- basicHeaderGatherer()
+    t <- basicTextGatherer()
+    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, verbose = FALSE),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])

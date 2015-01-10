@@ -35,8 +35,9 @@
   tempE <- paste(sample(y_digits,1), collapse='')
   tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
   tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
-  temp <- paste0(tempA, tempB, tempC, tempD, tempE, tempF, tempG)
-  paste0(prefix, '_', temp)
+  tempH <- paste0(tempA, tempB, tempC, tempD, tempE, tempF, tempG)
+  tempI <- paste0(prefix, '_', tempH)
+  id    <- paste0(tempI, .get.session.id())
 }
 .key.make <- function() .uniq.id("rapids")
 

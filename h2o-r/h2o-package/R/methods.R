@@ -143,11 +143,14 @@ h2o.gc <- function(object) {
   if(missing(object)) object <- .retrieveH2O(parent.frame())
 
   frame_keys <- as.vector(h2o.ls()[,1L])
+
+  # subset keys for this session ID
+  frame_keys <- frame_keys[grepl(object@session_key, frame_keys)]
   # no reference? then destroy!
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
-      if(is(o, "H2OFrame") || is(o, "H2OModel")) o@key
+      if( (is(o, "H2OFrame") || is(o, "H2OModel"))) o@key
     })
     Filter(Negate(is.null), l)
   }
@@ -156,10 +159,11 @@ h2o.gc <- function(object) {
   f1_list <- f(parent.frame())
 
   g_list <- unlist(c(p_list, g_list, f1_list))
-  l <- setdiff(seq_len(length(frame_keys)),
+  if (!is.null(g_list)) {
+    l <- setdiff(seq_len(length(frame_keys)),
                unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
-  if (length(l) != 0L)
-    h2o.rm(frame_keys[l])
+    if( length(l) != 0L) h2o.rm(frame_keys[l])
+  }
 }
 
 #'

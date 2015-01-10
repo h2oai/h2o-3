@@ -72,8 +72,8 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 #' @slot port Object of class \code{numeric} representing the port number of the H2O server.
 #' @aliases H2OConnection
 setClass("H2OConnection",
-         representation(ip="character", port="numeric"),
-         prototype(ip=NA_character_, port=NA_integer_)
+         representation(ip="character", port="numeric", session_key="character"),
+         prototype(ip=NA_character_, port=NA_integer_, session_key=NA_character_)
          )
 
 #' @rdname H2OConnection-class
@@ -107,8 +107,9 @@ setClass("H2OFrame",
 setMethod("show", "H2OFrame", function(object) {
   print(object@h2o)
   cat("Key:", object@key, "\n")
-  print(head(object))
-  invisible(h2o.gc())
+  tmp_R_value <- object
+  print(head(tmp_R_value))
+  h2o.gc()
 })
 
 #'
@@ -202,4 +203,10 @@ function(env) {
     return(get(ls(globalenv())[which(g_list)[1L]], envir=globalenv()))
   }
   stop("Could not find any active H2OConnection objects. Please specify an H2O connection.")
+}
+
+.get.session.id <- function() {
+  h <- .retrieveH2O(parent.frame())
+  if (is.na(h@session_key)) stop("Missing session_key! Please perform h2o.init.")
+  h@session_key
 }

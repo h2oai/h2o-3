@@ -124,13 +124,13 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn = new("H2OConnection", ip = ip, port = port)
+  conn <- new("H2OConnection", ip = ip, port = port)
   cat("Successfully connected to", h2o.getBaseURL(conn), "\n\n")
   h2o.clusterInfo(conn)
   cat("\n")
 
-  verH2O = h2o.getVersion(conn)
-  verPkg = packageVersion("h2o")
+  verH2O <- h2o.getVersion(conn)
+  verPkg <- packageVersion("h2o")
   if (verH2O != verPkg) {
     message = sprintf("Version mismatch! H2O is running version %s but R package is version %s", verH2O, toString(verPkg))
     if (strict_version_check)
@@ -146,7 +146,8 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-
+  assign("SESSION_ID", .h2o.session.id(conn), .pkg.env)
+  conn@session_key <- .pkg.env$SESSION_ID
   assign("SERVER", conn, .pkg.env)
   conn
 }
@@ -223,6 +224,13 @@ h2o.clusterStatus <- function(conn) {
   cnames = c("name", "value_size_bytes", "free_mem_bytes", "max_mem_bytes", "free_disk_bytes", "max_disk_bytes", "num_cpus", "system_load", "rpcs", "last_contact")
   temp = data.frame(t(sapply(res$nodes, c)))
   temp[,cnames]
+}
+
+#
+# Get a session ID at init
+.h2o.session.id <- function(conn) {
+  res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
+  res$session_key
 }
 
 #---------------------------- H2O Jar Initialization -------------------------------#
