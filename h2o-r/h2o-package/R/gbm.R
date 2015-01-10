@@ -71,6 +71,13 @@ h2o.gbm <- function(x, y, training_frame, ...,
   if( missing(x) ) stop("`x` is missing, with no default")
   if( missing(y) ) stop("`y` is missing, with no default")
   if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
+  
+  # Training_frame may be a key or an H2OFrame object
+  if (!inherits(training_frame, "H2OFrame"))
+    tryCatch(training_frame <- h2o.getFrame(training_frame),
+             error = function(err) {
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+             })
 
   #required map for params with different names, assuming it will change in the RESTAPI end
   .gbm.map <- c("x" = "ignored_columns",
