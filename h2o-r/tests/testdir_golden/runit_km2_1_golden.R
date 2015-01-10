@@ -15,7 +15,7 @@ test.kmvanilla.golden <- function(H2Oserver) {
   
   Log.info("R Final Clusters:"); print(fitR$centers)
   Log.info("H2O Final Clusters:"); print(fitH2O@model$centers)
-  expect_equivalent(fitH2O@model$centers, fitR$centers)
+  expect_equivalent(as.matrix(fitH2O@model$centers), fitR$centers)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
   wmseH2O <- sort.int(fitH2O@model$withinmse)
