@@ -610,7 +610,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningOutput() { super(); }
     public DeepLearningOutput( DeepLearning b ) { super(b); }
     Errors errors;
+    boolean autoencoder;
     TwoDimTable modelSummary;
+    @Override public ModelCategory getModelCategory() {
+      return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
+    }
   }
 
   // Default publicly visible Schema is V2

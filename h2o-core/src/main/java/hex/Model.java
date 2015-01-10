@@ -25,7 +25,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Binomial,
     Multinomial,
     Regression,
-    Clustering
+    Clustering,
+    AutoEncoder,
+    DimReduction
   }
 
   public boolean isSupervised() { return false; }
@@ -174,7 +176,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return cns==null ? 1 : cns.length;
     }
 
-    // Note: Clustering algorithms MUST redefine this method to return ModelCategory.Clustering:
+    // Note: some algorithms MUST redefine this method to return other model categories
     public ModelCategory getModelCategory() {
       return (isClassifier() ?
               (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :

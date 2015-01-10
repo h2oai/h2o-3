@@ -268,6 +268,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                   train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
           model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
         }
+        model._output.autoencoder = _parms._autoencoder;
         model.training_rows = train.numRows();
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
 

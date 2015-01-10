@@ -55,7 +55,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     @Override public int nfeatures() { return _names.length; }
 
     @Override public ModelCategory getModelCategory() {
-      return Model.ModelCategory.Clustering;
+      return ModelCategory.DimReduction;
     }
   }
 
