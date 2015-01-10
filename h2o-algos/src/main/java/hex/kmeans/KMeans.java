@@ -228,7 +228,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
       if( !isRunning() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
-      if( model._output._iters >= _parms._max_iters ) return true;
+      if( model._output._iters > _parms._max_iters ) return true;
 
       // Compute average change in standardized cluster centers
       if( oldCenters==null ) return false; // No prior iteration, not stopping
