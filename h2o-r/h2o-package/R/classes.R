@@ -160,8 +160,13 @@ setClass("H2OModel",
 
 setMethod("show", "H2OModel", function(object) {
   cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
-  cat("Model Details\n")
-  print(object@model)
+  cat("Model Details:\n")
+  # print(object@model)
+  sub = intersect(names(object@model), names(object@model$help))
+  val = object@model[sub]; lab = object@model$help[sub]
+  val = val[match(names(val), names(lab))]
+  val = val[names(val) != "help"]; lab = lab[names(lab) != "help"]
+  tmp = mapply(function(val, lab) { cat("\n", lab, "\n"); print(val) }, val, lab)
 })
 
 setClass("H2OUnknownModel",     contains="H2OModel")

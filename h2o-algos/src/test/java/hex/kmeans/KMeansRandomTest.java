@@ -60,7 +60,7 @@ public class KMeansRandomTest extends TestUtil {
                   for (double d : m._output._withinmse) Assert.assertFalse(Double.isNaN(d));
                   Assert.assertFalse(Double.isNaN(m._output._avgwithinss));
                   for (long o : m._output._size) Assert.assertTrue(o > 0); //have at least one point per centroid
-                  for (double[] dc : m._output._centers) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
+                  for (double[] dc : m._output._centersraw) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
 
                   // make prediction (cluster assignment)
                   score = m.score(frame);
