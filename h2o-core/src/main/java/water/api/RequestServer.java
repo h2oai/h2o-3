@@ -216,7 +216,7 @@ public class RequestServer extends NanoHTTPD {
     register("/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
-
+    register("/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
   }
 
   @Deprecated
