@@ -22,7 +22,7 @@ test.kmstand.golden <- function(H2Oserver) {
   avg <- apply(irisR[,1:4], 2, mean)
   std <- apply(irisR[,1:4], 2, sd)
   fitR_centstd <- sweep(sweep(fitR$centers, 2, std, '*'), 2, avg, "+")
-  expect_equivalent(fitH2O@model$centers, fitR_centstd)
+  expect_equivalent(as.matrix(fitH2O@model$centers), fitR_centstd)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
   wmseH2O <- sort.int(fitH2O@model$withinmse)

@@ -95,7 +95,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     }
     // mults & means for standardization
     double[] prepMults( final Vec[] vecs) {
-      if( _parms._standardize ) return null;
+      if( !_parms._standardize ) return null;
       double[] mults = new double[vecs.length];
       for( int i = 0; i < vecs.length; i++ ) {
         double sigma = vecs[i].sigma();
@@ -104,16 +104,16 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       return mults;
     }
 
-    // Initialize standardized cluster centers
+    // Initialize cluster centers
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
-      double centers[][];    // Standardized cluster centers
+      double centers[][];    // Cluster centers
       if( null != _parms._user_points ) { // User-specified starting points
         int numCenters = _parms._k;
         int numCols = _parms._user_points.get().numCols();
         centers = new double[numCenters][numCols];
         Vec[] centersVecs = _parms._user_points.get().vecs();
-        // Get the centers and standardize them
+        // Get the centers and standardize them if requested
         for (int r=0; r<numCenters; r++) {
           for (int c=0; c<numCols; c++){
             centers[r][c] = centersVecs[c].at(r);
@@ -149,7 +149,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             
             model.update(_key); // Make early version of model visible, but don't update progress using update(1)
           }
-          // Recluster down to k standardized cluster centers
+          // Recluster down to k cluster centers
           centers = recluster(centers, rand);
           model._output._iters = -1; // Reset iteration count
         }
@@ -215,10 +215,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       if(_parms._k == 1)
         model._output._avgss = model._output._avgwithinss;
       else {
-        double[][] orig = new double[1][means.length];
-        if(!_parms._standardize) orig[0] = means;  // If data standardized, grand mean is just the origin
-        SumSqr totss = new SumSqr(orig,means,mults,_ncats).doAll(vecs);
-        model._output._avgss = totss._sqr/_train.numRows(); // mse with respect to grand mean
+        // If data already standardized, grand mean is just the origin
+        TotSS totss = new TotSS(means,mults).doAll(vecs);
+        model._output._avgss = totss._tss/_train.numRows(); // mse with respect to grand mean
       }
       model._output._avgbetweenss = model._output._avgss - model._output._avgwithinss;  // mse between-cluster
       return task._cMeans;      // New centers
@@ -261,7 +260,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         final double[] means = prepMeans(vecs);
         // mults & means for standardization
         final double[] mults = prepMults(vecs);
-        // Initialize standardized cluster centers
+        // Initialize cluster centers and standardize if requested
         double[][] centers = initial_centers(model,vecs,means,mults);
         if( centers==null ) return; // Stopped/cancelled during center-finding
         double[][] oldCenters = null;
@@ -298,6 +297,36 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
       tryComplete();
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Initial sum-of-square-distance to nearest cluster center
+  private static class TotSS extends MRTask<TotSS> {
+    // IN
+    double[] _means, _mults;
+
+    // OUT
+    double _tss;
+
+    TotSS(double[] means, double[] mults) {
+      _means = means;
+      _mults = mults;
+      _tss = 0;
+    }
+
+    @Override public void map(Chunk[] cs) {
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        for( int i = 0; i < cs.length; i++ ) {
+          double d = cs[i].at0(row);
+          if(Double.isNaN(d)) continue;
+          d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
+          _tss += d * d;
+        }
+      }
+      _means = null;
+    }
+
+    @Override public void reduce(TotSS other) { _tss += other._tss; }
   }
 
   // -------------------------------------------------------------------------
