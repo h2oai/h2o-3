@@ -39,6 +39,7 @@ Collate:
          'parse.R'
          'export.R'
          'edicts.R'
+         'locate.R'
          'models.R'
          'algorithms.R'
          'predict.R'
