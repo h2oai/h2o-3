@@ -16,19 +16,18 @@
 #'  { 'ast' : { ... }, 'funs' : {[ ... ]} }
 #'
 #' All ASTNodes have children. All nodes with the @@root slot has a list in the @@children slot that represent operands.
-#TODO: this must become hidden. visitor -> .visitor
-visitor<-
+.visitor<-
 function(node) {
   if (is.list(node))
-    unlist(lapply(node, visitor), use.names = FALSE)
+    unlist(lapply(node, .visitor), use.names = FALSE)
   else if (is(node, "ASTNode") || is(node, "ASTSpan"))
-    paste0("(", node@root@op, " ", paste0(visitor(node@children), collapse = " "), ")")
+    paste0("(", node@root@op, " ", paste0(.visitor(node@children), collapse = " "), ")")
   else if (is(node, "ASTSeries"))
-    paste0(" ", node@op, paste0(visitor(node@children), collapse = ";"), "}")
+    paste0(" ", node@op, paste0(.visitor(node@children), collapse = ";"), "}")
   else if (is(node, "ASTEmpty"))
     node@key
   else if (is(node, "H2OFrame"))
-    visitor(.get(node))
+    .visitor(.get(node))
   else
     node
 }

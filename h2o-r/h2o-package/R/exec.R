@@ -94,7 +94,7 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getCo
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
   if (new.assign) ast <- h2o.ID %<-% ast
-  ast <- visitor(ast)
+  ast <- .visitor(ast)
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {

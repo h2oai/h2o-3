@@ -172,7 +172,7 @@ function(stmnt) {
       args <- lapply(stmnt_list[-1L], .statement.to.ast.switchboard)
       arg1 <- args[1L]
       if (is(arg1[[1L]], "ASTEmpty")) arg1[[1L]] <- .get.value.from.arg(arg1[[1L]])
-      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- visitor(.get.value.from.arg(arg1[[1L]]))
+      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- .visitor(.get.value.from.arg(arg1[[1L]]))
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
@@ -405,7 +405,7 @@ function(s) {
   } else if (is(s, "ASTIf")) {
     res %p0% '('
     res %p0% s@op
-    res %p% visitor(s@condition)
+    res %p% .visitor(s@condition)
     body <- .body.visitor(s@body)
     for (b in body) {res %p% b}
     res %p0% ')'
@@ -420,7 +420,7 @@ function(s) {
   } else if (is(s, "ASTFor")) {
     .NotYetImplemented()
   } else if (is(s, "ASTNode")) {
-    res %p% visitor(s)
+    res %p% .visitor(s)
     return(res)
   } else if (is.character(s)) {
     res %p% s
@@ -428,7 +428,7 @@ function(s) {
   } else if (is(s, "H2OFrame")) {
     tmp <- .get(s)
     if (is(tmp, "ASTNode")) {
-      res %p% visitor(s@ast)
+      res %p% .visitor(s@ast)
       return(res)
     } else {
       res %p% s

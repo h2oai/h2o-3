@@ -177,7 +177,7 @@
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
-h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
+.h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "GET")
 }
@@ -203,7 +203,7 @@ h2o.doRawGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffi
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return A list object as described above
-h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
+.h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
 }
@@ -229,7 +229,7 @@ h2o.doRawPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuff
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
-h2o.doGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
+.h2o.doGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
   .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "GET")
 }
@@ -241,7 +241,7 @@ h2o.doGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, 
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return A list object as described above
-h2o.doPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
+.h2o.doPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
   .h2o.doREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
               parms = parms, method = "POST")
 }
@@ -276,7 +276,7 @@ h2o.doPOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix,
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return The raw response payload as a character vector
-h2o.doSafeGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
+.h2o.doSafeGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms) {
   .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "GET")
 }
@@ -293,7 +293,7 @@ h2o.doSafeGET <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuff
 #' @param parms (Optional) Parameters to include in the request
 #' @param fileUploadInfo (Optional) Information to POST (NOTE: changes Content-type from XXX-www-url-encoded to multi-part).  Use fileUpload(normalizePath("/path/to/file")).
 #' @return The raw response payload as a character vector
-h2o.doSafePOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
+.h2o.doSafePOST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, fileUploadInfo) {
   .h2o.doSafeREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                   parms = parms, method = "POST", fileUploadInfo = fileUploadInfo)
 }
@@ -419,7 +419,7 @@ print.H2OTable <- function(x, ...) {
 h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
   if (!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
 
-  rv = h2o.doRawGET(conn = conn, urlSuffix = "")
+  rv = .h2o.doRawGET(conn = conn, urlSuffix = "")
 
   !rv$curlError && (rv$httpStatusCode == 200)
 }
@@ -435,7 +435,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   nodeInfo <- res$nodes
   numCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
 
@@ -445,7 +445,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     # to post its information yet.
     threeSeconds = 3L
     Sys.sleep(threeSeconds)
-    res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+    res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
   }
 
   nodeInfo <- res$nodes
@@ -475,7 +475,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #' Warn if there are sick nodes.
 .h2o.__checkConnectionHealth <- function(conn = h2o.getConnection()) {
   grabCloudStatus <- function(conn = h2o.getConnection()) {
-    rv = h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
+    rv = .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
 
     if (rv$curlError) {
       ip = conn@ip

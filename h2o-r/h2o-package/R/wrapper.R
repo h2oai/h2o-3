@@ -203,7 +203,7 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
   }
   
   if(temp == "Y" || temp == "y") {
-    h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
+    .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
   }
   
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
@@ -223,7 +223,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   .h2o.__checkUp(conn)
   myURL = paste0("http://", conn@ip, ":", conn@port, "/", .h2o.__PAGE_CLOUD)
   params = list(quiet="true", skip_ticks="true")
-  res = .h2o.fromJSON(h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
+  res = .h2o.fromJSON(.h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
   
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
@@ -247,7 +247,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 #
 # Get a session ID at init
 .h2o.session.id <- function(conn) {
-  res <- .h2o.fromJSON(h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
+  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
   res$session_key
 }
 
