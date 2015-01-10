@@ -37,14 +37,20 @@ public class NodePersistentStorageHandler extends Handler {
   public NodePersistentStorageV1 list(int version, NodePersistentStorageV1 s) {
     NodePersistentStorage nps = H2O.getNPS();
     NodePersistentStorageEntry[] entries = nps.list(s.category);
-    String[] arr = new String[entries.length];
+
+    s.entries = new NodePersistentStorageV1.NodePersistentStorageEntryV1[entries.length];
     int i = 0;
-    s.names = arr;
     for (NodePersistentStorageEntry entry : entries) {
-      s.names[i] = entry._name;
+      NodePersistentStorageV1.NodePersistentStorageEntryV1 e = new NodePersistentStorageV1.NodePersistentStorageEntryV1();
+      e.category = entry._category;
+      e.name = entry._name;
+      e.size = entry._size;
+      e.timestamp_millis = entry._timestamp_millis;
+
+      s.entries[i] = e;
       i++;
     }
-    // s.list = nps.list(s.category);
+
     return s;
   }
 
@@ -54,16 +60,5 @@ public class NodePersistentStorageHandler extends Handler {
     nps.delete(s.category, s.name);
     return s;
   }
-/*
-  public static class APIPojoListEntryV1 extends Schema<NodePersistentStorageEntry, APIPojoListEntryV1> {
-    @API(help="Key name", required=true, direction=API.Direction.OUTPUT)
-    String name;
 
-    @API(help="Size in bytes of value", required=true, direction=API.Direction.OUTPUT)
-    long size;
-
-    @API(help="Epoch time in milliseconds of when the value was written", required=true, direction=API.Direction.OUTPUT)
-    long timestamp_millis;
-  }
-*/
 }
