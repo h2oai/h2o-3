@@ -216,7 +216,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         model._output._avgss = model._output._avgwithinss;
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means).doAll(vecs);
+        TotSS totss = new TotSS(means,mults).doAll(vecs);
         model._output._avgss = totss._tss/_train.numRows(); // mse with respect to grand mean
       }
       model._output._avgbetweenss = model._output._avgss - model._output._avgwithinss;  // mse between-cluster
@@ -303,13 +303,14 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   // Initial sum-of-square-distance to nearest cluster center
   private static class TotSS extends MRTask<TotSS> {
     // IN
-    double[] _means;
+    double[] _means, _mults;
 
     // OUT
     double _tss;
 
-    TotSS(double[] means) {
+    TotSS(double[] means, double[] mults) {
       _means = means;
+      _mults = mults;
       _tss = 0;
     }
 
@@ -318,7 +319,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         for( int i = 0; i < cs.length; i++ ) {
           double d = cs[i].at0(row);
           if(Double.isNaN(d)) continue;
-          d -= _means[i];
+          d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
           _tss += d * d;
         }
       }
