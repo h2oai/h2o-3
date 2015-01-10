@@ -110,6 +110,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Timer kb_timer = new Timer();
         buildNextKTrees();
         Log.info((tid+1) + ". tree was built in " + kb_timer.toString());
+        GBM.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
       }
       // Final scoring (skip if job was cancelled)
