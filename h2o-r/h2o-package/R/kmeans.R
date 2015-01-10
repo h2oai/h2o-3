@@ -46,6 +46,13 @@ h2o.kmeans <- function(training_frame, x, k,
 {
   # Required args: training_frame
   if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
+  
+  # Training_frame may be a key or an H2OFrame object
+  if (!inherits(training_frame, "H2OFrame"))
+    tryCatch(training_frame <- h2o.getFrame(training_frame),
+             error = function(err) {
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+             })
 
   .kmeans.map <- c("x" = "ignored_columns")
 
