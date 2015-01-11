@@ -24,12 +24,13 @@ Suggests: devtools,
           roxygen2,
           testthat
 Collate:
+         'classes.R'
          'wrapper.R'
          'constants.R'
          'logging.R'
          'h2o.R'
+         'kvstore.R'
          'exec.R'
-         'classes.R'
          'ops.R'
          'methods.R'
          'ast.R'
@@ -39,8 +40,6 @@ Collate:
          'export.R'
          'edicts.R'
          'models.R'
-         'algorithms.R'
-         'predict.R'
          'kmeans.R'
          'gbm.R'
          'deeplearning.R'

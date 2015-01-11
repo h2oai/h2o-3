@@ -1,97 +1,213 @@
 #'
-#' Retrieve Model Data
+#' H2O Model Related Functions
 #'
-#' After a model is constructed by H2O, R must create a view of the model. All views are backed by S4 objects that
-#' subclass the H2OModel.
 
-#' Get an R reference to an H2O model
-#'
-#' Returns a reference to an existing model in the H2O instance.
-#'
-#' @param key A string indicating the unique hex key of the model to retrieve.
-#' @param conn \linkS4class{H2OConnection} object containing the IP address and port
-#'             of the server running H2O.
-#' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
-#' @examples
-#' library(h2o)
-#' localH2O <- h2o.init()
-#'
-#' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
-#' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
-#' model.retrieved <- h2o.getModel(key, localH2O)
-h2o.getModel <- function(key, conn = h2o.getConnection()) {
-  if (is(key, "H2OConnection")) {
-    temp <- key
-    key <- conn
-    conn <- temp
+# ------------------------------- Helper Functions --------------------------- #
+# Used to verify data, x, y and turn into the appropriate things
+.verify_dataxy <- function(data, x, y, autoencoder = FALSE) {
+  if(!is(data,  "H2OFrame"))
+    stop('`data` must be an H2OFrame object')
+  if(!is.character(x) && !is.numeric(x))
+    stop('`x` must be column names or indices')
+  if(!is.character(y) && !is.numeric(y))
+    stop('`y` must be a column name or index')
+
+  cc <- colnames(data)
+
+  if(is.character(x)) {
+    if(!all(x %in% cc))
+      stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse=','))
+    x_i <- match(x, cc)
+  } else {
+    if(any( x < 1L | x > length(cc)))
+      stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse=','))
+    x_i <- x
+    x <- cc[x_i]
   }
-  json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
-  model_category <- json$output$model_category
-  if (is.null(model_category))
-     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
-    stop("model_category missing in the output")
-  Class <- paste0("H2O", model_category, "Model")
-  model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
-  parameters <- list()
-  lapply(json$parameters, function(param) {
-    if (!is.null(param$actual_value))
-    {
-      name <- param$name
-      if (is.null(param$default_value) || param$default_value != param$actual_value){
-        value <- param$actual_value
-        mapping <- .type.map[param$type,]
-        type    <- mapping[1L, 1L]
-        scalar  <- mapping[1L, 2L]
-        
-        # Change Java Array to R list
-        if (!scalar) {
-          arr <- gsub("\\[", "", gsub("]", "", value))
-          value <- unlist(strsplit(arr, split=", "))
+
+  if(is.character(y)){
+    if(!(y %in% cc))
+      stop(y, ' is not a column name')
+    y_i <- which(y == cc)
+  } else {
+    if(y < 1L || y > length(cc))
+      stop('response variable index ', y, ' is out of range')
+    y_i <- y
+    y <- cc[y]
+  }
+
+  if(!autoencoder && (y %in% x)) {
+    warning('removing response variable from the explanatory variables')
+    x <- setdiff(x,y)
+  }
+
+  x_ignore <- setdiff(setdiff(cc, x), y)
+  if(length(x_ignore) == 0L) x_ignore <- ''
+  list(x=x, y=y, x_i=x_i, x_ignore=x_ignore, y_i=y_i)
+}
+
+.verify_datacols <- function(data, cols) {
+  if(!is(data, "H2OFrame"))
+    stop('`data` must be an H2OFrame object')
+  if(!is.character(cols) && !is.numeric(cols))
+    stop('`cols` must be column names or indices')
+
+  cc <- colnames(data)
+  if(length(cols) == 1L && cols == '')
+    cols <- cc
+  if(is.character(cols)) {
+    if(!all(cols %in% cc))
+      stop("Invalid column names: ", paste(cols[which(!cols %in% cc)], collapse=", "))
+    cols_ind <- match(cols, cc)
+  } else {
+    if(any(cols < 1L | cols > length(cc)))
+      stop('out of range explanatory variable ', paste(cols[cols < 1L | cols > length(cc)], collapse=','))
+    cols_ind <- cols
+    cols <- cc[cols_ind]
+  }
+
+  cols_ignore <- setdiff(cc, cols)
+  if( length(cols_ignore) == 0L )
+    cols_ignore <- ''
+  list(cols=cols, cols_ind=cols_ind, cols_ignore=cols_ignore)
+}
+
+.build_cm <- function(cm, actual_names = NULL, predict_names = actual_names, transpose = TRUE) {
+  categories <- length(cm)
+  cf_matrix <- matrix(unlist(cm), nrow=categories)
+  if(transpose)
+    cf_matrix <- t(cf_matrix)
+
+  cf_total <- apply(cf_matrix, 2L, sum)
+  cf_error <- c(1 - diag(cf_matrix)/apply(cf_matrix,1L,sum), 1 - sum(diag(cf_matrix))/sum(cf_matrix))
+  cf_matrix <- rbind(cf_matrix, cf_total)
+  cf_matrix <- cbind(cf_matrix, round(cf_error, 3L))
+
+  if(!is.null(actual_names))
+    dimnames(cf_matrix) = list(Actual = c(actual_names, "Totals"), Predicted = c(predict_names, "Error"))
+  cf_matrix
+}
+
+.seq_to_string <- function(vec = as.numeric(NA)) {
+  vec <- sort(vec)
+  if(length(vec) > 2L) {
+    vec_diff <- diff(vec)
+    if(abs(max(vec_diff) - min(vec_diff)) < .Machine$double.eps^0.5)
+      return(paste(min(vec), max(vec), vec_diff[1], sep = ":"))
+  }
+  paste(vec, collapse = ",")
+}
+
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
+  params$training_frame <- get("training_frame", parent.frame())
+
+  #---------- Force evaluate temporary ASTs ----------#
+  delete_train <- !.is.eval(params$training_frame)
+  if (delete_train) {
+    temp_train_key <- params$training_frame@key
+    .force.eval(ast = params$training_frame@ast, h2o.ID = temp_train_key)
+  }
+  if (!is.null(params$validation_frame)){
+    params$validation_frame <- get("validation_frame", parent.frame())
+    delete_valid <- !.is.eval(params$validation_frame)
+    if (delete_valid) {
+      temp_valid_key <- params$validation_frame@key
+      .force.eval(ast = params$validation_frame@ast, h2o.ID = temp_valid_key)
+    }
+  }
+
+  ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
+
+  params <- lapply(as.list(params), function(i) {
+                     if (is.name(i))    i <- get(deparse(i), envir)
+                     if (is.call(i))    i <- eval(i, envir)
+                     if (is.integer(i)) i <- as.numeric(i)
+                     i
+                   })
+
+  #---------- Check user parameter types ----------#
+  error <- lapply(ALL_PARAMS, function(i) {
+    e <- ""
+    if (i$required && !(i$name %in% names(params)))
+      e <- paste0("argument \"", i$name, "\" is missing, with no default\n")
+    else if (i$name %in% names(params)) {
+      # changing Java types to R types
+      mapping <- .type.map[i$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
+      if (is.na(type))
+        stop("Cannot find type ", i$type, " in .type.map")
+      if (scalar) {
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
+          e <- paste0("\"", i$name,"\" must be in")
+          for (fact in i$values)
+            e <- paste0(e, " \"", fact, "\",")
+          e <- paste(e, "but got", params[[i$name]])
         }
-        
-        # Prase frame information to a key
-        if (type == "H2OFrame") {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
-          value <- gsub("\\\"", "", key)
-        } else if (type == "numeric")
-          value <- as.numeric(value)
-        else if (type == "logical")
-          value <- as.logical(value)
-        
-        # Response column needs to be parsed
-        if (name == "response_column")
-        {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
-          value <- gsub("\\\"", "", key)
-        }
-        parameters[[name]] <<- value
+      } else {
+        if (!inherits(params[[i$name]], type))
+          e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else
+          params[[i$name]] <<- .collapse(params[[i$name]])
       }
     }
+    e
   })
-  
-  # Convert ignored_columns/response_column to valid R x/y
-  if (!is.null(parameters$ignored_columns))
-    parameters$x <- .verify_datacols(h2o.getFrame(conn, parameters$training_frame), parameters$ignored_columns)$cols_ignore
-  if (!is.null(parameters$response_column))
-  {
-    parameters$y <- parameters$response_column
-    parameters$x <- setdiff(parameters$x, parameters$y)
+  if(any(nzchar(error)))
+    stop(error)
+
+  #---------- Create parameter list to pass ----------#
+  param_values <- lapply(params, function(i) {
+    if(is(i, "H2OFrame"))
+      i@key
+    else
+      i
+  })
+
+  #---------- Validate parameters ----------#
+  validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
+  if(length(validation$validation_messages) != 0L) {
+    error <- lapply(validation$validation_messages, function(i) {
+      if( !(i$message_type %in% c("HIDE","INFO")) )
+        paste0(i$message, ".\n")
+      else
+        ""
+    })
+    if(any(nzchar(error)))
+      stop(error)
   }
-  
-  parameters$ignored_columns <- NULL
-  parameters$response_column <- NULL
-  
-  new(Class      = Class,
-      h2o        = conn,
-      key        = json$key$name,
-      algorithm  = json$algo,
-      parameters = parameters,
-      model      = model)
+
+  res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
+
+  job_key  <- res$job[[1L]]$key$name
+  dest_key <- res$jobs[[1L]]$dest$name
+  .h2o.__waitOnJob(conn, job_key)
+
+  model <- h2o.getModel(dest_key, conn)
+
+  if (delete_train)
+    h2o.rm(temp_train_key)
+  if (!is.null(params$validation_frame))
+    if (delete_valid)
+      h2o.rm(temp_valid_key)
+
+  model
+}
+
+predict.H2OModel <- function(object, newdata, ...) {
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+
+  # Send keys to create predictions
+  url <- paste0('Predictions.json/models/', object@key, '/frames/', newdata@key)
+  res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
+  res <- res$model_metrics[[1L]]$predictions
+
+  # Grab info to make data frame
+  .h2o.parsedPredData(newdata@h2o, res)
 }
 
 #' Cross Validate an H2O Model
