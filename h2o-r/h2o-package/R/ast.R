@@ -33,6 +33,26 @@ function(node) {
 }
 
 #'
+#' Get the key or AST
+#'
+#' Key points to a bonified object in the H2O cluster
+.get <- function(H2OFrame) {
+  if(.is.eval(H2OFrame))
+    paste0('%', H2OFrame@key)
+  else
+    H2OFrame@ast
+}
+
+#'
+#' Check if key points to bonified object in H2O cluster.
+#'
+.is.eval <- function(H2OFrame) {
+  key <- H2OFrame@key
+  res <- .h2o.__remoteSend(h2o.getConnection(), paste0(.h2o.__RAPIDS, "/isEval"), ast_key=key)
+  res$evaluated
+}
+
+#'
 #' Get the class of the object from the envir.
 #'
 #' The environment is the parent frame

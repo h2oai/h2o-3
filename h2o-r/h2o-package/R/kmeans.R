@@ -88,6 +88,6 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .run(training_frame@h2o, 'kmeans', parms, parent.frame())
+  .h2o.createModel(training_frame@h2o, 'kmeans', parms, parent.frame())
 
 }

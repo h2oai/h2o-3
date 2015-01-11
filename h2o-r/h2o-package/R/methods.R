@@ -103,19 +103,6 @@ function(conn = h2o.getConnection()) {
   invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE"))
 }
 
-#'
-#' Make an HTTP request to the H2O backend.
-#'
-#' Useful for sending a REST command to H2O that is not currently supported by R.
-#'
-#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
-#' @param page An endpoint not supplied by the h2o package. See constants.R.
-#' @param method Either "GET", "POST", or "HTTPPOST".
-#' @param ... Arguements to pass down
-#' @param .params
-h2o.remoteSend <- function(conn = h2o.getConnection(), page, method = "GET", ..., .params = list())
-  .h2o.__remoteSend(conn, page, method, ..., .params)
-
 #
 #' Delete Objects In H2O
 #'
@@ -198,7 +185,9 @@ h2o.getFrame <- function(key, conn = h2o.getConnection()) {
     key <- conn
     conn <- temp
   }
-  .fill(conn, key)
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
+  cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
+  .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames)
 }
 
 #h2o.createFrame <- function(object, key, rows, cols, seed, randomize, value, real_range, categorical_fraction, factors, integer_fraction, integer_range, missing_fraction, response_factors) {
@@ -220,20 +209,20 @@ h2o.getFrame <- function(key, conn = h2o.getConnection()) {
 #  .h2o.exec2(expr = key, conn = object, dest_key = key)
 #}
 
-h2o.splitFrame <- function(data, ratios = 0.75) {
-  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
-    stop("`ratios` must be between 0 and 1 exclusive")
-  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
-
-  res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-  .h2o.__waitOnJob(conn, .get.job(res))
-
-  model.view <- .model.view(.get.dest(res))
-  splits <- lapply(model.view$models[[1]]$output$splits, function(l) h2o.getFrame(l$`_key`$name))
-  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
-  splits
-}
+#h2o.splitFrame <- function(data, ratios = 0.75) {
+#  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+#  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
+#    stop("`ratios` must be between 0 and 1 exclusive")
+#  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+#
+#  res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
+#  .h2o.__waitOnJob(conn, .res$job$key$name)
+#
+#  model.view <- .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", .res$job$dest$name))
+#  splits <- lapply(model.view$models[[1]]$output$splits, function(l) h2o.getFrame(l$`_key`$name))
+#  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
+#  splits
+#}
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
@@ -938,7 +927,7 @@ quantile.H2OFrame <- function(x,
   .quantile.map <- c("x" = "training_frame")
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.quantile.map) ) i <- .quantile.map[[i]]; i })
 
-  model <- .run(x@h2o, 'quantile', parms, parent.frame())
+  model <- .h2o.createModel(x@h2o, "quantile", parms, parent.frame())
 
   col <- model@model$quantile[[1L]]
   names(col) <- paste0(100*probs, "%")

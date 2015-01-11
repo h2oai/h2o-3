@@ -162,7 +162,7 @@ h2o.deeplearning <- function(x, y, training_frame, key = "",
   parms$max_after_balance_size <- 1 #hard-code max_after_balance_size until Inf fixed
   # parms$max_w2 <- 1e6 #hard code max_w2 until Inf fixed
 
-  .run(training_frame@h2o, 'deeplearning', parms, dots$envir)
+  .h2o.createModel(training_frame@h2o, 'deeplearning', parms, dots$envir)
 
 #  if(nfolds == 1) stop("nfolds cannot be 1")
 #  if(!missing(validation) && class(validation) != "H2OFrame")

@@ -94,7 +94,7 @@
   paste(vec, collapse = ",")
 }
 
-.run <- function(conn = h2o.getConnection(), algo, params, envir) {
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
   params$training_frame <- get("training_frame", parent.frame())
 
   #---------- Force evaluate temporary ASTs ----------#
