@@ -56,44 +56,16 @@ function(node) {
 #' Get the class of the object from the envir.
 #'
 #' The environment is the parent frame
-.eval_class<-
-function(i, envir) {
-  val <- tryCatch(class(get(as.character(i), envir)), error = function(e) {
-    tryCatch(class(i), error = function(e) {
-      return(NA)
-    })
-  })
-}
 
 #'
 #' Helper function to recursively unfurl an expression into a list of statements/exprs/calls/names.
 #'
 .as_list<-
 function(expr) {
-  if (is.call(expr)) {
-    return(lapply(as.list(expr), .as_list))
-  }
-  return(expr)
-}
-
-#'
-#' Check if any item in the expression is an H2OFrame object.
-#'
-#' Useful when trying to unravel an expression
-.any.h2o<-
-function(expr, envir) {
-  l <- unlist(lapply(as.list(expr), .as_list), recursive = TRUE)
-  any("H2OFrame" == unlist(lapply(l, .eval_class, envir)))
-}
-
-#'
-#' Assign the value into the correct environment.
-.eval.assign<-
-function(x, ID, top_level_envir, calling_envir) {
-  .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')
-  ID <- ifelse(ID == "Last.value", ID, x@key)
-  assign(ID, x, top_level_envir)
-  ID
+  if (is.call(expr))
+    lapply(as.list(expr), .as_list)
+  else
+    expr
 }
 
 #'
@@ -101,8 +73,18 @@ function(x, ID, top_level_envir, calling_envir) {
 #'
 .eval<-
 function(x, envir, sub_one = TRUE) {
-  if (.any.h2o(x, envir)) return(.ast.walker(eval(x,envir),envir,FALSE,sub_one))
-  .ast.walker(x,envir, FALSE, sub_one)
+  statements <- unlist(lapply(as.list(x), .as_list), recursive = TRUE)
+  anyH2OFrame <- FALSE
+  for (i in statements) {
+    anyH2OFrame <- tryCatch(is(i, "H2OFrame") ||
+                            is(get(as.character(i), envir), "H2OFrame"),
+                            error = function(e) FALSE)
+    if (anyH2OFrame)
+      break
+  }
+  if (anyH2OFrame)
+    x <- eval(x, envir)
+  .ast.walker(x, envir, FALSE, sub_one)
 }
 
 #'
