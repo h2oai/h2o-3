@@ -25,14 +25,14 @@ Suggests: devtools,
           testthat
 Collate:
          'classes.R'
-         'wrapper.R'
+         'connection.R'
          'constants.R'
          'logging.R'
-         'h2o.R'
+         'communication.R'
          'kvstore.R'
          'exec.R'
          'ops.R'
-         'methods.R'
+         'frame.R'
          'ast.R'
          'astfun.R'
          'import.R'
