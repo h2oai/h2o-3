@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
-final public class Key<T extends Keyed> extends Iced implements Comparable {
+final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
