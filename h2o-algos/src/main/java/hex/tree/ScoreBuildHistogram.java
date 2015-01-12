@@ -163,7 +163,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
+<<<<<<< HEAD
           nhs[col].incr((float)chks[col].atd(row),(float)wrks.atd(row)); // Histogram row/col
+=======
+          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
+>>>>>>> e7ff376915e8c0514c728c8dfdce893ab8c9eb97
       }
     }
   }
