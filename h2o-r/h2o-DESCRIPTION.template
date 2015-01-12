@@ -44,3 +44,4 @@ Collate:
          'gbm.R'
          'deeplearning.R'
          'word2vec.R'
+         'locate.R'
