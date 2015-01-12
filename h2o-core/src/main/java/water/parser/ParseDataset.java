@@ -145,7 +145,7 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
-    EnumUpdateTask eut = null;
+    Frame fr = null;
     // Calculate enum domain
     // Filter down to columns with some enums
     int n = 0;
@@ -181,17 +181,33 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      eut = new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum);
+      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
+
+      // Some cols with enums lose their enum status (because they have more
+      // number chunks than enum chunks); these no longer need (or want) enum
+      // updating.
+      Vec[] vecs = fr.vecs();
+      int j=0;
+      for( int i=0; i<ecols.length; i++ ) {
+        if( vecs[ecols[i]].isEnum() ) {
+          ecols[j] = ecols[i];
+          ds[j] = ds[i];
+          for( int l=0; l<emaps.length; l++ ) emaps[l].map[j] = emaps[l].map[i];
+          j++;
+        }
+      }
+      // Update enums to the globally agreed numbering
+      Vec[] evecs = new Vec[j];
+      for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
+      new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
+
+    } else {                    // No enums case
+      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
     }
-    Frame fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(mfpt._dout._nCols),mfpt._dout.closeVecs());
+
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     new SVFTask(fr).doAllNodes();
-    // Update enums to the globally agreed numbering
-    if( eut != null ) {
-      Vec[] evecs = new Vec[ecols.length];
-      for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
-      eut.doAll(evecs);
-    }
+
     // unify any vecs with enums and strings to strings only
     new UnifyStrVecTask().doAll(fr);
 

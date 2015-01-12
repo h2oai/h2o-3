@@ -583,15 +583,15 @@ public abstract class Chunk extends Iced implements Cloneable {
     StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     k = Math.max(k,j-2);
     sb.append("...\n");
     for(; k < Math.min(_len,j+2); ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     sb.append("...\n");
     k = Math.max(k,_len-5);
     for(; k < _len; ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
 }
