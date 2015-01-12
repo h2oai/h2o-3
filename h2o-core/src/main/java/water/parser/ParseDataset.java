@@ -192,7 +192,9 @@ public final class ParseDataset extends Job<Frame> {
         if( vecs[ecols[i]].isEnum() ) {
           ecols[j] = ecols[i];
           ds[j] = ds[i];
-          for( int l=0; l<emaps.length; l++ ) emaps[l].map[j] = emaps[l].map[i];
+          for( int l=0; l<emaps.length; l++ ) 
+            if( emaps[l] != null ) 
+              emaps[l].map[j] = emaps[l].map[i];
           j++;
         }
       }
