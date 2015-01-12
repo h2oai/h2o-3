@@ -61,18 +61,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 }
 
 #'
-#' Load H2O Model from HDFS or Local Disk
-#'
-#' Load a saved H2O model from disk.
-h2o.loadModel <- function(object, path="") {
-  if(!is(object, 'H2OConnection')) stop('`object` must be of class H2OConnection')
-  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
-    stop("`path` must be a non-empty character string")
-  res <- .h2o.__remoteSend(object, .h2o.__PAGE_LoadModel, path = path)
-  h2o.getModel(res$model$'_key', object)
-}
-
-#'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names)
   new("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
