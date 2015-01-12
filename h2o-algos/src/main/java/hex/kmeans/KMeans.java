@@ -317,7 +317,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     @Override public void map(Chunk[] cs) {
       for( int row = 0; row < cs[0]._len; row++ ) {
         for( int i = 0; i < cs.length; i++ ) {
-          double d = cs[i].at0(row);
+          double d = cs[i].atd(row);
           if(Double.isNaN(d)) continue;
           d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
           _tss += d * d;
