@@ -411,13 +411,13 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       float  [] preds = MemoryManager.malloc4f(_model._parms._family == Family.binomial?3:1);
       OUTER:
       for(int i = 0; i < nrows; ++i){
-        if(chunks[chunks.length-1].isNA0(i))continue;
+        if(chunks[chunks.length-1].isNA(i))continue;
         for(int j = 0; j < chunks.length-1; ++j){
-          if(chunks[j].isNA0(i))continue OUTER;
-          row[j] = chunks[j].at0(i);
+          if(chunks[j].isNA(i))continue OUTER;
+          row[j] = chunks[j].atd(i);
         }
         _model.score0(row, preds);
-        double response = chunks[chunks.length-1].at0(i);
+        double response = chunks[chunks.length-1].atd(i);
         _res.add(response, _model._parms._family == Family.binomial?preds[2]:preds[0]);
       }
     }
@@ -450,17 +450,17 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms._family == Family.binomial?3:1);
       OUTER:
       for(int i = 0; i < nrows; ++i){
-        if(chunks[chunks.length-1].isNA0(i))continue;
+        if(chunks[chunks.length-1].isNA(i))continue;
         for(int j = 0; j < chunks.length-1; ++j){
-          if(chunks[j].isNA0(i))continue OUTER;
-          row[j] = chunks[j].at0(i);
+          if(chunks[j].isNA(i))continue OUTER;
+          row[j] = chunks[j].atd(i);
         }
         ++_nobs;
         final int mid = i % _xmodels.length;
         final GLMModel model = _xmodels[mid];
         final GLMValidation val = _xvals[mid];
         model.score0(row, preds);
-        double response = chunks[chunks.length-1].at80(i);
+        double response = chunks[chunks.length-1].at8(i);
         val.add(response, model._parms._family == Family.binomial?preds[2]:preds[0]);
       }
     }

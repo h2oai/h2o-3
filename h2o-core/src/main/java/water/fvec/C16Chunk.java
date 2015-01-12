@@ -7,7 +7,7 @@ public class C16Chunk extends Chunk {
   public static final long _LO_NA = Long.MAX_VALUE;
   public static final long _HI_NA = 0;
   C16Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>4); }
-  @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8 but 16-byte UUID");  }
+  @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
   @Override protected final double atd_impl( int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
   @Override protected final boolean isNA_impl( int i ) { return UnsafeUtils.get8(_mem,(i<<4))==_LO_NA && UnsafeUtils.get8(_mem,(i<<4)+8)==_HI_NA; }
   @Override protected long at16l_impl(int idx) { 

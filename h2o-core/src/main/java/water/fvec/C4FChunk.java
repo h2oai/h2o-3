@@ -10,7 +10,7 @@ public class C4FChunk extends Chunk {
   C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     float res = UnsafeUtils.get4f(_mem, i << 2);
-    if( Float.isNaN(res) ) throw new IllegalArgumentException("at8 but value is missing");
+    if( Float.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)res;
   }
   @Override protected final double atd_impl( int i ) {

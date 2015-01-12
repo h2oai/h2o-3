@@ -27,7 +27,7 @@ import water.parser.ValueString;
  *  avoids some range checks):
  *  <pre>
  *  for( int row=0; row &lt; chunk._len; row++ )
- *    ...chunk.at0(row)...
+ *    ...chunk.atd(row)...
  *  </pre>
  *
  *  <p>The array-like API allows loading and storing elements in and out of
@@ -46,7 +46,7 @@ import water.parser.ValueString;
  *  #close} is made; again this is handled by MRTask directly.
  * 
  *  <p>In addition to normal load and store operations, Chunks support the
- *  notion a missing element via the {@code isNA()} calls, and a "next
+ *  notion a missing element via the {@code isNA_abs()} calls, and a "next
  *  non-zero" notion for rapidly iterating over sparse data.
  *
  *  <p><b>Data Types</b>
@@ -68,7 +68,7 @@ import water.parser.ValueString;
  *  with missing elements, you must first check for a missing value before
  *  loading it:
  *  <pre>
- *  if( !chk.isNA0(row) ) ...chk.at80(row)....
+ *  if( !chk.isNA(row) ) ...chk.at8(row)....
  *  </pre>
  * 
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
@@ -100,10 +100,16 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
   for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
     double dist=0;                                 // Squared distance
     for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
-      double d = chks[col].at0(row) - _point[col]; // Distance along this dimension
-      dist += d*d;                                // Sum-squared-distance
+      double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
+<<<<<<< HEAD
+      dist += d*d;                                 // Sum-squared-distance
     }
-    chks[chks.length-1].set0( row, dist );         // Store back the distance in the last col
+    chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
+=======
+      dist += d*d*;                                // Sum-squared-distance
+    }
+    chks[chks.length-1].set( row, dist );         // Store back the distance in the last col
+>>>>>>> e7ff376915e8c0514c728c8dfdce893ab8c9eb97
   }
 }}</pre>
  */
@@ -125,7 +131,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  <p>Proper usage: read the field, probably in a hot loop.
    *  <pre>
    *  for( int row=0; row &lt; chunk._len; row++ )
-   *    ...chunk.at0(row)...
+   *    ...chunk.atd(row)...
    *  </pre>
    **/
   public transient int _len;
@@ -162,22 +168,9 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
-  /** Used by rbind to flush the chk2 */
-  public final void flushChk2() { _chk2 = null; setWrite(); }
-
-  /** Load a {@code long} value using absolute row numbers.  Floating point
-   *  values are silently rounded to a long.  Throws if the value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #at80} since it range-checks within a chunk. 
-   *  @return long value at the given row, or throw if the value is missing */
-  public final long at8( long i ) {
+  final long at8_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at80((int)x);
+    if( 0 <= x && x < _len) return at8((int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -189,11 +182,11 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
-   *  <p>Slightly slower than {@link #at0} since it range-checks within a chunk.
+   *  <p>Slightly slower than {@link #atd} since it range-checks within a chunk.
    *  @return double value at the given row, or NaN if the value is missing */
-  public final double at( long i ) {
+  final double at_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at0((int)x);
+    if( 0 <= x && x < _len) return atd((int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -204,11 +197,11 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
-   *  <p>Slightly slower than {@link #isNA0} since it range-checks within a chunk.
+   *  <p>Slightly slower than {@link #isNA} since it range-checks within a chunk.
    *  @return true if the value is missing */
-  public final boolean isNA(long i) {
+  final boolean isNA_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return isNA0((int)x);
+    if( 0 <= x && x < _len) return isNA((int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -219,11 +212,11 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
-   *  <p>Slightly slower than {@link #at16l0} since it range-checks within a chunk.
+   *  <p>Slightly slower than {@link #at16l} since it range-checks within a chunk.
    *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long at16l( long i ) {
+  final long at16l_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at16l0((int)x);
+    if( 0 <= x && x < _len) return at16l((int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -234,11 +227,11 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
-   *  <p>Slightly slower than {@link #at16h0} since it range-checks within a chunk.
+   *  <p>Slightly slower than {@link #at16h} since it range-checks within a chunk.
    *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long at16h( long i ) {
+  final long at16h_abs(long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at16h0((int)x);
+    if( 0 <= x && x < _len) return at16h((int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
@@ -249,44 +242,44 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
-   *  <p>Slightly slower than {@link #atStr0} since it range-checks within a chunk.
+   *  <p>Slightly slower than {@link #atStr} since it range-checks within a chunk.
    *  @return String value using absolute row numbers, or null if missing. */
-  public final ValueString atStr( ValueString vstr, long i ) {
+  final ValueString atStr_abs(ValueString vstr, long i) {
     long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return atStr0(vstr,(int)x);
+    if( 0 <= x && x < _len) return atStr(vstr, (int) x);
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
   /** Load a {@code double} value using chunk-relative row numbers.  Returns Double.NaN
    *  if value is missing.
    *  @return double value at the given row, or NaN if the value is missing */
-  public final double  at0  ( int i ) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
+  public final double atd(int i) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
 
   /** Load a {@code long} value using chunk-relative row numbers.  Floating
    *  point values are silently rounded to a long.  Throws if the value is
    *  missing.
    *  @return long value at the given row, or throw if the value is missing */
-  public final long    at80 ( int i ) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
+  public final long at8(int i) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
 
   /** Missing value status using chunk-relative row numbers.
    *
    *  @return true if the value is missing */
-  public final boolean isNA0( int i ) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
+  public final boolean isNA(int i) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
 
   /** Low half of a 128-bit UUID, or throws if the value is missing.
    *
    *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long   at16l0( int i ) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
+  public final long at16l(int i) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
 
   /** High half of a 128-bit UUID, or throws if the value is missing.
    *
    *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long   at16h0( int i ) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
+  public final long at16h(int i) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
 
   /** String value using chunk-relative row numbers, or null if missing.
    *
    *  @return String value or null if missing. */
-  public final ValueString atStr0( ValueString vstr, int i ) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
+  public final ValueString atStr(ValueString vstr, int i) { return _chk2 == null ? atStr_impl(vstr,i) : _chk2.atStr_impl(vstr,i); }
 
 
   /** Write a {@code long} using absolute row numbers.  There is no way to
@@ -306,7 +299,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  public final void set( long i, long   l) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,l); else _vec.set(i,l); }
+  final void set_abs(long i, long l) { long x = i-_start; if (0 <= x && x < _len) set((int) x, l); else _vec.set(i,l); }
 
   /** Write a {@code double} using absolute row numbers; NaN will be treated as
    *  a missing value.
@@ -322,7 +315,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  public final void set( long i, double d) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,d); else _vec.set(i,d); }
+  final void set_abs(long i, double d) { long x = i-_start; if (0 <= x && x < _len) set((int) x, d); else _vec.set(i,d); }
 
   /** Write a {@code float} using absolute row numbers; NaN will be treated as
    *  a missing value.
@@ -338,7 +331,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  public final void set( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,f); else _vec.set(i,f); }
+  final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
   /** Set the element as missing, using absolute row numbers.
    *
@@ -353,7 +346,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  final void setNA( long i ) { long x = i-_start; if (0 <= x && x < _len) setNA0((int)x); else _vec.setNA(i); }
+  final void setNA_abs(long i) { long x = i-_start; if (0 <= x && x < _len) setNA((int) x); else _vec.setNA(i); }
 
   /** Set a {@code String}, using absolute row numbers.
    *
@@ -368,7 +361,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  public final void set( long i, String str) { long x = i-_start; if (0 <= x && x < _len) set0((int)x,str); else _vec.set(i,str); }
+  public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
   private void setWrite() {
@@ -393,7 +386,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  change.
    *  @return the set value
    */
-  public final long set0(int idx, long l) {
+  public final long set(int idx, long l) {
     setWrite();
     if( _chk2.set_impl(idx,l) ) return l;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,l);
@@ -411,7 +404,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  change.
    *  @return the set value
    */
-  public final double set0(int idx, double d) {
+  public final double set(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,d);
@@ -429,7 +422,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  change.
    *  @return the set value
    */
-  public final float set0(int idx, float f) {
+  public final float set(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,f);
@@ -446,7 +439,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  change.
    *  @return the set value
    */
-  public final boolean setNA0(int idx) {
+  public final boolean setNA(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
     (_chk2 = inflate_impl(new NewChunk(this))).setNA_impl(idx);
@@ -464,7 +457,7 @@ public abstract class Chunk extends Iced implements Cloneable {
    *  change.
    *  @return the set value
    */
-  public final String set0(int idx, String str) {
+  public final String set(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
     (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,str);
@@ -525,16 +518,6 @@ public abstract class Chunk extends Iced implements Cloneable {
   public int nonzeros(int [] res) {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
-  }
-
-  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk.  */
-  public final int [] nonzeros () {
-    int [] res = MemoryManager.malloc4(sparseLen());
-    nonzeros(res);
-    return res;
   }
 
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
@@ -606,15 +589,15 @@ public abstract class Chunk extends Iced implements Cloneable {
     StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + emap[i].length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
-      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
     k = Math.max(k,j-2);
     sb.append("...\n");
     for(; k < Math.min(_len,j+2); ++k)
-      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
     sb.append("...\n");
     k = Math.max(k,_len-5);
     for(; k < _len; ++k)
-      sb.append("at8[" + (k+_start) + "] = " + at80(k) + ", _chk2 = " + (_chk2 != null?_chk2.at80(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_start) + "] = " + at8(k) + ", _chk2 = " + (_chk2 != null?_chk2.at8(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
 }

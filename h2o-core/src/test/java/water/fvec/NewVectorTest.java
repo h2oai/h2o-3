@@ -28,7 +28,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
-        assertEquals(bv.at0(i), ls[i]*water.util.PrettyPrint.pow10(xs[i]), Math.abs(bv.at0(i))*EPSILON);
+        assertEquals(bv.atd(i), ls[i]*water.util.PrettyPrint.pow10(xs[i]), Math.abs(bv.atd(i))*EPSILON);
     } finally {
       if( vec != null ) vec.remove();
     }
@@ -106,7 +106,7 @@ public class NewVectorTest extends TestUtil {
       assertTrue( "Found chunk class "+c0.getClass()+" but expected C0LChunk", c0 instanceof C0LChunk );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
-        assertEquals(0, c0.at0(i), c0.at0(i)*EPSILON);
+        assertEquals(0, c0.atd(i), c0.atd(i)*EPSILON);
 
       // Now write a zero into slot 0
       vec.set(0,0);

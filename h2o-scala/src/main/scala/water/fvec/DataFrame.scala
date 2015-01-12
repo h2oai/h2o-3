@@ -64,7 +64,7 @@ class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[
         val row = new T(chks.length)
         val len = chks(0)._len
         (0 until len).foreach{ i =>
-          (0 until chks.length).foreach{ col => row(col) = if( chks(col).isNA0(i) ) None else Some(chks(col).at0(i)) }
+          (0 until chks.length).foreach{ col => row(col) = if( chks(col).isNA(i) ) None else Some(chks(col).atd(i)) }
           f(start+i,row)
         }
       }

@@ -3,7 +3,6 @@ package water.fvec;
 import static org.junit.Assert.*;
 import org.junit.*;
 
-import water.DKV;
 import water.Futures;
 import water.TestUtil;
 import java.util.Arrays;
@@ -38,8 +37,8 @@ public class CBSChunkTest extends TestUtil {
     assertEquals(expClen, cc._mem.length - CBSChunk._OFF);
     // Also, we can decompress correctly
     for( int i=0; i<ls.length; i++ )
-      if(xs[i]==0)assertEquals(ls[i], cc.at80(i));
-      else assertTrue(cc.isNA0(i));
+      if(xs[i]==0)assertEquals(ls[i], cc.at8(i));
+      else assertTrue(cc.isNA(i));
 
     // materialize the vector (prerequisite to free the memory)
     Vec vv = av.close(fs);
@@ -96,10 +95,10 @@ public class CBSChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CBSChunk);
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at80(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l+i));
-      Assert.assertTrue(cc.isNA0(vals.length+l));
-      Assert.assertTrue(cc.isNA(vals.length+l));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(l + i));
+      Assert.assertTrue(cc.isNA(vals.length + l));
+      Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
@@ -112,21 +111,21 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertTrue(!it.hasNext());
 
       if (l==1) {
-        Assert.assertTrue(nc.isNA0(0));
         Assert.assertTrue(nc.isNA(0));
+        Assert.assertTrue(nc.isNA_abs(0));
       }
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at80(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l+i));
-      Assert.assertTrue(nc.isNA0(vals.length+l));
-      Assert.assertTrue(nc.isNA(vals.length+l));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
+      Assert.assertTrue(nc.isNA(vals.length + l));
+      Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof CBSChunk);
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at80(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l+i));
-      Assert.assertTrue(cc2.isNA0(vals.length + l));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8_abs(l + i));
       Assert.assertTrue(cc2.isNA(vals.length + l));
+      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -145,17 +144,17 @@ public class CBSChunkTest extends TestUtil {
     Futures fs = new Futures();
     fs.blockForPending();
 
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at80(i));
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
+    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA(na);
+    for (int na : NAs) cc.setNA_abs(na);
 
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
@@ -167,18 +166,18 @@ public class CBSChunkTest extends TestUtil {
     for (int i = 0; i < vals.length; ++i) Assert.assertTrue(it.next().rowId0() == i);
     Assert.assertTrue(!it.hasNext());
 
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     Chunk cc2 = nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof CBSChunk);
-    for (int na : NAs) Assert.assertTrue(cc.isNA0(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA0(notna));
+    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
     Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     vec.remove();

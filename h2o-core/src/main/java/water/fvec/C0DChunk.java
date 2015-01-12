@@ -19,7 +19,7 @@ public class C0DChunk extends Chunk {
   }
   @Override public boolean hasFloat() { return true; }
   @Override protected final long at8_impl( int i ) {
-    if( Double.isNaN(_con) ) throw new IllegalArgumentException("at8 but value is missing");
+    if( Double.isNaN(_con) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)_con;          // Possible silent truncation
   }
   @Override protected final double atd_impl( int i ) {return _con;}

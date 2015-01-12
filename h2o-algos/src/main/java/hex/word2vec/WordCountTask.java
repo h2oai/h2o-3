@@ -67,7 +67,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
     for (Chunk chk : cs) if (chk instanceof CStrChunk) {
       ValueStringCount tmp = new ValueStringCount();
       for (int row = 0; row < chk._len; row++) {
-        chk.atStr0(tmp, row);
+        chk.atStr(tmp, row);
         ValueStringCount tmp2 = VOCABHM.get(tmp);
         if (tmp2 == null) {
           VOCABHM.put(tmp, tmp);

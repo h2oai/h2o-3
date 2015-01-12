@@ -11,7 +11,7 @@ public class C4Chunk extends Chunk {
   C4Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get4(_mem,i<<2);
-    if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
+    if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return res;
   }
   @Override protected final double atd_impl( int i ) {

@@ -12,7 +12,7 @@ public class C2Chunk extends Chunk {
   C2Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>1); }
   @Override protected final long at8_impl( int i ) {
     int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-    if( res == _NA ) throw new IllegalArgumentException("at8 but value is missing");
+    if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return res;
   }
   @Override protected final double atd_impl( int i ) {

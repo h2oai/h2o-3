@@ -79,18 +79,18 @@ class RollupStats extends Iced {
     if (isString) _isInt = false;
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-      if( c.isNA0(i) ) {
+      if( c.isNA(i) ) {
         _naCnt++;
       } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        long lo = c.at16l0(i), hi = c.at16h0(i);
+        long lo = c.at16l(i), hi = c.at16h(i);
         if (lo != 0 || hi != 0) _nzCnt++;
         l = lo ^ 37*hi;
       } else if( isString ) { // String columns do not compute min/max/mean/sigma
         _nzCnt++;
-        l = c.atStr0(vs,i).hashCode();
+        l = c.atStr(vs, i).hashCode();
       } else {                  // All other columns have useful rollups
-        double d = c.at0(i);
-        l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at80(i);
+        double d = c.atd(i);
+        l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
         if( d == Double.POSITIVE_INFINITY) _pinfs++;
         else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
         else {
@@ -118,8 +118,8 @@ class RollupStats extends Iced {
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
       for( int i=0; i< c._len; i++ ) {
-        if( !c.isNA0(i) ) {
-          double d = c.at0(i)-_mean;
+        if( !c.isNA(i) ) {
+          double d = c.atd(i)-_mean;
           _sigma += d*d;
         }
       }
@@ -235,7 +235,7 @@ class RollupStats extends Iced {
     @Override public void map( Chunk c ) {
       _bins = new long[_nbins];
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-        double d = c.at0(i);
+        double d = c.atd(i);
         if( Double.isNaN(d) ) continue;
         _bins[idx(d)]++;
       }
