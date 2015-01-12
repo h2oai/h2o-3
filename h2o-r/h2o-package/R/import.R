@@ -5,9 +5,6 @@
 #' including a header file, separator type, and in the future column type. Additionally, the import phase provides
 #' feedback on whether or not a folder or group of files may be imported together.
 
-#' API ENDPOINT
-.h2o.__IMPORT <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
-
 #'
 #' Import a Folder of Files
 #'
@@ -24,7 +21,7 @@ h2o.importFolder <- function(object, path, pattern = "", key = "", parse = TRUE,
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
-  res <- .h2o.__remoteSend(object, 'ImportFiles.json', path=path)
+  res <- .h2o.__remoteSend(object, .h2o.__IMPORT, path=path)
   if(length(res$fails) > 0L) {
     for(i in seq_len(length(res$fails)))
       cat(res$fails[[i]], "failed to import")

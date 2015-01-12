@@ -9,8 +9,6 @@
 #   GET & POST
 #-----------------------------------------------------------------------------------------------------------------------
 
-.h2o.__REST_API_VERSION <- 3L
-
 .skip_if_not_developer <- function() {
   if (Sys.getenv("USER") %in% c("tomk", "amy"))
     return()
@@ -560,7 +558,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   if(!is.character(keyName) || length(keyName) != 1L || is.na(keyName) || !nzchar(keyName))
     stop("`keyName` must be a non-empty string")
 
-  page <- paste0('Jobs.json/', keyName)
+  page <- paste0(.h2o.__JOBS, "/", keyName)
   res <- .h2o.__remoteSend(conn, page)
 
   res <- res$jobs
@@ -619,13 +617,6 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 }
 
 #------------------------------------ Utilities ------------------------------------#
-.h2o.__checkForFactors <- function(object) {
-  if(is(object, "H2OFrame"))
-    h2o.anyFactor(object)
-  else
-    FALSE
-}
-
 h2o.getBaseURL <- function(conn = h2o.getConnection()) {
   stopifnot(is(conn, "H2OConnection"))
 
@@ -653,12 +644,12 @@ h2o.getVersion <- function(conn = h2o.getConnection()) {
   paste(x1,x2)
 }
 
-.uri.exists <- function(uri) url.exists(uri)
-
-.h2o.__formatError <- function(error,prefix="  ") {
-  result = ""
-  items = strsplit(as.character(error),"\n")[[1L]]
-  for (i in seq_len(length(items)))
-    result = paste0(result,prefix,items[i],"\n")
-  result
+.seq_to_string <- function(vec = as.numeric(NA)) {
+  vec <- sort(vec)
+  if(length(vec) > 2L) {
+    vec_diff <- diff(vec)
+    if(abs(max(vec_diff) - min(vec_diff)) < .Machine$double.eps^0.5)
+      return(paste(min(vec), max(vec), vec_diff[1], sep = ":"))
+  }
+  paste(vec, collapse = ",")
 }

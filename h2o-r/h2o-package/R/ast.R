@@ -170,11 +170,11 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 #'
 #' Developer Note: If a method takes a function as an argument and
 #'                 you wish to pass arguments to that function by the way of `...`
-#'                 then you before passing flowing control to .h2o.varop, you MUST
+#'                 then you before passing flowing control to .h2o.nary_op, you MUST
 #'                 label the `...` and list it.
 #'
 #'                   e.g.: Inside of ddply, we have the following "fun_args" pattern:
-#'                      .h2o.varop("ddply", .data, vars, .fun, fun_args=list(...), .progress)
+#'                      .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 .get.value.from.arg<-
 function(a, name=NULL) {
   if (is(a, "H2OFrame")) {
@@ -187,20 +187,23 @@ function(a, name=NULL) {
     paste0('%', a@key)
   } else {
     res <- eval(a)
-    if (is.null(res)) return(deparse("null"))
-    if (is.vector(res)) {
+    if (is.null(res)) {
+      "\"null\""
+    } else if (is.vector(res)) {
       if (length(res) > 1L) {
         if (is.numeric(res)) res <- as.numeric(res)
         # wrap the vector up into a ';' separated {} thingy
         tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
-        return(paste0('{', tt, '}'))
+        paste0('{', tt, '}')
+      } else if (is.numeric(res)) {
+        paste0('#', res)
+      } else if (is.logical(res)) {
+        paste0('%', res)
       } else {
-        if (is.numeric(res)) return(paste0('#', res))
-        if (is.logical(res)) return(paste0('%', res))
-        else return(deparse(eval(a)))
+        deparse(eval(a))
       }
     } else {
-      return(deparse(eval(a)))
+      deparse(eval(a))
     }
   }
 }

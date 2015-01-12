@@ -3,10 +3,6 @@
 #'
 #' The second phase in the data ingestion step.
 
-# API ENDPOINTS
-.h2o.__PARSE_SETUP <- "ParseSetup.json"  # Sample Usage: ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
-.h2o.__PARSE       <- "Parse.json"       # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
-
 #'
 #' Parse the Raw Data produced by the import phase.
 h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
@@ -23,14 +19,14 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   srcs <- .collapse(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@h2o, 'ParseSetup.json', srcs = srcs)
+  parseSetup <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE_SETUP, srcs = srcs)
 
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
 
   parse.params <- list(
         srcs = srcs,
-        hex  = paste0(ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName), data@h2o@session_key),
+        hex  = paste0(ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName), .get.session_id()),
         columnNames = .collapse(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,
@@ -40,7 +36,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
         )
 
   # Perform the parse
-  res <- .h2o.__remoteSend(data@h2o, 'Parse.json', method = "POST", .params = parse.params)
+  res <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE, method = "POST", .params = parse.params)
   hex <- res$job$dest$name
 
   # Poll on job
@@ -60,9 +56,9 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=","), ']')
 
-#Inspect.json?key
-
-.h2o.fetchNRows <- function(conn = h2o.getConnection(), key) .h2o.__remoteSend(conn, paste0('Inspect.json?key=', key))$schema$rows
+.h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
+  .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
+}
 
 #'
 #' Load H2O Model from HDFS or Local Disk

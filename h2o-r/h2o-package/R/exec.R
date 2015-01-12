@@ -3,21 +3,16 @@
 #'
 #' This is the front-end of the execution interface between R and H2O.
 #'
-#' The workhorses of this front end are .h2o.unop, .h2o.binop, and .h2o.varop.
+#' The workhorses of this front end are .h2o.unary_op, .h2o.binary_op, and .h2o.nary_op.
 #'
 #' Together, these three methods handle all of the available operations that can
 #' be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
 
 #'
-#' Rapids End point
-#'
-.h2o.__RAPIDS <- "Rapids.json"
-
-#'
 #' Prefix Operation With A Single Argument
 #'
 #' Operation on an object that inherits from H2OFrame.
-.h2o.unop<-
+.h2o.unary_op<-
 function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
@@ -37,7 +32,7 @@ function(op, x) {
 #' Binary Operation
 #'
 #' Operation between H2OFrame objects and/or base R objects.
-.h2o.binop<-
+.h2o.binary_op<-
 function(op, e1, e2) {
   # Prep the op
   op <- new("ASTApply", op=.op.map[op])
@@ -67,7 +62,7 @@ function(op, e1, e2) {
 #' Prefix Operation With Multiple Arguments
 #'
 #' Operation on an H2OFrame object with some extra parameters.
-.h2o.varop<-
+.h2o.nary_op<-
 function(op, ..., .args = list(...), .key = .key.make()) {
   op <- new("ASTApply", op = op)
   children <- .args.to.ast(.args = .args)
@@ -93,7 +88,10 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE) {
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
-  if (new.assign) ast <- h2o.ID %<-% ast
+  if (new.assign) {
+    if (is(h2o.ID, "H2OFrame")) h2o.ID <- h2o.ID@key
+    ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', h2o.ID), right=ast))
+  }
   ast <- .visitor(ast)
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
   if (!is.null(res$error)) stop(res$error, call.=FALSE)

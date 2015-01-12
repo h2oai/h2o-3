@@ -68,18 +68,20 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 #' the `ip` and `port` of the machine running an instance to connect with. The default behavior
 #' is to connect with a local instance of H2O at port 54321, or to boot a new local instance if one
 #' is not found at port 54321.
-#' @slot ip Object of class \code{character} representing the IP address of the H2O server.
-#' @slot port Object of class \code{numeric} representing the port number of the H2O server.
+#' @slot ip A \code{character} string specifying the IP address of the H2O server.
+#' @slot port A \code{numeric} value specifying the port number of the H2O server.
+#' @slot session_id A \code{numeric} string specifying the H2O session identifier.
 #' @aliases H2OConnection
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", session_key="character"),
-         prototype(ip=NA_character_, port=NA_integer_, session_key=NA_character_)
+         representation(ip="character", port="numeric", session_id="character"),
+         prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_)
          )
 
 #' @rdname H2OConnection-class
 setMethod("show", "H2OConnection", function(object) {
-  cat("IP Address:", object@ip,   "\n")
-  cat("Port      :", object@port, "\n")
+  cat("IP Address:", object@ip,         "\n")
+  cat("Port      :", object@port,       "\n")
+  cat("Session ID:", object@session_id, "\n")
 })
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))

@@ -78,7 +78,7 @@ h2o.assign <- function(data, key) {
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
   ID <- deparse(substitute(data), width.cutoff = 500L)
-  ast <- .h2o.varop("rename", data, key)
+  ast <- .h2o.nary_op("rename", data, key)
   .force.eval(ast@ast, ID, parent.frame())
   o <- get(ID, parent.frame())
   o@key <- key

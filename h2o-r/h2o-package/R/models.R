@@ -88,16 +88,6 @@
   cf_matrix
 }
 
-.seq_to_string <- function(vec = as.numeric(NA)) {
-  vec <- sort(vec)
-  if(length(vec) > 2L) {
-    vec_diff <- diff(vec)
-    if(abs(max(vec_diff) - min(vec_diff)) < .Machine$double.eps^0.5)
-      return(paste(min(vec), max(vec), vec_diff[1], sep = ":"))
-  }
-  paste(vec, collapse = ",")
-}
-
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
   params$training_frame <- get("training_frame", parent.frame())
 

@@ -146,8 +146,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  assign("SESSION_ID", .h2o.session.id(conn), .pkg.env)
-  conn@session_key <- get("SESSION_ID", .pkg.env)
+  conn@session_id <- .init.session_id(conn)
   assign("SERVER", conn, .pkg.env)
   conn
 }
@@ -247,15 +246,15 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 
 #
 # Get a session ID at init
-.h2o.session.id <- function(conn) {
+.init.session_id <- function(conn) {
   res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
   res$session_key
 }
 
-.get.session.id <- function() {
+.get.session_id <- function() {
   conn <- h2o.getConnection()
-  if (is.na(conn@session_key)) stop("Missing session_key! Please perform h2o.init.")
-  conn@session_key
+  if (is.na(conn@session_id)) stop("Missing session_id! Please perform h2o.init.")
+  conn@session_id
 }
 
 #---------------------------- H2O Jar Initialization -------------------------------#
