@@ -153,9 +153,9 @@ public class IcedWrapper extends Iced {
     return "unhandled type";
   }
 
-  @Override
-  public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    ab.putJSONStr("value").put1(':');
+
+  /** Write JSON for the wrapped value without putting it inside a JSON object. */
+  public AutoBuffer writeUnwrappedJSON( AutoBuffer ab ) {
     if (is_array) {
       if (Byte.TYPE == t)
         return ab.putJSONA4(i_ar); // NOTE: upcast

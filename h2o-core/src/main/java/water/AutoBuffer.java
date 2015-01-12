@@ -1368,6 +1368,8 @@ public final class AutoBuffer {
     return putA1(b,off,b.length);
   }
   public AutoBuffer putJSONStrUnquoted ( String s ) { return s==null ? putJNULL() : putJStr(s); }
+  public AutoBuffer putJSONStrUnquoted ( String name, String s ) { return s==null ? putJSONStr(name).put1(':').putJNULL() : putJSONStr(name).put1(':').putJStr(s); }
+
   public AutoBuffer putJSONName( String s ) { return put1('"').putJStr(s).put1('"'); }
   public AutoBuffer putJSONStr ( String s ) { return s==null ? putJNULL() : putJSONName(s); }
   public AutoBuffer putJSONAStr(String[] ss) {

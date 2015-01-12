@@ -86,6 +86,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
 
   public static final class Meta extends Iced {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
     public int schema_version;
 

@@ -1,7 +1,9 @@
 package water.api;
 
+import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.IcedWrapper;
 import water.api.SchemaMetadata.FieldMetadata;
 import water.util.PojoUtils;
 
@@ -16,6 +18,9 @@ import java.lang.reflect.Field;
  * TODO: refactor this into with FieldMetadataBase.
  */
 public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2> {
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   @API(help="name in the JSON, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
   public String name;
 
@@ -44,10 +49,10 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public String[] values;
 
   @API(help="For Vec-type fields this is the set of other Vec-type fields which must contain mutually exclusive values; for example, for a SupervisedModel the response_column must be mutually exclusive with the weights_column")
-  String[] is_member_of_frames;
+  public String[] is_member_of_frames;
 
   @API(help="For Vec-type fields this is the set of Frame-type fields which must contain the named column; for example, for a SupervisedModel the response_column must be in both the training_frame and (if it's set) the validation_frame")
-  String[] is_mutually_exclusive_with;
+  public String[] is_mutually_exclusive_with;
 
   public ModelParameterSchemaV2() {
   }
@@ -108,5 +113,41 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   public Iced createImpl() {
     // should never get called
     throw H2O.fail("createImpl should never get called in ModelParameterSchemaV2!");
+  }
+
+  /**
+   * ModelParameterSchema has its own serializer so that
+   * @param ab
+   * @return
+   */
+  @Override
+  public AutoBuffer writeJSON_impl(AutoBuffer ab) {
+    ab.put1(','); // the schema and version fields get written before we get called
+
+    ab.putJSONStr("name", name);                                    ab.put1(',');
+    ab.putJSONStr("label", label);                                  ab.put1(',');
+    ab.putJSONStr("help", help);                                    ab.put1(',');
+    ab.putJSONStrUnquoted("required", required ? "true" : "false"); ab.put1(',');
+    ab.putJSONStr("type", type);                                    ab.put1(',');
+
+    if (default_value instanceof IcedWrapper) {
+      ab.putJSONStr("default_value").put1(':');
+      ((IcedWrapper) default_value).writeUnwrappedJSON(ab);            ab.put1(',');
+    } else {
+      ab.putJSONStr("default_value").put1(':').putJSON(default_value); ab.put1(',');
+    }
+
+    if (actual_value instanceof IcedWrapper) {
+      ab.putJSONStr("actual_value").put1(':');
+      ((IcedWrapper) actual_value).writeUnwrappedJSON(ab);             ab.put1(',');
+    } else {
+      ab.putJSONStr("actual_value").put1(':').putJSON(actual_value);   ab.put1(',');
+    }
+
+    ab.putJSONStr("level", level);                                            ab.put1(',');
+    ab.putJSONAStr("values", values);                                         ab.put1(',');
+    ab.putJSONAStr("is_member_of_frames", is_member_of_frames);               ab.put1(',');
+    ab.putJSONAStr("is_mutually_exclusive_with", is_mutually_exclusive_with);
+    return ab;
   }
 }
