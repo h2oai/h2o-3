@@ -27,7 +27,7 @@ public class AppendableVec extends Vec {
   public static final byte STRING = 6;
   private byte[] _chunkTypes;
   long _naCnt;
-  long _enumCnt;
+  public long _enumCnt;
   long _strCnt;
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
@@ -54,12 +54,6 @@ public class AppendableVec extends Vec {
     _strCnt += chk.strCnt();
     for( int i=0; i<_timCnt.length; i++ ) _timCnt[i] += chk._timCnt[i];
     _totalCnt += chk._len;
-  }
-
-  // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?
-  public boolean shouldBeEnum() {
-    // We declare column to be string/enum only if it does not have ANY numbers in it.
-    return _enumCnt > 0 && (_enumCnt + _strCnt + _naCnt) == _totalCnt;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -127,10 +121,11 @@ public class AppendableVec extends Vec {
       if( i != NA && ctypes[i] > ctypes[idx] )
         idx = i;
 
-    // Make Chunks other than the dominant type fail out to NAs
+    // Make Chunks other than the dominant type fail out to NAs.  This includes
+    // converting numeric chunks to NAs in Enum columns - we cannot reverse
+    // print the numbers to get the original text for the Enum back.
     for(int i = 0; i < nchunk; ++i)
-      if(_chunkTypes[i] != idx && 
-         !(idx==ENUM && _chunkTypes[i]==NUMBER)) // Odd case: numeric chunks being forced/treated as a boolean enum
+      if( _chunkTypes[i] != idx )
         DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
 
     byte type;

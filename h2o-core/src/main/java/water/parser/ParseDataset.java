@@ -147,13 +147,15 @@ public final class ParseDataset extends Job<Frame> {
     mfpt.doAll(fkeys);
     EnumUpdateTask eut = null;
     // Calculate enum domain
+    // Filter down to columns with some enums
     int n = 0;
     int [] ecols = new int[mfpt._dout._nCols];
     for( int i = 0; i < ecols.length; ++i )
-      if(mfpt._dout._vecs[i].shouldBeEnum())
+      if( mfpt._dout._vecs[i]._enumCnt > 0 )
         ecols[n++] = i;
-    ecols =  Arrays.copyOf(ecols, n);
-    if( ecols.length > 0 ) {
+    ecols = Arrays.copyOf(ecols, n);
+    // If we have any, go gather unified enum domains
+    if( n > 0 ) {
       EnumFetchTask eft = new EnumFetchTask(mfpt._eKey, ecols).doAllNodes();
       Categorical[] enums = eft._gEnums;
       ValueString[][] ds = new ValueString[ecols.length][];

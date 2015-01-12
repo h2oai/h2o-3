@@ -198,7 +198,10 @@ public class Vec extends Keyed {
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Categorical column.  */
-  public final boolean isEnum   (){ return _type==T_ENUM || _domain != null; }
+  public final boolean isEnum() { 
+    assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
+    return _type==T_ENUM; 
+  }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
