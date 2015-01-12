@@ -151,7 +151,7 @@ public final class ParseDataset extends Job<Frame> {
     int n = 0;
     int [] ecols = new int[mfpt._dout._nCols];
     for( int i = 0; i < ecols.length; ++i )
-      if( mfpt._dout._vecs[i]._enumCnt > 0 )
+      if( mfpt._dout._vecs[i].shouldBeEnum()  )
         ecols[n++] = i;
     ecols = Arrays.copyOf(ecols, n);
     // If we have any, go gather unified enum domains

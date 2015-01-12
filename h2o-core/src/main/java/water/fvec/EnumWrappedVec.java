@@ -47,7 +47,7 @@ public class EnumWrappedVec extends WrappedVec {
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
    *  the 'from' domain not in the 'to' domain are mapped past the end of the
-   *  'from' values.  Strings in the 'to' domain not in the 'from' domain
+   *  'to' values.  Strings in the 'to' domain not in the 'from' domain
    *  simply do not appear in the mapping.  The returned map is always the same
    *  length as the 'from' domain.  It's contents have values from both
    *  domains; the resulting domain is as big as the largest value in the map,
@@ -59,7 +59,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  Returned map is {2,3,0}.<br>
    *  Map length matches the 'from' domain length.<br>
    *  Largest value is 3, so the domain is size 4.<br>
-   *  Domain is: {"Green","Blue","Yellow","Red"}<br>
+   *  Domain is: {"Green","Yellow","Blue","Red"}<br>
    *  Extra values in the 'from' domain appear, in-order in the 'from' domain, at the end.
    *  @return mapping
    */
