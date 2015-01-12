@@ -101,15 +101,9 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
     double dist=0;                                 // Squared distance
     for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
       double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
-<<<<<<< HEAD
       dist += d*d;                                 // Sum-squared-distance
     }
     chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
-=======
-      dist += d*d*;                                // Sum-squared-distance
-    }
-    chks[chks.length-1].set( row, dist );         // Store back the distance in the last col
->>>>>>> e7ff376915e8c0514c728c8dfdce893ab8c9eb97
   }
 }}</pre>
  */
