@@ -29,8 +29,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
-    @Override public long checksum() {
-      return super.checksum()*_ntrees*_max_depth*_min_rows*_nbins^_seed;
+    @Override protected long checksum_impl() {
+      return super.checksum_impl()*_ntrees*_max_depth*_min_rows*_nbins^_seed;
     }
   }
 

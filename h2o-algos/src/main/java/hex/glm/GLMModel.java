@@ -63,15 +63,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double eta = 0.0;
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
-      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].at0(row_in_chunk) != 0)
-        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].at0(row_in_chunk)-1)];
+      for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
+        eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
     } else { // do not skip any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
-        eta += b[_dinfo._catOffsets[i] + (int)chks[i].at0(row_in_chunk)];
+        eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
     final int noff = _dinfo.numStart() - _dinfo._cats;
     for(int i = _dinfo._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*chks[i].at0(row_in_chunk);
+      eta += b[noff+i]*chks[i].atd(row_in_chunk);
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
     preds[0] = (float)mu;
@@ -124,7 +124,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public final Family _family;
-    public final Link _link;
+    public Link _link;
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
     public double [] _alpha;
@@ -139,7 +139,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
-    public GLMParameters(){this(Family.gaussian);}
+    public GLMParameters(){
+      this(Family.gaussian, Link.family_default);
+      assert _link == Link.family_default;
+    }
     public GLMParameters(Family f){this(f,f.defaultLink);}
     public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
@@ -149,11 +152,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       _tweedie_link_power = Double.NaN;
       _tweedie_variance_power = Double.NaN;
       if( f==Family.binomial ) _convert_to_enum = true;
-
+      _link = l;
       // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
-      if(l == Link.family_default)
-        _link = _family.defaultLink;
-      else { // check we have compatible link
+      if(_link != Link.family_default) { // check we have compatible link
         // TODO: refactor these checks into sanityCheckParameters():
         this._link = l;
         switch (_family) {

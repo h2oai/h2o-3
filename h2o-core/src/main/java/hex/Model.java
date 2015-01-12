@@ -25,7 +25,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Binomial,
     Multinomial,
     Regression,
-    Clustering
+    Clustering,
+    AutoEncoder,
+    DimReduction
   }
 
   public boolean isSupervised() { return false; }
@@ -96,7 +98,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  @return real-valued number (can be NaN)  */
     protected double missingColumnsType() { return Double.NaN; }
 
-    public long checksum() {
+    long checksum_impl() {
       return 
         (_dropNA20Cols?17:1) *
         train().checksum() *
@@ -174,7 +176,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return cns==null ? 1 : cns.length;
     }
 
-    // Note: Clustering algorithms MUST redefine this method to return ModelCategory.Clustering:
+    // Note: some algorithms MUST redefine this method to return other model categories
     public ModelCategory getModelCategory() {
       return (isClassifier() ?
               (nclasses() > 2 ? ModelCategory.Multinomial : ModelCategory.Binomial) :
@@ -190,7 +192,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return mm;                // Flow coding
     }
 
-    public long checksum() {
+    long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
@@ -400,7 +402,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int len = chks[0]._len;
       for( int row=0; row<len; row++ ) {
         float[] p = score0(chks,row,tmp,preds);
-        _mb.perRow(preds,(float)ys.at0(row));
+        _mb.perRow(preds,(float)ys.atd(row));
         for( int c=0; c<_ncols; c++ )  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
@@ -415,7 +417,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=_output._names.length;
     for( int i=0; i<_output._names.length; i++ )
-      tmp[i] = chks[i].at0(row_in_chunk);
+      tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }
 
@@ -433,5 +435,5 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return fs;
   }
 
-  @Override public long checksum() { return _parms.checksum() * _output.checksum(); }
+  @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }
 }

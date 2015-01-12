@@ -10,7 +10,7 @@ public class C8DChunk extends Chunk {
   C8DChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
   @Override protected final long   at8_impl( int i ) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
-    if( Double.isNaN(res) ) throw new IllegalArgumentException("at8 but value is missing");
+    if( Double.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)res;
   }
   @Override protected final double   atd_impl( int i ) { return              UnsafeUtils.get8d(_mem,i<<3) ; }

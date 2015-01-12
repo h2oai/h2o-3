@@ -19,7 +19,7 @@ public class C0LChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(K, cc._len);
       Assert.assertTrue(cc instanceof C0LChunk);
-      for (int i=0;i<K;++i) Assert.assertEquals(l, cc.at80(i));
+      for (int i=0;i<K;++i) Assert.assertEquals(l, cc.at8(i));
 
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
@@ -32,12 +32,12 @@ public class C0LChunkTest extends TestUtil {
         for (int i = 0; i < K; ++i) Assert.assertTrue(it.next().rowId0() == i);
       }
       Assert.assertTrue(!it.hasNext());
-      for (int i = 0; i < K; ++i) Assert.assertEquals(l, nc.at80(i));
+      for (int i = 0; i < K; ++i) Assert.assertEquals(l, nc.at8(i));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(K, cc2._len);
       Assert.assertTrue(cc2 instanceof C0LChunk);
-      for (int i=0;i<K;++i) Assert.assertEquals(l, cc2.at80(i));
+      for (int i=0;i<K;++i) Assert.assertEquals(l, cc2.at8(i));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

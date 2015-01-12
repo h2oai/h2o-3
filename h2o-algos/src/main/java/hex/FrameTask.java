@@ -91,8 +91,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     public Frame _adaptedFrame;
     public int _responses; // number of responses
 
-    @Override
-    public long checksum() {throw H2O.unimpl();} // don't really need checksum
+    @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
     public enum TransformType { NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE }
     public TransformType _predictor_transform;
@@ -544,14 +543,14 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         if ((_dinfo._nfolds > 0 && (lr % _dinfo._nfolds) == _dinfo._foldId)
           || (skip_rng != null && skip_rng.nextFloat() > fraction))continue;
         ++num_processed_rows; //count rows with missing values even if they are skipped
-        for(Chunk c:chunks)if(skipMissing() && c.isNA0(r))continue OUTER; // skip rows with NAs!
+        for(Chunk c:chunks)if(skipMissing() && c.isNA(r))continue OUTER; // skip rows with NAs!
         int i = 0, ncats = 0;
         for(; i < _dinfo._cats; ++i){
           int c;
-          if (chunks[i].isNA0(r)) {
+          if (chunks[i].isNA(r)) {
             cats[ncats++] = (_dinfo._catOffsets[i+1]-1); //missing value turns into extra (last) factor
           } else {
-            c = (int) chunks[i].at80(r);
+            c = (int) chunks[i].at8(r);
             if (_dinfo._catLvls != null) { // some levels are ignored?
               c = Arrays.binarySearch(_dinfo._catLvls[i], c);
               if (c >= 0)
@@ -564,12 +563,12 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         final int n = chunks.length-_dinfo._responses;
         for(;i < n;++i){
-          double d = chunks[i].at0(r); //can be NA if skipMissing() == false
+          double d = chunks[i].atd(r); //can be NA if skipMissing() == false
           if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
           nums[i-_dinfo._cats] = d;
         }
         for(i = 0; i < _dinfo._responses; ++i) {
-          response[i] = chunks[chunks.length-_dinfo._responses + i].at0(r);
+          response[i] = chunks[chunks.length-_dinfo._responses + i].atd(r);
           if (_dinfo._normRespMul != null) response[i] = (response[i] - _dinfo._normRespSub[i])*_dinfo._normRespMul[i];
           if(Double.isNaN(response[i]))continue OUTER; // skip rows without a valid response (no supervised training possible)
         }

@@ -70,17 +70,17 @@ public class WordCountTest extends TestUtil {
       // Skip partial words at the start of chunks, assuming they belong to the
       // trailing end of the prior chunk.
       if( bv._start > 0 )       // Not on the 1st chunk...
-        while( i < len && isChar((int)bv.at0(i)) >= 0 ) i++; // skip any partial word from prior
+        while( i < len && isChar((int)bv.atd(i)) >= 0 ) i++; // skip any partial word from prior
       VStr vs = new VStr(new byte[512],(short)0);
       // Loop over the chunk, picking out words
       while( i<len )                      // Till we run dry
-        vs = doChar(vs,(int)bv.at0(i++)); // Load a char & make words
+        vs = doChar(vs,(int)bv.atd(i++)); // Load a char & make words
       // Finish up partial word at Chunk end by flowing into the next Chunk
       i = 0;
       Chunk nv = bv.nextChunk();
       if( nv == null ) vs = doChar(vs,' '); // No next Chunk, end partial word
       while( vs._len > 0 )                // Till word breaks
-        vs = doChar(vs,(int)nv.at0(i++)); // Load a char & make words
+        vs = doChar(vs,(int)nv.atd(i++)); // Load a char & make words
       // Show some progress
       long progress = PROGRESS.addAndGet(len);
       long pre = progress - len;

@@ -20,15 +20,15 @@ public class C4FChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C4FChunk);
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], (float)cc.at0(l+i));
-      Assert.assertTrue(cc.isNA0(vals.length+l));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], (float)cc.atd(l + i));
+      Assert.assertTrue(cc.isNA(vals.length + l));
 
       Chunk cc2 = cc.inflate_impl(new NewChunk(null, 0)).compress();
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C4FChunk);
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], (float)cc2.at0(l+i));
-      Assert.assertTrue(cc2.isNA0(vals.length+l));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], (float)cc2.atd(l + i));
+      Assert.assertTrue(cc2.isNA(vals.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

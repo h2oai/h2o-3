@@ -56,10 +56,10 @@ public class AppendableVec extends Vec {
     _totalCnt += chk._len;
   }
 
-  // What kind of data did we find?  NA's?  Strings-only?  Floats or Ints?
+  // We declare column to be string/enum if it has more enums than numbers
   public boolean shouldBeEnum() {
-    // We declare column to be string/enum only if it does not have ANY numbers in it.
-    return _enumCnt > 0 && (_enumCnt + _strCnt + _naCnt) == _totalCnt;
+    long numCnt = _totalCnt - _strCnt - _naCnt - _enumCnt;
+    return _enumCnt > numCnt;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -106,8 +106,14 @@ public class AppendableVec extends Vec {
     for( int i = 0; i < nchunk; ++i )
       ctypes[_chunkTypes[i]]++;
 
-    // Make sure enums are consistent
-    if( domain() != null ) {    // If we have a domain, assume the numbers can be mapped into it
+    // Odd case: new enum columns are usually made as new numeric columns,
+    // with a domain pasted on afterwards.  All chunks look like
+    // numbers.... but they are all valid enum numbers.
+    boolean genEnumCol = false;
+    if( ctypes[ENUM]==0 && ctypes[TIME] == 0 && ctypes[UUID] == 0 && ctypes[STRING] == 0 ) genEnumCol = true;
+    // Make sure enums are consistent.  If we have a domain, and it is
+    // dominating assume ENUM type.
+    if( domain() != null && (genEnumCol || ctypes[ENUM]>ctypes[NUMBER]) ) {
       ctypes[ENUM] += ctypes[NUMBER]; ctypes[NUMBER]=0;
       ctypes[ENUM] += ctypes[NA]; ctypes[NA] = 0;        // All NA case
       if (nchunk == 0) ctypes[ENUM]++;                   // No rows in vec
@@ -127,10 +133,14 @@ public class AppendableVec extends Vec {
       if( i != NA && ctypes[i] > ctypes[idx] )
         idx = i;
 
-    // Make Chunks other than the dominant type fail out to NAs
+    if( idx!=ENUM ) setDomain(null);
+
+    // Make Chunks other than the dominant type fail out to NAs.  This includes
+    // converting numeric chunks to NAs in Enum columns - we cannot reverse
+    // print the numbers to get the original text for the Enum back.
     for(int i = 0; i < nchunk; ++i)
       if(_chunkTypes[i] != idx && 
-         !(idx==ENUM && _chunkTypes[i]==NUMBER)) // Odd case: numeric chunks being forced/treated as a boolean enum
+         !(idx==ENUM && _chunkTypes[i]==NUMBER && genEnumCol)) // Odd case: numeric chunks being forced/treated as a boolean enum
         DKV.put(chunkKey(i), new C0DChunk(Double.NaN, (int)_espc[i]),fs);
 
     byte type;

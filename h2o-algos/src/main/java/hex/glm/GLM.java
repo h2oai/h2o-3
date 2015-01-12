@@ -8,6 +8,7 @@ import hex.glm.GLMModel.FinalizeAndUnlockTsk;
 import hex.glm.GLMModel.GLMOutput;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
 import hex.glm.GLMTask.LMAXTask;
@@ -50,6 +51,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
 
   private static class TooManyPredictorsException extends RuntimeException {}
+
+  @Override public void init(boolean expensive) {
+    super.init(expensive);
+    if(expensive) {
+      if(_parms._link == Link.family_default)
+        _parms._link = _parms._family.defaultLink;
+    }
+  }
 
   @Override
   public ModelBuilderSchema schema() {

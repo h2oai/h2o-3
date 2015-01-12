@@ -12,106 +12,52 @@ class ModelMetricsHandler extends Handler {
 
   /** Class which contains the internal representation of the ModelMetrics list and params. */
   public static final class ModelMetricsList extends Iced {
-    public Model model;
-    public Frame frame;
-    public ModelMetrics[] model_metrics;
+    public Model _model;
+    public Frame _frame;
+    public ModelMetrics[] _model_metrics;
 
-    public ModelMetrics[] fetch() {
+    // Fetch all metrics that match model and/or frame
+    ModelMetricsList fetch() {
       final Key[] modelMetricsKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
-        @Override
-        public boolean filter(KeySnapshot.KeyInfo k) {
-          if (!Value.isSubclassOf(k._type, ModelMetrics.class))
-            return false;
-          if (null == model && null == frame)
-            return true;
-
-          Value mmv = DKV.get(k._key);
-          if (null == mmv)
-            throw H2O.fail("Failed to find ModelMetrics object for which we have a key: " + k._key.toString());
-          if ("water.ModelMetrics".equals(mmv.className()))
-            throw H2O.fail("ModelMetrics key points to a non-ModelMetrics object in the DKV: " + k._key.toString() + " has class: " + mmv.className());
-
-          ModelMetrics mm = mmv.get();
-          if (null == mm)
-            throw H2O.fail("Failed to find ModelMetrics object for which we have a key: " + k._key.toString());
-
-          // If we're filtering by model filter by Model.  :-)
-          if (model != null) {
-            // TODO: support old model versions
-            Value v = DKV.get(model._key);
-            if (null == v)
-              return false; // Warn that the model is gone?  TODO: allow fetch of metrics for deleted Frames and Models.
-
-            if (!v.isModel() || !mm.isForModel((Model) v.get())) return false;
+        @Override public boolean filter(KeySnapshot.KeyInfo k) {
+          try {
+            if( !Value.isSubclassOf(k._type, ModelMetrics.class) ) return false; // Fast-path cutout
+            ModelMetrics mm = DKV.getGet(k._key);
+            // If we're filtering by model filter by Model.  :-)
+            if( _model != null && !mm.isForModel((Model)DKV.getGet(_model._key)) ) return false;
+            // If we're filtering by frame filter by Frame.  :-)
+            if( _frame != null && !mm.isForFrame((Frame)DKV.getGet(_frame._key)) ) return false;
+          } catch( NullPointerException | ClassCastException ex ) {
+            return false;       // Handle all kinds of broken racey key updates
           }
-
-          // If we're filtering by frame filter by Frame.  :-)
-          if (frame != null) {
-            // TODO: support old frame versions
-            Value v = DKV.get(frame._key);
-            if (null == v)
-              return false; // Warn that the frame is gone?  TODO: allow fetch of metrics for deleted Frames and Models.
-
-            if (!v.isFrame() || !mm.isForFrame((Frame) v.get())) return false;
-          }
-
           return true;
         }
       }).keys();
 
-      ModelMetrics[] model_metrics_list = new ModelMetrics[modelMetricsKeys.length];
-      for (int i = 0; i < modelMetricsKeys.length; i++) {
-        Key key = modelMetricsKeys[i];
-        Value v = DKV.get(key);
-        if (null == v) {
-          Log.warn("ModelMetrics key not found in DKV: " + key.toString());
-          continue;
-        }
-        if (!ModelMetrics.class.getCanonicalName().equals(v.className())) {
-          Log.warn("ModelMetrics key: " + key.toString() + " points to a value of some other class: " + v.className());
-          continue;
-        }
-
-        ModelMetrics model_metrics = v.get();
-        model_metrics_list[i] = model_metrics;
-      }
-
-      return model_metrics_list;
+      _model_metrics = new ModelMetrics[modelMetricsKeys.length];
+      for (int i = 0; i < modelMetricsKeys.length; i++)
+        _model_metrics[i] = DKV.getGet(modelMetricsKeys[i]);
+      return this;              // Flow coding
     }
 
-    /**
-     * Return all the models.
-     */
-    public Schema list(int version, ModelMetricsList m) {
-      m.model_metrics = m.fetch();
-      return this.schema(version).fillFromImpl(m);
+    /** Return all the models matching the model&frame filters */
+    public Schema list(int version, ModelMetricsList m) { 
+      return this.schema(version).fillFromImpl(m.fetch());
     }
 
     // TODO: almost identical to ModelsHandler; refactor
-    public static ModelMetrics getFromDKV(String mm_key) {
-      return getFromDKV(mm_key);
-    }
-
-    /*
-    public static ModelMetrics getFromDKV(String model_key, String frame_key) {
-      return getFromDKV(ModelMetrics.buildKey(model_key, frame_key));
-    }
-    */
+    public static ModelMetrics getFromDKV(String mm_key) { return getFromDKV(mm_key); }
 
     protected ModelMetricsListSchemaV3 schema(int version) {
       switch (version) {
-        case 3:
-          return new ModelMetricsListSchemaV3();
-        default:
-          throw H2O.fail("Bad version for ModelMetrics schema: " + version);
+      case 3:   return new ModelMetricsListSchemaV3();
+      default:  throw H2O.fail("Bad version for ModelMetrics schema: " + version);
       }
     }
   } // class ModelMetricsList
 
-  /**
-   * Schema for a list of ModelMetricsBase.
-   * This should be common across all versions of ModelMetrics schemas, so it lives here.
-   */
+  /** Schema for a list of ModelMetricsBase.
+   *  This should be common across all versions of ModelMetrics schemas, so it lives here.   */
   public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = false)
@@ -125,26 +71,12 @@ class ModelMetricsHandler extends Handler {
     public ModelMetricsBase[] model_metrics;
 
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
-      if (null != model) {
-        Value v = DKV.get(this.model);
-        if (null == v)
-          throw new IllegalArgumentException("Model key not found: " + model);
-        mml.model = v.get();
-      }
-      if (null != frame) {
-        Value v = DKV.get(this.frame);
-        if (null == v)
-          throw new IllegalArgumentException("Frame key not found: " + frame);
-        mml.frame = v.get();
-      }
-
+      mml._model = DKV.getGet(this.model);
+      mml._frame = DKV.getGet(this.frame);
       if (null != model_metrics) {
-        mml.model_metrics = new ModelMetrics[model_metrics.length];
-
-        int i = 0;
-        for (ModelMetricsBase mmb : this.model_metrics) {
-          mml.model_metrics[i++] = mmb.createImpl();
-        }
+        mml._model_metrics = new ModelMetrics[model_metrics.length];
+        for( int i=0; i<model_metrics.length; i++ )
+          mml._model_metrics[i++] = model_metrics[i].createImpl();
       }
       return mml;
     }
@@ -154,15 +86,14 @@ class ModelMetricsHandler extends Handler {
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model = (null == mml.model ? null : mml.model._key.toString());
-      this.frame = (null == mml.frame ? null : mml.frame._key.toString());
+      this.model = (null == mml._model ? null : mml._model._key.toString());
+      this.frame = (null == mml._frame ? null : mml._frame._key.toString());
 
-      if (null != mml.model_metrics) {
-        this.model_metrics = new ModelMetricsBase[mml.model_metrics.length];
-
-        int i = 0;
-        for (ModelMetrics mm : mml.model_metrics) {
-          this.model_metrics[i++] = mm.schema().fillFromImpl(mm);
+      if (null != mml._model_metrics) {
+        this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
+        for( int i=0; i<model_metrics.length; i++ ) {
+          ModelMetrics mm = mml._model_metrics[i];
+          this.model_metrics[i] = mm.schema().fillFromImpl(mm);
         }
       } else {
         this.model_metrics = new ModelMetricsBase[0];
@@ -191,17 +122,8 @@ class ModelMetricsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsListSchemaV3 s) {
     ModelMetricsList m = s.createAndFillImpl();
-    m.model_metrics = m.fetch();
-    s.fillFromImpl(m);
+    s.fillFromImpl(m.fetch());
     return s;
-  }
-
-  /** Return all ModelMetrics. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ModelMetricsListSchemaV3 list(int version, ModelMetricsListSchemaV3 s) {
-    s.model = null;
-    s.frame = null;
-    return fetch(version, s);
   }
 
   /**
@@ -211,14 +133,14 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetricsList parms = s.createAndFillImpl();
-    ModelMetrics metrics = ModelMetrics.getFromDKV(parms.model, parms.frame);
+    ModelMetrics metrics = ModelMetrics.getFromDKV(parms._model, parms._frame);
 
     if (null != metrics) {
       Log.debug("using ModelMetrics from the cache. . .");
       return this.fetch(version, s);
     }
     Log.debug("Cache miss: computing ModelMetrics. . .");
-    parms.model.score(parms.frame); // throw away predictions
+    parms._model.score(parms._frame); // throw away predictions
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -241,7 +163,7 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // No caching for predict()
     ModelMetricsList parms = s.createAndFillImpl();
-    Frame predictions = parms.model.score(parms.frame);
+    Frame predictions = parms._model.score(parms._frame);
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.

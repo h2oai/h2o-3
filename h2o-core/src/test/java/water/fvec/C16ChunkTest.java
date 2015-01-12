@@ -19,39 +19,39 @@ public class C16ChunkTest extends TestUtil {
       Chunk cc = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C16Chunk);
-      if (l==1) Assert.assertTrue(cc.isNA0(0));
       if (l==1) Assert.assertTrue(cc.isNA(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16l0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16l(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16h0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16h(l+i));
-      Assert.assertTrue(cc.isNA0(vals.length+l));
-      Assert.assertTrue(cc.isNA(vals.length+l));
+      if (l==1) Assert.assertTrue(cc.isNA_abs(0));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16l(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16l_abs(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16h(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at16h_abs(l + i));
+      Assert.assertTrue(cc.isNA(vals.length + l));
+      Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
-      if (l==1) Assert.assertTrue(nc.isNA0(0));
       if (l==1) Assert.assertTrue(nc.isNA(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16l0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16l(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16h0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16h(l+i));
-      Assert.assertTrue(nc.isNA0(vals.length+l));
-      Assert.assertTrue(nc.isNA(vals.length+l));
+      if (l==1) Assert.assertTrue(nc.isNA_abs(0));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16l(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16l_abs(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16h(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at16h_abs(l + i));
+      Assert.assertTrue(nc.isNA(vals.length + l));
+      Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C16Chunk);
-      if (l==1) Assert.assertTrue(cc2.isNA0(0));
       if (l==1) Assert.assertTrue(cc2.isNA(0));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16l0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16l(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16h0(l+i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16h(l+i));
-      Assert.assertTrue(cc2.isNA0(vals.length+l));
-      Assert.assertTrue(cc2.isNA(vals.length+l));
+      if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16l(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16l_abs(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16h(l + i));
+      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at16h_abs(l + i));
+      Assert.assertTrue(cc2.isNA(vals.length + l));
+      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

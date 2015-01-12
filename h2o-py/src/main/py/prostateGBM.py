@@ -1,6 +1,7 @@
 from h2o import H2OConnection
 from h2o import H2OFrame
 from h2o import H2OGBM
+from tabulate import tabulate
 
 ######################################################
 #
@@ -13,21 +14,33 @@ df = H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
 print df.describe()
 
 # Remove ID from training frame
-train = df.drop("ID")
+del df['ID']
 
 # For VOL & GLEASON, a zero really means "missing"
-vol = train['VOL']
+vol = df['VOL']
 vol[vol==0] = None
-gle = train['GLEASON']
+gle = df['GLEASON']
 gle[gle==0] = None
 
 # Convert CAPSULE to a logical factor
-train['CAPSULE'] = train['CAPSULE'].asfactor()
+df['CAPSULE'] = df['CAPSULE'].asfactor()
+
+# Test/train split
+r = vol.runif()
+train = df[r< 0.8]
+test  = df[r>=0.8]
 
 # See that the data is ready
 print train.describe()
+print test .describe()
 
 # Run GBM
-gbm = H2OGBM(dataset=train,x="CAPSULE",ntrees=50,shrinkage=0.1)
-print gbm._model
+gbm = H2OGBM(dataset=train,x="CAPSULE",validation_dataset=test,ntrees=50,max_depth=5,learn_rate=0.1)
+#print gbm._model
+mm = gbm.metrics()
+mm0 = mm[0]
+cm = mm0['cm']
+conf = cm['confusion_matrix']
+print tabulate(conf)
+
 

@@ -217,6 +217,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     for( int i=0; i<columns.length; i++ )
       columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);
     isText = f.numCols()==1 && vecs[0] instanceof ByteVec;
+    default_pctiles = Vec.PERCENTILES;
     return this;
   }
 

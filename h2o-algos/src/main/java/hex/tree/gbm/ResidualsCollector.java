@@ -20,7 +20,7 @@ public class ResidualsCollector extends DTreeScorer<ResidualsCollector> {
     for( int tidx=0; tidx<ntrees; tidx++) { // tree
       for (int row=0; row<cys._len; row++) {
         // Make a prediction
-        for (int i=0;i<_ncols;i++) data[i] = chks[i].at0(row);
+        for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
         Arrays.fill(preds, 0);
         score0(data, preds, _trees[tidx]);
         if (_nclass==1) preds[1]=preds[0]; // regression shortcut
@@ -28,7 +28,7 @@ public class ResidualsCollector extends DTreeScorer<ResidualsCollector> {
         for (int c=0;c<_nclass;c++) { // over all class
           if (preds[1+c] != 0) {
             Chunk ctree = chk_tree(chks, c);
-            ctree.set0(row, (float)(ctree.at0(row) + preds[1+c]));
+            ctree.set(row, (float)(ctree.atd(row) + preds[1+c]));
           }
         }
       }

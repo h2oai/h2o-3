@@ -3,7 +3,7 @@ package water;
 import water.fvec.*;
 
 /** Iced, with a Key.  Support for DKV removal. */
-public abstract class Keyed<T extends Keyed> extends Iced {
+public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Key mapping a Value which holds this object; may be null  */
   public final Key<T> _key;
   public Keyed() { _key = null; } // NOTE: every Keyed that can come out of the REST API has to have a no-arg constructor.
@@ -44,6 +44,13 @@ public abstract class Keyed<T extends Keyed> extends Iced {
    * checksum() there should be a 1 - 1/2^64 chance that they
    * are the same object by value.
    */
-  abstract public long checksum();
-
+  abstract protected long checksum_impl();
+  private long _checksum;
+  // Efficiently fetch the checksum, setting on first access
+  public final long checksum() {
+    if( _checksum!=0 ) return _checksum;
+    long x = checksum_impl();
+    if( x==0 ) x=1;
+    return (_checksum=x);
+  }
 }

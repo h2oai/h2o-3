@@ -21,7 +21,7 @@ public class CBSChunk extends Chunk {
   }
   @Override protected long at8_impl(int idx) {
     byte b = atb(idx);
-    if( b == _NA ) throw new IllegalArgumentException("at8 but value is missing");
+    if( b == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return b;
   }
   @Override protected double atd_impl(int idx) {

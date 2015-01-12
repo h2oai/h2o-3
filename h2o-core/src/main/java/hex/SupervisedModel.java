@@ -48,8 +48,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
      *  computation (for multi-class only, 0 to disable) */
     public int _max_hit_ratio_k = 10;
 
-    @Override public long checksum() {
-      return super.checksum()^_response_column.hashCode()^(_convert_to_enum ?31:33)^(_balance_classes?37:39);
+    @Override protected long checksum_impl() {
+      return super.checksum_impl()^_response_column.hashCode()^(_convert_to_enum ?31:33)^(_balance_classes?37:39);
     }
   }
 
@@ -110,7 +110,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
   @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
     assert chks.length>=_output._names.length; // Last chunk is for the response
     for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
-      tmp[i] = chks[i].at0(row_in_chunk);
+      tmp[i] = chks[i].atd(row_in_chunk);
     float[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)

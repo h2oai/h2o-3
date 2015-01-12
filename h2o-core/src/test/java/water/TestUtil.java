@@ -236,25 +236,25 @@ public class TestUtil extends Iced {
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
           if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
-            if (! (c0.isNA0(rows) && c1.isNA0(rows))) {
-              long lo0 = c0.at16l0(rows), lo1 = c1.at16l0(rows);
-              long hi0 = c0.at16h0(rows), hi1 = c1.at16h0(rows);
+            if (! (c0.isNA(rows) && c1.isNA(rows))) {
+              long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);
+              long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
               if (lo0 != lo1 || hi0 != hi1) {
                 _unequal = true;
                 return;
               }
             }
           } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
-            if (!(c0.isNA0(rows) && c1.isNA0(rows))) {
+            if (!(c0.isNA(rows) && c1.isNA(rows))) {
               ValueString v0 = new ValueString(), v1 = new ValueString();
-              c0.atStr0(v0, rows); c1.atStr0(v1, rows);
+              c0.atStr(v0, rows); c1.atStr(v1, rows);
               if (v0.compareTo(v1) != 0) {
                 _unequal = true;
                 return;
               }
             }
           }else {
-            double d0 = c0.at0(rows), d1 = c1.at0(rows);
+            double d0 = c0.atd(rows), d1 = c1.atd(rows);
             if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
               _unequal = true;
               return;
@@ -276,7 +276,7 @@ public class TestUtil extends Iced {
         Chunk c0 = chks[cols];
         Vec v1 = _fr.vecs()[cols];
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.at0(rows), d1 = v1.at(c0.start() + rows);
+          double d0 = c0.atd(rows), d1 = v1.at(c0.start() + rows);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
           }

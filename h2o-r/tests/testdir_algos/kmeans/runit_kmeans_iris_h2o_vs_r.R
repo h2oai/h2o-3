@@ -7,7 +7,7 @@ test.km.iris <- function(conn) {
   start <- iris[c(2,70,148),1:4]
   start.hex <- iris.hex[c(2,70,148),1:4]
 
-  iris.km.r <- kmeans(iris[,1:4], centers=start, algorithm="Lloyd")
+  iris.km.r <- kmeans(iris[,1:4], centers=start, algorithm="Lloyd", iter.max = 1000)
   iris.km.h2o <- h2o.kmeans(iris.hex[,1:4], init=start, standardize=FALSE)
   iris.km.h2o2 <- h2o.kmeans(iris.hex[,1:4], init=start.hex, standardize=FALSE)
 

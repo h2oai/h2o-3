@@ -47,6 +47,15 @@ h2o.kmeans <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
 
+  # Training_frame may be a key or an H2OFrame object
+  if (!inherits(training_frame, "H2OFrame"))
+    tryCatch(training_frame <- h2o.getFrame(training_frame),
+             error = function(err) {
+               stop("argument \"training_frame\" must be a valid H2OFrame or key")
+             })
+
+  .kmeans.map <- c("x" = "ignored_columns")
+
   # Gather user input
   parms <- as.list(match.call()[-1L])
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.kmeans.map) ) i <- .kmeans.map[[i]]; i })
@@ -59,7 +68,7 @@ h2o.kmeans <- function(training_frame, x, k,
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
         if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-        parms[["user_points"]] <- as.h2o(training_frame@h2o, init)
+        parms[["user_points"]] <- as.h2o(init, training_frame@h2o)
     }
     else {
         parms[["user_points"]] <- init
@@ -68,6 +77,7 @@ h2o.kmeans <- function(training_frame, x, k,
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
         print("Warning: Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
+    parms[["user_points"]] <- parms[["user_points"]]@key
     parms[["k"]] <- as.integer(nrow(init))
   }
   else if ( is.character(init) ) { # Furthest, Random, PlusPlus
@@ -78,8 +88,6 @@ h2o.kmeans <- function(training_frame, x, k,
   }
 
   # Error check and build model
-  .run(training_frame@h2o, 'kmeans', parms, parent.frame())
+  .h2o.createModel(training_frame@h2o, 'kmeans', parms, parent.frame())
 
 }
-
-.kmeans.map <- c("x" = "ignored_columns")

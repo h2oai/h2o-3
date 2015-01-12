@@ -81,10 +81,10 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
     // super.fillFromImpl(modelMetrics);
 
     if (null != modelMetrics._aucdata)
-      this.auc = (AUCBase)Schema.schema(this.getSchemaVersion(), modelMetrics._aucdata);
+      this.auc = (AUCBase)Schema.schema(this.getSchemaVersion(), modelMetrics._aucdata).fillFromImpl(modelMetrics._aucdata);
 
     if (null != modelMetrics._cm)
-      this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm);
+      this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
 
     return this;
   }

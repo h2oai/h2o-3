@@ -84,7 +84,7 @@ class CompressedTree extends Keyed {
 
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
 
-  @Override public long checksum() { throw water.H2O.fail(); }
+  @Override protected long checksum_impl() { throw water.H2O.fail(); }
 
   public String toString( SharedTreeModel.SharedTreeOutput tm ) {
     final String[] names = tm._names;

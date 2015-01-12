@@ -60,7 +60,7 @@ public class FVecTest extends TestUtil {
     @Override public void map( Chunk bv ) {
       _x = new int[256];        // One-time set histogram array
       for( int i=0; i< bv._len; i++ )
-        _x[(int)bv.at0(i)]++;
+        _x[(int)bv.atd(i)]++;
     }
     // ADD together all results
     @Override public void reduce( ByteHisto bh ) { ArrayUtils.add(_x,bh._x); }
@@ -89,8 +89,8 @@ public class FVecTest extends TestUtil {
 
       double d=c._vec.min();
       for( int i=0; i< c._len; i++ ) {
-        double e = c.at0(i);
-        c.set0(i,d);
+        double e = c.atd(i);
+        c.set(i, d);
         d=e;
       }
     }
@@ -113,7 +113,7 @@ public class FVecTest extends TestUtil {
   private static class TestNewVec extends MRTask<TestNewVec> {
     @Override public void map( Chunk in, NewChunk out ) {
       for( int i=0; i< in._len; i++ )
-        out.append2( in.at8(i)+(in.at8(i) >= ' ' ? 1 : 0),0);
+        out.append2( in.at8_abs(i)+(in.at8_abs(i) >= ' ' ? 1 : 0),0);
     }
   }
 
@@ -158,7 +158,7 @@ public class FVecTest extends TestUtil {
       int len = bvs[0]._len;
       for( int i=0; i<len; i++ )
         for( int j=0; j<bvs.length; j++ )
-          _sums[j] += bvs[j].at0(i);
+          _sums[j] += bvs[j].atd(i);
     }
     @Override public void reduce( Sum mrt ) { ArrayUtils.add(_sums, mrt._sums);  } 
   }
@@ -167,7 +167,7 @@ public class FVecTest extends TestUtil {
   private static class PairSum extends MRTask<Sum> {
     @Override public void map( Chunk out, Chunk in1, Chunk in2 ) {
       for( int i=0; i< out._len; i++ )
-        out.set0(i,in1.at80(i)+in2.at80(i));
+        out.set(i, in1.at8(i) + in2.at8(i));
     }
   }
 
