@@ -539,7 +539,7 @@ class H2OConnection(object):
 
   # Remove a Key (probably just a Vec)
   def Remove(self,key):
-    return self._doSafeGet(self.buildURL("Remove",{"key":key}))
+    return self.Rapids("(del %"+key+" #0)")
 
   # Fire off a Rapids expression
   def Rapids(self,expr):

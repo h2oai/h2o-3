@@ -224,11 +224,29 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   // ---------------
   // The *outgoing* client-side calls; pending tasks this Node wants answered.
   private final NonBlockingHashMapLong<RPC> _tasks = new NonBlockingHashMapLong<>();
-  void taskPut(int tnum, RPC rpc ) { _tasks.put(tnum,rpc); }
+  void taskPut(int tnum, RPC rpc ) { 
+    _tasks.put(tnum,rpc); 
+    if( rpc._dt instanceof TaskPutKey ) _tasksPutKey.put(tnum,(TaskPutKey)rpc._dt);
+  }
   RPC taskGet(int tnum) { return _tasks.get(tnum); }
-  void taskRemove(int tnum) { _tasks.remove(tnum); }
+  void taskRemove(int tnum) { 
+    _tasks.remove(tnum); 
+    _tasksPutKey.remove(tnum);
+  }
   Collection<RPC> tasks() { return _tasks.values(); }
   int taskSize() { return _tasks.size(); }
+
+  // True if there is a pending PutKey against this Key.  Totally a speed
+  // optimization in the case of a large number of pending Gets are flooding
+  // the tasks() queue, each needing to scan the tasks queue for pending
+  // PutKeys to the same Key.  Legal to always 
+  private final NonBlockingHashMapLong<TaskPutKey> _tasksPutKey = new NonBlockingHashMapLong<>();
+  TaskPutKey pendingPutKey( Key k ) {
+    for( TaskPutKey tpk : _tasksPutKey.values() )
+      if( k.equals(tpk._key) )
+        return tpk;
+    return null;
+  }
 
   // The next unique task# sent *TO* the 'this' Node.
   private final AtomicInteger _created_task_ids = new AtomicInteger(1);
