@@ -39,18 +39,13 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     /**
      * Fetch all the Models so we can see if they are compatible with our Frame(s).
      */
-    protected Map<Model, Set<String>> fetchModelCols() {
-      Model[] all_models = null;
+    static protected Map<Model, Set<String>> fetchModelCols(Model[] all_models) {
       Map<Model, Set<String>> all_models_cols = null;
 
-      if (this.find_compatible_models) {
-        // caches for this request
-        all_models = Models.fetchAll();
-        all_models_cols = new HashMap<Model, Set<String>>();
+      all_models_cols = new HashMap<Model, Set<String>>();
 
-        for (Model m : all_models) {
-          all_models_cols.put(m, new HashSet<String>(Arrays.asList(m._output._names)));
-        }
+      for (Model m : all_models) {
+        all_models_cols.put(m, new HashSet<String>(Arrays.asList(m._output._names)));
       }
       return all_models_cols;
     }
@@ -60,10 +55,10 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
      *
      * @param frame The frame to fetch the compatible models for.
      * @param all_models An array of all the Models in the DKV.
-     * @param all_models_cols A Map of Model to a Set of its column names.
      * @return
      */
-    private static Model[] findCompatibleModels(Frame frame, Model[] all_models, Map<Model, Set<String>> all_models_cols) {
+    private static Model[] findCompatibleModels(Frame frame, Model[] all_models) {
+      Map<Model, Set<String>> all_models_cols = Frames.fetchModelCols(all_models);
       List<Model> compatible_models = new ArrayList<Model>();
 
       Set<String> frame_column_names = new HashSet(Arrays.asList(frame._names));
@@ -72,7 +67,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
         Model model = entry.getKey();
         Set<String> model_cols = entry.getValue();
 
-        if (model_cols.containsAll(frame_column_names)) {
+        if (frame_column_names.containsAll(model_cols)) {
           // See if adapt throws an exception or not.
           try {
             if( model.adaptTestForTrain(new Frame(frame), false).length == 0 )
@@ -206,7 +201,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     }
     if (s.find_compatible_models) {
-      Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll(), f.fetchModelCols());
+      Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchema[compatible.length];
       s.frames[0].compatible_models = new String[compatible.length];
       int i = 0;

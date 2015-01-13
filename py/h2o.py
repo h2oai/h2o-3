@@ -197,10 +197,10 @@ class H2O(object):
                         array_str += ']'
                         munged_postData[k] = array_str
                 else:
+                    # not list:
                     munged_postData[k] = v
-
-            print "munged_postData: ", munged_postData
-        else:
+        else:  
+            # None
             munged_postData = postData
 
         if extraComment:

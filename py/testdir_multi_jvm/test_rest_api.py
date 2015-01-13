@@ -146,7 +146,6 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
     for k, expected in input_parameters.iteritems():
-        print 'expected for: ', k, ': ', repr(expected)
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
@@ -567,8 +566,6 @@ frames = a_node.frames(key='prostate_binomial', len=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
-print 'columns: ', repr(frames[0]['columns'])
-print 'columns_dict: ', repr(columns_dict)
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
 assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
