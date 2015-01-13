@@ -3,7 +3,9 @@ package hex.glm;
 import hex.FrameTask;
 import hex.FrameTask.DataInfo;
 import hex.SupervisedModel;
+import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.optimization.L_BFGS;
 import hex.schemas.GLMModelV2;
 import water.*;
 import water.DTask.DKeyTask;
@@ -125,6 +127,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public boolean _standardize = true;
     public final Family _family;
     public Link _link;
+    public Solver _solver = Solver.ADMM;
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
     public double [] _alpha;
@@ -138,6 +141,18 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _n_folds;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
+
+    public void validate(GLM glm) {
+      if (_solver == Solver.L_BFGS) {
+        glm.hide("_alpha", "L1 penalty is currently only available for ADMM solver.");
+        glm.hide("_higher_accuracy","only available for ADMM");
+        _alpha = new double[]{0};
+      }
+      if(!_lambda_search) {
+        glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
+        glm.hide("_nlambdas", "only applies if lambda search is on.");
+      }
+    }
 
     public GLMParameters(){
       this(Family.gaussian, Link.family_default);
@@ -355,7 +370,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-    public static enum Link {family_default, identity, logit, log,inverse,tweedie;}
+    public static enum Link {family_default, identity, logit, log,inverse,tweedie}
+
+    public static enum Solver {ADMM, L_BFGS}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -365,6 +382,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
 
   }
+  public static class GLM_LBFGS_Parameters extends GLMParameters {}
 
   public static class Submodel extends Iced {
     final double lambda_value;
@@ -452,7 +470,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
     public GLMOutput() { }
-    public GLMOutput(GLM b, DataInfo dinfo, boolean binomial){
+    public GLMOutput(SupervisedModelBuilder b, DataInfo dinfo, boolean binomial){
       super(b);
       String [] cnames = dinfo.coefNames();
       String [] pnames = dinfo._adaptedFrame.names();

@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Level;
 import water.api.SupervisedModelParametersSchema;
@@ -15,6 +16,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
 
   public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
     static public String[] own_fields = new String[] {
+      "solver",
       "standardize",
       "family",
       "link",
@@ -30,6 +32,9 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
       "use_all_factor_levels",
       "n_folds"
     };
+
+    @API(help="solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"})
+    public Solver solver;
 
     // Input fields
     @API(help = "Standardize numeric columns to have zero mean and unit variance.")
