@@ -4,6 +4,7 @@ import water.DKV;
 import water.H2O;
 import water.Iced;
 import water.Key;
+import water.fvec.Vec;
 
 import java.util.HashSet;
 
@@ -32,6 +33,8 @@ public final class ParseSetup extends Iced {
   String[] _errors;           // Errors in this parse setup
   long _invalidLines; // Number of broken/invalid lines found
   long _headerlines; // Number of header lines found
+  int _chunkSize = Vec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
+  float _decomprRatio;
 
   public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, byte[] ctypes) {
     _isValid = isValid;

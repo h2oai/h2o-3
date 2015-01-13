@@ -6,6 +6,7 @@ import water.parser.Categorical;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
 
@@ -157,11 +158,14 @@ import java.util.UUID;
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
+  public static final int DFLT_LOG2_CHUNK_SIZE = 20/*1Meg*/+2/*4Meg*/;
+  protected int _log2ChkSize = DFLT_LOG2_CHUNK_SIZE;
   /** Default Chunk size in bytes, useful when breaking up large arrays into
    *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
    *  costs, lower increases fine-grained parallelism. */
-  public static final int CHUNK_SZ = 1 << LOG_CHK;
+  public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
+  protected int _chunkSize = DFLT_CHUNK_SIZE;
+
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is
@@ -289,10 +293,10 @@ public class Vec extends Keyed {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len) {
-    int nchunks = (int)Math.max(1,len >> LOG_CHK);
+    int nchunks = (int)Math.max(1,len >> DFLT_LOG2_CHUNK_SIZE);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
-      espc[i] = ((long)i)<<LOG_CHK;
+      espc[i] = ((long)i)<< DFLT_LOG2_CHUNK_SIZE;
     espc[nchunks] = len;
     return makeCon(x,VectorGroup.VG_LEN1,espc);
   }
@@ -353,6 +357,60 @@ public class Vec extends Keyed {
     DKV.put(v._key,v,fs);
     fs.blockForPending();
     return v;
+  }
+
+  /**
+   * Calculates safe and hopefully optimal chunk sizes.  Four cases
+   * exist.
+   * <p>
+   * very small data < 128K per proc - uses default chunk size and
+   * all data will be in one chunk
+   * <p>
+   * small data - data is partitioned into chunks that at least
+   * 4 chunks per core to help keep all cores loaded
+   * <p>
+   * default - chunks are {@value #DFLT_CHUNK_SIZE}
+   * <p>
+   * large data - if the data would create more than 4M keys per
+   * node, then chunk sizes larger than DFLT_CHUNK_SIZE are issued.
+   * <p>
+   * Too many keys can create enough overhead to blow out memory in
+   * large data parsing. # keys = (parseSize / chunkSize) * numCols.
+   * Key limit of 4M is a guessed "reasonable" number.
+   *
+   * @param totalSize - parse size in bytes (across all files to be parsed)
+   * @param numCols - number of columns expected in dataset
+   * @return - optimal chunk size in bytes (always a power of 2).
+   */
+  public static int calcOptimalChunkSize(int totalSize, int numCols) {
+    int localParseSize =  totalSize / H2O.getCloudSize();
+    int chunkSize = localParseSize /
+            (Runtime.getRuntime().availableProcessors() * 4);
+
+    // Super small data check - less than 32K/thread
+    if (chunkSize <= (1 << 15)) {
+      water.util.Log.info("super small " + DFLT_CHUNK_SIZE);
+      return DFLT_CHUNK_SIZE;
+    }
+
+    // Small data check
+    chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
+    if (chunkSize < DFLT_CHUNK_SIZE) {
+      water.util.Log.info("small " + chunkSize);
+      return chunkSize;
+    }
+
+    // Big data check
+    chunkSize = localParseSize * numCols / (1 << 22); // ~ 4M keys per node
+    if (chunkSize > DFLT_CHUNK_SIZE) {
+      chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
+      water.util.Log.info("big " + chunkSize);
+      if (chunkSize > (1 << 30)) // Max limit is 1G
+        return (1 << 30);
+      return chunkSize;
+    }
+
+    return DFLT_CHUNK_SIZE;
   }
 
   /** Make a new vector with the same size and data layout as the current one,

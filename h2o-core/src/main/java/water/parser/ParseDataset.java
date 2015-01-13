@@ -374,12 +374,25 @@ public final class ParseDataset extends Job<Frame> {
       _job_key = job_key;
 
       // A mapping of Key+ByteVec to rolling total Chunk counts.
+      // Also collects the total size of files to be parsed to
+      // figure out what the chunk size should be.
       _fileChunkOffsets = new int[fkeys.length];
-      int len = 0;
+      int len = 0, totalParseSize = 0;
+      ByteVec bv;
+      float dcr, maxDecomprRatio = 0;
       for( int i = 0; i < fkeys.length; ++i ) {
         _fileChunkOffsets[i] = len;
-        len += getByteVec(fkeys[i]).nChunks();
+        bv = getByteVec(fkeys[i]);
+        len += bv.nChunks();
+
+        dcr = ZipUtil.decompressionRatio(bv);
+        if (dcr > maxDecomprRatio)
+          maxDecomprRatio = dcr;
+        totalParseSize += bv.length();
       }
+
+      totalParseSize = (int) (totalParseSize * maxDecomprRatio);
+      _setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, _setup._ncols);
 
       // Mapping from Chunk# to cluster-node-number
       _chunk2Enum = MemoryManager.malloc4(len);
@@ -418,7 +431,7 @@ public final class ParseDataset extends Job<Frame> {
       final int chunkStartIdx = _fileChunkOffsets[_lo];
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr);
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr,_setup._chunkSize);
       ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
@@ -539,11 +552,11 @@ public final class ParseDataset extends Job<Frame> {
         switch(_setup._pType) {
         case CSV:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, null);
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, null,_setup._chunkSize);
           break;
         case ARFF:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, _setup._ctypes); //TODO: use _setup._domains instead of enums
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, _setup._ctypes, _setup._chunkSize); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
@@ -616,17 +629,18 @@ public final class ParseDataset extends Job<Frame> {
     int _col = -1;
     final int _cidx;
     final int _vecIdStart;
+    final int _chunkSize;
     boolean _closedVecs = false;
     private final VectorGroup _vg;
 
     static final byte UCOL = 0; // unknown col type
     static final byte NCOL = 1; // numeric col type
     static final byte ECOL = 2; // enum    col type
-    static final byte TCOL = 3; // time    col typ
-    static final byte ICOL = 4; // UUID    col typ
-    static final byte SCOL = 5; // String  col typ
+    static final byte TCOL = 3; // time    col type
+    static final byte ICOL = 4; // UUID    col type
+    static final byte SCOL = 5; // String  col type
 
-    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes){
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes, int chunkSize){
       _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
@@ -635,8 +649,13 @@ public final class ParseDataset extends Job<Frame> {
       _cidx = cidx;
       _vg = vg;
       _vecIdStart = vecIdStart;
+      _chunkSize = chunkSize;
       for(int i = 0; i < ncols; ++i)
-        _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
+        _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i), chunkSize)).chunkForChunkIdx(_cidx);
+    }
+
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes){
+      this(vg, cidx, ncols, vecIdStart, enums, ctypes, Vec.DFLT_CHUNK_SIZE);
     }
 
     @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){
@@ -674,7 +693,7 @@ public final class ParseDataset extends Job<Frame> {
       return this;
     }
     @Override public FVecDataOut nextChunk(){
-      return  new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums, null);
+      return new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums, null, _chunkSize);
     }
 
     private Vec [] closeVecs(){

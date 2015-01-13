@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.parser.ParseTime;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -31,6 +32,16 @@ public class AppendableVec extends Vec {
   long _strCnt;
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
+
+  public AppendableVec( Key key, int chunkSize ) {
+    this(key);
+    if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
+    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
+    _log2ChkSize = water.util.MathUtils.log2(chunkSize);
+    _chunkSize = 1 << _log2ChkSize;
+    if (_chunkSize != chunkSize) Log.info("Provided chunk size " + chunkSize +
+            " is not a power of 2.  Using " + _chunkSize + " instead.");
+  }
 
   public AppendableVec( Key key ) {
     super(key, null);
