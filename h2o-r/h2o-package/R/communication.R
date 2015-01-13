@@ -540,11 +540,18 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     if (length(jobs) > 1) {
       stop("Job list has more than 1 entry")
     } else if (length(jobs) == 0) {
-      message <- sprintf("Job %s not found in list", job_key)
-      stop("Job list is not length 1")
+      stop("Job list is empty")
     }
 
     job = jobs[[1]]
+
+    key = job$key
+    name = key$name
+    if (name != job_key) {
+      message <- sprintf("Job %s not found in job list", job_key)
+      stop(message)
+    }
+
     if (progressBar) {
       progress = job$progress
       if (is.numeric(progress)) {
