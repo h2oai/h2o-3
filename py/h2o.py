@@ -175,6 +175,34 @@ class H2O(object):
         else:
             paramsStr = ''
 
+        # The requests package takes array parameters and explodes them: ['f00', 'b4r'] becomes "f00,b4r".
+        # NOTE: this handles 1D arrays only; if we need ND this needs to be recursive.
+        # NOTE: we currently don't need to do this for GET, so that's not implemented.
+        if postData is not None:
+            munged_postData = {}
+            for k, v in postData.iteritems():
+                if type(v) is list:
+                    if len(v) == 0:
+                        munged_postData[k] = '[]'
+                    else:
+                        first = True
+                        array_str = '['
+                        for val in v:
+                            if not first: array_str += ', '
+                            if isinstance(val, basestring):
+                                array_str += "'" + str(val) + "'"
+                            else:
+                                array_str += str(val)
+                            first  = False
+                        array_str += ']'
+                        munged_postData[k] = array_str
+                else:
+                    munged_postData[k] = v
+
+            print "munged_postData: ", munged_postData
+        else:
+            munged_postData = postData
+
         if extraComment:
             log('Start ' + url + paramsStr, comment=extraComment)
         else:
@@ -197,10 +225,10 @@ class H2O(object):
                 # This is temporary.
                 # 
                 # This following does application/json (aka, posting JSON in the body):
-                # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(postData), **kwargs)
+                # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(munged_postData), **kwargs)
                 # 
                 # This does form-encoded, which doesn't allow POST of nested structures
-                r = requests.post(url, timeout=timeout, params=params, data=postData, **kwargs)
+                r = requests.post(url, timeout=timeout, params=params, data=munged_postData, **kwargs)
             elif 'delete' == cmd:
                 r = requests.delete(url, timeout=timeout, params=params, **kwargs)                
             elif 'get' == cmd:
@@ -426,16 +454,8 @@ class H2O(object):
 
         # 
         # and then Parse?srcs=<keys list> and params from the ParseSetup result
-        # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
+        # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
-
-        first = True
-        ascii_column_names = '['
-        for s in setup_result['columnNames']:
-            if not first: ascii_column_names += ', '
-            ascii_column_names += str(s)
-            first  = False
-        ascii_column_names += ']'
 
         parse_params = {
             'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
@@ -445,7 +465,7 @@ class H2O(object):
             'ncols': setup_result['ncols'],
             'checkHeader': setup_result['checkHeader'],
             'singleQuotes': setup_result['singleQuotes'],
-            'columnNames': ascii_column_names,
+            'columnNames': setup_result['columnNames'], # gets stringified inside __do_json_request()
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
@@ -617,16 +637,19 @@ class H2O(object):
     Frame and model parameters.
     '''
     def build_model(self, algo, training_frame, parameters, destination_key = None, timeoutSecs=60, asynchronous=False, **kwargs):
+        # basic parameter checking
         assert algo is not None, 'FAIL: "algo" parameter is null'
         assert training_frame is not None, 'FAIL: "training_frame" parameter is null'
         assert parameters is not None, 'FAIL: "parameters" parameter is null'
 
+        # check that algo is known (TODO: remove after testing that error from POST is good enough)
         model_builders = self.model_builders(timeoutSecs=timeoutSecs)
         assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
         assert algo in model_builders['model_builders'], "FAIL: failed to find algo " + algo + " in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
         
         # TODO: test this assert, I don't think this is working. . .
+        # Check for frame:
         frames = self.frames(key=training_frame)
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(training_frame)
         assert frames['frames'][0]['key']['name'] == training_frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(training_frame, frames['frames'][0]['key']['name'], training_frame)

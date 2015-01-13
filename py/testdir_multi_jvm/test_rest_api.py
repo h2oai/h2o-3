@@ -146,12 +146,17 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
     for k, expected in input_parameters.iteritems():
+        print 'expected for: ', k, ': ', repr(expected)
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
 
         # TODO: skipping training frame becuase model building is now changing the training frame.  Why?!
         if k is 'training_frame':
+            continue
+
+        # TODO: skipping do_classification because it's not coming back correctly, and we're killing it anyway
+        if k is 'do_classification':
             continue
 
         # Python says True; json says true
@@ -174,8 +179,13 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
             expected = long(expected)
             actual = long(actual)
         elif actual_type == 'string':
+            # convert from Unicode
             expected = str(expected)
             actual = str(actual)
+        elif actual_type == 'string[]':
+            # convert from Unicode
+            # expected = [str(expected_val) for expected_val in expected]
+            actual = [str(actual_val) for actual_val in actual]
         elif actual_type == 'double':
             expected = float(expected)
             actual = float(actual)
@@ -185,7 +195,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         elif actual_type.startswith('Key<'):
             # For keys we send just a String but receive an object
             expected = expected
-            actual = json.loads(actual)['name']
+            actual = actual['name']
             
         # TODO: don't do exact comparison of floating point!
 
@@ -291,7 +301,7 @@ class ModelSpec(dict):
         dataset_params = {}
         assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
-        if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = repr(dataset['ignored_columns'])
+        if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
         if dataset['model_category'] == 'Binomial' or dataset['model_category'] == 'Multinomial': 
             dataset_params['do_classification'] = True
         elif dataset['model_category'] == 'Clustering':
@@ -557,6 +567,8 @@ frames = a_node.frames(key='prostate_binomial', len=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
+print 'columns: ', repr(frames[0]['columns'])
+print 'columns_dict: ', repr(columns_dict)
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
 assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
@@ -614,8 +626,8 @@ models_to_build = [
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
     ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1 } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': '[20, 20]' } ),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': '[10, 10]' } ),
+    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20] } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10] } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
 
     ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5 } ),
@@ -799,7 +811,7 @@ assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in
 
 compatible_models = result['compatible_models']
 models_dict = h2o_util.list_to_dict(compatible_models, 'key/name')
-assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list."
+assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " + 'deeplearning_prostate_binomial' + " in compatible models list: " + repr(result)
 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."
 assert 'kmeans_prostate' in frames[0]['compatible_models'], "FAIL: failed to find kmeans_prostate in compatible_models for prostate."

@@ -420,7 +420,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
-      String[] splits = s.substring(1,s.length()-1).split(",");
+      String inside = s.substring(1,s.length()-1).trim();
+      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
+      if (inside.length() == 0)
+        splits = new String[] {};
+      else
+          splits = inside.split(",");
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
@@ -433,8 +438,17 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         a = (E[]) Array.newInstance(afclz, splits.length);
       }
 
-      for( int i=0; i<splits.length; i++ )
-        a[i] = (E)parse(splits[i].trim(),afclz, required);
+      for( int i=0; i<splits.length; i++ ) {
+        if (String.class == afclz) {
+          // strip quotes off string values inside array
+          String stripped = splits[i].trim();
+          if (stripped.length() >= 2)
+            stripped = stripped.substring(1, stripped.length() - 1);
+          a[i] = (E) parse(stripped, afclz, required);
+        } else {
+          a[i] = (E) parse(splits[i].trim(), afclz, required);
+        }
+      }
       return a;
     }
 

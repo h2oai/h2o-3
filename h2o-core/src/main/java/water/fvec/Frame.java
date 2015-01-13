@@ -167,7 +167,7 @@ public class Frame extends Lockable<Frame> {
 
   /** A single column name.
    *  @return the column name */
-  public String name(int i) { return _names[i]; }
+  public String name(int i) { return _names[i]; } // TODO: saw a non-reproducible NPE here
 
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
