@@ -456,6 +456,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   @Override public int hashCode() { return _hash; }
   @Override public boolean equals( Object o ) {
     if( this == o ) return true;
+    if( o == null ) return false;
     Key k = (Key)o;
     if( _hash != k._hash ) return false;
     return Arrays.equals(k._kb,_kb);
