@@ -14,6 +14,7 @@ import water.Key;
 import water.TestUtil;
 import water.Value;
 import water.fvec.Frame;
+import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class L_BFGS_Test  extends TestUtil {
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
     try {
       Thread.sleep(100);
     } catch (InterruptedException e) {
@@ -59,11 +60,15 @@ public class L_BFGS_Test  extends TestUtil {
     int fails = 0;
     int N = 1000;
     for (int i = 0; i < N; ++i) {
-      L_BFGS.Result r = L_BFGS.solve(2, gs, new L_BFGS_Params());
+      L_BFGS_Params parms = new L_BFGS_Params();
+      parms._stepDec = .9;
+      parms._nBetas = 3;
+      parms._minStep = 1e-18;
+      L_BFGS.Result r = L_BFGS.solve(2, gs, parms);
       if (Math.abs(r.ginfo._objVal) > 1e-4)
         ++fails;
     }
-    assertTrue(fails < 10);
+    assertTrue("too many fails " + fails, fails < 5);
   }
 
   @Test

@@ -208,6 +208,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(_taskInfo._params._alpha[0] == 0 || selected == _taskInfo._dinfo.fullN()){
         _activeCols = null;
         _activeData = _taskInfo._dinfo;
+        selected = _taskInfo._dinfo.fullN();
       } else {
         _activeCols = Arrays.copyOf(cols, selected);
         _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
@@ -396,8 +397,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(LBFGS) {
         if(_taskInfo._params._alpha[0] > 0 || _activeCols != null)
           throw H2O.unimpl();
-        GLM.GLMGradientSolver solver = new GLM.GLMGradientSolver(_taskInfo._params, _activeData, 1e-5,_taskInfo._ymu, _taskInfo._nobs);
-        L_BFGS.Result r = L_BFGS.solve(_activeData.fullN() + 1, solver, new L_BFGS_Params());
+        Log.info("current lambda = " + _currentLambda);
+        GLM.GLMGradientSolver solver = new GLM.GLMGradientSolver(_taskInfo._params, _activeData, _currentLambda,_taskInfo._ymu, _taskInfo._nobs);
+        if(beta == null) {
+          beta = MemoryManager.malloc8d(_activeData.fullN() + 1);
+          beta[beta.length-1] = _taskInfo._params.link(_taskInfo._ymu);
+        }
+        L_BFGS.Result r = L_BFGS.solve(solver, new L_BFGS_Params(), beta);
         GLM.GLMGradientInfo ginfo = (GLM.GLMGradientInfo) r.ginfo;
         double [] newBeta = r.coefs;
         // update the state
@@ -452,7 +458,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (d > gerr) gerr = d;
             else if (d < -gerr) gerr = -d;
           if(gerr <= GLM_GRAD_EPS){
-            LogInfo("converged by reaching small enough gradient, with max |subgradient| = " + gerr );
+            LogInfo("converged by reaching small enough gradient, with max |subgradient| = " + gerr  /* + ", coefs = " + Arrays.toString(glmt._beta) */);
             checkKKTAndComplete(glmt._beta,false);
             return;
           }
@@ -832,7 +838,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   public final static class GLMGradientInfo extends GradientInfo {
     public final GLMValidation _val;
     public GLMGradientInfo(GLMIterationTask t, double lambda) {
-      super(t._val.residualDeviance()/t._nobs, t.gradient(0,lambda));
+      super(t._val.residualDeviance()/t._nobs + .5*lambda*l2norm(t._beta), t.gradient(0,lambda));
       _val = t._val;
     }
   }
