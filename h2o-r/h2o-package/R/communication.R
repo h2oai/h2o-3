@@ -526,93 +526,57 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #   Job Polling
 #-----------------------------------------------------------------------------------------------------------------------
 
-#'
-#' Job Polling Top-Level Function
-#'
-#' Poll the H2O server with the current job key `job_key` for completion.
 .h2o.__waitOnJob <- function(conn = h2o.getConnection(), job_key, pollInterval = 1, progressBar = TRUE) {
-  if(!is.character(job_key) || length(job_key) != 1L || is.na(job_key) || !nzchar(job_key))
-    stop("`job_key` must be a non-empty string")
-  if(progressBar) {
+  if (progressBar) {
     pb <- txtProgressBar(style = 3L)
-    tryCatch(while((prog <- .h2o.__poll(conn, job_key))$prog != 1 && !prog$DONE) {
-               Sys.sleep(pollInterval)
-               setTxtProgressBar(pb, prog$prog)
-             },
-             error = function(e) { cat("\nPolling fails:\n"); print(e) },
-             finally = setTxtProgressBar(pb, 1.0))
-    if (!prog$DONE) {
-      tryCatch(while(!(prog <- .h2o.__poll(conn, job_key))$DONE) { Sys.sleep(pollInterval/2) },
-               error = function(e) { cat("\nPolling fails:\n"); print(e) })
-    }
-    close(pb)
-  } else
-    tryCatch(while(prog<- .h2o.__poll(conn, job_key) != -1 && !prog$DONE) { Sys.sleep(pollInterval) },
-             finally = .h2o.__cancelJob(conn, job_key))
-}
-
-#'
-#' Return the progress so far and check if job is done
-.h2o.__poll <- function(conn = h2o.getConnection(), keyName) {
-  if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
-  if(!is.character(keyName) || length(keyName) != 1L || is.na(keyName) || !nzchar(keyName))
-    stop("`keyName` must be a non-empty string")
-
-  page <- paste0(.h2o.__JOBS, "/", keyName)
-  res <- .h2o.__remoteSend(conn, page)
-
-  res <- res$jobs
-  if(length(res) == 0L) stop("No jobs found in queue")
-  prog <- list(prog = numeric(0), DONE = FALSE)
-  jobRes <- NULL
-  for(i in seq_len(length(res))) {
-    if(res[[i]]$key$name == keyName)
-      jobRes <- res[[i]]
   }
-  if(is.null(jobRes)) stop("Job key ", keyName, " not found in job queue")
-  if(!is.null(jobRes$status) && jobRes$status == "CANCELLED") stop("Job key ", keyName, " was cancelled by user")
-  else if(!is.null(jobRes$exception) && jobRes$exception == 1L) stop(jobRes$status)
-  prog$prog <- jobRes$progress
-  if (jobRes$status == "DONE") prog$DONE <- TRUE
-  prog
-}
 
-#'
-#' Cancel a job.
-.h2o.__cancelJob <- function(conn = h2o.getConnection(), keyName) {
-  res = .h2o.__remoteSend(conn, .h2o.__JOBS)
-  res = res$jobs
-  if(length(res) == 0L) stop("No jobs found in queue")
-  prog = NULL
-  for(i in seq_len(length(res))) {
-    if(res[[i]]$key$name == keyName) {
-      prog = res[[i]]; break
+  keepRunning <- TRUE
+  while (keepRunning) {
+    myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
+    rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+    jsonObject <- .h2o.fromJSON(rawResponse)
+    jobs <- jsonObject$jobs
+    if (length(jobs) > 1) {
+      stop("Job list has more than 1 entry")
+    } else if (length(jobs) == 0) {
+      message <- sprintf("Job %s not found in list", job_key)
+      stop("Job list is not length 1")
     }
-  }
-  if(is.null(prog)) stop("Job key ", keyName, " not found in job queue")
-#  if(!(prog$cancelled || prog$progress == -1.0 || prog$progress == -2.0 || prog$end_time == -1)) {
-##    .h2o.__remoteSend(conn, .h2o.__PAGE_CANCEL, key=keyName)
-#    cat("Job key", keyName, "was cancelled by user\n")
-#  }
-  cat("Job key", keyName, "was cancelled by user\n")
-}
 
-#'
-#' Check if any jobs are still running.
-.h2o.__allDone <- function(conn = h2o.getConnection()) {
-  res = .h2o.__remoteSend(conn, .h2o.__JOBS)
-  notDone = lapply(res$jobs, function(x) !(x$progress == -1.0 || x$cancelled))
-  !any(unlist(notDone))
-}
+    job = jobs[[1]]
+    if (progressBar) {
+      progress = job$progress
+      if (is.numeric(progress)) {
+        setTxtProgressBar(pb, progress)
+      }
+    }
 
-#'
-#' Poll on all jobs until they are all done.
-.h2o.__pollAll <- function(conn = h2o.getConnection(), timeout) {
-  start = Sys.time()
-  while(!.h2o.__allDone(conn)) {
-    Sys.sleep(1L)
-    if(as.numeric(difftime(Sys.time(), start)) > timeout)
-      stop("Timeout reached! Check if any jobs have frozen in H2O.")
+    status = job$status
+    stopifnot(is.character(status))
+
+    if (status == "CANCELLED") {
+      stop("Job key ", job_key, " cancelled by user")
+    }
+
+    if (status == "FAILED") {
+      stop("Job key ", job_key, " failed")
+    }
+
+    if ((status == "CREATED") || (status == "RUNNING")) {
+      # Do nothing, keep running...
+    } else {
+      stopifnot(status == "DONE")
+      keepRunning <- FALSE
+    }
+
+    if (keepRunning) {
+      Sys.sleep(pollInterval)
+    } else {
+      if (progressBar) {
+        close(pb)
+      }
+    }
   }
 }
 
