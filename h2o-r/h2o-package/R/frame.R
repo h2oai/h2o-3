@@ -1002,7 +1002,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
     object <- as.data.frame(object)
   }
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE)
+  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
   h2f <- h2o.uploadFile(conn, tmpf, key = key)
   file.remove(tmpf)
   h2f

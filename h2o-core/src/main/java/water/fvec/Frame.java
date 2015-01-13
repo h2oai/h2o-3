@@ -148,7 +148,7 @@ public class Frame extends Lockable<Frame> {
   public int  numCols() { return _keys.length; }
   /** Number of rows
    *  @return Number of rows */
-  public long numRows() { return anyVec().length(); }
+  public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
