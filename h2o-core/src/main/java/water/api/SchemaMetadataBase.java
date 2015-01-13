@@ -1,5 +1,6 @@
 package water.api;
 
+import water.Iced;
 import water.api.SchemaMetadata.FieldMetadata;
 import water.util.PojoUtils;
 
@@ -40,7 +41,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     public boolean is_schema;
 
     @API(help="Value for this field", direction=API.Direction.OUTPUT)
-    public String value;
+    public Iced value;
 
     @API(help="A short help description to appear alongside the field in a UI", direction=API.Direction.OUTPUT)
     String help;

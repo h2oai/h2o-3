@@ -164,10 +164,6 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         actual = actuals_dict[k]['actual_value']
         actual_type = actuals_dict[k]['type']
 
-        print 'k: ', k
-        print repr(actual)
-        print repr(expected)
-
         if actual_type == 'boolean':
             expected = bool(expected)
             actual = True if 'true' == actual else False # true -> True
