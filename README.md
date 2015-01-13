@@ -55,6 +55,7 @@ Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We 
 
 	(possibly sudo)
 	pip install grip
+	pip install tabulate
 
 ### Setup on Windows
 
