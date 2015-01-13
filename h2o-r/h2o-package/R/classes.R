@@ -110,6 +110,7 @@ setMethod("show", "H2OFrame", function(object) {
   print(object@h2o)
   cat("Key:", object@key, "\n")
   print(head(object))
+  h2o.gc()
   invisible(object)
 })
 
