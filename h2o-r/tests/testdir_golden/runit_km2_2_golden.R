@@ -43,10 +43,17 @@ test.kmstand.golden <- function(H2Oserver) {
   Log.info("Compare Between-Cluster SS between R and H2O\n")
   expect_equal(btwssH2O, btwssR, tolerance = 0.01)
   
-  # Log.info("Compare Predicted Classes between R and H2O\n")
+  Log.info("Compare Predicted Classes between R and H2O\n")
+  # Need to compute distance of original data from de-standardized centers
+  # R's fitted method computes distance of standardized data from standardized centers
   # classR <- fitted(fitR, method = "classes")
-  # classH2O <- as.matrix(predict(fitH2O, ozoneH2O))
-  # expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
+  clusters <- function(x, centers) {
+    tmp <- sapply(seq_len(nrow(x)), function(i) apply(centers, 1, function(v) sum((x[i, ]-v)^2)))
+    max.col(-t(tmp))  # find index of min distance
+  }
+  classR <- clusters(ozoneR, fitR_centstd)
+  classH2O <- as.matrix(predict(fitH2O, ozoneH2O))
+  expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
   
   testEnd()
 }
