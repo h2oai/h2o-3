@@ -30,8 +30,8 @@ myX <- 1:20
 myY <- "y"
 
 # Run GBM with variable importance
-my.gbm <- h2o.gbm(x = myX, y = myY, distribution = "bernoulli", data = data.hex, n.trees =100,
-                  interaction.depth = 2, shrinkage = 0.01, importance = T) 
+my.gbm <- h2o.gbm(x = myX, y = myY, distribution = "bernoulli", training_frame = data.hex, ntrees =100,
+                  max_depth = 2, learn_rate = 0.01, variable_importance = T) 
 
 # Access Variable Importance from the built model
 gbm.VI <- my.gbm@model$varimp

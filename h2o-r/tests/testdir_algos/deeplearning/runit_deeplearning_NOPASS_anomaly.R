@@ -4,8 +4,8 @@ source('../../h2o-runit.R')
 check.deeplearning_anomaly <- function(conn) {
   Log.info("Deep Learning Anomaly Detection MNIST)")
   
-  TRAIN <- "smalldata/mnist/train.csv.gz"
-  TEST <- "smalldata/mnist/test.csv.gz"
+  TRAIN <- "bigdata/laptop/mnist/train.csv.gz"
+  TEST <- "bigdata/laptop/mnist/test.csv.gz"
   
   # set to FALSE for stand-alone demo
   if (TRUE) {
