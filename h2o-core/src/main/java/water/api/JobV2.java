@@ -6,7 +6,7 @@ import water.util.DocGen.HTML;
 import water.util.PrettyPrint;
 
 /** Schema for a single Job. */
-public class JobV2 extends Schema<Job, JobV2> {
+public class JobV2<J extends Schema> extends Schema<Job, JobV2<J>> {
 
   // Input fields
   @API(help="Job Key",required=true)
@@ -25,7 +25,7 @@ public class JobV2 extends Schema<Job, JobV2> {
   @API(help="runtime", direction=API.Direction.OUTPUT)
   public long msec;
 
-  @API(help="destination key", direction=API.Direction.OUTPUT)
+  @API(help="destination key", direction=API.Direction.INOUT)
   public KeySchema dest;
 
   @API(help="exception", direction=API.Direction.OUTPUT)

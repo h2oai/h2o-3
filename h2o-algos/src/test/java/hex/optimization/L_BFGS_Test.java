@@ -72,7 +72,7 @@ public class L_BFGS_Test  extends TestUtil {
     Key parsedKey = Key.make("prostate");
     DataInfo dinfo = null;
     try {
-      GLMParameters glmp = new GLMParameters(Family.binomial);
+      GLMParameters glmp = new GLMParameters(Family.binomial, Family.binomial.defaultLink);
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();

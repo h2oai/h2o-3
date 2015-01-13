@@ -20,4 +20,4 @@ head(a)  # force eval of a amd store H2OParsedData into a (drops the ast)
 print(a)  # prints the head of a
 
 
-# To see what else will work see ops.R and methods.R -- some are still in progress
+# To see what else will work see ops.R and frame.R -- some are still in progress

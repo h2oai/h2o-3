@@ -57,7 +57,7 @@ import java.util.UUID;
  *  <p>Example manipulating some individual elements:<pre>
  *    double r1 = vec.at(0x123456789L);  // Access element 0x1234567889 as a double
  *    double r2 = vec.at(-1);            // Throws AIOOBE
- *    long   r3 = vec.at8(1);            // Element #1, as a long
+ *    long   r3 = vec.at8_abs(1);            // Element #1, as a long
  *    vec.set(2,r1+r3);                  // Set element #2, as a double
  *  </pre>
  *
@@ -115,7 +115,7 @@ import java.util.UUID;
  *    new MRTask{} { final double _mean = vec.mean();
  *      public void map( Chunk chk ) {
  *        for( int row=0; row &lt; chk._len; row++ )
- *          if( chk.isNA0(row) ) chk.set0(row,_mean);
+ *          if( chk.isNA(row) ) chk.set(row,_mean);
  *      }
  *    }.doAll(vec);
  *  </pre>
@@ -202,7 +202,10 @@ public class Vec extends Keyed {
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is an Categorical column.  */
-  public final boolean isEnum   (){ return _type==T_ENUM || _domain != null; }
+  public final boolean isEnum() { 
+    assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
+    return _type==T_ENUM; 
+  }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
@@ -389,14 +392,12 @@ public class Vec extends Keyed {
 
     // Super small data check - less than 32K/thread
     if (chunkSize <= (1 << 15)) {
-      water.util.Log.info("super small " + DFLT_CHUNK_SIZE);
       return DFLT_CHUNK_SIZE;
     }
 
     // Small data check
     chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
     if (chunkSize < DFLT_CHUNK_SIZE) {
-      water.util.Log.info("small " + chunkSize);
       return chunkSize;
     }
 
@@ -404,7 +405,6 @@ public class Vec extends Keyed {
     chunkSize = localParseSize * numCols / (1 << 22); // ~ 4M keys per node
     if (chunkSize > DFLT_CHUNK_SIZE) {
       chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
-      water.util.Log.info("big " + chunkSize);
       if (chunkSize > (1 << 30)) // Max limit is 1G
         return (1 << 30);
       return chunkSize;
@@ -466,7 +466,7 @@ public class Vec extends Keyed {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
-            c.set0(r, r+1+c._start);
+            c.set(r, r + 1 + c._start);
       }
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
@@ -479,7 +479,7 @@ public class Vec extends Keyed {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs)
           for (int r = 0; r < c._len; r++)
-            c.set0(r,r+min+c._start);
+            c.set(r, r + min + c._start);
       }
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
@@ -492,7 +492,7 @@ public class Vec extends Keyed {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
-            c.set0(r, (r+1+c._start) % repeat);
+            c.set(r, (r + 1 + c._start) % repeat);
       }
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
@@ -593,7 +593,7 @@ public class Vec extends Keyed {
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
-  public long checksum() { return rollupStats()._checksum;}
+  @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
 
   /** Begin writing into this Vec.  Immediately clears all the rollup stats
@@ -772,23 +772,23 @@ public class Vec extends Keyed {
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. 
    *  @return {@code i}th element as a long, or throw if missing */
-  public final long  at8( long i ) { return chunkForRow(i).at8(i); }
+  public final long  at8( long i ) { return chunkForRow(i).at8_abs(i); }
 
   /** Fetch element the slow way, as a double, or Double.NaN is missing.
    *  @return {@code i}th element as a double, or Double.NaN if missing */
-  public final double at( long i ) { return chunkForRow(i).at(i); }
+  public final double at( long i ) { return chunkForRow(i).at_abs(i); }
   /** Fetch the missing-status the slow way. 
    *  @return the missing-status the slow way */
-  public final boolean isNA(long row){ return chunkForRow(row).isNA(row); }
+  public final boolean isNA(long row){ return chunkForRow(row).isNA_abs(row); }
 
   /** Fetch element the slow way, as the low half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID low half, or throw if missing */
-  public final long  at16l( long i ) { return chunkForRow(i).at16l(i); }
+  public final long  at16l( long i ) { return chunkForRow(i).at16l_abs(i); }
   /** Fetch element the slow way, as the high half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID high half, or throw if missing */
-  public final long  at16h( long i ) { return chunkForRow(i).at16h(i); }
+  public final long  at16h( long i ) { return chunkForRow(i).at16h_abs(i); }
 
   /** Fetch element the slow way, as a {@link ValueString} or null if missing.
    *  Throws if the value is not a String.  ValueStrings are String-like
@@ -796,7 +796,7 @@ public class Vec extends Keyed {
    *  constructing Strings.
    *  @return {@code i}th element as {@link ValueString} or null if missing, or
    *  throw if not a String */
-  public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr(vstr,i); }
+  public final ValueString atStr( ValueString vstr, long i ) { return chunkForRow(i).atStr_abs(vstr, i); }
 
   /** Write element the slow way, as a long.  There is no way to write a
    *  missing value with this call.  Under rare circumstances this can throw:
@@ -805,7 +805,7 @@ public class Vec extends Keyed {
    *  common compatible data representation.  */
   public final void set( long i, long l) {
     Chunk ck = chunkForRow(i);
-    ck.set(i,l);
+    ck.set_abs(i, l);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
@@ -813,7 +813,7 @@ public class Vec extends Keyed {
    *  set of a missing element. */
   public final void set( long i, double d) {
     Chunk ck = chunkForRow(i);
-    ck.set(i,d);
+    ck.set_abs(i, d);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
@@ -821,14 +821,14 @@ public class Vec extends Keyed {
    *  set of a missing element. */
   public final void set( long i, float  f) {
     Chunk ck = chunkForRow(i);
-    ck.set(i,f);
+    ck.set_abs(i, f);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
   /** Set the element as missing the slow way.  */
   final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
-    ck.setNA(i);
+    ck.setNA_abs(i);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
@@ -836,7 +836,7 @@ public class Vec extends Keyed {
    *  set of a missing element. */
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
-    ck.set(i,str);
+    ck.set_abs(i, str);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
@@ -854,11 +854,11 @@ public class Vec extends Keyed {
   public final static class Writer implements java.io.Closeable {
     final Vec _vec;
     private Writer(Vec v) { (_vec=v).preWriting(); }
-    public final void set( long i, long   l) { _vec.chunkForRow(i).set(i,l); }
-    public final void set( long i, double d) { _vec.chunkForRow(i).set(i,d); }
-    public final void set( long i, float  f) { _vec.chunkForRow(i).set(i,f); }
-    public final void setNA( long i        ) { _vec.chunkForRow(i).setNA(i); }
-    public final void set( long i, String str) { _vec.chunkForRow(i).set(i,str); }
+    public final void set( long i, long   l) { _vec.chunkForRow(i).set_abs(i, l); }
+    public final void set( long i, double d) { _vec.chunkForRow(i).set_abs(i, d); }
+    public final void set( long i, float  f) { _vec.chunkForRow(i).set_abs(i, f); }
+    public final void setNA( long i        ) { _vec.chunkForRow(i).setNA_abs(i); }
+    public final void set( long i, String str) { _vec.chunkForRow(i).set_abs(i, str); }
     public Futures close(Futures fs) { return _vec.postWrite(_vec.closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }
@@ -928,7 +928,7 @@ public class Vec extends Keyed {
     new MRTask() {
       @Override public void map(Chunk c0) {
         long srow = c0._start;
-        for (int r = 0; r < c0._len; r++) c0.set0(r, vec.at(srow + r));
+        for (int r = 0; r < c0._len; r++) c0.set(r, vec.at(srow + r));
       }
     }.doAll(avec);
     avec._domain = _domain;
@@ -985,8 +985,8 @@ public class Vec extends Keyed {
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
-        if( !ys.isNA0(row) )
-          _uniques.put(ys.at80(row),"");
+        if( !ys.isNA(row) )
+          _uniques.put(ys.at8(row),"");
     }
 
     @Override public void reduce(CollectDomain mrt) {

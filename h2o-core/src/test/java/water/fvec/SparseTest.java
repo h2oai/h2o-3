@@ -35,7 +35,7 @@ public class SparseTest extends TestUtil {
     final int cidx = c.cidx();
     final Vec vec = c._vec;
     for(int i = 0; i < vals.length; ++i)
-      c.set0(ids[i],vals[i]);
+      c.set(ids[i], vals[i]);
     c.close(cidx,fs);
     return vec.chunkForChunkIdx(cidx);
   }
@@ -55,15 +55,15 @@ public class SparseTest extends TestUtil {
       assertTrue(class0.isAssignableFrom(c0.getClass()));
       assertEquals(3,c0.sparseLen());
       for(int i = 0; i < vals.length; ++i){
-        assertEquals(Double.isNaN(vals[i]), c0.isNA0(i));
-        assertTrue(Double.isNaN(vals[i]) || vals[i] == c0.at0(i));
+        assertEquals(Double.isNaN(vals[i]), c0.isNA(i));
+        assertTrue(Double.isNaN(vals[i]) || vals[i] == c0.atd(i));
       }
       int j = c0.nextNZ(-1);
       // test skip cnt iteration
       for(int nz:nzs){
         assertEquals(nz,j);
-        assertEquals(Double.isNaN(vals[nz]),c0.isNA0(j));
-        assertTrue(Double.isNaN(vals[nz]) || vals[nz] == c0.at0(j));
+        assertEquals(Double.isNaN(vals[nz]),c0.isNA(j));
+        assertTrue(Double.isNaN(vals[nz]) || vals[nz] == c0.atd(j));
         j = c0.nextNZ(j);
       }
       Iterator<CXIChunk.Value> it = ((CXIChunk)c0).values();
@@ -78,15 +78,15 @@ public class SparseTest extends TestUtil {
       assertTrue(class1.isAssignableFrom(c1.getClass()));
       // test sparse set
       assertEquals(4,c1.sparseLen());
-      assertEquals(Double.isNaN(v1),c1.isNA0(length-1));
-      assertTrue(Double.isNaN(v1) || v1 == c1.at0(length-1));
+      assertEquals(Double.isNaN(v1),c1.isNA(length - 1));
+      assertTrue(Double.isNaN(v1) || v1 == c1.atd(length - 1));
       Chunk c2 = setAndClose(vals[0] = v2,0,c1,fs);
       assertTrue(class2.isAssignableFrom(c2.getClass()));
       assertTrue(c2.nextNZ(-1) == 0);
       assertEquals(vals.length,c2.sparseLen());
       for(int i = 0; i < vals.length; ++i){
-        assertEquals(Double.isNaN(vals[i]),c2.isNA0(i));
-        assertTrue(Double.isNaN(vals[i]) || vals[i] == c2.at0(i));
+        assertEquals(Double.isNaN(vals[i]),c2.isNA(i));
+        assertTrue(Double.isNaN(vals[i]) || vals[i] == c2.atd(i));
         assertTrue(c2.nextNZ(i) == i+1);
       }
       fs.blockForPending();

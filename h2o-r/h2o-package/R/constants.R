@@ -10,35 +10,22 @@
 #' The H2O Package Environment
 #'
 .pkg.env              <- new.env()
+assign("SERVER",        NULL,  .pkg.env)
+assign("IS_LOGGING",    FALSE, .pkg.env)
+assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
-# These may no longer be needed...
-.pkg.env$IS_LOGGING   <- FALSE
-.pkg.env$LOG_FILE_NAME<- NULL
-.TEMP_KEY <- "Last.value"
-
-# Some handy infix utilities
-"%i%"    <- function(x,y) inherits(x, y)                                                         # instanceof
-"%p0%"   <- function(x,y) assign(deparse(substitute(x)), paste(x, y, sep = ""), parent.frame())  # paste0 infix
-"%p%"    <- function(x,y) assign(deparse(substitute(x)), paste(x, y), parent.frame())            # paste  infix
-"%<-%"   <- function(x,y) {
-  if (is(x, "H2OFrame")) x <- x@key
-  new("ASTNode", root= new("ASTApply", op="="), children = list(left = paste0('!', x), right = y))   # assignment node
-}
-
-.uniq.id <- function(prefix = "") {
+.key.make <- function(prefix = "rapids") {
   hex_digits <- c(as.character(0:9), letters[1:6])
   y_digits <- hex_digits[9:12]
   tempA <- paste(sample(hex_digits, 8, replace=TRUE), collapse='')
   tempB <- paste(sample(hex_digits, 4, replace=TRUE), collapse='')
   tempC <- '4'
   tempD <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
-  tempE <- paste(sample(y_digits,1), collapse='')
+  tempE <- paste(sample(y_digits, 1), collapse='')
   tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
   tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
-  temp <- paste0(tempA, tempB, tempC, tempD, tempE, tempF, tempG)
-  paste0(prefix, '_', temp)
+  paste0(prefix, '_', tempA, tempB, tempC, tempD, tempE, tempF, tempG, .get.session_id())
 }
-.key.make <- function() .uniq.id("rapids")
 
 #'
 #' Map of binary operators to their "AST" operator value.
@@ -62,30 +49,30 @@
              '^'  = '^',
              "%/%"="%/%")
 
-.binop.map <- c('>'  = 'g',
-                '>=' = 'G',
-                '<'  = 'l',
-                '<=' = 'L',
-                '==' = 'n',
-                '!=' = 'N',
-                '%%' = '%',
-                '**' = '^',
-                '|'  = '|',
-                '&'  = '&',
-                "&&" = "&&",
-                '+'  = '+',
-                '-'  = '-',
-                '*'  = '*',
-                '/'  = '/',
-                '^'  = '^',
-                "%/%"="%/%")
+.binary_op.map <- c('>'  = 'g',
+                    '>=' = 'G',
+                    '<'  = 'l',
+                    '<=' = 'L',
+                    '==' = 'n',
+                    '!=' = 'N',
+                    '%%' = '%',
+                    '**' = '^',
+                    '|'  = '|',
+                    '&'  = '&',
+                    "&&" = "&&",
+                    '+'  = '+',
+                    '-'  = '-',
+                    '*'  = '*',
+                    '/'  = '/',
+                    '^'  = '^',
+                    "%/%"="%/%")
 
 #'
 #' Map of unary operators to their "AST" operator value.
 #'
-.unop.map <- c('!' = '_',
-               '$' = '[',
-               '[' = '[')
+.unary_op.map <- c('!' = '_',
+                   '$' = '[',
+                   '[' = '[')
 
 .slice.map <- c('$' = '$', '[' = '[')
 
@@ -143,97 +130,86 @@
                   "is.factor" = "is.factor")
 
 #'
-#' The variable args operations
+#' The n-ary args operations
 #'
-.varop.map <- c("round" = "round",
-                "signif" = "signif",
-                "max" = "max",
-                "min" = "min",
-                "range" = "range",
-                "prod" = "prod",
-                "sum" = "sum",
-                "any" = "any",
-                "all" = "all",
-                "mean"  = "mean",
-                "var"   = "var",
-                "log" = "log",
-                "sd"    = "sd",
-                "scale" = "scale",
-                "tail" = "tail",
-                "head" = "head",
-                "match" = "match",
-                "cut" = "cut",
-                "table" = "table",
-                "xorsum" = "xorsum",
-                "trunc" = "trunc")
+.nary_op.map <- c("round" = "round",
+                  "signif" = "signif",
+                  "max" = "max",
+                  "min" = "min",
+                  "range" = "range",
+                  "prod" = "prod",
+                  "sum" = "sum",
+                  "any" = "any",
+                  "all" = "all",
+                  "mean"  = "mean",
+                  "var"   = "var",
+                  "log" = "log",
+                  "sd"    = "sd",
+                  "scale" = "scale",
+                  "tail" = "tail",
+                  "head" = "head",
+                  "match" = "match",
+                  "cut" = "cut",
+                  "table" = "table",
+                  "xorsum" = "xorsum",
+                  "trunc" = "trunc")
 
+.type.map <- rbind(data.frame(type = "logical",   scalar = TRUE,  row.names = "boolean",      stringsAsFactors = FALSE),
+                   data.frame(type = "logical",   scalar = FALSE, row.names = "boolean[]",    stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = TRUE,  row.names = "enum",         stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = FALSE, row.names = "enum[]",       stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = TRUE,  row.names = "double",       stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = FALSE, row.names = "double[]",     stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = TRUE,  row.names = "float",        stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = FALSE, row.names = "float[]",      stringsAsFactors = FALSE),
+                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
+                   data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = FALSE, row.names = "int[]",        stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = TRUE,  row.names = "long",         stringsAsFactors = FALSE),
+                   data.frame(type = "numeric",   scalar = FALSE, row.names = "long[]",       stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = TRUE,  row.names = "string",       stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
+                   data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE))
 
-.type.map <- c("boolean" = "logical",
-               "boolean[]" = "barray",
-               "enum" = "character",
-               "enum[]" = "sarray",
-               "double" = "numeric",
-               "double[]" = "narray",
-               "float" = "numeric",
-               "float[]" = "narray",
-               "Key" = "H2OFrame",
-               "Key<Frame>" = "H2OFrame",
-               "int" = "numeric",
-               "int[]" = "narray",
-               "Key<Key>" = "character",
-               "long" = "numeric",
-               "long[]" = "narray",
-               "string" = "character",
-               "string[]" = "sarray",
-               "VecSpecifier" = "character")
+#' Endpoint Version
+.h2o.__REST_API_VERSION <- 3L
 
-.algo.map <- c("deeplearning" = ".deeplearning.builder",
-               "gbm" = ".gbm.builder",
-               "kmeans" = ".kmeans.builder",
-               "glm" = ".glm.builder",
-               "quantile" = ".quantile.builder")
-#'
-#' Inspect/Summary Endpoints
-#'
-.h2o.__INSPECT      <- "Inspect.json"       # Inspect.json?key=asdfasdf
-.h2o.__FRAMES       <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
-
-#'
 #' Administrative Endpoints
-#'
-.h2o.__JOBS         <- "Jobs.json"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
-.h2o.__CLOUD        <- "Cloud.json"
-.h2o.__SHUTDOWN     <- "Shutdown.json"
-.h2o.__DOWNLOAD_LOGS <- "/Logs/download"
+.h2o.__JOBS           <- "Jobs.json"          # Jobs.json/$90w3r52hfej_JOB_KEY_12389471jsdfs
+.h2o.__CLOUD          <- "Cloud.json"
+.h2o.__SHUTDOWN       <- "Shutdown.json"
+.h2o.__DOWNLOAD_LOGS  <- "/Logs/download"
 
-#'
-#' Algorithm Endpoints
-#'
+#' Removal Endpoints
+.h2o.__REMOVE         <- "Remove.json"
+.h2o.__REMOVEALL      <- "RemoveAll.json"
+
+#' Log and Echo Endpoint
+.h2o.__LOGANDECHO     <- "LogAndEcho.json"
+
+#' Import/Export Endpoints
+.h2o.__IMPORT         <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
+
+#' Parse Endpoints
+.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
+.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
+
+#' Inspect/Summary Endpoints
+.h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
+.h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
+
+#' Rapids Endpoint
+.h2o.__RAPIDS         <- "Rapids.json"
+
+#' Model Builder Endpoint Generator
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo, '.json')
 
-#'
-#' Algorithm Parameter Endpoints
-#'
-
-#'
 #' Model Endpoint
-#'
-.h2o.__MODELS       <- "Models.json"
+.h2o.__MODELS         <- "Models.json"
 
-#'
-#' Removal
-#'
-.h2o.__REMOVE       <- "Remove.json"
-.h2o.__REMOVEALL    <- "RemoveAll.json"
-
-#'
-#' Log and Echo
-#'
-.h2o.__LOGANDECHO   <- "LogAndEcho.json"
-
-#'
-#' Word To Vec
-#'
-.h2o.__W2V          <- "Word2Vec.json"
-.h2o.__SYNONYMS     <- "Synonyms.json"
-.h2o.__TRANSFORM    <- "Transform.json"
+#' Word To Vector Endpoints
+.h2o.__W2V            <- "Word2Vec.json"
+.h2o.__SYNONYMS       <- "Synonyms.json"
+.h2o.__TRANSFORM      <- "Transform.json"

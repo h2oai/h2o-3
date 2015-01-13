@@ -11,9 +11,9 @@ public class MSETsk extends MRTask<MSETsk> {
   public long   _nobs;
   public void map(Chunk prediction, Chunk response){
     for(int i = 0; i < prediction._len; ++i){
-      if(prediction.isNA0(i) || response.isNA0(i))
+      if(prediction.isNA(i) || response.isNA(i))
         continue;
-      double diff = prediction.at0(i) - response.at0(i);
+      double diff = prediction.atd(i) - response.atd(i);
       _resDev += diff*diff;
       ++_nobs;
     }

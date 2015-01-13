@@ -27,9 +27,9 @@
 #'
 #' Simple statements can be further grouped into the following ways (excuse abuse of `dispatch` lingo below):
 #'
-#'  1. Unary operations  (dispatch to .h2o.unop )
-#'  2. Binary Operations (dispatch to .h2o.binop)
-#'  3. Prefix Operations (dispatch to .h2o.varop)
+#'  1. Unary operations  (dispatch to .h2o.unary_op )
+#'  2. Binary Operations (dispatch to .h2o.binary_op)
+#'  3. Prefix Operations (dispatch to .h2o.nary_op)
 #'  4. User Defined Function Call
 #'  5. Anonymous closure
 #'
@@ -54,7 +54,7 @@
 #' Mutually recursive functions:
 #'
 #'  For processing a raw function:
-#'   .process.stmnt <=> .statement.to.ast.switchboard
+#'   .process.stmnt <=> .stmnt.to.ast.switchboard
 #'
 #'  For postprocessing the ast:
 #'   .body.visitor <=> .stmnt.visitor
@@ -96,12 +96,12 @@ function(o, map) {
   o %in% names(map)
 }
 
-.is.unop   <- function(o) .is.in(o, .unop.map)
-.is.binop  <- function(o) .is.in(o, .binop.map)
-.is.varop  <- function(o) .is.in(o, .varop.map)
-.is.prefix <- function(o) .is.in(o, .prefix.map)
-.is.slice  <- function(o) .is.in(o, .slice.map)
-.is.op     <- function(o) .is.unop(o) || .is.binop(o) || .is.varop(o) || .is.prefix(o)
+.is.unary_op  <- function(o) .is.in(o, .unary_op.map)
+.is.binary_op <- function(o) .is.in(o, .binary_op.map)
+.is.nary_op   <- function(o) .is.in(o, .nary_op.map)
+.is.prefix    <- function(o) .is.in(o, .prefix.map)
+.is.slice     <- function(o) .is.in(o, .slice.map)
+.is.op        <- function(o) .is.unary_op(o) || .is.binary_op(o) || .is.nary_op(o) || .is.prefix(o)
 
 #'
 #' Statement Processor
@@ -111,10 +111,10 @@ function(o, map) {
 #'
 #' The possible types of statements to process:
 #'
-#'  1. A unary operation (calls .h2o.unop)
+#'  1. A unary operation (calls .h2o.unary_op)
 #'      A. `!` operator
 #'
-#'  2. A binary operation  (calls .h2o.binop)
+#'  2. A binary operation  (calls .h2o.binary_op)
 #'      A. ‘"+"’, ‘"-"’, ‘"*"’, ‘"^"’, ‘"%%"’, ‘"%/%"’, ‘"/"’
 #'         ‘"=="’, ‘">"’, ‘"<"’, ‘"!="’, ‘"<="’, ‘">="’
 #'         ‘"&"’, ‘"|"’, ‘"**"’
@@ -128,11 +128,11 @@ function(o, map) {
 #'                        ‘"tan"’,   ‘"tanh"’,   ‘"tanpi"’,
 #'                        ‘"gamma"’, ‘"lgamma"’, ‘"digamma"’,‘"trigamma"’, ‘"is.na"’
 #'
-#'      B. .h2o.varop: ‘"round"’, ‘"signif"’
+#'      B. .h2o.nary_op: ‘"round"’, ‘"signif"’
 #'
-#'      C. .h2o.varop: ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
+#'      C. .h2o.nary_op: ‘"max"’, ‘"min"’, ‘"range"’, ‘"prod"’, ‘"sum"’, ‘"any"’, ‘"all"’
 #'
-#'      D. .h2o.varop: ‘"trunc"’, ‘"log"’  (could be either unop or varop)
+#'      D. .h2o.nary_op: ‘"trunc"’, ‘"log"’  (could be either unary_op or nary_op)
 #'
 #' Each of the above types of statements will handle their own arguments and return an appropriate AST
 .process.stmnt<-
@@ -156,23 +156,23 @@ function(stmnt) {
     op <- stmnt_list[[1L]]
 
     # Case 2 from the comment above
-    if (.is.binop(op)) {
-      e1 <- .statement.to.ast.switchboard(stmnt_list[[2L]])
-      e2 <- .statement.to.ast.switchboard(stmnt_list[[3L]])
-      return(.h2o.binop(deparse(op), e1, e2))
+    if (.is.binary_op(op)) {
+      e1 <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
+      e2 <- .stmnt.to.ast.switchboard(stmnt_list[[3L]])
+      return(.h2o.binary_op(deparse(op), e1, e2))
 
     # Case 1, 3A above unless it's `log`, or `[`, or `$`
-    } else if (.is.unop(op)) {
+    } else if (.is.unary_op(op)) {
       if (.is.slice(op)) return(.process.slice.stmnt(stmnt))
-      x <- .statement.to.ast.switchboard(stmnt_list[[2L]])
-      return(.h2o.unop(deparse(op), x))
+      x <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
+      return(.h2o.unary_op(deparse(op), x))
 
-    # all varops
-    } else if(.is.varop(op)) {
-      args <- lapply(stmnt_list[-1L], .statement.to.ast.switchboard)
+    # all nary_ops
+    } else if(.is.nary_op(op)) {
+      args <- lapply(stmnt_list[-1L], .stmnt.to.ast.switchboard)
       arg1 <- args[1L]
       if (is(arg1[[1L]], "ASTEmpty")) arg1[[1L]] <- .get.value.from.arg(arg1[[1L]])
-      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- visitor(.get.value.from.arg(arg1[[1L]]))
+      if (is(arg1[[1L]], "ASTNode"))  arg1[[1L]] <- .visitor(.get.value.from.arg(arg1[[1L]]))
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
@@ -197,7 +197,7 @@ function(stmnt) {
 
       # simplify the list, names in the list makes things go kablooey
       names(add_args) <- NULL
-      add_args <- lapply(add_args, .statement.to.ast.switchboard)
+      add_args <- lapply(add_args, .stmnt.to.ast.switchboard)
       add_args <- lapply(add_args, .get.value.from.arg)
 
       # update the args list and then return the node
@@ -206,8 +206,8 @@ function(stmnt) {
 
     # prefix op, 1 arg
     } else if(.is.prefix(op)) {
-      arg <- .statement.to.ast.switchboard(stmnt_list[[2L]])
-      return(.h2o.unop(deparse(op), arg))
+      arg <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
+      return(.h2o.unary_op(deparse(op), arg))
 
     # should never get here
     } else {
@@ -261,7 +261,7 @@ function(stmnt) {
 function(stmnt) {
   stmnt_list <- as.list(stmnt)         # drop the `if`
   has_else <- length(stmnt_list) == 4L # more if-elses are glommed together into the 4th item in the list ... ALWAYS!
-  condition <- .statement.to.ast.switchboard(stmnt_list[[2L]])
+  condition <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
   body <- .process.body(stmnt_list[[3L]])
   if (has_else) body <- c(body, .process.else.stmnt(stmnt_list[[4L]]))
   new("ASTIf", condition = condition, body = new("ASTBody", statements = body))
@@ -269,19 +269,19 @@ function(stmnt) {
 
 .process.for.stmnt    <- function(stmnt) stop("`for` unimplemented")
 .process.else.stmnt   <- function(stmnt) new("ASTElse", body = .process.body(stmnt, TRUE))
-.process.return.stmnt <- function(stmnt) .h2o.unop("return", .statement.to.ast.switchboard(as.list(stmnt)[[2]]))
+.process.return.stmnt <- function(stmnt) .h2o.unary_op("return", .stmnt.to.ast.switchboard(as.list(stmnt)[[2]]))
 
 .process.assign.stmnt<-
 function(stmnt) {
   stmnt_list <- as.list(stmnt)
-  s <- .statement.to.ast.switchboard(stmnt_list[[2L]])
+  s <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
   lhs <- ""
   if (is(s, "ASTNode")) lhs <- s
   else {
     x <- deparse(stmnt[[2L]])
     lhs <- x   # TODO: checkup on this (should be doing __no__ DKV puts!!!
   }
-  y <- .statement.to.ast.switchboard(stmnt_list[[3L]])
+  y <- .stmnt.to.ast.switchboard(stmnt_list[[3L]])
   new("ASTNode", root= new("ASTApply", op="="), children = list(left = lhs, right = y))
 }
 
@@ -304,7 +304,7 @@ function(stmnt) {
 #'  3. Function call / Operation
 #'
 #' This switchboard takes exactly ONE statement at a time.
-.statement.to.ast.switchboard<-
+.stmnt.to.ast.switchboard<-
 function(stmnt) {
   if (is.null(stmnt)) return(NULL)
 
@@ -327,24 +327,13 @@ function(stmnt) {
   .process.stmnt(stmnt)
 }
 
-
-#'
-#' Produce a list of statements from a function body. The statements are ordered in first -> last.
-.extract.statements<-
-function(b) {
-  # strip off the '{' if it's there
-  stmnts <- as.list(b)
-  if(identical(stmnts[[1L]], quote(`{`))) stmnts <- stmnts[-1L]
-  stmnts
-}
-
-
 .process.body<-
 function(b, is.single = FALSE) {
-  stmnts <- .extract.statements(b)
-  if (is.single) { stmnts <- list(.statement.to.ast.switchboard(stmnts))
+  stmnts <- as.list(b)
+  if(identical(stmnts[[1L]], quote(`{`))) stmnts <- stmnts[-1L]
+  if (is.single) { stmnts <- list(.stmnt.to.ast.switchboard(stmnts))
   # return a list of ast_stmnts
-  } else { stmnts <- lapply(stmnts, .statement.to.ast.switchboard) }
+  } else { stmnts <- lapply(stmnts, .stmnt.to.ast.switchboard) }
   new("ASTBody", statements = stmnts)
 }
 
@@ -386,56 +375,37 @@ function(fun, name) {
 
 .fun.visitor<-
 function(astfun) {
-  res <- "(def"
-  res %p% astfun@name
-  res %p% astfun@arguments
-  body <- .body.visitor(astfun@body)
-  for (b in body) {res %p% b; res %p0% ";;" }
-  res %p0% ';)'
-  list(ast = res)
+  body <- paste0(unlist(.body.visitor(astfun@body), use.names = FALSE), ";;", collapse = " ")
+  list(ast = paste0("(def ", astfun@name, " ", astfun@arguments, " ", body , ";)"))
 }
 
 .body.visitor <- function(b) lapply(b@statements, .stmnt.visitor)
 
 .stmnt.visitor<-
 function(s) {
-  res <- ""
   if (is(s, "ASTBody")) {
-    return(.body.visitor(s))
+    .body.visitor(s)
   } else if (is(s, "ASTIf")) {
-    res %p0% '('
-    res %p0% s@op
-    res %p% visitor(s@condition)
-    body <- .body.visitor(s@body)
-    for (b in body) {res %p% b}
-    res %p0% ')'
-    return(res)
+    body <- paste0(unlist(.body.visitor(s@body), use.names = FALSE), collapse = " ")
+    paste0("(", s@op, " ", .visitor(s@condition), " ", body, ")")
   } else if (is(s, "ASTElse")) {
-    res %p0% '('
-    res %p0% s@op
-    body <- .body.visitor(s@body)
-    for (b in body) {res %p% b}
-    res %p0% ')'
-    return(res)
+    body <- paste0(unlist(.body.visitor(s@body), use.names = FALSE), collapse = " ")
+    paste0("(", s@op, " ", body, ")")
   } else if (is(s, "ASTFor")) {
     .NotYetImplemented()
   } else if (is(s, "ASTNode")) {
-    res %p% visitor(s)
-    return(res)
+    paste0(" ", .visitor(s))
   } else if (is.character(s)) {
-    res %p% s
-    return(res)
+    paste0(" ", s)
   } else if (is(s, "H2OFrame")) {
     tmp <- .get(s)
     if (is(tmp, "ASTNode")) {
-      res %p% visitor(s@ast)
-      return(res)
+      paste0(" ", .visitor(s@ast))
     } else {
-      res %p% s
-      return(res)
+      paste0(" ", s)
     }
   } else if (is(s, "ASTEmpty")) {
-    res %p% '%' %p0% s@key
+    paste0(" %", s@key)
   } else {
     print(s)
     print(class(s))

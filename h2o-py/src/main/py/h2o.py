@@ -31,10 +31,10 @@ class H2OFrame(object):
       print "Imported",local_fname,"into local python process"
     # Construct from an array of Vecs already passed in
     elif vecs is not None:
-      vlen = len(vecs[0])
+      vlen = vecs[0].__len__()
       for v in vecs:  
         if not isinstance(v,Vec): raise ValueError("Not a list of Vecs")
-        if len(v)!=vlen: raise ValueError("Vecs not the same size, "+str(vlen)+" vs "+str(len(v)))
+        if v.__len__() != vlen : raise ValueError("Vecs not the same size, "+str(vlen)+" vs "+str(len(v)))
       self._vecs = vecs
     else: raise ValueError("Frame made from CSV file or an array of Vecs only")
 
@@ -48,6 +48,7 @@ class H2OFrame(object):
 
   # In-depth description of data frame
   def describe(self):
+    self._vecs[0].summary()
     print "Rows:",len(self._vecs[0]),"Cols:",len(self)
     headers = [vec._name for vec in self._vecs]
     table = [ 
@@ -94,12 +95,13 @@ class H2OFrame(object):
 
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
-  def drop(self,i):
+  def __delitem__(self,i):
     if isinstance(i,str):
       for v in self._vecs:  
-        if i==v._name: 
-          return H2OFrame(vecs=[vec for vec in self._vecs if i!=vec._name])
-      raise ValueError("Name "+i+" not in Frame")
+        if i==v._name:
+          self._vecs.remove(v)
+          return self
+      raise KeyError("Name "+i+" not in Frame")
     raise NotImplementedError
     
 
@@ -165,7 +167,7 @@ class Vec(object):
 
   # Boolean column select lookup
   def row_select(self,vec):
-    return Vec(self._name+"["+vec._name+"]",Expr("[",self,vec))
+    return Vec(self._name,Expr("[",self,vec,length=-1))
 
   # Basic indexed set
   def __setitem__(self,b,c):
@@ -200,12 +202,32 @@ class Vec(object):
       return Vec(self._name+"=="+str(i) ,Expr("==",self,Expr(i)))
     raise NotImplementedError
 
+  def __lt__(self,i):
+    if isinstance(i,Vec):
+      if len(i) != len(self):
+        raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
+      return Vec(self._name+"<"+i._name,Expr("<",self,i))
+    if isinstance(i,(int,float)): # Vec+int
+      return Vec(self._name+"<"+str(i) ,Expr("<",self,Expr(i)))
+    raise NotImplementedError
+
+  def __ge__(self,i):
+    if isinstance(i,Vec):
+      if len(i) != len(self):
+        raise ValueError("Vec len()="+len(self)+" cannot be broadcast across len(i)="+len(i))
+      return Vec(self._name+">="+i._name,Expr(">=",self,i))
+    if isinstance(i,(int,float)): # Vec+int
+      return Vec(self._name+">="+str(i) ,Expr(">=",self,Expr(i)))
+    raise NotImplementedError
+
   # Number of rows
-  def __len__(self): return len(self._expr)
+  def __len__(self): return self._expr._len
 
   def mean(self): return Expr("mean",self._expr,None,length=1)
 
   def asfactor(self): return Vec(self._name,Expr("as.factor",self._expr,None))
+
+  def runif(self,seed=None): return Vec("runif",Expr("h2o.runif",self._expr,Expr(seed if seed else -1)))
 
 ##############################################################################
 #
@@ -289,6 +311,7 @@ class Expr(object):
       return {'type':t,'mins':mins,'maxs':maxs,'mean':mean,'sigma':stddev,'zeros':zeros,'missing':missing}
     if self._summary: return self._summary
     j = H2OCONN.Frame(self._data)
+    self._len = j['frames'][0]['rows']
     self._summary = j['frames'][0]['columns'][0]
     return self._summary
 
@@ -355,7 +378,7 @@ class Expr(object):
     # See if this is not a temp and not a scalar; if so it needs a name
     cnt = sys.getrefcount(self) - 1 # Remove one count for the call to getrefcount itself
     # Magical count-of-4 is the depth of 4 interpreter stack
-    py_tmp = cnt!=4 and self._len > 1 and not assign_vec
+    py_tmp = cnt!=4 and self._len != 1 and not assign_vec
 
     if py_tmp:
       self._data = _py_tmp_key() # Top-level key/name assignment
@@ -397,6 +420,20 @@ class Expr(object):
         if left.isLocal():                        self._data = [x==rite._data for x in left._data]
         else:                                     pass
       else: raise NotImplementedError
+    elif self._op == "<":
+      if isinstance(left._data,(int,float)):
+        raise NotImplementedError
+      elif isinstance(rite._data,(int,float)):
+        if left.isLocal():                        self._data = [x<rite._data for x in left._data]
+        else:                                     pass
+      else: raise NotImplementedError
+    elif self._op == ">=":
+      if isinstance(left._data,(int,float)):
+        raise NotImplementedError
+      elif isinstance(rite._data,(int,float)):
+        if left.isLocal():                        self._data = [x>=rite._data for x in left._data]
+        else:                                     pass
+      else: raise NotImplementedError
     elif self._op == "[":
       if left.isLocal():                          self._data = left._data[rite._data]
       else:                                       _CMD +=  ' "null"' # Rapids column zero lookup
@@ -409,6 +446,9 @@ class Expr(object):
       else: _CMD += " #0 %TRUE" # Rapids mean extra args (trim=0, rmNA=TRUE)
     elif self._op == "as.factor":
       if left.isLocal():                          self._data = map(str,left._data)
+      else:                                       pass
+    elif self._op == "h2o.runif":
+      if left.isLocal():                          raise NotImplementedError
       else:                                       pass
     else:
       raise NotImplementedError
@@ -503,25 +543,23 @@ class H2OConnection(object):
 
   # Fire off a Rapids expression
   def Rapids(self,expr):
-    return self._doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
+    j = self._doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
+    if 'error' in j and j['error']: raise ValueError(j['error'])
+    return j
 
   def Frame(self,key):
     return self._doSafeGet(self.buildURL("3/Frames/"+str(key),{}))
 
-  def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,train_frame,test_frame=None):
-    p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':train_frame}
-    if test_frame: p['validation_frame'] = test_frame
-    j = self._doJob(self._doSafeGet(self.buildURL("GBM",p)))
-    j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
-    return j['models'][0]
-
-  def DeepLearning(self,x,train_frame,test_frame=None,**kwargs):
+  def doModel(self,model,x,train_frame,test_frame=None,**kwargs):
     kwargs['response_column'] = x
     kwargs['training_frame'] = train_frame
     if test_frame: kwargs['validation_frame'] = test_frame
-    j = self._doJob(self._doSafeGet(self.buildURL("DeepLearning",kwargs)))
+    j = self._doJob(self._doSafeGet(self.buildURL(model,kwargs)))
     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
     return j['models'][0]
+
+  def Metrics(self,model,dataset):
+    return self._doSafeGet(self.buildURL("3/ModelMetrics/models/"+model,{}))['model_metrics']
 
   def Job(self,jobkey):
     return self._doSafeGet(self.buildURL("Jobs/"+jobkey,{}))
@@ -550,7 +588,11 @@ class H2OConnection(object):
     j = r.json()
     if 'errmsg' in j: raise ValueError(j['errmsg'])
     if 'http_status' in j:
-      if j['http_status']==404 or j['http_status']==500: raise ValueError(j['msg'])
+      if j['http_status']==404 or j['http_status']==500: 
+        if j['msg']: raise ValueError(j['msg'])
+        if 'stacktrace' in j: 
+          raise ValueError(j['stacktrace'])
+        raise ValueError(j)
     return j
 
   # function to build a URL from a base and a dictionary of params.  'request'
@@ -575,60 +617,36 @@ class H2OConnection(object):
 
 ##############################################################################
 #
-# Simple GBM Wrapper
+# Simple Model Wrapper
 #
-class H2OGBM(object):
-  def __init__(self,dataset,x,ntrees=50,shrinkage=0.1,interaction_depth=5,distribution="AUTO",validation_dataset=None):
+class H2OModel(object):
+  def __init__(self,model,dataset,x,validation_dataset=None,**kwargs):
     if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
     self.dataset = dataset
-
     if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
     self.x = x
-
-    if not (0 <= ntrees <= 1000000): raise ValueError("ntrees must be between 0 and a million")
-    self.ntrees = ntrees
-
-    if not (0.0 <= shrinkage <= 1.0): raise ValueError("shrinkage must be between 0 and 1")
-    self.shrinkage = 0.1
-
-    if not (1 <= interaction_depth): raise ValueError("interaction_depth must be at least 1")
-    self.interaction_depth = interaction_depth
-
-    self.distribution = distribution
-
-    # Send over the frame
-    fr = _send_frame(dataset)
-    # And Validationm if any
-    if validation_dataset:
-      vfr = _send_frame(validation_dataset)
+    # Send over the frame, and validation frame if any
+    fr  = _send_frame(dataset)
+    vfr = _send_frame(validation_dataset) if validation_dataset else None
     # Do the big job
-    self._model = H2OCONN.GBM(distribution,shrinkage,ntrees,interaction_depth,x,fr,vfr)
+    self._model = H2OCONN.doModel(model,x,fr,vfr,**kwargs)
     H2OCONN.Remove(fr)
-    
+    if validation_dataset:
+      H2OCONN.Remove(vfr)
+
+  def metrics(self,dataset=None):
+    return H2OCONN.Metrics(self._model['key']['name'],dataset)
 
 ##############################################################################
-#
-# Simple DeepLearning Wrapper
-#
-class H2ODeepLearning(object):
+class H2OGBM(H2OModel):
   def __init__(self,dataset,x,validation_dataset=None,**kwargs):
-    if not isinstance(dataset,H2OFrame):  raise ValueError("dataset must be a H2OFrame not "+str(type(dataset)))
-    self.dataset = dataset
+    H2OModel.__init__(self,"GBM",dataset,x,validation_dataset,**kwargs)
 
-    if not dataset[x]: raise ValueError(x+" must be column in "+str(dataset))
-    self.x = x
+class H2ODeepLearning(H2OModel):
+  def __init__(self,dataset,x,validation_dataset=None,**kwargs):
+    H2OModel.__init__(self,"DeepLearning",dataset,x,validation_dataset,**kwargs)
 
-    # Send over the frame
-    fr = _send_frame(dataset)
-    # And Validationm if any
-    if validation_dataset:
-      vfr = _send_frame(validation_dataset)
-    # Do the big job
-    self._model = H2OCONN.DeepLearning(x,fr,vfr,**kwargs)
-    H2OCONN.Remove(fr)
-    
-
-##############################################################################
+##########################################################################
 
 # Send over a frame description to H2O
 def _send_frame(dataset):

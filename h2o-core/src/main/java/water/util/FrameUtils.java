@@ -69,7 +69,7 @@ public class FrameUtils {
       for (int c = 0; c < cs.length; c++) {
         for (int r = 0; r < cs[c]._len; r++) {
           rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-          if (rng.nextDouble() < _frac) cs[c].setNA0(r);
+          if (rng.nextDouble() < _frac) cs[c].setNA(r);
         }
       }
     }

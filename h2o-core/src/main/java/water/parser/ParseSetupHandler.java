@@ -24,6 +24,14 @@ public class ParseSetupHandler extends Handler {
     p.hexName = ParseSetup.hex(p.srcs[0].toString());
     if( p.checkHeader==1 ) p.data = Arrays.copyOfRange(p.data,1,p.data.length-1); // Drop header from the preview data
 
+    // Fill in data type names for each column.
+    if (ps._ctypes != null) {
+      p.columnDataTypes = new String[ps._ctypes.length];
+      for (int i = 0; i < ps._ctypes.length; i++) {
+        p.columnDataTypes[i] = ParseDataset.FVecDataOut.ctypeToDataTypeName(ps._ctypes[i]);
+      }
+    }
+
     return p;
   }
 

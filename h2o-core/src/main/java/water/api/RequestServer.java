@@ -83,6 +83,7 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
+    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
@@ -166,13 +167,13 @@ public class RequestServer extends NanoHTTPD {
     // TODO: filtering isn't working for these first four; we get all results:
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"},
       "Return the saved scoring metrics for the specified Model and Frame.");
-    register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"model"},
+    register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"model"},
       "Return the saved scoring metrics for the specified Model.");
     register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"},
       "Return the saved scoring metrics for the specified Model and Frame.");
-    register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "list",  new String[] {"frame"},
+    register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"frame"},
       "Return the saved scoring metrics for the specified Frame.");
-    register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "list",
+    register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "fetch",
       "Return all the saved scoring metrics.");
 
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"POST"  ,ModelMetricsHandler.class, "score", new String[] {"model", "frame"},
@@ -211,11 +212,11 @@ public class RequestServer extends NanoHTTPD {
     register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.  DEPRECATED: Use POST because of its higher data limit.");
     register("/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
-    register("/Remove"                                           ,"GET"   ,RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
-    register("/RemoveAll"                                        ,"GET"   ,RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
-    register("/LogAndEcho"                                       ,"GET"   ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
+    register("/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
+    register("/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
+    register("/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
-
+    register("/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
   }
 
   @Deprecated

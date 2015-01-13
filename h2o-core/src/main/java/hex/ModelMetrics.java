@@ -51,7 +51,7 @@ public final class ModelMetrics extends Keyed {
   }
 
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
-  public Frame frame() { return _model==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   // r2 => improvement over random guess of the mean
   public double r2() {
@@ -165,5 +165,5 @@ public final class ModelMetrics extends Keyed {
     return null == v ? null : (ModelMetrics)v.get();
   }
 
-  @Override public long checksum() { return _frame_checksum * 13 + _model_checksum * 17; }
+  @Override protected long checksum_impl() { return _frame_checksum * 13 + _model_checksum * 17; }
 }

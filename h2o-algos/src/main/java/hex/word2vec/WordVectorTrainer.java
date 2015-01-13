@@ -105,7 +105,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     else if (sentLen < MIN_SENTENCE_LEN) return 0;
 
     for (; _chkIdx < cs._len; _chkIdx++) {
-      cs.atStr0(tmp, _chkIdx);
+      cs.atStr(tmp, _chkIdx);
       if (!_vocabHM.containsKey(tmp)) continue; //not in vocab, skip
       wIdx = _vocabHM.get(tmp);
       if (_sentSampleRate > 0) {  // subsampling while creating a "_sentence"

@@ -8,9 +8,9 @@ prostate.hex <- h2o.importFile(H2Oserver, path = prosPath)
 s <- as.h2o(H2Oserver, runif(nrow(prostate.hex)))
 prostate.hex <- prostate.hex[s <= 0.8,]
 h2o.ls()
-h2o.rm(object= H2Oserver, keys= "Last.value.hex")
+h2o.rm(conn= H2Oserver, keys= "Last.value.hex")
 h2o.ls(H2Oserver)
-h2o.rm(object= H2Oserver, keys= "prostate.hex")
+h2o.rm(conn= H2Oserver, keys= "prostate.hex")
 remove(prostate.hex)
 h2o.ls(H2Oserver)
 

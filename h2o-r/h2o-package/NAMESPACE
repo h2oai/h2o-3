@@ -14,13 +14,12 @@ exportMethods(
   "show", "%in%"
 )
 exportClasses(
-  "H2OFrame",
-  "H2OGLMModel",
-  "H2OKMeansModel",
-  "H2OModel",
   "H2ORawData",
-  "H2ODRFModel",
-  "H2OPCAModel",
-  "H2ONBModel",
-  "H2OGBMModel"
+  "H2OFrame",
+  "H2OModel",
+  "H2OUnknownModel",
+  "H2OBinomialModel",
+  "H2OMultinomialModel",
+  "H2ORegressionModel",
+  "H2OClusteringModel"
 )

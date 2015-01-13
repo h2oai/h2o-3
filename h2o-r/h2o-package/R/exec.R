@@ -3,21 +3,16 @@
 #'
 #' This is the front-end of the execution interface between R and H2O.
 #'
-#' The workhorses of this front end are .h2o.unop, .h2o.binop, and .h2o.varop.
+#' The workhorses of this front end are .h2o.unary_op, .h2o.binary_op, and .h2o.nary_op.
 #'
 #' Together, these three methods handle all of the available operations that can
 #' be done with H2OFrame objects (this includes H2OFrame objects and ASTNode objects).
 
 #'
-#' Rapids End point
-#'
-.h2o.__RAPIDS <- "Rapids.json"
-
-#'
 #' Prefix Operation With A Single Argument
 #'
 #' Operation on an object that inherits from H2OFrame.
-.h2o.unop<-
+.h2o.unary_op<-
 function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
@@ -30,14 +25,14 @@ function(op, x) {
   else stop("operand type not handled: ", class(x))
 
   ast <- new("ASTNode", root=op, children=list(x))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
 }
 
 #'
 #' Binary Operation
 #'
 #' Operation between H2OFrame objects and/or base R objects.
-.h2o.binop<-
+.h2o.binary_op<-
 function(op, e1, e2) {
   # Prep the op
   op <- new("ASTApply", op=.op.map[op])
@@ -60,19 +55,19 @@ function(op, e1, e2) {
 
   # Return an ASTNode
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
 }
 
 #'
 #' Prefix Operation With Multiple Arguments
 #'
 #' Operation on an H2OFrame object with some extra parameters.
-.h2o.varop<-
+.h2o.nary_op<-
 function(op, ..., .args = list(...), .key = .key.make()) {
   op <- new("ASTApply", op = op)
   children <- .args.to.ast(.args = .args)
   ast <- new("ASTNode", root = op, children = children)
-  new("H2OFrame", ast = ast, key = .key, h2o = .retrieveH2O())
+  new("H2OFrame", ast = ast, key = .key, h2o = h2o.getConnection())
 }
 
 #'
@@ -80,29 +75,32 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #'
 #' Force the evaluation of the AST.
 #'
-#' @param h2o: an H2OConnection object
-#' @param ast: an ASTNode object
-#' @param h2o.ID: the name of the key in h2o (hopefully matches top-most level user-defined variable)
-#' @param parent.ID: the name of the object in the calling frame
-#' @param env: the environment back to which we assign
+#' @param ast an ASTNode object
+#' @param caller.ID the name of the object in the calling frame
+#' @param env the environment back to which we assign
+#' @param h2o.ID the name of the key in h2o (hopefully matches top-most level user-defined variable)
+#' @param conn an H2OConnection object
+#' @param new.assign a logical flag
 #'
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.assign=TRUE) {
-  if (is.null(h2o)) h2o <- .retrieveH2O(parent.frame())
+function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE) {
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
-  if (new.assign) ast <- h2o.ID %<-% ast
-  ast <- visitor(ast)
-  res <- .h2o.__remoteSend(h2o, .h2o.__RAPIDS, ast=ast)
+  if (new.assign) {
+    if (is(h2o.ID, "H2OFrame")) h2o.ID <- h2o.ID@key
+    ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', h2o.ID), right=ast))
+  }
+  ast <- .visitor(ast)
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {
     ret <- res$string
     if (ret == "TRUE")  ret <- TRUE
     if (ret == "FALSE") ret <- FALSE
   } else if (res$result == "") {
-    ret <- .h2o.parsedData(h2o, res$key$name, res$num_rows, res$num_cols, res$col_names)
+    ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names)
     ret@key <- if(is.null(h2o.ID)) NA_character_ else h2o.ID
   } else {
     ret <- res$scalar
@@ -128,5 +126,5 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, h2o=NULL, new.
 .h2o.post.function<-
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
-  res <- .h2o.__remoteSend(.retrieveH2O(parent.frame()), .h2o.__RAPIDS, funs=.collapse(expr))
+  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr))
 }

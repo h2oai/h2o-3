@@ -212,7 +212,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
-      error("_train","There are no usable columns to the generate model");
+      error("_train","There are no usable columns to generate model");
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums

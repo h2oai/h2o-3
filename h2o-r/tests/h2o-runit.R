@@ -11,8 +11,9 @@ options(echo=FALSE)
 local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
 if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
 if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
-tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Ups. Couldn't install `rgl` package...") })
+tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Oops. Couldn't install `rgl` package...") })
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
+if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
 library(R.utils)
 
 PROJECT.ROOT <- "h2o-dev"
@@ -100,7 +101,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/wrapper.R", "/constants.R", "/logging.R", "/gbm.R",  "/h2o.R", "/utils.R", "/exec.R", "/classes.R", "/ops.R", "/methods.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/algorithms.R", "/predict.R", "/kmeans.R", "/deeplearning.R")
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R", "/kmeans.R", "/deeplearning.R", "/locate.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }

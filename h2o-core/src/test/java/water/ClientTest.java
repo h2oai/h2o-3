@@ -70,7 +70,7 @@ public class ClientTest extends TestUtil {
     double _sumX,_sumY,_sumX2; // Sum of X's, Y's, X^2's
     @Override public void map( Chunk xs, Chunk ys ) {
       for( int i=0; i<xs._len; i++ ) {
-        double X = xs.at0(i);  double Y = ys.at0(i);
+        double X = xs.atd(i);  double Y = ys.atd(i);
         if( !Double.isNaN(X) && !Double.isNaN(Y)) {
           _sumX += X;    _sumY += Y;
           _sumX2+= X*X;  _nrows++;

@@ -148,7 +148,7 @@ public class Frame extends Lockable<Frame> {
   public int  numCols() { return _keys.length; }
   /** Number of rows
    *  @return Number of rows */
-  public long numRows() { return anyVec().length(); }
+  public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
   /** Returns the first readable vector. 
    *  @return the first readable Vec */
@@ -289,7 +289,7 @@ public class Frame extends Lockable<Frame> {
    *  files into the same offsets in some chunk this checksum will be
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
-  @Override public long checksum() {
+  @Override protected long checksum_impl() {
     Vec[] vecs = vecs();
     long _checksum = 0;
     for( int i = 0; i < _names.length; ++i ) {
@@ -679,7 +679,7 @@ public class Frame extends Lockable<Frame> {
                 if (er >= 0) continue;
                 er = Math.abs(er);
                 if (er < cs._start || er > (cs._len + cs._start - 1)) continue;
-                cs.set0((int) (er - cs._start), 1);
+                cs.set((int) (er - cs._start), 1);
               }
             }
           }.doAll(v0).getResult()._fr.anyVec();
@@ -740,7 +740,7 @@ public class Frame extends Lockable<Frame> {
       final Vec[] vecs = new Vec[_cols.length];
       final Vec   anyv = _base.anyVec();
       final long  nrow = anyv.length();
-      long  r    = ix[0].at80(0);
+      long  r    = ix[0].at8(0);
       int   last_ci = anyv.elem2ChunkIdx(r<nrow?r:0); // memoize the last chunk index
       long  last_c0 = anyv._espc[last_ci];            // ...         last chunk start
       long  last_c1 = anyv._espc[last_ci + 1];        // ...         last chunk end
@@ -751,7 +751,7 @@ public class Frame extends Lockable<Frame> {
       }
       for (int i = 0; i < ix[0]._len; i++) {
         // select one row
-        r = ix[0].at80(i);   // next row to select
+        r = ix[0].at8(i);   // next row to select
         if (r < 0) continue;
         if (r >= nrow) {
           for (int c = 0; c < vecs.length; c++) ncs[c].addNum(Double.NaN);
@@ -765,7 +765,7 @@ public class Frame extends Lockable<Frame> {
           }
           for (int c = 0; c < vecs.length; c++)
             if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c],r);
-            else                   ncs[c].addNum (last_cs[c].at(r));
+            else                   ncs[c].addNum (last_cs[c].at_abs(r));
         }
       }
     }
@@ -813,14 +813,14 @@ public class Frame extends Lockable<Frame> {
           if (_isInt[i] == 1) { // Slice on integer columns
             for (int j = rlo; j < rhi; j++)
               if (oc._vec.isUUID()) nc.addUUID(oc, j);
-              else if (oc.isNA0(j)) nc.addNA();
-              else nc.addNum(oc.at80(j), 0);
+              else if (oc.isNA(j)) nc.addNA();
+              else nc.addNum(oc.at8(j), 0);
           } else if (oc._vec.isString()) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr0(new ValueString(), j));
+              nc.addStr(oc.atStr(new ValueString(), j));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
-              nc.addNum(oc.at0(j));
+              nc.addNum(oc.atd(j));
           }
         }
         rlo = rhi;
@@ -836,12 +836,12 @@ public class Frame extends Lockable<Frame> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
       for(int i = 0; i < pred._len; ++i) {
-        if(pred.at0(i) != 0) {
+        if(pred.atd(i) != 0) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
             if( chk._vec.isUUID() ) nchks[j].addUUID(chk, i);
-            else if(chk._vec.isString()) nchks[j].addStr((chk.atStr0(new ValueString(), i)));
-            else nchks[j].addNum(chk.at0(i));
+            else if(chk._vec.isString()) nchks[j].addStr((chk.atStr(new ValueString(), i)));
+            else nchks[j].addNum(chk.atd(i));
           }
         }
       }

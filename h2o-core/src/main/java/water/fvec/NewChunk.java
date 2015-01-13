@@ -321,12 +321,12 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
   public void addUUID( Chunk c, long row ) {
-    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l(row),c.at16h(row));
+    if( c.isNA_abs(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else addUUID(c.at16l_abs(row),c.at16h_abs(row));
   }
   public void addUUID( Chunk c, int row ) {
-    if( c.isNA0(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l0(row),c.at16h0(row));
+    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else addUUID(c.at16l(row),c.at16h(row));
   }
 
   public final boolean isUUID(){return _ls != null && _ds != null; }

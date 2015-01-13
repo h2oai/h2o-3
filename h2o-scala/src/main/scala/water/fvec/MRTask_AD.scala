@@ -35,14 +35,14 @@ class MRTask_AD[tmr <: MapReduce[Array[Double],tmr]](val mr : tmr) extends MRTas
     if( skipNA ) {
       var col = 0
       while( col < chks.length ) {
-        val d = chks(col).at0(i); row(col) = d
+        val d = chks(col).atd(i); row(col) = d
         if( d.isNaN ) return false
         col += 1
       }
     } else {
       var col = 0
       while( col < chks.length ) {
-        row(col) = chks(col).at0(i)
+        row(col) = chks(col).atd(i)
         col += 1
       }
     }
