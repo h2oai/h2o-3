@@ -1,17 +1,10 @@
 package water;
 
-import static org.junit.Assert.*;
 import org.junit.*;
-
-import java.io.File;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.util.UnsafeUtils;
 
 public class KVSpeedTest extends TestUtil {
   static final int NCLOUD=5;
-  static final int NKEYS=10;
+  static final int NKEYS=100000;
   @BeforeClass static public void setup() { stall_till_cloudsize(NCLOUD); }
 
   // Make a million keys-per-node.  Make sure they are all cached/shared on at
@@ -19,36 +12,67 @@ public class KVSpeedTest extends TestUtil {
   // the million read/write/put/invalidates hit the wires.
   @Test @Ignore
   public void testMillionRemoveKeys() {
-    long start;
+    long start = System.currentTimeMillis();
+
+    // Compute home keys
+    byte[] homes = new byte[NKEYS*NCLOUD];
+    for( int i=0; i<homes.length; i++ )
+      homes[i] = (byte)Key.make("Q"+i).home(H2O.CLOUD);
+    final Key k = Key.make("homes");
+    DKV.put(k,new Value(k,homes));
+    start = logTime(start,"HOMEALL",NCLOUD);
 
     // Populate NKEYS locally
-    start = System.currentTimeMillis();
     new MRTask() {
       @Override protected void setupLocal() {
+        byte[] homes = DKV.get(k).rawMem();
+        final int sidx = H2O.SELF.index();
         long start = System.currentTimeMillis();
-        for( int i=0; i<NKEYS; i++ ) {
-          String s = "Q"+i;
-          Key k = Key.make(s);
-          if( k.home() ) DKV.put(k,new Value(k,s),_fs);
-          else i--;
+        for( int i=0; i<homes.length; i++ ) {
+          if( homes[i]==sidx ) {
+            String s = "Q"+i;
+            Key k = Key.make(s);
+            DKV.put(k,new Value(k,s),_fs);
+          }
         }
-        System.out.println("PUT1 "+H2O.SELF+" "+NKEYS/(System.currentTimeMillis()-start));
+        logTime(start, "PUT1 "+H2O.SELF, 1);
       }
     }.doAllNodes();
-    System.out.println("PUTALL "+NCLOUD*NKEYS/(System.currentTimeMillis()-start));
+    start = logTime(start,"PUTALL",NCLOUD);
 
     // Force sharing at least once
-    start = System.currentTimeMillis();
     new MRTask() {
       @Override protected void setupLocal() {
+        byte[] homes = DKV.get(k).rawMem();
+        final int sidx = H2O.SELF.index();
         long start = System.currentTimeMillis();
-        for( int i=0; i<NKEYS; i++ )  DKV.prefetch(Key.make("Q"+i+1));
-        for( int i=0; i<NKEYS; i++ )  DKV.get     (Key.make("Q"+i+1));
-        System.out.println("GET1 "+H2O.SELF+" "+NKEYS/(System.currentTimeMillis()-start));
+        for( int i=0; i<homes.length; i++ )
+          if( homes[i]==sidx )
+            DKV.prefetch(Key.make("Q"+i+1));
+        start = logTime(start, "PREFETCH1 "+H2O.SELF, 1);
+        for( int i=0; i<homes.length; i++ )
+          if( homes[i]==sidx )
+            DKV.get(Key.make("Q"+i+1));
+        logTime(start, "GET1 "+H2O.SELF, 1);
       }
     }.doAllNodes();
-    System.out.println("GETALL "+NCLOUD*NKEYS/(System.currentTimeMillis()-start));
+    start = logTime(start,"GETALL",NCLOUD);
 
+    Futures fs = new Futures();
+    for( int i=0; i<homes.length; i++ )
+      DKV.remove(Key.make("Q"+i), fs);
+    start = logTime(start,"REMALL_START",NCLOUD);
+    fs.blockForPending();
+    logTime(start,"REMALL_DONE",NCLOUD);
+
+    DKV.remove(k);
+  }
+
+  private long logTime( long start, String msg, int ncloud ) {
+    long now = System.currentTimeMillis();
+    double d = (double)(now-start)/NKEYS/ncloud;
+    System.out.println(msg+" "+d+" msec/op");
+    return now;
   }
 
 }

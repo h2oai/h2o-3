@@ -202,16 +202,9 @@ public abstract class DKV {
     // e.g., because a prior 'put' of a null (i.e. a remove) is still mid-
     // send to the remote, so the local get has missed above, but a remote
     // get still might 'win' because the remote 'remove' is still in-progress.
-    for( RPC<?> rpc : home.tasks() ) {
-      DTask dt = rpc._dt;       // Read once; racily changing
-      if( dt instanceof TaskPutKey ) {
-        assert rpc._target == home;
-        TaskPutKey tpk = (TaskPutKey)dt;
-        Key k = tpk._key;
-        if( k != null && key.equals(k) )
-          return tpk._xval;
-      }
-    }
+    TaskPutKey tpk = home.pendingPutKey(key);
+    if( tpk != null ) return tpk._xval;
+
     // Get data "the hard way"
     RPC<TaskGetKey> tgk = TaskGetKey.start(home,key);
     return blocking ? TaskGetKey.get(tgk) : null;
