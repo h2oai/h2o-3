@@ -646,6 +646,18 @@ public final class ParseDataset extends Job<Frame> {
     static final byte ICOL = 4; // UUID    col typ
     static final byte SCOL = 5; // String  col typ
 
+    public static String ctypeToDataTypeName(byte b) {
+      switch (b) {
+        case UCOL:  return "unknown";
+        case NCOL:  return "numeric";
+        case ECOL:  return "enum";
+        case TCOL:  return "time";
+        case ICOL:  return "uuid";
+        case SCOL:  return "string";
+        default:    throw new RuntimeException("ctypeToDataTypeName case unhandled");
+      }
+    }
+
     private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes){
       _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
       _vecs = new AppendableVec[ncols];

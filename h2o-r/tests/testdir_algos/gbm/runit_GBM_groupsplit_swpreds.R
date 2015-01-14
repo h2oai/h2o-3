@@ -17,30 +17,34 @@ test.GBM.SWpreds <- function(conn) {
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
   drfmodel.nogrp <- h2o.gbm(x = "X1", y = "y", training_frame = swpreds.hex, ntrees = 50, max_depth = 20, nbins = 500, group_split = FALSE)
   print(drfmodel.nogrp)
+  drfmodel.nogrp.perf <- h2o.performance(drfmodel.nogrp, swpreds.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
   drfmodel.grpsplit <- h2o.gbm(x = "X1", y = "y", training_frame = swpreds.hex, ntrees = 50, max_depth = 20, nbins = 500, group_split = TRUE)
   print(drfmodel.grpsplit)
+  drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, swpreds.hex)
   
   # Check AUC and overall prediction error at least as good with group split than without
   tol <- 1e-4     #  Note: Allow for certain tolerance
-  expect_true(drfmodel.grpsplit@model$auc >= drfmodel.nogrp@model$auc - tol)
-  expect_true(drfmodel.grpsplit@model$confusion[3,3] <= drfmodel.nogrp@model$confusion[3,3] + tol)
+  expect_true(drfmodel.grpsplit.perf@metrics$auc$AUC >= drfmodel.nogrp.perf@metrics$auc$AUC - tol)
+  expect_true(drfmodel.grpsplit.perf@metrics$cm$table[3,3] <= drfmodel.nogrp.perf@metrics$cm$table[3,3] + tol)
   
   # Train H2O GBM Model including Noise Column:
   Log.info("Distributed Random Forest including Noise Column")
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
   drfmodel.nogrp2 <- h2o.gbm(x = c("X1", "X2"), y = "y", training_frame = swpreds.hex, ntrees = 50, max_depth = 20, nbins = 500, group_split = FALSE)
   print(drfmodel.nogrp2)
+  drfmodel.nogrp2.perf <- h2o.performance(drfmodel.nogrp2, swpreds.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
   drfmodel.grpsplit2 <- h2o.gbm(x = c("X1", "X2"), y = "y", training_frame = swpreds.hex, ntrees = 50, max_depth = 20, nbins = 500, group_split = TRUE)
   print(drfmodel.grpsplit2)
+  drfmodel.grpsplit2.perf <- h2o.performance(drfmodel.grpsplit2, swpreds.hex)
   
   # BUG? With noise, seems like AUC and/or prediction error can be slightly better with naive rather than group split
   #      This behavior is inconsistent over repeated runs when the seed is different
-  # expect_true(drfmodel.grpsplit2@model$auc >= drfmodel.nogrp2@model$auc - tol)
-  # expect_true(drfmodel.grpsplit2@model$confusion[3,3] <= drfmodel.nogrp2@model$confusion[3,3] + tol)
+  expect_true(drfmodel.grpsplit2.perf@metrics$auc$AUC >= drfmodel.nogrp2.perf@metrics$auc$AUC - tol)
+  expect_true(drfmodel.grpsplit2.perf@metrics$cm$table[3,3] <= drfmodel.nogrp2.perf@metrics$cm$table[3,3] + tol)
   
   testEnd()
 }

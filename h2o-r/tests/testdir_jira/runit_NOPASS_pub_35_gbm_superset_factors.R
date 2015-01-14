@@ -29,13 +29,13 @@ pub35gbm <- function(conn){
   Log.info("Training a GBM model")
   m <- h2o.gbm(x = 1:3, 
                y = 4, 
-               data = df.h,
-               n.trees = 10,
-               interaction.depth = 5,  
-               n.minobsinnode = 10, 
-               shrinkage = 0.1)
+               training_frame = df.h,
+               ntrees = 10,
+               max_depth = 5,  
+               min_rows = 10, 
+               learn_rate = 0.1)
 
-  preds <- as.data.frame(h2o.predict(m, df.h2))
+  preds <- as.data.frame(predict(m, df.h2))
 
   print(preds)
   expect_that(is.na(preds[1,1]), equals(TRUE))

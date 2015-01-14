@@ -62,7 +62,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     if( _parms._k < 1 || _parms._k > 10000000 ) error("_k", "k must be between 1 and 1e7");
     if( _parms._max_iters < 0 || _parms._max_iters > 1000000) error("_max_iters", " max_iters must be between 0 and 1e6");
     if( _train == null ) return; // Nothing more to check
-    if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows.");
+    if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       if( _parms._user_points.get().numCols() != _train.numCols() ) {
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");

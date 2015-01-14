@@ -469,8 +469,7 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
     ast <- .h2o.nary_op("colnames=", x, idxs, value, .key = x@key)
-    .force.eval(ast@ast, new.assign = FALSE)
-    x
+    .force.eval(ast@ast, new.assign = FALSE, h2o.ID = x@key)
 })
 
 #' @rdname h2o.colnames
@@ -1002,7 +1001,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
     object <- as.data.frame(object)
   }
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE)
+  write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
   h2f <- h2o.uploadFile(conn, tmpf, key = key)
   file.remove(tmpf)
   h2f

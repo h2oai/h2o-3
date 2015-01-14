@@ -36,6 +36,9 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   @API(help="Column Names",direction=API.Direction.OUTPUT)
   public String[] columnNames;
 
+  @API(help="Column Data Types",direction=API.Direction.OUTPUT)
+  public String[] columnDataTypes;
+
   @API(help="Sample Data", direction=API.Direction.OUTPUT)
   public String[][] data;
 

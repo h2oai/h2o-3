@@ -11,8 +11,9 @@ options(echo=FALSE)
 local({r <- getOption("repos"); r["CRAN"] <- "http://cran.us.r-project.org"; options(repos = r)})
 if (!"R.utils" %in% rownames(installed.packages())) install.packages("R.utils")
 if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
-tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Ups. Couldn't install `rgl` package...") })
+tryCatch(if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl"), error = function(e) { print("Oops. Couldn't install `rgl` package...") })
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
+if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
 library(R.utils)
 
 PROJECT.ROOT <- "h2o-dev"

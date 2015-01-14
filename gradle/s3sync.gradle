@@ -48,7 +48,7 @@ task syncBigdataServer {
 // sync is based on name, size, and the last modify date, currently md5 tags are ignored
 // note this drops the subdir name locally
 def syncData(subdir) {
-  def localDestDir = (new File(".")).getCanonicalPath() + File.separator + subdir.replaceAll("/", Matcher.quoteReplacement(File.separator)) + File.separator
+  def localDestDir = (new File("$rootDir")).getCanonicalPath() + File.separator + subdir.replaceAll("/", Matcher.quoteReplacement(File.separator)) + File.separator
   def remoteFiles = new XmlSlurper().parseText(new URL('https://h2o-public-test-data.s3.amazonaws.com').getText())
   FileTree localFiles= fileTree(dir: subdir) // local tree
   def trimLength = (subdir+File.separator).length()

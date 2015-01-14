@@ -91,7 +91,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Override in subclasses to change the default; e.g. true in GLM
     protected boolean defaultDropNA20Cols() { return false; }
-    
+
     /** Type of missing columns during adaptation between train/test datasets
      *  Overload this method for models that have sparse data handling - a zero
      *  will preserve the sparseness.  Otherwise, NaN is used.

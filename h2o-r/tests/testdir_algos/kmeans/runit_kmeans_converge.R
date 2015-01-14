@@ -10,6 +10,7 @@ test.km.iter_max <- function(conn) {
   
   Log.info(paste("Run k-means in a loop of", miters, "iterations with max_iter = 1"))
   start <- ozone.hex[1:ncent,]
+  expect_error(h2o.kmeans(ozone.hex, max_iter = 0))
   for(i in 1:miters) {
     fitrep <- h2o.kmeans(ozone.hex, init = start, max_iter = 1)
     start <- fitrep@model$centers
