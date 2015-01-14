@@ -15,8 +15,9 @@ function(conn) {
 
     Log.info("Check that \"slicedIris.hex\" is in the user store.")
     print(h2o.ls(conn))
-    expect_true("slicedIris.hex" %in% h2o.ls(conn)[[1]])
-    expect_that(irisSlice@key, equals("slicedIris.hex"))
+    keys <- as.vector(h2o.ls()[,1])
+    expect_true(any(grepl("slicedIris.hex", keys)))
+    expect_true(grepl("slicedIris.hex", irisSlice@key))
     h2o.removeAll(conn)
 
     iris.hex <- h2o.importFile(conn, locate("smalldata/iris/iris.csv"), "iris.hex")
