@@ -30,7 +30,7 @@ test.GBM.groupsplit <- function(conn) {
   Log.info("Confusion matrix of predictions (max accuracy):\n")
   # test.cm <- h2o.confusionMatrix(test.hex$y, drfmodel.pred[,1])
   # print(test.cm)
-  test.perf <- h2o.performance(data=drfmodel.pred[,3], reference = test.hex$y)
+  test.perf <- h2o.performance(model = drfmodel.h2o, data = test.hex)
   #test.perf <- h2o.performance(test.hex$y, drfmodel.pred[,1])
   print(test.perf)
   testEnd()

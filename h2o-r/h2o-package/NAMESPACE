@@ -21,5 +21,11 @@ exportClasses(
   "H2OBinomialModel",
   "H2OMultinomialModel",
   "H2ORegressionModel",
-  "H2OClusteringModel"
+  "H2OClusteringModel",
+  "H2OModelMetrics",
+  "H2OUnknownMetrics",
+  "H2OBinomialMetrics",
+  "H2OMultinomialMetrics",
+  "H2ORegressionMetrics",
+  "H2OClusteringMetrics"
 )

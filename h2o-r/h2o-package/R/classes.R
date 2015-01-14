@@ -178,3 +178,22 @@ setClass("H2OBinomialModel",    contains="H2OModel")
 setClass("H2OMultinomialModel", contains="H2OModel")
 setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
+
+#' 
+#' The H2OModelMetrics Object.
+#'
+#' A class for constructing performance measures of H2O models.
+#'
+setClass("H2OModelMetrics", 
+         representation(algorithm="character", metrics="list"),
+         contains="VIRTUAL")
+
+setMethod("show", "H2OModelMetrics", function(object) {
+  cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+})
+
+setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
+setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
+setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
+setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
+setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")

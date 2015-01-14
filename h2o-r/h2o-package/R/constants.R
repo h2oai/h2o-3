@@ -213,3 +213,13 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__W2V            <- "Word2Vec.json"
 .h2o.__SYNONYMS       <- "Synonyms.json"
 .h2o.__TRANSFORM      <- "Transform.json"
+
+#' Model Metrics Endpoint
+.h2o.__MODEL_METRICS <- function(model,data) {
+  if(missing(data)) {
+    paste0("ModelMetrics.json/models/",model)
+  }
+  else {
+    paste0("ModelMetrics.json/models/",model,"/frames/",data)
+  }
+}
