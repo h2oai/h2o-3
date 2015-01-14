@@ -78,14 +78,16 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
     if (null != impl._train) {
       Value v = DKV.get(impl._train);
-      if (null == v) throw new IllegalArgumentException("Failed to find training_frame: " + impl._train);
-      training_frame = new FrameKeyV1(((Frame)v.get())._key);
+      if (null != v) {
+        training_frame = new FrameKeyV1(((Frame) v.get())._key);
+      }
     }
 
     if (null != impl._valid) {
       Value v = DKV.get(impl._valid);
-      if (null == v) throw new IllegalArgumentException("Failed to find validation_frame: " + impl._valid);
-      validation_frame = new FrameKeyV1(((Frame)v.get())._key);
+      if (null != v) {
+        validation_frame = new FrameKeyV1(((Frame) v.get())._key);
+      }
     }
 
     return (S)this;
