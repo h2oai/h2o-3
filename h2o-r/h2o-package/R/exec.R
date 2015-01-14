@@ -17,15 +17,21 @@ function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
 
-  if (is(x, "H2OFrame"))      x <- .get(x)
-  else if (is(x, "ASTNode"))  x <- x
-  else if (is.numeric(x))     x <- paste0('#', x)
-  else if (is.character(x))   x <- deparse(eval(x))
-  else if (is(x, "ASTEmpty")) x <- paste0('%', x@key)
-  else stop("operand type not handled: ", class(x))
-
+  if (is(x, "H2OFrame")) {
+    conn <- x@h2o
+    finalizers <- x@finalizers
+    x <- .get(x)
+  } else {
+    conn <- h2o.getConnection()
+    finalizers <- list()
+    if (is(x, "ASTNode"))       x <- x
+    else if (is.numeric(x))     x <- paste0('#', x)
+    else if (is.character(x))   x <- deparse(eval(x))
+    else if (is(x, "ASTEmpty")) x <- paste0('%', x@key)
+    else stop("operand type not handled: ", class(x))
+  }
   ast <- new("ASTNode", root=op, children=list(x))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
+  .newH2OObject("H2OFrame", ast = ast, key = .key.make(), h2o = conn, finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -38,24 +44,39 @@ function(op, e1, e2) {
   op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
-  if (is(e1, "H2OFrame"))       lhs <- .get(e1)
-  else if (is(e1, "ASTNode"))   lhs <- e1
-  else if (is.numeric(e1))      lhs <- paste0('#', e1)
-  else if (is.character(e1))    lhs <- deparse(eval(e1))
-  else if (is(e1, "ASTEmpty"))  lhs <- paste0('%', e1@key)
-  else stop("LHS operand type not handled: ", class(e1))
+  if (is(e1, "H2OFrame")) {
+    lhsconn <- e1@h2o
+    finalizers <- e1@finalizers
+    lhs <- .get(e1)
+  } else {
+    lhsconn <- h2o.getConnection()
+    finalizers <- list()
+    if (is(e1, "ASTNode"))        lhs <- e1
+    else if (is.numeric(e1))      lhs <- paste0('#', e1)
+    else if (is.character(e1))    lhs <- deparse(eval(e1))
+    else if (is(e1, "ASTEmpty"))  lhs <- paste0('%', e1@key)
+    else stop("LHS operand type not handled: ", class(e1))
+  }
 
   # Prep the RHS
-  if (is(e2, "H2OFrame"))       rhs <- .get(e2)
-  else if (is(e2, "ASTNode"))   rhs <- e2
-  else if (is.numeric(e2))      rhs <- paste0('#', e2)
-  else if (is.character(e2))    rhs <- deparse(eval(e2))
-  else if (is(e2, "ASTEmpty"))  rhs <- paste0('%', e2@key)
-  else stop("RHS operand type not handled: ", class(e2))
+  if (is(e2, "H2OFrame")) {
+    rhsconn <- e2@h2o
+    finalizers <- c(finalizers, e2@finalizers)
+    rhs <- .get(e2)
+  } else {
+    rhsconn <- h2o.getConnection()
+    if (is(e2, "ASTNode"))        rhs <- e2
+    else if (is.numeric(e2))      rhs <- paste0('#', e2)
+    else if (is.character(e2))    rhs <- deparse(eval(e2))
+    else if (is(e2, "ASTEmpty"))  rhs <- paste0('%', e2@key)
+    else stop("RHS operand type not handled: ", class(e2))
+  }
 
-  # Return an ASTNode
+  if (!identical(lhsconn, rhsconn))
+    stop("LHS and RHS are using different H2O connections")
+
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  new("H2OFrame", ast = ast, key = .key.make(), h2o = h2o.getConnection())
+  .newH2OObject("H2OFrame", ast = ast, key = .key.make(), h2o = lhsconn, finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -65,9 +86,10 @@ function(op, e1, e2) {
 .h2o.nary_op<-
 function(op, ..., .args = list(...), .key = .key.make()) {
   op <- new("ASTApply", op = op)
+  finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
   children <- .args.to.ast(.args = .args)
   ast <- new("ASTNode", root = op, children = children)
-  new("H2OFrame", ast = ast, key = .key, h2o = h2o.getConnection())
+  .newH2OObject("H2OFrame", ast = ast, key = .key, h2o = h2o.getConnection(), finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -85,7 +107,7 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE) {
+function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE, finalizers=list()) {
   ret <- ""
   if (is.null(h2o.ID)) h2o.ID <- .key.make()
   if (new.assign) {
@@ -100,8 +122,9 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getCo
     if (ret == "TRUE")  ret <- TRUE
     if (ret == "FALSE") ret <- FALSE
   } else if (res$result == "") {
-    ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names)
+    ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names, linkToGC=FALSE)
     ret@key <- if(is.null(h2o.ID)) NA_character_ else h2o.ID
+    ret@finalizers <- c(ret@finalizers, finalizers)
   } else {
     ret <- res$scalar
     if (ret == "NaN") ret <- NA
@@ -126,5 +149,5 @@ function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getCo
 .h2o.post.function<-
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
-  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr))
+  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr))
 }

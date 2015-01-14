@@ -15,46 +15,7 @@ NULL
 # Class Defintions
 #-----------------------------------------------------------------------------------------------------------------------
 
-#'
-#' The Node class.
-#'
-#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' has as its ancestor this class.
-#'
-#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
-#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
-#' by looking up the tree to the nearest symbol table defining that symbol.
-setClass("Node", contains="VIRTUAL")
-
-#'
-#' The ASTNode class.
-#'
-#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
-#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
-#' @slot root Object of type \code{Node}
-#' @slot children Object of type \code{list}
-setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
-
-#' @rdname ASTNode-class
-setMethod("show", "ASTNode", function(object) cat(.visitor(object), "\n") )
-
-#'
-#' The ASTApply class.
-#'
-#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
-#' are never leaf nodes. Operators are discussed more in depth in ops.R.
-setClass("ASTApply", representation(op="character"), contains="Node")
-
-setClass("ASTEmpty",  representation(key="character"), contains="Node")
-setClass("ASTBody",   representation(statements="list"), contains="Node")
-setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
-setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
-setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node")
-setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
-setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
-setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
-setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
+setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
 
 #'
 #' The H2OConnection class.
@@ -76,6 +37,7 @@ setClass("H2OConnection",
          representation(ip="character", port="numeric", session_id="character"),
          prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_)
          )
+setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
 setMethod("show", "H2OConnection", function(object) {
@@ -84,33 +46,92 @@ setMethod("show", "H2OConnection", function(object) {
   cat("Session ID:", object@session_id, "\n")
 })
 
-setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
-setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
-setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
+#'
+#' The H2OObject class
+#'
+setClass("H2OObject",
+         representation(h2o="H2OConnectionOrNULL", key="character", finalizers="list"),
+         prototype(h2o=NULL, key=NA_character_, finalizers=list()),
+         contains="VIRTUAL")
 
+.keyFinalizer <- function(envir) {
+  try(h2o.rm(get("key", envir), get("h2o", envir)), silent=TRUE)
+}
+
+.newH2OObject <- function(Class, ..., h2o = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(key) && is(h2o, "H2OConnection")) {
+    envir <- new.env()
+    assign("key", key, envir)
+    assign("h2o", h2o, envir)
+    reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
+    finalizers <- c(list(envir), finalizers)
+  }
+  new(Class, ..., h2o = h2o, key = key, finalizers = finalizers)
+}
+
+#'
+#' The Node class.
+#'
+#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' has as its ancestor this class.
+#'
+#' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
+#' all the relevant variables and functions defined in the current scope. A missing symbol is therefore discovered
+#' by looking up the tree to the nearest symbol table defining that symbol.
+setClass("Node", contains="VIRTUAL")
+
+#'
+#' The ASTNode class.
+#'
+#' This class represents a node in the abstract syntax tree. An ASTNode has a root. The root has children that either
+#' point to another ASTNode, or to a leaf node, which may be of type ASTNumeric or ASTFrame.
+#' @slot root Object of type \code{Node}
+#' @slot children Object of type \code{list}
+setClass("ASTNode", representation(root="Node", children="list"), contains="Node")
+setClassUnion("ASTNodeOrNULL", c("ASTNode", "NULL"))
+
+#' @rdname ASTNode-class
+setMethod("show", "ASTNode", function(object) cat(.visitor(object), "\n") )
+
+#'
+#' The ASTApply class.
+#'
+#' This class represents an operator between one or more H2O objects. ASTApply nodes are always root nodes in a tree and
+#' are never leaf nodes. Operators are discussed more in depth in ops.R.
+setClass("ASTApply", representation(op="character"), contains="Node")
+
+setClass("ASTEmpty",  representation(key="character"), contains="Node")
+setClass("ASTBody",   representation(statements="list"), contains="Node")
+setClass("ASTFun",    representation(name="character", arguments="character", body="ASTBody"), contains="Node")
+setClass("ASTSpan",   representation(root="Node",    children  = "list"), contains="Node")
+setClass("ASTSeries", representation(op="character", children  = "list"), contains="Node", prototype(op="{"))
+setClass("ASTIf",     representation(op="character", condition = "ASTNode",  body = "ASTBody"), contains="Node", prototype(op="if"))
+setClass("ASTElse",   representation(op="character", body      = "ASTBody"), contains="Node", prototype(op="else"))
+setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
+setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
 
 #'
 #' The H2OFrame class
 #'
 setClass("H2OFrame",
-         representation(h2o="H2OConnectionOrNULL", key="character", ast="ASTNodeOrNULL",
-         col_names="character", nrows="numeric", ncols="numeric", scalar="numeric",
-         factors="data.frameOrNULL"),
-         prototype(h2o       = NULL,
-                   key       = NA_character_,
-                   ast       = NULL,
-                   col_names = NA_character_,
-                   nrows     = NA_integer_,
-                   ncols     = NA_integer_,
-                   factors   = NULL,
-                   scalar    = NA_integer_)
-         )
+         representation(ast="ASTNodeOrNULL", nrows="numeric", ncols="numeric", col_names="character",
+                        factors="data.frameOrNULL"),
+         prototype(h2o        = NULL,
+                   key        = NA_character_,
+                   finalizers = list(),
+                   ast        = NULL,
+                   nrows      = NA_integer_,
+                   ncols      = NA_integer_,
+                   col_names  = NA_character_,
+                   factors    = NULL),
+         contains ="H2OObject")
 
 setMethod("show", "H2OFrame", function(object) {
   print(object@h2o)
   cat("Key:", object@key, "\n")
   print(head(object))
-#  h2o.gc()
+#  .h2o.gc()
   invisible(object)
 })
 
@@ -128,7 +149,7 @@ setMethod("show", "H2OFrame", function(object) {
 #' @slot h2o An \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
 #' @aliases H2ORawData
-setClass("H2ORawData", representation(h2o="H2OConnection", key="character"))
+setClass("H2ORawData", contains="H2OObject")
 
 #' @rdname H2ORawData-class
 setMethod("show", "H2ORawData", function(object) {
@@ -143,7 +164,7 @@ setMethod("show", "H2ORawData", function(object) {
 #'
 #' This class represents a h2o-word2vec object.
 #'
-setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.data="H2OFrame"))
+setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 
 #'
 #' The H2OModel object.
@@ -158,8 +179,8 @@ setClass("H2OW2V", representation(h2o="H2OConnection", key="character", train.da
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 setClass("H2OModel",
-         representation(h2o="H2OConnection", key="character", algorithm="character", parameters="list", model="list"),
-         contains="VIRTUAL")
+         representation(algorithm="character", parameters="list", model="list"),
+         contains=c("VIRTUAL", "H2OObject"))
 
 setMethod("show", "H2OModel", function(object) {
   cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
