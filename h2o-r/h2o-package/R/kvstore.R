@@ -66,6 +66,32 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 }
 
 #'
+#' Garbage Collection of Temporary Frames
+#'
+#' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
+h2o.gc <- function(conn = h2o.getConnection()) {
+  frame_keys <- as.vector(h2o.ls()[,1L])
+  # no reference? then destroy!
+  f <- function(env) {
+    l <- lapply(ls(env), function(x) {
+      o <- get(x, envir=env)
+      if(is(o, "H2OFrame") || is(o, "H2OModel")) o@key
+    })
+    Filter(Negate(is.null), l)
+  }
+  p_list  <- f(.pkg.env)
+  g_list  <- f(globalenv())
+  f1_list <- f(parent.frame())
+
+  g_list <- unlist(c(p_list, g_list, f1_list))
+  l <- setdiff(seq_len(length(frame_keys)),
+               unlist(lapply(g_list, function(e) if (e %in% frame_keys) match(e, frame_keys) else NULL)))
+  if (length(l) != 0L)
+    h2o.rm(frame_keys[l])
+  invisible(NULL)
+}
+
+#'
 #' Rename an H2O object.
 #'
 #' Makes a copy of the data frame and gives it the desired the key.

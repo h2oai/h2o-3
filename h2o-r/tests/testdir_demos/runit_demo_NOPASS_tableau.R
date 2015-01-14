@@ -18,7 +18,7 @@ test.tableau <- function(conn) {
   numFlights.R <- as.data.frame(numFlights)
 
   Log.info ('Grouping number of cancellations by months...')
-  fun2 <- function(df) {sum(df$Cancelled)}
+  fun2 <- function(df) {sum(df[22])}         # must be numeric
   cancelledFlights <- h2o.ddply(data.hex, 'Month', fun2)
   cancelledFlights.R <- as.data.frame(cancelledFlights)
   
@@ -32,7 +32,7 @@ test.tableau <- function(conn) {
   
   .arg2 <- 'Origin,Dest,UniqueCarrier'
   xvars <- unlist( strsplit( .arg2, split = ',' , fixed = TRUE ) )
-  data.glm <- h2o.glm(x = xvars , y = 'Cancelled', data = data.hex, family = 'binomial', nfolds = 0, standardize=TRUE)
+  data.glm <- h2o.glm(x = xvars , y = 'Cancelled', training_frame = data.hex, family = 'binomial', n_folds = 0, standardize=TRUE)
   
   glmModelTemp <- eval(parse(text = 'data.glm' ))
   originFactors <- levels(data.hex$Origin)

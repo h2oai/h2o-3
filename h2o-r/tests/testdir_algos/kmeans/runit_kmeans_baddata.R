@@ -24,10 +24,6 @@ test.km.bad_data <- function(conn) {
   allNA.hex <- as.h2o(conn, train)
   expect_error(h2o.kmeans(allNA.hex, k = 5))
   
-  # Log.info("Training data with categorical column (unimplemented)")
-  # iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"))
-  # expect_error(h2o.kmeans(iris.hex, k = 5))
-  
   testEnd()
 }
 

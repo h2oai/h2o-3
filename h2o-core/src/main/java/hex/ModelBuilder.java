@@ -194,7 +194,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     if( cstr.length() > 0 )
-      if( expensive ) Log.info("Dropping constant columns: "+cstr);
+      if( expensive ) {
+        warn("_train","Dropping constant columns: " + cstr);
+        Log.info("Dropping constant columns: " + cstr);
+      }
 
     if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
       String nstr="";            // Log of dropped columns
@@ -207,7 +210,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
       if( nstr.length() > 0 )
-        if( expensive ) Log.info("Dropping columns with too many missing values: "+nstr);
+        if( expensive ) {
+          warn("_train","Dropping columns with too many missing values: " + nstr);
+          Log.info("Dropping columns with too many missing values: " + nstr);
+        }
     }
 
     // Check that at least some columns are not-constant and not-all-NAs

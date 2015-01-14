@@ -54,6 +54,7 @@ public class JobV2<J extends Schema> extends Schema<Job, JobV2<J>> {
     // Do this in the handler:
     // Job job = DKV.get(j._key).get();
     key = new JobKeyV1(job._key);
+    description = job._description;
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;

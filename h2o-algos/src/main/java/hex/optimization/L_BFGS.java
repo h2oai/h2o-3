@@ -3,6 +3,7 @@ package hex.optimization;
 import water.Iced;
 import water.MemoryManager;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -184,6 +185,7 @@ _MAIN:
       // line search did not progress -> converged
       break _MAIN;
     }
+    Log.info("L_BFGS done after " + iter + " iterations");
     return new Result(iter,beta, gOld);
   }
 

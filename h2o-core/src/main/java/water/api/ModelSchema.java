@@ -53,7 +53,7 @@ abstract public class ModelSchema<M extends Model, P extends Model.Parameters, O
   //==========================
   // Custom adapters go here
 
-  // TOOD: I think we can implement the following two here, using reflection on the type parameters.
+  // TODO: I think we can implement the following two here, using reflection on the type parameters.
 
   /** Factory method to create the model-specific parameters schema. */
   abstract public ModelParametersSchema createParametersSchema();

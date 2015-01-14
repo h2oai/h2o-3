@@ -160,13 +160,17 @@
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
   if(length(validation$validation_messages) != 0L) {
     error <- lapply(validation$validation_messages, function(i) {
-      if( !(i$message_type %in% c("HIDE","INFO")) )
+      if( i$message_type == "ERROR" )
         paste0(i$message, ".\n")
-      else
-        ""
+      else ""
     })
-    if(any(nzchar(error)))
-      stop(error)
+    if(any(nzchar(error))) stop(error)
+    warn <- lapply(validation$validation_messages, function(i) {
+      if( i$message_type == "WARN" )
+        paste0(i$message, ".\n")
+      else ""
+    })
+    if(any(nzchar(warn))) warning(warn)
   }
 
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
@@ -252,4 +256,53 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   print(output)
   
   model
+}
+
+#' Model Performance Metrics in H2O
+#'
+#' Given a trained h2o model, compute its performance on the given
+#' dataset
+#'
+#'
+#' @param model An \linkS4class{H2OModel} object
+#' @param data An \linkS4class{H2OFrame}. The model will make predictions
+#'        on this dataset, and subsequently score them. The dataset should
+#'        match the dataset that was used to train the model, in terms of
+#'        column names, types, and dimensions.
+#' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' h2o.performance(model = prostate.gbm, data=prostate.hex)
+h2o.performance <- function(model, data=NULL) {
+  # Some parameter checking
+  if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
+  if(!is.null(data) && !is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+
+  parms <- list()
+  parms[["model"]] <- model@key
+  if(!is.null(data))
+    parms[["frame"]] <- data@key
+
+  if(missing(data)){
+    res <- .h2o.__remoteSend(model@h2o, method = "GET", .h2o.__MODEL_METRICS(model@key))
+  }
+  else {
+    res <- .h2o.__remoteSend(model@h2o, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
+  }
+
+  algo <- model@algorithm
+  res$model_metrics <- res$model_metrics[[1L]]
+  metrics <- res$model_metrics[!(names(res$model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
+
+  model_category <- res$model_metrics$model_category
+  Class <- paste0("H2O", model_category, "Metrics")
+
+  new(Class     = Class,
+      algorithm = algo,
+      metrics   = metrics)
 }

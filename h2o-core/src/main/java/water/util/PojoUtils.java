@@ -130,7 +130,7 @@ public class PojoUtils {
               Schema[] translation = (Schema[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
-                translation[i] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
+                translation[i++] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {
@@ -143,7 +143,7 @@ public class PojoUtils {
               Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, Array.getLength(orig_field.get(origin)));
               int i = 0;
               for (Schema s : ((Schema[])orig_field.get(origin))) {
-                translation[i] = s.createImpl();
+                translation[i++] = s.createImpl();
               }
               dest_field.set(dest, translation);
             } else {
