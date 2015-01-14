@@ -69,8 +69,11 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' Garbage Collection of Temporary Frames
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
+
+# TODO: This is an older version; need to go back through git and find the "good" one...
 .h2o.gc <- function(conn = h2o.getConnection()) {
   frame_keys <- as.vector(h2o.ls()[,1L])
+  frame_keys <- frame_keys[grepl(.get.session_id(), frame_keys)]
   # no reference? then destroy!
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
@@ -103,12 +106,19 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  ID <- deparse(substitute(data), width.cutoff = 500L)
+  if (!grepl(.get.session_id(), key)) key <- paste0(key, .get.session_id())
+  if (length(substitute(data)) > 1) {
+    ID <- "tmp_value"
+  } else {
+    ID  <- deparse(substitute(data), width.cutoff = 500L)
+  }
   ast <- .h2o.nary_op("rename", data, key)
   .force.eval(ast@ast, ID, parent.frame())
-  o <- get(ID, parent.frame())
-  o@key <- key
-  o
+  data@key <- key
+  data
+#  o <- get(ID, parent.frame())
+#  o@key <- key
+#  o
 }
 
 #'
