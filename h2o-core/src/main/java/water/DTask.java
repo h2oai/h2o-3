@@ -3,8 +3,6 @@ package water;
 import jsr166y.CountedCompleter;
 import water.DException.DistributedException;
 import water.H2O.H2OCountedCompleter;
-import water.util.DocGen;
-import water.util.Log;
 
 /** Objects which are passed and {@link #dinvoke} is remotely executed.<p>
  * <p>
@@ -23,7 +21,7 @@ import water.util.Log;
  * </ol>
  *
  */
-public abstract class DTask<T extends DTask> extends H2OCountedCompleter implements Freezable {
+public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   protected DTask(){}
   public DTask(H2OCountedCompleter completer){super(completer);}
 
@@ -67,7 +65,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter impleme
   public boolean logVerbose() { return true; }
 
   // For MRTasks, we need to copyOver
-  protected void copyOver( T src ) { icer().copyOver(this,src); }
+  protected void copyOver( T src ) { icer().copyOver((T)this,src); }
 
   /** Task to be executed at the home node of the given key.
    *  Basically a wrapper around DTask which enables us to bypass
