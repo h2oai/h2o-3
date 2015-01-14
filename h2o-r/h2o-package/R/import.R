@@ -35,10 +35,10 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key
   if(length(res$files) > 0L) {
     if(parse) {
       srcKey <- res$keys
-      rawData <- new("H2ORawData", h2o=conn, key=srcKey)
+      rawData <- .newH2OObject("H2ORawData", h2o=conn, key=srcKey, linkToGC=TRUE)
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
-      myData <- lapply(res$keys, function(x) new("H2ORawData", h2o=conn, key=x))
+      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", h2o=conn, key=x, linkToGC=TRUE))
       if(length(res$keys) == 1L)
         ret <- myData[[1L]]
       else
@@ -100,7 +100,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
   .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
-  rawData <- new("H2ORawData", h2o=conn, key=path)
+  rawData <- .newH2OObject("H2ORawData", h2o=conn, key=path, linkToGC=TRUE)
   if (parse) {
     h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
   } else {

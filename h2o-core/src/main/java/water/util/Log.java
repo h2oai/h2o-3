@@ -144,6 +144,13 @@ abstract public class Log {
     return LOG_DIR;
   }
 
+  private static String getLogFileNameStem() throws Exception {
+    String ip = H2O.SELF_ADDRESS.getHostAddress();
+    int port = H2O.API_PORT;
+    String portString = Integer.toString(port);
+    return "h2o_" + ip + "_" + portString;
+  }
+
   /**
    * @return The common prefix for all of the different log files for this process.
    */
@@ -155,17 +162,17 @@ abstract public class Log {
     String ip = H2O.SELF_ADDRESS.getHostAddress();
     int port = H2O.API_PORT;
     String portString = Integer.toString(port);
-    String logFileName =
-            getLogDir() + File.separator +
-                    "h2o_" + ip + "_" + portString;
+    String logFileName = getLogDir() + File.separator + getLogFileNameStem();
     return logFileName;
   }
 
+  private static String DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER = "-2-debug.log";
+
   /**
-   * @return This is what shows up in the Web UI when clicking on show log file.
+   * @return This is what shows up in the Web UI when clicking on show log file.  File name only.
    */
-  public static String getLogPathFileName() throws Exception {
-    return getLogPathFileNameStem() + "-2-debug.log";
+  public static String getLogFileName() throws Exception {
+    return getLogFileNameStem() + DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER;
   }
 
   private static void setLog4jProperties(String logDirParent, java.util.Properties p) throws Exception {

@@ -1422,15 +1422,20 @@ class ASTCbind extends ASTUniPrefixOp {
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     dblarys.add(ary);
     AST a;
+    boolean broke = false;
     while (E.skipWS().hasNext()) {
       a = E.parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
-        if (ast instanceof ASTFrame || ast instanceof ASTRaft) {dblarys.add(a); continue; }
+        if (ast instanceof ASTFrame || ast instanceof ASTRaft) { dblarys.add(a); }
+        else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
       }
-      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft)
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft) { // basically anything that returns a Frame...
         dblarys.add(a);
+      }
+      else { broke = true; break; }
     }
+    if (broke) E.rewind();
     ASTCbind res = (ASTCbind) clone();
     AST[] arys = new AST[argcnt=dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
@@ -1564,13 +1569,8 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Futures fs = new Futures();
-    Frame ff = DKV.remove(fr._key, fs).get();
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(_newname), ff.names(), ff.vecs());
-    Futures fs2 = new Futures();
-    DKV.put(Key.make(_newname), fr2, fs2);
-    fs2.blockForPending();
+    Frame fr2 = new Frame(Key.make(_newname), fr.names(), fr.deepSlice(null,null).vecs());
+    DKV.put(Key.make(_newname), fr2);
     e.pushAry(fr2);  // the vecs have not changed and their refcnts remain the same
   }
 }

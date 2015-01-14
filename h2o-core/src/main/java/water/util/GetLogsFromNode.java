@@ -9,16 +9,30 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Get zipped log directory data from a node.
+ * The intent here is to return a binary blob with the data for saving as a file.
+ * This is used as part of the "/3/Logs/download" REST API.
+ */
 public class GetLogsFromNode extends Iced {
   static final int MB = 1 << 20;
   static final int MAX_SIZE = 25 * MB;
 
   // Input
+  /**
+   * Node number to get logs from (starting at 0).
+   */
   public int nodeidx;
 
   // Output
+  /**
+   * Byte array containing a zipped file with the entire log directory.
+   */
   public byte[] bytes;
 
+  /**
+   * Do the work.
+   */
   public void doIt() {
     H2ONode node = H2O.CLOUD._memary[nodeidx];
     GetLogsTask ggt = new GetLogsTask();
