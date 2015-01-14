@@ -319,9 +319,14 @@
           all(tableElements %in% names(x))) {
         tbl <- x$cellValues
         if (is.vector(tbl)) {
-          if (any(nzchar(x$rowHeaders)))
-            tbl <- matrix(tbl, nrow = 1L, dimnames = list(x$rowHeaders, x$colHeaders))
-          else
+          if (any(nzchar(x$rowHeaders))) {
+            if(length(x$rowHeaders) == 1)
+              tbl <- matrix(tbl, nrow = 1L)
+            else if(length(x$colHeaders) == 1)
+              tbl <- matrix(tbl, ncol = 1L)
+            else stop("Mismatched dimensions between row/column headers and data")
+            dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+          } else
             names(tbl) <- x$colHeaders
         } else {
           if (any(nzchar(x$rowHeaders)))
