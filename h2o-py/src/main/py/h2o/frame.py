@@ -5,8 +5,8 @@ This module contains the abstraction for H2OFrame and H2OVec objects.
 import csv
 import tabulate
 import uuid
-from h2o import H2OCONN
-from h2o import Expr
+import h2o
+from expr import Expr
 
 
 class H2OFrame(object):
@@ -39,11 +39,9 @@ class H2OFrame(object):
 
         # Import the data into H2O cluster
         if remote_fname:
-            if not H2OCONN:
-                raise ValueError("No open h2o connection")
-            rawkey  = H2OCONN.ImportFile(remote_fname)
-            setup   = H2OCONN.ParseSetup(rawkey)
-            parse   = H2OCONN.Parse(setup, H2OFrame._py_tmp_key())  # create a new key
+            rawkey  = h2o.import_file(remote_fname)
+            setup   = h2o.parse_setup(rawkey)
+            parse   = h2o.parse(setup, H2OFrame._py_tmp_key())  # create a new key
             cols    = parse['columnNames']
             rows    = parse['rows']
             veckeys = parse['vecKeys']
@@ -75,8 +73,7 @@ class H2OFrame(object):
         else:
             raise ValueError("Frame made from CSV file or an array of Vecs only")
 
-    def get_vecs(self):
-        return self._vecs
+    def get_vecs(self): return self._vecs
 
     # Print [col, cols...]
     def show(self):
@@ -218,12 +215,12 @@ class H2OFrame(object):
         fr = H2OFrame._py_tmp_key()
         cbind = "(= !" + fr + " (cbind %"
         cbind += " %".join([vec.get_expr().eager() for vec in dataset.get_vecs()]) + "))"
-        H2OCONN.Rapids(cbind)
+        h2o.rapids(cbind)
         # And frame columns
         colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(dataset) - 1) + ")} {"
         cnames = ';'.join([vec.name() for vec in dataset.get_vecs()])
         colnames += cnames + "})"
-        H2OCONN.Rapids(colnames)
+        h2o.rapids(colnames)
         return fr
 
     def _row(self, field, idx):

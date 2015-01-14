@@ -5,7 +5,7 @@ This module contains code for the lazy expression DAG.
 import sys
 from math import sqrt, isnan
 from frame import H2OVec
-from h2o import H2OCONN
+
 
 class Expr(object):
     """
@@ -27,7 +27,7 @@ class Expr(object):
         Constructor choices:
             ("op"   left rite): pending calc, awaits left & rite being computed
             ("op"   None None): precomputed local small data
-            (hexkey #num name): precomputed remote Big Data
+            (fr_key #num name): precomputed remote Big Data
 
         :param op: An operation to perform
         :param left: An Expr to the "left"
@@ -68,29 +68,14 @@ class Expr(object):
             self._len = length if length else len(self._left)
         assert self._len is not None
 
-    def name(self):
-        return self._name
-
-    def set_len(self, i):
-        self._len = i
-
-    def get_len(self):
-        return self._len
-
-    def data(self):
-        return self._data
-
-    def is_local(self):
-        return isinstance(self._data, (list, int, float))
-
-    def is_remote(self):
-        return isinstance(self._data, unicode)
-
-    def is_pending(self):
-        return self._data is None
-
-    def is_computed(self):
-        return not self.is_pending()
+    def name(self): return self._name
+    def set_len(self, i): self._len = i
+    def get_len(self): return self._len
+    def data(self): return self._data
+    def is_local(self): return isinstance(self._data, (list, int, float))
+    def is_remote(self): return isinstance(self._data, unicode)
+    def is_pending(self): return self._data is None
+    def is_computed(self): return not self.is_pending()
 
     def _is_valid(self, child=False):
         check = False

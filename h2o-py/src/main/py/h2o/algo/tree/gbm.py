@@ -3,7 +3,8 @@ This module is a simple wrapper around a Gradient Boosted Machine.
 """
 
 from ..model import ModelBase
-from h2o.algo import *
+from ..algo import *
+
 
 class H2OGBM(ModelBase):
     """
@@ -42,4 +43,3 @@ class H2OGBM(ModelBase):
         self._model = H2OCONN.GBM(distribution, shrinkage, ntrees, interaction_depth, x,
                                   fr, vfr)
         H2OCONN.Remove(fr)
-
