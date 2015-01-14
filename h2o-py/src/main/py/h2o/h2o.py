@@ -105,7 +105,3 @@ def frame(key):
 #     j = self._doJob(self._doSafeGet(self.buildURL("DeepLearning",kwargs)))
 #     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
 #     return j['models'][0]
-
-# Global list of pending expressions and deletes to ship to the cluster
-_CMD = None
-_TMPS= None

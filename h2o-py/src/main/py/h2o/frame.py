@@ -41,7 +41,7 @@ class H2OFrame(object):
         if remote_fname:
             rawkey  = h2o.import_file(remote_fname)
             setup   = h2o.parse_setup(rawkey)
-            parse   = h2o.parse(setup, H2OFrame._py_tmp_key())  # create a new key
+            parse   = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
             cols    = parse['columnNames']
             rows    = parse['rows']
             veckeys = parse['vecKeys']
@@ -197,7 +197,7 @@ class H2OFrame(object):
         return self.__add__(i)
 
     @staticmethod
-    def _py_tmp_key():
+    def py_tmp_key():
         """
         :return: a unique h2o key obvious from python
         """
