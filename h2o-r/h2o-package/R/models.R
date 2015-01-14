@@ -160,13 +160,17 @@
   validation <- .h2o.__remoteSend(conn, method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = param_values)
   if(length(validation$validation_messages) != 0L) {
     error <- lapply(validation$validation_messages, function(i) {
-      if( !(i$message_type %in% c("HIDE","INFO")) )
+      if( i$message_type == "ERROR" )
         paste0(i$message, ".\n")
-      else
-        ""
+      else ""
     })
-    if(any(nzchar(error)))
-      stop(error)
+    if(any(nzchar(error))) stop(error)
+    warn <- lapply(validation$validation_messages, function(i) {
+      if( i$message_type == "WARN" )
+        paste0(i$message, ".\n")
+      else ""
+    })
+    if(any(nzchar(warn))) warning(warn)
   }
 
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
