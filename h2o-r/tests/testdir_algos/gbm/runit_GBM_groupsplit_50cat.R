@@ -28,11 +28,9 @@ test.GBM.groupsplit <- function(conn) {
   
   # Get the confusion matrix and AUC
   Log.info("Confusion matrix of predictions (max accuracy):\n")
-  # test.cm <- h2o.confusionMatrix(test.hex$y, drfmodel.pred[,1])
-  # print(test.cm)
-  test.perf <- h2o.performance(model = drfmodel.h2o, data = test.hex)
-  #test.perf <- h2o.performance(test.hex$y, drfmodel.pred[,1])
-  print(test.perf)
+  test.perf <- h2o.performance(drfmodel.h2o, test.hex)
+  test.perf@metrics$cm$table
+  test.perf@metrics$auc$AUC
   testEnd()
 }
 
