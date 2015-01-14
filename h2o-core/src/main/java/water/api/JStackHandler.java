@@ -8,8 +8,6 @@ public class JStackHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JStackV2 fetch(int version, JStackV2 js) {
-    JStack _jstack = new JStack();
-    _jstack.execImpl();
-    return js.fillFromImpl(_jstack);
+    return js.fillFromImpl(new JStack().execImpl());
   }
 }
