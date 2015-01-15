@@ -67,15 +67,13 @@ h2o.kmeans <- function(training_frame, x, k,
     parms[["init"]] <- "User"
     # Convert user-specified starting points to H2OFrame
     if( is.data.frame(init) || is.matrix(init) || is.list(init) ) {
-        if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
-        parms[["user_points"]] <- as.h2o(init, training_frame@h2o)
+      if( !is.data.frame(init) && !is.matrix(init) ) init <- t(as.data.frame(init))
+      init <- as.h2o(init, training_frame@h2o)
     }
-    else {
-        parms[["user_points"]] <- init
-    }
+    parms[["user_points"]] <- init
     # Set k
     if( !(missing(k)) && k!=as.integer(nrow(init)) ) {
-        print("Warning: Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+      print("Warning: Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
     parms[["user_points"]] <- parms[["user_points"]]@key
     parms[["k"]] <- as.integer(nrow(init))

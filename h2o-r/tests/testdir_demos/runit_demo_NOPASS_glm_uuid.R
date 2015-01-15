@@ -41,7 +41,7 @@ test <- function(conn) {
     y <- "IsArrDelayed" 
   
   print("Run glm model on train set.")
-    airline.glm <- h2o.glm(x=x, y=y, data=airline.train.hex,family="binomial")
+    airline.glm <- h2o.glm(x=x, y=y, training_frame=airline.train.hex,family="binomial")
     airline.glm
   
   print("Extract UUIDs from test set.")

@@ -25,11 +25,11 @@ test.hex_1908 <- function(conn) {
   
   # Build GLM and GBM each with cross validation models
   Log.info("Build GLM model")
-  airlines.glm = h2o.glm(y = myY, x = myX, data = airlines.hex, family = "binomial", nfolds = 0, alpha = 0.5)
+  airlines.glm = h2o.glm(y = myY, x = myX, training_frame = airlines.hex, family = "binomial", n_folds = 0, alpha = 0.5)
   Log.info("Build GLM model with nfold = 5")
-  airlines_xval.glm = h2o.glm(y = myY, x = myX, data = airlines.hex, family = "binomial", nfolds = 5, alpha = 0.5)
+  airlines_xval.glm = h2o.glm(y = myY, x = myX, training_frame = airlines.hex, family = "binomial", n_folds = 5, alpha = 0.5)
   Log.info("Build GBM model with nfold = 3")
-  airlines_xval.gbm = h2o.gbm(y = myY, x = myX, data = airlines.hex, nfolds = 3)
+  airlines_xval.gbm = h2o.gbm(y = myY, x = myX, training_frame = airlines.hex, n_folds = 3)
   
   # Predict on models and save results in R
   Log.info("Scoring on models and saving predictions to R")

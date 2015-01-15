@@ -47,7 +47,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Return a new H2OFrame object
   nrows <- .h2o.fetchNRows(data@h2o, hex)
-  .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names)
+  .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names, linkToGC = TRUE)
 }
 
 #'
@@ -62,12 +62,12 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names)
-  new("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names)
+.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names, linkToGC=linkToGC)
 
 #'
 #' Create new H2OFrame object for predictions
-.h2o.parsedPredData <- function(conn = h2o.getConnection(), predictions) {
+.h2o.parsedPredData <- function(conn = h2o.getConnection(), predictions, linkToGC = TRUE) {
   key <- predictions$key$name
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows
@@ -75,5 +75,5 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   factors <- sapply(predictions$columns, function(column) column$type == "enum")
   names(factors) <- col_names
   factors <- as.data.frame(factors)
-  new("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors)
+  .newH2OObject("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors, linkToGC = linkToGC)
 }

@@ -63,7 +63,7 @@ air.srf <- h2o.randomForest(data = air.train, validation = air.valid,
                            importance = TRUE,
                            type = "fast")
 
-air.glm <- h2o.glm(data = air.train,
+air.glm <- h2o.glm(training_frame = air.train,
                   x = myX, y = myY,
                   family = "binomial",
                   alpha = c(0.1, 0.2, 0.5),
