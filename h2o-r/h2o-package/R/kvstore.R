@@ -238,8 +238,9 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   })
 
   # Convert ignored_columns/response_column to valid R x/y
-  if (!is.null(parameters$ignored_columns))
-    parameters$x <- .verify_datacols(h2o.getFrame(conn, parameters$training_frame), parameters$ignored_columns)$cols_ignore
+  cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
+  
+  parameters$x <- setdiff(cols, parameters$ignored_columns)
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column

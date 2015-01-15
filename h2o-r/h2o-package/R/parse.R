@@ -27,7 +27,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   parse.params <- list(
         srcs = srcs,
         hex  = key,
-        columnNames = .collapse(col.names),
+        columnNames = .collapse.char(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,
         ncols = ncols,
@@ -54,8 +54,13 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #' Helper Collapse Function
 #'
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
-.collapse <- function(v) paste0('[', paste(v, collapse=","), ']')
+.collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
 
+<<<<<<< HEAD
+=======
+.collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
+
+>>>>>>> model and column related type fixes
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
   .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
 }
