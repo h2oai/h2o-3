@@ -27,6 +27,7 @@ public class CreateFrame extends Job<CreateFrame> {
   public double missing_fraction = 0.01;
   public int response_factors = 2;
   public boolean positive_response; // only for response_factors=1
+  public boolean has_response = false;
 
   public CreateFrame(Key<CreateFrame> dest, String desc) { super(dest, desc); }
   public CreateFrame() { super(Key.make(), null); }
@@ -55,5 +56,4 @@ public class CreateFrame extends Job<CreateFrame> {
     Log.info("Created frame '" + _dest + "'.");
     Log.info(FrameUtils.chunkSummary((Frame) DKV.getGet(_dest)).toString());
   }
-
 }
