@@ -200,6 +200,9 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 
+#' Frame Manipulation
+.h2o.__CREATE_FRAME   <- "CreateFrame.json"
+
 #' Rapids Endpoint
 .h2o.__RAPIDS         <- "Rapids.json"
 
