@@ -21,6 +21,7 @@ public class CreateFrameTest extends TestUtil {
     cf.factors = 4;
     cf.response_factors = 2;
     cf.positive_response = false;
+    cf.has_response = true;
     cf.seed = 1234;
     cf.execImpl();
     Frame frame = DKV.getGet(cf.dest());
@@ -39,6 +40,7 @@ public class CreateFrameTest extends TestUtil {
     cf.factors = 1;
     cf.response_factors = 2;
     cf.positive_response = false;
+    cf.has_response = true;
     cf.seed = 1234;
     cf.execImpl();
     Frame frame = DKV.getGet(cf.dest());
