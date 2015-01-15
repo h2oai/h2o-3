@@ -477,8 +477,10 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #'
 #' Warn if there are sick nodes.
 .h2o.__checkConnectionHealth <- function(conn = h2o.getConnection()) {
+  max_retries <- 10
+  retries <- 0
   grabCloudStatus <- function(conn = h2o.getConnection()) {
-    rv = .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
+    rv <- .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
 
     if (rv$curlError) {
       ip = conn@ip
@@ -502,8 +504,9 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
     nport <- unlist(strsplit(node$h2o$node, ":"))[2L]
     if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
-    if(elapsed > 60000) .h2o.__cloudSick(node_name = NULL, conn = conn)
-    if(elapsed > 10000) {
+    if(elapsed > 60*1000) .h2o.__cloudSick(node_name = NULL, conn = conn)
+    if(elapsed > 10*1000 && retries < max_retries) {
+        retries <<- retries + 1
         Sys.sleep(5L)
         invisible(lapply(grabCloudStatus(conn)$nodes, checker, conn))
     }
