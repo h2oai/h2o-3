@@ -642,6 +642,13 @@ final public class H2O {
   public static int H2O_PORT; // Both TCP & UDP cluster ports
   public static int API_PORT; // RequestServer and the API HTTP port
 
+  /**
+   * @return String of the form ipaddress:port
+   */
+  public static String getIpPortString() {
+    return H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
+  }
+
   // The multicast discovery port
   public static MulticastSocket  CLOUD_MULTICAST_SOCKET;
   public static NetworkInterface CLOUD_MULTICAST_IF;
