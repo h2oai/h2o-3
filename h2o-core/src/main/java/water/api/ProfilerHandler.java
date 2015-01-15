@@ -8,17 +8,25 @@ public class ProfilerHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ProfilerV2 fetch(int version, ProfilerV2 p) {
+    if (p.depth < 1) throw new IllegalArgumentException("depth must be >= 1.");
+
     JProfile profile = new JProfile(p.depth).execImpl(true);
+    p.nodes = new ProfilerNodeV2[profile.nodes.length];
     int i=0;
-    p.node_names = new String[profile.nodes.length];
-    p.timestamps = new long[profile.nodes.length];
-    p.stacktraces = new String[profile.nodes.length][];
-    p.counts = new int[profile.nodes.length][];
     for (JProfile.ProfileSummary s : profile.nodes) {
-      p.node_names[i] = s.profile.node_name;
-      p.timestamps[i] = s.profile.timestamp;
-      p.stacktraces[i] = s.profile.stacktraces;
-      p.counts[i] = s.profile.counts;
+      ProfilerNodeV2 n = new ProfilerNodeV2();
+
+      n.node_name = s.profile.node_name;
+      n.timestamp = s.profile.timestamp;
+      n.entries = new ProfilerNodeV2.ProfilerNodeEntryV2[s.profile.stacktraces.length];
+      for (int j = 0; j < s.profile.stacktraces.length; j++) {
+        ProfilerNodeV2.ProfilerNodeEntryV2 e = new ProfilerNodeV2.ProfilerNodeEntryV2();
+        e.stacktrace = s.profile.stacktraces[j];
+        e.count = s.profile.counts[j];
+        n.entries[j] = e;
+      }
+
+      p.nodes[i] = n;
       i++;
     }
     return p;
