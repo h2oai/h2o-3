@@ -12,7 +12,7 @@ class H2OJob(object):
     A class representing an H2O Job.
     """
     def __init__(self, jobs):
-        job = jobs["jobs"][0]
+        job = jobs["job"]
 
         self.jobs = jobs
         self.job = job
@@ -40,7 +40,7 @@ class H2OJob(object):
 
     def _refresh_job_view(self):
         self.jobs = h2oConn.do_safe_get_json(url_suffix="Jobs")
-        self.job = self.jobs["jobs"][0]
+        self.job = self.jobs["job"][0]
         self.status = self.job["status"]
         self.progress += self.job["progress"]
 

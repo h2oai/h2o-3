@@ -3,7 +3,7 @@ This module implements the communication REST layer for the python <-> H2O conne
 """
 
 import urllib
-from connection import H2OConnectionBase as h2oConn
+from connection import H2OConnection as h2oConn
 from job import H2OJob
 
 
@@ -11,7 +11,7 @@ def import_file(path):
     """
     Import a single file.
     :param path: A path to a data file (remote or local)
-    :return: Returns a new h2o key.
+    :return: Return an H2OFrame.
     """
     j = h2oConn.do_safe_get_json(url_suffix="ImportFiles", params={'path': path})
     if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
@@ -59,7 +59,7 @@ def parse(setup, h2o_name):
     # TODO: POST vs GET
     j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p))
     j.poll()
-    return j
+    return j.jobs
 
 
 def remove(key):
@@ -89,6 +89,17 @@ def frame(key):
     """
 
     return h2oConn.do_safe_get_json(url_suffix="Frames", params={"key": key})
+
+
+def connect(ip="localhost", port=54321):
+    """
+    Initiate an H2O connection to the specified ip and port
+    :param ip: An IP address, default is "localhost"
+    :param port: A port, default is 54321
+    :return: None
+    """
+    h2oConn(ip=ip, port=port)
+    return None
 
 
 # def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,train_frame,test_frame=None):

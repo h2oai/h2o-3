@@ -4,9 +4,8 @@ This module contains code for the lazy expression DAG.
 
 import sys
 from math import sqrt, isnan
-from frame import H2OVec
-from frame import H2OFrame
 import h2o
+import frame
 
 __CMD__ = None
 __TMPS__ = None
@@ -55,8 +54,8 @@ class Expr(object):
 
         assert self._is_valid(), str(self._name) + str(self._data)
 
-        self._left = left.get_expr() if isinstance(left, H2OVec) else left
-        self._rite = rite.get_expr() if isinstance(rite, H2OVec) else rite
+        self._left = left.get_expr() if isinstance(left, frame.H2OVec) else left
+        self._rite = rite.get_expr() if isinstance(rite, frame.H2OVec) else rite
 
         assert self._left is None or self._is_valid(self._left), self.debug()
         assert self._rite is None or self._is_valid(self._rite), self.debug()
@@ -174,7 +173,8 @@ class Expr(object):
         return self + i  # Add is commutative
 
     def __del__(self):
-        if self.is_pending() or self.is_local(): return  # Dead pending op or local data; nothing to delete
+        # Dead pending op or local data; nothing to delete
+        if self.is_pending() or self.is_local(): return
         assert self.is_remote()
         global __CMD__
         if __CMD__ is None:
@@ -261,7 +261,7 @@ class Expr(object):
         py_tmp = cnt != 4 and self._len > 1 and not assign_vec
 
         if py_tmp:
-            self._data = H2OFrame.py_tmp_key()  # Top-level key/name assignment
+            self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
             __CMD__ += "(= !" + self._data + " "
         __CMD__ += "(" + self._op + " "
 

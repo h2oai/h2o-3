@@ -3,8 +3,7 @@ This module implements the abstract model class. All models inherit from this cl
 """
 
 import abc
-from frame import H2OFrame
-from frame import H2OCONN
+from .. import frame
 
 
 class ModelBase(object):
@@ -85,18 +84,18 @@ class ModelBase(object):
         y = self.parameters.y
         dataset = self.parameters.dataset
 
-        if not isinstance(dataset, H2OFrame):
+        if not isinstance(dataset, frame.H2OFrame):
             raise ValueError("`dataset` must be a H2OFrame not " + str(type(dataset)))
 
         if not self.parameters.dataset[x]:
             raise ValueError(x + " must be column(s) in " + str(dataset))
 
-        fr = H2OFrame.send_frame(dataset)  # a temp frame to train on
+        fr = frame.H2OFrame.send_frame(dataset)  # a temp frame to train on
         vfr = None  # a temp validation frame
         if self.parameters.validation_dataset:
-            vfr = H2OFrame.send_frame(dataset)
+            vfr = frame.H2OFrame.send_frame(dataset)
 
         # TODO: need to check self.parameters fully with /Parameters endpoint
 
-        self.model = H2OCONN.modelBuilder(self, fr, vfr)
+        self.model = frame.H2OCONN.modelBuilder(self, fr, vfr)
         H2OCONN.Remove(fr)s

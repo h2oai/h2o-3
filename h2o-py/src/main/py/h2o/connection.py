@@ -46,8 +46,8 @@ class H2OConnectionBase(object):
         __H2OCONN__._port = port
 
         cld = H2OConnectionBase.connect()
-        ncpus = sum([n['num_cpus'] for n in cld['nods']])
-        mmax = sum([n['max_mem'] for n in cld['nods']])
+        ncpus = sum([n['num_cpus'] for n in cld['nodes']])
+        mmax = sum([n['max_mem'] for n in cld['nodes']])
 
         print "Connected to cloud '" + cld['cloud_name'] + "' size", \
             cld['cloud_size'], "ncpus", ncpus, "maxmem", \
@@ -58,7 +58,7 @@ class H2OConnectionBase(object):
 
     @staticmethod
     def get_session_id():
-        return H2OConnectionBase._do_safe_get_json(url_suffix="InitID")["session_key"]
+        return H2OConnectionBase.do_safe_get_json(url_suffix="InitID")["session_key"]
 
     @staticmethod
     def connect(size=1):
@@ -69,7 +69,7 @@ class H2OConnectionBase(object):
         :return: The JSON response from a "stable" cluster.
         """
         while True:
-            cld = H2OConnectionBase._do_safe_get_json(url_suffix="Cloud")
+            cld = H2OConnectionBase.do_safe_get_json(url_suffix="Cloud")
             if not cld['cloud_healthy']:
                 raise ValueError("Cluster reports unhealthy status", cld)
             if cld['cloud_size'] >= size and cld['consensus']:
@@ -157,7 +157,7 @@ class H2OConnectionBase(object):
                 parts[k] += ','.join([str(l).encode("utf-8") for l in params[k]])
                 parts[k] += ']'
             else:
-                parts[k] = str(params[k].encode("utf-8"))
+                parts[k] = str(params[k]).encode("utf-8")
 
         query_string = '&'.join(['%s=%s' % (k, v) for (k, v) in parts.items()])
         post_body = ""
@@ -187,7 +187,7 @@ class H2OConnectionBase(object):
         elapsed_time_millis = elapsed_time_seconds * 1000
 
         # TODO: is.logging? -> write to logs
-        print "Time to perform REST call (millis): " + elapsed_time_millis
+        print "Time to perform REST call (millis): " + str(elapsed_time_millis)
 
         return http_result
 
@@ -239,10 +239,11 @@ class H2OConnectionBase(object):
                                          **kwargs)
 
         if res["http_error"]:
-            raise EnvironmentError("Unexpected requests error: {}"
+            raise EnvironmentError("h2o-py encountered an unexpected HTTP error:\n {}"
                                    .format(res["http_error_message"]))
         elif res["http_status_code"] != 200:
-            raise EnvironmentError("Unexpected HTTP Status code: {} {} (url = {})"
+            raise EnvironmentError("h2o-py got an unexpected HTTP status code:\n"
+                                   " {} {} (url = {})"
                                    .format(res["http_status_code"],
                                            res["http_status_message"],
                                            res["url"]))
@@ -313,7 +314,7 @@ class H2OConnectionBase(object):
                 http_result["http_error"] = True
                 http_result["http_error_message"] = e2.message
 
-        elif not file_upload_info:
+        elif file_upload_info:
             if not method == "POST":
                 raise ValueError("Recieved file upload info "
                                  "and expected method to be POST. Got: " + method)
@@ -329,7 +330,7 @@ class H2OConnectionBase(object):
 
         elif method == "POST":
             try:
-                http_result["http_payload"] = requests.post(url, params=params, **kwargs)
+                http_result["http_payload"] = requests.post(url, params=post_body, **kwargs)
             except requests.ConnectionError as e:
                 http_result["http_error"] = True
                 http_result["http_error_message"] = e.message
