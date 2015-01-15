@@ -10,6 +10,10 @@ abstract class ProfilerBase<I extends Iced, S extends Schema<I, S>> extends Sche
   public int depth = 10;
 
   // Output
+  @API(help="Array of node names", direction=API.Direction.OUTPUT)
+  public String[] node_names;
+  @API(help="Array of timestamps (millis since epoch)", direction=API.Direction.OUTPUT)
+  public long[] timestamps;
   @API(help="Array of Profiles, one per Node in the Cluster", direction=API.Direction.OUTPUT)
   public String[][] stacktraces;
   @API(help="Array of Profile Counts, one per Node in the Cluster", direction=API.Direction.OUTPUT)
