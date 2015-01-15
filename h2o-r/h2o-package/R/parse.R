@@ -19,7 +19,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   srcs <- .collapse(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE_SETUP, srcs = srcs)
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs)
 
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
@@ -36,18 +36,18 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
         )
 
   # Perform the parse
-  res <- .h2o.__remoteSend(data@h2o, .h2o.__PARSE, method = "POST", .params = parse.params)
+  res <- .h2o.__remoteSend(data@conn, .h2o.__PARSE, method = "POST", .params = parse.params)
   hex <- res$job$dest$name
 
   # Poll on job
-  .h2o.__waitOnJob(data@h2o, res$job$key$name)
+  .h2o.__waitOnJob(data@conn, res$job$key$name)
 
   # Remove keys to unparsed data
-  h2o.rm(res$srcs[[1L]]$name, data@h2o)
+  h2o.rm(res$srcs[[1L]]$name, data@conn)
 
   # Return a new H2OFrame object
-  nrows <- .h2o.fetchNRows(data@h2o, hex)
-  .h2o.parsedData(data@h2o, hex, nrows, ncols, col.names, linkToGC = TRUE)
+  nrows <- .h2o.fetchNRows(data@conn, hex)
+  .h2o.parsedData(data@conn, hex, nrows, ncols, col.names, linkToGC = TRUE)
 }
 
 #'
@@ -63,7 +63,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #'
 #' The H2OFrame Constructor
 .h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names, linkToGC = TRUE)
-  .newH2OObject("H2OFrame", h2o=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names, linkToGC=linkToGC)
+  .newH2OObject("H2OFrame", conn=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names, linkToGC=linkToGC)
 
 #'
 #' Create new H2OFrame object for predictions
@@ -75,5 +75,5 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   factors <- sapply(predictions$columns, function(column) column$type == "enum")
   names(factors) <- col_names
   factors <- as.data.frame(factors)
-  .newH2OObject("H2OFrame", h2o = conn, key = key, col_names = col_names, nrows = nrows, ncols = ncols, factors = factors, linkToGC = linkToGC)
+  .newH2OObject("H2OFrame", conn=conn, key=key, col_names=col_names, nrows=nrows, ncols=ncols, factors=factors, linkToGC=linkToGC)
 }

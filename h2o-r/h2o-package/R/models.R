@@ -95,14 +95,14 @@
   delete_train <- !.is.eval(params$training_frame)
   if (delete_train) {
     temp_train_key <- params$training_frame@key
-    .force.eval(ast = params$training_frame@ast, h2o.ID = temp_train_key)
+    .force.eval(conn = conn, ast = params$training_frame@ast, key = temp_train_key)
   }
   if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
     delete_valid <- !.is.eval(params$validation_frame)
     if (delete_valid) {
       temp_valid_key <- params$validation_frame@key
-      .force.eval(ast = params$validation_frame@ast, h2o.ID = temp_valid_key)
+      .force.eval(conn = conn, ast = params$validation_frame@ast, key = temp_valid_key)
     }
   }
 
@@ -197,11 +197,11 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   # Send keys to create predictions
   url <- paste0('Predictions.json/models/', object@key, '/frames/', newdata@key)
-  res <- .h2o.__remoteSend(object@h2o, url, method = "POST")
+  res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$model_metrics[[1L]]$predictions
 
   # Grab info to make data frame
-  .h2o.parsedPredData(newdata@h2o, res)
+  .h2o.parsedPredData(newdata@conn, res)
 }
 
 #' Cross Validate an H2O Model
@@ -289,10 +289,10 @@ h2o.performance <- function(model, data=NULL) {
     parms[["frame"]] <- data@key
 
   if(missing(data)){
-    res <- .h2o.__remoteSend(model@h2o, method = "GET", .h2o.__MODEL_METRICS(model@key))
+    res <- .h2o.__remoteSend(model@conn, method = "GET", .h2o.__MODEL_METRICS(model@key))
   }
   else {
-    res <- .h2o.__remoteSend(model@h2o, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
+    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
   }
 
   algo <- model@algorithm

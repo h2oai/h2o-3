@@ -89,7 +89,5 @@ h2o.glm <- function(x, y, training_frame, ...,
 
     names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.gbm.map)) i <- .gbm.map[[i]]; i })
 
-    .h2o.createModel(training_frame@h2o, 'glm', parms, dots$envir)
+    .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
 }
-
-

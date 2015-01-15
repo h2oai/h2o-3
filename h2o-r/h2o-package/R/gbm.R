@@ -94,7 +94,7 @@ h2o.gbm <- function(x, y, training_frame, ...,
 
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.gbm.map) ) i <- .gbm.map[[i]]; i })
 
-  .h2o.createModel(training_frame@h2o, 'gbm', parms, dots$envir )
+  .h2o.createModel(training_frame@conn, 'gbm', parms, dots$envir )
 }
 
 # Function call for R sided cross validation of h2o objects
@@ -121,4 +121,3 @@ h2o.gbm.cv <- function(x, y, training_frame, nfolds = 2,
   
   do.call("h2o.crossValidate", list(model.type = 'gbm', nfolds = nfolds, params = parms, envir = env))
 }
-

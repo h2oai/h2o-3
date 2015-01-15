@@ -9,6 +9,19 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
+  // helper class to store per-node profiles
+  public static class NodeProfile extends Iced {
+    NodeProfile(int len) {
+      stacktraces = new String[len];
+      counts = new int[len];
+    }
+
+    public String node_name;
+    public long timestamp;
+    public String[] stacktraces;
+    public int[] counts;
+  }
+
   public ProfileCollectorTask(int stack_depth) {
     _stack_depth = stack_depth;
   }
@@ -19,22 +32,15 @@ public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
   // output
   public NodeProfile[] _result;
 
-  // helper class to store per-node profiles
-  public static class NodeProfile extends Iced {
-    NodeProfile(int len) {
-      stacktraces = new String[len];
-      counts = new int[len];
-    }
-    public String[] stacktraces;
-    public int[] counts;
-  }
-
   @Override public void reduce(ProfileCollectorTask that) {
     for (int i=0; i<_result.length; ++i)
       if (_result[i] == null)
         _result[i] = that._result[i];
   }
 
+  /**
+   * This runs on each node in the cluster.
+   */
   @Override public void setupLocal() {
     int idx = H2O.SELF.index();
     _result = new NodeProfile[H2O.CLOUD.size()];
@@ -85,6 +91,8 @@ public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
 
     int i=0;
     _result[idx] = new NodeProfile(countedStackTraces.size());
+    _result[idx].node_name = H2O.getIpPortString();
+    _result[idx].timestamp = System.currentTimeMillis();
     for (Map.Entry<String, Integer> entry : countedStackTraces.entrySet()) {
       _result[idx].stacktraces[i] = entry.getKey();
       _result[idx].counts[i] = entry.getValue();

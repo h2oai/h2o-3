@@ -17,9 +17,9 @@
 #' h2o.ls(localH2O)
 h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
-  fr <- .newH2OObject("H2OFrame", ast=ast, key=.key.make(), h2o=conn, linkToGC = TRUE)
+  fr <- .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(), linkToGC = TRUE)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@key, fr@h2o)
+  h2o.rm(fr@key, fr@conn)
   ret
 }
 
@@ -108,12 +108,12 @@ h2o.assign <- function(data, key) {
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
   if (!grepl(.get.session_id(), key)) key <- paste0(key, .get.session_id())
   if (length(substitute(data)) > 1) {
-    ID <- "tmp_value"
+    deparsedExpr <- "tmp_value"
   } else {
-    ID  <- deparse(substitute(data), width.cutoff = 500L)
+    deparsedExpr <- deparse(substitute(data), width.cutoff = 500L)
   }
-  ast <- .h2o.nary_op("rename", data, key)
-  .force.eval(ast@ast, ID, parent.frame())
+  res <- .h2o.nary_op("rename", data, key)
+  .force.eval(conn = res@conn, ast = res@ast, deparsedExpr = deparsedExpr, env = parent.frame())
   data@key <- key
   data
 #  o <- get(ID, parent.frame())
@@ -227,7 +227,7 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   parameters$response_column <- NULL
 
   .newH2OObject(Class      = Class,
-                h2o        = conn,
+                conn       = conn,
                 key        = json$key$name,
                 algorithm  = json$algo,
                 parameters = parameters,
