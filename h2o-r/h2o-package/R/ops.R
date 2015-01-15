@@ -111,8 +111,8 @@ setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.nary_op(.
 #' 
 #'             \code{"max"}, \code{"min"}, \code{"range"}, \code{"prod"}, \code{"sum"}, \code{"any"}, \code{"all"}
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
-  ast <- .h2o.nary_op(.Generic, x, ..., na.rm)
-  .force.eval(ast@ast)
+  res <- .h2o.nary_op(.Generic, x, ..., na.rm)
+  .force.eval(conn = res@conn, ast = res@ast)
 })
 
 #'

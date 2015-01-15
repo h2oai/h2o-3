@@ -18,7 +18,7 @@ function(op, x) {
   op <- new("ASTApply", op = op)
 
   if (is(x, "H2OFrame")) {
-    conn <- x@h2o
+    conn <- x@conn
     finalizers <- x@finalizers
     x <- .get(x)
   } else {
@@ -31,7 +31,7 @@ function(op, x) {
     else stop("operand type not handled: ", class(x))
   }
   ast <- new("ASTNode", root=op, children=list(x))
-  .newH2OObject("H2OFrame", ast = ast, key = .key.make(), h2o = conn, finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -45,7 +45,7 @@ function(op, e1, e2) {
 
   # Prep the LHS
   if (is(e1, "H2OFrame")) {
-    lhsconn <- e1@h2o
+    lhsconn <- e1@conn
     finalizers <- e1@finalizers
     lhs <- .get(e1)
   } else {
@@ -60,7 +60,7 @@ function(op, e1, e2) {
 
   # Prep the RHS
   if (is(e2, "H2OFrame")) {
-    rhsconn <- e2@h2o
+    rhsconn <- e2@conn
     finalizers <- c(finalizers, e2@finalizers)
     rhs <- .get(e2)
   } else {
@@ -76,7 +76,7 @@ function(op, e1, e2) {
     stop("LHS and RHS are using different H2O connections")
 
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  .newH2OObject("H2OFrame", ast = ast, key = .key.make(), h2o = lhsconn, finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = lhsconn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -89,7 +89,7 @@ function(op, ..., .args = list(...), .key = .key.make()) {
   finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
   children <- .args.to.ast(.args = .args)
   ast <- new("ASTNode", root = op, children = children)
-  .newH2OObject("H2OFrame", ast = ast, key = .key, h2o = h2o.getConnection(), finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = h2o.getConnection(), key = .key, finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -97,48 +97,56 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #'
 #' Force the evaluation of the AST.
 #'
-#' @param ast an ASTNode object
-#' @param caller.ID the name of the object in the calling frame
-#' @param env the environment back to which we assign
-#' @param h2o.ID the name of the key in h2o (hopefully matches top-most level user-defined variable)
 #' @param conn an H2OConnection object
+#' @param ast an ASTNode object
+#' @param key the name of the key in h2o (hopefully matches top-most level user-defined variable)
+#' @param finalizers a list of environment that trigger the removal of keys at R gc()
 #' @param new.assign a logical flag
+#' @param deparsedExpr the deparsed expression in the calling frame
+#' @param env the environment back to which we assign
 #'
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(ast, caller.ID=NULL, env = parent.frame(2), h2o.ID=NULL, conn=h2o.getConnection(), new.assign=TRUE, finalizers=list()) {
-  ret <- ""
-  if (is.null(h2o.ID)) h2o.ID <- .key.make()
+function(conn, ast, key=.key.make(), finalizers=list(), new.assign=TRUE, deparsedExpr=NULL, env=parent.frame()) {
+  # Prepare the AST
   if (new.assign) {
-    if (is(h2o.ID, "H2OFrame")) h2o.ID <- h2o.ID@key
-    ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', h2o.ID), right=ast))
+    if (is(key, "H2OFrame")) key <- key@key
+    ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
   }
   ast <- .visitor(ast)
+
+  # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {
+    # String or boolean result
     ret <- res$string
     if (ret == "TRUE")  ret <- TRUE
     if (ret == "FALSE") ret <- FALSE
   } else if (res$result == "") {
+    # H2OFrame result
     ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names, linkToGC=FALSE)
-    ret@key <- if(is.null(h2o.ID)) NA_character_ else h2o.ID
+    ret@key <- if(is.null(key)) NA_character_ else key
     ret@finalizers <- c(ret@finalizers, finalizers)
   } else {
+    # Scalar result
     ret <- res$scalar
-    if (ret == "NaN") ret <- NA
+    if (ret == "NaN") ret <- NA_real_
   }
-  if (!is.null(caller.ID) && exists(caller.ID, envir=env)) {
+
+  # Modify an H2OFrame object in another environment
+  # TODO Refactor H2OFrame class to be an S4 RefClass to avoid this non-standard operation
+  if (!is.null(deparsedExpr) && exists(deparsedExpr, envir=env)) {
     if (is(ret, "H2OFrame")) {
-      assign(caller.ID, ret, env)
+      assign(deparsedExpr, ret, env)
     } else {
-      expr <- paste0(caller.ID, "@ast <- NULL")
+      expr <- paste0(deparsedExpr, "@ast <- NULL")
       eval(parse(text=expr), env)
-#      expr <- paste0(caller.ID, "@scalar <- ", ret)
-#      eval(parse(text=expr), env)
     }
   }
+
+  # Return the value
   ret
 }
 

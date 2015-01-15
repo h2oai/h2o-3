@@ -269,7 +269,7 @@ function(stmnt) {
 
 .process.for.stmnt    <- function(stmnt) stop("`for` unimplemented")
 .process.else.stmnt   <- function(stmnt) new("ASTElse", body = .process.body(stmnt, TRUE))
-.process.return.stmnt <- function(stmnt) .h2o.unary_op("return", .stmnt.to.ast.switchboard(as.list(stmnt)[[2]]))
+.process.return.stmnt <- function(stmnt) .h2o.unary_op("return", .stmnt.to.ast.switchboard(as.list(stmnt)[[2L]]))
 
 .process.assign.stmnt<-
 function(stmnt) {
