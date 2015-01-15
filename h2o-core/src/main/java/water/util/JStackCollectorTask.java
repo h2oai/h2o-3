@@ -10,7 +10,7 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
     final long _time;           // Unix epoch time
     final String[] _traces;     // One per thread
     DStackTrace( String[] traces ) {
-      _node = H2O.SELF.toString();
+      _node = H2O.getIpPortString();
       _time = System.currentTimeMillis();
       _traces = traces;
     }
