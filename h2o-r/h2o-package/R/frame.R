@@ -82,7 +82,7 @@ NULL
 #    stop("`ratios` must be between 0 and 1 exclusive")
 #  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 #
-#  res <- .h2o.__remoteSend(data@h2o, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
+#  res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
 #  .h2o.__waitOnJob(conn, .res$job$key$name)
 #
 #  model.view <- .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", .res$job$dest$name))
@@ -100,7 +100,7 @@ NULL
 #  naThreshold = numRows * max_na
 #  cardinalityThreshold = numRows
 #
-#  res = .h2o.__remoteSend(data@h2o, .h2o.__PAGE_SUMMARY2, source=data@key, max_ncols=.Machine$integer.max)
+#  res = .h2o.__remoteSend(data@conn, .h2o.__PAGE_SUMMARY2, source=data@key, max_ncols=.Machine$integer.max)
 #  columns = res$summaries
 #  ignore = sapply(columns, function(col) {
 #    if(col$stats$type != 'Enum'){# Numeric Column
@@ -147,7 +147,7 @@ h2o.table <- function(x, y = NULL) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
   ast <- .h2o.nary_op("table", x, y)
-  .force.eval(ast@ast)
+  .force.eval(conn = x@conn, ast = ast@ast)
 }
 
 
@@ -226,8 +226,8 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 #  if(!is.numeric(differences)) stop("differences must be numeric")
 #
 #  expr <- paste("diff(", paste(x@key, lag, differences, sep = ","), ")", sep = "")
-#  res <- .h2o.__exec2(x@h2o, expr)
-#  .newH2OObject("H2OFrame", h2o=x@h2o, key=res$dest_key, logic=FALSE, finalizers=x@finalizers)
+#  res <- .h2o.__exec2(x@conn, expr)
+#  .newH2OObject("H2OFrame", conn=x@conn, key=res$dest_key, logic=FALSE, finalizers=x@finalizers)
 #}
 
 
@@ -236,7 +236,7 @@ h2o.runif <- function(x, seed = -1) {
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   ast <- .h2o.nary_op("h2o.runif", x, seed)
-  .newH2OObject("H2OFrame", ast = ast@ast, key = .key.make(), h2o = x@h2o, finalizers = x@finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast@ast, conn = x@conn, key = .key.make(), finalizers = x@finalizers, linkToGC = TRUE)
 }
 
 
@@ -263,7 +263,7 @@ h2o.runif <- function(x, seed = -1) {
 h2o.anyFactor <- function(x) {
   if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   ast <- .h2o.unary_op("any.factor", x)
-  .force.eval(ast@ast)
+  .force.eval(conn = x@conn, ast = ast@ast)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -329,7 +329,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  .newH2OObject("H2OFrame", ast = ast, key = .key.make(), h2o = x@h2o, finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = x@conn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
 })
 
 #' @rdname H2OFrame-Extract
@@ -416,8 +416,8 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  o <- new("H2OFrame", ast = ast, key = x@key, h2o = x@h2o, finalizers = finalizers)
-  .force.eval(o@ast, new.assign = FALSE)
+  o <- new("H2OFrame", ast = ast, conn = x@conn, key = x@key, finalizers = finalizers)
+  .force.eval(conn = o@conn, ast = o@ast, new.assign = FALSE)
   o
 })
 
@@ -447,8 +447,8 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
       stop("`value` can only be an H2OFrame object, numeric or NULL")
 
     res <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
-    res <- new("H2OFrame", ast = res, key = x@key, h2o = x@h2o, finalizers = finalizers)
-    .force.eval(res@ast, new.assign = FALSE)
+    res <- new("H2OFrame", ast = res, conn = x@conn, key = x@key, finalizers = finalizers)
+    .force.eval(conn = res@conn, ast = res@ast, new.assign = FALSE)
     colnames(res)[idx] <- name
   }
   res
@@ -476,8 +476,8 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
-    ast <- .h2o.nary_op("colnames=", x, idxs, value, .key = x@key)
-    .force.eval(ast@ast, new.assign = FALSE, h2o.ID = x@key, finalizers = c(ast@finalizers, x@finalizers))
+    res <- .h2o.nary_op("colnames=", x, idxs, value, .key = x@key)
+    .force.eval(conn = res@conn, ast = res@ast, key = res@key, finalizers = c(res@finalizers, x@finalizers), new.assign = FALSE)
 })
 
 #' @rdname h2o.colnames
@@ -580,22 +580,22 @@ NULL
 #'
 #' @rdname h2o.nrow
 setMethod("nrow", "H2OFrame", function(x) {
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
   if (is.na(x@nrows))
-    x <- h2o.getFrame(x@key, x@h2o)
+    x <- h2o.getFrame(x@key, x@conn)
   x@nrows
 })
 
 #'
 #' @rdname h2o.nrow
 setMethod("ncol", "H2OFrame", function(x) {
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
   if (is.na(x@ncols))
-    x <- h2o.getFrame(x@key, x@h2o)
+    x <- h2o.getFrame(x@key, x@conn)
   x@ncols
 })
 
@@ -618,22 +618,22 @@ NULL
 
 #' @rdname h2o.colnames
 setMethod("colnames", "H2OFrame", function(x) {
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
   if (is.na(x@col_names[1L]))
-    x <- h2o.getFrame(x@key, x@h2o)
+    x <- h2o.getFrame(x@key, x@conn)
   x@col_names
 })
 
 
 #' @rdname h2o.colnames
 setMethod("names", "H2OFrame", function(x) {
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
   if (is.na(x@nrows))
-    x <- h2o.getFrame(x@key, x@h2o)
+    x <- h2o.getFrame(x@key, x@conn)
   x@col_names
 })
 
@@ -693,10 +693,10 @@ NULL
 #' @rdname h2o.head
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   ret <- NULL
   if (!is.null(x@ast) && !.is.eval(x))
-    ret <- .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    ret <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
   if (!is.null(ret) && is.numeric(ret))
     return(ret)
   numRows <- nrow(x)
@@ -706,7 +706,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   else {
     tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
-    h2o.rm(tmp_head@key, tmp_head@h2o)
+    h2o.rm(tmp_head@key, tmp_head@conn)
     x.slice
   }
 })
@@ -715,9 +715,9 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 #'  @rdname h2o.head
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
   if (!is.null(x@ast) && !.is.eval(x))
-    .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+    .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
 
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
@@ -728,7 +728,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
     x.slice <- as.data.frame(tmp_tail)
-    h2o.rm(tmp_tail@key, tmp_tail@h2o)
+    h2o.rm(tmp_tail@key, tmp_tail@conn)
     rownames(x.slice) <- idx
     x.slice
   }
@@ -745,7 +745,7 @@ NULL
 
 #setMethod("levels", "H2OFrame", function(x) {
 #  if(ncol(x) != 1) return(NULL)
-#  res = .h2o.__remoteSend(x@h2o, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
+#  res = .h2o.__remoteSend(x@conn, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
 #  res$levels[[1]]
 #})
 
@@ -754,8 +754,8 @@ NULL
 #'
 #' Returns Boolean.
 setMethod("is.factor", "H2OFrame", function(x) {
-  ast <- .h2o.unary_op("is.factor", x)
-  .force.eval(ast@ast)
+  res <- .h2o.unary_op("is.factor", x)
+  .force.eval(conn = res@conn, ast = res@ast)
 })
 
 #'
@@ -801,7 +801,7 @@ quantile.H2OFrame <- function(x,
   .quantile.map <- c("x" = "training_frame")
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.quantile.map) ) i <- .quantile.map[[i]]; i })
 
-  model <- .h2o.createModel(x@h2o, "quantile", parms, parent.frame())
+  model <- .h2o.createModel(x@conn, "quantile", parms, parent.frame())
 
   col <- model@model$quantile[[1L]]
   names(col) <- paste0(100*probs, "%")
@@ -813,7 +813,7 @@ quantile.H2OFrame <- function(x,
 #  digits = 12L
 #  if(ncol(object) > .MAX_INSPECT_COL_VIEW)
 #    warning(object@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  res = .h2o.__remoteSend(object@h2o, .h2o.__PAGE_SUMMARY2, source=object@key, max_ncols=.Machine$integer.max)
+#  res = .h2o.__remoteSend(object@conn, .h2o.__PAGE_SUMMARY2, source=object@key, max_ncols=.Machine$integer.max)
 #  cols <- sapply(res$summaries, function(col) {
 #    if(col$stats$type != 'Enum') { # numeric column
 #      if(is.null(col$stats$mins) || length(col$stats$mins) == 0) col$stats$mins = NaN
@@ -894,8 +894,8 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   if (trim != 0) stop("unimplemented: trim must be 0", call.=FALSE)
   if (trim < 0) trim <- 0
   if (trim > .5) trim <- .5
-  ast <- .h2o.nary_op("mean", x, trim, na.rm, ...)
-  .force.eval(ast@ast)
+  res <- .h2o.nary_op("mean", x, trim, na.rm, ...)
+  .force.eval(conn = res@conn, ast = res@ast)
 })
 
 #
@@ -934,8 +934,8 @@ setMethod("var", "H2OFrame",
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
-  ast <- .h2o.nary_op("var", x, y, na.rm, use)
-  .force.eval(ast@ast)
+  res <- .h2o.nary_op("var", x, y, na.rm, use)
+  .force.eval(conn = res@conn, ast = res@ast)
 })
 
 #'
@@ -954,8 +954,8 @@ setMethod("var", "H2OFrame",
 #' sd(prostate.hex$AGE)
 setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
   if(ncol(x) != 1L) stop("can only compute sd of a single column.")
-  ast <- .h2o.nary_op("sd", x, na.rm)
-  .force.eval(ast@ast)
+  res <- .h2o.nary_op("sd", x, na.rm)
+  .force.eval(conn = res@conn, ast = res@ast)
 })
 
 #'
@@ -978,8 +978,8 @@ setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
 #' h2o.scale(iris.hex[, 1:4])
 scale.H2OFrame<-
 function(x, center = TRUE, scale = TRUE) {
-  ast <- .h2o.nary_op("scale", x, center, scale)
-  .force.eval(ast@ast)
+  res <- .h2o.nary_op("scale", x, center, scale)
+  .force.eval(conn = res@conn, ast = res@ast)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1028,15 +1028,15 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' as.data.frame.H2OFrame(prostate.hex)
 as.data.frame.H2OFrame <- function(x, ...) {
-  ID <- deparse(substitute(x), width.cutoff = 500L)
+  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
    if (!is.null(x@ast) && !.is.eval(x))
-     .force.eval(x@ast, ID, parent.frame(), x@key, finalizers = x@finalizers)
+     .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
 
-  url <- paste0('http://', x@h2o@ip, ':', x@h2o@port,
+  url <- paste0('http://', x@conn@ip, ':', x@conn@port,
                 '/2/DownloadDataset',
                 '?key=', URLencode(x@key),
                 '&hex_string=', as.numeric(use_hex_string))
@@ -1452,7 +1452,7 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #
 #  if(ncol(object) > .MAX_INSPECT_COL_VIEW)
 #    warning(object@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  res <- .h2o.__remoteSend(object@h2o, .h2o.__PAGE_INSPECT, key=object@key, max_column_display=.Machine$integer.max)
+#  res <- .h2o.__remoteSend(object@conn, .h2o.__PAGE_INSPECT, key=object@key, max_column_display=.Machine$integer.max)
 #  cat("\nH2O dataset '", object@key, "':\t", res$num_rows, " obs. of  ", (p <- res$num_cols),
 #      " variable", if(p != 1) "s", if(p > 0) ":", "\n", sep = "")
 #
@@ -1461,9 +1461,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #  rows <- res$rows[1:min(res$num_rows, 10)]    # TODO: Might need to check rows > 0
 #
 #  if(class(object) == "H2OFrame")
-#    res2 <- .h2o.__remoteSend(object@h2o, .h2o.__HACK_LEVELS, key=object@key, max_column_display=.Machine$integer.max)
+#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS, key=object@key, max_column_display=.Machine$integer.max)
 #  else
-#    res2 <- .h2o.__remoteSend(object@h2o, .h2o.__HACK_LEVELS2, source=object@key, max_ncols=.Machine$integer.max)
+#    res2 <- .h2o.__remoteSend(object@conn, .h2o.__HACK_LEVELS2, source=object@key, max_ncols=.Machine$integer.max)
 #  for(i in 1:p) {
 #    cat("$ ", cc[i], rep(' ', width - nchar(cc[i])), ": ", sep = "")
 #    rhead <- sapply(rows, function(x) { x[i+1] })
@@ -1486,15 +1486,15 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
 #
 #  myVec <- paste0("c(", .seq_to_string(vec), ")")
 #  expr <- paste0("findInterval(", x@key, ",", myVec, ",", as.numeric(rightmost.closed), ")")
-#  res <- .h2o.__exec2(x@h2o, expr)
-#  new('H2OFrame', h2o=x@h2o, key=res$dest_key, finalizers=x@finalizers)
+#  res <- .h2o.__exec2(x@conn, expr)
+#  new('H2OFrame', conn=x@conn, key=res$dest_key, finalizers=x@finalizers)
 #})
 #
 ## setGeneric("histograms", function(object) { standardGeneric("histograms") })
 ## setMethod("histograms", "H2OFrame", function(object) {
 ##   if(ncol(object) > .MAX_INSPECT_COL_VIEW)
 ##     warning(object@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-##   res <- .h2o.__remoteSend(object@h2o, .h2o.__PAGE_SUMMARY2, source=object@key, max_ncols=.Machine$integer.max)
+##   res <- .h2o.__remoteSend(object@conn, .h2o.__PAGE_SUMMARY2, source=object@key, max_ncols=.Machine$integer.max)
 ##   list.of.bins <- lapply(res$summaries, function(x) {
 ##     if (x$stats$type == 'Enum') {
 ##       bins <- NULL
