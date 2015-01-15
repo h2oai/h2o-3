@@ -493,7 +493,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
-  int nextNZ(int rid){return rid+1;}
+  public int nextNZ(int rid){return rid+1;}
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.

@@ -107,6 +107,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     public double [] _normRespSub;
     public int _foldId;
     public int _nfolds;
+    public boolean _intercept = true;
+    public boolean _offset = false;
 
     public DataInfo deep_clone() {
       AutoBuffer ab = new AutoBuffer();

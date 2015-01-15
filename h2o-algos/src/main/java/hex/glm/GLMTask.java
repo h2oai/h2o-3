@@ -5,6 +5,8 @@ import hex.FrameTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import hex.glm.GLMModel.GLMParameters;
 import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMValidation.GLMXValidation;
@@ -214,6 +216,141 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     }
   }
 
+  public static class ColGradientTask extends MRTask<ColGradientTask> {
+    final GLMParameters _params;
+    final double [][] _beta;
+    final DataInfo _dinfo;
+    final double _reg;
+    double [][] _gradient;
+    double []   _objVals;
+
+    public ColGradientTask(DataInfo dinfo, GLMParameters params, double[][] beta, double reg){
+      _dinfo = dinfo;
+      _params = params;
+      _beta = beta;
+      _reg = reg;
+    }
+    public void map(Chunk [] chks){
+      double  [][] eta = new double[_beta.length][];
+//      double  [][] grd = new double[_beta.length][];
+      double  []   obj = MemoryManager.malloc8d(_beta.length);
+      boolean []   skp = MemoryManager.mallocZ(chks[0]._len);
+      for(int i = 0; i < eta.length; ++i)
+        eta[i] = MemoryManager.malloc8d(chks[0]._len);
+//        grd[i] = MemoryManager.malloc8d(_beta[i].length);
+      _gradient = new double[_beta.length][];
+      for(int i = 0; i < _gradient.length; ++i)
+        _gradient[i] = MemoryManager.malloc8d(_beta[i].length);
+      int nxs = chks.length-1; // -1 for response
+      Chunk responseChunk = chks[nxs];
+      Chunk offsetChunk = null;
+      if(_dinfo._offset) {
+        nxs -= 1;
+        offsetChunk = chks[nxs];
+      }
+      // first compute linear estimate by summing contributions for all columns (looping by column in the outer loop to have good access pattern and to exploit sparsity)
+      // do categoricals first
+      for(int i = 0; i < _dinfo._cats; ++i) {
+        Chunk c = chks[i];
+        for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
+          if(skp[r] || c.isNA(r)) {
+            skp[r] = true;
+            continue;
+          }
+          int off = (int)c.at8(r) + _dinfo._catOffsets[i];
+          if(!_dinfo._useAllFactorLevels) {
+            if (off == _dinfo._catOffsets[i])
+              continue;
+            off -= 1;
+          }
+          for(int j = 0; j < eta.length; ++j)
+            eta[j][r] += _beta[j][off];
+        }
+      }
+      // now numerics
+      for (int i = _dinfo._cats; i < nxs; ++i) {
+        Chunk c = chks[i];
+        // todo: use sparse interface here (need to adjust for data normalization)
+//        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        for(int r = 0; r < c._len; ++r) {
+          if(skp[r] || c.isNA(r)) {
+            skp[r] = true;
+            System.out.println("skipping row " + r);
+            continue;
+          }
+          double d = c.atd(r);
+          if (_dinfo._normMul != null)
+            d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
+          int numStart = _dinfo.numStart() - _dinfo._cats;
+          for (int j = 0; j < eta.length; ++j)
+            eta[j][r] += _beta[j][numStart + i] * d;
+        }
+      }
+      // next compute the predicted mean and variance and gradient for each row
+      for(int r = 0; r < chks[0]._len; ++r){
+        if(skp[r] || responseChunk.isNA(r))
+          continue;
+        double off = _dinfo._offset?offsetChunk.atd(r):0;
+        double y = responseChunk.atd(r);
+        for(int j = 0; j < eta.length; ++j) {
+
+          double offset = off + (_dinfo._intercept?_beta[j][_beta[j].length-1]:0);
+          double mu = _params.linkInv(eta[j][r] + offset);
+          obj[j] += _params.deviance(y,mu);
+          double var = _params.variance(mu);
+          if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
+          eta[j][r] = (mu-y) / (var * _params.linkDeriv(mu));
+          if(_dinfo._intercept)
+            _gradient[j][_gradient[j].length-1] += eta[j][r];
+        }
+      }
+      // finally go over the columns again and compute gradient for each column
+      // do categoricals first
+      for(int i = 0; i < _dinfo._cats; ++i) {
+        Chunk c = chks[i];
+        for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
+          if(skp[r]) continue;
+          int off = (int)c.at8(r) + _dinfo._catOffsets[i];
+          if(!_dinfo._useAllFactorLevels) {
+            if (off == _dinfo._catOffsets[i])
+              continue;
+            off -= 1;
+          }
+          for(int j = 0; j < eta.length; ++j)
+            _gradient[j][off] += eta[j][r];
+        }
+      }
+      // now numerics
+      for (int i = _dinfo._cats; i < nxs; ++i) {
+        Chunk c = chks[i];
+        // for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        for(int r = 0; r < c._len; ++r) {
+          if(skp[r] || c.isNA(r)) {
+            skp[r] = true;
+            continue;
+          }
+          double d = c.atd(r);
+          if (_dinfo._normMul != null)
+            d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
+          int numStart = _dinfo.numStart() - _dinfo._cats;
+          for (int j = 0; j < eta.length; ++j)
+            _gradient[j][numStart + i] += eta[j][r] * d;
+        }
+      }
+      // apply reg
+      for(int i = 0; i < _beta.length; ++i) {
+        obj[i] *= _reg;
+        for (int j = 0; j < _beta[i].length; ++j)
+          _gradient[i][j] *= _reg;
+      }
+      _objVals = obj;
+    }
+    public void reduce(ColGradientTask grt){
+      ArrayUtils.add(_objVals, grt._objVals);
+      for(int i = 0; i < _beta.length; ++i)
+        ArrayUtils.add(_beta[i],grt._beta[i]);
+    }
+  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -237,7 +374,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     final boolean _computeGram;
     public static final int N_THRESHOLDS = 50;
 
-    public GLMIterationTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
+     public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
       super(jobKey, dinfo,glm,cmp);
       _beta = beta;
       _ymu = ymu;
