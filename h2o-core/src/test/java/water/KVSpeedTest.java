@@ -2,8 +2,8 @@ package water;
 
 import org.junit.*;
 
+@Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
-  @Ignore @Test public void testDoesNothing() { }
 
   static final int NCLOUD=5;
   static final int NKEYS=1000000;
@@ -12,7 +12,7 @@ public class KVSpeedTest extends TestUtil {
   // Make a million keys-per-node.  Make sure they are all cached/shared on at
   // least one other node.  Time removing them all.  Can be network bound as
   // the million read/write/put/invalidates hit the wires.
-  @Test @Ignore
+  @Test
   public void testMillionRemoveKeys() {
     long start = System.currentTimeMillis();
 

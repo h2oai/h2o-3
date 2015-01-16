@@ -237,8 +237,6 @@ public final class AutoBuffer {
       try {
         bb = ByteBuffer.allocateDirect(BBSIZE).order(ByteOrder.nativeOrder());
         bbstats(BBMAKE);
-        if( (BBMAKE.get()&511)==511 ) 
-          new Error().printStackTrace();
         return bb;
       } catch( OutOfMemoryError oome ) {
         // java.lang.OutOfMemoryError: Direct buffer memory
