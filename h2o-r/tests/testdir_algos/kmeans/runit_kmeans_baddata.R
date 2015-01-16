@@ -16,7 +16,7 @@ test.km.bad_data <- function(conn) {
   Log.info("Training data with 1 column of all NAs: drop automatically")
   train <- rawdata; train[,5] <- NA
   colNA.hex <- as.h2o(conn, train)
-  fitH2O <- h2o.kmeans(colNA.hex, k = 5)
+  expect_warning(fitH2O <- h2o.kmeans(colNA.hex, k = 5))
   expect_equal(dim(fitH2O@model$centers), c(5,9))
   
   Log.info("Training data with all NAs")
