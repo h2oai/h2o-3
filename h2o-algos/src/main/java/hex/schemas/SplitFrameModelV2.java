@@ -8,7 +8,7 @@ import water.api.ModelSchema;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
-public class SplitFrameModelV2 extends ModelSchema<SplitFrameModel, SplitFrameModel.SplitFrameParameters, SplitFrameModel.SplitFrameOutput, SplitFrameModelV2 > {
+public class SplitFrameModelV2 extends ModelSchema<SplitFrameModel, SplitFrameModelV2, SplitFrameModel.SplitFrameParameters, SplitFrameModel.SplitFrameOutput> {
 
   public static final class SplitFrameModelOutputV2 extends ModelOutputSchema<SplitFrameModel.SplitFrameOutput, SplitFrameModelOutputV2> {
 

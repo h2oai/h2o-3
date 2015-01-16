@@ -34,9 +34,15 @@ setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
 #' @slot session_id A \code{numeric} string specifying the H2O session identifier.
 #' @aliases H2OConnection
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", session_id="character"),
-         prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_)
+         representation(ip="character", port="numeric", session_id="character", envir="environment"),
+         prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_, envir=new.env())
          )
+setMethod("initialize", "H2OConnection",
+function(.Object, ...) {
+  .Object <- callNextMethod()
+  assign("key_count", 0L, .Object@envir)
+  .Object
+})
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
@@ -50,30 +56,30 @@ setMethod("show", "H2OConnection", function(object) {
 #' The H2OObject class
 #'
 setClass("H2OObject",
-         representation(h2o="H2OConnectionOrNULL", key="character", finalizers="list"),
-         prototype(h2o=NULL, key=NA_character_, finalizers=list()),
+         representation(conn="H2OConnectionOrNULL", key="character", finalizers="list"),
+         prototype(conn=NULL, key=NA_character_, finalizers=list()),
          contains="VIRTUAL")
 
 .keyFinalizer <- function(envir) {
-  try(h2o.rm(get("key", envir), get("h2o", envir)), silent=TRUE)
+  try(h2o.rm(get("key", envir), get("conn", envir)), silent=TRUE)
 }
 
-.newH2OObject <- function(Class, ..., h2o = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
-  if (linkToGC && !is.na(key) && is(h2o, "H2OConnection")) {
+.newH2OObject <- function(Class, ..., conn = NULL, key = NA_character_, finalizers = list(), linkToGC = FALSE) {
+  if (linkToGC && !is.na(key) && is(conn, "H2OConnection")) {
     envir <- new.env()
     assign("key", key, envir)
-    assign("h2o", h2o, envir)
+    assign("conn", conn, envir)
     reg.finalizer(envir, .keyFinalizer, onexit = FALSE)
     finalizers <- c(list(envir), finalizers)
   }
-  new(Class, ..., h2o = h2o, key = key, finalizers = finalizers)
+  new(Class, ..., conn = conn, key = key, finalizers = finalizers)
 }
 
 #'
 #' The Node class.
 #'
 #' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
-#' An object of type Node inherits from an h2o.frame, but holds no H2O-aware data. Every node in the abstract syntax tree
+#' An object of type Node inherits from an H2OFrame, but holds no H2O-aware data. Every node in the abstract syntax tree
 #' has as its ancestor this class.
 #'
 #' Every node in the abstract syntax tree will have a symbol table, which is a dictionary of types and names for
@@ -117,7 +123,7 @@ setClass("ASTReturn", representation(op="character", children  = "ASTNode"), con
 setClass("H2OFrame",
          representation(ast="ASTNodeOrNULL", nrows="numeric", ncols="numeric", col_names="character",
                         factors="data.frameOrNULL"),
-         prototype(h2o        = NULL,
+         prototype(conn       = NULL,
                    key        = NA_character_,
                    finalizers = list(),
                    ast        = NULL,
@@ -128,7 +134,7 @@ setClass("H2OFrame",
          contains ="H2OObject")
 
 setMethod("show", "H2OFrame", function(object) {
-  print(object@h2o)
+  print(object@conn)
   cat("Key:", object@key, "\n")
   print(head(object))
 #  .h2o.gc()
@@ -146,14 +152,14 @@ setMethod("show", "H2OFrame", function(object) {
 #' memory.
 #'
 #' The H2ORawData is a representation of the imported, not yet parsed, data.
-#' @slot h2o An \code{H2OConnection} object containing the IP address and port number of the H2O server.
+#' @slot conn An \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @slot key An object of class \code{"character"}, which is the hex key assigned to the imported data.
 #' @aliases H2ORawData
 setClass("H2ORawData", contains="H2OObject")
 
 #' @rdname H2ORawData-class
 setMethod("show", "H2ORawData", function(object) {
-  print(object@h2o)
+  print(object@conn)
   cat("Raw Data Key:", object@key, "\n")
 })
 
@@ -174,7 +180,7 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 #' This object has slots for the key, which is a character string that points to the model key existing in the H2O cloud,
 #' the data used to build the model (an object of class H2OFrame).
 
-#' @slot h2o Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
+#' @slot conn Object of class \code{H2OConnection}, which is the client object that was passed into the function call.
 #' @slot key Object of class \code{character}, representing the unique hex key that identifies the model
 #' @slot model Object of class \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel

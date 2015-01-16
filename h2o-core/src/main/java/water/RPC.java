@@ -527,27 +527,23 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Got a response UDP packet, or completed a large TCP answer-receive.
   // Install it as The Answer packet and wake up anybody waiting on an answer.
   protected int response( AutoBuffer ab ) {
-    try{
-      assert _tasknum==ab.getTask();
+    assert _tasknum==ab.getTask();
+    if( _done ) return ab.close(); // Ignore duplicate response packet
+    int flag = ab.getFlag();       // Must read flag also, to advance ab
+    if( flag == SERVER_TCP_SEND ) return ab.close(); // Ignore UDP packet for a TCP reply
+    assert flag == SERVER_UDP_SEND;
+    synchronized(this) {             // Install the answer under lock
       if( _done ) return ab.close(); // Ignore duplicate response packet
-      int flag = ab.getFlag();    // Must read flag also, to advance ab
-      if( flag == SERVER_TCP_SEND ) return ab.close(); // Ignore UDP packet for a TCP reply
-      assert flag == SERVER_UDP_SEND;
-      synchronized(this) {        // Install the answer under lock
-        if( _done ) return ab.close(); // Ignore duplicate response packet
-        UDPTimeOutThread.PENDING.remove(this);
-        _dt.read(ab);             // Read the answer (under lock?)
-        _size_rez = ab.size();    // Record received size
-        ab.close();               // Also finish the read (under lock?)
-        _dt.onAck();              // One time only execute (before sending ACKACK)
-        _done = true;             // Only read one (of many) response packets
-        ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null
-        notifyAll();              // And notify in any case
-      }
-      doAllCompletions(); // Send all tasks needing completion to the work queues
-    }catch(Throwable t){
-      t.printStackTrace();
+      UDPTimeOutThread.PENDING.remove(this);
+      _dt.read(ab);            // Read the answer (under lock?)
+      _size_rez = ab.size();   // Record received size
+      ab.close();              // Also finish the read (under lock?)
+      _dt.onAck();             // One time only execute (before sending ACKACK)
+      _done = true;            // Only read one (of many) response packets
+      ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null
+      notifyAll();                  // And notify in any case
     }
+    doAllCompletions(); // Send all tasks needing completion to the work queues
     return 0;
   }
 

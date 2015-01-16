@@ -1,5 +1,7 @@
 package water.api;
 
-public class ModelBuildersV2 extends ModelBuildersBase<ModelBuildersV2> {
+import water.Iced;
+
+public class ModelBuildersV2 extends ModelBuildersBase<Iced, ModelBuildersV2> {
 
 }

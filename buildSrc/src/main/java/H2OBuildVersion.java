@@ -140,13 +140,18 @@ public class H2OBuildVersion {
     return System.getProperty("user.name");
   }
 
+  private String getProjectVersion() {
+    String projectVersion = _buildMajorVersion + "." + _buildMinorVersion + "." + _buildIncrementalVersion + "." + _buildNumber;
+    return projectVersion;
+  }
+
   //------------------------------------------------------------
   // PUBLIC API BELOW THIS LINE.
   //------------------------------------------------------------
 
-  private String getProjectVersion() {
-    String projectVersion = _buildMajorVersion + "." + _buildMinorVersion + "." + _buildIncrementalVersion + "." + _buildNumber;
-    return projectVersion;
+  public String getLastCommitHash() {
+    String s = calcLastCommitHash();
+    return s;
   }
 
   public String getBranch() {
