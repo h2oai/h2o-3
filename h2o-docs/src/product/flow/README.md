@@ -32,7 +32,7 @@ To close this window, click the **X** in the upper-right corner, or click the **
 
 For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button, or type `assist` in a blank cell and press **Ctrl+Enter**. A list of common tasks displays to help you find the correct command. 
 
- ![Flow - Assist Me](/product/h2o-flow/images/Flow_AssistMeButton.png) 
+ ![Flow - Assist Me](images/Flow_AssistMeButton.png) 
  
 You can also access the quick start guide, keyboard shortcuts, or H2O documentation from the "Help" menu at the top of the screen. 
 
@@ -43,7 +43,7 @@ You can also access the quick start guide, keyboard shortcuts, or H2O documentat
 
 There are two modes for cells: edit and command. In edit mode, the cell is yellow, there is an orange flag to the left of the cell and a blinking bar to indicate where text can be entered.
 
-![Edit Mode](/product/h2o-flow/images/Flow_EditMode.png)
+![Edit Mode](images/Flow_EditMode.png)
 
 **NOTE**: If there is an error in the cell, the flag is red. 
  
@@ -51,19 +51,19 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
 
 - **MD**: Markdown
 
- ![Flow - Markdown](/product/h2o-flow/images/Flow_Markdown.png)
+ ![Flow - Markdown](images/Flow_Markdown.png)
 
 - **CS**: Code
 
- ![Flow - Code](/product/h2o-flow/images/Flow_parse_code_ex.png)
+ ![Flow - Code](images/Flow_parse_code_ex.png)
 
 - **RAW**: Raw format (for code comments)
 
- ![Flow - Raw](/product/h2o-flow/images/Flow_raw.png)
+ ![Flow - Raw](images/Flow_raw.png)
 
 - **H[1-5]**: Heading level (where 1 is a first-level heading)
 
- ![Flow - Heading Levels](/product/h2o-flow/images/Flow_headinglevels.png)
+ ![Flow - Heading Levels](images/Flow_headinglevels.png)
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -79,10 +79,10 @@ The following commands must be entered in command mode.
 
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
 
- ![Flow buttons](/product/h2o-flow/images/Flow_buttons.png)
+ ![Flow buttons](images/Flow_buttons.png)
  
 You can also use the menus at the top of the screen to edit the cells, view specific format types (such as input or output), change the cell's format, or run the cell.  
- ![Flow menus](/product/h2o-flow/images/Flow_menus.png)
+ ![Flow menus](images/Flow_menus.png)
 
 
 Now that you are familiar with the cell modes, let's import some data. 
@@ -101,16 +101,16 @@ There are multiple ways to import data in H2O flow:
 
 - Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  
- ![Flow - Assist Me links](/product/h2o-flow/images/Flow_assist.png)
+ ![Flow - Assist Me links](images/Flow_assist.png)
 
   You can also drag and drop the file onto the "Search" field in the   "Import Files" cell.  
- ![Flow - Import Files](/product/h2o-flow/images/Flow_Import_DragDrop.png)
+ ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
 - In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
- ![Import Files](/product/h2o-flow/images/Flow_import.png)
+ ![Import Files](images/Flow_import.png)
 
 - To import the selected file(s), click the **Import** button. 
 
@@ -120,7 +120,7 @@ After selecting the file to import, the file path displays in the "Search Result
 
 After you click the **Import** button, the raw code for the current job displays. A summary displays the results of the file import, including the number of imported files and their Network File System (nfs) locations. 
 
- ![Import Files - Results](/product/h2o-flow/images/Flow_import_results.png)
+ ![Import Files - Results](images/Flow_import_results.png)
 
 Ok, now that you've imported your data, let's move on to the next step: parsing. Click the **Parse these files** button to continue. 
 
@@ -153,11 +153,11 @@ Select any necessary additional options:
 
 A preview of the data displays in the "Data Preview" section. After making your selections, click the **Parse** button. 
 
- ![Flow - Parse options](/product/h2o-flow/images/Flow_parse_setup.png)
+ ![Flow - Parse options](images/Flow_parse_setup.png)
 
 After you click the **Parse** button, the code for the current job displays. 
 
- ![Flow - Parse code](/product/h2o-flow/images/Flow_parse_code_ex.png)
+ ![Flow - Parse code](images/Flow_parse_code_ex.png)
  
 --- 
  
@@ -166,7 +166,7 @@ After you click the **Parse** button, the code for the current job displays.
 
 To view a job, click the "Job Key" link or click the **View Job** button. 
 
-![View Model](/product/h2o-flow/images/Flow_ViewJob_Model.png)
+![View Model](images/Flow_ViewJob_Model.png)
 
 The following information displays: 
 
@@ -415,7 +415,7 @@ The available options vary depending on the selected model. If an option is only
 
 Click the **Assist Me!** button, then click the **getModels** link, or enter `getModels` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays. 
 
- ![Flow Models](/product/h2o-flow/images/Flow_getModels.png)
+ ![Flow Models](images/Flow_getModels.png)
 
 To inspect a model, check its checkbox then click the **Inspect** button, or click the **Inspect** button to the right of the model name. 
 
@@ -431,7 +431,7 @@ To learn how to make predictions, continue to the next section.
 After creating your model, click the destination key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
 
- ![Making Predictions](/product/h2o-flow/images/Flow_makePredict.png)
+ ![Making Predictions](images/Flow_makePredict.png)
 
 ---
  
@@ -441,7 +441,7 @@ Select the model to use in the prediction from the drop-down **Model:** menu and
 Click the **Assist Me!** button, then click the **getPredictions** link, or enter `getPredictions` in the cell in CS mode and press **Ctrl+Enter**. A list of the stored predictions displays. 
 To view a prediction, click the **View** button to the right of the model name. 
 
- ![Viewing Predictions](/product/h2o-flow/images/Flow_getPredict.png)
+ ![Viewing Predictions](images/Flow_getPredict.png)
 
 ---
 
@@ -455,14 +455,14 @@ Click the **Assist Me!** button, then click the **getFrames** link, or enter `ge
 - Number of rows and columns
 - Size 
 
- ![Pre-Parse Frame](/product/h2o-flow/images/Flow_getFrame.png)
+ ![Pre-Parse Frame](images/Flow_getFrame.png)
 
 For parsed data, the following information displays: 
 
 - Link to the .hex file
 - The **Build Model**, **Predict**, and **Inspect** buttons
 
- ![Parsed Frames](/product/h2o-flow/images/Flow_getFrames.png)
+ ![Parsed Frames](images/Flow_getFrames.png)
 
 To make a prediction, check the checkboxes for the frames you want to use to make the prediction, then click the **Predict on Selected Frames** button. 
 
@@ -473,11 +473,11 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 ##Using Clips
 
 Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot). 
- ![Paperclip icon](/product/h2o-flow/images/Flow_clips_paperclip.png)
+ ![Paperclip icon](images/Flow_clips_paperclip.png)
 
 To use a clip in a workflow, click the "Clips" tab in the sidebar on the right. 
 
- ![Clips tab](/product/h2o-flow/images/Flow_clips.png)
+ ![Clips tab](images/Flow_clips.png)
 
 All saved clips, including the default system clips (such as `assist`, `importFiles`, and `predict`), are listed. Clips you have created are listed under the "My Clips" heading. To select a clip to insert, click the circular button to the left of the clip name. To delete a clip, click the trashcan icon to right of the clip name. 
 
@@ -492,7 +492,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow. To jump to a specific cell, click the cell description. 
 
- ![View Outline](/product/h2o-flow/images/Flow_Outline.png)
+ ![View Outline](images/Flow_Outline.png)
 
 ---
 
@@ -502,13 +502,13 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 You can save your flow for later reuse. To save your flow, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
 
- ![Renaming Flows](/product/h2o-flow/images/Flow_rename.png)
+ ![Renaming Flows](images/Flow_rename.png)
 
 To confirm the name, click the checkmark to the right of the name field. 
  
- ![Confirm Name](/product/h2o-flow/images/Flow_rename2.png)
+ ![Confirm Name](images/Flow_rename2.png)
 
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name. 
 
- ![Flows](/product/h2o-flow/images/Flow_flows.png)
+ ![Flows](images/Flow_flows.png)
 
