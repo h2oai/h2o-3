@@ -112,24 +112,32 @@ public class CXIChunk extends Chunk {
   }
 
   // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
+  // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
   protected final int findOffset(int idx) {
     if(idx >= _len)throw new IndexOutOfBoundsException();
-    final byte [] mem = _mem;
     int sparseLen = sparseLen();
     if(sparseLen == 0)return 0;
+    final byte [] mem = _mem;
+    if(idx <= getId(_OFF))  // easy cut off accessing the zeros prior first nz
+      return _OFF;
+    int last = mem.length - _ridsz - _valsz;
+    if(idx >= getId(last))  // easy cut off accessing of the tail zeros
+      return last;
     final int off = _lastOff;
     int lastIdx = getId(off);
-    // check the last accessed elem
+    // check the last accessed elem + one after
     if( idx == lastIdx ) return off;
-    if( idx > lastIdx ) {       // check the next one
+    if(idx > lastIdx){
+      // check the next one (no need to check bounds, already checked at the beginning)
       final int nextOff = off + _ridsz + _valsz;
-      if( nextOff < mem.length ) {
-        int nextId =  getId(nextOff);
-        if( idx <  nextId ) return off;
-        if( idx == nextId ) return (_lastOff = nextOff);
+      int nextId =  getId(nextOff);
+      if(idx < nextId) return off;
+      if(idx == nextId){
+        _lastOff = nextOff;
+        return nextOff;
       }
     }
-    // no match so far, do binary search
+    // binary search
     int lo=0, hi = sparseLen;
     while( lo+1 != hi ) {
       int mid = (hi+lo)>>>1;
