@@ -3,8 +3,8 @@ package water;
 import org.junit.*;
 
 public class KVSpeedTest extends TestUtil {
-  static final int NCLOUD=5;
-  static final int NKEYS=100000;
+  static final int NCLOUD=10;
+  static final int NKEYS=1000000;
   @BeforeClass static public void setup() { stall_till_cloudsize(NCLOUD); }
 
   // Make a million keys-per-node.  Make sure they are all cached/shared on at
