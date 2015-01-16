@@ -220,7 +220,7 @@ public final class AutoBuffer {
   static final int BBSIZE = 64*1024; // Bytebuffer "common big size"
   private static void bbstats( AtomicInteger ai ) {
     if( !DEBUG ) return;
-    if( (ai.incrementAndGet()&511)==511 ) {
+    if( (ai.incrementAndGet()&2047)==2047 ) {
       Log.warn("BB make="+BBMAKE.get()+" free="+BBFREE.get()+" cache="+BBCACHE.get()+" size="+BBS.size());
     }
   }
@@ -237,11 +237,13 @@ public final class AutoBuffer {
       try {
         bb = ByteBuffer.allocateDirect(BBSIZE).order(ByteOrder.nativeOrder());
         bbstats(BBMAKE);
+        if( (BBMAKE.get()&511)==511 ) 
+          new Error().printStackTrace();
         return bb;
       } catch( OutOfMemoryError oome ) {
         // java.lang.OutOfMemoryError: Direct buffer memory
         if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
-        System.out.println("Sleeping & retrying");
+        System.out.println("OOM DBB - Sleeping & retrying");
         try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
       }
     }
