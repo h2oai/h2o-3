@@ -5,7 +5,7 @@ import water.Iced;
 import water.util.IcedHashMap;
 
 // Input fields
-abstract class ModelBuildersBase<S extends ModelBuildersBase<S>> extends Schema<Iced, ModelBuildersBase<S>> {
+abstract class ModelBuildersBase<I extends Iced, S extends ModelBuildersBase<I, S>> extends Schema<I, S> {
   @API(help="Algo of ModelBuilder of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   String algo;;
 

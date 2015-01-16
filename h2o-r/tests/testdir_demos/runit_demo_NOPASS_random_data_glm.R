@@ -36,7 +36,7 @@ for(i in 1:length(rows)){ # changing number of rows
                                                  seed = 12345, randomize = T, value = 0, real_range = 100, 
                                                  categorical_fraction = 0.0, factors = 10, 
                                                  integer_fraction = 0.4, integer_range = 100, 
-                                                 missing_fraction = 0, response_factors = 1) ) 
+                                                 missing_fraction = 0, response_factors = 1, has_response = TRUE) ) 
     create_frm_time[i,j] <- as.numeric(sst[3]) 
     mem <- h2o.ls(conn,"myframe") 
     frm_size[i,j] <- as.numeric(mem[2]) 

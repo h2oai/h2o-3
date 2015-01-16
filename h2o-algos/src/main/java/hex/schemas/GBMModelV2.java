@@ -6,7 +6,7 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 //import water.util.DocGen.HTML;
 
-public class GBMModelV2 extends ModelSchema<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput, GBMModelV2> {
+public class GBMModelV2 extends ModelSchema<GBMModel, GBMModelV2, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
   public static final class GBMModelOutputV2 extends ModelOutputSchema<GBMModel.GBMOutput, GBMModelOutputV2> {
     // Output fields; input fields are in the parameters list

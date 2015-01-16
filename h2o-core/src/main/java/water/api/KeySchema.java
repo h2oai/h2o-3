@@ -11,7 +11,7 @@ import java.lang.reflect.Constructor;
  * Base Schema Class for Keys.  Note that Key schemas are generally typed by the type of
  * object they point to (e.g., the front something like a Key<Frame>).
  */
-public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
+public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schema<Key<I>, S> {
   @API(help="Name (string representation) for this Key.")
   public String name;
 
@@ -50,8 +50,8 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
   }
 
   @Override
-  public KeySchema<T> fillFromImpl(Key key) {
-    if (null == key) return this;
+  public S fillFromImpl(Key key) {
+    if (null == key) return (S)this;
 
     this.name = key.toString();
 
@@ -67,7 +67,7 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
     }
 
     // TODO: URL
-    return this;
+    return (S)this;
   }
 
   public static Class<? extends Keyed> getKeyedClass(Class<? extends KeySchema> clz) {
@@ -87,7 +87,7 @@ public class KeySchema<T extends Keyed> extends Schema<Key<T>, KeySchema<T>> {
     return getKeyedClassType(this.getClass());
   }
 
-  public Key<T> key() {
+  public Key<I> key() {
     if (null == name) return null;
 
     return Key.make(this.name);
