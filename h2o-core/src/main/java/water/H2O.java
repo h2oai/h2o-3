@@ -479,7 +479,7 @@ final public class H2O {
     private final int _cap;
     FJWThrFact( int cap ) { _cap = cap; }
     @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-      int cap = 4 * NUMCPUS;
+      int cap = _cap==-1 ? 4 * NUMCPUS : _cap;
       return pool.getPoolSize() <= cap ? new FJWThr(pool) : null;
     }
   }
@@ -504,7 +504,7 @@ final public class H2O {
     // Only need 1 thread for the AckAck work, as it cannot block
     FJPS[ACK_ACK_PRIORITY] = new PrioritizedForkJoinPool(ACK_ACK_PRIORITY,1);
     for( int i=MIN_HI_PRIORITY+1; i<MAX_PRIORITY; i++ )
-      FJPS[i] = new PrioritizedForkJoinPool(i,NUMCPUS); // All CPUs, but no more for blocking purposes
+      FJPS[i] = new PrioritizedForkJoinPool(i,4); // All CPUs, but no more for blocking purposes
     FJPS[GUI_PRIORITY] = new PrioritizedForkJoinPool(GUI_PRIORITY,2);
   }
 
