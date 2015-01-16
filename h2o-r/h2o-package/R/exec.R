@@ -31,7 +31,7 @@ function(op, x) {
     else stop("operand type not handled: ", class(x))
   }
   ast <- new("ASTNode", root=op, children=list(x))
-  .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(conn, "unary_op"), finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -72,11 +72,11 @@ function(op, e1, e2) {
     else stop("RHS operand type not handled: ", class(e2))
   }
 
-  if (!identical(lhsconn, rhsconn))
+  if (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port)
     stop("LHS and RHS are using different H2O connections")
 
   ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  .newH2OObject("H2OFrame", ast = ast, conn = lhsconn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = lhsconn, key = .key.make(lhsconn, "binary_op"), finalizers = finalizers, linkToGC = TRUE)
 }
 
 #'
@@ -84,7 +84,7 @@ function(op, e1, e2) {
 #'
 #' Operation on an H2OFrame object with some extra parameters.
 .h2o.nary_op<-
-function(op, ..., .args = list(...), .key = .key.make()) {
+function(op, ..., .args = list(...), .key = .key.make(h2o.getConnection(), "nary_op")) {
   op <- new("ASTApply", op = op)
   finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
   children <- .args.to.ast(.args = .args)
@@ -108,7 +108,7 @@ function(op, ..., .args = list(...), .key = .key.make()) {
 #' Here's a quick diagram to illustrate what is going on here
 #'
 .force.eval<-
-function(conn, ast, key=.key.make(), finalizers=list(), new.assign=TRUE, deparsedExpr=NULL, env=parent.frame()) {
+function(conn, ast, key=.key.make(conn, "rapids"), finalizers=list(), new.assign=TRUE, deparsedExpr=NULL, env=parent.frame()) {
   # Prepare the AST
   if (new.assign) {
     if (is(key, "H2OFrame")) key <- key@key

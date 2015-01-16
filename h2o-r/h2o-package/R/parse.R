@@ -14,6 +14,9 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
   if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
 
+  # cleanup KV store
+  gc()
+
   # Prep srcs: must be of the form [src1,src2,src3,...]
   srcs <- data@key
   srcs <- .collapse(srcs)
@@ -26,7 +29,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   parse.params <- list(
         srcs = srcs,
-        hex  = paste0(ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName), .get.session_id()),
+        hex  = paste0(ifelse(nzchar(key), paste0(key, ".hex"), parseSetup$hexName), data@conn@session_id),
         columnNames = .collapse(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,

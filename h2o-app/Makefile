@@ -59,11 +59,11 @@ $(main_classes): build/classes/%class: src/main/java/%java
 # Name collisions amongst packages are quietly ignored.
 # H2O names win over all other names.
 #	@(cd build/tmp; for d in $(libs); do ( jar xf ../../$$d ); done )
-build/libs/h2o-web.jar: $(classes) ../h2o-algos/build/libs/h2o-algos.jar ../h2o-core/build/libs/h2o-core.jar
+build/libs/h2o-web.jar: $(classes) ../h2o-algos/build/libs/h2o-algos.jar ../h2o-core/build/libs/h2o-core.jar ../h2o-core/build/libs/h2o-core-test.jar
 	@echo "jarring " $@ " because " $?
 	@[ -d build/libs ] || mkdir -p build/libs
 	@rm -rf build/tmp ; mkdir -p build/tmp
-	@(cd build/tmp; jar xf ../../../h2o-algos/build/libs/h2o-algos.jar; rm -rf META-INF; jar xf ../../../h2o-core/build/libs/h2o-core.jar; rm -rf META-INF )
+	@(cd build/tmp; jar xf ../../../lib/junit*.jar; jar xf ../../../lib/hamcrest*.jar; jar xf ../../../lib/joda*.jar; jar xf ../../../lib/log4j*.jar; jar xf ../../../h2o-algos/build/libs/h2o-algos.jar; jar xf ../../../h2o-core/build/libs/h2o-core.jar; jar xf ../../../h2o-core/build/libs/h2o-core-test.jar; rm -rf META-INF )
 	@cp -r build/classes/water build/tmp
 	@jar -cfm build/libs/h2o-web.jar manifest.txt -C build/tmp .
 	@rm -rf build/tmp
