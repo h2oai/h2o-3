@@ -2,6 +2,8 @@ package water.api;
 
 import org.reflections.Reflections;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
@@ -636,7 +638,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    */
   public static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);
-    if (null == clz) throw H2O.fail("Failed to find schema for version: " + version + " and type: " + type);
+    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
+                                                            "Failed to find schema for version: " + version + " and type: " + type);
     return Schema.newInstance(clz);
   }
 
@@ -646,7 +649,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public static Schema schema(String schema_name) {
     Schema.registerAllSchemasIfNecessary();
     Class<? extends Schema> clz = schemas.get(schema_name);
-    if (null == clz) throw H2O.fail("Failed to find schema for schema_name: " + schema_name);
+    if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
+                                                            "Failed to find schema for schema_name: " + schema_name);
     return Schema.newInstance(clz);
   }
 
@@ -748,7 +752,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       // TODO: render examples and other stuff, if it's passed in
     }
     catch (Exception e) {
-      throw H2O.fail("Caught exception using reflection on schema: " + this + ": " + e);
+      IcedHashMap values = new IcedHashMap();
+      values.put("schema", this);
+      // TODO: This isn't quite the right exception type:
+      throw new H2OIllegalArgumentException("Caught exception using reflection on schema: " + this,
+                                            "Caught exception using reflection on schema: " + this + ": " + e,
+                                            values);
     }
 
     if (null != appendToMe)

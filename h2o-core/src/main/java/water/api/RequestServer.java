@@ -1,8 +1,9 @@
 package water.api;
 
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import water.*;
-import water.exceptions.H2ONotFoundArgumentException;
 import water.exceptions.H2OAbstractRuntimeException;
+import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
@@ -12,6 +13,7 @@ import water.util.RString;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -540,6 +542,14 @@ public class RequestServer extends NanoHTTPD {
     // TODO: kill the server if someone called H2O.fail()
     catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, uri);
+
+      // some special cases for which we return 400 because it's likely a problem with the client request:
+      if (e instanceof IllegalArgumentException)
+        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
+      else if (e instanceof FileNotFoundException)
+        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
+      else if (e instanceof MalformedURLException)
+        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
 
       Log.warn(error._dev_msg);
       Log.warn(error._values.toJsonString());

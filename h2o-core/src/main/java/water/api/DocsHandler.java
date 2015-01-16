@@ -72,7 +72,7 @@ public class DocsHandler extends Handler {
   /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
   public DocsV1 fetchSchemaMetadataByClass(int version, DocsV1 docs) {
     docs.schemas = new SchemaMetadataBase[1];
-    // NOTE: this will throw IllegalArgumentException if the classname isn't found:
+    // NOTE: this will throw an exception if the classname isn't found:
     SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
     docs.schemas[0] = meta;
     return docs;
@@ -87,7 +87,7 @@ public class DocsHandler extends Handler {
     }
 
     docs.schemas = new SchemaMetadataBase[1];
-    // NOTE: this will throw IllegalArgumentException if the classname isn't found:
+    // NOTE: this will throw an exception if the classname isn't found:
     SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.schema(docs.schemaname)));
     docs.schemas[0] = meta;
     return docs;
@@ -99,7 +99,7 @@ public class DocsHandler extends Handler {
     Map<String, Class<? extends Schema>> ss = Schema.schemas();
     docs.schemas = new SchemaMetadataBase[ss.size()];
 
-    // NOTE: this will throw IllegalArgumentException if the classname isn't found:
+    // NOTE: this will throw an exception if the classname isn't found:
     int i = 0;
     for (Class<? extends Schema> schema_class : ss.values()) {
       // No hardwired version! YAY!  FINALLY!
