@@ -9,22 +9,19 @@
 #'
 #' The H2O Package Environment
 #'
-.pkg.env              <- new.env()
+.pkg.env <- new.env()
 assign("SERVER",        NULL,  .pkg.env)
 assign("IS_LOGGING",    FALSE, .pkg.env)
 assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
-.key.make <- function(prefix = "rapids") {
-  hex_digits <- c(as.character(0:9), letters[1:6])
-  y_digits <- hex_digits[9:12]
-  tempA <- paste(sample(hex_digits, 8, replace=TRUE), collapse='')
-  tempB <- paste(sample(hex_digits, 4, replace=TRUE), collapse='')
-  tempC <- '4'
-  tempD <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
-  tempE <- paste(sample(y_digits, 1), collapse='')
-  tempF <- paste(sample(hex_digits, 3, replace=TRUE), collapse='')
-  tempG <- paste(sample(hex_digits, 12, replace=TRUE), collapse='')
-  paste0(prefix, '_', tempA, tempB, tempC, tempD, tempE, tempF, tempG, .get.session_id())
+.key.make <- function(conn, prefix = "rapids") {
+  key_count <- get("key_count", conn@envir)
+  if (key_count == .Machine$integer.max)
+    stop("current H2OConnection has reached its maximum number of keys. Use h2o.init() to open another connection.")
+  key_count <- key_count + 1L
+  key <- sprintf("%s_%d%s", prefix, key_count, conn@session_id) # session_id has leading underscore
+  assign("key_count", key_count, conn@envir)
+  key
 }
 
 #'

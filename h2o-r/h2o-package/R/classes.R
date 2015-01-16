@@ -34,9 +34,15 @@ setClassUnion("data.frameOrNULL", c("data.frame", "NULL"))
 #' @slot session_id A \code{numeric} string specifying the H2O session identifier.
 #' @aliases H2OConnection
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", session_id="character"),
-         prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_)
+         representation(ip="character", port="numeric", session_id="character", envir="environment"),
+         prototype(ip=NA_character_, port=NA_integer_, session_id=NA_character_, envir=new.env())
          )
+setMethod("initialize", "H2OConnection",
+function(.Object, ...) {
+  .Object <- callNextMethod()
+  assign("key_count", 0L, .Object@envir)
+  .Object
+})
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
