@@ -2372,7 +2372,8 @@ class ASTTable extends ASTUniPrefixOp {
     NewChunk c0 = new NewChunk(v0,0);
     for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
     c0.close(0,null);
-    vecs[0] = v0.close(null);
+    Futures fs = new Futures();
+    vecs[0] = v0.close(fs);
     colnames[0] = "row.names";
     if (ncol==1) colnames[1] = "Count";
     for (int level1=0; level1 < counts.length; level1++) {
@@ -2382,11 +2383,12 @@ class ASTTable extends ASTUniPrefixOp {
       for (int level0=0; level0 < counts[level1].length; level0++)
         c.addNum((double) counts[level1][level0]);
       c.close(0, null);
-      vecs[level1+1] = v.close(null);
+      vecs[level1+1] = v.close(fs);
       if (ncol>1) {
         colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
       }
     }
+    fs.blockForPending();
     Frame fr2 = new Frame(colnames, vecs);
     env.pushAry(fr2);
   }
