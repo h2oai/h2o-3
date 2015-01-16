@@ -51,7 +51,7 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
 
 - **MD**: Markdown
 
- ![Flow - Markdown](images/Flow_Markdown.png)
+ ![Flow - Markdown](images/Flow_markdown.png)
 
 - **CS**: Code
 
@@ -510,5 +510,5 @@ To confirm the name, click the checkmark to the right of the name field.
 
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name. 
 
- ![Flows](Flow_flows.png)
+ ![Flows](images/Flow_flows.png)
 
