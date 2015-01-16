@@ -46,6 +46,9 @@ class CreateFrameV2 extends JobV2<CreateFrame, CreateFrameV2> {
   @API(help = "Number of factor levels of the first column (1=real, 2=binomial, N=multinomial)", json=true)
   public int response_factors;
 
+  @API(help = "Whether an additional response column should be generated", json=true)
+  public boolean has_response;
+
   @Override public CreateFrame createImpl( ) { return new CreateFrame(Key.make(), null); }
 }
 

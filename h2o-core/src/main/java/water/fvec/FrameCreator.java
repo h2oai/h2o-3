@@ -40,27 +40,25 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     _bin_cols  = Arrays.copyOfRange(shuffled_idx, catcols+intcols+realcols, catcols+intcols+realcols+bincols);
 
     // create domains for categorical variables
-    if (_createFrame.randomize) {
+    _domain = new String[_createFrame.cols + (_createFrame.has_response ? 1 : 0)][];
+    if(createFrame.randomize) {
       if(_createFrame.has_response) {
-        assert(_createFrame.response_factors >= 1);
-        _domain = new String[_createFrame.cols + 1][];
+        assert (_createFrame.response_factors >= 1);
         _domain[0] = _createFrame.response_factors == 1 ? null : new String[_createFrame.response_factors];
         if (_domain[0] != null) {
           for (int i = 0; i < _domain[0].length; ++i) {
             _domain[0][i] = "resp." + i;
           }
         }
-      } else {
-        _domain = new String[_createFrame.cols][];
       }
 
       for (int c : _cat_cols) {
         _domain[c] = new String[_createFrame.factors];
         for (int i = 0; i < _createFrame.factors; ++i) {
-          _domain[c][i] = UUID.randomUUID().toString().subSequence(0,5).toString();
+          _domain[c][i] = UUID.randomUUID().toString().subSequence(0, 5).toString();
           // make sure that there's no pure number-labels
-          while ( _domain[c][i].matches("^\\d+$") || _domain[c][i].matches("^\\d+e\\d+$") ) {
-            _domain[c][i] = UUID.randomUUID().toString().subSequence(0,5).toString();
+          while (_domain[c][i].matches("^\\d+$") || _domain[c][i].matches("^\\d+e\\d+$")) {
+            _domain[c][i] = UUID.randomUUID().toString().subSequence(0, 5).toString();
           }
         }
       }
@@ -80,7 +78,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
   final private Key _job;
 
   @Override public void compute2() {
-    int totcols = _createFrame.has_response ? (_createFrame.cols+1) : _createFrame.cols;
+    int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
     Vec[] vecs = new Vec[totcols];
     for (int i=0; i<vecs.length; ++i) {
       vecs[i] = _v.makeZero(_domain[i]);
