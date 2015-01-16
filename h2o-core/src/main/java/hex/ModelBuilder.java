@@ -188,32 +188,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     String cstr="";             // Log of dropped columns
     for( int i=0; i<_train.vecs().length; i++ ) {
       if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
-        cstr += _train._names[i]+", "; // Log dropped cols
+        if(cstr.length() > 0) cstr += ", "; // Log dropped cols
+        cstr += _train._names[i];
         _train.remove(i);
         i--; // Re-run at same iteration after dropping a col
       }
     }
-    if( cstr.length() > 0 )
-      if( expensive ) {
-        warn("_train","Dropping constant columns: " + cstr);
-        Log.info("Dropping constant columns: " + cstr);
-      }
+    if( cstr.length() > 0 ) {
+      warn("_train", "Dropping constant columns: " + cstr);
+      if(expensive) Log.info("Dropping constant columns: " + cstr);
+    }
 
     if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
       String nstr="";            // Log of dropped columns
       for( int i=0; i<_train.vecs().length; i++ ) {
         float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
         if( ratio > 0.2 ) {
-          nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%), "; // Log dropped cols
+          if(nstr.length() > 0) nstr += ", "; // Log dropped cols
+          nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%)";
           _train.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
-      if( nstr.length() > 0 )
-        if( expensive ) {
-          warn("_train","Dropping columns with too many missing values: " + nstr);
-          Log.info("Dropping columns with too many missing values: " + nstr);
-        }
+      if( nstr.length() > 0 ) {
+        warn("_train","Dropping columns with too many missing values: " + nstr);
+        if(expensive) Log.info("Dropping columns with too many missing values: " + nstr);
+      }
     }
 
     // Check that at least some columns are not-constant and not-all-NAs
