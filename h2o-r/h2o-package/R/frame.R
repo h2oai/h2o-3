@@ -88,39 +88,36 @@ NULL
 #'
 #' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5, categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
-h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE, 
-                            value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100, 
-                            integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1, 
-                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2, 
+h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
+                            value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
+                            integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
+                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
-  if(class(conn) != "H2OConnection") stop("object must be of class H2OConnection")
-  if(!is.character(key)) stop("key must be a string")
-  if(!is.numeric(rows)) stop("rows must be a positive number")
-  if(!is.numeric(cols)) stop("cols must be a positive number")
-  if(!missing(seed) && !is.numeric(seed)) stop("seed must be a numeric value")
-  if(!is.logical(randomize)) stop("randomize must be TRUE or FALSE")
-  if(!is.numeric(value)) stop("value must be a numeric value")
-  if(!is.numeric(real_range)) stop("real_range must be a numeric value")
-  if(!is.numeric(categorical_fraction)) stop("categorical_fraction must be a numeric value")
-  if(!is.numeric(factors)) stop("factors must be a numeric value")
-  if(!is.numeric(integer_fraction)) stop("integer_fraction must be a numeric value")
-  if(!is.numeric(integer_range)) stop("integer_range must be a numeric value")
-  if(!is.numeric(binary_fraction)) stop("binary_fraction must be a numeric value")
-  if(!is.numeric(binary_ones_fraction)) stop("binary_ones_fraction must be a numeric value")
-  if(!is.numeric(missing_fraction)) stop("missing_fraction must be a numeric value")
-  if(!is.numeric(response_factors)) stop("response_factors must be a numeric value")
-  if(!is.logical(has_response)) stop("has_response must be a logical value")
-  
+  if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
+  if(!is.character(key)) stop("`key` must be a string")
+  if(!is.numeric(rows)) stop("`rows` must be a positive number")
+  if(!is.numeric(cols)) stop("`cols` must be a positive number")
+  if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
+  if(!is.logical(randomize)) stop("`randomize` must be TRUE or FALSE")
+  if(!is.numeric(value)) stop("`value` must be a numeric value")
+  if(!is.numeric(real_range)) stop("`real_range` must be a numeric value")
+  if(!is.numeric(categorical_fraction)) stop("`categorical_fraction` must be a numeric value")
+  if(!is.numeric(factors)) stop("`factors` must be a numeric value")
+  if(!is.numeric(integer_fraction)) stop("`integer_fraction` must be a numeric value")
+  if(!is.numeric(integer_range)) stop("`integer_range` must be a numeric value")
+  if(!is.numeric(binary_fraction)) stop("`binary_fraction` must be a numeric value")
+  if(!is.numeric(binary_ones_fraction)) stop("`binary_ones_fraction` must be a numeric value")
+  if(!is.numeric(missing_fraction)) stop("`missing_fraction` must be a numeric value")
+  if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
+  if(!is.logical(has_response)) stop("`has_response` must be a logical value")
+
   .cframe.map <- c("key" = "dest")
   parms <- as.list(match.call(expand.dots = FALSE)[-1L])
   parms$conn <- NULL
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
-  
+
   res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "GET", .params = parms)
   h2o.getFrame(res$dest$name, conn)
-  # col_names <- paste("C", 1:res$cols, sep = "")
-  # if(has_response) col_names <- c("response", col_names)
-  # .h2o.parsedData(conn, res$dest$name, res$rows, res$cols, col_names)
 }
 
 #h2o.splitFrame <- function(data, ratios = 0.75) {
@@ -283,7 +280,7 @@ h2o.runif <- function(x, seed = -1) {
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
   ast <- .h2o.nary_op("h2o.runif", x, seed)
-  .newH2OObject("H2OFrame", ast = ast@ast, conn = x@conn, key = .key.make(), finalizers = x@finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast@ast, conn = x@conn, key = .key.make(x@conn, "runif"), finalizers = x@finalizers, linkToGC = TRUE)
 }
 
 
@@ -376,7 +373,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  .newH2OObject("H2OFrame", ast = ast, conn = x@conn, key = .key.make(), finalizers = finalizers, linkToGC = TRUE)
+  .newH2OObject("H2OFrame", ast = ast, conn = x@conn, key = .key.make(x@conn, "subset"), finalizers = finalizers, linkToGC = TRUE)
 })
 
 #' @rdname H2OFrame-Extract
