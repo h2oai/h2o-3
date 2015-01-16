@@ -21,6 +21,9 @@ public class LogsHandler extends Handler {
     @Override public void compute2() {
       String logPathFilename;
       try {
+        if (filename == null) {
+          filename = water.util.Log.getLogFileName();
+        }
         logPathFilename = Log.getLogDir() + File.separator + filename;
         File f = new File(logPathFilename);
         if (! f.exists()) {
@@ -63,20 +66,18 @@ public class LogsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
     int nodeidx = s.nodeidx;
+    if (nodeidx == -1) {
+      nodeidx = H2O.SELF.index();
+    }
     if ((nodeidx < 0) || (nodeidx >= H2O.CLOUD.size())) {
       throw new IllegalArgumentException("node does not exist");
     }
 
-    String filename;
-    try {
-      filename = (s.filename != null) ? s.filename : water.util.Log.getLogFileName();
-    }
-    catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    if (filename.contains(File.separator)) {
-      throw new IllegalArgumentException("filename may not contain File.separator character");
+    String filename = s.filename;
+    if (filename != null) {
+      if (filename.contains(File.separator)) {
+        throw new IllegalArgumentException("filename may not contain File.separator character");
+      }
     }
 
     H2ONode node = H2O.CLOUD._memary[nodeidx];
