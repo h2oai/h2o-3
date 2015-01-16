@@ -243,6 +243,7 @@ abstract public class MemoryManager {
         case  5: return new float  [elems];
         case  9: return new double [elems];
         case  0: return new boolean[elems];
+        case 10: return new Object [elems];
         case -1: return Arrays.copyOfRange((byte  [])orig,from,elems);
         case -4: return Arrays.copyOfRange((int   [])orig,from,elems);
         case -8: return Arrays.copyOfRange((long  [])orig,from,elems);
@@ -270,6 +271,7 @@ abstract public class MemoryManager {
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4, 5,null,0); }
   public static double [] malloc8d(int size) { return (double [])malloc(size,size*8, 9,null,0); }
   public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size  , 0,null,0); }
+  public static Object [] mallocObj(int size){ return (Object [])malloc(size,size*8,10,null,0,false); }
   public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)  ,-1,orig,from); }
   public static int    [] arrayCopyOfRange(int   [] orig, int from, int sz) { return (int   []) malloc(sz,(sz-from)*4,-4,orig,from); }
   public static long   [] arrayCopyOfRange(long  [] orig, int from, int sz) { return (long  []) malloc(sz,(sz-from)*8,-8,orig,from); }

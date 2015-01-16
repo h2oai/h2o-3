@@ -948,9 +948,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
         return newkvs;          // Use the new table already
 
       // Double size for K,V pairs, add 1 for CHM
-      newkvs = new Object[((1<<log2)<<1)+2]; // This can get expensive for big arrays
+      newkvs = water.MemoryManager.mallocObj(((1<<log2)<<1)+2); // This can get expensive for big arrays
       newkvs[0] = new CHM(_size); // CHM in slot 0
-      newkvs[1] = new int[1<<log2]; // hashes in slot 1
+      newkvs[1] = water.MemoryManager.malloc4(1<<log2); // hashes in slot 1
 
       // Another check after the slow allocation
       if( _newkvs != null )     // See if resize is already in progress
