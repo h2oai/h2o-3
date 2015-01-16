@@ -23,6 +23,14 @@ class FJPacket extends H2OCountedCompleter {
       RPC.remote_exec(_ab);
     tryComplete();
   }
+  /** Exceptional completion path; mostly does printing if the exception was
+   *  not handled earlier in the stack.  */
+  @Override public boolean onExceptionalCompletion(Throwable ex, jsr166y.CountedCompleter caller) {
+    System.err.println("onExCompletion for "+this);
+    ex.printStackTrace();
+    water.util.Log.err(ex);
+    return true;
+  }
   // Run at max priority until we decrypt the packet enough to get priorities out
   static private byte[] UDP_PRIORITIES =
     new byte[]{-1,
