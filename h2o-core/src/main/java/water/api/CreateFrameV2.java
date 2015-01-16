@@ -1,17 +1,13 @@
 package water.api;
 
 import hex.CreateFrame;
-import water.Job;
 import water.Key;
 
-class CreateFrameV2 extends JobV2<CreateFrameV2> {
-  @API(help = "Key")
-  Key key;
-
-  @API(help = "Number of rows", required = true, json=true)
+class CreateFrameV2 extends JobV2<CreateFrame, CreateFrameV2> {
+  @API(help = "Number of rows", json=true)
   public long rows;
 
-  @API(help = "Number of data columns (in addition to the first response column)", required = true,json=true)
+  @API(help = "Number of data columns (in addition to the first response column)", json=true)
   public int cols;
 
   @API(help = "Random number seed", json=true)
@@ -50,6 +46,6 @@ class CreateFrameV2 extends JobV2<CreateFrameV2> {
   @API(help = "Number of factor levels of the first column (1=real, 2=binomial, N=multinomial)", json=true)
   public int response_factors;
 
-  @Override public Job createImpl( ) { return new CreateFrame(Key.make(), null); }
+  @Override public CreateFrame createImpl( ) { return new CreateFrame(Key.make(), null); }
 }
 

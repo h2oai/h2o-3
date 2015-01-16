@@ -456,9 +456,54 @@ if verbose: print 'Cleaning up old stuff. . .'
 cleanup(a_node)
 
 
+#########################
+# test Metadata/endpoints
+if verbose: print 'Testing /Metadata/endpoints. . .'
+endpoints = a_node.endpoints()
+assert 'routes' in endpoints, "FAIL: failed to find routes in the endpoints result."
+assert type(endpoints['routes']) is list, "FAIL: routes in the endpoints result is not a list."
+assert len(endpoints['routes']) > 0, "FAIL: routes list in the endpoints result is empty."
+assert type(endpoints['routes'][0]) is dict, "FAIL: routes[0] in the endpoints result is not a dict."
+assert 'input_schema' in endpoints['routes'][0], "FAIL: routes[0] in the endpoints result does not have an 'input_schema' field."
+
+
+#########################
+# test Metadata/schemas
+if verbose: print 'Testing /Metadata/schemas. . .'
+schemas = a_node.schemas()
+assert 'schemas' in schemas, "FAIL: failed to find schemas in the schemas result."
+assert type(schemas['schemas']) is list, "FAIL: schemas in the schemas result is not a list."
+assert len(schemas['schemas']) > 0, "FAIL: schemas list in the schemas result is empty."
+assert type(schemas['schemas'][0]) is dict, "FAIL: schemas[0] in the schemas result is not a dict."
+assert 'fields' in schemas['schemas'][0], "FAIL: schemas[0] in the schemas result does not have an 'fields' field."
+
+
 ####################################################################################################
 # Import and check datasets
 ####################################################################################################
+
+##################
+# Test CreateFrame
+if verbose: print 'Testing CreateFrame. . .'
+created_job = a_node.create_frame(dest='created') # call with defaults
+
+a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV2 instance (aka the Job)
+
+frames = a_node.frames(key='created')['frames']
+assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
+assert frames[0]['key']['name'] == 'created', "FAIL: expected to find 1 frame called 'created', found: " + repr(frames)
+
+created = frames[0]
+assert 'rows' in created, "FAIL: failed to find 'rows' field in CreateFrame result."
+assert created['rows'] == 10000, "FAIL: expected value of 'rows' field in CreateFrame result to be: " + str(10000) + ", found: " + str(created['rows'])
+assert 'columns' in created, "FAIL: failed to find 'columns' field in CreateFrame result."
+assert len(created['columns']) == 10, "FAIL: expected value of 'columns' field in CreateFrame result to be: " + str(10) + ", found: " + str(len(created['columns']))
+
+
+#########################################################
+# Import all the datasets we'll need for the teste below:
+#########################################################
+
 # dest_key, path, expected_rows, model_category, response_column, ignored_columns
 datasets_to_import = [
     DatasetSpec('prostate_clustering', '../../smalldata/logreg/prostate.csv', 380, 'Clustering', None, ['ID']),

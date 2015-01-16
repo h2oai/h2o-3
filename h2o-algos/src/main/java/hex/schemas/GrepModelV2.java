@@ -5,7 +5,7 @@ import water.H2O;
 import water.api.*;
 import water.util.PojoUtils;
 
-public class GrepModelV2 extends ModelSchema<GrepModel, GrepModel.GrepParameters, GrepModel.GrepOutput, GrepModelV2 > {
+public class GrepModelV2 extends ModelSchema<GrepModel, GrepModelV2, GrepModel.GrepParameters, GrepModel.GrepOutput> {
 
   public static final class GrepModelOutputV2 extends ModelOutputSchema<GrepModel.GrepOutput, GrepModelOutputV2> {
     // Output fields

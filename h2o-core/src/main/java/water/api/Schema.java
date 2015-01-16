@@ -5,9 +5,7 @@ import water.*;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -185,8 +183,30 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public static void register(Class<? extends Schema> clz) {
     synchronized(clz) {
       // Was there a race to get here?  If so, return.
-      if (null != schemas.get(clz.getSimpleName()))
+      Class<? extends Schema> existing = schemas.get(clz.getSimpleName());
+      if (null != existing) {
+        if (clz != existing)
+          throw H2O.fail("Two schema classes have the same simpleName; this is not supported: " + clz + " and " + existing + ".");
         return;
+      }
+
+      // Check that the Schema has the correct type parameters:
+      if (clz.getGenericSuperclass() instanceof ParameterizedType) {
+        Type[] schema_type_parms = ((ParameterizedType) (clz.getGenericSuperclass())).getActualTypeArguments();
+        if (schema_type_parms.length < 2)
+          throw H2O.fail("Found a Schema that does not pass at least two type parameters.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
+        Class parm0 = ReflectionUtils.findActualClassParameter(clz, 0);
+        if (! Iced.class.isAssignableFrom(parm0))
+          throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Iced.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
+        if (Schema.class.isAssignableFrom(parm0))
+          throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
+
+        Class parm1 = ReflectionUtils.findActualClassParameter(clz, 1);
+        if (! Schema.class.isAssignableFrom(parm1))
+          throw H2O.fail("Found a Schema with bad type parameters.  Second parameter is not a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm1);
+      } else {
+        throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
+      }
 
       if (extractVersion(clz.getSimpleName()) > -1) {
         Schema s = null;

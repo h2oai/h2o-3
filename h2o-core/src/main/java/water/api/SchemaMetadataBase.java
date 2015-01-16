@@ -29,7 +29,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
   /**
    * Schema for the metadata for the field of a Schema.
    */
-  public static class FieldMetadataBase extends Schema<FieldMetadata, FieldMetadataBase> {
+  public static class FieldMetadataBase<I extends FieldMetadata, S extends FieldMetadataBase<I, S>> extends Schema<I, S> {
     @API(help="Field name in the Schema", direction=API.Direction.OUTPUT)
     String name;
 
@@ -84,7 +84,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     impl.fields = new ArrayList<FieldMetadata>(this.fields.length);
     int i = 0;
     for (FieldMetadataBase s : this.fields)
-      impl.fields.add(s.createImpl());
+      impl.fields.add((FieldMetadata)s.createImpl());
     return impl;
   }
 

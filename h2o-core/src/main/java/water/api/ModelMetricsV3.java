@@ -1,4 +1,6 @@
 package water.api;
 
-public class ModelMetricsV3 extends ModelMetricsBase {
+import hex.ModelMetrics;
+
+public class ModelMetricsV3 extends ModelMetricsBase<ModelMetrics, ModelMetricsV3> {
 }
