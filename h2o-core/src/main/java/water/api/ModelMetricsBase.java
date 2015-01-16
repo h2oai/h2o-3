@@ -10,7 +10,7 @@ import water.util.PojoUtils;
 /**
  * Base Schema for individual instances of ModelMetrics objects.
  */
-public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetricsBase> {
+public abstract class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends Schema<I, S> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
   // public KeyV1<Key<Model>> model;
@@ -46,23 +46,23 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
   public FrameV2 predictions;
 
   // Non-version-specific filling into the impl
-  @Override public ModelMetrics createImpl() {
+  @Override public I createImpl() {
 //    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
 //     ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl().get());
     ModelMetrics m = new ModelMetrics(this.model.createImpl().get(), this.frame.createImpl().get());
-    return m;
+    return (I) m;
   }
 
-  public ModelMetrics fillImpl(ModelMetrics m) {
+  public I fillImpl(ModelMetrics m) {
     PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[] {"auc", "cm"});
     //m._aucdata = (AUCData)this.auc.createImpl();
     /*
      * m._cm = this.cm.createImpl();
      */
-    return m;
+    return (I) m;
   }
 
-  @Override public ModelMetricsBase fillFromImpl(ModelMetrics modelMetrics) {
+  @Override public S fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();
     if( m != null ) {
@@ -86,6 +86,6 @@ public abstract class ModelMetricsBase extends Schema<ModelMetrics, ModelMetrics
     if (null != modelMetrics._cm)
       this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
 
-    return this;
+    return (S) this;
   }
 }

@@ -3,13 +3,14 @@ package water.api;
 import water.*;
 import water.api.KeyV1.JobKeyV1;
 import water.util.DocGen.HTML;
+import water.util.PojoUtils;
 import water.util.PrettyPrint;
 
 /** Schema for a single Job. */
-public class JobV2<J extends Schema> extends Schema<Job, JobV2<J>> {
+public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
 
   // Input fields
-  @API(help="Job Key",required=true)
+  @API(help="Job Key")
   public JobKeyV1 key;
 
   @API(help="Job description")
@@ -46,13 +47,14 @@ public class JobV2<J extends Schema> extends Schema<Job, JobV2<J>> {
   // Custom adapters go here
 
   // Version&Schema-specific filling into the impl
-  @Override public Job createImpl( ) { return new Job(key.key(), description); }
+  @Override public J createImpl( ) { return (J)new Job(key.key(), description); }
 
   // Version&Schema-specific filling from the impl
   @Override public JobV2 fillFromImpl(Job job) {
-    // Fetch the latest Job status from the K/V store
-    // Do this in the handler:
-    // Job job = DKV.get(j._key).get();
+    // Handle fields in subclasses:
+    PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+    PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
+
     key = new JobKeyV1(job._key);
     description = job._description;
     progress = job.progress();

@@ -5,7 +5,7 @@ import water.H2O;
 import water.api.*;
 import water.util.PojoUtils;
 
-public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModel.QuantileParameters, QuantileModel.QuantileOutput, QuantileModelV2 > {
+public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModelV2, QuantileModel.QuantileParameters, QuantileModel.QuantileOutput> {
 
   public static final class QuantileModelOutputV2 extends ModelOutputSchema<QuantileModel.QuantileOutput, QuantileModelOutputV2> {
     @API(help="Iterations executed")
@@ -15,12 +15,14 @@ public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModel.Qu
     @API(help="Quantiles")
     public double quantiles[/*N*/][/*Q*/]; // Our N columns, Q quantiles reported
 
+    // TODO: gratuitous
     @Override public QuantileModel.QuantileOutput createImpl() {
       QuantileModel.QuantileOutput impl = new QuantileModel.QuantileOutput(null);
       PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return impl;
     }
 
+    // TODO: gratuitous
     @Override public QuantileModelOutputV2 fillFromImpl( QuantileModel.QuantileOutput impl) {
       PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return this;

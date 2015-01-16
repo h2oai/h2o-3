@@ -6,7 +6,7 @@ import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
-public class PCAModelV2 extends ModelSchema<PCAModel, PCAModel.PCAParameters, PCAModel.PCAOutput, PCAModelV2> {
+public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAParameters, PCAModel.PCAOutput> {
 
   public static final class PCAModelOutputV2 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV2> {
     // Output fields; input fields are in the parameters list

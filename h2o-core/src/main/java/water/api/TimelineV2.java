@@ -23,7 +23,7 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
   public EventV2 [] events;
 
-  public abstract static class EventV2 extends Schema<Iced, EventV2> {
+  public abstract static class EventV2<I, S extends EventV2<I, S>> extends Schema<Iced, S> {
     @API(help="Time when the event was recorded. Format is hh:mm:ss:ms")
     private final String date;
     @API(help="Time in nanos")
@@ -43,7 +43,7 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     public    abstract String bytes();
   } // Event
 
-  private static class HeartBeatEvent extends EventV2 {
+  private static class HeartBeatEvent extends EventV2<Iced, HeartBeatEvent> {
     @API(help = "number of sent heartbeats")
     final int sends;
     @API(help = "number of received heartbeats")
@@ -62,7 +62,7 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     @Override public    String toString() { return "HeartBeat(" + sends + " sends, " + recvs + " receives)"; }
   } // HeartBeatEvent
 
-  public static class NetworkEvent extends EventV2 {
+  public static class NetworkEvent extends EventV2<Iced, NetworkEvent> {
     @API(help="Boolean flag distinguishing between sends (true) and receives(false)")
     public final boolean isSend;
     @API(help="network protocol (UDP/TCP)")
@@ -94,7 +94,7 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     }
   } // NetworkEvent
 
-  private static class IOEvent extends EventV2 {
+  private static class IOEvent extends EventV2<Iced, IOEvent> {
     @API(help="flavor of the recorded io (ice/hdfs/...)")
     private final String ioFlavor;
     @API(help="node where this io event happened")
