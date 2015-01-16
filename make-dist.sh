@@ -28,4 +28,4 @@ mv h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
 cd $TOPDIR
 
 # Create index file.
-cat h2o-dist/index.html | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" > target/index.html
+cat h2o-dist/index.html | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html
