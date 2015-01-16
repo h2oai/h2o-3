@@ -492,7 +492,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow. To jump to a specific cell, click the cell description. 
 
- ![View Outline](images/Flow_Outline.png)
+ ![View Outline](images/Flow_outline.png)
 
 ---
 
