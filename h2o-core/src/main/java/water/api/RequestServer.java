@@ -522,11 +522,11 @@ public class RequestServer extends NanoHTTPD {
         return getResource(version, type, uri);
       else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
         // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
-        return wrap2(HTTP_OK, handle(type,route,version,parms));
+        return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
-        return wrap(HTTP_OK,handle(type,route,version,parms),type);
+        return wrap(handle(type,route,version,parms),type);
       }
     }
     catch (H2OAbstractRuntimeException e) {
@@ -537,7 +537,7 @@ public class RequestServer extends NanoHTTPD {
       Log.warn((Object[])error._stacktrace);
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OErrorV1().fillFromImpl(error), type);
     }
     // TODO: kill the server if someone called H2O.fail()
     catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
@@ -556,7 +556,7 @@ public class RequestServer extends NanoHTTPD {
       Log.warn((Object[])error._stacktrace);
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(error.httpStatusHeader(), new H2OErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OErrorV1().fillFromImpl(error), type);
     }
   }
 
@@ -579,8 +579,13 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap( String http_response_header, Schema s, RequestType type ) {
+  private Response wrap( Schema s, RequestType type ) {
     // Convert Schema to desired output flavor
+    String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
+
+    if (s instanceof SpecifiesHttpResponseCode)
+      http_response_header = H2OError.httpStatusHeader(((SpecifiesHttpResponseCode) s).httpStatus());
+
     switch( type ) {
     case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
@@ -596,7 +601,7 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Response wrap2(String http_code, Schema s) {
+  private Response wrapDownloadData(String http_code, Schema s) {
     DownloadDataV1 dd = (DownloadDataV1)s;
     Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
     res.addHeader("Content-Disposition", "filename=" + dd.filename);

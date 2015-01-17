@@ -6,6 +6,7 @@ import os
 import argparse
 import time
 import json
+import requests
 
 #################
 # Config is below
@@ -87,9 +88,17 @@ def validate_model_builder_result(result, original_params, model_name):
     Job if successful, and a ModelBuilder with errors if it's not.
     '''
 
+    error = False
     if 'validation_error_count' in result and result['validation_error_count'] > 0:
         # error case
-        print 'Parameters validation error for model: ', model_name
+        print 'FAIL: Parameters validation error for model: ', model_name
+        error = True
+
+    if result['__http_response']['status_code'] != requests.codes.ok:
+        error = True
+        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+
+    if error:
         print 'Input parameters: '
         pp.pprint(original_params)
         print 'Returned result: '
@@ -703,6 +712,7 @@ if verbose: print 'About to try to build a DeepLearning model with bad parameter
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
 parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binomial_bad', training_frame='prostate_binomial', parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
 validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
+assert parameters_validation['__http_response']['status_code'] == requests.codes.bad_request, "FAIL: expected 400 Bad Request from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
 if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 
 ###################################
