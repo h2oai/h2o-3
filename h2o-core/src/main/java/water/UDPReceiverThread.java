@@ -102,28 +102,43 @@ public class UDPReceiverThread extends Thread {
     boolean is_member = cloud.contains(ab._h2o);
     boolean is_client = ab._h2o._heartbeat._client;
 
-    // Paxos stateless packets & ACKs just fire immediately in a worker
-    // thread.  Dups are handled by these packet handlers directly.  No
-    // current membership check required for Paxos packets
-    if( UDP.udp.UDPS[ctrl]._paxos || (is_member||is_client) ) {
-      H2O.submitTask(new FJPacket(ab,ctrl));
+    // Some non-Paxos packet from a non-member.  Probably should record & complain.
+    // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
+    // voting we can get a LOT of these packets/sec, flooding the logs.
+    if( !(UDP.udp.UDPS[ctrl]._paxos || is_member || is_client) ) {
+      _unknown_packets_per_sec++;
+      long timediff = ab._h2o._last_heard_from - _unknown_packet_time;
+      if( timediff > 1000 ) {
+        // If this is a recently booted client node... coming up right after a
+        // prior client was shutdown, it might see leftover trash UDP packets
+        // from the servers intended for the prior client.
+        if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
+          Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
+        _unknown_packets_per_sec = 0;
+        _unknown_packet_time = ab._h2o._last_heard_from;
+      }
+      ab.close();
       return;
     }
 
-    // Some non-Paxos packet from a non-member.  Probably should record & complain.
-    // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
-    // voting we can get a LOT of these packets/sec, flooding the console.
-    _unknown_packets_per_sec++;
-    long timediff = ab._h2o._last_heard_from - _unknown_packet_time;
-    if( timediff > 1000 ) {
-      // If this is a recently booted client node... coming up right after a
-      // prior client was shutdown, it might see leftover trash UDP packets
-      // from the servers intended for the prior client.
-      if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
-        Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
-      _unknown_packets_per_sec = 0;
-      _unknown_packet_time = ab._h2o._last_heard_from;
-    }
-    ab.close();
+    // Paxos stateless packets & ACKs just fire immediately in a worker
+    // thread.  Dups are handled by these packet handlers directly.  No
+    // current membership check required for Paxos packets.
+    //
+    // Handle the case of packet flooding draining all the available
+    // ByteBuffers and running the JVM out of *native* memory, triggering
+    // either a large RSS (and having YARN kill us for being over-budget) or
+    // simply tossing a OOM - but a out-of-native-memory nothing to do with
+    // heap memory.
+    //
+    // All UDP packets at this stage have fairly short lifetimes - Exec packets
+    // (which you might think to be unboundedly slow) are actually just going
+    // through the deserialization call in RPC.remote_exec - and the deser'd
+    // DTask gets tossed on a low priority queue to do "the real work".  Since
+    // this is coming from a UDP packet the deser work is actually small.
+
+
+    H2O.submitTask(new FJPacket(ab,ctrl));
+    return;
   }
 }
