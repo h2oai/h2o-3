@@ -16,7 +16,7 @@ function(conn) {
   path <- locate("smalldata/logreg/prostate.csv")
   prostate.hex <- h2o.importFile(conn, path, key="prostate.hex")
   
-  main_model <- h2o.glm(x = 3:8, y = 2, data = prostate.hex, nfold = 2, standardize = FALSE, family = "binomial")
+  main_model <- h2o.glm(x = 3:8, y = 2, training_frame = prostate.hex, nfold = 2, standardize = FALSE, family = "binomial")
 
 
   print(main_model@key)

@@ -1422,15 +1422,20 @@ class ASTCbind extends ASTUniPrefixOp {
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     dblarys.add(ary);
     AST a;
+    boolean broke = false;
     while (E.skipWS().hasNext()) {
       a = E.parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
-        if (ast instanceof ASTFrame || ast instanceof ASTRaft) {dblarys.add(a); continue; }
+        if (ast instanceof ASTFrame || ast instanceof ASTRaft) { dblarys.add(a); }
+        else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
       }
-      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft)
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft) { // basically anything that returns a Frame...
         dblarys.add(a);
+      }
+      else { broke = true; break; }
     }
+    if (broke) E.rewind();
     ASTCbind res = (ASTCbind) clone();
     AST[] arys = new AST[argcnt=dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
@@ -1564,13 +1569,8 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Futures fs = new Futures();
-    Frame ff = DKV.remove(fr._key, fs).get();
-    fs.blockForPending();
-    Frame fr2 = new Frame(Key.make(_newname), ff.names(), ff.vecs());
-    Futures fs2 = new Futures();
-    DKV.put(Key.make(_newname), fr2, fs2);
-    fs2.blockForPending();
+    Frame fr2 = new Frame(Key.make(_newname), fr.names(), fr.deepSlice(null,null).vecs());
+    DKV.put(Key.make(_newname), fr2);
     e.pushAry(fr2);  // the vecs have not changed and their refcnts remain the same
   }
 }
@@ -2372,7 +2372,8 @@ class ASTTable extends ASTUniPrefixOp {
     NewChunk c0 = new NewChunk(v0,0);
     for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
     c0.close(0,null);
-    vecs[0] = v0.close(null);
+    Futures fs = new Futures();
+    vecs[0] = v0.close(fs);
     colnames[0] = "row.names";
     if (ncol==1) colnames[1] = "Count";
     for (int level1=0; level1 < counts.length; level1++) {
@@ -2382,11 +2383,12 @@ class ASTTable extends ASTUniPrefixOp {
       for (int level0=0; level0 < counts[level1].length; level0++)
         c.addNum((double) counts[level1][level0]);
       c.close(0, null);
-      vecs[level1+1] = v.close(null);
+      vecs[level1+1] = v.close(fs);
       if (ncol>1) {
         colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
       }
     }
+    fs.blockForPending();
     Frame fr2 = new Frame(colnames, vecs);
     env.pushAry(fr2);
   }

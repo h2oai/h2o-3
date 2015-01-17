@@ -19,11 +19,11 @@ test <- function(conn) {
   myX = c("ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","GLEASON")
   
   print("Testing for family: GAMMA")
-  model.h2o.Gamma.inverse <- h2o.glm(x=myX, y=myY, data=prostate.data, family="gamma", link="inverse", alpha=1, lambda_search=T, variable_importances=TRUE, use_all_factor_levels=TRUE, nfolds=0)
+  model.h2o.Gamma.inverse <- h2o.glm(x=myX, y=myY, training_frame=prostate.data, family="gamma", link="inverse", alpha=1, lambda_search=T, variable_importances=TRUE, use_all_factor_levels=TRUE, n_folds=0)
   print(model.h2o.Gamma.inverse)      #AIC is NaN
   
   print("Testing for family: TWEEDIE")
-  model.h2o.tweedie <- h2o.glm(x=myX, y=myY, data=prostate.data, family="tweedie", link="tweedie", alpha=1, lambda_search=T, variable_importances=TRUE, use_all_factor_levels=TRUE, nfolds=0)
+  model.h2o.tweedie <- h2o.glm(x=myX, y=myY, training_frame=prostate.data, family="tweedie", link="tweedie", alpha=1, lambda_search=T, variable_importances=TRUE, use_all_factor_levels=TRUE, n_folds=0)
   print(model.h2o.tweedie)      #AIC is NaN
     
   testEnd()

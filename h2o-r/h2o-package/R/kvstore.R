@@ -17,9 +17,9 @@
 #' h2o.ls(localH2O)
 h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
-  fr <- new("H2OFrame", ast=ast, key=.key.make(), h2o=conn)
+  fr <- .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE)
   ret <- as.data.frame(fr)
-  h2o.rm(fr@key)
+  h2o.rm(fr@key, fr@conn)
   ret
 }
 
@@ -69,9 +69,15 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' Garbage Collection of Temporary Frames
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
-h2o.gc <- function(conn = h2o.getConnection()) {
+
+# TODO: This is an older version; need to go back through git and find the "good" one...
+.h2o.gc <- function(conn = h2o.getConnection()) {
   frame_keys <- as.vector(h2o.ls()[,1L])
+  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@session_id), frame_keys)]
   # no reference? then destroy!
+  # TODO in order for this function to work properly, you would need to search (recursively)
+  # TODO through ALL objects for H2OFrame and H2OModel objects including lists, environments,
+  # TODO and slots of S4 objects
   f <- function(env) {
     l <- lapply(ls(env), function(x) {
       o <- get(x, envir=env)
@@ -103,12 +109,17 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  ID <- deparse(substitute(data), width.cutoff = 500L)
-  ast <- .h2o.nary_op("rename", data, key)
-  .force.eval(ast@ast, ID, parent.frame())
-  o <- get(ID, parent.frame())
-  o@key <- key
-  o
+  gc() # cleanup KV store
+  if (!grepl(sprintf("%s$", data@conn@session_id), key)) key <- paste0(key, data@conn@session_id)
+  if (length(substitute(data)) > 1L) {
+    deparsedExpr <- "tmp_value"
+  } else {
+    deparsedExpr <- deparse(substitute(data), width.cutoff = 500L)
+  }
+  res <- .h2o.nary_op("rename", data, key)
+  .force.eval(conn = res@conn, ast = res@ast, deparsedExpr = deparsedExpr, env = parent.frame())
+  data@key <- key
+  data
 }
 
 #'
@@ -119,7 +130,9 @@ h2o.assign <- function(data, key) {
 #' @param key A string indicating the unique hex key of the dataset to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
-h2o.getFrame <- function(key, conn = h2o.getConnection()) {
+#' @param linkToGC a logical value indicating whether to remove the underlying key
+#'        from the H2O cluster when the R proxy object is garbage collected.
+h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key
     key <- conn
@@ -127,7 +140,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection()) {
   }
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
-  .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames)
+  .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
 }
 
 #' Get an R reference to an H2O model
@@ -137,6 +150,8 @@ h2o.getFrame <- function(key, conn = h2o.getConnection()) {
 #' @param key A string indicating the unique hex key of the model to retrieve.
 #' @param conn \linkS4class{H2OConnection} object containing the IP address and port
 #'             of the server running H2O.
+#' @param linkToGC a logical value indicating whether to remove the underlying key
+#'        from the H2O cluster when the R proxy object is garbage collected.
 #' @return Returns an object that is a subclass of \linkS4class{H2OModel}.
 #' @examples
 #' library(h2o)
@@ -145,7 +160,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection()) {
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
 #' model.retrieved <- h2o.getModel(key, localH2O)
-h2o.getModel <- function(key, conn = h2o.getConnection()) {
+h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key
     key <- conn
@@ -154,7 +169,7 @@ h2o.getModel <- function(key, conn = h2o.getConnection()) {
   json <- .h2o.__remoteSend(conn, method = "GET", paste0(.h2o.__MODELS, "/", key))$models[[1L]]
   model_category <- json$output$model_category
   if (is.null(model_category))
-     model_category <- "Unknown"
+    model_category <- "Unknown"
   else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
     stop("model_category missing in the output")
   Class <- paste0("H2O", model_category, "Model")
@@ -176,11 +191,11 @@ h2o.getModel <- function(key, conn = h2o.getConnection()) {
           value <- unlist(strsplit(arr, split=", "))
         }
 
-        # Prase frame information to a key
+        # Parse frame information to a key
         if (type == "H2OFrame") {
           toParse <- unlist(strsplit(value, split=","))
           key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
+          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
           value <- gsub("\\\"", "", key)
         } else if (type == "numeric")
           value <- as.numeric(value)
@@ -192,7 +207,7 @@ h2o.getModel <- function(key, conn = h2o.getConnection()) {
         {
           toParse <- unlist(strsplit(value, split=","))
           key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1]],split=":"))[2]
+          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
           value <- gsub("\\\"", "", key)
         }
         parameters[[name]] <<- value
@@ -212,10 +227,11 @@ h2o.getModel <- function(key, conn = h2o.getConnection()) {
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
 
-  new(Class      = Class,
-      h2o        = conn,
-      key        = json$key$name,
-      algorithm  = json$algo,
-      parameters = parameters,
-      model      = model)
+  .newH2OObject(Class      = Class,
+                conn       = conn,
+                key        = json$key$name,
+                algorithm  = json$algo,
+                parameters = parameters,
+                model      = model,
+                linkToGC   = linkToGC)
 }

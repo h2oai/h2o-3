@@ -7,7 +7,7 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 import water.util.TwoDimTable;
 
-public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput, DeepLearningModelV2> {
+public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModelV2, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
     @API(help="Scoring information")

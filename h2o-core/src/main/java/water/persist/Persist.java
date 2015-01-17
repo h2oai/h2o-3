@@ -53,9 +53,13 @@ public abstract class Persist {
       // System.out.println("TOM ice is null: " + ((ice == null) ? "true" : "false"));
 
       I[Value.ICE ] = ice;
-      I[Value.HDFS] = new PersistHdfs();
-      I[Value.S3  ] = new PersistS3();
       I[Value.NFS ] = new PersistNFS();
+      try {
+        I[Value.HDFS] = new PersistHdfs();
+        I[Value.S3  ] = new PersistS3();
+      } catch( NoClassDefFoundError e ) {
+        // Not linked against HDFS or S3, so not available in this build
+      }
     }
   }
 

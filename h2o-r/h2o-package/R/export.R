@@ -41,7 +41,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
     stop("`force` must be TRUE or FALSE")
   force <- as.integer(force)
 
-  .h2o.__remoteSend(data@h2o, .h2o.__PAGE_EXPORTFILES, src_key = data@key, path = path, force = force)
+  .h2o.__remoteSend(data@conn, .h2o.__PAGE_EXPORTFILES, src_key = data@key, path = path, force = force)
 }
 
 #'
@@ -59,7 +59,7 @@ h2o.exportHDFS <- function(object, path) {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
 
-  .h2o.__remoteSend(object@data@h2o, .h2o.__PAGE_EXPORTHDFS, source_key = object@key, path = path)
+  .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_EXPORTHDFS, source_key = object@key, path = path)
 }
 
 #' Download H2O Data to Disk
@@ -85,7 +85,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@h2o@ip, ':', data@h2o@port, '/2/DownloadDataset?src_key=', data@key)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/2/DownloadDataset?src_key=', data@key)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))
@@ -153,7 +153,7 @@ h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   else
     path <- file.path(dir, name)
 
-  res <- .h2o.__remoteSend(object@data@h2o, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
+  res <- .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_SaveModel, model=object@key, path=path, force=force)
 
   path
 }

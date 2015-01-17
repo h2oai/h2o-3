@@ -5,68 +5,60 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-
 # Check if we are running inside the 0xdata network by seeing if we can touch
-# the cdh4 namenode. Update if using other clusters.
+# the HDP2.1 namenode. Update if using other clusters.
 # Note this should fail on home networks, since 176 is not likely to exist
 # also should fail in ec2.
-running_inside_hexdata = url.exists("http://172.16.2.176:80", timeout=1)
+running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=1)
 
 if (running_inside_hexdata) {
     # cdh3 cluster
-    hdfs_name_node = "172.16.2.176"    
-    hdfs_iris_file = "/datasets/runit/iris_wheader.csv"
-    hdfs_iris_dir  = "/datasets/runit/iris_test_train"
+    hdfs_name_node = "mr-0xd6"
+    hdfs_iris_file = "/datasets/iris_wheader.csv"
+    hdfs_covtype_file = "/datasets/covtype.data"
 } else {
     stop("Not running on 0xdata internal network.  No access to HDFS.")
 }
 
 #----------------------------------------------------------------------
 
-
 heading("BEGIN TEST")
-conn <- new("H2OConnection", ip=myIP, port=myPort)
+conn <- h2o.init(ip=myIP, port=myPort)
 
 #----------------------------------------------------------------------
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
+heading("Import iris_wheader.csv from HDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
 iris.hex <- h2o.importFile(conn, url)
-head(iris.hex)
-tail(iris.hex)
 n <- nrow(iris.hex)
 print(n)
 if (n != 150) {
-    stop("FV nrows is wrong")
+    stop("nrows is wrong")
 }
-if (class(iris.hex) != "H2OFrame") {
-    stop("iris.hex is the wrong type")
-}
-print ("FV import worked")
 
-#----------------------------------------------------------------------
-# Directory file cases.
-#----------------------------------------------------------------------
+heading("Running KMeans on iris")
+iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iters = 10)
+iris.km
 
-heading("Testing directory importHDFS")
-url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_dir)
-iris.dir.hex <- h2o.importFile(conn, url)
-head(iris.dir.hex)
-tail(iris.dir.hex)
-n <- nrow(iris.dir.hex)
+
+
+heading("Importing covtype.data from HDFS")
+url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_covtype_file)
+covtype.hex <- h2o.importFile(conn, url)
+n <- nrow(covtype.hex)
 print(n)
-if (n != 150) {
-    stop("FV nrows is wrong")
+if (n != 581012) {
+    stop("nrows is wrong")
 }
-if (class(iris.dir.hex) != "H2OFrame") {
-    stop("iris.dir.hex is the wrong type")
-}
-print ("FV import worked")
+
+heading("Running KMeans on covtype")
+covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iters = 10)
+covtype.km
+
 
 PASS_BANNER()

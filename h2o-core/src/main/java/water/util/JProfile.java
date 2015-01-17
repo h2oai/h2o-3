@@ -3,23 +3,22 @@ package water.util;
 import water.H2O;
 import water.Iced;
 
-import java.text.DateFormat;
-import java.util.Date;
-
 public class JProfile extends Iced {
-  public final String node_name;
-  public final String time;
-  public final int depth;
-  public JProfile(int d) {
-    depth = d;
-    node_name = H2O.SELF.toString();
-    time = DateFormat.getInstance().format(new Date());
-  }
   public static class ProfileSummary extends Iced {
     public ProfileSummary( String name, ProfileCollectorTask.NodeProfile profile) { this.name=name; this.profile=profile; }
     public final String name;
     public final ProfileCollectorTask.NodeProfile profile;
   }
+
+  public final String node_name;
+  public final long timestamp;
+  public final int depth;
+  public JProfile(int d) {
+    depth = d;
+    node_name = H2O.getIpPortString();
+    timestamp = System.currentTimeMillis();
+  }
+
   public ProfileSummary nodes[];
 
   public JProfile execImpl(boolean print) {

@@ -55,11 +55,11 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
                  initLearningRate = initLearningRate,
                  epochs = epochs)
 
-  res <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__W2V, .params = params)
-  .h2o.__waitOnJob(trainingFrame@h2o, res$job)
-  dest_key <- .h2o.__remoteSend(trainingFrame@h2o, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
-  w2vmodel <- .h2o.__remoteSend(trainingFrame@h2o, .h2o.__INSPECT, key = dest_key)
-  new("H2OW2V", h2o = trainingFrame@h2o, key = dest_key, train.data=trainingFrame)
+  res <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__W2V, .params = params)
+  .h2o.__waitOnJob(trainingFrame@conn, res$job)
+  dest_key <- .h2o.__remoteSend(trainingFrame@conn, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
+  w2vmodel <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__INSPECT, key = dest_key)
+  new("H2OW2V", h2o = trainingFrame@conn, key = dest_key, train.data=trainingFrame)
 }
 
 #'
@@ -79,7 +79,7 @@ function(word2vec, target, count) {
 
   params <- list(key = word2vec@key, target=target, cnt=count)
   if (length(target) == 1L) {
-    res <- .h2o.__remoteSend(word2vec@h2o, .h2o.__SYNONYMS, .params = params)
+    res <- .h2o.__remoteSend(word2vec@conn, .h2o.__SYNONYMS, .params = params)
     fr <- data.frame(synonyms = res$synonyms, cosine.similarity = res$cos_sim)
     fr[with(fr, order(-cosine.similarity)),]
   } else {
@@ -87,7 +87,7 @@ function(word2vec, target, count) {
 #    vecs <- lapply(target, h2o.transform, word2vec)
 #    vec <- colSums(as.data.frame(vecs))
 #    params$vec <- vec
-#    res <- .h2o.__remoteSend(data@h2o, .h2o.__SYNONYMS, params)
+#    res <- .h2o.__remoteSend(data@conn, .h2o.__SYNONYMS, params)
 #    return(h2o.getFrame(res$key))
   }
 }
@@ -104,6 +104,6 @@ function(word2vec, target, count) {
 #  if (length(target) > 1) stop("`target` must be a single word")
 #
 #  params <- params <- c(data = word2vec@word2vec@key, target = target, word2vec@params)
-#  res <- .h2o.__remoteSend(data@h2o, .h2o.__TRANSFORM, params)
+#  res <- .h2o.__remoteSend(data@conn, .h2o.__TRANSFORM, params)
 #  res$vec
 #})

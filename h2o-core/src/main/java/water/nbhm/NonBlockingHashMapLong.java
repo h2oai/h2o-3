@@ -470,8 +470,8 @@ public class NonBlockingHashMapLong<TypeV>
       _nbhml = nbhml;
       _size = size;
       _slots= new ConcurrentAutoTable();
-      _keys = new long  [1<<logsize];
-      _vals = new Object[1<<logsize];
+      _keys = water.MemoryManager.malloc8  (1<<logsize);
+      _vals = water.MemoryManager.mallocObj(1<<logsize);
     }
 
     // --- print innards

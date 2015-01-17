@@ -21,7 +21,7 @@ public class JobsHandler extends Handler {
   public Schema list(int version, JobsV2 s) {
     Jobs j = new Jobs();
     j._jobs = Job.jobs();
-    PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.CONSISTENT);
+    PojoUtils.copyProperties(s, j, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     return s;
   }
 

@@ -92,40 +92,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 //    return 0;
 //  }
 
-    // the following parameters can only be specified in expert mode
-    transient final String [] expert_options = new String[] {
-            "_use_all_factor_levels",
-            "_loss",
-            "_max_w2",
-            "_score_training_samples",
-            "_score_validation_samples",
-            "_initial_weight_distribution",
-            "_initial_weight_scale",
-            "_diagnostics",
-            "_rate_decay",
-            "_score_duty_cycle",
-            "_variable_importances",
-            "_fast_mode",
-            "_score_validation_sampling",
-            "_ignore_const_cols",
-            "_force_load_balance",
-            "_replicate_training_data",
-            "_shuffle_training_data",
-            "_nesterov_accelerated_gradient",
-            "_classification_stop",
-            "_regression_stop",
-            "_quiet_mode",
-            "_max_confusion_matrix_size",
-            "_max_hit_ratio_k",
-            "_hidden_dropout_ratios",
-            "_single_node_mode",
-            "_sparse",
-            "_col_major",
-            "_autoencoder",
-            "_average_activation",
-            "_sparsity_beta",
-            "_max_categorical_features",
-    };
 
     // the following parameters can be modified when restarting from a checkpoint
     transient final String [] cp_modifiable = new String[] {
@@ -202,7 +168,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Object B = _parms;
           for (Field fA : A.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
-              if (!_parms._expert_mode && ArrayUtils.contains(expert_options, fA.getName())) continue;
+              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
               for (Field fB : B.getClass().getDeclaredFields()) {
                 if (fA.equals(fB)) {
                   try {

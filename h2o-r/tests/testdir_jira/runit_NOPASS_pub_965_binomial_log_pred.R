@@ -24,7 +24,7 @@ test.linkFunctions <- function(conn) {
 	myX = c("AGE","RACE","DCAPS","PSA","VOL","DPROS","GLEASON")
 	
 	print("Create model with link: LOG")
-	model.h2o.binomial.log <- h2o.glm(x=myX, y=myY, data=prostate.train, family="binomial", link="log",alpha=0.5, lambda=0, nfolds=0)
+	model.h2o.binomial.log <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, family="binomial", link="log",alpha=0.5, lambda=0, n_folds=0)
 	
 	print("Predict")
 	prediction.h2o.binomial.log <- predict(model.h2o.binomial.log, prostate.test)

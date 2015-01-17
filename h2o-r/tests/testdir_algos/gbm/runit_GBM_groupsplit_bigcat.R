@@ -17,14 +17,16 @@ test.GBM.bigcat <- function(conn) {
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
   drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = FALSE)
   print(drfmodel.nogrp)
+  drfmodel.nogrp.perf <- h2o.performance(drfmodel.nogrp, bigcat.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
   drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = TRUE)
   print(drfmodel.grpsplit)
+  drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, bigcat.hex)
   
   # Check AUC and overall prediction error at least as good with group split than without
-  expect_true(drfmodel.grpsplit@model$auc >= drfmodel.nogrp@model$auc)
-  expect_true(drfmodel.grpsplit@model$confusion[3,3] <= drfmodel.nogrp@model$confusion[3,3])
+  expect_true(drfmodel.grpsplit.perf@metrics$auc$AUC >= drfmodel.nogrp.perf@metrics$auc$AUC)
+  expect_true(drfmodel.grpsplit.perf@metrics$cm$table[3,3] <= drfmodel.nogrp.perf@metrics$cm$table[3,3])
   testEnd()
 }
 

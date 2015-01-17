@@ -6,7 +6,7 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 //import water.util.DocGen.HTML;
 
-public class GLMModelV2 extends ModelSchema<GLMModel, GLMModel.GLMParameters, GLMModel.GLMOutput, GLMModelV2> {
+public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMModel.GLMOutput> {
 
   public static final class GLMModelOutputV2 extends ModelOutputSchema<GLMModel.GLMOutput, GLMModelOutputV2> {
     // Output fields; input fields are in the parameters list

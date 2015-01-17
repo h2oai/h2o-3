@@ -64,10 +64,6 @@ public class H2OError extends Iced {
     this(System.currentTimeMillis(), error_url, e.getMessage(), e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(), new IcedHashMap(), e);
   }
 
-  public String httpStatusHeader() {
-    return httpStatusHeader(this._http_status);
-  }
-
   static public String httpStatusHeader(int status_code) {
     switch (status_code) {
     case 200: return "200 OK";

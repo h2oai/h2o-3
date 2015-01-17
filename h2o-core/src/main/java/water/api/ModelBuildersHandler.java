@@ -6,7 +6,7 @@ import water.util.IcedHashMap;
 
 import java.util.Map;
 
-class ModelBuildersHandler<S extends ModelBuildersBase<S>> extends Handler {
+class ModelBuildersHandler extends Handler {
   @Override protected int min_ver() { return 2; }
   @Override protected int max_ver() { return Integer.MAX_VALUE; }
 

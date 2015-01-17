@@ -4,7 +4,7 @@ source('../../h2o-runit.R')
 test.gbm.imbalanced <- function(conn) {
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
 
-  hh_imbalanced<-h2o.gbm.cv(model.type='gbm',params = list(x=c(1:54),y=55,ntrees=50,training_frame=covtype,balance_classes=F), nfolds=10)
+  hh_imbalanced<-h2o.gbm.cv(x=c(1:54),y=55,ntrees=50,training_frame=covtype,balance_classes=F, nfolds=10)
   print(hh_imbalanced)
   hh_balanced<-h2o.gbm.cv(x=c(1:54),y=55,ntrees=50,training_frame=covtype,balance_classes=T,nfolds=10)
   print(hh_balanced)

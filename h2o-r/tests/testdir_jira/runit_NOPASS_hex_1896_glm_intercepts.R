@@ -43,15 +43,15 @@ test.GLM.zero_intercept <- function(conn) {
   }
   
   Log.info("Build logistic model in H2O with intercept...")
-  prostate.glm.h2o1 = h2o.glm(y = myY, x = myX, data = prostate.hex, lambda = var_lambda1,
-                             family = var_family, nfolds = var_folds, alpha = var_alpha, intercept = TRUE)
+  prostate.glm.h2o1 = h2o.glm(y = myY, x = myX, training_frame = prostate.hex, lambda = var_lambda1,
+                             family = var_family, n_folds = var_folds, alpha = var_alpha, intercept = TRUE)
   Log.info("Build logistic model in H2O without intercept...")
   ## standardization must be set to false since there are no intercepts, we cannnot regularize
-  prostate.glm.h2o2 = h2o.glm(y = myY, x = myX, data = prostate.hex, lambda = var_lambda2, standardize = F,
-                                family = var_family, nfolds = var_folds, alpha = var_alpha, intercept = FALSE)
+  prostate.glm.h2o2 = h2o.glm(y = myY, x = myX, training_frame = prostate.hex, lambda = var_lambda2, standardize = F,
+                                family = var_family, n_folds = var_folds, alpha = var_alpha, intercept = FALSE)
   Log.info("Build logistic model in H2O w/o intercept w/ rebalanced data...")
-  prostate.glm.h2o3 = h2o.glm(y = myY, x = myX, data = prostate.rebalanced, lambda = var_lambda2, standardize = F,
-                              family = var_family, nfolds = var_folds, alpha = var_alpha, intercept = FALSE)
+  prostate.glm.h2o3 = h2o.glm(y = myY, x = myX, training_frame = prostate.rebalanced, lambda = var_lambda2, standardize = F,
+                              family = var_family, n_folds = var_folds, alpha = var_alpha, intercept = FALSE)
   
   check_coeff(prostate.glm.h2o2@model$coefficients, prostate.glm.h2o3@model$coefficients, 1e-10)
   Log.info("Rebalanced data ran with same results.")

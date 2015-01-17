@@ -16,8 +16,7 @@ the_test <- function(conn){
     interval <- findInterval(valuesArray, quantileLevels, rightmost.closed)
     scores[interval, 1]
   }
-
-  h2o.addFunction(conn, metric.quantilesScore)
+  
   scores <- apply(df, 2, metric.quantilesScore)
 
   testEnd()

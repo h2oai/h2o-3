@@ -251,12 +251,6 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   res$session_key
 }
 
-.get.session_id <- function() {
-  conn <- h2o.getConnection()
-  if (is.na(conn@session_id)) stop("Missing session_id! Please perform h2o.init.")
-  conn@session_id
-}
-
 #---------------------------- H2O Jar Initialization -------------------------------#
 .h2o.pkg.path <- NULL
 .h2o.jar.env <- new.env()    # Dummy variable used to shutdown H2O when R exits

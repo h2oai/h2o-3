@@ -31,7 +31,7 @@ import java.io.*;
  * @see water.Weaver
  * @see water.AutoBuffer
  */
-abstract public class Iced<D extends Iced> implements Freezable, Externalizable {
+abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizable {
 
   // The serialization flavor / delegate.  Lazily set on first use.
   private short _ice_id;

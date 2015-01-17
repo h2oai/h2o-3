@@ -88,6 +88,6 @@ if (FALSE) {
     head(df)
     myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "Month", "DayofMonth", "DayOfWeek")
     myY <- "IsDepDelayed"
-    air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", nfolds = 10, alpha = 0.25, lambda = 0.001)
+    air.glm <- h2o.glm(x = myX, y = myY, training_frame = df, family = "binomial", n_folds = 10, alpha = 0.25, lambda = 0.001)
     air.glm@model$confusion
 }
