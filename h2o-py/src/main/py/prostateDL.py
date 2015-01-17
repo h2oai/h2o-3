@@ -17,6 +17,7 @@ print train.describe()
 print test.describe()
 
 # Run DeepLearning
-dl = h2o.H2ODeepLearning(dataset=train,validation_dataset=test,x="CAPSULE",epochs=100,hidden=[20,20,20])
+dl = h2o.H2ODeepLearning(dataset=train,validation_dataset=test,
+                         x="CAPSULE",epochs=100,hidden=[20,20,20])
 
 print dl.metrics()
