@@ -82,7 +82,7 @@ public final class AutoBuffer {
   // figure the originating H2ONode from the first few bytes read.
   AutoBuffer( DatagramChannel sock ) throws IOException {
     _chan = null;
-    _bb = bbMake();
+    _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
     _read = true;               // Reading by default
     _firstPage = true;
     // Read a packet; can get H2ONode from 'sad'?
@@ -110,7 +110,7 @@ public final class AutoBuffer {
   AutoBuffer( SocketChannel sock ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
-    _bb = bbMake();
+    _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
     _bb.flip();
     _read = true;               // Reading by default
     _firstPage = true;
@@ -126,7 +126,7 @@ public final class AutoBuffer {
   // open a TCP socket and roll through writing to the target.  Smaller
   // requests will send via UDP.
   AutoBuffer( H2ONode h2o ) {
-    _bb = bbMake();
+    _bb = BBP_SML.make();       // Get a small / UDP-sized ByteBuffer
     _chan = null;               // Channel made lazily only if we write alot
     _h2o = h2o;
     _read = false;              // Writing by default
@@ -138,7 +138,7 @@ public final class AutoBuffer {
 
   // Spill-to/from-disk request.
   public AutoBuffer( FileChannel fc, boolean read, byte persist ) {
-    _bb = bbMake();
+    _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
     _chan = fc;                 // Write to read/write
     _h2o = null;                // File Channels never have an _h2o
     _read = read;               // Mostly assert reading vs writing
@@ -212,48 +212,68 @@ public final class AutoBuffer {
   // included BB count tracking code to help track leaks.  As of 12/17/2012 the
   // leaks are under control, but figure this may happen again so keeping these
   // counters around.
+  //
+  // We use 2 pool sizes: lots of small UDP packet-sized buffers and fewer
+  // larger TCP-sized buffers.
   private static final boolean DEBUG = Boolean.getBoolean("h2o.find-ByteBuffer-leaks");
-  private static final AtomicInteger BBMAKE = new AtomicInteger(0);
-  private static final AtomicInteger BBFREE = new AtomicInteger(0);
-  private static final AtomicInteger BBCACHE= new AtomicInteger(0);
-  private static final LinkedBlockingDeque<ByteBuffer> BBS = new LinkedBlockingDeque<>();
-  static final int BBSIZE = 64*1024; // Bytebuffer "common big size"
-  private static void bbstats( AtomicInteger ai ) {
-    if( !DEBUG ) return;
-    if( (ai.incrementAndGet()&2047)==2047 ) {
-      Log.warn("BB make="+BBMAKE.get()+" free="+BBFREE.get()+" cache="+BBCACHE.get()+" size="+BBS.size());
-    }
-  }
+  private static long HWM=0;
+  static class BBPool {
+    final AtomicInteger _made  = new AtomicInteger(0);
+    final AtomicInteger _freed = new AtomicInteger(0);
+    final AtomicInteger _cached= new AtomicInteger(0);
+    final LinkedBlockingDeque<ByteBuffer> _bbs = new LinkedBlockingDeque<>();
+    final int _size;
+    BBPool( int sz ) { _size=sz; }
+    public final int size() { return _size; }
 
-  private static ByteBuffer bbMake() {
-    while( true ) {             // Repeat loop for DBB OutOfMemory errors
-      ByteBuffer bb;
-      try { bb = BBS.pollFirst(0,TimeUnit.SECONDS); }
-      catch( InterruptedException e ) { throw Log.throwErr(e); }
-      if( bb != null ) {
-        bbstats(BBCACHE);
-        return bb;
+    private ByteBuffer stats( AtomicInteger ai, ByteBuffer bb ) {
+      if( !DEBUG ) return bb;
+      if( (ai.incrementAndGet()&255)!=255 ) return bb;
+      long now = System.currentTimeMillis();
+      if( now < HWM ) return bb;
+      HWM = now+1000;
+      water.util.SB sb = new water.util.SB();
+      sb.p("BB").p(this==BBP_BIG?1:0).p(" make=").p(_made.get()).p(" free=").p(_freed.get()).p(" cache=").p(_cached.get()).p(" size=").p(_bbs.size()).nl();
+      for( int i=0; i<H2O.MAX_PRIORITY; i++ ) {
+        int x = H2O.getWrkQueueSize(i);
+        if( x > 0 ) sb.p('Q').p(i).p('=').p(x).p(' ');
       }
-      try {
-        bb = ByteBuffer.allocateDirect(BBSIZE).order(ByteOrder.nativeOrder());
-        bbstats(BBMAKE);
-        return bb;
-      } catch( OutOfMemoryError oome ) {
-        // java.lang.OutOfMemoryError: Direct buffer memory
-        if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
-        System.out.println("OOM DBB - Sleeping & retrying");
-        try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+      Log.warn(sb.nl().toString());
+      return bb;
+    }
+
+    ByteBuffer make() {
+      while( true ) {             // Repeat loop for DBB OutOfMemory errors
+        ByteBuffer bb;
+        try { bb = _bbs.pollFirst(0,TimeUnit.SECONDS); }
+        catch( InterruptedException e ) { throw Log.throwErr(e); }
+        if( bb != null ) return stats(_cached,bb);
+        try {
+          bb = ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder());
+          return stats(_made,bb);
+        } catch( OutOfMemoryError oome ) {
+          // java.lang.OutOfMemoryError: Direct buffer memory
+          if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
+          System.out.println("OOM DBB - Sleeping & retrying");
+          try { Thread.sleep(100); } catch( InterruptedException ignore ) { }
+        }
       }
     }
+    void free(ByteBuffer bb) {
+      assert bb.capacity() == _size;
+      stats(_freed,bb).clear();
+      _bbs.offerFirst(bb);
+    }
+    static int FREE( ByteBuffer bb ) {
+      (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
+      return 0;                 // Flow coding
+    }
   }
-  private static void bbFree(ByteBuffer bb) {
-    bbstats(BBFREE);
-    bb.clear();
-    BBS.offerFirst(bb);
-  }
+  static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
+  static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
 
   private int bbFree() {
-    if( _bb != null && _bb.isDirect() ) bbFree(_bb);
+    if( _bb != null && _bb.isDirect() ) BBPool.FREE(_bb);
     _bb = null;
     return 0;                   // Flow-coding
   }
@@ -539,7 +559,7 @@ public final class AutoBuffer {
       // declare (and then ignore) this exception.
       throw new AutoBufferException(e);
     }
-    if( _bb.capacity() < 16*1024 ) _bb = bbMake();
+    if( _bb.capacity() < BBP_BIG._size ) { BBP_SML.free(_bb); _bb = BBP_BIG.make(); }
     _firstPage = false;
     _bb.clear();
     return _bb;
