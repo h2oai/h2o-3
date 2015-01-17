@@ -20,9 +20,7 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
-  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  .key.validate(key)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 
@@ -88,9 +86,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
-  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  .key.validate(key)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
 

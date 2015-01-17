@@ -7,9 +7,7 @@
 #' Parse the Raw Data produced by the import phase.
 h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
-  if(nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
-    stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+  .key.validate(key)
   if(!(missing(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
   if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
   if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))

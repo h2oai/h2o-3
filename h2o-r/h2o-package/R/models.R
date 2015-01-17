@@ -89,6 +89,7 @@
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
+  .key.validate(params$key)
   params$training_frame <- get("training_frame", parent.frame())
 
   #---------- Force evaluate temporary ASTs ----------#
