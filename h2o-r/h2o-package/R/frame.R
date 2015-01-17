@@ -94,7 +94,7 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  if(!is.character(key)) stop("`key` must be a string")
+  .key.validate(key)
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
@@ -1046,7 +1046,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
+  .key.validate(key)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(object)) {

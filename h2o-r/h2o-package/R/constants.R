@@ -14,16 +14,6 @@ assign("SERVER",        NULL,  .pkg.env)
 assign("IS_LOGGING",    FALSE, .pkg.env)
 assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
-.key.make <- function(conn, prefix = "rapids") {
-  key_count <- get("key_count", conn@envir)
-  if (key_count == .Machine$integer.max)
-    stop("current H2OConnection has reached its maximum number of keys. Use h2o.init() to open another connection.")
-  key_count <- key_count + 1L
-  key <- sprintf("%s_%d%s", prefix, key_count, conn@session_id) # session_id has leading underscore
-  assign("key_count", key_count, conn@envir)
-  key
-}
-
 #'
 #' Map of binary operators to their "AST" operator value.
 #'
