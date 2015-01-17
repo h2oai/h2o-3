@@ -40,6 +40,9 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
     public int htm_port() { return getPort()-1; }
     public int udp_port() { return getPort()  ; }
     @Override public String toString() { return getAddress()+":"+htm_port(); }
+    public String getIpPortString() {
+      return getAddress().getHostAddress() + ":" + htm_port();
+    }
     AutoBuffer write( AutoBuffer ab ) {
       return ab.put4(_ipv4).put2((char)udp_port());
     }
@@ -60,6 +63,10 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
       if( res != 0 ) return res < 0 ? -1 : 1;
       return udp_port() - key.udp_port();
     }
+  }
+
+  public String getIpPortString() {
+    return _key.getIpPortString();
   }
 
   public final int ip4() { return _key._ipv4; }

@@ -80,8 +80,12 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
   @Override public void compute2() {
     int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
     Vec[] vecs = new Vec[totcols];
-    for (int i=0; i<vecs.length; ++i) {
-      vecs[i] = _v.makeZero(_domain[i]);
+    if(_createFrame.randomize) {
+      for (int i = 0; i < vecs.length; ++i)
+        vecs[i] = _v.makeZero(_domain[i]);
+    } else {
+      for (int i = 0; i < vecs.length; ++i)
+        vecs[i] = _v.makeCon(_createFrame.value);
     }
     _v.remove();
     _v=null;

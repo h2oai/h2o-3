@@ -863,6 +863,7 @@ class ASTAssign extends AST {
           double d = e.popDbl();
           if (ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set numeric columns");
           ary.vecs()[col].set(row, d);
+          if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
           e.push(new ValFrame(ary));
           return;
         } else if (e.isStr()) {
@@ -872,6 +873,7 @@ class ASTAssign extends AST {
           String[] dom = ary.vecs()[col].domain();
           if (in(s, dom)) ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
           else ary.vecs()[col].set(row, Double.NaN);
+          if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
           e.push(new ValFrame(ary));
           return;
         } else
@@ -907,6 +909,7 @@ class ASTAssign extends AST {
             throw new IllegalArgumentException("Currently can only set numeric columns");
           lhs_ary.vecs()[col].set(row, e.popDbl());
           e.pushAry(lhs_ary);
+          if (lhs_ary._key != null && DKV.get(lhs_ary._key) != null) DKV.put(lhs_ary);
           return;
         } else if (e.isStr()) {
           if (!lhs_ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set categorical columns.");
@@ -914,6 +917,7 @@ class ASTAssign extends AST {
           String[] dom = lhs_ary.vecs()[col].domain();
           if (in(s, dom)) lhs_ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
           else lhs_ary.vecs()[col].set(row, Double.NaN);
+          if (lhs_ary._key != null && DKV.get(lhs_ary._key) != null) DKV.put(lhs_ary);
           e.pushAry(lhs_ary);
           return;
         } else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
@@ -968,6 +972,7 @@ class ASTAssign extends AST {
           }
         }
         fs.blockForPending();
+        if (lhs_ary._key != null && DKV.get(lhs_ary._key) != null) DKV.put(lhs_ary);
         e.pushAry(lhs_ary);
         return;
       } else throw new IllegalArgumentException("Invalid row/col selections.");

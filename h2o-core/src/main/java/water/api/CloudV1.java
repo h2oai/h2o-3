@@ -44,6 +44,9 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
     @API(help="IP", direction=API.Direction.OUTPUT)
     public H2ONode h2o;
 
+    @API(help="IP address and port in the form a.b.c.d:e", direction=API.Direction.OUTPUT)
+    public String ip_port;
+
     @API(help="(now-last_ping)<HeartbeatThread.TIMEOUT", direction=API.Direction.OUTPUT)
     public boolean healthy;
 
@@ -112,6 +115,7 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
 
       // Basic system health
       this.h2o = h2o;
+      ip_port = h2o.getIpPortString();
       healthy = (System.currentTimeMillis()-h2o._last_heard_from)<HeartBeatThread.TIMEOUT;
       last_ping = h2o._last_heard_from;
       sys_load = hb._system_load_average;

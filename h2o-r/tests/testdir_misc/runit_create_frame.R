@@ -17,11 +17,9 @@ test.createFrame <- function(conn) {
   expect_equal(dim(hex2), c(1000, 21))
   expect_equal(length(colnames(hex2)), 21)
   
-#   Log.info("Check that all data entries are equal to 5")
-#   cons_col <- sapply(2:20, function(i) { min(hex2[,i]) == 5 && max(hex2[,i]) == 5 })
-#   print(cons_col)
-#   print(head(hex2))
-#   expect_true(all(cons_col))
+  Log.info("Check that all data entries are equal to 5 (including response)")
+  cons_col <- sapply(1:21, function(i) { min(hex2[,i]) == 5 && max(hex2[,i]) == 5 })
+  expect_true(all(cons_col))
   
   testEnd()
 }

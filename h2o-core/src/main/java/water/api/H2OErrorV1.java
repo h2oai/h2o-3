@@ -11,7 +11,7 @@ import java.util.Arrays;
  * errors may be caused by the user (specifying an object which has been removed) or due
  * to a failure which is out of the user's control.
  */
-public class H2OErrorV1 extends Schema<H2OError, H2OErrorV1> {
+public class H2OErrorV1 extends Schema<H2OError, H2OErrorV1> implements SpecifiesHttpResponseCode {
 
   @API(help="Milliseconds since the epoch for the time that this H2OError instance was created.  Generally this is a short time since the underlying error ocurred.", direction=API.Direction.OUTPUT)
   public long timestamp;
@@ -42,6 +42,10 @@ public class H2OErrorV1 extends Schema<H2OError, H2OErrorV1> {
 
   @API(help="Stacktrace, if any.", direction=API.Direction.OUTPUT)
   public String[] stacktrace;
+
+  public int httpStatus() {
+    return http_status;
+  }
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
     ab.bodyHead();
