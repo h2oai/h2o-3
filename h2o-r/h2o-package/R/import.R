@@ -91,12 +91,13 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
     stop("`parse` must be TRUE or FALSE")
 
   path <- normalizePath(path, winslash = "/")
-  urlSuffix <- sprintf("PostFile.json?destination_key=%s", curlEscape(path))
+  srcKey <- .key.make(conn, path)
+  urlSuffix <- sprintf("PostFile.json?destination_key=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)
 
-  rawData <- .newH2OObject("H2ORawData", conn=conn, key=path, linkToGC=TRUE)
+  rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=TRUE)
   if (parse) {
     h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
   } else {
