@@ -16,13 +16,14 @@ This tutorial will show you how to:
 - [use clips](#Clips)
 - [view an outline of your flow](#Outline)
 - [save a flow](#SaveFlows)
+- [troubleshoot issues](#Troubleshooting)
 
 
 <a name="GetHelp"></a> 
 ##Getting Help 
 ---
 
-First, let's review the basics. Type `h` to view a list of helpful shortcuts. 
+First, let's go over the basics. Type `h` to view a list of helpful shortcuts. 
 
 The following help window displays: 
 
@@ -30,22 +31,26 @@ The following help window displays:
 
 To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. 
 
-For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button, or type `assist` in a blank cell and press **Ctrl+Enter**. A list of common tasks displays to help you find the correct command. 
+For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button. 
 
- ![Flow - Assist Me](images/Flow_AssistMeButton.png) 
+![Assist Me](images/Flow_AssistMeButton.png) 
+
+You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of common tasks displays to help you find the correct command. 
+
+ ![Assist Me links](images/Flow_assist.png)
  
 You can also access the quick start guide, keyboard shortcuts, or H2O documentation from the "Help" menu at the top of the screen. 
+
+Before getting started with H2O Flow, make sure you understand the different cell modes. 
 
 ---
 
 <a name="Cell"></a>
-###Understanding Cell Modes
+##Understanding Cell Modes
 
-There are two modes for cells: edit and command. In edit mode, the cell is yellow, there is an orange flag to the left of the cell and a blinking bar to indicate where text can be entered.
+There are two modes for cells: edit and command. In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
 ![Edit Mode](images/Flow_EditMode.png)
-
-**NOTE**: If there is an error in the cell, the flag is red. 
  
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
@@ -65,6 +70,10 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
 
  ![Flow - Heading Levels](images/Flow_headinglevels.png)
 
+**NOTE**: If there is an error in the cell, the flag is red. 
+
+ ![Cell error](images/Flow_redflag.png)
+
 Here are some important keyboard shortcuts to remember: 
 
 - Click a cell and press **Enter** to enter edit mode, which allows you to change the contents of a cell. 
@@ -77,11 +86,13 @@ The following commands must be entered in command mode.
 - To add a new cell *below* the current cell, press **b**. 
 - To delete the current cell, press the **d** key *twice*. (**dd**). 
 
+You can view these shortcuts by clicking **Help** > **Keyboard Shortcuts** or by clicking the **Help** tab in the sidebar. 
+
 There are also a series of buttons at the top of the page below the flow name that allow you to save the current flow, add a new cell, move cells up or down, run the current cell, and cut, copy, or paste the current cell. If you hover over the button, a description of the button's function displays. 
 
  ![Flow buttons](images/Flow_buttons.png)
  
-You can also use the menus at the top of the screen to edit the cells, view specific format types (such as input or output), change the cell's format, or run the cell.  
+You can also use the menus at the top of the screen to edit the cells, view specific format types (such as input or output), change the cell's format, or run the cell. You can also access troubleshooting information or obtain help with Flow.  
  ![Flow menus](images/Flow_menus.png)
 
 
@@ -101,9 +112,8 @@ There are multiple ways to import data in H2O flow:
 
 - Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  
- ![Flow - Assist Me links](images/Flow_assist.png)
-
-  You can also drag and drop the file onto the "Search" field in the   "Import Files" cell.  
+  You can also drag and drop the file onto the **Search** field in the cell.
+  
  ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
 - In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. 
@@ -131,7 +141,7 @@ Ok, now that you've imported your data, let's move on to the next step: parsing.
 
 After you have imported your data, parse the data.
 
-Select the parser type (if necessary) from the drop-down **Parser** list. For most data parsing, H2O automatically recognizes the data type, so the default settings do not need to be changed. The following options are available: 
+Select the parser type (if necessary) from the drop-down **Parser** list. For most data parsing, H2O automatically recognizes the data type, so the default settings typically do not need to be changed. The following options are available: 
 
 - Auto
 - XLS
@@ -144,12 +154,12 @@ Select a column header option, if applicable:
 
 - **Auto**: Automatically detect header types.
 - **First row contains column names**: Specify heading as column names.
-- **First row contains data**: Specify heading as data. 
+- **First row contains data**: Specify heading as data. This option is selected by default.
 
 Select any necessary additional options: 
 
-- **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum.  
-- **Delete on done**: Check this checkbox to delete the imported data after parsing.
+- **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
+- **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
 A preview of the data displays in the "Data Preview" section. After making your selections, click the **Parse** button. 
 
@@ -159,14 +169,32 @@ After you click the **Parse** button, the code for the current job displays.
 
  ![Flow - Parse code](images/Flow_parse_code_ex.png)
  
+Since we've submitted a couple of jobs (data import & parse) to H2O now, let's take a moment to learn more about jobs in H2O.  
+ 
 --- 
  
 <a name="ViewJobs"></a>
 ##Viewing Jobs
 
-To view a job, click the "Job Key" link or click the **View Job** button. 
+Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference. 
 
-![View Model](images/Flow_ViewJob_Model.png)
+###Viewing Recent Jobs
+
+To view all recent jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
+
+ ![View Jobs](images/Flow_getJobs.png)
+
+The following information displays: 
+
+- Key (linked to the specified job)
+- Description of the type of job (for example, `GLM` or `Parse`)
+- Status (`RUNNING` or `DONE`)
+
+###Viewing Specific Jobs
+
+To view a specific job, click the **Destination Key** link. 
+
+![View Job - Model](images/Flow_ViewJob_Model.png)
 
 The following information displays: 
 
@@ -176,16 +204,28 @@ The following information displays:
 - Run time
 - Progress
 
-To refresh this information, click the **Refresh** button. To view the imported data, click the **View** button. 
+To refresh this information, click the **Refresh** button. To view the details of the job, click the **View** button. 
 
-Now that the data is parsed, let's start building a model. Click the **Build Model** button. 
+**NOTE**: For a better understanding of how jobs work, make sure to review the [Viewing Frames](#ViewFrames) section as well. 
+ 
+Ok, now that you understand how to find jobs in H2O, let's submit a new one by building a model. 
 
 ---
 
 <a name="BuildModel"></a>
 ##Building Models
 
-First, select an algorithm from the drop-down menu: 
+To build a model: 
+
+- Click the **Assist Me!** button and select **buildModel**
+
+  or 
+
+- Click the **Assist Me!** button, select **getFrames**, then click the **Build Model...** button below the parsed .hex data set
+
+The **Build Model...** button can be accessed from any page containing the .hex key for the parsed data (for example, `getJobs` > `getFrame`). 
+ 
+In the **Build a Model** cell, select an algorithm from the drop-down menu: 
 
 <a name="Kmeans"></a>
 - **kmeans**: Create a K-Means model
@@ -215,7 +255,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Destination\_key**: (Optional) Enter a custom name for the model to use as a reference. By default, H2O automatically generates a destination key. 
 
-- **Training_frame**: (Optional) Select the dataset used to build the model. 
+- **Training_frame**: (Required) Select the dataset used to build the model. 
+**NOTE**: If you click the **Build a model** button from the `Parse` cell, the training frame is entered automatically. 
 
 - **Validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
@@ -419,6 +460,12 @@ Click the **Assist Me!** button, then click the **getModels** link, or enter `ge
 
 To inspect a model, check its checkbox then click the **Inspect** button, or click the **Inspect** button to the right of the model name. 
 
+ ![Flow Model](images/Flow_GetModel.png)
+ 
+ A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
+ 
+ **NOTE**: The **Clone this model...** button will be supported in a future version. 
+ 
 To compare models, check the checkboxes for the models to use in the comparison and click the **Compare selected models** button. To select all models, check the checkbox at the top of the checkbox column (next to the **KEY** heading). 
 
 To learn how to make predictions, continue to the next section. 
@@ -446,16 +493,37 @@ To view a prediction, click the **View** button to the right of the model name.
 ---
 
 <a name="ViewFrame"></a>
-###Viewing Frames
+##Viewing Frames
 
-Click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. A list of the current frames in H2O displays that includes the following information for each frame: 
+To view a specific frame, click the "Destination Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
+
+ ![Viewing specified frame](images/Flow_getFrame.png) 
+
+From the `getFrame` cell, you can: 
+
+- view a truncated list of the rows in the data frame by clicking the **View Data** button
+- create a model by clicking the **Build Model** button
+- make a prediction based on the data by clicking the **Predict** button
+- download the data as a .csv file by clicking the **Download** button
+- view the columns, data, and factors in more detail or plot a graph by clicking the **Inspect** button
+- view the characteristics or domain of a specific column by clicking the **Summary** link
+
+When you view a frame, you can "drill-down" to the necessary level of detail (such as a specific column or row) using the **View Data** and **Inspect** buttons. The following screenshot displays the results of clicking the **Inspect** button.
+
+![Inspecting Frames](images/Flow_inspectFrame.png)
+
+This screenshot displays the results of clicking the **Summary** link for the first column. 
+
+![Inspecting Columns](images/Flow_inspectCol.png)
+
+
+To view all frames, click the **Assist Me!** button, then click the **getFrames** link, or enter `getFrames` in the cell in CS mode and press **Ctrl+Enter**. A list of the current frames in H2O displays that includes the following information for each frame: 
 
 
 - Column headings
 - Number of rows and columns
 - Size 
 
- ![Pre-Parse Frame](images/Flow_getFrame.png)
 
 For parsed data, the following information displays: 
 
@@ -465,6 +533,29 @@ For parsed data, the following information displays:
  ![Parsed Frames](images/Flow_getFrames.png)
 
 To make a prediction, check the checkboxes for the frames you want to use to make the prediction, then click the **Predict on Selected Frames** button. 
+
+
+
+
+###Plotting Frames
+
+To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
+
+Select the type of plot (point, line, area, or interval) from the drop-down **Type** menu, then select the x-axis and y-axis from the following options: 
+
+- label 
+- missing 
+- zeros
+- pinfs 
+- ninfs 
+- min
+- max
+- mean
+- sigma
+- type
+- cardinality
+
+Select one of the above options from the drop-down **Color** menu to display the specified data in color, then click the **Plot** button to plot the data. 
 
 ---
 
@@ -485,12 +576,14 @@ All saved clips, including the default system clips (such as `assist`, `importFi
 
 Deleted clips are stored in the trash. To permanently delete all clips in the trash, click the **Empty Trash** button. 
 
+**NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
+
 ---
 
 <a name="Outline"></a>
 ##Viewing Outlines
 
-The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow. To jump to a specific cell, click the cell description. 
+The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. To jump to a specific cell, click the cell description. 
 
  ![View Outline](images/Flow_outline.png)
 
@@ -511,4 +604,94 @@ To confirm the name, click the checkmark to the right of the name field.
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name. 
 
  ![Flows](images/Flow_flows.png)
+ 
+ **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
+
+
+<a name="Troubleshooting"></a>
+##Troubleshooting 
+
+To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
+
+###Viewing Cluster Status
+
+Click the **Admin** menu, then select **Cluster Status**. A summary of the status of the cluster (also known as a cloud) displays, which includes the same information: 
+
+- Cluster health
+- Whether all nodes can communicate (consensus)
+- Whether new nodes can join (locked/unlocked)
+- H2O version
+- Cluster size
+- Number of unavailable nodes
+- When the cluster was created
+
+ ![Cluster Status](images/Flow_CloudStatus.png)
+
+
+The following information displays for each node: 
+
+- IP address (name)
+- Time of last ping
+- Number of cores
+- Load
+- Amount of data (used/total)
+- Percentage of cached data
+- GC (free/total/max)
+- Amount of disk space in GB (free/max)
+- Percentage of free disk space 
+
+To view more information, click the **Show Advanced** button. 
+
+---
+
+###Viewing Logs
+To view the logs for troubleshooting, click the **Admin** menu, then click **Inspect Log**. 
+
+ ![Inspect Log](images/Flow_viewLog.png)
+
+To view the logs for a specific node, select it from the drop-down **Select Node** menu. 
+
+---
+
+###Downloading Logs
+
+To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to support@h2o.ai for issue resolution. 
+
+---
+
+###Accessing the Profiler
+
+To view the profiler, click the **Admin** menu, then click **Profiler**. 
+
+ ![Profiler](images/Flow_profiler.png)
+
+To view the profiler information for a specific node, select it from the drop-down **Select Node** menu. 
+
+---
+
+###Viewing Stack Trace Information
+
+To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
+
+ ![Stack Trace](images/Flow_stacktrace.png)
+
+To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
+
+
+###Viewing the Timeline
+
+To view a timeline of events in Flow, click the **Admin** menu, then click **Timeline**. The following information displays for each event: 
+
+- Time of occurrence (HH:MM:SS:MS)
+- Number of nanoseconds for duration
+- Originator of event ("who")
+- I/O type
+- Event type
+- Number of bytes sent & received
+
+ ![Timeline](images/Flow_timeline.png)
+
+To obtain the most recent information, click the **Refresh** button. 
+
+
 
