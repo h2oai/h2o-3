@@ -2,10 +2,10 @@ package water;
 
 import org.junit.*;
 
-@Ignore("Speed/perf test, not intended as a pre-push junit test")
+//@Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
 
-  static final int NCLOUD=5;
+  static final int NCLOUD=10;
   static final int NKEYS=1000000;
   @BeforeClass static public void setup() { stall_till_cloudsize(NCLOUD); }
 
