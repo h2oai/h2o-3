@@ -156,7 +156,7 @@ class H2O(object):
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
-                          cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, **kwargs):
+                          cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
         # if url param is used, use it as full url. otherwise crate from the jsonRequest
         if fullUrl:
@@ -227,7 +227,7 @@ class H2O(object):
 
             H2O.verboseprint("r: " + repr(r))
 
-        if 200 != r.status_code:
+        if raiseIfNon200 and 200 != r.status_code:
             print "JSON call returned non-200 status: ", url
             print "r.status_code: " + str(r.status_code)
             print "r.headers: " + repr(r.headers)
@@ -252,7 +252,7 @@ class H2O(object):
             print "Caught exception from result logging: ", e, "; result: ", repr(r)
 
         # fatal if no response
-        if not r:
+        if raiseIfNon200 and not r:
             raise Exception("Maybe bad url? no r in __do_json_request in %s:" % inspect.stack()[1][3])
 
         # this is used to open a browser on results, or to redo the operation in the browser
@@ -295,6 +295,15 @@ class H2O(object):
             if w in rjson and rjson[w]:
                 H2O.verboseprint(dump_json(rjson))
                 print 'rjson %s in %s: %s' % (w, inspect.stack()[1][3], rjson[w])
+
+        
+        # Allow the caller to check things like __http_request.status_code.
+        # The response object is not JSON-serializable, so we capture the fields we want here:
+        response = {}
+        # response['headers'] = r.headers
+        response['url'] = r.url
+        response['status_code'] = r.status_code
+        rjson['__http_response'] = response
 
         return rjson
         # end of __do_json_request
@@ -597,7 +606,7 @@ class H2O(object):
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
-        result = self.__do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
+        result = self.__do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result
@@ -625,7 +634,7 @@ class H2O(object):
 
         if destination_key is not None:
             parameters['destination_key'] = destination_key
-        result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters)
+        result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
             return result

@@ -6,11 +6,8 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Job;
 import water.Key;
-import water.api.API;
-import water.api.JobV2;
-import water.api.ModelParametersSchema;
+import water.api.*;
 import water.api.ModelParametersSchema.ValidationMessageBase;
-import water.api.Schema;
 import water.util.DocGen;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -20,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> {
+public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -41,8 +38,18 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;
 
+  private int __http_status; // The handler sets this to 400 if we're building and validation_error_count > 0, else 200.
+
   public ModelBuilderSchema() {
     this.parameters = createParametersSchema();
+  }
+
+  public void setHttpStatus(int status) {
+    __http_status = status;
+  }
+
+  public int httpStatus() {
+    return __http_status;
   }
 
   /** Factory method to create the model-specific parameters schema. */
