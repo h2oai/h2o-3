@@ -17,7 +17,7 @@ class FJPacket extends H2OCountedCompleter {
 
   @Override protected void compute2() {
     _ab.getPort(); // skip past the port
-    if( _ctrl <= UDP.udp.ack.ordinal() )
+    if( _ctrl <= UDP.udp.nack.ordinal() )
       UDP.udp.UDPS[_ctrl]._udp.call(_ab).close();
     else
       RPC.remote_exec(_ab);
@@ -32,14 +32,5 @@ class FJPacket extends H2OCountedCompleter {
     return true;
   }
   // Run at max priority until we decrypt the packet enough to get priorities out
-  static private byte[] UDP_PRIORITIES =
-    new byte[]{-1,
-               H2O.MAX_PRIORITY,    // Heartbeat
-               H2O.MAX_PRIORITY,    // Rebooted
-               H2O.MAX_PRIORITY,    // Timeline
-               H2O.ACK_ACK_PRIORITY,// Ack Ack
-               H2O.FETCH_ACK_PRIORITY, // Class/ID mapping ACK
-               H2O.ACK_PRIORITY,    // Ack
-               H2O.DESERIAL_PRIORITY}; // Exec is very high, so we deserialize early
-  @Override protected byte priority() { return UDP_PRIORITIES[_ctrl]; }
+  @Override protected byte priority() { return UDP.udp.UDPS[_ctrl]._prior; }
 }

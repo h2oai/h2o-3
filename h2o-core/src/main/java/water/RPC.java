@@ -55,6 +55,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // True if _dt contains the final answer
   volatile boolean _done;
 
+  // True if the remote sent us a NACK (he received this RPC, but perhaps is
+  // not done processing it, no need for more retries).
+  volatile boolean _nack;
+
   // A locally-unique task number; a "cookie" handed to the remote process that
   // they hand back with the response packet.  These *never* repeat, so that we
   // can tell when a reply-packet points to e.g. a dead&gone task.
@@ -117,53 +121,58 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return this;
   }
 
+  // Any Completer will not be carried over to remote; add it to the RPC call
+  // so completion is signaled after the remote comes back.
+  private void handleCompleter( CountedCompleter cc ) {
+    assert cc instanceof H2OCountedCompleter;
+    if( _fjtasks != null && !_fjtasks.contains(cc) )
+      addCompleter((H2OCountedCompleter)cc);
+    _dt.setCompleter(null);
+  }
+
+  // If running on self, just submit to queues & do locally
+  private RPC<V> handleLocal() {
+    assert _dt.getCompleter()==null;
+    _dt.setCompleter(new H2O.H2OCallback<DTask>() {
+        @Override public void callback(DTask dt) {
+          synchronized(RPC.this) {
+            _done = true;
+            RPC.this.notifyAll();
+          }
+          doAllCompletions();
+        }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter dt) {
+          synchronized(RPC.this) { // Might be called several times
+            if( _done ) return true; // Filter down to 1st exceptional completion
+            _dt.setException(ex);
+            // must be the last set before notify call cause the waiting thread
+            // can wake up at any moment independently on notify
+            _done = true; 
+            RPC.this.notifyAll();
+          }
+          doAllCompletions();
+          return true;
+        }
+      });
+    H2O.submitTask(_dt);
+    return this;
+  }
+
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
   public synchronized RPC<V> call() {
-    // completer will not be carried over to remote
-    // add it to the RPC call.
-    if(_dt.getCompleter() != null){
-      CountedCompleter cc = _dt.getCompleter();
-      assert cc instanceof H2OCountedCompleter;
-      boolean alreadyIn = false;
-      if(_fjtasks != null)
-        for( H2OCountedCompleter hcc : _fjtasks )
-          if( hcc == cc) alreadyIn = true;
-      if( !alreadyIn ) addCompleter((H2OCountedCompleter)cc);
-      _dt.setCompleter(null);
-    }
+      // Any Completer will not be carried over to remote; add it to the RPC call
+      // so completion is signaled after the remote comes back.
+    CountedCompleter cc = _dt.getCompleter();
+    if( cc != null )  handleCompleter(cc);
+
     // If running on self, just submit to queues & do locally
-    if( _target==H2O.SELF ) {
-      assert _dt.getCompleter()==null;
-      _dt.setCompleter(new H2O.H2OCallback<DTask>() {
-          @Override public void callback(DTask dt){
-            assert dt==_dt;
-            synchronized(RPC.this) {
-              assert !_done;    // F/J guarentees called once
-              _done = true;
-              RPC.this.notifyAll();
-            }
-            doAllCompletions();
-          }
-          @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter dt){
-            assert dt==_dt;
-            synchronized(RPC.this) { // Might be called several times
-              if( _done ) return true; // Filter down to 1st exceptional completion
-              _done = true; // must be the last set before notify call cause the waiting thread can wake up at any moment independently on notify
-              _dt.setException(ex);
-              RPC.this.notifyAll();
-            }
-            doAllCompletions();
-            return true;
-          }
-        });
-      H2O.submitTask(_dt);
-      return this;
-    }
+    if( _target==H2O.SELF ) return handleLocal();
 
     // Keep a global record, for awhile
     if( _target != null ) _target.taskPut(_tasknum,this);
     try {
+      if( _nack ) return this; // Racing Nack rechecked under lock; no need to send retry
       // We could be racing timeouts-vs-replies.  Blow off timeout if we have an answer.
       if( isDone() ) {
         if( _target != null ) _target.taskRemove(_tasknum);
@@ -470,8 +479,10 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     } else if( !old._computedAndReplied) {
       // This packet has not been fully computed.  Hence it's still a work-in-
       // progress locally.  We have no answer to reply but we do not want to
-      // re-offer the packet for repeated work.  Just ignore the packet.
+      // re-offer the packet for repeated work.  Send back a NACK, letting the
+      // client know we're Working On It
       assert !ab.hasTCP():"ERROR: got tcp resend with existing in-progress task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
+      ab.clearForWriting().putTask(UDP.udp.nack.ordinal(), task);
       // DROP PACKET
     } else {
       // This is an old re-send of the same thing we've answered to before.
@@ -526,14 +537,18 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // Got a response UDP packet, or completed a large TCP answer-receive.
   // Install it as The Answer packet and wake up anybody waiting on an answer.
-  protected int response( AutoBuffer ab ) {
+  // On all paths, send an ACKACK back
+  static AutoBuffer ackack( AutoBuffer ab, int tnum ) {
+    return ab.clearForWriting().putTask(UDP.udp.ackack.ordinal(),tnum);
+  }
+  protected AutoBuffer response( AutoBuffer ab ) {
     assert _tasknum==ab.getTask();
-    if( _done ) return ab.close(); // Ignore duplicate response packet
+    if( _done ) return ackack(ab, _tasknum); // Ignore duplicate response packet
     int flag = ab.getFlag();       // Must read flag also, to advance ab
-    if( flag == SERVER_TCP_SEND ) return ab.close(); // Ignore UDP packet for a TCP reply
+    if( flag == SERVER_TCP_SEND ) return ackack(ab, _tasknum); // Ignore UDP packet for a TCP reply
     assert flag == SERVER_UDP_SEND;
     synchronized(this) {             // Install the answer under lock
-      if( _done ) return ab.close(); // Ignore duplicate response packet
+      if( _done ) return ackack(ab, _tasknum); // Ignore duplicate response packet
       UDPTimeOutThread.PENDING.remove(this);
       _dt.read(ab);            // Read the answer (under lock?)
       _size_rez = ab.size();   // Record received size
@@ -544,7 +559,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       notifyAll();                  // And notify in any case
     }
     doAllCompletions(); // Send all tasks needing completion to the work queues
-    return 0;
+    // AckAck back on a fresh AutoBuffer, since actually closed() the incoming one
+    return new AutoBuffer(_target).putTask(UDP.udp.ackack.ordinal(),_tasknum);
   }
 
   private void doAllCompletions() {
