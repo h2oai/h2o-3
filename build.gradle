@@ -185,6 +185,7 @@ apply from: "gradle/s3sync.gradle"
 // See ~jenkins/bin/buildh2odev.sh.
 task buildH2oDevDist(type: Exec) {
     group='Dist'
+    commandLine './gradlew --no-daemon :h2o-test-integ:cleanGenerateRESTAPIDocs :h2o-test-integ:runGenerateRESTAPIDocs'
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
     def projectVersion = bv.getProjectVersion()
     def lastCommitHash = bv.getLastCommitHash()
@@ -192,6 +193,8 @@ task buildH2oDevDist(type: Exec) {
     environment['LAST_COMMIT_HASH'] = lastCommitHash
     commandLine './make-dist.sh'
 }
+
+buildH2oDevDist.dependsOn ':h2o-test-integ:runGenerateRESTAPIDocs'
 
 //
 // Import project development profiles

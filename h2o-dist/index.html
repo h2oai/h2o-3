@@ -224,11 +224,14 @@
       }
       <!-- DOM 0 style without jquery -->
       window.onload = function() {
-        trackLink('dzip', 'Download', 'ZIP');
-        trackLink('ddocall', 'Documentation', 'All');
-        trackLink('ddocr', 'Documentation', 'R');
-        trackLink('ddocjavadoc', 'Documentation', 'Javadoc');
-        
+        trackLink('download-zip', 'Download', 'ZIP');
+        trackLink('doc-flow', 'Documentation', 'Flow');
+        trackLink('doc-h2o-r-pdf', 'Documentation', 'R');
+        trackLink('doc-Hadoop', 'Documentation', 'Hadoop');
+        trackLink('doc-rest', 'Documentation', 'REST API');
+        trackLink('doc-h2o-core-javadoc', 'Documentation', 'H2O Core Javadoc');
+        trackLink('doc-h2o-algos-javadoc', 'Documentation', 'H2O Algos Javadoc');
+
         initializeTabs();
        }
     </script>
@@ -259,7 +262,7 @@
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
-              <a id="dzip" class="download-button" href="h2o-dev-SUBST_PROJECT_VERSION.zip">Download H<sub>2</sub>O</a>
+              <a id="download-zip" class="download-button" href="h2o-dev-SUBST_PROJECT_VERSION.zip">Download H<sub>2</sub>O</a>
             </div>
             <h2>Get started with H<sub>2</sub>O Dev in 3 easy steps</h2>
             <p>1. Download H<sub>2</sub>O Dev. This is a zip file that contains everything you need to get started.</p>
@@ -319,16 +322,17 @@
 -->
         </div>
         <div id="documentation">
-          <h2>Documentation</h2>
+          <h2>User Documentation</h2>
           <ul>
-            <li><a id="ddocflow" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/README.md">Flow Documentation</a></li>
-<!--                 
-            <li><a id="ddocall" href="docs-website/index.html">Full Documentation</a></li>
-            <li><a id="ddochadoop" href="docs-website/deployment/hadoop_tutorial.html">Hadoop Documentation</a></li>
-	    <li><a id="ddocr" href="docs-website/bits/h2o_package.pdf">R User Documentation</a></li>
-            <li><a id="ddocjavadoc" href="javadoc/index.html">Java Developer Documentation (Javadoc)</a></li>
-            <li><a id="ddocrest" href="#"></a>REST API Documentation (Coming soon)</li>
--->                 
+            <li><a id="doc-flow" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/README.md">Flow (Web UI) User Documentation</a></li>
+            <li><a id="doc-h2o-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
+            <li><a id="doc-hadoop" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/README.md">Hadoop Documentation (Coming soon!)</a></li>
+          </ul>
+          <h2>Developer Documentation</h2>
+          <ul>
+            <li><a id="doc-rest" href="docs-website/REST/endpoints/markdown/toc.md">REST API Documentation (Google Chrome MarkView extension recommended)</a></li>
+            <li><a id="doc-h2o-core-javadoc" href="docs-website/h2o-core/javadoc/index.html">H2O Core Java Developer Documentation (Javadoc)</a></li>
+            <li><a id="doc-h2o-algos-javadoc" href="docs-website/h2o-algos/javadoc/index.html">H2O Algos Java Developer Documentation (Javadoc)</a></li>
           </ul>
         </div>
       </div>

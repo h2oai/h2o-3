@@ -54,7 +54,7 @@ def restGenPath = new File("$rootDir/py")
 
 task runGenerateRESTAPIDocs(type: Exec) {
     workingDir restGenPath
-    commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--jvm.xmx', '4g', '--test', 'generate_rest_api_docs.py'
+    commandLine 'python', runner, '--wipeall', '--baseport', '48000', '--numclouds', '1', '--jvm.xmx', '4g', '--test', 'generate_rest_api_docs.py'
 }
 
 task cleanGenerateRESTAPIDocs(type: Delete) {
