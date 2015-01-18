@@ -33,6 +33,10 @@ mkdir target
 # Add zip file to target.
 mv $IMAGEDIR/../h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
 
+# Add R CRAN structure to target.
+mkdir -p target/R/src
+cp -rp h2o-r/R/src/contrib target/R/src
+
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-r
