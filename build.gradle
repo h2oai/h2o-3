@@ -193,8 +193,6 @@ task buildH2oDevDist(type: Exec) {
     commandLine './make-dist.sh'
 }
 
-buildH2oDevDist.dependsOn ':h2o-test-integ:runGenerateRESTAPIDocs'
-
 task dist(dependsOn: buildH2oDevDist) 
 
 //
