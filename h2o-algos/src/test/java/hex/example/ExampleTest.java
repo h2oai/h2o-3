@@ -19,7 +19,7 @@ public class ExampleTest extends TestUtil {
 
       ExampleModel.ExampleParameters parms = new ExampleModel.ExampleParameters();
       parms._train = fr._key;
-      parms._max_iters = 10;
+      parms._max_iterations = 10;
       parms._response_column = "class";
 
       Example job = new Example(parms).trainModel();
