@@ -69,8 +69,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
     }
 
-    for( Vec v : _train.vecs() )
-      if( v.isEnum() ) _ncats++;
+    for( Vec v : _train.vecs() ) {
+      // if (v.isEnum()) _ncats++;
+      if(v.isEnum()) error("_train","Columns cannot have categorical values");
+    }
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.

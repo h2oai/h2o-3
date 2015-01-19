@@ -39,6 +39,7 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
+      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iters = 10;
@@ -63,6 +64,7 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
+      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iters = 10;

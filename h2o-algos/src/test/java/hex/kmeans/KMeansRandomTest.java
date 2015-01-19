@@ -19,7 +19,7 @@ public class KMeansRandomTest extends TestUtil {
     Random rng = new Random(seed);
     String[] datasets = new String[2];
     datasets[0] = "smalldata/logreg/prostate.csv";
-    datasets[1] = "smalldata/junit/iris.csv";
+    datasets[1] = "smalldata/iris/iris_wheader.csv";
 
 
     int testcount = 0;
@@ -41,6 +41,8 @@ public class KMeansRandomTest extends TestUtil {
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
                 parms._train = frame._key;
+                if(dataset != null && dataset.equals("smalldata/iris/iris_wheader.csv"))
+                  parms._ignored_columns = new String[] {"class"};
                 parms._k = centers;
                 parms._seed = rng.nextLong();
                 parms._max_iters = max_iter;
