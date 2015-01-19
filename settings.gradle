@@ -8,5 +8,6 @@ include 'h2o-scala'
 include 'h2o-r'
 include 'h2o-assembly'
 include 'h2o-hadoop'
+include 'h2o-docs'
 include 'h2o-test-integ'
 
