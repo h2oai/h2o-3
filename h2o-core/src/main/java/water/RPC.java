@@ -125,7 +125,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // so completion is signaled after the remote comes back.
   private void handleCompleter( CountedCompleter cc ) {
     assert cc instanceof H2OCountedCompleter;
-    if( _fjtasks != null && !_fjtasks.contains(cc) )
+    if( _fjtasks == null || !_fjtasks.contains(cc) )
       addCompleter((H2OCountedCompleter)cc);
     _dt.setCompleter(null);
   }
