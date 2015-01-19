@@ -58,7 +58,8 @@ public class SplitFrame extends ModelBuilder<SplitFrameModel,SplitFrameModel.Spl
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the max_iters. */
+   *  Validate the ratios.
+   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     assert _parms._ratios.length > 0 : "No ratio specified!";

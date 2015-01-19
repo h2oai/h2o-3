@@ -11,7 +11,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
   public static class KMeansParameters extends Model.Parameters {
     public int _k = 1;                     // Number of clusters
-    public int _max_iters = 1000;          // Max iterations
+    public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
@@ -21,10 +21,10 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   public static class KMeansOutput extends Model.Output {
     // Number of categorical variables in the training set; they are all moved
     // up-front and use a different distance metric than numerical variables
-    public int _ncats;
+    public int _categorical_column_count;
 
     // Iterations executed
-    public int _iters;
+    public int _iterations;
 
     // Cluster centers_raw.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
@@ -60,7 +60,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._centers_raw,data,_output._ncats);
+    preds[0] = KMeans.closest(_output._centers_raw,data,_output._categorical_column_count);
     return preds;
   }
 }

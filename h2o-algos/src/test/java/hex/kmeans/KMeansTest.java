@@ -42,7 +42,7 @@ public class KMeansTest extends TestUtil {
       parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
-      parms._max_iters = 10;
+      parms._max_iterations = 10;
       parms._init = KMeans.Initialization.Random;
       kmm = doSeed(parms,0);
 
@@ -67,7 +67,7 @@ public class KMeansTest extends TestUtil {
       parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
-      parms._max_iters = 10;
+      parms._max_iterations = 10;
       parms._init = KMeans.Initialization.Random;
 
       doSeed(parms,341534765239617L).delete(); // Seed triggers an empty cluster on iris
@@ -93,7 +93,7 @@ public class KMeansTest extends TestUtil {
       parms._train = fr._key;
       parms._k = 7;
       parms._standardize = true;
-      parms._max_iters = 100;
+      parms._max_iterations = 100;
       parms._init = KMeans.Initialization.Random;
 
       for( int i=0; i<10; i++ )
@@ -121,7 +121,7 @@ public class KMeansTest extends TestUtil {
       parms._train = fr._key;
       parms._k = 3;
       parms._standardize = true;
-      parms._max_iters = 100;
+      parms._max_iterations = 100;
       parms._init = KMeans.Initialization.Random;
 
       double[][] exp1 = new double[][]{ d(1, 0, 0), d(0, 1, 0), d(0, 0, 1), };
@@ -159,7 +159,7 @@ public class KMeansTest extends TestUtil {
       parms._train = fr._key;
       parms._k = 2;
       parms._standardize = true;
-      parms._max_iters = 100;
+      parms._max_iterations = 100;
       parms._init = KMeans.Initialization.Furthest;
 
       for( int i=0; i<10; i++ ) {

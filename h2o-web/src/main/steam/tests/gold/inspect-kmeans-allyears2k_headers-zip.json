@@ -42,8 +42,8 @@
         "values": []
       },
       {
-        "name": "max_iters",
-        "label": "max_iters",
+        "name": "max_iterations",
+        "label": "max_iterations",
         "help": "Maximum training iterations.",
         "required": false,
         "type": "int",
@@ -4026,7 +4026,7 @@
         24.720950013940048
       ],
       "mse": 20.017565378351367,
-      "iters": 32
+      "iterations": 32
     }
   }
 }

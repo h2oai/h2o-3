@@ -31,10 +31,10 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
     public double avg_between_ss;
 
     @API(help="Iterations executed")
-    public double iters;
+    public double iterations;
 
     @API(help="Number of categorical columns trained on")
-    public int ncats;
+    public int categorical_column_count;
 
   } // KMeansModelOutputV2
 

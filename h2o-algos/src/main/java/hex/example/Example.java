@@ -29,7 +29,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
   public ModelBuilderSchema schema() { return new ExampleV2(); }
 
   @Override public Example trainModel() {
-    return (Example)start(new ExampleDriver(), _parms._max_iters);
+    return (Example)start(new ExampleDriver(), _parms._max_iterations);
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -38,11 +38,11 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the max_iters. */
+   *  Validate the max_iterations. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._max_iters < 1 || _parms._max_iters > 9999999 )
-      error("max_iters", "must be between 1 and 10 million");
+    if( _parms._max_iterations < 1 || _parms._max_iterations > 9999999 )
+      error("max_iterations", "must be between 1 and 10 million");
   }
 
   // ----------------------
@@ -62,7 +62,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
         // ---
         // Run the main Example Loop
         // Stop after enough iterations
-        for( ; model._output._iters < _parms._max_iters; model._output._iters++ ) {
+        for( ; model._output._iterations < _parms._max_iterations; model._output._iterations++ ) {
           if( !isRunning() ) break; // Stopped/cancelled
 
           double[] maxs = new Max().doAll(_parms.train())._maxs;
@@ -73,7 +73,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
           update(1);          // One unit of work
 
           StringBuilder sb = new StringBuilder();
-          sb.append("Example: iter: ").append(model._output._iters);
+          sb.append("Example: iter: ").append(model._output._iterations);
           Log.info(sb);
         }
 
