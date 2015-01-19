@@ -167,7 +167,7 @@ class Basic(unittest.TestCase):
                 'ignored_columns': None,
                 'score_each_iteration': False,
                 'k': CLUSTERS,
-                'max_iters': 50,
+                'max_iterations': 50,
                 'standardize': False,
                 # 'seed': kmeansSeed,
                 'init': 'Furthest',

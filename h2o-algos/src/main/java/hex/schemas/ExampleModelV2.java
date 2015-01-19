@@ -9,7 +9,7 @@ public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModelV2, Ex
 
   public static final class ExampleModelOutputV2 extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelOutputV2> {
     // Output fields
-    @API(help="Iterations executed") public int iters;
+    @API(help="Iterations executed") public int iterations;
     @API(help="") public double[] maxs;
   } // ExampleModelOutputV2
 

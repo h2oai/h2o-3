@@ -9,7 +9,7 @@ public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModelV2,
 
   public static final class QuantileModelOutputV2 extends ModelOutputSchema<QuantileModel.QuantileOutput, QuantileModelOutputV2> {
     @API(help="Iterations executed")
-    public double iters;
+    public double iterations;
 
     // Output fields
     @API(help="Quantiles")

@@ -58,7 +58,7 @@ class Basic(unittest.TestCase):
                 'ignored_columns': None,
                 'score_each_iteration': False,
                 'k': 4,
-                'max_iters': 50,
+                'max_iterations': 50,
                 'standardize': False,
                 'seed': kmeansSeed,
                 'init': 'Furthest',
@@ -138,7 +138,7 @@ class Basic(unittest.TestCase):
                 'ignored_columns': '[ID]',
                 'score_each_iteration': False,
                 'k': 3,
-                'max_iters': 500,
+                'max_iterations': 500,
                 'standardize': False,
                 'seed': kmeansSeed,
                 # PlusPlus init seems bad here..should investigate
