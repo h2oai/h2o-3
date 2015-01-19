@@ -142,8 +142,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
             
             // Fill in sample centers into the model
             if (!isRunning()) return null; // Stopped/cancelled
-            model._output._centersraw = destandardize(centers, _ncats, means, mults);
-            model._output._avgwithinss = sqr._sqr / _train.numRows();
+            model._output._centers_raw = destandardize(centers, _ncats, means, mults);
+            model._output._avg_within_ss = sqr._sqr / _train.numRows();
             
             model._output._iters++;     // One iteration done
             
@@ -195,31 +195,31 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      model._output._centersraw = destandardize(centers, _ncats, means, mults);
+      model._output._centers_raw = destandardize(centers, _ncats, means, mults);
       String[] rowHeaders = new String[_parms._k];
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centersraw);
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
-      model._output._withinmse = task._cSqr;
+      model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
       for( int i=0; i<_parms._k; i++ ) {
-        ssq += model._output._withinmse[i]; // sum squared error all clusters
-        model._output._withinmse[i] /= task._size[i]; // mse within-cluster
+        ssq += model._output._within_mse[i]; // sum squared error all clusters
+        model._output._within_mse[i] /= task._size[i]; // mse within-cluster
       }
-      model._output._avgwithinss = ssq/_train.numRows(); // mse total
+      model._output._avg_within_ss = ssq/_train.numRows(); // mse total
 
       // Sum-of-square distance from grand mean
       if(_parms._k == 1)
-        model._output._avgss = model._output._avgwithinss;
+        model._output._avg_ss = model._output._avg_within_ss;
       else {
         // If data already standardized, grand mean is just the origin
         TotSS totss = new TotSS(means,mults).doAll(vecs);
-        model._output._avgss = totss._tss/_train.numRows(); // mse with respect to grand mean
+        model._output._avg_ss = totss._tss/_train.numRows(); // mse with respect to grand mean
       }
-      model._output._avgbetweenss = model._output._avgss - model._output._avgwithinss;  // mse between-cluster
+      model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // mse between-cluster
       return task._cMeans;      // New centers
     }
 

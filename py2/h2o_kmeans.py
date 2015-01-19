@@ -22,17 +22,17 @@ def simpleCheckKMeans(modelResult, parameters, numRows, numCols, labels):
     ko = KMeansObj(modelResult, parameters)
 
     # to unzip the tuplesSorted. zip with *
-    # ids, withinmse, rows, centers = zip(*tuplesSorted)
-    return ko.tuplesSorted, ko.iters, ko.avgss, ko.names
+    # ids, within_mse, rows, centers = zip(*tuplesSorted)
+    return ko.tuplesSorted, ko.iters, ko.avg_ss, ko.names
 
 class KMeansObj(OutputObj):
     def __init__(self, kmeansResult, parameters, numRows, numCols, labels, noPrint=False, **kwargs):
         super(KMeansObj, self).__init__(kmeansResult['models'][0]['output'], "KMeans", noPrint=noPrint)
 
-        print self.withinmse # per cluster
-        print self.avgss
-        print self.avgwithinss
-        print self.avgbetweenss
+        print self.within_mse # per cluster
+        print self.avg_ss
+        print self.avg_within_ss
+        print self.avg_between_ss
 
         # should model builder add this to the kmeansResult?
         if 'python_elapsed' in kmeansResult:
@@ -45,8 +45,8 @@ class KMeansObj(OutputObj):
         names = self.names 
         ncats = self.ncats # 0
         centers = self.centers # [ 4 lists of centers ]
-        withinmse = self.withinmse
-        avgss = self.avgss
+        within_mse = self.within_mse
+        avg_ss = self.avg_ss
 
         if numRows:
             assert numRows==sum(size)
@@ -83,17 +83,17 @@ class KMeansObj(OutputObj):
         # create a tuple for each cluster result, then sort by rows for easy comparison
         # maybe should sort by centers?
         # put a cluster index in there too, (leftmost) so we don't lose track
-        tuples = zip(range(len(centers)), centers, size, withinmse)
+        tuples = zip(range(len(centers)), centers, size, within_mse)
         # can we sort on the sum of the centers?
         self.tuplesSorted = sorted(tuples, key=lambda tup: sum(tup[1]))
 
         print "iters:", iters
         # undo for printing what the caller will see
-        ids, centers, size, withinmse = zip(*self.tuplesSorted)
+        ids, centers, size, within_mse = zip(*self.tuplesSorted)
         for i,c in enumerate(centers):
             print "cluster id %s (2 places):" % ids[i], h2o_util.twoDecimals(c)
             print "rows_per_cluster[%s]: " % i, size[i]
-            print "withinmse[%s]: " % i, withinmse[i]
+            print "within_mse[%s]: " % i, within_mse[i]
             print "size[%s]:" % i, size[i]
 
         print "KMeansObj created for:", "???"# vars(self)
