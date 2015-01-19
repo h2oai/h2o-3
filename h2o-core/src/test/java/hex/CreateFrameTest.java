@@ -24,6 +24,7 @@ public class CreateFrameTest extends TestUtil {
     cf.has_response = true;
     cf.seed = 1234;
     cf.execImpl();
+    cf.get();
     Frame frame = DKV.getGet(cf.dest());
     Assert.assertTrue(frame.checksum() == -1885667171979213105L);
     frame.delete();
@@ -43,6 +44,7 @@ public class CreateFrameTest extends TestUtil {
     cf.has_response = true;
     cf.seed = 1234;
     cf.execImpl();
+    cf.get();
     Frame frame = DKV.getGet(cf.dest());
     Assert.assertTrue(frame.checksum() == 746L);
     frame.delete();

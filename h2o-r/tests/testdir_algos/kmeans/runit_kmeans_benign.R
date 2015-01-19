@@ -4,13 +4,10 @@ source('../../h2o-runit.R')
 # Test k-means clustering on benign.csv
 test.km.benign <- function(conn) {
   Log.info("Importing benign.csv data...\n")
-  # benign.hex = h2o.importURL(conn, "https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/benign.csv")
-  # benign.hex = h2o.importFile(conn, normalizePath("../../../smalldata/logreg/benign.csv"))
   benign.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"))
   benign.sum <- summary(benign.hex)
   print(benign.sum)
   
-  # benign.data = read.csv(text = getURL("https..//raw.github.com/0xdata/h2o/master/smalldata/logreg/benign.csv"), header = TRUE)
   benign.data <- read.csv(locate("smalldata/logreg/benign.csv"), header = TRUE)
   benign.data <- na.omit(benign.data)
   

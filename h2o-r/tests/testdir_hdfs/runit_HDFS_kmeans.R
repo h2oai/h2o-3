@@ -42,7 +42,7 @@ if (n != 150) {
 }
 
 heading("Running KMeans on iris")
-iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iters = 10)
+iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
 iris.km
 
 
@@ -57,7 +57,7 @@ if (n != 581012) {
 }
 
 heading("Running KMeans on covtype")
-covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iters = 10)
+covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
 covtype.km
 
 

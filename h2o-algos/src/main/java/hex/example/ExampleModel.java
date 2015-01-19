@@ -1,20 +1,21 @@
 package hex.example;
 
-import hex.*;
+import hex.Model;
+import hex.SupervisedModel;
 import hex.schemas.ExampleModelV2;
-import water.*;
+import water.H2O;
+import water.Key;
 import water.api.ModelSchema;
-import water.fvec.Frame;
 
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
   public static class ExampleParameters extends SupervisedModel.SupervisedParameters {
-    public int _max_iters = 1000; // Max iterations
+    public int _max_iterations = 1000; // Max iterations
   }
 
   public static class ExampleOutput extends SupervisedModel.SupervisedOutput {
     // Iterations executed
-    public int _iters;
+    public int _iterations;
     public double[] _maxs;
     public ExampleOutput( Example b ) { super(b); }
     @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }

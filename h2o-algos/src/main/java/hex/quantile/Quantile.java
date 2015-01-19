@@ -38,7 +38,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the max_iters. */
+   *  Validate the probs.
+   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     for( double p : _parms._probs )
@@ -80,12 +81,12 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
               h = h.refinePass(prob).doAll(vec); // Full pass at higher resolution
 
             // Update the model
-            model._output._iters++; // One iter per-prob-per-column
+            model._output._iterations++; // One iter per-prob-per-column
             model.update(_key); // Update model in K/V store
             update(1);          // One unit of work
           }
           StringBuilder sb = new StringBuilder();
-          sb.append("Quantile: iter: ").append(model._output._iters).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
+          sb.append("Quantile: iter: ").append(model._output._iterations).append(" Qs=").append(Arrays.toString(model._output._quantiles[n]));
           Log.info(sb);
         }
 
@@ -118,7 +119,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     long   _bins [/*nbins*/]; // Rows in each bin
     double _elems[/*nbins*/]; // Unique element, or NaN if not unique
 
-    private Histo( double lb, double ub, long start_row, long nrows, boolean isInt  ) { 
+    private Histo( double lb, double ub, long start_row, long nrows, boolean isInt  ) {
       _nbins = NBINS;
       _lb = lb;
       _step = (ub-lb)/_nbins;
@@ -136,12 +137,12 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         if( !(0.0 <= idx && idx < bins.length) ) continue;
         int i = (int)idx;
         if( bins[i]==0 ) elems[i] = d; // Capture unique value
-        else if( !Double.isNaN(elems[i]) && elems[i]!=d ) 
+        else if( !Double.isNaN(elems[i]) && elems[i]!=d )
           elems[i] = Double.NaN; // Not unique
         bins[i]++;               // Bump row counts
-      }        
+      }
     }
-    @Override public void reduce( Histo h ) { 
+    @Override public void reduce( Histo h ) {
       for( int i=0; i<_nbins; i++ ) // Keep unique elements
         if( _bins[i]== 0 ) _elems[i] = h._elems[i]; // Left had none, so keep right unique
         else if( h._bins[i] > 0 && _elems[i] != h._elems[i] )

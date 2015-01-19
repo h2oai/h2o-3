@@ -94,8 +94,8 @@
       "schema_version": 2,
       "schema_name": "ModelParameterSchemaV2",
       "schema_type": "Iced",
-      "name": "max_iters",
-      "label": "max_iters",
+      "name": "max_iterations",
+      "label": "max_iterations",
       "help": "Maximum training iterations.",
       "required": false,
       "type": "int",
@@ -395,7 +395,7 @@
       9.40508808871119
     ],
     "mse": 53.93615049449347,
-    "iters": 1,
+    "iterations": 1,
     "ncats": 0
   },
   "compatible_frames": null
