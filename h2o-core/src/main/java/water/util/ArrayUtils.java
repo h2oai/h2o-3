@@ -570,11 +570,47 @@ public class ArrayUtils {
     return c;
   }
 
+  public static <T> T[] append(T[] a, T... b) {
+    if( a==null ) return b;
+    T[] tmp = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,tmp,a.length,b.length);
+    return tmp;
+  }
+
   static public String[] prepend(String[] ary, String s) {
     if (ary==null) return new String[] { s };
     String[] nary = new String[ary.length+1];
     nary[0] = s;
     System.arraycopy(ary,0,nary,1,ary.length);
     return nary;
+  }
+
+  // sparse sortedMerge (ids and vals)
+  public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
+    int i = 0, j = 0;
+    for(int k = 0; k < resIds.length; ++k){
+      if(i == aIds.length){
+        System.arraycopy(bIds,j,resIds,k,resIds.length-k);
+        System.arraycopy(bVals,j,resVals,k,resVals.length-k);
+        j = bIds.length;
+        break;
+      }
+      if(j == bIds.length) {
+        System.arraycopy(aIds,i,resIds,k,resIds.length-k);
+        System.arraycopy(aVals,i,resVals,k,resVals.length-k);
+        i = aIds.length;
+        break;
+      }
+      if(aIds[i] > bIds[j]) {
+        resIds[k] = bIds[j];
+        resVals[k] = bVals[j];
+        ++j;
+      } else {
+        resIds[k] = aIds[i];
+        resVals[k] = aVals[i];
+        ++i;
+      }
+    }
+    assert i == aIds.length && j == bIds.length;
   }
 }

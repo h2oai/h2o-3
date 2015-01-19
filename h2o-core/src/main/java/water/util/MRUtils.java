@@ -277,17 +277,24 @@ public class MRUtils {
       forkDTask(i,H2O.CLOUD._memary[nodeId]);
     }
     private void forkDTask(final int i, H2ONode n){
-      if(n == H2O.SELF) H2O.submitTask(_tasks[i]);
-      else new RPC(n,_tasks[i]).addCompleter(this).call();
+      if(n == H2O.SELF) {
+        _tasks[i].setCompleter(new Callback(H2O.SELF,i));
+        H2O.submitTask(_tasks[i]);
+      } else
+        new RPC(n,_tasks[i]).addCompleter(this).call();
     }
     class Callback extends H2OCallback<H2OCountedCompleter> {
       final int i;
       final H2ONode n;
-      public Callback(H2ONode n, int i){super(ParallelTasks.this); this.n = n; this.i = i;}
+
+      public Callback(H2ONode n, int i){
+        super(ParallelTasks.this); this.n = n; this.i = i;
+      }
       @Override public void callback(H2OCountedCompleter cc){
-        int i;
-        if((i = _nextTask.getAndIncrement()) < _tasks.length)  // not done yet
-          forkDTask(i, n);
+        Log.info("callback for task " + i);
+        int nextI;
+        if((nextI = _nextTask.getAndIncrement()) < _tasks.length)  // not done yet
+          forkDTask(nextI, n);
       }
     }
     @Override public void compute2(){

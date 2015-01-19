@@ -17,7 +17,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 #' Map of binary operators to their "AST" operator value.
 #'
-.op.map <- c('>'  = 'g',
+.op.map <- c("%*%" = "x",
+             '>'  = 'g',
              '>=' = 'G',
              '<'  = 'l',
              '<=' = 'L',
@@ -36,7 +37,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '^'  = '^',
              "%/%"="%/%")
 
-.binary_op.map <- c('>'  = 'g',
+.binary_op.map <- c("%*%" = "x",
+                    '>'  = 'g',
                     '>=' = 'G',
                     '<'  = 'l',
                     '<=' = 'L',

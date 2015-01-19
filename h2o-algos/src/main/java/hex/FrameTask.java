@@ -441,6 +441,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       if(ignoredCnt > 0) f.remove(Arrays.copyOf(ignoredCols,ignoredCnt));
       assert catLvls.length < f.numCols():"cats = " + catLvls.length + " numcols = " + f.numCols();
       DataInfo dinfo = new DataInfo(_key,f,catLvls, _responses, _predictor_transform, _response_transform, _foldId, _nfolds);
+      // do not put activeData into K/V - active data is recreated on each node based on active columns
       dinfo._activeCols = cols;
       return dinfo;
     }

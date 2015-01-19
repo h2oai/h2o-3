@@ -65,8 +65,15 @@ public class NewChunk extends Chunk {
 
   public final int _timCnt[] = new int[ParseTime.TIME_PARSE.length]; // Count of successful time parses
   protected static final int MIN_SPARSE_RATIO = 32;
+  private int _sparseRatio = MIN_SPARSE_RATIO;
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
+  public NewChunk(double [] ds) {
+    _cidx = -1;
+    _vec = null;
+    _ds = ds;
+    _sparseLen = _len = ds.length;
+  }
   public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _vec = vec; _cidx = cidx;
     _ls = mantissa;
@@ -91,6 +98,11 @@ public class NewChunk extends Chunk {
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);
     set_sparseLen(set_len(len));
+  }
+
+  public NewChunk setSparseRatio(int s) {
+    _sparseRatio = s;
+    return this;
   }
 
   public void set_vec(Vec vec) { _vec = vec; }
@@ -135,6 +147,7 @@ public class NewChunk extends Chunk {
     }
   }
 
+  public Iterator<Value> values(){ return values(0,_len);}
   public Iterator<Value> values(int fromIdx, int toIdx){
     final int lId, gId;
     final int to = Math.min(toIdx, _len);
@@ -415,7 +428,7 @@ public class NewChunk extends Chunk {
       if(_id == null){ // check for sparseness
         int nzs = 0; // assume one non-zero for the element currently being stored
         for(double d:_ds)if(d != 0)++nzs;
-        if((nzs+1)*MIN_SPARSE_RATIO < _len)
+        if((nzs+1)*_sparseRatio < _len)
           set_sparse(nzs);
       } else _id = MemoryManager.arrayCopyOf(_id, sparseLen() << 1);
       _ds = MemoryManager.arrayCopyOf(_ds, sparseLen() << 1);
@@ -461,10 +474,10 @@ public class NewChunk extends Chunk {
       if(_id == null){
         int nzs = 0; // assume one non-null for the element currently being stored
         for( int i:_is) if( i != -1 ) ++nzs;
-        if( (nzs+1)*MIN_SPARSE_RATIO < _len)
+        if( (nzs+1)*_sparseRatio < _len)
           set_sparse(nzs);
       } else {
-        if((MIN_SPARSE_RATIO*(_sparseLen) >> 1) > _len)  cancel_sparse();
+        if((_sparseRatio*(_sparseLen) >> 1) > _len)  cancel_sparse();
         else _id = MemoryManager.arrayCopyOf(_id,_sparseLen<<1);
       }
 
@@ -489,7 +502,7 @@ public class NewChunk extends Chunk {
       if(_id == null){ // check for sparseness
         int nzs = 0;
         for(int i = 0; i < _ls.length; ++i) if(_ls[i] != 0 || _xs[i] != 0)++nzs;
-        if((nzs+1)*MIN_SPARSE_RATIO < _len){
+        if((nzs+1)*_sparseRatio < _len){
           set_sparse(nzs);
           assert sparseLen() == 0 || sparseLen() <= _ls.length:"_len = " + sparseLen() + ", _ls.length = " + _ls.length + ", nzs = " + nzs +  ", len2 = " + _len;
           assert _id.length == _ls.length;
@@ -498,7 +511,7 @@ public class NewChunk extends Chunk {
         }
       } else {
         // verify we're still sufficiently sparse
-        if((MIN_SPARSE_RATIO*(sparseLen()) >> 1) > _len)  cancel_sparse();
+        if((_sparseRatio*(sparseLen()) >> 1) > _len)  cancel_sparse();
         else _id = MemoryManager.arrayCopyOf(_id, sparseLen() <<1);
       }
       _ls = MemoryManager.arrayCopyOf(_ls, sparseLen() <<1);
@@ -698,7 +711,7 @@ public class NewChunk extends Chunk {
     if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/enums
     boolean sparse = false;
     // sparse? treat as sparse iff we have at least MIN_SPARSE_RATIOx more zeros than nonzeros
-    if(MIN_SPARSE_RATIO*(_naCnt + _nzCnt) < _len) {
+    if(_sparseRatio*(_naCnt + _nzCnt) < _len) {
       set_sparse(_naCnt + _nzCnt);
       sparse = true;
     } else if (sparseLen() != _len)

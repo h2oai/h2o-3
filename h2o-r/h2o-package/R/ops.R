@@ -52,8 +52,7 @@ setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binary_op(.Generic,e1,0))
-#' @describeIn H2OFrame For \code{'H2OFrame','H2OFrame'}
-#' 
+
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
@@ -114,6 +113,9 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
   res <- .h2o.nary_op(.Generic, x, ..., na.rm)
   .force.eval(conn = res@conn, ast = res@ast)
 })
+
+
+setMethod("%*%", c("H2OFrame", "H2OFrame"), function(x,y) .h2o.binary_op("%*%",x,y))
 
 #'
 #' Methods that don't fit into the S4 group generics

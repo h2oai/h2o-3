@@ -579,6 +579,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       _thresholds = thresholds;
     }
     @Override public void map(Chunk [] chunks){
+      long gid = chunks[0].start();
       _xvals = new GLMValidation[_xmodels.length];
       for(int i = 0; i < _xmodels.length; ++i)
         _xvals[i] = new GLMValidation(null,_xmodels[i]._ymu,_xmodels[i]._parms,_xmodels[i]._output.rank(),_thresholds);
@@ -593,7 +594,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
           row[j] = chunks[j].atd(i);
         }
         ++_nobs;
-        final int mid = i % _xmodels.length;
+        final int mid = (int)((i + gid)  % _xmodels.length);
         final GLMModel model = _xmodels[mid];
         final GLMValidation val = _xvals[mid];
         model.score0(row, preds);

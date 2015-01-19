@@ -392,6 +392,52 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  // Leask xval keys
+//  @Test public void testXval() {
+//    GLM job = null;
+//    GLMModel model = null;
+//    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+//    Frame score = null;
+//    try{
+//      Scope.enter();
+//      // R results
+////      Coefficients:
+////        (Intercept)           ID          AGE       RACER2       RACER3        DPROS        DCAPS          PSA          VOL      GLEASON
+////          -8.894088     0.001588    -0.009589     0.231777    -0.459937     0.556231     0.556395     0.027854    -0.011355     1.010179
+//      String [] cfs1 = new String [] {"Intercept","AGE", "RACE.R2","RACE.R3", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"};
+//      double [] vals = new double [] {-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
+//      GLMParameters params = new GLMParameters(Family.binomial);
+//      params._n_folds = 10;
+//      params._response_column = "CAPSULE";
+//      params._ignored_columns = new String[]{"ID"};
+//      params._train = fr._key;
+//      params._lambda = new double[]{0};
+//      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+//      model = job.trainModel().get();
+//      HashMap<String, Double> coefs = model.coefficients();
+//      for(int i = 0; i < cfs1.length; ++i)
+//        assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
+//      GLMValidation val = model.validation();
+////      assertEquals(512.3, val.nullDeviance(),1e-1);
+////      assertEquals(378.3, val.residualDeviance(),1e-1);
+////      assertEquals(396.3, val.aic(),1e-1);
+////      score = model.score(fr);
+////
+////      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
+////
+////      AUCData adata = mm._aucdata;
+////      assertEquals(val.auc(),adata.AUC(),1e-2);
+////      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
+////      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
+////      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
+//    } finally {
+//      fr.delete();
+//      if(model != null)model.delete();
+//      if(score != null)score.delete();
+//      if( job != null ) job.remove();
+//      Scope.exit();
+//    }
+//  }
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,
@@ -560,4 +606,6 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
+
+
 }

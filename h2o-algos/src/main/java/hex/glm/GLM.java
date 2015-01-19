@@ -171,6 +171,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GLMLambdaTask(H2OCountedCompleter cmp, Key jobKey, Key progressKey, GLMTaskInfo state, double lambda, boolean forceLBFGS){
       super(cmp);
       _taskInfo = state;
+      assert DKV.get(_taskInfo._dinfo._key) != null;
       _currentLambda = lambda;
       _jobKey = jobKey;
       _progressKey = progressKey;
@@ -209,6 +210,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       } else {
         _activeCols = Arrays.copyOf(cols, selected);
         _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
+        assert DKV.get(_activeData._key) != null;
       }
       LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _taskInfo._dinfo.fullN() + " total.");
       assert _activeCols == null || _activeData.fullN() == _activeCols.length:LogInfo("mismatched number of cols, got " + _activeCols.length + " active cols, but data info claims " + _activeData.fullN());
@@ -316,9 +318,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             }
             if (fcnt > 0) {
               final int n = _activeCols.length;
+              int [] oldCols = _activeCols;
               _activeCols = Arrays.copyOf(_activeCols, _activeCols.length + fcnt);
               for (int i = 0; i < fcnt; ++i)
                 _activeCols[n + i] = failedCols[i];
+              if(_lastResult != null)
+                _lastResult = new IterationInfo(_lastResult._iter, resizeVec(_lastResult._beta, _activeCols, oldCols, _taskInfo._dinfo.fullN() + 1),resizeVec(_lastResult._grad,_activeCols, oldCols, _taskInfo._dinfo.fullN() + 1), _lastResult._objval);
               Arrays.sort(_activeCols);
               LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_activeCols.length > 100?"lost":Arrays.toString(_activeCols)));
               _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
@@ -326,8 +331,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               // We expect 0 pending in this method since this is the end-point, ( actually it's racy, can be 1 with pending 1 decrement from the original Iteration callback, end result is 0 though)
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
-//              getCompleter().addToPendingCount(1);
-//              new GLMIterationTask(_key, _activeData, _taskInfo._params, true, true, true, contractVec(glmt2._beta, _activeCols), _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+              getCompleter().addToPendingCount(1);
+              new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, true, true, contractVec(glmt2._beta, _activeCols), _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
               return;
             }
           }
@@ -379,8 +384,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
-      if(_currentLambda > _taskInfo._lambdaMax)
+      if(_currentLambda > _taskInfo._lambdaMax) {
+        tryComplete();
         return; // no point doing anything, it's just the null model
+      }
       _iter = _taskInfo._iter;
       LogInfo("starting computation of lambda = " + _currentLambda + ", previous lambda = " + _taskInfo._lastLambda);
       int [] activeCols = activeCols(_currentLambda, _taskInfo._lastLambda, _taskInfo._gradient);
@@ -564,8 +571,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       doCleanup();
-      for(DataInfo dinfo:_foldInfos)
-        DKV.remove(dinfo._key);
       if(!_gotException.getAndSet(true)){
         if(ex instanceof TooManyPredictorsException){
           // TODO add a warning
@@ -684,12 +689,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                   @Override
                   public void callback(H2OCountedCompleter h2OCountedCompleter) {
                     GLMLambdaTask [] tasks = new GLMLambdaTask[_state.length];
-                    H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter(),_parms._solver == Solver.L_BFGS);
-                    cmp.addToPendingCount(tasks.length-1);
+
                     for(int i = 0; i < tasks.length; ++i)
-                      tasks[i] = new GLMLambdaTask(cmp, _key,_progressKey,_state[i],lambdas[_lambdaId], _parms._solver == Solver.L_BFGS);
+                      tasks[i] = new GLMLambdaTask(null, _key,_progressKey,_state[i],lambdas[_lambdaId], _parms._solver == Solver.L_BFGS);
                     // now we have computed lmax for all n_folds model and solution for global lmax (lmax on the whole dataset) for all n_folds
                     // just start tasks to compute the first lambda in parallel for all n_folds.
+                    getCompleter().addToPendingCount(1);
                     new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter(), _parms._solver == Solver.L_BFGS),tasks).fork();
                   }
                 };
@@ -700,10 +705,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                   params._n_folds = 0;
                   final DataInfo dinfo = _dinfo.getFold(i-1,_parms._n_folds);
                   _foldInfos.add(dinfo);
-                  DKV.put(dinfo._key,dinfo);
+                  DKV.put(dinfo._key, dinfo);
+                  Log.info("inserted dinfo for fold " + i + " under key " + dinfo._key);
                   if(i != 0){
                     // public LMAXTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double ymu, long nobs, double alpha, float [] thresholds, H2OCountedCompleter cmp) {
-                    new LMAXTask(_key,dinfo,_parms,ymut.ymu(fi-1),ymut.nobs(fi-1), ModelUtils.DEFAULT_THRESHOLDS,new H2OCallback<LMAXTask>(cmp) {
+                    new LMAXTask(_key,dinfo,params,ymut.ymu(fi-1),ymut.nobs(fi-1), ModelUtils.DEFAULT_THRESHOLDS,new H2OCallback<LMAXTask>(cmp) {
                       @Override
                       public String toString(){
                         return "Xval LMAXTask callback., completer = " + getCompleter() == null?"null":getCompleter().toString();
@@ -714,6 +720,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dest.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_parms._alpha[0],lmax),objval(lLmax,_parms._alpha[0],lLmax.lmax()));
+                        assert DKV.get(dinfo._key) != null;
                         new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_parms._family == Family.binomial), dinfo, lLmax._ymu, lmax, nobs).delete_and_lock(_key);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
@@ -721,7 +728,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                           new GLMLambdaTask((H2OCountedCompleter)getCompleter(), _key,_progressKey,_state[fi],gLmax.lmax(), _parms._solver == Solver.L_BFGS).fork();
                         }
                       }
-                    }).asyncExec(_state[fi]._dinfo._adaptedFrame);
+                    }).asyncExec(dinfo._adaptedFrame);
                   }
                 }
               } else {

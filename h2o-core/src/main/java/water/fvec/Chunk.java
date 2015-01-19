@@ -514,6 +514,9 @@ public abstract class Chunk extends Iced implements Cloneable {
     return _len;
   }
 
+  public NewChunk inflate(){
+    return inflate_impl(new NewChunk(this));
+  }
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 
