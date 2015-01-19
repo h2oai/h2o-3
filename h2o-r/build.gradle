@@ -127,14 +127,14 @@ task genPDF(type: Exec) {
     standardOutput = new ByteArrayOutputStream() // > /dev/null
 }
 
-genPDF.onlyIf { PDF_LATEX != ""  && SYS_OS != "unix" && SYS_OS != "windows" }
+genPDF.onlyIf { PDF_LATEX != "" && SYS_OS != "windows" }
 
 task cpPDF << {
     new File([T,"R"].join(File.separator)).mkdirs()
     copyFile([T,"h2o_package.pdf"], [T,"R", "h2o_package.pdf"])
 }
 
-cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") && SYS_OS != "unix" }
+cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
 task cpH2OAppJar << {
     def path = [T, "h2o-package", "inst", "java"].join(File.separator)
@@ -149,6 +149,7 @@ task cpToR << {
     new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
     copyFile([T, "README.md"], [T, "R", "README.md"])
     copyFile([T, "h2o-package", "DESCRIPTION"], [T, "PACKAGES"])
+    copyFile([T, "PACKAGES"], [T, "R", "src", "contrib", "PACKAGES"])
     gzip(new File([T,"PACKAGES"].join(File.separator)).text, [T,"PACKAGES.gz"].join(File.separator))
     copyFile([T, "PACKAGES.gz"], [T, "R", "src", "contrib", "PACKAGES.gz"])
     copyFile([T, H2O_R_SOURCE_FILE], [T, "R", "src", "contrib", H2O_R_SOURCE_FILE])

@@ -193,6 +193,8 @@ task buildH2oDevDist(type: Exec) {
     commandLine './make-dist.sh'
 }
 
+task dist(dependsOn: buildH2oDevDist) 
+
 //
 // Import project development profiles
 //

@@ -423,6 +423,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Typeahead")) return;
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
+    if (uri.contains("WaterMeterCpuTicks")) return;
 
     Log.info("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
