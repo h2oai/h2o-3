@@ -2,7 +2,7 @@ package water;
 
 import org.junit.*;
 
-//@Ignore("Speed/perf test, not intended as a pre-push junit test")
+@Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
 
   static final int NCLOUD=5;
