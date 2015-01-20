@@ -160,7 +160,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     key <- conn
     conn <- temp
   }
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"))
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "GET")
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
   .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
 }
