@@ -22,7 +22,7 @@ class ARFFParser extends CsvParser {
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
-    byte[] ctypes;
+    ColTypeInfo[] ctypes;
 
     // header section
     {
@@ -59,7 +59,8 @@ class ARFFParser extends CsvParser {
       data = new String[ncols][];
       labels = new String[ncols];
       domains = new String[ncols][];
-      ctypes = new byte[ncols];
+      ctypes = new ColTypeInfo[ncols];
+      for (int i=0; i < ctypes.length; i++) ctypes[i] = new ColTypeInfo();
       for (int i=0; i<ncols; ++i) {
         data[i] = headerlines[i].split("\\s+");
         if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
@@ -72,23 +73,23 @@ class ARFFParser extends CsvParser {
           String type = data[i][2];
           domains[i] = null;
           if (type.equalsIgnoreCase("NUMERIC") || type.equalsIgnoreCase("REAL") || type.equalsIgnoreCase("INTEGER") || type.equalsIgnoreCase("INT")) {
-            ctypes[i] = ParseDataset.FVecDataOut.NCOL;
+            ctypes[i]._type = ColType.NUM;
             continue;
           }
           else if (type.equalsIgnoreCase("DATE") || type.equalsIgnoreCase("TIME")) {
-            ctypes[i] = ParseDataset.FVecDataOut.TCOL;
+            ctypes[i]._type = ColType.TIME;
             continue;
           }
           else if (type.equalsIgnoreCase("ENUM")) {
-            ctypes[i] = ParseDataset.FVecDataOut.ECOL;
+            ctypes[i]._type = ColType.ENUM;
             continue;
           }
           else if (type.equalsIgnoreCase("STRING")) {
-            ctypes[i] = ParseDataset.FVecDataOut.SCOL;
+            ctypes[i]._type = ColType.STR;
             continue;
           }
           else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
-            ctypes[i] = ParseDataset.FVecDataOut.ICOL;
+            ctypes[i]._type = ColType.UUID;
             continue;
           }
           else if (type.equalsIgnoreCase("RELATIONAL")) {
@@ -98,7 +99,7 @@ class ARFFParser extends CsvParser {
             domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
             if (domains[i][0].length() > 0) {
               // case of {A,B,C} (valid list of factors)
-              ctypes[i] = ParseDataset.FVecDataOut.ECOL;
+              ctypes[i]._type = ColType.ENUM;
               continue;
             }
           }

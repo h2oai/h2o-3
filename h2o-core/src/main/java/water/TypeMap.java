@@ -93,7 +93,7 @@ public class TypeMap {
   // During first Icing, get a globally unique class ID for a className
   static int onIce(Iced ice) { return onIce(ice.getClass().getName()); }
   static int onIce(Freezable ice) { return onIce(ice.getClass().getName()); }
-  static int onIce(String className) {
+  public static int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
     // Need to install a new cloud-wide type ID for className.
