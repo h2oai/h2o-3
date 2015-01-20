@@ -109,11 +109,12 @@ public class L_BFGS  {
     public int _maxIter = 1000;
     public double _gradEps = 1e-5;
     // line search params
-    public double _minStep = 1e-3;
-    public int _nBetas = 8; // number of line search steps done in each pass (to minimize passes over the whole data)
+    public int _nBetas = 16; // number of line search steps done in each pass (to minimize passes over the whole data)
     public double _stepDec = .8; // line search step decrement
-
+    public double _minStep = Math.pow(_stepDec,_nBetas*2);
   }
+
+
   /**
    * Solve the optimization problem defined by the user-supplied gradient function using L-BFGS algorithm.
    *
@@ -121,14 +122,13 @@ public class L_BFGS  {
    * Outside of that it does only limited single threaded computation (order of number of coefficients).
    * The gradient is likely to be the most expensive part and key for good perfomance.
    *
-   * @param n      - number of coefficients
    * @param gslvr  - user gradient function
    * @param params - internal L-BFGS parameters.
+   * @params coefs - intial solution
    * @return Optimal solution (coefficients) + gradient info returned by the user gradient
    * function evaluated at the found optmimum.
    */
-  public static final Result solve(int n, GradientSolver gslvr, L_BFGS_Params params){
-    double [] coefs = startCoefs(n);
+  public static final Result solve(GradientSolver gslvr, L_BFGS_Params params, double [] coefs){
     return solve(gslvr,params, new History(20,coefs.length),coefs);
   }
 
@@ -167,7 +167,9 @@ _MAIN:
         t = step;
         // check the line search, we do several steps at once each time to limit number of passes over all data
         for (int i = 0; i < ginfos.length; ++i) {
-          if (t <= params._minStep || !needLineSearch(t, gOld._objVal, ginfos[i]._objVal, pk, gOld._gradient)) {
+          if(t < params._minStep)
+            break _MAIN; // line search did not progress -> converged
+          if (!needLineSearch(t, gOld._objVal, ginfos[i]._objVal, pk, gOld._gradient)) {
             // we got admissible solution
             ArrayUtils.mult(pk, t);
             if(iter > 0)
@@ -218,9 +220,10 @@ _MAIN:
       res[i] = x[i] +  w*y[i];
     return x;
   }
-  private static double [] startCoefs(int n){
+
+  public static double [] startCoefs(int n, long seed){
     double [] res = MemoryManager.malloc8d(n);
-    Random r = new Random();
+    Random r = new Random(seed);
     for(int i = 0; i < res.length; ++i)
       res[i] = r.nextGaussian();
     return res;

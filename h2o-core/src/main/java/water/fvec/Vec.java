@@ -387,7 +387,10 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  
+
+  public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
+  public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
+
   // Make a bunch of compatible zero Vectors
   public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
