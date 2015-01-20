@@ -33,7 +33,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     start_time = time.time()
     pollCount = 0
     while True:
-        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
 
         if key:
@@ -79,7 +79,7 @@ def import_files(self, path, timeoutSecs=180):
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
-    a = self.do_json_request('2/ImportFiles.json',
+    a = self.do_json_request('3/ImportFiles.json',
         timeout=timeoutSecs,
         params={"path": path}
     )
@@ -347,7 +347,7 @@ def model_builders(self, algo=None, timeoutSecs=10, **kwargs):
     params_dict = {}
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'model_builders', False)
 
-    request = '2/ModelBuilders.json' 
+    request = '3/ModelBuilders.json' 
     if algo:
         request += "/" + algo
 
@@ -386,7 +386,7 @@ def validate_model_parameters(self, algo, training_frame, parameters, timeoutSec
     # TODO: add parameter value validation
 
     # FIX! why ignoreH2oError here?
-    result = self.do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', 
+    result = self.do_json_request('/3/ModelBuilders.json/' + algo + "/parameters", cmd='post', 
         timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True)
 
     verboseprint("model parameters validation: " + repr(result))
@@ -425,7 +425,7 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
 
     print "build_model parameters", parameters
     start = time.time()
-    result1 = self.do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', 
+    result1 = self.do_json_request('/3/ModelBuilders.json/' + algo, cmd='post', 
         timeout=timeoutSecs, postData=parameters)
     # make get overwritten after polling
     elapsed = time.time() - start
