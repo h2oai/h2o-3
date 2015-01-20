@@ -10,8 +10,8 @@ check.verify.parameters.slot <- function(conn) {
     parameters <- iris.km@parameters
     iris.km.cpy <- do.call("h2o.kmeans", parameters)
 
-    wmse.org <- sort.int(iris.km@model$withinmse)
-    wmse.cpy <- sort.int(iris.km.cpy@model$withinmse)
+    wmse.org <- sort.int(iris.km@model$within_mse)
+    wmse.cpy <- sort.int(iris.km.cpy@model$within_mse)
 
     Log.info("Verify outputs...")
     Log.info("centers")
