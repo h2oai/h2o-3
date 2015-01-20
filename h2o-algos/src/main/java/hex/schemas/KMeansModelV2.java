@@ -13,28 +13,28 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
     // Output fields; input fields are in the parameters list
     @API(help="Cluster Centers[k][features]")
     public TwoDimTable centers;
-    public double[/*k*/][/*features*/] centersraw;
+    public double[/*k*/][/*features*/] centers_raw;
 
     @API(help="Cluster Size[k]")
     public long[/*k*/] size;
 
     @API(help="Within cluster Mean Square Error per cluster")
-    public double[/*k*/] withinmse;   // Within-cluster MSE, variance
+    public double[/*k*/] within_mse;   // Within-cluster MSE, variance
 
     @API(help="Average within cluster Mean Square Error")
-    public double avgwithinss;       // Average within-cluster MSE, variance
+    public double avg_within_ss;       // Average within-cluster MSE, variance
 
     @API(help="Average Mean Square Error to grand mean")
-    public double avgss;    // Total MSE to grand mean centroid
+    public double avg_ss;    // Total MSE to grand mean centroid
 
     @API(help="Average between cluster Mean Square Error")
-    public double avgbetweenss;
+    public double avg_between_ss;
 
     @API(help="Iterations executed")
-    public double iters;
+    public double iterations;
 
     @API(help="Number of categorical columns trained on")
-    public int ncats;
+    public int categorical_column_count;
 
   } // KMeansModelOutputV2
 

@@ -47,4 +47,9 @@ public class C0LChunk extends Chunk {
     set_len(UnsafeUtils.get4(_mem,8));
     return this;
   }
+
+  @Override public int nextNZ(int rid) {
+    return _con == 0?_len:rid+1;
+  }
+  @Override public boolean isSparse(){return _con == 0;}
 }

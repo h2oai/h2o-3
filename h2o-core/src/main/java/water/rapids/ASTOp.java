@@ -2,6 +2,7 @@ package water.rapids;
 
 //import hex.Quantiles;
 
+import hex.DMatrix;
 import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
@@ -70,6 +71,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("while", new ASTWhile());
     SYMBOLS.put("return", new ASTReturn());
     SYMBOLS.put("del", new ASTDelete());
+    SYMBOLS.put("x", new ASTMMult());
 
     //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
 
@@ -79,6 +81,7 @@ public abstract class ASTOp extends AST {
     putBinInfix(new ASTPlus());
     putBinInfix(new ASTSub());
     putBinInfix(new ASTMul());
+    putBinInfix(new ASTMMult());
     putBinInfix(new ASTDiv());
     putBinInfix(new ASTPow());
     putBinInfix(new ASTPow2());
@@ -141,6 +144,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
+    
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -2372,7 +2376,8 @@ class ASTTable extends ASTUniPrefixOp {
     NewChunk c0 = new NewChunk(v0,0);
     for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
     c0.close(0,null);
-    vecs[0] = v0.close(null);
+    Futures fs = new Futures();
+    vecs[0] = v0.close(fs);
     colnames[0] = "row.names";
     if (ncol==1) colnames[1] = "Count";
     for (int level1=0; level1 < counts.length; level1++) {
@@ -2382,11 +2387,12 @@ class ASTTable extends ASTUniPrefixOp {
       for (int level0=0; level0 < counts[level1].length; level0++)
         c.addNum((double) counts[level1][level0]);
       c.close(0, null);
-      vecs[level1+1] = v.close(null);
+      vecs[level1+1] = v.close(fs);
       if (ncol>1) {
         colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
       }
     }
+    fs.blockForPending();
     Frame fr2 = new Frame(colnames, vecs);
     env.pushAry(fr2);
   }
@@ -2895,6 +2901,29 @@ class ASTXorSum extends ASTReducerOp {
   }
 }
 
+class ASTMMult extends ASTOp {
+  ASTMMult() { super(VARS2);}
+
+  ASTMMult parse_impl(Exec E) {
+    AST l = E.parse();
+    if (l instanceof ASTId) l = Env.staticLookup((ASTId)l);
+    AST r = E.parse();
+    if (r instanceof ASTId) r = Env.staticLookup((ASTId)r);
+    ASTMMult res = (ASTMMult) clone();
+    res._asts = new AST[]{l,r};
+    return res;
+  }
+  @Override
+  String opStr() { return "x";}
+
+  @Override
+  ASTOp make() { return new ASTMMult();}
+
+  @Override
+  void apply(Env env) {
+    env.poppush(2, new ValFrame(DMatrix.mmul(env.peekAryAt(-1), env.peekAryAt(-0))));
+  }
+}
 
 // Legacy Items: On the chopping block
 

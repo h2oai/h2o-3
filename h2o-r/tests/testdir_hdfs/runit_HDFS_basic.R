@@ -11,7 +11,7 @@ source('../h2o-runit.R')
 #----------------------------------------------------------------------
 
 # Check if we are running inside the 0xdata network by seeing if we can touch
-# the cdh4 namenode. Update if using other clusters.
+# the HDP2.1 namenode. Update if using other clusters.
 # Note this should fail on home networks, since 176 is not likely to exist
 # also should fail in ec2.
 running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=1)

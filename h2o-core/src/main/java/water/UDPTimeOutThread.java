@@ -2,7 +2,7 @@ package water;
 import java.util.concurrent.DelayQueue;
 
 /**
- * The Thread that looks for UDPAsyncTasks that are timing out
+ * The Thread that looks for RPCs that are timing out
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
  */
@@ -27,7 +27,7 @@ public class UDPTimeOutThread extends Thread {
         if( H2O.CLOUD.contains(t._target) ||
             // Also retry clients who do not appear to be shutdown
             (t._target._heartbeat._client && t._retry <  HeartBeatThread.CLIENT_TIMEOUT) ) {
-          if( !t.isDone() ) t.call();
+          if( !t.isDone() && !t._nack ) t.call();
         } else {                // Target is dead, nobody to retry to
           t.cancel(true);
         }

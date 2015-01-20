@@ -181,6 +181,13 @@ public class Frame extends Lockable<Frame> {
     Vec[] tvecs = _vecs; // read the content
     return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
   }
+  public final Vec[] vecs(int [] idxs) {
+    Vec [] all = vecs();
+    Vec [] res = new Vec[idxs.length];
+    for(int i = 0; i < idxs.length; ++i)
+      res[i] = all[idxs[i]];
+    return res;
+  }
   // Compute vectors for caching
   private Vec[] vecs_impl() {
     // Load all Vec headers; load them all in parallel by starting prefetches
@@ -401,7 +408,8 @@ public class Frame extends Lockable<Frame> {
     return fs;
   }
 
-  /** Replace one column with another 
+  /** Replace one column with another. Caller must perform global update (DKV.put) on
+   * this updated frame.
    *  @return The old column, for flow-coding */
   public Vec replace(int col, Vec nv) {
     assert DKV.get(nv._key)!=null; // Already in DKV
@@ -413,7 +421,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Create a subframe from given interval of columns.
-   *  @param startIdx index of first column (inclusive)
+   *  @param startIdx index of first column (inclusiAST
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
   Frame subframe(int startIdx, int endIdx) {

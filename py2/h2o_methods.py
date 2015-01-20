@@ -1,4 +1,9 @@
 
+# some methods should use 'put' instead of 'get'
+# some seem to require 'delete' now?
+# use the right (latest) version of this:
+# http://s3.amazonaws.com/h2o-release/h2o-dev/master/1019/docs-website/REST/endpoints/markdown/toc.md
+
 import os, sys, time, requests, zipfile, StringIO, re
 import h2o_args
 # from h2o_cmd import runInspect, infoFromSummary
@@ -96,7 +101,8 @@ def h2o_log_msg(self, message=None, timeoutSecs=15):
         message += "\npython_test_name: " + h2o_args.python_test_name
         message += "\n#***********************"
     params = {'message': message}
-    self.do_json_request('2/LogAndEcho.json', params=params, timeout=timeoutSecs)
+    self.do_json_request('3/LogAndEcho.json', cmd='post', params=params, timeout=timeoutSecs)
+    # print "HACK: not doing 3/LogAndEcho.json"
 
 def get_timeline(self):
     return self.do_json_request('Timeline.json')
@@ -116,6 +122,21 @@ def shutdown_all(self):
     # time.sleep(1) # a little delay needed?
     return True
 
+
+#*******************************************************************************
+# examples from prithvi
+# http://localhost:54321/Typeahead.json/files?src=?&limit=?
+# http://localhost:54321/Typeahead.json/files?src=.%2Fsmalldata%2Fairlines%2F&limit=10
+def typeahead(self, timeoutSecs=10, **kwargs):
+    params_dict = {
+        'src': None,
+        'limit': None,
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'typeahead', print_params=True)
+    # odd ...needs /files
+    a = self.do_json_request('Typeahead.json/files', params=params_dict, timeout=timeoutSecs)
+    verboseprint("\ntypeahead result:", dump_json(a))
+    return a
 
 #*******************************************************************************
 def unlock (self, timeoutSecs=30, **kwargs):
@@ -153,7 +174,7 @@ def put_file(self, f, key=None, timeoutSecs=60):
 
     fileObj = open(f, 'rb')
     resp = self.do_json_request(
-        '2/PostFile.json',
+        '3/PostFile.json',
         cmd='post',
         timeout=timeoutSecs,
         params={"destination_key": key},
@@ -167,7 +188,7 @@ def put_file(self, f, key=None, timeoutSecs=60):
 def csv_download(self, key, csvPathname, timeoutSecs=60, **kwargs):
     params = {'key': key}
     paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
-    url = self.url('2/DownloadDataset.json')
+    url = self.url('3/DownloadDataset.json')
     log('Start ' + url + paramsStr, comment=csvPathname)
 
     # do it (absorb in 1024 byte chunks)
@@ -319,6 +340,7 @@ H2O.inspect = inspect
 H2O.quantiles = quantiles
 H2O.rapids = rapids
 H2O.unlock = unlock
+H2O.typeahead = typeahead
 H2O.get_timeline = get_timeline
 
 H2O.frame_split = frame_split

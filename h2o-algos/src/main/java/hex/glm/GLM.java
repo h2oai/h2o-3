@@ -10,10 +10,7 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import hex.glm.GLMTask.GLMIterationTask;
-import hex.glm.GLMTask.GLMLineSearchTask;
-import hex.glm.GLMTask.LMAXTask;
-import hex.glm.GLMTask.YMUTask;
+import hex.glm.GLMTask.*;
 import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS;
 import hex.optimization.L_BFGS.GradientInfo;
@@ -174,6 +171,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GLMLambdaTask(H2OCountedCompleter cmp, Key jobKey, Key progressKey, GLMTaskInfo state, double lambda, boolean forceLBFGS){
       super(cmp);
       _taskInfo = state;
+      assert DKV.get(_taskInfo._dinfo._key) != null;
       _currentLambda = lambda;
       _jobKey = jobKey;
       _progressKey = progressKey;
@@ -208,9 +206,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(_taskInfo._params._alpha[0] == 0 || selected == _taskInfo._dinfo.fullN()){
         _activeCols = null;
         _activeData = _taskInfo._dinfo;
+        selected = _taskInfo._dinfo.fullN();
       } else {
         _activeCols = Arrays.copyOf(cols, selected);
         _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
+        assert DKV.get(_activeData._key) != null;
       }
       LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _taskInfo._dinfo.fullN() + " total.");
       assert _activeCols == null || _activeData.fullN() == _activeCols.length:LogInfo("mismatched number of cols, got " + _activeCols.length + " active cols, but data info claims " + _activeData.fullN());
@@ -318,9 +318,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             }
             if (fcnt > 0) {
               final int n = _activeCols.length;
+              int [] oldCols = _activeCols;
               _activeCols = Arrays.copyOf(_activeCols, _activeCols.length + fcnt);
               for (int i = 0; i < fcnt; ++i)
                 _activeCols[n + i] = failedCols[i];
+              if(_lastResult != null)
+                _lastResult = new IterationInfo(_lastResult._iter, resizeVec(_lastResult._beta, _activeCols, oldCols, _taskInfo._dinfo.fullN() + 1),resizeVec(_lastResult._grad,_activeCols, oldCols, _taskInfo._dinfo.fullN() + 1), _lastResult._objval);
               Arrays.sort(_activeCols);
               LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_activeCols.length > 100?"lost":Arrays.toString(_activeCols)));
               _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
@@ -328,8 +331,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               // We expect 0 pending in this method since this is the end-point, ( actually it's racy, can be 1 with pending 1 decrement from the original Iteration callback, end result is 0 though)
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
-//              getCompleter().addToPendingCount(1);
-//              new GLMIterationTask(_key, _activeData, _taskInfo._params, true, true, true, contractVec(glmt2._beta, _activeCols), _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+              getCompleter().addToPendingCount(1);
+              new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, true, true, contractVec(glmt2._beta, _activeCols), _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
               return;
             }
           }
@@ -381,8 +384,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
-      if(_currentLambda > _taskInfo._lambdaMax)
+      if(_currentLambda > _taskInfo._lambdaMax) {
+        tryComplete();
         return; // no point doing anything, it's just the null model
+      }
       _iter = _taskInfo._iter;
       LogInfo("starting computation of lambda = " + _currentLambda + ", previous lambda = " + _taskInfo._lastLambda);
       int [] activeCols = activeCols(_currentLambda, _taskInfo._lastLambda, _taskInfo._gradient);
@@ -396,9 +401,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(LBFGS) {
         if(_taskInfo._params._alpha[0] > 0 || _activeCols != null)
           throw H2O.unimpl();
-        GLM.GLMGradientSolver solver = new GLM.GLMGradientSolver(_taskInfo._params, _activeData, 1e-5,_taskInfo._ymu, _taskInfo._nobs);
-        L_BFGS.Result r = L_BFGS.solve(_activeData.fullN() + 1, solver, new L_BFGS_Params());
-        GLM.GLMGradientInfo ginfo = (GLM.GLMGradientInfo) r.ginfo;
+        Log.info("current lambda = " + _currentLambda);
+        GLMGradientSolver solver = new GLMGradientSolver(_taskInfo._params, _activeData, _currentLambda,_taskInfo._ymu, _taskInfo._nobs);
+        if(beta == null) {
+          beta = MemoryManager.malloc8d(_activeData.fullN() + 1);
+          beta[beta.length-1] = _taskInfo._params.link(_taskInfo._ymu);
+        }
+        L_BFGS.Result r = L_BFGS.solve(solver, new L_BFGS_Params(), beta);
+        GLMGradientInfo ginfo = (GLMGradientInfo)r.ginfo;
         double [] newBeta = r.coefs;
         // update the state
         _taskInfo._beta = newBeta;
@@ -452,7 +462,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (d > gerr) gerr = d;
             else if (d < -gerr) gerr = -d;
           if(gerr <= GLM_GRAD_EPS){
-            LogInfo("converged by reaching small enough gradient, with max |subgradient| = " + gerr );
+            LogInfo("converged by reaching small enough gradient, with max |subgradient| = " + gerr  /* + ", coefs = " + Arrays.toString(glmt._beta) */);
             checkKKTAndComplete(glmt._beta,false);
             return;
           }
@@ -561,8 +571,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
       doCleanup();
-      for(DataInfo dinfo:_foldInfos)
-        DKV.remove(dinfo._key);
       if(!_gotException.getAndSet(true)){
         if(ex instanceof TooManyPredictorsException){
           // TODO add a warning
@@ -681,12 +689,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                   @Override
                   public void callback(H2OCountedCompleter h2OCountedCompleter) {
                     GLMLambdaTask [] tasks = new GLMLambdaTask[_state.length];
-                    H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter(),_parms._solver == Solver.L_BFGS);
-                    cmp.addToPendingCount(tasks.length-1);
+
                     for(int i = 0; i < tasks.length; ++i)
-                      tasks[i] = new GLMLambdaTask(cmp, _key,_progressKey,_state[i],lambdas[_lambdaId], _parms._solver == Solver.L_BFGS);
+                      tasks[i] = new GLMLambdaTask(null, _key,_progressKey,_state[i],lambdas[_lambdaId], _parms._solver == Solver.L_BFGS);
                     // now we have computed lmax for all n_folds model and solution for global lmax (lmax on the whole dataset) for all n_folds
                     // just start tasks to compute the first lambda in parallel for all n_folds.
+                    getCompleter().addToPendingCount(1);
                     new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter(), _parms._solver == Solver.L_BFGS),tasks).fork();
                   }
                 };
@@ -697,10 +705,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                   params._n_folds = 0;
                   final DataInfo dinfo = _dinfo.getFold(i-1,_parms._n_folds);
                   _foldInfos.add(dinfo);
-                  DKV.put(dinfo._key,dinfo);
+                  DKV.put(dinfo._key, dinfo);
+                  Log.info("inserted dinfo for fold " + i + " under key " + dinfo._key);
                   if(i != 0){
                     // public LMAXTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double ymu, long nobs, double alpha, float [] thresholds, H2OCountedCompleter cmp) {
-                    new LMAXTask(_key,dinfo,_parms,ymut.ymu(fi-1),ymut.nobs(fi-1), ModelUtils.DEFAULT_THRESHOLDS,new H2OCallback<LMAXTask>(cmp) {
+                    new LMAXTask(_key,dinfo,params,ymut.ymu(fi-1),ymut.nobs(fi-1), ModelUtils.DEFAULT_THRESHOLDS,new H2OCallback<LMAXTask>(cmp) {
                       @Override
                       public String toString(){
                         return "Xval LMAXTask callback., completer = " + getCompleter() == null?"null":getCompleter().toString();
@@ -711,6 +720,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                         final double lmax = lLmax.lmax();
                         Key dstKey = Key.make(_dest.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,lLmax._nobs,lLmax._ymu,lLmax.lmax(),gLmax.lmax(),nullBeta(dinfo,params,lLmax._ymu),lLmax.gradient(_parms._alpha[0],lmax),objval(lLmax,_parms._alpha[0],lLmax.lmax()));
+                        assert DKV.get(dinfo._key) != null;
                         new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_parms._family == Family.binomial), dinfo, lLmax._ymu, lmax, nobs).delete_and_lock(_key);
                         if(lLmax.lmax() > gLmax.lmax()){
                           getCompleter().addToPendingCount(1);
@@ -718,7 +728,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                           new GLMLambdaTask((H2OCountedCompleter)getCompleter(), _key,_progressKey,_state[fi],gLmax.lmax(), _parms._solver == Solver.L_BFGS).fork();
                         }
                       }
-                    }).asyncExec(_state[fi]._dinfo._adaptedFrame);
+                    }).asyncExec(dinfo._adaptedFrame);
                   }
                 }
               } else {
@@ -807,7 +817,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     return contractVec(full,activeCols);
   }
 
-  protected static double l2norm(double[] beta){
+  public static double l2norm(double[] beta){
     if(beta == null)return 0;
     double l2 = 0;
     for (int i = 0; i < beta.length-1; ++i)
@@ -829,14 +839,46 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     return glmt._val.residual_deviance / glmt._nobs + penalty(glmt._beta,alpha,lambda);
   }
 
-  public final static class GLMGradientInfo extends GradientInfo {
-    public final GLMValidation _val;
-    public GLMGradientInfo(GLMIterationTask t, double lambda) {
-      super(t._val.residualDeviance()/t._nobs, t.gradient(0,lambda));
-      _val = t._val;
+
+
+
+  public final static class GLMColBasedGradientSolver extends GradientSolver {
+    final Key _jobKey = null;
+    final GLMParameters _glmp;
+    final DataInfo _dinfo;
+    final double _ymu;
+    final double _lambda;
+    final long _nobs;
+
+    public GLMColBasedGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
+      _glmp = glmp;
+      _dinfo = dinfo;
+      _ymu = ymu;
+      _nobs = nobs;
+      _lambda = lambda;
+    }
+
+    @Override
+    public GradientInfo[] getGradient(double[][] betas) {
+
+      ColGradientTask gt = new ColGradientTask(_dinfo,_glmp,betas,1.0/_nobs).doAll(_dinfo._adaptedFrame);
+      GradientInfo [] ginfos = new GradientInfo[betas.length];
+      for(int i = 0; i < ginfos.length; ++i) {
+        for(int j = 0; j < betas[i].length-1; ++j)
+          gt._gradient[i][j] += _lambda*betas[i][j];
+        ginfos[i] = new GradientInfo(gt._objVals[i] + .5 * _lambda * l2norm(betas[i]), gt._gradient[i]);
+      }
+      return ginfos;
     }
   }
 
+  public final static class GLMGradientInfo extends GradientInfo {
+    public final GLMValidation _val;
+    public GLMGradientInfo(GLMIterationTask t, double lambda) {
+      super(t._val.residualDeviance()/t._nobs + .5 * lambda * l2norm(t._beta), t.gradient(0,lambda));
+      _val = t._val;
+    }
+  }
 
   public final static class GLMGradientSolver extends GradientSolver {
     final Key _jobKey = null;
@@ -865,4 +907,5 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return ginfos;
     }
   }
+
 }

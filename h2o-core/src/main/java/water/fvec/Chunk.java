@@ -493,7 +493,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
-  int nextNZ(int rid){return rid+1;}
+  public int nextNZ(int rid){return rid+1;}
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
@@ -514,6 +514,9 @@ public abstract class Chunk extends Iced implements Cloneable {
     return _len;
   }
 
+  public NewChunk inflate(){
+    return inflate_impl(new NewChunk(this));
+  }
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls array.   */ 

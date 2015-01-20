@@ -94,7 +94,7 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  if(!is.character(key)) stop("`key` must be a string")
+  .key.validate(key)
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
@@ -684,7 +684,7 @@ setMethod("names", "H2OFrame", function(x) {
 #'
 #' Returns the Length of a Parsed H2O Data Object.
 #'
-#' Returns the lenght of an \code{\linkS4class{H2OFrame}}
+#' Returns the length of an \code{\linkS4class{H2OFrame}}
 #'
 #' @name h2o.length
 #' @param x An \linkS4class{H2OFrame} object.
@@ -803,6 +803,8 @@ setMethod("is.factor", "H2OFrame", function(x) {
 })
 
 #'
+#' Quantiles of H2O Data Frame.
+#'
 #' Obtain and display quantiles for H2O parsed data.
 #'
 #' \code{quantile.H2OFrame}, a method for the \code{\link{quantile}} generic. Obtain and return quantiles for
@@ -852,66 +854,74 @@ quantile.H2OFrame <- function(x,
   col
 }
 
-## setMethod("summary", "H2OFrame", function(object) {
-#summary.H2OFrame <- function(object, ...) {
-#  digits = 12L
-#  if(ncol(object) > .MAX_INSPECT_COL_VIEW)
-#    warning(object@key, " has greater than ", .MAX_INSPECT_COL_VIEW, " columns. This may take awhile...")
-#  res = .h2o.__remoteSend(object@conn, .h2o.__PAGE_SUMMARY2, source=object@key, max_ncols=.Machine$integer.max)
-#  cols <- sapply(res$summaries, function(col) {
-#    if(col$stats$type != 'Enum') { # numeric column
-#      if(is.null(col$stats$mins) || length(col$stats$mins) == 0) col$stats$mins = NaN
-#      if(is.null(col$stats$maxs) || length(col$stats$maxs) == 0) col$stats$maxs = NaN
-#      if(is.null(col$stats$pctile))
-#        params = format(rep(signif(as.numeric(col$stats$mean), digits), 6), digits = 4)
-#      else
-#        params = format(signif(as.numeric(c(
-#          col$stats$mins[1],
-#          col$stats$pctile[4],
-#          col$stats$pctile[6],
-#          col$stats$mean,
-#          col$stats$pctile[8],
-#          col$stats$maxs[1])), digits), digits = 4)
-#      result = c(paste("Min.   :", params[1], "  ", sep=""), paste("1st Qu.:", params[2], "  ", sep=""),
-#                 paste("Median :", params[3], "  ", sep=""), paste("Mean   :", params[4], "  ", sep=""),
-#                 paste("3rd Qu.:", params[5], "  ", sep=""), paste("Max.   :", params[6], "  ", sep=""))
-#    }
-#    else {
-#      top.ix <- sort.int(col$hcnt, decreasing=TRUE, index.return=TRUE)$ix[1:6]
-#      if(is.null(col$hbrk)) domains <- top.ix[1:6] else domains <- col$hbrk[top.ix]
-#      counts <- col$hcnt[top.ix]
-#
-#      # TODO: Make sure "NA's" isn't a legal domain level
-#      if(!is.null(col$nacnt) && col$nacnt > 0) {
-#        idx <- ifelse(any(is.na(top.ix)), which(is.na(top.ix))[1], 6)
-#        domains[idx] <- "NA's"
-#        counts[idx] <- col$nacnt
-#      }
-#
-#      # width <- max(cbind(nchar(domains), nchar(counts)))
-#      width <- c(max(nchar(domains)), max(nchar(counts)))
-#      result <- paste(domains,
-#                      sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),
-#                      ":",
-#                      sapply(counts, function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }),
-#                      counts,
-#                      " ",
-#                      sep='')
-#      # result[is.na(top.ix)] <- NA
-#      result[is.na(domains)] <- NA
-#      result
-#    }
-#  })
-#  # Filter out rows with nothing in them
-#  cidx <- apply(cols, 1, function(x) { any(!is.na(x)) })
-#  if(ncol(cols) == 1) { cols <- as.matrix(cols[cidx,]) } else { cols <- cols[cidx,] }
-#  # cols <- as.matrix(cols[cidx,])
-#
-#  result = as.table(cols)
-#  rownames(result) <- rep("", nrow(result))
-#  colnames(result) <- sapply(res$summaries, function(col) col$colname)
-#  result
-#}
+#'
+#' Summarizes the columns of a H2O data frame.
+#'
+#' A method for the \code{\link{summary}} generic. Summarizes the columns of an H2O data frame or subset of 
+#' columns and rows using vector notation (e.g. dataset[row, col])
+#'
+#' @name summary
+#' @param object An \linkS4class{H2OFrame} object.
+#' @param ... Arguments to be passed to or from other methods. ##(Currently unimplemented).
+#' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each 
+#' numeric column, and the levels and category counts of the levels in each categorical column. 
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath)
+#' summary(prostate.hex)
+#' summary(prostate.hex$GLEASON)
+#' summary(prostate.hex[,4:6])
+setMethod("summary", "H2OFrame", function(object, ...) {
+  digits <- 12L
+  cnames <- colnames(object)
+  cols <- sapply(cnames, function(x) {
+      res <- .h2o.__remoteSend(object@conn, .h2o.__COL_SUMMARY(object@key, x), method = "GET")
+      col <- res$frames[[1]]$columns[[1]]
+      if(is.null(col$domain)) {
+        if(is.null(col$mins) || length(col$mins) == 0) col$mins = NaN
+        if(is.null(col$maxs) || length(col$maxs) == 0) col$maxs = NaN
+        if(is.null(col$mean)) col$mean = NaN
+        if(is.null(col$pctiles))
+          params <- format(rep(signif(as.numeric(col$mean), digits), 6), digits = 4)
+        else
+          params = format(signif(as.numeric(c(col$mins[1], col$pctiles[3], col$pctiles[5], col$mean, col$pctile[7], col$maxs[5])), digits), digits = 4)
+        c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
+          paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
+          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "))
+      } else {
+        top.ix <- sort.int(col$bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
+        if(is.null(col$domain)) domains <- top.ix[1:6] else domains <- col$domain[top.ix]
+        counts <- col$bins[top.ix]
+        
+        # TODO: Make sure "NA's" isn't a legal domain level.
+        if(!is.null(col$missing) && col$missing > 0) {
+          idx <- ifelse(any(is.na(top.ix)), which(is.na(top.ix))[1], 6)
+          domains[idx] <- "NA's"
+          counts[idx] <- col$missing
+        }
+        
+        width <- c(max(nchar(domains)), max(nchar(counts)))
+        result <- paste0(domains,
+                        sapply(domains, function(x) { ifelse(width[1] == nchar(x), "", paste(rep(' ', width[1] - nchar(x)), collapse='')) }),
+                          ":",
+                        sapply(counts, function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }),
+                          counts, " ")
+        result[is.na(domains)] <- NA
+        result
+      }
+    })
+  
+  # Filter out rows with nothing in them
+  cidx <- apply(cols, 1, function(x) { any(!is.na(x)) })
+  if(ncol(cols) == 1) { cols <- as.matrix(cols[cidx,]) } else { cols <- cols[cidx,] }
+
+  result = as.table(cols)
+  rownames(result) <- rep("", nrow(result))
+  colnames(result) <- cnames
+  result
+})
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Summary Statistics Operations
@@ -1046,7 +1056,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
+  .key.validate(key)
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(object)) {

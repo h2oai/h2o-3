@@ -46,20 +46,3 @@ task cleanNodeJsSingleJVMTests(type: Delete) {
 // test.dependsOn runNodeJsSingleJVMTests
 clean.dependsOn cleanNodeJsSingleJVMTests
 
-
-// REST API Documentation generator
-// --------------------------------
-
-def restGenPath = new File("$rootDir/py")
-
-task runGenerateRESTAPIDocs(type: Exec) {
-    workingDir restGenPath
-    commandLine 'python', runner, '--wipeall', '--numclouds', '1', '--jvm.xmx', '4g', '--test', 'generate_rest_api_docs.py'
-}
-
-task cleanGenerateRESTAPIDocs(type: Delete) {
-    delete "$restGenPath/results"
-}
-
-test.dependsOn runGenerateRESTAPIDocs
-clean.dependsOn cleanGenerateRESTAPIDocs

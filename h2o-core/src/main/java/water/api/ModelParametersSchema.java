@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 /**
- * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iters for KMeans).
+ * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
  */
 abstract public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>> extends Schema<P, S> {
   ////////////////////////////////////////

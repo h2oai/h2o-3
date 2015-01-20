@@ -1,10 +1,10 @@
 package hex.quantile;
 
-import hex.*;
+import hex.Model;
 import hex.schemas.QuantileModelV2;
-import water.*;
+import water.H2O;
+import water.Key;
 import water.api.ModelSchema;
-import water.fvec.Frame;
 
 public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
@@ -14,7 +14,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
   }
 
   public static class QuantileOutput extends Model.Output {
-    public int _iters;        // Iterations executed
+    public int _iterations;        // Iterations executed
     public double _quantiles[/*N*/][/*Q*/]; // Our N columns, Q quantiles reported
     public QuantileOutput( Quantile b ) { super(b); }
     @Override public ModelCategory getModelCategory() { return Model.ModelCategory.Unknown; }

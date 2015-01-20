@@ -1,0 +1,26 @@
+description = "H2O Documentation"
+
+apply plugin: 'java'
+
+dependencies {
+    compile project(":h2o-assembly")
+}
+
+def runner = new File("$rootDir/h2o-r/tests/run.py").canonicalPath
+
+// REST API Documentation generator
+// --------------------------------
+
+def restGenPath = new File("$rootDir/py")
+
+task runGenerateRESTAPIDocs(type: Exec) {
+    workingDir restGenPath
+    commandLine 'python', runner, '--wipeall', '--baseport', '48000', '--numclouds', '1', '--jvm.xmx', '4g', '--test', 'generate_rest_api_docs.py'
+}
+
+task cleanGenerateRESTAPIDocs(type: Delete) {
+    delete "$restGenPath/results"
+}
+
+build.dependsOn runGenerateRESTAPIDocs
+clean.dependsOn cleanGenerateRESTAPIDocs

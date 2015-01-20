@@ -42,7 +42,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the max_iters. */
+   *  Validate the regex. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if( _parms._regex == null ) {
@@ -106,8 +106,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     private final byte _bs1[];
     ByteSeq( Chunk chk0, Chunk chk1 ) { _bs0 = chk0.getBytes(); _bs1 = chk1==null ? null : chk1.getBytes(); }
 
-    @Override public char charAt(int idx ) { 
-      return (char)(idx < _bs0.length ? _bs0[idx] : _bs1[idx-_bs0.length]); 
+    @Override public char charAt(int idx ) {
+      return (char)(idx < _bs0.length ? _bs0[idx] : _bs1[idx-_bs0.length]);
     }
     @Override public int length( ) { return _bs0.length+(_bs1==null?0:_bs1.length); }
     @Override public ByteSeq subSequence( int start, int end ) { throw H2O.unimpl(); }

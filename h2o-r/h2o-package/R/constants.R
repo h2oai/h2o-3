@@ -14,20 +14,11 @@ assign("SERVER",        NULL,  .pkg.env)
 assign("IS_LOGGING",    FALSE, .pkg.env)
 assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
-.key.make <- function(conn, prefix = "rapids") {
-  key_count <- get("key_count", conn@envir)
-  if (key_count == .Machine$integer.max)
-    stop("current H2OConnection has reached its maximum number of keys. Use h2o.init() to open another connection.")
-  key_count <- key_count + 1L
-  key <- sprintf("%s_%d%s", prefix, key_count, conn@session_id) # session_id has leading underscore
-  assign("key_count", key_count, conn@envir)
-  key
-}
-
 #'
 #' Map of binary operators to their "AST" operator value.
 #'
-.op.map <- c('>'  = 'g',
+.op.map <- c("%*%" = "x",
+             '>'  = 'g',
              '>=' = 'G',
              '<'  = 'l',
              '<=' = 'L',
@@ -46,7 +37,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '^'  = '^',
              "%/%"="%/%")
 
-.binary_op.map <- c('>'  = 'g',
+.binary_op.map <- c("%*%" = "x",
+                    '>'  = 'g',
                     '>=' = 'G',
                     '<'  = 'l',
                     '<=' = 'L',
@@ -196,6 +188,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Inspect/Summary Endpoints
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
+.h2o.__COL_SUMMARY <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/")
 
 #' Frame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame.json"

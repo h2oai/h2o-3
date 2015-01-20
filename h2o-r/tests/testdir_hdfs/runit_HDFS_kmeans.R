@@ -9,7 +9,7 @@ source('../h2o-runit.R')
 # Parameters for the test.
 #----------------------------------------------------------------------
 # Check if we are running inside the 0xdata network by seeing if we can touch
-# the cdh4 namenode. Update if using other clusters.
+# the HDP2.1 namenode. Update if using other clusters.
 # Note this should fail on home networks, since 176 is not likely to exist
 # also should fail in ec2.
 running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=1)
@@ -42,7 +42,7 @@ if (n != 150) {
 }
 
 heading("Running KMeans on iris")
-iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iters = 10)
+iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
 iris.km
 
 
@@ -57,7 +57,7 @@ if (n != 581012) {
 }
 
 heading("Running KMeans on covtype")
-covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iters = 10)
+covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
 covtype.km
 
 

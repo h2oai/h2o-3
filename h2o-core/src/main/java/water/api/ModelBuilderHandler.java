@@ -2,6 +2,7 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import water.api.JobsHandler.Jobs;
 import water.Job;
 
@@ -18,6 +19,7 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
     B builder = builderSchema.createAndFillImpl();
     if (builder.error_count() > 0) {
       S errors = (S) Schema.schema(version, builder).fillFromImpl(builder);
+      errors.setHttpStatus(HttpResponseStatus.BAD_REQUEST.getCode());
       return errors;
     }
 
@@ -28,6 +30,7 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
   public S do_validate_parameters(int version, S builderSchema) {
     B builder = builderSchema.createAndFillImpl();
     S builder_schema = (S) builder.schema().fillFromImpl(builder);
+    builder_schema.setHttpStatus(HttpResponseStatus.OK.getCode());
     return builder_schema;
   }
 }

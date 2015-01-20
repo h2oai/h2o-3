@@ -2,6 +2,30 @@
 # H2O Key-Value Store Functions
 #-----------------------------------------------------------------------------------------------------------------------
 
+.key.validate <- function(key) {
+  if (!missing(key) && !is.null(key)) {
+    if (!is.character(key) || length(key) != 1L || is.na(key)) {
+      stop("`key` must be a character string")
+    }
+    if (nzchar(key)) {
+      if (regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L)
+        stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+      gc() # clean up KV store
+    }
+  }
+  invisible(TRUE)
+}
+
+.key.make <- function(conn, prefix = "rapids") {
+  key_count <- get("key_count", conn@envir)
+  if (key_count == .Machine$integer.max)
+    stop("current H2OConnection has reached its maximum number of keys. Use h2o.init() to open another connection.")
+  key_count <- key_count + 1L
+  key <- sprintf("%s_%d%s", prefix, key_count, conn@session_id) # session_id has leading underscore
+  assign("key_count", key_count, conn@envir)
+  key
+}
+
 #'
 #' List Keys on an H2O Cluster
 #'
@@ -107,10 +131,8 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #'
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
-  if(!is.character(key) || length(key) != 1L || is.na(key)) stop("`key` must be a character string")
+  .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  gc() # cleanup KV store
-  if (!grepl(sprintf("%s$", data@conn@session_id), key)) key <- paste0(key, data@conn@session_id)
   if (length(substitute(data)) > 1L) {
     deparsedExpr <- "tmp_value"
   } else {

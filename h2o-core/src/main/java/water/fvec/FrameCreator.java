@@ -63,7 +63,9 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         }
       }
     }
-    _v = makeCon(_createFrame.value, _createFrame.rows);
+    // All columns together fill one chunk
+    final int log_rows_per_chunk = Math.max(1, Vec.LOG_CHK - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
+    _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk);
   }
 
   transient Vec _v;
@@ -80,8 +82,12 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
   @Override public void compute2() {
     int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
     Vec[] vecs = new Vec[totcols];
-    for (int i=0; i<vecs.length; ++i) {
-      vecs[i] = _v.makeZero(_domain[i]);
+    if(_createFrame.randomize) {
+      for (int i = 0; i < vecs.length; ++i)
+        vecs[i] = _v.makeZero(_domain[i]);
+    } else {
+      for (int i = 0; i < vecs.length; ++i)
+        vecs[i] = _v.makeCon(_createFrame.value);
     }
     _v.remove();
     _v=null;
@@ -149,25 +155,28 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
             cs[0].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble())); //regression
         }
       }
-
+      _createFrame.update(1);
       for (int c : _cat_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, (int)(rng.nextDouble() * _createFrame.factors));
         }
       }
+      _createFrame.update(1);
       for (int c : _int_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, (long) ((_createFrame.integer_range+1) * (1 - 2 * rng.nextDouble())));
         }
       }
+      _createFrame.update(1);
       for (int c : _real_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble()));
         }
       }
+      _createFrame.update(1);
       for (int c : _bin_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
