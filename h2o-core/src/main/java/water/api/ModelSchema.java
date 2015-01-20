@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 /**
@@ -85,8 +86,16 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
-    ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema());
-    ab.put1(',');
+    try {
+      ModelParametersSchema defaults = createParametersSchema().fillFromImpl((P) parameters.getImplClass().newInstance());
+      ModelParametersSchema.writeParametersJSON(ab, parameters, defaults);
+      ab.put1(',');
+    }
+    catch (Exception e) {
+      String msg = "Error creating an instance of ModelParameters for algo: " + algo;
+      String dev_msg = "Error creating an instance of ModelParameters for algo: " + algo + ": " + this.getImplClass();
+      throw new H2OIllegalArgumentException(msg, dev_msg);
+    }
 
     if (null == output) { // allow key-only output
       output = createOutputSchema();

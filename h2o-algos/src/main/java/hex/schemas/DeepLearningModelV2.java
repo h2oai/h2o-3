@@ -16,7 +16,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     TwoDimTable modelSummary;
   } // DeepLearningModelOutputV2
 
-  // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
+  // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
   public DeepLearningV2.DeepLearningParametersV2 createParametersSchema() { return new DeepLearningV2.DeepLearningParametersV2(); }
   public DeepLearningModelOutputV2 createOutputSchema() { return new DeepLearningModelOutputV2(); }
 

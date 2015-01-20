@@ -292,10 +292,17 @@ public class Vec extends Keyed {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len) {
-    int nchunks = (int)Math.max(1,len >> LOG_CHK);
+    int log_rows_per_chunk = LOG_CHK;
+    return makeCon(x, len, log_rows_per_chunk);
+  }
+
+  /** Make a new constant vector with the given row count.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+    int nchunks = (int)Math.max(1,len >> log_rows_per_chunk);
     long[] espc = new long[nchunks+1];
     for( int i=0; i<nchunks; i++ )
-      espc[i] = ((long)i)<<LOG_CHK;
+      espc[i] = ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     return makeCon(x,VectorGroup.VG_LEN1,espc);
   }
