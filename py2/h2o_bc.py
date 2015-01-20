@@ -620,7 +620,14 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExt
         if cloud_size != node_count:
             print "\nNodes in cloud while building:"
             for i,ci in enumerate(c['nodes']):
-                print "node %s" % i, ci['h2o']['node']
+                # 'h2o' disappeared?
+                if 'h2o' not in ci:
+                    print "ci:", dump_json(ci)
+                    # apparently this can happen in cases where I didn't join a cloud because 
+                    # of a different md5 version. We'll eventually exception out?
+                    # raise Exception("What happened to the 'h2o' ci dict entry?, not there")
+                else:
+                    print "node %s" % i, ci['h2o']['node']
 
         if cloud_size > node_count:
             emsg = (

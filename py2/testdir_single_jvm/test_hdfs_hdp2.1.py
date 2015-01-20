@@ -12,7 +12,7 @@ class Basic(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # assume we're at 0xdata with it's hdfs namenode
-        h2o.init(1, use_hdfs=True, hdfs_version='cdh5', hdfs_name_node='172.16.2.180', java_heap_GB=12)
+        h2o.init(1, use_hdfs=True, hdfs_version='hdp2.1', hdfs_name_node='172.16.2.186', java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):

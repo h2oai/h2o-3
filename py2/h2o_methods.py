@@ -96,7 +96,7 @@ def h2o_log_msg(self, message=None, timeoutSecs=15):
         message += "\npython_test_name: " + h2o_args.python_test_name
         message += "\n#***********************"
     params = {'message': message}
-    # self.do_json_request('2/LogAndEcho.json', params=params, timeout=timeoutSecs)
+    # self.do_json_request('LogAndEcho.json', params=params, timeout=timeoutSecs)
     print "HACK: not doing 2/LogAndEcho.json"
 
 def get_timeline(self):
