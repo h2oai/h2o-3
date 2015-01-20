@@ -48,19 +48,19 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
 
   /** Start the KMeans training Job on an F/J thread. */
   @Override public Job<KMeansModel> trainModel() {
-    return start(new KMeansDriver(), _parms._max_iters);
+    return start(new KMeansDriver(), _parms._max_iterations);
   }
-  
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".
    *
-   *  Validate K, max_iters and the number of rows.  Precompute the number of
+   *  Validate K, max_iterations and the number of rows.  Precompute the number of
    *  categorical columns. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if( _parms._k < 1 || _parms._k > 10000000 ) error("_k", "k must be between 1 and 1e7");
-    if( _parms._max_iters < 0 || _parms._max_iters > 1000000) error("_max_iters", " max_iters must be between 0 and 1e6");
+    if( _parms._max_iterations < 0 || _parms._max_iterations > 1000000) error("_max_iterations", " max_iterations must be between 0 and 1e6");
     if( _train == null ) return; // Nothing more to check
     if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
@@ -69,8 +69,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
     }
 
-    for( Vec v : _train.vecs() )
-      if( v.isEnum() ) _ncats++;
+    for( Vec v : _train.vecs() ) {
+      // if (v.isEnum()) _ncats++;
+      if(v.isEnum()) error("_train","Columns cannot have categorical values");
+    }
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
@@ -131,27 +133,27 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           centers = new double[1][vecs.length];
           // Initialize first cluster center to random row
           randomRow(vecs, rand, centers[0], means, mults);
-          
-          while (model._output._iters < 5) {
+
+          while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
             SumSqr sqr = new SumSqr(centers, means, mults, _ncats).doAll(vecs);
-            
+
             // Sample with probability inverse to square distance
             Sampler sampler = new Sampler(centers, means, mults, _ncats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
             centers = ArrayUtils.append(centers, sampler._sampled);
-            
+
             // Fill in sample centers into the model
             if (!isRunning()) return null; // Stopped/cancelled
-            model._output._centersraw = destandardize(centers, _ncats, means, mults);
-            model._output._avgwithinss = sqr._sqr / _train.numRows();
-            
-            model._output._iters++;     // One iteration done
-            
+            model._output._centers_raw = destandardize(centers, _ncats, means, mults);
+            model._output._avg_within_ss = sqr._sqr / _train.numRows();
+
+            model._output._iterations++;     // One iteration done
+
             model.update(_key); // Make early version of model visible, but don't update progress using update(1)
           }
           // Recluster down to k cluster centers
           centers = recluster(centers, rand);
-          model._output._iters = -1; // Reset iteration count
+          model._output._iterations = -1; // Reset iteration count
         }
       }
       return centers;
@@ -195,31 +197,31 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      model._output._centersraw = destandardize(centers, _ncats, means, mults);
+      model._output._centers_raw = destandardize(centers, _ncats, means, mults);
       String[] rowHeaders = new String[_parms._k];
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centersraw);
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
-      model._output._withinmse = task._cSqr;
+      model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
       for( int i=0; i<_parms._k; i++ ) {
-        ssq += model._output._withinmse[i]; // sum squared error all clusters
-        model._output._withinmse[i] /= task._size[i]; // mse within-cluster
+        ssq += model._output._within_mse[i]; // sum squared error all clusters
+        model._output._within_mse[i] /= task._size[i]; // mse within-cluster
       }
-      model._output._avgwithinss = ssq/_train.numRows(); // mse total
+      model._output._avg_within_ss = ssq/_train.numRows(); // mse total
 
       // Sum-of-square distance from grand mean
       if(_parms._k == 1)
-        model._output._avgss = model._output._avgwithinss;
+        model._output._avg_ss = model._output._avg_within_ss;
       else {
         // If data already standardized, grand mean is just the origin
         TotSS totss = new TotSS(means,mults).doAll(vecs);
-        model._output._avgss = totss._tss/_train.numRows(); // mse with respect to grand mean
+        model._output._avg_ss = totss._tss/_train.numRows(); // mse with respect to grand mean
       }
-      model._output._avgbetweenss = model._output._avgss - model._output._avgwithinss;  // mse between-cluster
+      model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // mse between-cluster
       return task._cMeans;      // New centers
     }
 
@@ -227,7 +229,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
       if( !isRunning() ) return true; // Stopped/cancelled
       // Stopped for running out iterations
-      if( model._output._iters > _parms._max_iters ) return true;
+      if( model._output._iterations > _parms._max_iterations) return true;
 
       // Compute average change in standardized cluster centers
       if( oldCenters==null ) return false; // No prior iteration, not stopping
@@ -253,8 +255,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_key);
 
-        // 
-        model._output._ncats = _ncats;
+        //
+        model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
         // means are used to impute NAs
         final double[] means = prepMeans(vecs);
@@ -281,7 +283,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           oldCenters = centers;
           centers = computeStatsFillModel(task,model,vecs,centers,means,mults);
 
-          model._output._iters++;
+          model._output._iterations++;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
         }

@@ -37,8 +37,8 @@
           "values": []
         },
         {
-          "name": "max_iters",
-          "label": "max_iters",
+          "name": "max_iterations",
+          "label": "max_iterations",
           "help": "Maximum training iterations.",
           "required": false,
           "type": "int",

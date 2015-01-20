@@ -2,6 +2,7 @@ package water.rapids;
 
 //import hex.Quantiles;
 
+import hex.DMatrix;
 import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
@@ -70,6 +71,8 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("while", new ASTWhile());
     SYMBOLS.put("return", new ASTReturn());
     SYMBOLS.put("del", new ASTDelete());
+    SYMBOLS.put("x", new ASTMMult());
+    SYMBOLS.put("t", new ASTTranspose());
 
     //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
 
@@ -79,6 +82,7 @@ public abstract class ASTOp extends AST {
     putBinInfix(new ASTPlus());
     putBinInfix(new ASTSub());
     putBinInfix(new ASTMul());
+    putBinInfix(new ASTMMult());
     putBinInfix(new ASTDiv());
     putBinInfix(new ASTPow());
     putBinInfix(new ASTPow2());
@@ -125,6 +129,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSignif());
     putPrefix(new ASTTrun());
 
+    putPrefix(new ASTTranspose());
+
     // Trigonometric functions
     putPrefix(new ASTCos  ());
     putPrefix(new ASTSin  ());
@@ -141,6 +147,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
+    
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -2894,6 +2901,52 @@ class ASTXorSum extends ASTReducerOp {
     xorsum = Double.longBitsToDouble(xorsumBits);
     out[0] = xorsum;
     return out;
+  }
+}
+
+class ASTMMult extends ASTOp {
+  ASTMMult() { super(VARS2);}
+
+  ASTMMult parse_impl(Exec E) {
+    AST l = E.parse();
+    if (l instanceof ASTId) l = Env.staticLookup((ASTId)l);
+    AST r = E.parse();
+    if (r instanceof ASTId) r = Env.staticLookup((ASTId)r);
+    ASTMMult res = new ASTMMult();
+    res._asts = new AST[]{l,r};
+    return res;
+  }
+  @Override
+  String opStr() { return "x";}
+
+  @Override
+  ASTOp make() { return new ASTMMult();}
+
+  @Override
+  void apply(Env env) {
+    env.poppush(2, new ValFrame(DMatrix.mmul(env.peekAryAt(-0), env.peekAryAt(-1))));
+  }
+}
+
+class ASTTranspose extends ASTOp {
+  ASTTranspose() { super(VARS1);}
+
+  ASTTranspose parse_impl(Exec E) {
+    AST arg = E.parse();
+    if (arg instanceof ASTId) arg = Env.staticLookup((ASTId)arg);
+    ASTTranspose res = new ASTTranspose();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+  @Override
+  String opStr() { return "t";}
+
+  @Override
+  ASTOp make() { return new ASTMMult();}
+
+  @Override
+  void apply(Env env) {
+    env.push(new ValFrame(DMatrix.transpose(env.popAry())));
   }
 }
 

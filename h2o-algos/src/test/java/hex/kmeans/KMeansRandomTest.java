@@ -19,7 +19,7 @@ public class KMeansRandomTest extends TestUtil {
     Random rng = new Random(seed);
     String[] datasets = new String[2];
     datasets[0] = "smalldata/logreg/prostate.csv";
-    datasets[1] = "smalldata/junit/iris.csv";
+    datasets[1] = "smalldata/iris/iris_wheader.csv";
 
 
     int testcount = 0;
@@ -41,9 +41,11 @@ public class KMeansRandomTest extends TestUtil {
 
                 KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
                 parms._train = frame._key;
+                if(dataset != null && dataset.equals("smalldata/iris/iris_wheader.csv"))
+                  parms._ignored_columns = new String[] {"class"};
                 parms._k = centers;
                 parms._seed = rng.nextLong();
-                parms._max_iters = max_iter;
+                parms._max_iterations = max_iter;
                 parms._standardize = standardize;
                 parms._init = init;
 
@@ -56,11 +58,11 @@ public class KMeansRandomTest extends TestUtil {
                   for (int j = 0; j < parms._k; j++)
                     Assert.assertTrue(m._output._size[j] != 0);
 
-                  Assert.assertTrue(m._output._iters <= max_iter+1);    // Matches R's kmeans behavior, e.g. max_iter = 1, then iters = 2
-                  for (double d : m._output._withinmse) Assert.assertFalse(Double.isNaN(d));
-                  Assert.assertFalse(Double.isNaN(m._output._avgwithinss));
+                  Assert.assertTrue(m._output._iterations <= max_iter+1);    // Matches R's kmeans behavior, e.g. max_iter = 1, then iters = 2
+                  for (double d : m._output._within_mse) Assert.assertFalse(Double.isNaN(d));
+                  Assert.assertFalse(Double.isNaN(m._output._avg_within_ss));
                   for (long o : m._output._size) Assert.assertTrue(o > 0); //have at least one point per centroid
-                  for (double[] dc : m._output._centersraw) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
+                  for (double[] dc : m._output._centers_raw) for (double d : dc) Assert.assertFalse(Double.isNaN(d));
 
                   // make prediction (cluster assignment)
                   score = m.score(frame);

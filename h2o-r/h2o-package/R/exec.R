@@ -117,7 +117,7 @@ function(conn, ast, key=.key.make(conn, "rapids"), finalizers=list(), new.assign
   ast <- .visitor(ast)
 
   # Process the results
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast)
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
   if (!is.null(res$string)) {
     # String or boolean result
@@ -157,5 +157,5 @@ function(conn, ast, key=.key.make(conn, "rapids"), finalizers=list(), new.assign
 .h2o.post.function<-
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
-  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr))
+  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr), method = "POST")
 }

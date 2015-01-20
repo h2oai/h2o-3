@@ -6,7 +6,7 @@ import water.fvec.Frame;
 
 public class QuantileTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  
+
   @Test public void testIris() {
     QuantileModel kmm = null;
     Frame fr = null;
@@ -20,7 +20,7 @@ public class QuantileTest extends TestUtil {
 
       QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = fr._key;
-      //parms._max_iters = 10;
+      //parms._max_iterations = 10;
 
       Quantile job = new Quantile(parms).trainModel();
       kmm = job.get();

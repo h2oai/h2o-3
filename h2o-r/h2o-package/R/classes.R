@@ -134,10 +134,14 @@ setClass("H2OFrame",
          contains ="H2OObject")
 
 setMethod("show", "H2OFrame", function(object) {
-  print(object@conn)
-  cat("Key:", object@key, "\n")
-  print(head(object))
-#  .h2o.gc()
+  nr <- nrow(object)
+  nc <- ncol(object)
+  cat(class(object), " with ",
+      nr, ifelse(nr == 1L, " row and ", " rows and "),
+      nc, ifelse(nc == 1L, " column\n", " columns\n"), sep = "")
+  if (nr > 10L)
+    cat("\nFirst 10 rows:\n")
+  print(head(object, 10L))
   invisible(object)
 })
 

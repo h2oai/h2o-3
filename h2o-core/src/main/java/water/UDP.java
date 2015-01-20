@@ -13,36 +13,38 @@ import water.util.UnsafeUtils;
 public abstract class UDP {
   /** UDP packet types, and their handlers */
   public static enum udp {
-    bad(false,null), // Do not use the zero packet, too easy to make mistakes
-      // Some health-related packet types.  These packets are all stateless, in
-      // that we do not need to send any replies back.
-      heartbeat     ( true, new UDPHeartbeat()),
-      rebooted      ( true, new UDPRebooted()),  // This node has rebooted recently
-      timeline      (false, new TimeLine()),     // Get timeline dumps from across the Cloud
+    bad(false,null,(byte)-1), // Do not use the zero packet, too easy to make mistakes
+    // Some health-related packet types.  These packets are all stateless, in
+    // that we do not need to send any replies back.
+    heartbeat     ( true, new UDPHeartbeat(),H2O.MAX_PRIORITY),
+    rebooted      ( true, new UDPRebooted() ,H2O.MAX_PRIORITY), // This node has rebooted recently
+    timeline      (false, new TimeLine()    ,H2O.MAX_PRIORITY), // Get timeline dumps from across the Cloud
 
-      // All my *reliable* tasks (below), are sent to remote nodes who then ACK
-      // back an answer.  To be reliable, I might send the TASK multiple times.
-      // To get a reliable answer, the remote might send me multiple ACKs with
-      // the same answer every time.  When does the remote know it can quit
-      // tracking reply ACKs?  When it recieves an ACKACK.
-      ackack(false,new UDPAckAck()),  // a generic ACKACK for a UDP async task
-      // In order to unpack an ACK (which contains an arbitrary returned POJO)
-      // the reciever might need to fetch a id/class mapping from the leader -
-      // while inside an ACK-priority thread holding onto lots of resources
-      // (e.g. TCP channel).  Allow the fetch to complete on a higher priority
-      // thread.
-      fetchack(false,new UDPFetchAck()),  // a class/id fetch ACK
-      ack   (false,new UDPAck   ()),  // a generic ACK    for a UDP async task
-
-      // These packets all imply some sort of request/response handshake.
-      // We'll hang on to these packets; filter out dup sends and auto-reply
-      // identical result ACK packets.
-      exec(false,new RPC.RemoteHandler()),   // Remote hi-q execution request
-      i_o (false,new UDP.IO_record());       // Only used to profile I/O
-
+    // All my *reliable* tasks (below), are sent to remote nodes who then ACK
+    // back an answer.  To be reliable, I might send the TASK multiple times.
+    // To get a reliable answer, the remote might send me multiple ACKs with
+    // the same answer every time.  When does the remote know it can quit
+    // tracking reply ACKs?  When it recieves an ACKACK.
+    ackack(false,new UDPAckAck(),H2O.ACK_ACK_PRIORITY), // a generic ACKACK for a UDP async task
+    // In order to unpack an ACK (which contains an arbitrary returned POJO)
+    // the reciever might need to fetch a id/class mapping from the leader -
+    // while inside an ACK-priority thread holding onto lots of resources
+    // (e.g. TCP channel).  Allow the fetch to complete on a higher priority
+    // thread.
+    fetchack(false,new UDPFetchAck(),H2O.FETCH_ACK_PRIORITY), // a class/id fetch ACK
+    ack   (false,new UDPAck (),H2O.ACK_PRIORITY),  // a generic ACK for a UDP async task
+    nack  (false,new UDPNack(),H2O.ACK_PRIORITY),  // a generic NACK
+    
+    // These packets all imply some sort of request/response handshake.
+    // We'll hang on to these packets; filter out dup sends and auto-reply
+    // identical result ACK packets.
+    exec(false,new RPC.RemoteHandler(),H2O.DESERIAL_PRIORITY), // Remote hi-q execution request
+    i_o (false,new UDP.IO_record(),(byte)-1); // Only used to profile I/O
+    
     final UDP _udp;           // The Callable S.A.M. instance
+    final byte _prior;        // Priority
     final boolean _paxos;     // Ignore (or not) packets from outside the Cloud
-    udp( boolean paxos, UDP udp ) { _paxos = paxos; _udp = udp; }
+    udp( boolean paxos, UDP udp, byte prior ) { _paxos = paxos; _udp = udp; _prior = prior; }
     static udp[] UDPS = values();
   }
   public static udp getUdp(int id){return udp.UDPS[id];}

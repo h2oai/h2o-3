@@ -25,11 +25,11 @@ test.kmstand.golden <- function(H2Oserver) {
   expect_equivalent(as.matrix(fitH2O@model$centers), fitR_centstd)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
-  wmseH2O <- sort.int(fitH2O@model$withinmse)
+  wmseH2O <- sort.int(fitH2O@model$within_mse)
   totssR <- fitR$totss
-  totssH2O <- fitH2O@model$avgss*nrow(ozoneH2O)
+  totssH2O <- fitH2O@model$avg_ss*nrow(ozoneH2O)
   btwssR <- fitR$betweenss
-  btwssH2O <- fitH2O@model$avgbetweenss*nrow(ozoneH2O)
+  btwssH2O <- fitH2O@model$avg_between_ss*nrow(ozoneH2O)
   
   Log.info(paste("H2O WithinMSE : ", wmseH2O, "\t\t", "R WithinMSE : ", wmseR))
   Log.info("Compare Within-Cluster MSE between R and H2O\n")  

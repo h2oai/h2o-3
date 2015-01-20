@@ -39,7 +39,7 @@ public class TCPReceiverThread extends Thread {
         // More common-case setup of a ServerSocket
         if( SOCK == null ) {
           SOCK = ServerSocketChannel.open();
-          SOCK.socket().setReceiveBufferSize(AutoBuffer.BBSIZE);
+          SOCK.socket().setReceiveBufferSize(AutoBuffer.BBP_BIG.size());
           SOCK.socket().bind(H2O.SELF._key);
         }
 

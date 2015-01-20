@@ -32,8 +32,11 @@
   stopifnot(is.character(urlSuffix))
   if (missing(parms))
     parms = list()
-  else
+  else {
     stopifnot(is.list(parms))
+    # Uncomment line below if all keys should contain a session ID suffix
+    #if (!is.null(parms[["key"]]) && !grepl(sprintf("%s$", conn@session_id), parms[["key"]])) parms[["key"]] <- paste0(parms[["key"]], conn@session_id)
+  }
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 

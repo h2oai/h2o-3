@@ -282,7 +282,7 @@ function initializeCloud() {
             var nodes = obj.nodes;
             for (var i = 0; i < cloud_size; i = i + 1) {
                 var node = nodes[i];
-                var fullNodeName = node.h2o.node;
+                var fullNodeName = node.ip_port;
                 var arr = fullNodeName.split(".");
                 var lastOctetAndPort = arr[3];
                 var arr2 = lastOctetAndPort.split(":");

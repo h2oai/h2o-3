@@ -453,7 +453,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             "_score_validation_sampling",
             "_ignore_const_cols",
             "_force_load_balance",
-            "_replicate_training_data",
             "_shuffle_training_data",
             "_nesterov_accelerated_gradient",
             "_classification_stop",
