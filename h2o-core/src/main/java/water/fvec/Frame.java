@@ -181,6 +181,13 @@ public class Frame extends Lockable<Frame> {
     Vec[] tvecs = _vecs; // read the content
     return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
   }
+  public final Vec[] vecs(int [] idxs) {
+    Vec [] all = vecs();
+    Vec [] res = new Vec[idxs.length];
+    for(int i = 0; i < idxs.length; ++i)
+      res[i] = all[idxs[i]];
+    return res;
+  }
   // Compute vectors for caching
   private Vec[] vecs_impl() {
     // Load all Vec headers; load them all in parallel by starting prefetches
