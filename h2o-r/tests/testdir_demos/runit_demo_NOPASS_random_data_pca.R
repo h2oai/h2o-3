@@ -8,7 +8,7 @@ source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.ini(ip=myIP, port=myPort)
+conn <- h2o.init(ip=myIP, port=myPort)
 
 # Data frame size 
 rows <- c(1e3,1e4) 
@@ -28,20 +28,20 @@ row_grid <- rep(NA,length(rows))
 names <- c() 
 
 for(i in 1:length(rows)){ # changing number of rows 
-  nrow <- rows[i] 
-  row_grid[i] <- nrow 
+  nrows <- rows[i] 
+  row_grid[i] <- nrows 
   for(j in 1:length(cols) ){ # changing number of columns 
-    ncol <- cols[j] 
-    col_grid[j] <- ncol 
-    names <- c(names, nrow * ncol) # set the name to be the problem size 
-    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrow, cols = ncol,
+    ncols <- cols[j] 
+    col_grid[j] <- ncols 
+    names <- c(names, nrows * ncols) # set the name to be the problem size 
+    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
                                                  seed = 12345, randomize = T, value = 0, real_range = 100, 
                                                  categorical_fraction = 0.0, factors = 10, 
                                                  integer_fraction = 0.4, integer_range = 100, 
                                                  missing_fraction = 0, response_factors = 1, has_response = TRUE) ) 
     
     create_frm_time[i,j] = as.numeric(sst[3]) 
-    mem <- h2o.ls(conn,"myframe") 
+    mem <- h2o.ls(conn) 
     frm_size[i,j] <- as.numeric(mem[2]) 
     head(myframe) 
     #str(myframe) 
