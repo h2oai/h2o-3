@@ -14,25 +14,26 @@ if (TRUE) {
   setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 
   if (FALSE) {
-      setwd("/Users/tomk/0xdata/ws/h2o/R/tests/testdir_demos")
+      setwd("/Users/tomk/0xdata/ws/h2o-dev/h2o-r/tests/testdir_demos")
   }
 
   source('../h2o-runit.R')
   options(echo=TRUE)
-  filePath <- normalizePath(locate("smalldata/airlines/AirlinesTrain.csv.zip"))
-  testFilePath <- normalizePath(locate("smalldata/airlines/AirlinesTest.csv.zip"))
+  filePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+  testFilePath <- normalizePath(h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 } else {
   stop("need to hardcode ip and port")
-  # myIP = "127.0.0.1"
-  # myPort = 54321
+  myIP = "127.0.0.1"
+  myPort = 54321
 
   library(h2o)
   PASS_BANNER <- function() { cat("\nPASS\n\n") }
-  filePath <- "https://raw.github.com/0xdata/h2o/master/smalldata/airlines/AirlinesTrain.csv.zip"
-  testFilePath <-"https://raw.github.com/0xdata/h2o/master/smalldata/airlines/AirlinesTest.csv.zip"
+  filePath <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip"
+  testFilePath <-"https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"
 }
 
-conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
+h2o.startLogging()
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=T)
 
 #uploading data file to h2o
 air <- h2o.importFile(conn, filePath, "air")
@@ -48,19 +49,19 @@ myX = c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", 
 myY="IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "multinomial", training_frame = air.train, ntrees = 10, 
-                  max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid, variable_importance = T)
+air.gbm <- h2o.gbm(x = myX, y = myY, loss = "AUTO", training_frame = air.train, ntrees = 10, 
+                   max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid, variable_importance = T)
 print(air.gbm@model)
 air.gbm@model$auc
 
 #RF
-air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")
-print(air.rf@model)
+# air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")
+# print(air.rf@model)
 
 #uploading test file to h2o
 air.test <- h2o.importFile(conn,testFilePath,key="air.test")
 
-model_object <- air.rf #air.glm air.rf air.dl
+model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 
 #predicting on test file 
 pred <- predict(model_object,air.test)
