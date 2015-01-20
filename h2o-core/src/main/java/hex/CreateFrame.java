@@ -51,6 +51,6 @@ public class CreateFrame extends Job<CreateFrame> {
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
     FrameCreator fc = new FrameCreator(this, this._key);
-    start(fc, fc.nChunks());
+    start(fc, fc.nChunks()*5);
   }
 }
