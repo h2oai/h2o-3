@@ -30,7 +30,7 @@ if (! failed) {
 
 h2o_r_package_file <- NULL
 dir_to_search = normalizePath("../../R/src/contrib")
-files = dir(dir_to_search)
+files = dir(dir_to_search, pattern="h2o.*.gz")
 for (i in 1:length(files)) {
     f = files[i]
     arr = strsplit(f, '\\.')[[1]]
