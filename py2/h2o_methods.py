@@ -96,8 +96,8 @@ def h2o_log_msg(self, message=None, timeoutSecs=15):
         message += "\npython_test_name: " + h2o_args.python_test_name
         message += "\n#***********************"
     params = {'message': message}
-    # self.do_json_request('LogAndEcho.json', params=params, timeout=timeoutSecs)
-    print "HACK: not doing 2/LogAndEcho.json"
+    self.do_json_request('3/LogAndEcho.json', cmd='post', params=params, timeout=timeoutSecs)
+    # print "HACK: not doing 2/LogAndEcho.json"
 
 def get_timeline(self):
     return self.do_json_request('Timeline.json')
@@ -117,6 +117,21 @@ def shutdown_all(self):
     # time.sleep(1) # a little delay needed?
     return True
 
+
+#*******************************************************************************
+# examples from prithvi
+# http://localhost:54321/Typeahead.json/files?src=?&limit=?
+# http://localhost:54321/Typeahead.json/files?src=.%2Fsmalldata%2Fairlines%2F&limit=10
+def typeahead(self, timeoutSecs=10, **kwargs):
+    params_dict = {
+        'src': None,
+        'limit': None,
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'typeahead', print_params=True)
+    # odd ...needs /files
+    a = self.do_json_request('Typeahead.json/files', params=params_dict, timeout=timeoutSecs)
+    verboseprint("\ntypeahead result:", dump_json(a))
+    return a
 
 #*******************************************************************************
 def unlock (self, timeoutSecs=30, **kwargs):
@@ -320,6 +335,7 @@ H2O.inspect = inspect
 H2O.quantiles = quantiles
 H2O.rapids = rapids
 H2O.unlock = unlock
+H2O.typeahead = typeahead
 H2O.get_timeline = get_timeline
 
 H2O.frame_split = frame_split

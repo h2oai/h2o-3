@@ -2,6 +2,7 @@ import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e
 import getpass
+from h2o_test import dump_json
 
 DO_EXPORT=False
 
@@ -18,7 +19,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_hdfs_cdh5(self):
+    def test_hdfs_hdp2_1(self):
         print "\nLoad a list of files from HDFS, parse and do 1 RF tree"
         print "\nYou can try running as hduser/hduser if fail"
         # larger set in my local dir
@@ -60,6 +61,38 @@ class Basic(unittest.TestCase):
             start = time.time()
             hex_key = "a.hex"
             csvPathname = "datasets/" + csvFilename
+
+            # Do a simple typeahead check on the directory
+            # typeaheadResult 2: {
+            #   "__meta": {
+            #     "schema_name": "TypeaheadV2",
+            #     "schema_type": "Iced",
+            #     "schema_version": 2
+            #   },
+            #   "limit": 2,
+            #   "matches": [
+            #     "hdfs://172.16.2.186/datasets/15Mx2.2k.csv",
+            #     "hdfs://172.16.2.186/datasets/1Mx2.2k.NAs.csv"
+            #   ],
+            #   "src": "hdfs://172.16.2.186/datasets/"
+            # }
+
+            typeaheadPath = "hdfs://"+ h2o.nodes[0].hdfs_name_node + "/datasets/"
+            typeaheadResult = h2o.nodes[0].typeahead(src=typeaheadPath, limit=2)
+            print "typeaheadResult 2:", dump_json(typeaheadResult)
+            assert len(typeaheadResult['matches']) == 2
+
+            typeaheadResult = h2o.nodes[0].typeahead(src=typeaheadPath, limit=0)
+            print "typeaheadResult 0:", dump_json(typeaheadResult)
+            assert len(typeaheadResult['matches']) > 2
+
+            typeaheadResult = h2o.nodes[0].typeahead(src=typeaheadPath, limit=None)
+            print "typeaheadResult 0:", dump_json(typeaheadResult)
+            assert len(typeaheadResult['matches']) > 2
+
+            typeaheadResult = h2o.nodes[0].typeahead(src=typeaheadPath, limit=-1)
+            print "typeaheadResult -1:", dump_json(typeaheadResult)
+            assert len(typeaheadResult['matches']) > 2
 
             parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=hex_key, timeoutSecs=1000)
             print "hdfs parse of", csvPathname, "took", time.time() - start, 'secs'
