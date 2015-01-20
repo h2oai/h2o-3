@@ -72,6 +72,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("return", new ASTReturn());
     SYMBOLS.put("del", new ASTDelete());
     SYMBOLS.put("x", new ASTMMult());
+    SYMBOLS.put("t", new ASTTranspose());
 
     //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
 
@@ -127,6 +128,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRound());
     putPrefix(new ASTSignif());
     putPrefix(new ASTTrun());
+
+    putPrefix(new ASTTranspose());
 
     // Trigonometric functions
     putPrefix(new ASTCos  ());
@@ -2909,7 +2912,7 @@ class ASTMMult extends ASTOp {
     if (l instanceof ASTId) l = Env.staticLookup((ASTId)l);
     AST r = E.parse();
     if (r instanceof ASTId) r = Env.staticLookup((ASTId)r);
-    ASTMMult res = (ASTMMult) clone();
+    ASTMMult res = new ASTMMult();
     res._asts = new AST[]{l,r};
     return res;
   }
@@ -2921,9 +2924,32 @@ class ASTMMult extends ASTOp {
 
   @Override
   void apply(Env env) {
-    env.poppush(2, new ValFrame(DMatrix.mmul(env.peekAryAt(-1), env.peekAryAt(-0))));
+    env.poppush(2, new ValFrame(DMatrix.mmul(env.peekAryAt(-0), env.peekAryAt(-1))));
   }
 }
+
+class ASTTranspose extends ASTOp {
+  ASTTranspose() { super(VARS1);}
+
+  ASTTranspose parse_impl(Exec E) {
+    AST arg = E.parse();
+    if (arg instanceof ASTId) arg = Env.staticLookup((ASTId)arg);
+    ASTTranspose res = new ASTTranspose();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+  @Override
+  String opStr() { return "t";}
+
+  @Override
+  ASTOp make() { return new ASTMMult();}
+
+  @Override
+  void apply(Env env) {
+    env.push(new ValFrame(DMatrix.transpose(env.popAry())));
+  }
+}
+
 
 // Legacy Items: On the chopping block
 

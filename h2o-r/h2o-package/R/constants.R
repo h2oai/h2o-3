@@ -35,6 +35,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '*'  = '*',
              '/'  = '/',
              '^'  = '^',
+             't'  = 't', 
              "%/%"="%/%")
 
 .binary_op.map <- c("%*%" = "x",
@@ -61,7 +62,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #'
 .unary_op.map <- c('!' = '_',
                    '$' = '[',
-                   '[' = '[')
+                   '[' = '[',
+                   't' = 't')
 
 .slice.map <- c('$' = '$', '[' = '[')
 
@@ -183,7 +185,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 #' Parse Endpoints
 .h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
-.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
+.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&n63=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
 
 #' Inspect/Summary Endpoints
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
