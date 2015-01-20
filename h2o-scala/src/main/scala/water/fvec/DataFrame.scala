@@ -6,6 +6,9 @@ import java.net.URI
 import water._
 import water.parser.ParseSetup
 
+/** Wrapper around H2O Frame to provide more Scala-like API
+  *
+  */
 class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[Vec] )
   extends Frame(key,names,vecs) 
   with Map[Long,Array[Option[Any]]] {
@@ -74,4 +77,15 @@ class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[
   override def toString(): String = super[Frame].toString()
 
   override def hashCode(): Int = super[Frame].hashCode()
+}
+
+/** Companion object providing factory methods to create frame
+  * from different sources.
+  */
+object DataFrame {
+  def apply(key : Key[Frame]) = new DataFrame(key)
+  def apply(f : Frame) = new DataFrame(f)
+  def apply(s : String) = new DataFrame(s)
+  def apply(file : File) = new DataFrame(file)
+  def apply(uri : URI) = new DataFrame(uri)
 }
