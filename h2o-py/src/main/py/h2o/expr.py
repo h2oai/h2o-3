@@ -15,7 +15,7 @@ class Expr(object):
     """
     Expr objects have a few different flavors:
         1. A pending to-be-computed BigData expression. Does _NOT_ have a Key
-        2. An already compted BigData expression. Does have a key
+        2. An already computed BigData expression. Does have a key
         3. A small-data computation, pending or not.
 
     Pending computations point to other Expr objects in a DAG of pending computations.
@@ -200,7 +200,7 @@ class Expr(object):
         assert not __CMD__ and not __TMPS__
         __CMD__ = ""
         __TMPS__ = ""  # Begin gathering rapids commands
-        self.do_it()   # Symbolically execute the command
+        self._do_it()   # Symbolically execute the command
         cmd = __CMD__
         tmps = __TMPS__  # Stop  gathering rapids commands
         __CMD__ = None
@@ -224,7 +224,7 @@ class Expr(object):
         global __CMD__
         if child:
             if child.is_pending():
-                child.do_it()
+                child._do_it()
             elif isinstance(child.data(), (int, float)):
                 __CMD__ += "#" + str(child.data())
             elif isinstance(child.data(), unicode):
@@ -234,7 +234,7 @@ class Expr(object):
         __CMD__ += " "
         return child
 
-    def do_it(self):
+    def _do_it(self):
         """
         External API for eager; called by all top-level demanders (e.g. print)
         This may trigger (recursive) big-data evaluation.
@@ -317,6 +317,48 @@ class Expr(object):
             else:
                 raise NotImplementedError
 
+        elif self._op == "<":
+
+            # cases:
+            #   num < []
+            #   [] < num
+
+            # num < []
+            if isinstance(left.data(), (int, float)):
+                raise NotImplementedError
+
+            # [] < num
+            elif isinstance(rite.data(), (int, float)):
+                if left.is_local():
+                    self._data = [x < rite.data() for x in left.data()]
+                else:
+                    pass
+
+            # else unimpl
+            else:
+                raise NotImplementedError
+
+        elif self._op == ">=":
+
+            # cases:
+            #   num < []
+            #   [] < num
+
+            # num < []
+            if isinstance(left.data(), (int, float)):
+                raise NotImplementedError
+
+            # [] < num
+            elif isinstance(rite.data(), (int, float)):
+                if left.is_local():
+                    self._data = [x >= rite.data() for x in left.data()]
+                else:
+                    pass
+
+            # else unimpl
+            else:
+                raise NotImplementedError
+
         elif self._op == "[":
 
             # cases below:
@@ -328,23 +370,33 @@ class Expr(object):
             #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
             else:
                 __CMD__ += ' "null"'
+
         elif self._op == "=":
             if left.is_local():
                 raise NotImplementedError
             else:
                 if rite is None: __CMD__ += "#NaN"
+
         elif self._op == "mean":
             if left.is_local():
                 self._data = sum(left.data()) / len(left.data())
             else:
                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
+
         elif self._op == "as.factor":
+            if left.is_local():
+                self._data = map(str, left.data())
+            else:
+                pass
+
+        elif self._op == "h2o.runif":
             if left.is_local():
                 self._data = map(str, left.data())
             else:
                 pass
         else:
             raise NotImplementedError
+
         # End of expression... wrap up parens
         __CMD__ += ")"
         if py_tmp:

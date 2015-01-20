@@ -37,6 +37,7 @@ class H2OJob(object):
             if self.status == "FAILED":
                 raise EnvironmentError("Job with key {} failed with an exception."
                                        .format(self.job_key))
+        return self
 
     def _refresh_job_view(self):
         self.jobs = h2oConn.do_safe_get_json(url_suffix="Jobs")

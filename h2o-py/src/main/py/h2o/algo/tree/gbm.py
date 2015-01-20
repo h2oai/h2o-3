@@ -2,9 +2,7 @@
 This module is a simple wrapper around a Gradient Boosted Machine.
 """
 
-from ..model import ModelBase
-from ..algo import *
-
+from ...model_base import ModelBase
 
 class H2OGBM(ModelBase):
     """

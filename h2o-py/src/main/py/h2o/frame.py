@@ -75,6 +75,18 @@ class H2OFrame(object):
 
     def get_vecs(self): return self._vecs
 
+    def col_names(self):
+        return [i.name() for i in self._vecs]
+
+    def names(self):
+        return self.col_names()
+
+    def nrow(self):
+        return len(self._vecs[0])
+
+    def ncol(self):
+        return len(self)
+
     # Print [col, cols...]
     def show(self):
         s = ""
@@ -154,9 +166,22 @@ class H2OFrame(object):
         c._name = b
         self._vecs[i] = c
 
-    # Column selection via integer, string (name) returns a Vec
-    # Column selection via slice returns a subset Frame
+    def __delitem__(self, i):
+        if isinstance(i, str):
+            for v in self._vecs:
+                if i == v.name():
+                    self._vecs.remove(v)
+                    return
+                raise KeyError("Name " + i + " not in Frames")
+            raise NotImplementedError
+
     def drop(self, i):
+        """
+        Column selection via integer, string(name) returns a Vec
+        Column selection via slice returns a subset Frame
+        :param i: Column to select
+        :return: Returns an H2OVec or H2OFrame.
+        """
         if isinstance(i, str):
             for v in self._vecs:
                 if i == v.name():
@@ -212,7 +237,7 @@ class H2OFrame(object):
         :return: A key
         """
         # Send over the frame
-        fr = H2OFrame._py_tmp_key()
+        fr = H2OFrame.py_tmp_key()
         cbind = "(= !" + fr + " (cbind %"
         cbind += " %".join([vec.get_expr().eager() for vec in dataset.get_vecs()]) + "))"
         h2o.rapids(cbind)
@@ -403,6 +428,36 @@ class H2OVec(object):
 
         raise NotImplementedError
 
+    def __lt__(self, i):
+        # Vec < Vec
+        if isinstance(i, H2OVec):
+            if len(i) != len(self):
+                raise ValueError("len(self)=" + len(self) +
+                                 " cannot be broadcast across len(i)=" + len(i))
+            return H2OVec(self.name() + "<" + i.name(), Expr("<", self, i))
+
+        # Vec < number
+        elif isinstance(i, (int, float)):
+            return H2OVec(self.name() + "<" + str(i), Expr("<", self, Expr(i)))
+
+        else:
+            raise NotImplementedError
+
+    def __ge__(self, i):
+        # Vec >= Vec
+        if isinstance(i, H2OVec):
+            if len(i) != len(self):
+                raise ValueError("len(self)=" + len(self) +
+                                 " cannot be broadcast across len(i)=" + len(i))
+            return H2OVec(self.name() + ">=" + i.name(), Expr(">=", self, i))
+
+        # Vec >= number
+        elif isinstance(i, (int, float)):
+            return H2OVec(self.name() + ">=" + str(i), Expr(">=", self, Expr(i)))
+
+        else:
+            raise NotImplementedError
+
     def __len__(self):
         """
         :return: The length of this H2OVec
@@ -420,3 +475,13 @@ class H2OVec(object):
         :return: A transformed H2OVec from numeric to categorical.
         """
         return H2OVec(self._name, Expr("as.factor", self._expr, None))
+
+    def runif(self, seed=None):
+        """
+        :param seed: A random seed. If None, then one will be generated.
+        :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
+        """
+        if not seed:
+            import random
+            seed = random.randint(123456789, 999999999)  # generate a seed
+        return H2OVec("runif", Expr("h2o.runif", self.get_expr(), Expr(seed)))

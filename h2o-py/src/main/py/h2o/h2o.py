@@ -5,6 +5,9 @@ This module implements the communication REST layer for the python <-> H2O conne
 import urllib
 from connection import H2OConnection as h2oConn
 from job import H2OJob
+from frame import H2OFrame
+from frame import H2OVec
+from expr import Expr
 
 
 def import_file(path):
@@ -16,6 +19,15 @@ def import_file(path):
     j = h2oConn.do_safe_get_json(url_suffix="ImportFiles", params={'path': path})
     if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
     return j['keys'][0]
+
+
+def import_frame(path=None, vecs=None):
+    """
+    Import a frame.
+    :param path:
+    :return:
+    """
+    return H2OFrame(vecs=vecs) if vecs else H2OFrame(remote_fname=path)
 
 
 def parse_setup(rawkey):
@@ -57,8 +69,7 @@ def parse(setup, h2o_name):
     p['srcs'] = [src['name'] for src in setup['srcs']]
     # Request blocking parse
     # TODO: POST vs GET
-    j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p))
-    j.poll()
+    j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p)).poll()
     return j.jobs
 
 
