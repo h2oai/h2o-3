@@ -63,7 +63,8 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         }
       }
     }
-    _v = makeCon(_createFrame.value, _createFrame.rows);
+    final int log_rows_per_chunk = Math.max(1, Vec.LOG_CHK - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
+    _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk);
   }
 
   transient Vec _v;
