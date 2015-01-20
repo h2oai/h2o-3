@@ -144,6 +144,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
+    
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -2901,7 +2902,7 @@ class ASTXorSum extends ASTReducerOp {
 }
 
 class ASTMMult extends ASTOp {
-  ASTMMult() { super(new String[]{"x","y"});}
+  ASTMMult() { super(VARS2);}
 
   ASTMMult parse_impl(Exec E) {
     AST l = E.parse();
@@ -2913,7 +2914,7 @@ class ASTMMult extends ASTOp {
     return res;
   }
   @Override
-  String opStr() { return "%*%";}
+  String opStr() { return "x";}
 
   @Override
   ASTOp make() { return new ASTMMult();}
