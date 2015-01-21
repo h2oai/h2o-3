@@ -19,16 +19,26 @@ test.apply <- function(conn) {
     )
 
     a <- a_initial
-    b <- apply(a, c(1,2), sum)
+    b <- apply(a, 1, sum)
 
 
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o <- apply(a.h2o, c(1,2), sum)
+    b.h2o <- apply(a.h2o, 1, sum)
 
     b.h2o.R <- as.matrix(b.h2o)
     b
     b.h2o.R
     expect_that(all(b == b.h2o.R), equals(T))
+
+    b <- apply(a, 2, sum)
+    b.h2o <- apply(a.h2o, 2, sum)
+
+    b.h2o.R <- as.matrix(b.h2o)
+    b
+    b.h2o.R
+    expect_that(all(b == b.h2o.R), equals(T))    
+
+
 
     testEnd()
 }

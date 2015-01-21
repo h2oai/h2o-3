@@ -21,7 +21,11 @@ public class ASTApply extends ASTOp {
   @Override ASTApply parse_impl(Exec E) {
     AST ary = E.parse();
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
-    _margin = (int)((ASTNum)E.skipWS().parse())._d;
+    try {
+      _margin = (int) ((ASTNum) E.skipWS().parse())._d;
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("`MARGIN` must be either 1 or 2, it cannot be both.");
+    }
     _fun = ((ASTId)E.skipWS().parse())._id;
     ArrayList<AST> fun_args = new ArrayList<>();
     while(E.skipWS().hasNext()) {

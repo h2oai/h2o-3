@@ -468,7 +468,15 @@ class ASTRound extends ASTUniPrefixOp {
   // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
   static double roundDigits(double x, int digits) {
     if(Double.isNaN(x)) return x;
-    return Math.floor(x * digits + 0.5) / (double)digits;
+    double sgn = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    double power_of_10 = (int)Math.pow(10, digits);
+    return sgn*(digits == 0
+            // go to the even digit
+            ? (x % 1 >= 0.5 && !(Math.floor(x)%2==0))
+              ? Math.ceil(x)
+              : Math.floor(x)
+            : Math.floor(x * power_of_10 + 0.5) / power_of_10);
   }
 }
 
@@ -476,7 +484,7 @@ class ASTSignif extends ASTUniPrefixOp {
   int _digits = 6;  // R default
   @Override String opStr() { return "signif"; }
   ASTSignif() { super(new String[]{"signif", "x", "digits"}); }
-  @Override ASTRound parse_impl(Exec E) {
+  @Override ASTSignif parse_impl(Exec E) {
     // Get the ary
     AST ary = E.parse();
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
@@ -487,7 +495,7 @@ class ASTSignif extends ASTUniPrefixOp {
       e.printStackTrace();
       throw new IllegalArgumentException("Expected a double for `digits` argument.");
     }
-    ASTRound res = (ASTRound) clone();
+    ASTSignif res = (ASTSignif) clone();
     res._asts = new AST[]{ary};
     return res;
   }
@@ -1123,7 +1131,7 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
-  final double _init;
+  protected static double _init;
   protected static boolean _narm;        // na.rm in R
   protected static int _argcnt;
   ASTReducerOp( double init) {
@@ -1181,6 +1189,17 @@ abstract class ASTReducerOp extends ASTOp {
         sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
       }
     env.push(new ValNum(sum));
+  }
+
+  @Override void exec(Env e, AST arg1, AST[] args) {
+    if (args == null) {
+      _init = 0;
+      _narm = true;
+      _argcnt = 1;
+    }
+    arg1.exec(e);
+    e._global._frames.put(Key.make().toString(), e.peekAry());
+    apply(e);
   }
 
   private static class RedOp extends MRTask<RedOp> {
@@ -2454,7 +2473,19 @@ class ASTIfElse extends ASTUniPrefixOp {
   @Override String opStr() { return "ifelse"; }
   @Override ASTIfElse parse_impl(Exec E) {
     AST tst = E.parse();
-    if (tst instanceof ASTId) tst = Env.staticLookup((ASTId)tst);
+    if (tst instanceof ASTId) tst = Env.staticLookup((ASTId) tst);
+
+    // still have an instance of ASTId, and lookup gives 0 (%FALSE) or 1 (%TRUE)
+    if (tst instanceof ASTId) {
+      try {
+        double d = ((ASTNum) E._env.lookup((ASTId)tst))._d;
+        if (d == 0 || d == 1) {  // FALSE or TRUE
+          tst = new ASTFrame(new Frame(Key.make(), null, new Vec[]{Vec.makeCon(d, 1)} ) );
+        }
+      } catch (ClassCastException e) {
+        throw new IllegalArgumentException("`test` must be a frame or TRUE/FALSE");
+      }
+    }
     AST yes = E.skipWS().parse(); // could be num
     if (yes instanceof ASTId) yes = Env.staticLookup((ASTId)yes);
     AST no  = E.skipWS().parse(); // could be num
@@ -2478,14 +2509,14 @@ class ASTIfElse extends ASTUniPrefixOp {
       int nrbins = 1 + (int)((tgt.numRows() - src.numRows()) / src.numRows());
       long remainder = tgt.numRows() % src.numRows();
       sb = new StringBuilder("(rbind ");
-      for (int i = 0; i < nrbins; ++i) sb.append("$").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
-      sb.append(remainder > 0 ? "([ $"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
+      for (int i = 0; i < nrbins; ++i) sb.append("%").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
+      sb.append(remainder > 0 ? "([ %"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
       Log.info("extending frame:" + sb.toString());
 
     // reduce src
     } else if (src.numRows() > tgt.numRows()) {
       long rmax = tgt.numRows() - 1;
-      sb = new StringBuilder("([ $"+k+" (: #0 #"+rmax+"))");
+      sb = new StringBuilder("([ %"+k+" (: #0 #"+rmax+"))");
     }
 
     if (sb != null) {
@@ -2754,13 +2785,10 @@ class ASTLs extends ASTOp {
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
     NewChunk keys = new NewChunk(av,0);
     int r = 0;
-//    KeySnapshot.KeyInfo[] infos = KeySnapshot.globalSnapshot()._keyInfos;
-    for( Key key : KeySnapshot.globalSnapshot().keys())
-      if( key.user_allowed() && H2O.get(key) != null) {
-        if (DKV.get(key).get() instanceof Job.Progress) continue;
-        keys.addEnum(r++);
-        domain.add(key.toString());
-      }
+    for( Key key : KeySnapshot.globalSnapshot().keys()) {
+      keys.addEnum(r++);
+      domain.add(key.toString());
+    }
     keys.close(fs);
     Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
