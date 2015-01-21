@@ -517,7 +517,7 @@ class H2OConnection(object):
   def ParseSetup(self,rawkey):
     # Unable to use 'requests.params=' syntax because it flattens array
     # parameters, but ParseSetup really expects a real array of Keys.
-    j = self._doSafeGet(self.buildURL("ParseSetup",{'srcs':[rawkey]}))
+    j = self._doSafeGet(self.buildURL("ParseSetup",{'srcs':'["' + rawkey + '"]'}))
     if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
@@ -526,10 +526,24 @@ class H2OConnection(object):
     # Some initial parameters
     p = {'delete_on_done':True,'blocking':True,'removeFrame':True,'hex':hexname}
     # Copy selected keys
-    for key in ['ncols','sep','columnNames','pType','checkHeader','singleQuotes']:
+    for key in ['ncols','sep','pType','checkHeader','singleQuotes']:
       p[key] = setup[key]
+
     # Extract only 'name' from each src in the array of srcs
-    p['srcs'] = [src['name'] for src in setup['srcs']]
+    p['srcs'] = "["
+    for src in setup['srcs']:
+      if len(p['srcs']) > 1:
+        p['srcs'] += ','
+      p['srcs'] += '"' + src['name'] + '"'
+    p['srcs'] += "]"
+
+    p['columnNames'] = "["
+    for columnName in setup['columnNames']:
+      if len(p['columnNames']) > 1:
+        p['columnNames'] += ','
+      p['columnNames'] += '"' + columnName + '"'
+    p['columnNames'] += "]"
+
     # Request blocking parse
     # TODO: POST vs GET
     j = self._doSafeGet(self.buildURL("Parse",p))
