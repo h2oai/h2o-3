@@ -36,7 +36,6 @@ These changes are to improvements to existing features (which includes changed d
 - Rename some more fields per consistency (`max_iters` changed to `max_iterations`, `_iters` to `_iterations`, `_ncats` to `_categorical_column_count`, `_centersraw` to `centers_raw`, `_avgwithinss` to `avg_within_ss`, `_withinmse` to `within_mse`, )
 - Changed K-Means output parameters (`withinmse` to `within_mse`, `avgss` to `avg_ss`, `avgbetweenss` to `avg_between_ss`)
 - Remove default field values from DeepLearning parameters schema, since they come from the backing class
-- Added ip_port field in node json output for Cloud query
 
 #####Algorithms
 - Minor fix in rapids matrix multiplicaton
@@ -71,5 +70,13 @@ These changes are to resolve incorrect software behavior:
 - Fix build and instructions for R install.packages() style of installation; Note we only support source installs now
 - Fixed R test runner h2o package install issue that caused it to fail to install on dev builds
  
+---
+
+###0.1.20.1018
+
+
+###0.1.20.1016
+- Added ip_port field in node json output for Cloud query
+
 
 
