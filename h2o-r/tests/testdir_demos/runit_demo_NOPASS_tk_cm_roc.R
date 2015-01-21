@@ -67,16 +67,15 @@ model_object <- air.gbm # air.rf #air.glm air.gbm air.dl
 pred <- predict(model_object,air.test)
 head(pred)
 
+perf <- h2o.performance(model_object,air.test)
 #Building confusion matrix for test set
-CM <- h2o.table(pred$predict,air.test$IsDepDelayed)
-print(CM)
+perf@metrics$cm$table
 
 #Plot ROC for test set
-perf <- h2o.performance(pred$YES,air.test$IsDepDelayed )
-print(perf)
-perf@model$precision
-perf@model$accuracy
-perf@model$auc
+
+perf@metrics$auc$precision
+perf@metrics$auc$accuracy
+# perf@auc$auc
 plot(perf,type="roc")
 
 PASS_BANNER()

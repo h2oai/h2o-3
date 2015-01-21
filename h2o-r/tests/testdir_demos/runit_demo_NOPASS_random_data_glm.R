@@ -26,28 +26,30 @@ names <- c()
 
 
 for(i in 1:length(rows)){ # changing number of rows 
-  nrow <- rows[i] 
-  row_grid[i] <- nrow 
+  nrows <- rows[i] 
+  row_grid[i] <- nrows 
   for(j in 1:length(cols) ){ # changing number of columns 
-    ncol <- cols[j] 
-    col_grid[j] <- ncol 
-    names <- c(names, nrow * ncol) # set the name to be the problem size 
-    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrow, cols = ncol,
+    ncols <- cols[j] 
+    col_grid[j] <- ncols 
+    names <- c(names, nrows * ncols) # set the name to be the problem size 
+    print("frame")
+    sst <- system.time(myframe <- h2o.createFrame(conn, 'myframe', rows = nrows, cols = ncols,
                                                  seed = 12345, randomize = T, value = 0, real_range = 100, 
                                                  categorical_fraction = 0.0, factors = 10, 
                                                  integer_fraction = 0.4, integer_range = 100, 
                                                  missing_fraction = 0, response_factors = 1, has_response = TRUE) ) 
     create_frm_time[i,j] <- as.numeric(sst[3]) 
-    mem <- h2o.ls(conn,"myframe") 
-    frm_size[i,j] <- as.numeric(mem[2]) 
-    head(myframe) 
-    #str(myframe) 
-   
+    # mem <- h2o.ls(conn,"myframe") 
+    # frm_size[i,j] <- as.numeric(mem[2]) 
+    # head(myframe) 
+    #str(myframe)  
     #warmup
-    myframe.glm<-h2o.glm(x=seq(2,ncol+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,iter_max=1)
-
-    aat <- system.time(myframe.glm<-h2o.glm(x=seq(2,ncol+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,iter.max=1) ) 
-    algo_run_time[i,j] <- aat[3] 
+    print("first")
+    myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,iter_max=1)
+    print(i)
+      myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,iter_max=1)
+    print("second")
+    # algo_run_time[i,j] <- aat[3] 
   } 
 } 
 myframe <- NULL 
