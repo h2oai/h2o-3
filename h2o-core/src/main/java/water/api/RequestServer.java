@@ -85,7 +85,8 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
-    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+//    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"DEPRECATED Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/CreateFrame","POST",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
