@@ -446,7 +446,7 @@ class H2O(object):
 
         # TODO: multiple keys
         parse_setup_params = {
-            'srcs': "[" + key + "]"
+            'srcs': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
@@ -458,7 +458,7 @@ class H2O(object):
         #
 
         parse_params = {
-            'srcs': "[" + setup_result['srcs'][0]['name'] + "]", # TODO: cons up the whole list
+            'srcs': '["' + setup_result['srcs'][0]['name'] + '"]', # TODO: cons up the whole list
             'hex': dest_key if dest_key else setup_result['hexName'],
             'pType': setup_result['pType'],
             'sep': setup_result['sep'],

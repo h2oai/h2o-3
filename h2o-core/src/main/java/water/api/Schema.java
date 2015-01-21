@@ -439,7 +439,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       for( int i=0; i<splits.length; i++ ) {
-        if (String.class == afclz) {
+        if (String.class == afclz || KeySchema.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
           if (stripped.length() >= 2)
