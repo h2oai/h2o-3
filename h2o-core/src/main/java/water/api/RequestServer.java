@@ -85,7 +85,8 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
-    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+//    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"DEPRECATED Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/CreateFrame","POST",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
     addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
@@ -415,7 +416,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String uri, String versioned_path, String pattern, Properties parms) {
+  void maybeLogRequest(String method, String uri, String versioned_path, String pattern, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
@@ -425,7 +426,8 @@ public class RequestServer extends NanoHTTPD {
     if (uri.contains("Progress")) return;
     if (uri.contains("WaterMeterCpuTicks")) return;
 
-    Log.info("Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
+    String paddedMethod = String.format("%-6s", method);
+    Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
 
   // Parse version number.  Java has no ref types, bleah, so return the version
@@ -506,7 +508,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
     if (uri.endsWith("/Logs/download")) {
-      maybeLogRequest(path, versioned_path, "", parms);
+      maybeLogRequest(method, path, versioned_path, "", parms);
       return downloadLogs();
     }
 
@@ -526,7 +528,7 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(path, versioned_path, route._url_pattern.pattern(), parms);
+        maybeLogRequest(method, path, versioned_path, route._url_pattern.pattern(), parms);
         return wrap(handle(type,route,version,parms),type);
       }
     }

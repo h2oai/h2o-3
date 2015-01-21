@@ -23,35 +23,28 @@ test.nonexistent_rhs_col <- function(conn) {
     b <- a$"13"
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
     b.h2o <- a.h2o$"3"
-    b.h2o.R <- as.data.frame(b.h2o)
-    b
-    b.h2o.R
-    expect_that(all(b == b.h2o.R), equals(T))
+
+    expect_that(is.null(b.h2o), equals(T))
 
     b <- a$C13
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
     b.h2o <- a.h2o$C13
-    b.h2o.R <- as.data.frame(b.h2o)
-    b
-    b.h2o.R
-    expect_that(all(b == b.h2o.R), equals(T))
 
-    b <- a[,"13"]
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o <- a.h2o[,"13"]
-    b.h2o.R <- as.data.frame(b.h2o)
-    b
-    b.h2o.R
-    expect_that(all(b == b.h2o.R), equals(T))
+    expect_that(is.null(b.h2o), equals(T))
 
-    b <- a[,"C13"]
-    a.h2o <- as.h2o(conn, a_initial, key="r.hex")
-    b.h2o <- a.h2o[,"C13"]
-    b.h2o.R <- as.data.frame(b.h2o)
-    b
-    b.h2o.R
-    expect_that(all(b == b.h2o.R), equals(T))
+    # b <- a[,"13"]
+    # a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    # b.h2o <- a.h2o[,"13"]
+    # expect_that(all(b == b.h2o.R), equals(T))
 
+    # b <- a[,"C13"]
+    # a.h2o <- as.h2o(conn, a_initial, key="r.hex")
+    # b.h2o <- a.h2o[,"C13"]
+    # b.h2o.R <- as.data.frame(b.h2o)
+    # b
+    # b.h2o.R
+    # expect_that(all(b == b.h2o.R), equals(T))
+    # This doesn't work in R
 
     testEnd()
 }

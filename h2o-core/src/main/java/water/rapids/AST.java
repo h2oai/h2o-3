@@ -35,7 +35,6 @@ abstract public class AST extends Iced {
 
         // Perform the binary operation
         ((ASTBinOp) this).apply(e);
-
       } else if (this instanceof ASTUniPrefixOp) {
         for (int i = 0; i < _asts.length; ++i) _asts[i].treeWalk(e);
         ((ASTUniPrefixOp) this).apply(e);
@@ -53,6 +52,9 @@ abstract public class AST extends Iced {
         _asts[1].treeWalk(e);
         _asts[0].treeWalk(e);
         ((ASTMMult)this).apply(e);
+      } else if(this instanceof ASTTranspose) {
+        _asts[0].treeWalk(e);
+        ((ASTTranspose)this).apply(e);
       } else if (this instanceof ASTddply) {
         _asts[0].treeWalk(e);
         ((ASTddply)this).apply(e);

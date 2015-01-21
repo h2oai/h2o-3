@@ -20,11 +20,8 @@ test.null_tofrom <- function(conn) {
     b <- a$"13"
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
     b.h2o <- a.h2o$"3" # doesn't exist
-    b.h2o.R <- as.matrix(b.h2o)
-    b
-    # NULL
-    b.h2o.R
-    expect_that(all(b == b.h2o.R), equals(T)) 
+    expect_that(is.null(b.h2o), equals(T))
+
     testEnd()
 }
 
