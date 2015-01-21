@@ -195,7 +195,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     @Override public void chunkInit(){
       _glmts = _glmts.clone();
       for(int i = 0; i < _glmts.length; ++i)
-        (_glmts[i] = (GLMIterationTask)_glmts[i].clone()).chunkInit();
+        (_glmts[i] = _glmts[i].clone()).chunkInit();
     }
     @Override public void chunkDone(long n){
       for(int i = 0; i < _glmts.length; ++i)

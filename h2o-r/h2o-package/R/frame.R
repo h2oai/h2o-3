@@ -116,7 +116,7 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   parms$conn <- NULL
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
-  res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "GET", .params = parms)
+  res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
   h2o.getFrame(res$dest$name, conn)
 }
 
@@ -1396,6 +1396,10 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if(missing(MARGIN) || !(length(MARGIN) <= 2L && all(MARGIN %in% c(1L, 2L))))
     stop("MARGIN must be either 1 (rows), 2 (cols), or a vector containing both")
   if(missing(FUN)) stop("FUN must be an R function")
+  if( typeof(FUN) == 'closure' )
+    FUN <- deparse(substitute(FUN), width.cutoff = 500L)
+  
+  else FUN <- .fun
   .FUN <- NULL
   if (is.character(FUN)) .FUN <- get(FUN)
   if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function!")

@@ -39,7 +39,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     @Override
     public void map(GLMModel m) {
-      _res = (GLMModel)m.clone();
+      _res = m.clone();
       _res._output = (GLMOutput)_res._output.clone();
       Submodel sm = Double.isNaN(_lambda)?_res._output._submodels[_res._output._best_lambda_idx]:_res._output.submodelForLambda(_lambda);
       assert sm != null : "GLM[" + m._key + "]: missing submodel for lambda " + _lambda;

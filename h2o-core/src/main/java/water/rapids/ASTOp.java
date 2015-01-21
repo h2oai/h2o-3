@@ -2942,7 +2942,7 @@ class ASTTranspose extends ASTOp {
   String opStr() { return "t";}
 
   @Override
-  ASTOp make() { return new ASTMMult();}
+  ASTOp make() { return new ASTTranspose();}
 
   @Override
   void apply(Env env) {
