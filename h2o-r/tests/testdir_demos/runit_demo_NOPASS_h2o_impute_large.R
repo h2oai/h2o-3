@@ -20,7 +20,7 @@ if (TRUE) {
 
   source('../h2o-runit.R')
   options(echo=TRUE)
-  filePath <- "/home/0xdiag/datasets/airlines/airlines_all.csv"
+  filePath <- locate("smalldata/airlines/airlines_all.csv")
 #  testFilePath <- normalizePath(locate("smalldata/airlines/allyears2k_headers.zip"))
 } else {
   stop("need to hardcode ip and port")
