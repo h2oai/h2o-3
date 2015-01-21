@@ -1131,7 +1131,7 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
-  final double _init;
+  protected static double _init;
   protected static boolean _narm;        // na.rm in R
   protected static int _argcnt;
   ASTReducerOp( double init) {
@@ -1189,6 +1189,17 @@ abstract class ASTReducerOp extends ASTOp {
         sum = op(sum,_narm?new NaRmRedOp(this).doAll(fr)._d:new RedOp(this).doAll(fr)._d);
       }
     env.push(new ValNum(sum));
+  }
+
+  @Override void exec(Env e, AST arg1, AST[] args) {
+    if (args == null) {
+      _init = 0;
+      _narm = true;
+      _argcnt = 1;
+    }
+    arg1.exec(e);
+    e._global._frames.put(Key.make().toString(), e.peekAry());
+    apply(e);
   }
 
   private static class RedOp extends MRTask<RedOp> {
