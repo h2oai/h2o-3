@@ -499,7 +499,7 @@ class H2OConnection(object):
   # reached, is of a certain size, and is taking basic status commands
   def connect(self,size=1):
     while True:
-      cld = self._doSafeGet(self.buildURL("Cloud",{}))
+      cld = self._doSafeGet(self.buildURL("LATEST/Cloud",{}))
       if not cld['cloud_healthy']:
         raise ValueError("Cluster reports unhealthy status",cld)
       if cld['cloud_size'] >= size and cld['consensus']: return cld
@@ -509,15 +509,13 @@ class H2OConnection(object):
   # Import a single file; very basic error checking
   # Returns h2o Key
   def ImportFile(self,path):
-    j = self._doSafeGet(self.buildURL("ImportFiles",{'path':path}))
+    j = self._doSafeGet(self.buildURL("LATEST/ImportFiles",{'path':path}))
     if j['fails']:  raise ValueError("ImportFiles of "+path+" failed on "+j['fails'])
     return j['keys'][0]
 
   # Return basic parse setup object
   def ParseSetup(self,rawkey):
-    # Unable to use 'requests.params=' syntax because it flattens array
-    # parameters, but ParseSetup really expects a real array of Keys.
-    j = self._doSafeGet(self.buildURL("ParseSetup",{'srcs':'["' + rawkey + '"]'}))
+    j = self._doSafePost(self.buildURL("LATEST/ParseSetup"),{'srcs':[rawkey]})
     if not j['isValid']: raise ValueError("ParseSetup not Valid",j)
     return j
 
@@ -526,27 +524,13 @@ class H2OConnection(object):
     # Some initial parameters
     p = {'delete_on_done':True,'blocking':True,'removeFrame':True,'hex':hexname}
     # Copy selected keys
-    for key in ['ncols','sep','pType','checkHeader','singleQuotes']:
-      p[key] = setup[key]
-
-    # Extract only 'name' from each src in the array of srcs
-    p['srcs'] = "["
-    for src in setup['srcs']:
-      if len(p['srcs']) > 1:
-        p['srcs'] += ','
-      p['srcs'] += '"' + src['name'] + '"'
-    p['srcs'] += "]"
-
-    p['columnNames'] = "["
-    for columnName in setup['columnNames']:
-      if len(p['columnNames']) > 1:
-        p['columnNames'] += ','
-      p['columnNames'] += '"' + columnName + '"'
-    p['columnNames'] += "]"
+    for key in ['ncols','sep','columnNames','pType','checkHeader','singleQuotes']:
+        p[key] = setup[key]
+    # Extract only 'name' from each src in the array of srcs.
+    p['srcs'] = [src['name'] for src in setup['srcs']]
 
     # Request blocking parse
-    # TODO: POST vs GET
-    j = self._doSafeGet(self.buildURL("Parse",p))
+    j = self._doSafePost(self.buildURL("LATEST/Parse"),p)
     if j['job']['status'] != 'DONE': raise ValueError("Parse status expected to be DONE, instead is "+j['job']['status'])
     if j['job']['progress'] != 1.0: raise ValueError("Parse progress expected to be 1.0, instead is "+j['job']['progress'])
     return j
@@ -557,7 +541,7 @@ class H2OConnection(object):
 
   # Fire off a Rapids expression
   def Rapids(self,expr):
-    j = self._doSafeGet(self.buildURL("Rapids",{"ast":urllib.quote(expr)}))
+    j = self._doSafePost(self.buildURL("LATEST/Rapids",{}), {"ast":expr})
     if 'error' in j and j['error']: raise ValueError(j['error'])
     return j
 
@@ -568,7 +552,7 @@ class H2OConnection(object):
     kwargs['response_column'] = x
     kwargs['training_frame'] = train_frame
     if test_frame: kwargs['validation_frame'] = test_frame
-    j = self._doJob(self._doSafeGet(self.buildURL(model,kwargs)))
+    j = self._doJob(self._doSafeGet(self.buildURL("LATEST/" + model,kwargs)))
     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
     return j['models'][0]
 
@@ -576,7 +560,7 @@ class H2OConnection(object):
     return self._doSafeGet(self.buildURL("3/ModelMetrics/models/"+model,{}))['model_metrics']
 
   def Job(self,jobkey):
-    return self._doSafeGet(self.buildURL("Jobs/"+jobkey,{}))
+    return self._doSafeGet(self.buildURL("LATEST/Jobs/"+jobkey,{}))
 
   # Block until a job is done
   def _doJob(self,j):
@@ -609,10 +593,38 @@ class H2OConnection(object):
         raise ValueError(j)
     return j
 
+  # "Safe" REST calls.  Check for errors in a common way
+  def _doSafePost(self,url,parms):
+    parms_serialized = {}
+    if parms is not None:
+      parms_serialized = parms.copy()
+      for k,v in parms.iteritems():
+        if v is not None:
+          if type(v) is list and len(v) == 0:
+            parms_serialized[k] = '[]'
+          elif type(v) is list and isinstance(v[0], basestring):
+            parms_serialized[k] = '["' + '","'.join([str(val) for val in v]) + '"]'
+          elif type(v) is list:
+            parms_serialized[k] = '[' + ','.join([str(val) for val in v]) + ']'
+          else:
+            parms_serialized[k] = v
+
+    r = requests.post(url,data=parms_serialized)
+    # Missing a non-json response check, e.g. 404 check here
+    j = r.json()
+    if 'errmsg' in j: raise ValueError(j['errmsg'])
+    if 'http_status' in j:
+      if j['http_status'] != 200: 
+        if j['msg']: raise ValueError(j['msg'])
+        if 'stacktrace' in j: 
+          raise ValueError(j['stacktrace'])
+        raise ValueError(j)
+    return j
+
   # function to build a URL from a base and a dictionary of params.  'request'
   # has such a thing but it flattens lists and we need the actual list
   # complete with '[]'
-  def buildURL(self,base,params):
+  def buildURL(self,base,params = {}):
     s = self.url()+base+".json"
     sep = '?'
     for k,v in params.items():

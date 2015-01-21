@@ -185,6 +185,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
 
+  private static int latest_version = -1;
+  public final static int getLatestVersion() {
+    return latest_version;
+  }
+  // Bound the version search if we haven't yet registered all schemas
+  public final static int getHighestSupportedVersion() {
+    return 10;
+  }
+
   /** Register the given schema class. */
   public static void register(Class<? extends Schema> clz) {
     synchronized(clz) {
@@ -214,7 +223,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
       }
 
-      if (extractVersion(clz.getSimpleName()) > -1) {
+      int version = extractVersion(clz.getSimpleName());
+      if (version > getHighestSupportedVersion())
+        throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
+
+      if (version > -1) {
+        // Track highest version of all schemas; only valid after all are registered at startup time.
+        if (version > latest_version) {
+          synchronized (Schema.class) {
+            if (version > latest_version) latest_version = version;
+          }
+        }
+
         Schema s = null;
         try {
           s = clz.newInstance();
@@ -455,13 +475,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     if( fclz.equals(Key.class) )
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       else if (!required && (s == null || s.length() == 0)) return null;
-      else return Key.make(s);
+      else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
     if( KeySchema.class.isAssignableFrom(fclz) ) {
       if ((s == null || s.length() == 0) && required) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       if (!required && (s == null || s.length() == 0)) return null;
 
-      return KeySchema.make(fclz, Key.make(s));
+      return KeySchema.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
     if( Enum.class.isAssignableFrom(fclz) )

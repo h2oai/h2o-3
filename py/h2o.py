@@ -167,9 +167,9 @@ class H2O(object):
         # remove any params that are 'None'
         # need to copy dictionary, since can't delete while iterating
         if params is not None:
-            params2 = params.copy()
-            for k in params2:
-                if params2[k] is None:
+            params_serialized = params.copy()
+            for k in params_serialized:
+                if params_serialized[k] is None:
                     del params[k]
             paramsStr = '?' + '&'.join(['%s=%s' % (k, v) for (k, v) in params.items()])
         else:
@@ -375,7 +375,7 @@ class H2O(object):
             'job_key': job_key
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
-        result = self.__do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/2/Jobs.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -391,7 +391,7 @@ class H2O(object):
         start_time = time.time()
         while True:
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
-            result = self.__do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
             
             status = result['jobs'][0]['status']
             if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
@@ -409,7 +409,7 @@ class H2O(object):
     Create a Frame.
     '''
     def create_frame(self, timeoutSecs=180, **kwargs):
-        a = self.__do_json_request('3/CreateFrame.json',
+        a = self.__do_json_request('/3/CreateFrame.json',
             timeout=timeoutSecs,
             params=kwargs
         )
@@ -422,7 +422,7 @@ class H2O(object):
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
     def import_files(self, path, timeoutSecs=180):
-        a = self.__do_json_request('2/ImportFiles.json',
+        a = self.__do_json_request('/2/ImportFiles.json',
             timeout=timeoutSecs,
             params={"path": path}
         )
@@ -449,7 +449,7 @@ class H2O(object):
             'srcs': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
-        setup_result = self.__do_json_request(jsonRequest="ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
+        setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
@@ -470,7 +470,7 @@ class H2O(object):
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
-        parse_result = self.__do_json_request(jsonRequest="Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
+        parse_result = self.__do_json_request(jsonRequest="/2/Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
         # print("Parse result:", repr(parse_result))
@@ -507,9 +507,9 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
         if key:
-            result = self.__do_json_request('3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('3/Frames.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/3/Frames.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -524,7 +524,7 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
-        result = self.__do_json_request('3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -539,7 +539,7 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
-        result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -554,7 +554,7 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         
-        result = self.__do_json_request('3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
         return result
 
 

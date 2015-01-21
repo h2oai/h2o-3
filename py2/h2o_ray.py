@@ -16,7 +16,7 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
         'job_key': job_key
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.do_json_request('Jobs.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -33,7 +33,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     start_time = time.time()
     pollCount = 0
     while True:
-        result = self.do_json_request('3/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
 
         if key:
@@ -79,7 +79,7 @@ def import_files(self, path, timeoutSecs=180):
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
-    a = self.do_json_request('3/ImportFiles.json',
+    a = self.do_json_request('2/ImportFiles.json',
         timeout=timeoutSecs,
         params={"path": path}
     )
@@ -139,7 +139,7 @@ def parse(self, key, hex_key=None,
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     params_setup = {'srcs': srcs}
-    setup_result = self.do_json_request(jsonRequest="ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
+    setup_result = self.do_json_request(jsonRequest="2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
@@ -187,7 +187,7 @@ def parse(self, key, hex_key=None,
     print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
-    parse_result = self.do_json_request( jsonRequest="Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
+    parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['key']['name']

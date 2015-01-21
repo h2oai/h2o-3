@@ -58,8 +58,6 @@ import java.util.zip.ZipOutputStream;
  */
 public class RequestServer extends NanoHTTPD {
 
-  private static final int DEFAULT_VERSION = 2;
-
   static public RequestServer SERVER;
   private RequestServer( ServerSocket socket ) throws IOException { super(socket,null); }
 
@@ -79,34 +77,38 @@ public class RequestServer extends NanoHTTPD {
   private static HashMap<String, ArrayList<MenuItem>> _navbar = new HashMap<>();
   private static ArrayList<String> _navbarOrdering = new ArrayList<>();
 
+  private static Pattern version_pattern = null;
+  private static Pattern getVersionPattern() {
+    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+)/(.*)");
+    return version_pattern;
+  }
+
+
+
   // NOTE!
   // URL patterns are searched in order.  If you have two patterns that can match on the same URL
   // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
   static {
     // Data
 
-//    addToNavbar(register("/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"DEPRECATED Something something something."),"/CreateFrame", "Create Frame",  "Data");
-    addToNavbar(register("/CreateFrame","POST",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
-    addToNavbar(register("/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
-    addToNavbar(register("/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
-    addToNavbar(register("/ParseSetup" ,"GET",ParseSetupHandler .class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.  DEPRECATED: Use POST because of its higher data limit."),"/ParseSetup","ParseSetup",    "Data");
-
-    addToNavbar(register("/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
-    addToNavbar(register("/Parse"      ,"GET",ParseHandler      .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame.  DEPRECATED: Use POST because of its higher data limit."),"/Parse"      , "Parse",         "Data");
-    addToNavbar(register("/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an arbitrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
+    addToNavbar(register("/2/CreateFrame","GET",CreateFrameHandler.class,"run"         ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
+    addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
+    addToNavbar(register("/1/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an arbitrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
 
     // Admin
-    addToNavbar(register("/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
+    addToNavbar(register("/1/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
     register("/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
-    addToNavbar(register("/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
-    addToNavbar(register("/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
-    addToNavbar(register("/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
-    addToNavbar(register("/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
-    addToNavbar(register("/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
-    addToNavbar(register("/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
+    addToNavbar(register("/2/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
+    addToNavbar(register("/2/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
+    addToNavbar(register("/2/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
+    addToNavbar(register("/2/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
+    addToNavbar(register("/2/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
+    addToNavbar(register("/2/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(register("/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
+    addToNavbar(register("/1/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
     register("/"           ,"GET",TutorialsHandler  .class,"nop"                     ,"H2O tutorials."); // TODO: this should hit tutorials if .html, but REST info otherwise
 
     initializeNavBar();
@@ -131,12 +133,12 @@ public class RequestServer extends NanoHTTPD {
             "Return list of all REST API schemas.");
 
 
-    register("/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
+    register("/2/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
       "Typehead hander for filename completion.");
-    register("/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
+    register("/2/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
       "Get the status of the given H2O Job (long-running action).");
 
-    register("/Find"                                             ,"GET"   ,FindHandler.class,    "find",
+    register("/2/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
 
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"key", "column"},
@@ -219,15 +221,14 @@ public class RequestServer extends NanoHTTPD {
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
 
-    register("/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
-    register("/Rapids"                                           ,"GET"   ,RapidsHandler.class, "exec", "Something something R exec something.  DEPRECATED: Use POST because of its higher data limit.");
-    register("/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
-    register("/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
-    register("/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
-    register("/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
-    register("/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
-    register("/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
-    register("/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+    register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
+    register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
+    register("/1/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
+    register("/1/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
+    register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
+    register("/1/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
+    register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
   }
 
   @Deprecated
@@ -329,7 +330,6 @@ public class RequestServer extends NanoHTTPD {
   }
 
 
-  static Pattern version_pattern = null;
   // Lookup the method/url in the register list, and return a matching Method
   protected static Route lookup( String http_method, String uri ) {
     if (null == http_method || null == uri)
@@ -348,8 +348,7 @@ public class RequestServer extends NanoHTTPD {
           return r;
 
     // Didn't find a registered route and didn't find a cached fallback, so do a backward version search and cache if we find a match:
-    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+)/(.*)");
-    Matcher m = version_pattern.matcher(uri);
+    Matcher m = getVersionPattern().matcher(uri);
     if (! m.matches()) return null;
 
     // Ok then. . .  Try to fall back to a previous version.
@@ -430,35 +429,6 @@ public class RequestServer extends NanoHTTPD {
     Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
   }
 
-  // Parse version number.  Java has no ref types, bleah, so return the version
-  // number and the "parse pointer" by shift-by-16 compaction.
-  // /1/xxx     --> version 1
-  // /2/xxx     --> version 2
-  // /v1/xxx    --> version 1
-  // /v2/xxx    --> version 2
-  // /latest/xxx--> DEFAULT_VERSION
-  // /xxx       --> DEFAULT_VERSION
-  private int parseVersion( String uri ) {
-    if( uri.length() <= 1 || uri.charAt(0) != '/' ) // If not a leading slash, then I am confused
-      return DEFAULT_VERSION;
-    if( uri.startsWith("/latest") )
-      return (("/latest".length())<<16)| DEFAULT_VERSION;
-    int idx=1;                  // Skip the leading slash
-    int version=0;
-    char c = uri.charAt(idx);   // Allow both /### and /v###
-    if( c=='v' ) c = uri.charAt(++idx);
-    while( idx < uri.length() && '0' <= c && c <= '9' ) {
-      version = version*10+(c-'0');
-      c = uri.charAt(++idx);
-    }
-    // Allow versions > DEFAULT_VERSION
-    if( idx > 10 || version < 1 || uri.charAt(idx) != '/' )
-      return (0<<16)| DEFAULT_VERSION; // Failed number parse or baloney version
-    // Happy happy version
-    return (idx<<16)|version;
-  }
-
-
   private void capturePathParms(Properties parms, String path, Route route) {
     Matcher m = route._url_pattern.matcher(path);
     if (! m.matches()) {
@@ -486,16 +456,37 @@ public class RequestServer extends NanoHTTPD {
   //   parms:        "{hex-->some_hex}"
   @Override public Response serve( String uri, String method, Properties header, Properties parms ) {
     // Jack priority for user-visible requests
-    Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
+    Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
 
-    // determine version
-    int version = parseVersion(uri);
-    int idx = version>>16;
-    version &= 0xFFFF;
-    String uripath = uri.substring(idx);
+    // determine version: if /LATEST then use the highest version of any schema (or the highest supported version, if we don't know yet).
+    if (uri.startsWith("/LATEST")) {
+      if (-1 == Schema.getLatestVersion()) {
+        // Not yet initialized, and we might be in bootstrap
+        uri = "/" + Schema.getHighestSupportedVersion() + uri.substring("/latest".length());
+      } else {
+        uri = "/" + Schema.getLatestVersion() + uri.substring("/latest".length());
+      }
+    }
 
     // determine the request type
-    RequestType type = RequestType.requestType(uripath);
+    RequestType type = RequestType.requestType(uri);
+
+    Matcher m = getVersionPattern().matcher(uri);
+    if (! m.matches()) {
+      H2ONotFoundArgumentException e = new H2ONotFoundArgumentException("Route " + uri + " not found",
+              "Route " + uri + " not found");
+      H2OError error = e.toH2OError(uri);
+
+      Log.warn(error._dev_msg);
+      Log.warn(error._values.toJsonString());
+      Log.warn((Object[])error._stacktrace);
+
+      return wrap(new H2OErrorV1().fillFromImpl(error), type);
+    }
+
+    int version = Integer.valueOf(m.group(1));
+    String uripath = "/" + m.group(2);
+
     String path = type.requestName(uripath); // Strip suffix type from middle of URI
     String versioned_path = "/" + version + path;
     alwaysLogRequest(path, method, parms);
