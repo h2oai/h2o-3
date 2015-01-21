@@ -468,7 +468,15 @@ class ASTRound extends ASTUniPrefixOp {
   // e.g.: floor(2.676*100 + 0.5) / 100 => 2.68
   static double roundDigits(double x, int digits) {
     if(Double.isNaN(x)) return x;
-    return Math.floor(x * digits + 0.5) / (double)digits;
+    double sgn = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    double power_of_10 = (int)Math.pow(10, digits);
+    return sgn*(digits == 0
+            // go to the even digit
+            ? (x % 1 >= 0.5 && !(Math.floor(x)%2==0))
+              ? Math.ceil(x)
+              : Math.floor(x)
+            : Math.floor(x * power_of_10 + 0.5) / power_of_10);
   }
 }
 
@@ -476,7 +484,7 @@ class ASTSignif extends ASTUniPrefixOp {
   int _digits = 6;  // R default
   @Override String opStr() { return "signif"; }
   ASTSignif() { super(new String[]{"signif", "x", "digits"}); }
-  @Override ASTRound parse_impl(Exec E) {
+  @Override ASTSignif parse_impl(Exec E) {
     // Get the ary
     AST ary = E.parse();
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
@@ -487,7 +495,7 @@ class ASTSignif extends ASTUniPrefixOp {
       e.printStackTrace();
       throw new IllegalArgumentException("Expected a double for `digits` argument.");
     }
-    ASTRound res = (ASTRound) clone();
+    ASTSignif res = (ASTSignif) clone();
     res._asts = new AST[]{ary};
     return res;
   }
