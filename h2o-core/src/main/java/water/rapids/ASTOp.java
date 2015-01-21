@@ -2473,7 +2473,19 @@ class ASTIfElse extends ASTUniPrefixOp {
   @Override String opStr() { return "ifelse"; }
   @Override ASTIfElse parse_impl(Exec E) {
     AST tst = E.parse();
-    if (tst instanceof ASTId) tst = Env.staticLookup((ASTId)tst);
+    if (tst instanceof ASTId) tst = Env.staticLookup((ASTId) tst);
+
+    // still have an instance of ASTId, and lookup gives 0 (%FALSE) or 1 (%TRUE)
+    if (tst instanceof ASTId) {
+      try {
+        double d = ((ASTNum) E._env.lookup((ASTId)tst))._d;
+        if (d == 0 || d == 1) {  // FALSE or TRUE
+          tst = new ASTFrame(new Frame(Key.make(), null, new Vec[]{Vec.makeCon(d, 1)} ) );
+        }
+      } catch (ClassCastException e) {
+        throw new IllegalArgumentException("`test` must be a frame or TRUE/FALSE");
+      }
+    }
     AST yes = E.skipWS().parse(); // could be num
     if (yes instanceof ASTId) yes = Env.staticLookup((ASTId)yes);
     AST no  = E.skipWS().parse(); // could be num
@@ -2497,14 +2509,14 @@ class ASTIfElse extends ASTUniPrefixOp {
       int nrbins = 1 + (int)((tgt.numRows() - src.numRows()) / src.numRows());
       long remainder = tgt.numRows() % src.numRows();
       sb = new StringBuilder("(rbind ");
-      for (int i = 0; i < nrbins; ++i) sb.append("$").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
-      sb.append(remainder > 0 ? "([ $"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
+      for (int i = 0; i < nrbins; ++i) sb.append("%").append(k).append((i == (nrbins - 1) && remainder<0) ? "" : " ");
+      sb.append(remainder > 0 ? "([ %"+k+" (: #0 #"+(remainder-1)+") \"null\"))" : ")");
       Log.info("extending frame:" + sb.toString());
 
     // reduce src
     } else if (src.numRows() > tgt.numRows()) {
       long rmax = tgt.numRows() - 1;
-      sb = new StringBuilder("([ $"+k+" (: #0 #"+rmax+"))");
+      sb = new StringBuilder("([ %"+k+" (: #0 #"+rmax+"))");
     }
 
     if (sb != null) {
@@ -2773,13 +2785,10 @@ class ASTLs extends ASTOp {
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec());
     NewChunk keys = new NewChunk(av,0);
     int r = 0;
-//    KeySnapshot.KeyInfo[] infos = KeySnapshot.globalSnapshot()._keyInfos;
-    for( Key key : KeySnapshot.globalSnapshot().keys())
-      if( key.user_allowed() && H2O.get(key) != null) {
-        if (DKV.get(key).get() instanceof Job.Progress) continue;
-        keys.addEnum(r++);
-        domain.add(key.toString());
-      }
+    for( Key key : KeySnapshot.globalSnapshot().keys()) {
+      keys.addEnum(r++);
+      domain.add(key.toString());
+    }
     keys.close(fs);
     Vec c0 = av.close(fs);   // c0 is the row index vec
     fs.blockForPending();
