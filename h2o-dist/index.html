@@ -278,7 +278,14 @@
 
           <div id="quickstart-r" style="display:none">
             <h2>Use H<sub>2</sub>O directly from R</h2>
-            <p>Copy and paste these commands into R one line at a time:
+            <p>NOTE: The R devtools package and roxygen2 are required. Please install these dependencies before installing H2O.</p>
+              <p>To install from CRAN:</p>
+              <p class="terminal">
+                  install.packages("devtools")<br/>
+                  install.packages("roxygen2")<br/>
+              </p>
+
+              <p>Copy and paste these commands into R one line at a time:
             <p class="terminal">
               <em># The following two commands remove any previously installed H<sub>2</sub>O packages for R.</em><br/>
               if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br/>
