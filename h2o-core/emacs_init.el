@@ -6,6 +6,7 @@
 (setq confirm-kill-emacs 'yes-or-no-p)
 
 ;; JavaDoc help on F1
+(add-to-list 'load-path (substitute-in-file-name "$DESK/Dropbox/Programs/Emacs/elisp"))
 (require 'javadoc-help)
 (global-set-key [(f1)]          'javadoc-lookup)  ; F1 to lookup
 (global-set-key [(shift f1)]    'javadoc-help)    ; Shift-F1 to bring up menu
@@ -84,7 +85,7 @@
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
  '(jde-compile-option-debug (quote ("all" (t t t))))
- '(jde-compile-option-source (quote ("1.6")))
+ '(jde-compile-option-source (quote ("1.7")))
  '(jde-compile-option-sourcepath (quote ("./src")))
  '(jde-debugger (quote ("JDEbug")))
  '(jde-global-classpath (quote (".")))
