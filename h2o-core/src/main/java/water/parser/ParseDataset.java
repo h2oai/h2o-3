@@ -862,33 +862,52 @@ public final class ParseDataset extends Job<Frame> {
       _col = 0;
     }
 
+//    private void addColumns(int ncols){
+//      if(ncols > _nCols){
+//        _nvs   = Arrays.copyOf(_nvs   , ncols);
+//        _vecs  = Arrays.copyOf(_vecs  , ncols);
+//        _ctypes= Arrays.copyOf(_ctypes, ncols);
+//        for(int i = _nCols; i < ncols; ++i){
+//          _vecs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i + 1));
+//          _nvs[i] = new NewChunk(_vecs[i], _cidx);
+//          for(int j = 0; j < _nLines; ++j)
+//            _nvs[i].addNum(0, 0);
+//        }
+//        _nCols = ncols;
+//      }
+//    }
+    @Override public void addNumCol(int colIdx, long number, int exp) {
+      assert colIdx >= _col;
+      if(colIdx >= _vecs.length) addColumns(colIdx+1);
+      _nvs[colIdx].addZeros((int)_nLines - _nvs[colIdx]._len);
+      _nvs[colIdx].addNum(number, exp);
+      if(_ctypes[colIdx]._type == ColType.UNKNOWN ) _ctypes[colIdx]._type = ColType.NUM;
+      _col = colIdx+1;
+    }
+    @Override
+    public void newLine() {
+      ++_nLines;
+      _col = 0;
+    }
+    @Override public FVecDataOut close(Futures fs) {
+      for(NewChunk nc:_nvs) {
+        nc.addZeros((int) _nLines - nc._len);
+        assert nc._len == _nLines:"incompatible number of lines after parsing chunk, " + _nLines + " != " + nc._len;
+      }
+      _nCols = _nvs.length;
+      return super.close(fs);
+    }
     private void addColumns(int ncols){
-      if(ncols > _nCols){
+      if(ncols > _nvs.length){
+        int _nCols = _vecs.length;
         _nvs   = Arrays.copyOf(_nvs   , ncols);
         _vecs  = Arrays.copyOf(_vecs  , ncols);
         _ctypes= Arrays.copyOf(_ctypes, ncols);
-        for(int i = _nCols; i < ncols; ++i){
-          _vecs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i + 1));
-          _nvs[i] = new NewChunk(_vecs[i], _cidx);
-          for(int j = 0; j < _nLines; ++j)
-            _nvs[i].addNum(0, 0);
-          _ctypes[i] = new ColTypeInfo();
+        for(int i = _nCols; i < ncols; ++i) {
+          _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart)); // todo - share espc!
+          _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
         }
-        _nCols = ncols;
       }
-    }
-    @Override public void addNumCol(int colIdx, long number, int exp) {
-      assert colIdx >= _col;
-      addColumns(colIdx+1);
-      for(int i = _col; i < colIdx; ++i)
-        super.addNumCol(i, 0, 0);
-      super.addNumCol(colIdx, number, exp);
-      _col = colIdx+1;
-    }
-    @Override public void newLine() {
-      if(_col < _nCols)addNumCol(_nCols-1, 0,0);
-      super.newLine();
-      _col = 0;
     }
   }
 

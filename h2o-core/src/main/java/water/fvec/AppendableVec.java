@@ -44,15 +44,21 @@ public class AppendableVec extends Vec {
     _chunkTypes = new byte[4];
   }
 
+  public AppendableVec( Key key, long [] espc) {
+    super(key, null);
+    _espc = espc;
+    _chunkTypes = new byte[4];
+  }
+
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
   synchronized void closeChunk( NewChunk chk ) {
     final int cidx = chk._cidx;
-    while( cidx >= _espc.length ) {
-      _espc   = Arrays.copyOf(_espc,_espc.length<<1);
+    while( cidx >= _chunkTypes.length )
       _chunkTypes = Arrays.copyOf(_chunkTypes,_chunkTypes.length<<1);
-    }
+    while( cidx >= _espc.length ) // should not happen if espcs are preallocated and shared!
+      _espc = Arrays.copyOf(_espc,_espc.length<<1);
     _espc[cidx] = chk._len;
     _chunkTypes[cidx] = chk.type();
     _naCnt += chk.naCnt();
