@@ -409,7 +409,7 @@ class H2O(object):
     Create a Frame.
     '''
     def create_frame(self, timeoutSecs=180, **kwargs):
-        a = self.__do_json_request('/3/CreateFrame.json',
+        a = self.__do_json_request('3/CreateFrame.json', cmd="post",
             timeout=timeoutSecs,
             params=kwargs
         )

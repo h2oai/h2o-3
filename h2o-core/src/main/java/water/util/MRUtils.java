@@ -25,6 +25,8 @@ public class MRUtils {
     if (fr == null) return null;
     final float fraction = rows > 0 ? (float)rows / fr.numRows() : 1.f;
     if (fraction >= 1.f) return fr;
+    Key newKey = fr._key != null ? Key.make(fr._key.toString() + ".sample." + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
+
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -38,7 +40,7 @@ public class MRUtils {
             }
           }
       }
-    }.doAll(fr.numCols(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.numCols(), fr).outputFrame(newKey, fr.names(), fr.domains());
     if (r.numRows() == 0) {
       Log.warn("You asked for " + rows + " rows (out of " + fr.numRows() + "), but you got none (seed=" + seed + ").");
       Log.warn("Let's try again. You've gotta ask yourself a question: \"Do I feel lucky?\"");

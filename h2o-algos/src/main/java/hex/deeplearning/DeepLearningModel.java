@@ -1812,11 +1812,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
-//    bestModel.get_params()._state = Job.JobState.DONE; //FIXME
-//    bestModel.get_params()._key = get_params().self(); //FIXME : is private
-    final Key job = null;
-    bestModel.delete_and_lock(job);
-    bestModel.unlock(job);
+    DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
     assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);

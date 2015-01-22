@@ -60,13 +60,17 @@ def syncData(subdir) {
     def rname = localDestDir + rfile.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
     def rsize = rfile.Size.text().toLong()
     def rdate = (dateFormatter.parseDateTime(rfile.LastModified.text())).getMillis()
-    localFiles.findAll().each { lfile ->
-      def lname = lfile.path
-      def lsize = lfile.size()
-      def ldate = (new Date(lfile.lastModified())).getTime()
-      if (lname == rname && lsize == rsize && ldate == rdate)
-        match = true
-    }
+    if (rsize != 0) { 
+      localFiles.findAll().each { lfile ->
+        def lname = lfile.path
+        def lsize = lfile.size()
+        def ldate = (new Date(lfile.lastModified())).getTime()
+        if (lname == rname && lsize == rsize && ldate == rdate)
+          match = true
+      }
+    } else { //some software makes 0-byte "directory" files in S3, skip them
+	match = true
+    } 
     if (match == false) {
       downloadList.add(rfile)
     }

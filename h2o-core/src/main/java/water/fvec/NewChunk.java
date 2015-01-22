@@ -68,6 +68,16 @@ public class NewChunk extends Chunk {
   private int _sparseRatio = MIN_SPARSE_RATIO;
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
+
+  public NewChunk( Vec vec, int cidx, boolean sparse ) {
+    _vec = vec; _cidx = cidx;
+    if(sparse) {
+      _ls = new long[128];
+      _xs = new int[128];
+      _id = new int[128];
+    }
+  }
+
   public NewChunk(double [] ds) {
     _cidx = -1;
     _vec = null;
@@ -421,8 +431,12 @@ public class NewChunk extends Chunk {
 
   // Slow-path append data
   private void append2slowd() {
-    if( sparseLen() > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException(sparseLen());
+    if (this._vec != null) {
+      if (sparseLen() > this._vec._chunkSize)
+        throw new ArrayIndexOutOfBoundsException(sparseLen());
+    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
+        throw new ArrayIndexOutOfBoundsException(sparseLen());
+
     assert _ls==null;
     if(_ds != null && _ds.length > 0){
       if(_id == null){ // check for sparseness
@@ -440,8 +454,12 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slowUUID() {
-    if( sparseLen() > Vec.CHUNK_SZ )
+    if (this._vec != null) {
+      if (sparseLen() > this._vec._chunkSize)
+        throw new ArrayIndexOutOfBoundsException(sparseLen());
+    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
+
     if( _ds==null && _ls!=null ) { // This can happen for columns with all NAs and then a UUID
       _xs=null;
       alloc_doubles(sparseLen());
@@ -459,7 +477,10 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append string
   private void append2slowstr() {
-    if( sparseLen() > Vec.CHUNK_SZ )
+    if (this._vec != null) {
+      if (sparseLen() > this._vec._chunkSize)
+        throw new ArrayIndexOutOfBoundsException(sparseLen());
+    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
 
     // In case of all NAs and then a string, convert NAs to string NAs
@@ -495,8 +516,12 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slow( ) {
-    if( sparseLen() > Vec.CHUNK_SZ )
-      throw new ArrayIndexOutOfBoundsException("NewChunk cannot handle more than " + Vec.CHUNK_SZ + " elements.");
+    if (this._vec != null) {
+      if (sparseLen() > this._vec._chunkSize)
+        throw new ArrayIndexOutOfBoundsException(sparseLen());
+    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
+      throw new ArrayIndexOutOfBoundsException(sparseLen());
+
     assert _ds==null;
     if(_ls != null && _ls.length > 0){
       if(_id == null){ // check for sparseness

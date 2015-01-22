@@ -56,6 +56,40 @@ public abstract class Parser extends Iced {
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
 
+  public enum ColType {
+    UNKNOWN, NUM, ENUM, TIME, UUID, STR, INVALID
+  }
+
+  public static class ColTypeInfo extends Iced{
+    ColType _type = ColType.UNKNOWN;
+    ValueString _naStr = new ValueString("");
+    boolean _strongGuess = false;
+
+    public void merge(ColTypeInfo tinfo){
+      if(_type == ColType.UNKNOWN || !_strongGuess && tinfo._strongGuess){ // copy over stuff from the other
+        _type = tinfo._type;
+        _naStr = tinfo._naStr;
+        _strongGuess = tinfo._strongGuess;
+      } else if(tinfo._type != ColType.UNKNOWN && !_strongGuess){
+        tinfo._type = ColType.INVALID;
+      } // else just keep mine
+    }
+
+    public String toString() {
+      switch (_type) {
+        case UNKNOWN:  return "Unknown";
+        case NUM:  return "Numeric";
+        case ENUM:  return "Enum";
+        case TIME:  return "Time";
+        case UUID:  return "UUID";
+        case STR:  return "String";
+        case INVALID: return "Invalid";
+        default:    throw new RuntimeException("Undefined column type used.");
+      }
+    }
+
+  }
+
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
