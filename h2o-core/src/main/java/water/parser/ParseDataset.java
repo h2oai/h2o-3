@@ -731,7 +731,11 @@ public final class ParseDataset extends Job<Frame> {
 
 
     public FVecDataOut(VectorGroup vg, int cidx, Categorical [] enums, ColTypeInfo [] ctypes, int chunkSize, AppendableVec [] avs){
-      _ctypes = ctypes;
+      if (ctypes != null) _ctypes = ctypes;
+      else {
+        _ctypes = new ColTypeInfo[avs.length];
+        for (int i=0; i < _ctypes.length;i++) _ctypes[i] = new ColTypeInfo();
+      }
       _vecs = avs;
       _nvs = new NewChunk[avs.length];
       for(int i = 0; i < avs.length; ++i)
