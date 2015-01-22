@@ -112,11 +112,11 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
   .cframe.map <- c("key" = "dest")
-  parms <- as.list(match.call(expand.dots = FALSE)[-1L])
+  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent)
   parms$conn <- NULL
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
-  res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "GET", .params = parms)
+  res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
   h2o.getFrame(res$dest$name, conn)
 }
 
