@@ -25,7 +25,7 @@ public class UploadFileVec extends FileVec {
     assert _len==-1;            // Not closed
     c._vec = this;              // Attach chunk to this vec.
     DKV.put(chunkKey(cidx),c,fs); // Write updated chunk back into K/V
-    _len = ((_nchunks-1L)<<LOG_CHK)+c._len;
+    _len = ((_nchunks-1L)<<_log2ChkSize)+c._len;
   }
 
   private boolean checkMissing(int cidx, Value val) {
@@ -75,18 +75,18 @@ public class UploadFileVec extends FileVec {
       assert uv.writable();
 
       byte prev[] = null;
-      byte bytebuf[] = new byte[FileVec.CHUNK_SZ];
+      byte bytebuf[] = new byte[Vec.DFLT_CHUNK_SIZE];
       int bytesInChunkSoFar = 0;
       while (true) {
-        int rv = is.read(bytebuf, bytesInChunkSoFar, FileVec.CHUNK_SZ - bytesInChunkSoFar);
+        int rv = is.read(bytebuf, bytesInChunkSoFar, FileVec.DFLT_CHUNK_SIZE - bytesInChunkSoFar);
         if (rv < 0) break;
         bytesInChunkSoFar += rv;
-        if( bytesInChunkSoFar == FileVec.CHUNK_SZ ) {
+        if( bytesInChunkSoFar == FileVec.DFLT_CHUNK_SIZE ) {
           // Write full chunk of size FileVec.CHUNK_SZ.
           C1NChunk c = new C1NChunk(bytebuf);
           uv.addAndCloseChunk(c, fs);
           prev = bytebuf;
-          bytebuf = new byte[FileVec.CHUNK_SZ];
+          bytebuf = new byte[FileVec.DFLT_CHUNK_SIZE];
           bytesInChunkSoFar = 0;
         }
       }

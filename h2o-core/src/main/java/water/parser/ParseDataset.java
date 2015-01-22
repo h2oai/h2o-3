@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.zip.*;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.parser.Parser.ColType;
+import water.parser.Parser.ColTypeInfo;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
@@ -76,7 +78,9 @@ public final class ParseDataset extends Job<Frame> {
     for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
-    long sum=0;
+    long totalParseSize=0;
+    ByteVec bv;
+    float dcr, maxDecompRatio = 0;
     for( int i=0; i<keys.length; i++ ) {
       Key k = keys[i];
       if( dest.equals(k) )
@@ -85,18 +89,36 @@ public final class ParseDataset extends Job<Frame> {
         for( int j=i+1; j<keys.length; j++ )
           if( k==keys[j] )
             throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
-      sum += getByteVec(k).length(); // Sum of all input filesizes
+
+      // estimate total size in bytes
+      bv = getByteVec(k);
+      dcr = ZipUtil.decompressionRatio(bv);
+      if (dcr > maxDecompRatio) maxDecompRatio = dcr;
+      totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
     }
+    //Calc chunk-size
+    setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    Log.info("Chunk size " + setup._chunkSize);
+    Vec update;
+    Iced ice;
+    for( int i = 0; i < keys.length; ++i ) {
+      ice = DKV.getGet(keys[i]);
+      update = (Vec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
+      //update = ((Frame) DKV.getGet(keys[i])).vec(0);
+      update.setChunkSize(setup._chunkSize);
+      DKV.put(update._key, update);
+    }
+
     long memsz = H2O.CLOUD.memsz();
-    if( sum > memsz*4 )
-      throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(sum)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
+    if( totalParseSize > memsz*4 )
+      throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
     // Fire off the parse
     ParseDataset job = new ParseDataset(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
-    job.start(fjt, sum);
+    job.start(fjt, totalParseSize);
     return job;
   }
 
@@ -438,8 +460,9 @@ public final class ParseDataset extends Job<Frame> {
       final int chunkStartIdx = _fileChunkOffsets[_lo];
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr);
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr,_setup._chunkSize);
       ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
+      localSetup._chunkSize = _setup._chunkSize;
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
@@ -510,7 +533,7 @@ public final class ParseDataset extends Job<Frame> {
     // parse local chunks; distribute chunks later.
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
-      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols), null);
+      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols), null, localSetup._chunkSize);
       Parser p = localSetup.parser();
       // assume 2x inflation rate
       if( localSetup._pType._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
@@ -559,11 +582,11 @@ public final class ParseDataset extends Job<Frame> {
         switch(_setup._pType) {
         case CSV:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, null);
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, null,_setup._chunkSize);
           break;
         case ARFF:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, _setup._ctypes); //TODO: use _setup._domains instead of enums
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(),_setup._ncols,_vecIdStart,enums, _setup._ctypes, _setup._chunkSize); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
@@ -630,36 +653,29 @@ public final class ParseDataset extends Job<Frame> {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Categorical [] _enums;
-    protected transient byte [] _ctypes;
+    protected transient ColTypeInfo [] _ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
     final int _cidx;
     final int _vecIdStart;
+    final int _chunkSize;
     boolean _closedVecs = false;
     private final VectorGroup _vg;
 
     static final byte UCOL = 0; // unknown col type
     static final byte NCOL = 1; // numeric col type
     static final byte ECOL = 2; // enum    col type
-    static final byte TCOL = 3; // time    col typ
-    static final byte ICOL = 4; // UUID    col typ
-    static final byte SCOL = 5; // String  col typ
+    static final byte TCOL = 3; // time    col type
+    static final byte ICOL = 4; // UUID    col type
+    static final byte SCOL = 5; // String  col type
 
-    public static String ctypeToDataTypeName(byte b) {
-      switch (b) {
-        case UCOL:  return "unknown";
-        case NCOL:  return "numeric";
-        case ECOL:  return "enum";
-        case TCOL:  return "time";
-        case ICOL:  return "uuid";
-        case SCOL:  return "string";
-        default:    throw new RuntimeException("ctypeToDataTypeName case unhandled");
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, ColTypeInfo[] ctypes, int chunkSize){
+      if (ctypes != null) _ctypes = ctypes;
+      else {
+        _ctypes = new ColTypeInfo[ncols];
+        for (int i=0; i < _ctypes.length;i++) _ctypes[i] = new ColTypeInfo();
       }
-    }
-
-    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, byte[] ctypes){
-      _ctypes = ctypes == null ? MemoryManager.malloc1(ncols) : ctypes;
       _vecs = new AppendableVec[ncols];
       _nvs = new NewChunk[ncols];
       _enums = enums;
@@ -667,8 +683,13 @@ public final class ParseDataset extends Job<Frame> {
       _cidx = cidx;
       _vg = vg;
       _vecIdStart = vecIdStart;
+      _chunkSize = chunkSize;
       for(int i = 0; i < ncols; ++i)
-        _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i))).chunkForChunkIdx(_cidx);
+        _nvs[i] = (_vecs[i] = new AppendableVec(vg.vecKey(vecIdStart + i), chunkSize)).chunkForChunkIdx(_cidx);
+    }
+
+    private FVecDataOut(VectorGroup vg, int cidx, int ncols, int vecIdStart, Categorical[] enums, Parser.ColTypeInfo[] ctypes){
+      this(vg, cidx, ncols, vecIdStart, enums, ctypes, Vec.DFLT_CHUNK_SIZE);
     }
 
     @Override public FVecDataOut reduce(Parser.StreamDataOut sdout){
@@ -686,7 +707,7 @@ public final class ParseDataset extends Job<Frame> {
           dout.enumCol2StrCol(i);
         else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
           enumCol2StrCol(i);
-          _ctypes[i] = SCOL;
+          _ctypes[i]._type = ColType.STR;
         }
 
         _vecs[i].reduce(dout._vecs[i]);
@@ -706,7 +727,7 @@ public final class ParseDataset extends Job<Frame> {
       return this;
     }
     @Override public FVecDataOut nextChunk(){
-      return  new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums, null);
+      return new FVecDataOut(_vg, _cidx+1, _nCols, _vecIdStart, _enums, null, _chunkSize);
     }
 
     private Vec [] closeVecs(){
@@ -741,32 +762,32 @@ public final class ParseDataset extends Job<Frame> {
     @Override public void addNumCol(int colIdx, long number, int exp) {
       if( colIdx < _nCols ) {
         _nvs[_col = colIdx].addNum(number, exp);
-        if(_ctypes[colIdx] == UCOL ) _ctypes[colIdx] = NCOL;
+        if(_ctypes[colIdx]._type == ColType.UNKNOWN ) _ctypes[colIdx]._type = ColType.NUM;
       }
     }
 
     @Override public final void addInvalidCol(int colIdx) {
       if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
     }
-    @Override public final boolean isString(int colIdx) { return (colIdx < _nCols) &&  (_ctypes[colIdx]==ECOL || _ctypes[colIdx]==SCOL);}
+    @Override public final boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx]._type == ColType.ENUM || _ctypes[colIdx]._type == ColType.STR);}
 
     @Override public final void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _nvs.length){
-        if(_ctypes[colIdx] == NCOL){ // support enforced types
+        if(_ctypes[colIdx]._type == ColType.NUM){ // support enforced types
           addInvalidCol(colIdx);
           return;
         }
-        if(_ctypes[colIdx] == UCOL && ParseTime.attemptTimeParse(str) > 0)
-          _ctypes[colIdx] = TCOL;
-        if( _ctypes[colIdx] == UCOL ) { // Attempt UUID parse
+        if(_ctypes[colIdx]._type == ColType.UNKNOWN && ParseTime.attemptTimeParse(str) > 0)
+          _ctypes[colIdx]._type = ColType.TIME;
+        if( _ctypes[colIdx]._type == ColType.UNKNOWN ) { // Attempt UUID parse
           int old = str.get_off();
           ParseTime.attemptUUIDParse0(str);
           ParseTime.attemptUUIDParse1(str);
-          if( str.get_off() != -1 ) _ctypes[colIdx] = ICOL;
+          if( str.get_off() != -1 ) _ctypes[colIdx]._type = ColType.UUID;
           str.setOff(old);
         }
 
-        if( _ctypes[colIdx] == TCOL ) {
+        if( _ctypes[colIdx]._type == ColType.TIME ) {
           long l = ParseTime.attemptTimeParse(str);
           if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
           else {
@@ -775,20 +796,20 @@ public final class ParseDataset extends Job<Frame> {
             addNumCol(colIdx, l, 0);               // Record time in msec
             _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
           }
-        } else if( _ctypes[colIdx] == ICOL ) { // UUID column?  Only allow UUID parses
+        } else if( _ctypes[colIdx]._type == ColType.UUID ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
           if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
           if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
-        } else if( _ctypes[colIdx] == SCOL ) {
+        } else if( _ctypes[colIdx]._type == ColType.STR ) {
           _nvs[_col = colIdx].addStr(str);
         } else {
           if(!_enums[colIdx].isMapFull()) {
             int id = _enums[_col = colIdx].addKey(str);
-            if (_ctypes[colIdx] == UCOL && id > 1) _ctypes[colIdx] = ECOL;
+            if (_ctypes[colIdx]._type == ColType.UNKNOWN && id > 1) _ctypes[colIdx]._type = ColType.ENUM;
             _nvs[colIdx].addEnum(id);
           } else { // maxed out enum map, convert col to string chunk
-            _ctypes[_col = colIdx] = SCOL;
+            _ctypes[_col = colIdx]._type = ColType.STR;
             enumCol2StrCol(colIdx);
             _nvs[colIdx].addStr(str);
           }
@@ -851,6 +872,7 @@ public final class ParseDataset extends Job<Frame> {
           _nvs[i] = new NewChunk(_vecs[i], _cidx);
           for(int j = 0; j < _nLines; ++j)
             _nvs[i].addNum(0, 0);
+          _ctypes[i] = new ColTypeInfo();
         }
         _nCols = ncols;
       }

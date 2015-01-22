@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.parser.ParseTime;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -31,6 +32,11 @@ public class AppendableVec extends Vec {
   long _strCnt;
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
+
+  public AppendableVec( Key key, int chunkSize ) {
+    this(key);
+    setChunkSize(chunkSize);
+  }
 
   public AppendableVec( Key key ) {
     super(key, null);
@@ -163,7 +169,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, domain(), type);
+    Vec vec = new Vec(_key, espc, domain(), type, _chunkSize);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }
