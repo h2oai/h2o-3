@@ -207,31 +207,13 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
         type    <- mapping[1L, 1L]
         scalar  <- mapping[1L, 2L]
 
-        # Change Java Array to R list
-        if (!scalar) {
-          arr <- gsub("\\[", "", gsub("]", "", value))
-          value <- unlist(strsplit(arr, split=", "))
-        }
-
-        # Parse frame information to a key
-        if (type == "H2OFrame") {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        } else if (type == "numeric")
-          value <- as.numeric(value)
-        else if (type == "logical")
-          value <- as.logical(value)
+        # Prase frame information to a key
+        if (type == "H2OFrame")
+          value <- value$name
 
         # Response column needs to be parsed
         if (name == "response_column")
-        {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        }
+          value <- value$column_name
         parameters[[name]] <<- value
       }
     }
