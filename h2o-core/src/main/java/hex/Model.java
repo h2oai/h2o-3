@@ -430,8 +430,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
 
   @Override protected Futures remove_impl( Futures fs ) {
-    for( Key k : _output._model_metrics )
-      k.remove(fs);
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        k.remove(fs);
     return fs;
   }
 
