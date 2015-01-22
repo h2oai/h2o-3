@@ -1,3 +1,4 @@
+__version__ = "0.0.4a1"
 
 from h2o import *
 from frame import H2OFrame
