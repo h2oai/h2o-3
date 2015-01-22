@@ -2,6 +2,8 @@ package water.fvec;
 
 import water.*;
 import water.parser.ParseTime;
+import water.util.Log;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -25,28 +27,44 @@ public class AppendableVec extends Vec {
   public static final byte TIME   = 4;
   public static final byte UUID   = 5;
   public static final byte STRING = 6;
+
   private byte[] _chunkTypes;
+
+  public void setTypes(byte [] ts) {
+    _chunkTypes = ts;
+  }
+
   long _naCnt;
   long _enumCnt;
   long _strCnt;
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
 
-  public AppendableVec( Key key ) {
-    super(key, null);
-    _espc = new long[4];
-    _chunkTypes = new byte[4];
+
+
+  int _chunkOff;
+
+
+  public AppendableVec( Key key){
+    this(key, Vec.DFLT_CHUNK_SIZE, new long[4], 0);
   }
 
+  public AppendableVec( Key key, int chunkSize, long [] espc, int chunkOff) {
+    super(key, null); // NOTE: passing null for espc and then keeping private copy so that the size can change
+    setChunkSize(chunkSize);
+    _espc = espc;
+    _chunkTypes = new byte[4];
+    _chunkOff = chunkOff;
+  }
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
   synchronized void closeChunk( NewChunk chk ) {
-    final int cidx = chk._cidx;
-    while( cidx >= _espc.length ) {
-      _espc   = Arrays.copyOf(_espc,_espc.length<<1);
+    final int cidx = chk._cidx - _chunkOff;
+    while( cidx >= _chunkTypes.length )
       _chunkTypes = Arrays.copyOf(_chunkTypes,_chunkTypes.length<<1);
-    }
+    while( cidx >= _espc.length ) // should not happen if espcs are preallocated and shared!
+      _espc = Arrays.copyOf(_espc,_espc.length<<1);
     _espc[cidx] = chk._len;
     _chunkTypes[cidx] = chk.type();
     _naCnt += chk.naCnt();
@@ -54,6 +72,35 @@ public class AppendableVec extends Vec {
     _strCnt += chk.strCnt();
     for( int i=0; i<_timCnt.length; i++ ) _timCnt[i] += chk._timCnt[i];
     _totalCnt += chk._len;
+  }
+
+  public static Vec[] closeAll(AppendableVec [] avs) {
+    Futures fs = new Futures();
+    Vec [] res = closeAll(avs,fs);
+    fs.blockForPending();
+    return res;
+  }
+
+  public static Vec[] closeAll(AppendableVec [] avs, Futures fs) {
+    Vec [] res = new Vec[avs.length];
+    for(int i = 0; i < avs.length; ++i)
+      res[i] = avs[i].close(fs);
+    return res;
+  }
+
+  /**
+   * Add AV build over sub-range of this vec (used e.g. by multifile parse where each file produces its own AV which represents sub-range of the resulting vec)
+   * @param av
+   */
+  public void setSubRange(AppendableVec av) {
+    assert _key.equals(av._key):"mismatched keys " + _key + ", " + av._key;
+    System.arraycopy(av._espc, 0, _espc, av._chunkOff, av._espc.length);
+    System.arraycopy(av._chunkTypes, 0, _chunkTypes, av._chunkOff, av._espc.length); // intentionally espc length which is guaranteed to be correct length, types may be longer!
+    _strCnt += av._strCnt;
+    _naCnt += av._naCnt;
+    _enumCnt += av._enumCnt;
+    ArrayUtils.add(_timCnt, av._timCnt);
+    _totalCnt += av._totalCnt;
   }
 
   // We declare column to be string/enum if it has more enums than numbers
@@ -70,18 +117,20 @@ public class AppendableVec extends Vec {
     // Combine arrays of elements-per-chunk
     long e1[] = nv._espc;       // Shorter array of longs?
     byte t1[] = nv._chunkTypes;
-    if( e1.length > _espc.length ) {
+    if( e1.length > _espc.length ) { // should not happen for shared espcs!
       e1 = _espc;               // Keep the shorter one in e1
-      t1 = _chunkTypes;
       _espc = nv._espc;         // Keep longer in the object
+    }
+    if(t1.length > _chunkTypes.length) {
+      t1 = _chunkTypes;
       _chunkTypes = nv._chunkTypes;
     }
     for( int i=0; i<e1.length; i++ ){ // Copy non-zero elements over
-      assert _chunkTypes[i] == 0 || t1[i] == 0 : " _chunkTypes[i] = " +_chunkTypes[i] + "; t1[i] = " + t1[i];
       if( e1[i] != 0 && _espc[i]==0 )
         _espc[i] = e1[i];
-      _chunkTypes[i] |= t1[i];
     }
+    for( int i =0 ; i < t1.length; ++i)
+      _chunkTypes[i] |= t1[i];
     _naCnt += nv._naCnt;
     _enumCnt += nv._enumCnt;
     _strCnt += nv._strCnt;
@@ -163,7 +212,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, domain(), type);
+    Vec vec = new Vec(_key, espc, domain(), type, _chunkSize);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

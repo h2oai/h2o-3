@@ -50,7 +50,15 @@ public class MathUtils {
     if (x > 1) return ((Double.doubleToLongBits(x) >> 32) - 1072632447d) / 1512775d;
     else return Math.log(x);
   }
-
+  /**
+   * Fast calculation of log base 2 for integers.
+   * @param n
+   * @return log base 2 of n
+   */
+  final public static int log2(int n) {
+    if (n <= 0) throw new IllegalArgumentException();
+    return 31 - Integer.numberOfLeadingZeros(n);
+  }
   public static float sumSquares(final float[] a) {
     return sumSquares(a, 0, a.length);
   }

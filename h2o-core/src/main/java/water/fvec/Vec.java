@@ -6,11 +6,14 @@ import water.parser.Categorical;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -157,11 +160,22 @@ import java.util.UUID;
  */
 public class Vec extends Keyed {
   /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
+  public static final int DFLT_LOG2_CHUNK_SIZE = 20/*1Meg*/+2/*4Meg*/;
+  protected int _log2ChkSize = DFLT_LOG2_CHUNK_SIZE;
   /** Default Chunk size in bytes, useful when breaking up large arrays into
    *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
    *  costs, lower increases fine-grained parallelism. */
-  public static final int CHUNK_SZ = 1 << LOG_CHK;
+  public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
+  protected int _chunkSize = DFLT_CHUNK_SIZE;
+  public void setChunkSize(int chunkSize) {
+    if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
+    if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
+    _log2ChkSize = water.util.MathUtils.log2(chunkSize);
+    _chunkSize = 1 << _log2ChkSize;
+    if (_chunkSize != chunkSize) Log.info("Provided chunk size " + chunkSize +
+            " is not a power of 2.  Using " + _chunkSize + " instead.");
+  }
+  public int getChunkSize() {return _chunkSize;}
 
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is
@@ -230,10 +244,12 @@ public class Vec extends Keyed {
    *  domain. */
   Vec( Key key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
 
+  public Vec( Key key, long espc[], String[] domain, byte type ) { this(key, espc, domain, type, DFLT_CHUNK_SIZE); }
+
   /** Main default constructor; the caller understands Chunk layout (via the
    *  {@code espc} array), plus enum/factor the {@code domain} (or null for
    *  non-enums), and the Vec type. */
-  public Vec( Key key, long espc[], String[] domain, byte type ) {
+  public Vec( Key key, long espc[], String[] domain, byte type, int chunkSize ) {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
@@ -241,6 +257,7 @@ public class Vec extends Keyed {
     _type = type;
     _espc = espc;
     _domain = domain;
+    _chunkSize = chunkSize;
   }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
@@ -292,7 +309,7 @@ public class Vec extends Keyed {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len) {
-    int log_rows_per_chunk = LOG_CHK;
+    int log_rows_per_chunk = DFLT_LOG2_CHUNK_SIZE;
     return makeCon(x, len, log_rows_per_chunk);
   }
 
@@ -363,6 +380,54 @@ public class Vec extends Keyed {
     DKV.put(v._key,v,fs);
     fs.blockForPending();
     return v;
+  }
+
+  /**
+   * Calculates safe and hopefully optimal chunk sizes.  Four cases
+   * exist.
+   * <p>
+   * very small data < 128K per proc - uses default chunk size and
+   * all data will be in one chunk
+   * <p>
+   * small data - data is partitioned into chunks that at least
+   * 4 chunks per core to help keep all cores loaded
+   * <p>
+   * default - chunks are {@value #DFLT_CHUNK_SIZE}
+   * <p>
+   * large data - if the data would create more than 4M keys per
+   * node, then chunk sizes larger than DFLT_CHUNK_SIZE are issued.
+   * <p>
+   * Too many keys can create enough overhead to blow out memory in
+   * large data parsing. # keys = (parseSize / chunkSize) * numCols.
+   * Key limit of 2M is a guessed "reasonable" number.
+   *
+   * @param totalSize - parse size in bytes (across all files to be parsed)
+   * @param numCols - number of columns expected in dataset
+   * @return - optimal chunk size in bytes (always a power of 2).
+   */
+  public static int calcOptimalChunkSize(long totalSize, int numCols) {
+    long localParseSize =  totalSize / H2O.getCloudSize();
+    int chunkSize = (int) (localParseSize /
+            (Runtime.getRuntime().availableProcessors() * 4));
+
+    // Super small data check - less than 32K/thread
+    if (chunkSize <= (1 << 15)) {
+      return DFLT_CHUNK_SIZE;
+    }
+
+    // Small data check
+    chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
+    if (chunkSize < DFLT_CHUNK_SIZE) {
+      return chunkSize;
+    }
+
+    // Big data check
+    long tmp = (localParseSize * numCols / (1 << 21)); // ~ 2M keys per node
+    if (tmp > (1 << 30)) return (1 << 30); // Max limit is 1G
+    if (tmp > DFLT_CHUNK_SIZE) {
+      chunkSize = 1 << MathUtils.log2((int) tmp); //closest power of 2
+      return chunkSize;
+    } else return DFLT_CHUNK_SIZE;
   }
 
   /** Make a new vector with the same size and data layout as the current one,
@@ -1053,6 +1118,22 @@ public class Vec extends Keyed {
       tsk.invoke(_key);
       return tsk._n;
     }
+
+
+    /**
+     * Task to atomically add vectors into existing group.
+     * @author tomasnykodym
+     */
+    private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
+      final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      final int _oldCnt;
+      private ReturnKeysTsk(Key key, int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
+      @Override public VectorGroup atomic(VectorGroup old) {
+        return (old._len == _oldCnt)? new VectorGroup(_key, _newCnt):old;
+      }
+    }
+    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(_key,oldCnt,newCnt).fork(_key);}
+
 
     /** Gets the next n keys of this group.
      *  @param n number of keys to make

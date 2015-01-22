@@ -2,6 +2,7 @@ package water.parser;
 
 import water.DKV;
 import water.api.Handler;
+import water.Key;
 import water.util.PojoUtils;
 
 import java.util.Arrays;
@@ -13,9 +14,12 @@ import java.util.Arrays;
 public class ParseSetupHandler extends Handler {
 
   public ParseSetupV2 guessSetup(int version, ParseSetupV2 p) {
-    if( DKV.get(p.srcs[0].key()) == null ) throw new IllegalArgumentException("Key not loaded: "+p.srcs[0]);
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(p.srcs[0].key()));
-    ParseSetup ps = ParseSetup.guessSetup(bits, p.singleQuotes, p.checkHeader);
+    Key[] fkeys = new Key[p.srcs.length];
+    for(int i=0; i < p.srcs.length; i++) {
+      fkeys[i] = p.srcs[i].key();
+      if (DKV.get(fkeys[i]) == null) throw new IllegalArgumentException("Key not loaded: "+ p.srcs[i]);
+    }
+    ParseSetup ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p.singleQuotes, p.checkHeader));
 
     // TODO: ParseSetup throws away the srcs list. . .
     PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "hex", "srcs" });
@@ -28,7 +32,7 @@ public class ParseSetupHandler extends Handler {
     if (ps._ctypes != null) {
       p.columnDataTypes = new String[ps._ctypes.length];
       for (int i = 0; i < ps._ctypes.length; i++) {
-        p.columnDataTypes[i] = ParseDataset.FVecDataOut.ctypeToDataTypeName(ps._ctypes[i]);
+        p.columnDataTypes[i] = ps._ctypes[i].toString();
       }
     }
 
