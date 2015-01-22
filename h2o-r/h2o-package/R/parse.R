@@ -14,10 +14,10 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
   srcs <- data@key
-  srcs <- .collapse(srcs)
+  srcs <- .collapse.char(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs)
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
 
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
@@ -25,14 +25,15 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   if (!nzchar(key))
     key <- .key.make(data@conn, parseSetup$hexName)
   parse.params <- list(
-        srcs = srcs,
+        srcs = .collapse(srcs), # TODO: use the keys list output by ParseSetup
         hex  = key,
-        columnNames = .collapse(col.names),
+        columnNames = .collapse.char(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,
         ncols = ncols,
         checkHeader = parseSetup$checkHeader,
-        singleQuotes = parseSetup$singleQuotes
+        singleQuotes = parseSetup$singleQuotes,
+        delete_on_done = TRUE
         )
 
   # Perform the parse
@@ -41,9 +42,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
-
-  # Remove keys to unparsed data
-  h2o.rm(res$srcs[[1L]]$name, data@conn)
 
   # Return a new H2OFrame object
   nrows <- .h2o.fetchNRows(data@conn, hex)
@@ -54,7 +52,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #' Helper Collapse Function
 #'
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
-.collapse <- function(v) paste0('[', paste(v, collapse=","), ']')
+.collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
+.collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
   .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows

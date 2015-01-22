@@ -9,9 +9,6 @@ import water.api.*;
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHandler does this for all the algos.  */
 @Deprecated
 public class KMeansHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public KMeansHandler() {}
 
   // TODO: move this into a new ModelBuilderHandler superclass

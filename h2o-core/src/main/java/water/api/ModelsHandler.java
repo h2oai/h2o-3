@@ -9,9 +9,6 @@ import water.fvec.Frame;
 import java.util.*;
 
 class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /** Class which contains the internal representation of the models list and params. */
   protected static final class Models extends Iced {
     public Key key;

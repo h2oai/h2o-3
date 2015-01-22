@@ -11,11 +11,4 @@ public class CreateFrameHandler extends Handler {
     cfr.execImpl(); //non-blocking -> caller has to check Job progress
     return (JobV2)Schema.schema(version, Job.class).fillFromImpl(cfr);
   }
-
-  @Override protected int min_ver() {
-    return 2;
-  }
-  @Override protected int max_ver() {
-    return Integer.MAX_VALUE;
-  }
 }

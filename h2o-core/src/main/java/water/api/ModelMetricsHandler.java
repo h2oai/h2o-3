@@ -7,9 +7,6 @@ import water.fvec.Frame;
 import water.util.Log;
 
 class ModelMetricsHandler extends Handler {
-  @Override protected int min_ver() { return 3; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /** Class which contains the internal representation of the ModelMetrics list and params. */
   public static final class ModelMetricsList extends Iced {
     public Model _model;
@@ -41,7 +38,7 @@ class ModelMetricsHandler extends Handler {
     }
 
     /** Return all the models matching the model&frame filters */
-    public Schema list(int version, ModelMetricsList m) { 
+    public Schema list(int version, ModelMetricsList m) {
       return this.schema(version).fillFromImpl(m.fetch());
     }
 

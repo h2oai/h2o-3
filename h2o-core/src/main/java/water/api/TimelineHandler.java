@@ -9,10 +9,6 @@ import water.init.TimelineSnapshot;
  * Created by tomasnykodym on 6/5/14.
  */
 public class TimelineHandler extends Handler {
-  // Supported at V1 same as always
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public static final class Timeline extends Iced {
     TimelineSnapshot snapshot;
   }

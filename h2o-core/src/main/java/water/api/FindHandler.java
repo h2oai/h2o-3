@@ -83,8 +83,4 @@ class FindHandler extends Handler {
       if( _next > f._next ) _next = f._next;
     }
   }
-
-
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 }

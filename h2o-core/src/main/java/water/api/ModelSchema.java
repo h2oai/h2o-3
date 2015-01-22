@@ -18,6 +18,9 @@ import water.util.PojoUtils;
  *
  */
 abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P, O>, P extends Model.Parameters, O extends Model.Output> extends Schema<M, S> {
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
   protected Key key;

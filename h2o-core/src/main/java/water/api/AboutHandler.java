@@ -24,9 +24,6 @@ public class AboutHandler extends Handler {
     public AboutEntryV3 entries[];
   }
 
-  @Override protected int min_ver() { return 3; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public AboutV3 get(int version, AboutV3 s) {
     ArrayList<AboutEntryV3> entries = new ArrayList<>();

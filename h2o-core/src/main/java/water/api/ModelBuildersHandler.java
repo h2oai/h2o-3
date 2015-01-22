@@ -7,9 +7,6 @@ import water.util.IcedHashMap;
 import java.util.Map;
 
 class ModelBuildersHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /** Return all the modelbuilders. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelBuildersV2 list(int version, ModelBuildersV2 m) {

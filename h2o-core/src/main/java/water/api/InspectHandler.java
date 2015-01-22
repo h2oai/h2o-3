@@ -6,9 +6,6 @@ import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 
 public class InspectHandler extends Handler {
-  // Supported at V1 same as always
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   // TODO: REMOVE: this class is now gratuitous.
   protected static final class InspectPojo extends Iced {
