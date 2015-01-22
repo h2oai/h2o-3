@@ -72,6 +72,9 @@ class H2OModelBuilder(ModelBase):
         if self._parameters["validation_frame"] is not None:
             h2o.remove(self._parameters["validation_frame"])
 
+        # flowing return
+        return self
+
     def show(self):
         pass
 
