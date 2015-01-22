@@ -680,7 +680,10 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // apparently spuriously fail - and we avoid apparent spurious failure
         // by not allowing Keys to ever change.
         K = key(kvs,idx);       // CAS failed, get updated value
-        if(K == null)continue;
+        if(K == null) {
+          System.out.println("double null: "+K);
+          continue;
+        }
       }
       // Key slot was not null, there exists a Key here
 
@@ -895,9 +898,11 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // Heuristic to determine new size.  We expect plenty of dead-slots-with-keys
       // and we need some decent padding to avoid endless reprobing.
       if( sz >= (oldlen>>2) ) { // If we are >25% full of keys then...
-        newsz = oldlen<<1;      // Double size
-        if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
-          newsz = oldlen<<2;    // Double double size
+        newsz = oldlen<<1;      // Double size, so new table will be between 12.5% and 25% full
+        // For tables less than 1M entries, if >50% full of keys then...
+        // For tables more than 1M entries, if >75% full of keys then...
+        if( 4L*sz >= ((oldlen>>20)!=0?3L:2L)*oldlen )
+          newsz = oldlen<<2;    // Double double size, so new table will be between %12.5 (18.75%) and 25% (25%)
       }
       // This heuristic in the next 2 lines leads to a much denser table
       // with a higher reprobe rate

@@ -449,7 +449,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       System.arraycopy(tail.getBytes(), 0, res, r, tail.length());
       return res;
     } else {
-      return what.getBytes();
+      byte[] res = new byte[what.length()];
+      for( int i=0; i<res.length; i++ ) res[i] = (byte)what.charAt(i);
+      return res;
     }
   }
 

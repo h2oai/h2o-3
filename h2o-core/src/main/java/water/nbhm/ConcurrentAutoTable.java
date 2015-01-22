@@ -103,12 +103,23 @@ public class ConcurrentAutoTable implements Serializable {
 
   // Hash spreader
   private static final int hash() {
-    int h = System.identityHashCode(Thread.currentThread());
+    int h = (int)Thread.currentThread().getId();
+    //int hash = (((int) (id ^ (id >>> 32))) ^ 0x811c9dc5) * 0x01000193;
+    //
+    //final int nbits = (((0xfffffc00 >> max) & 4) | // Compute ceil(log2(m+1))
+    //                   ((0x000001f8 >>> max) & 2) | // The constants hold
+    //                   ((0xffff00f2 >>> max) & 1)); // a lookup table
+    //int index;
+    //while((index = hash & ((1 << nbits) - 1)) > max) {// May retry on
+    //  hash = (hash >>> nbits) | (hash << (33 - nbits)); // non-power-2 m
+    //}    
+
     // You would think that System.identityHashCode on the current thread
     // would be a good hash fcn, but actually on SunOS 5.8 it is pretty lousy
     // in the low bits.
-    h ^= (h>>>20) ^ (h>>>12);   // Bit spreader, borrowed from Doug Lea
-    h ^= (h>>> 7) ^ (h>>> 4);
+    //int h = System.identityHashCode(Thread.currentThread());
+    //h ^= (h>>>20) ^ (h>>>12);   // Bit spreader, borrowed from Doug Lea
+    //h ^= (h>>> 7) ^ (h>>> 4);
     return h<<2;                // Pad out cache lines.  The goal is to avoid cache-line contention
   }
 
