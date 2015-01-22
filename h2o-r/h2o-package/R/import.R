@@ -33,10 +33,10 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key
   if(length(res$files) > 0L) {
     if(parse) {
       srcKey <- res$keys
-      rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=TRUE)
+      rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)  # # do not gc, H2O handles these nfs:// vecs
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
-      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=TRUE))
+      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=FALSE))  # # do not gc, H2O handles these nfs:// vecs
       if(length(res$keys) == 1L)
         ret <- myData[[1L]]
       else
