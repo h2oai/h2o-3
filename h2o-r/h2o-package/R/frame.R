@@ -120,20 +120,21 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(res$dest$name, conn)
 }
 
-#h2o.splitFrame <- function(data, ratios = 0.75) {
-#  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-#  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
-#    stop("`ratios` must be between 0 and 1 exclusive")
-#  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
-#
-#  res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-#  .h2o.__waitOnJob(conn, .res$job$key$name)
-#
-#  model.view <- .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", .res$job$dest$name))
-#  splits <- lapply(model.view$models[[1]]$output$splits, function(l) h2o.getFrame(l$`_key`$name))
-#  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
-#  splits
-#}
+h2o.splitFrame <- function(data, ratios = 0.75) {
+  if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
+  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
+    stop("`ratios` must be between 0 and 1 exclusive")
+  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+
+  res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
+  .h2o.__waitOnJob(conn, .res$job$key$name)
+
+  model.view <- .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", .res$job$dest$name))
+  splits <- lapply(model.view$models[[1L]]$output$splits,
+                   function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
+  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
+  splits
+}
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
 #  if(ncol(data) > .MAX_INSPECT_COL_VIEW)
