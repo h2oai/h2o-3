@@ -78,7 +78,9 @@ public final class ParseDataset extends Job<Frame> {
     for( String x : conflictingNames )
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
-    long sum=0;
+    long totalParseSize=0;
+    ByteVec bv;
+    float dcr, maxDecompRatio = 0;
     for( int i=0; i<keys.length; i++ ) {
       Key k = keys[i];
       if( dest.equals(k) )
@@ -87,18 +89,36 @@ public final class ParseDataset extends Job<Frame> {
         for( int j=i+1; j<keys.length; j++ )
           if( k==keys[j] )
             throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
-      sum += getByteVec(k).length(); // Sum of all input filesizes
+
+      // estimate total size in bytes
+      bv = getByteVec(k);
+      dcr = ZipUtil.decompressionRatio(bv);
+      if (dcr > maxDecompRatio) maxDecompRatio = dcr;
+      totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
     }
+    //Calc chunk-size
+    setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    Log.info("Chunk size " + setup._chunkSize);
+    Vec update;
+    Iced ice;
+    for( int i = 0; i < keys.length; ++i ) {
+      ice = DKV.getGet(keys[i]);
+      update = (Vec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
+      //update = ((Frame) DKV.getGet(keys[i])).vec(0);
+      update.setChunkSize(setup._chunkSize);
+      DKV.put(update._key, update);
+    }
+
     long memsz = H2O.CLOUD.memsz();
-    if( sum > memsz*4 )
-      throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(sum)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
+    if( totalParseSize > memsz*4 )
+      throw new IllegalArgumentException("Total input file size of "+PrettyPrint.bytes(totalParseSize)+" is much larger than total cluster memory of "+PrettyPrint.bytes(memsz)+", please use either a larger cluster or smaller data.");
 
     // Fire off the parse
     ParseDataset job = new ParseDataset(dest);
     new Frame(job.dest(),new String[0],new Vec[0]).delete_and_lock(job._key); // Write-Lock BEFORE returning
     for( Key k : keys ) Lockable.read_lock(k,job._key); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(job, keys, setup, delete_on_done); // Fire off background parse
-    job.start(fjt, sum);
+    job.start(fjt, totalParseSize);
     return job;
   }
 
@@ -396,25 +416,12 @@ public final class ParseDataset extends Job<Frame> {
       _job_key = job_key;
 
       // A mapping of Key+ByteVec to rolling total Chunk counts.
-      // Also collects the total size of files to be parsed to
-      // figure out what the chunk size should be.
       _fileChunkOffsets = new int[fkeys.length];
-      int len = 0, totalParseSize = 0;
-      ByteVec bv;
-      float dcr, maxDecomprRatio = 0;
+      int len = 0;
       for( int i = 0; i < fkeys.length; ++i ) {
         _fileChunkOffsets[i] = len;
-        bv = getByteVec(fkeys[i]);
-        len += bv.nChunks();
-
-        dcr = ZipUtil.decompressionRatio(bv);
-        if (dcr > maxDecomprRatio)
-          maxDecomprRatio = dcr;
-        totalParseSize += bv.length();
+        len += getByteVec(fkeys[i]).nChunks();
       }
-
-      totalParseSize = (int) (totalParseSize * maxDecomprRatio);
-      _setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, _setup._ncols);
 
       // Mapping from Chunk# to cluster-node-number
       _chunk2Enum = MemoryManager.malloc4(len);
@@ -455,6 +462,7 @@ public final class ParseDataset extends Job<Frame> {
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       byte[] bits = ZipUtil.unzipBytes(zips,cpr,_setup._chunkSize);
       ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
+      localSetup._chunkSize = _setup._chunkSize;
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
@@ -525,7 +533,7 @@ public final class ParseDataset extends Job<Frame> {
     // parse local chunks; distribute chunks later.
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
-      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols), null);
+      FVecDataOut dout = new FVecDataOut(_vg, chunkStartIdx, localSetup._ncols, vecIdStart, enums(_eKey,_setup._ncols), null, localSetup._chunkSize);
       Parser p = localSetup.parser();
       // assume 2x inflation rate
       if( localSetup._pType._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
