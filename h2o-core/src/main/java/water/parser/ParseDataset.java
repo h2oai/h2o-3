@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.zip.*;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -168,6 +170,7 @@ public final class ParseDataset extends Job<Frame> {
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
     AppendableVec [] avs = mfpt.vecs();
+
     Frame fr = null;
     // Calculate enum domain
     // Filter down to columns with some enums
@@ -410,9 +413,10 @@ public final class ParseDataset extends Job<Frame> {
     FVecDataOut [] _dout;
     String[] _errors;
 
+    int _reservedKeys;
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _vg = vg; _setup = setup;
-      _vecIdStart = _vg.reserveKeys(_setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
 
@@ -429,7 +433,9 @@ public final class ParseDataset extends Job<Frame> {
       Arrays.fill(_chunk2Enum, -1);
     }
 
-    public AppendableVec[] vecs(){
+    private AppendableVec [] _vecs;
+
+    @Override public void postGlobal(){
       int n = _dout.length-1;
       while(_dout[n] == null && n != 0)--n;
       for(int i = 0; i <= n; ++i) {
@@ -441,8 +447,10 @@ public final class ParseDataset extends Job<Frame> {
       }
       if(n < _dout.length-1)
         _dout = Arrays.copyOf(_dout,n+1);
-      if(_dout.length == 1)
-        return _dout[0]._vecs;
+      if(_dout.length == 1) {
+        _vecs = _dout[0]._vecs;
+        return;
+      }
       int nCols = 0;
       for(FVecDataOut dout:_dout)
         nCols = Math.max(dout._vecs.length,nCols);
@@ -458,8 +466,13 @@ public final class ParseDataset extends Job<Frame> {
       for(int i = 0; i < _dout.length; ++i)
         for(int j = 0; j < _dout[i]._vecs.length; ++j)
           res[j].setSubRange(_dout[i]._vecs[j]);
-      return res;
+      if((res.length + _vecIdStart) < _reservedKeys) {
+        Future f = _vg.tryReturnKeys(_vecIdStart + _reservedKeys, _vecIdStart + res.length);
+        if (f != null) try { f.get(); } catch (InterruptedException e) { } catch (ExecutionException e) {}
+      }
+      _vecs = res;
     }
+    private AppendableVec[] vecs(){ return _vecs; }
 
     @Override public void setupLocal() {
       _dout = new FVecDataOut[_keys.length];

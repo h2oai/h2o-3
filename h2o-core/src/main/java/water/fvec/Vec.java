@@ -13,6 +13,7 @@ import water.util.Log;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -1117,6 +1118,22 @@ public class Vec extends Keyed {
       tsk.invoke(_key);
       return tsk._n;
     }
+
+
+    /**
+     * Task to atomically add vectors into existing group.
+     * @author tomasnykodym
+     */
+    private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
+      final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      final int _oldCnt;
+      private ReturnKeysTsk(Key key, int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
+      @Override public VectorGroup atomic(VectorGroup old) {
+        return (old._len == _oldCnt)? new VectorGroup(_key, _newCnt):old;
+      }
+    }
+    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(_key,oldCnt,newCnt).fork(_key);}
+
 
     /** Gets the next n keys of this group.
      *  @param n number of keys to make
