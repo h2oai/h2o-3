@@ -9,9 +9,6 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 class ParseHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   // Entry point for parsing.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV2 parse(int version, ParseV2 parse) {

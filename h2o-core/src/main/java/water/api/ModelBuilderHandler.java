@@ -7,9 +7,6 @@ import water.api.JobsHandler.Jobs;
 import water.Job;
 
 abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /**
    * Create a model by launching a ModelBuilder algo.  If the model
    * parameters pass validation this returns a Job schema; if not it

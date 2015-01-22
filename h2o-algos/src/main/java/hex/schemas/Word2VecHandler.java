@@ -9,9 +9,6 @@ import water.api.Schema;
 
 @Deprecated
 public class Word2VecHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public Word2VecHandler() {}
   public Word2VecV2 train(int version, Word2VecV2 s) {
     Word2Vec builder = s.createAndFillImpl();

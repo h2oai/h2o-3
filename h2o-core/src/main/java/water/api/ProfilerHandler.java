@@ -3,9 +3,6 @@ package water.api;
 import water.util.JProfile;
 
 public class ProfilerHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ProfilerV2 fetch(int version, ProfilerV2 p) {
     if (p.depth < 1) throw new IllegalArgumentException("depth must be >= 1.");

@@ -11,9 +11,6 @@ import water.util.PrettyPrint;
 
 class RapidsHandler extends Handler {
 
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public RapidsV1 isEvaluated(int version, RapidsV1 rapids) {
     if (rapids == null) return null;
     if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");

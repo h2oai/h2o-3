@@ -10,8 +10,6 @@ import water.fvec.Vec;
 import java.util.*;
 
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   /** Class which contains the internal representation of the frames list and params. */
   protected static final class Frames extends Iced {

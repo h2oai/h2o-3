@@ -4,9 +4,6 @@ import water.*;
 import water.util.PojoUtils;
 
 public class JobsHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
   public static final class Jobs extends Iced {
     public Key _key;

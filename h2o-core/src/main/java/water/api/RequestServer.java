@@ -741,9 +741,6 @@ public class RequestServer extends NanoHTTPD {
         Class clz0 = meth.getDeclaringClass();
         Class<Handler> clz = (Class<Handler>)clz0;
         Handler h = clz.newInstance(); // TODO: we don't need to create new instances; handler is stateless
-        if( version < h.min_ver() || h.max_ver() < version ) continue;
-        // TODO: fixme! String url = Schema.schema(version, schema).acceptsFrame(fr);
-        // TODO: fixme! if( url != null ) al.add(url);
       }
       catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
     }

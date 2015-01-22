@@ -38,7 +38,4 @@ public class ParseSetupHandler extends Handler {
 
     return p;
   }
-
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 }
