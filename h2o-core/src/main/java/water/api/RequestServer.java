@@ -109,7 +109,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/1/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
-    register("/"           ,"GET",TutorialsHandler  .class,"nop"                     ,"H2O tutorials."); // TODO: this should hit tutorials if .html, but REST info otherwise
+    register("/"                         ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."); // TODO: this should hit tutorials if .html, but REST info otherwise.  We currently don't switch type on anything other than suffix, though. . .
 
     initializeNavBar();
 
@@ -448,6 +448,17 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
+  private Response response404(String what, RequestType type) {
+    H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
+    H2OError error = e.toH2OError(what);
+
+    Log.warn(error._dev_msg);
+    Log.warn(error._values.toJsonString());
+    Log.warn((Object[])error._stacktrace);
+
+    return wrap(new H2OErrorV1().fillFromImpl(error), type);
+  }
+
   // Top-level dispatch based on the URI.  Break down URI into parts;
   // e.g. /2/GBM.html/crunk?hex=some_hex breaks down into:
   //   version:      2
@@ -471,31 +482,25 @@ public class RequestServer extends NanoHTTPD {
     // determine the request type
     RequestType type = RequestType.requestType(uri);
 
-    Matcher m = getVersionPattern().matcher(uri);
-    if (! m.matches()) {
-      H2ONotFoundArgumentException e = new H2ONotFoundArgumentException("Route " + uri + " not found",
-              "Route " + uri + " not found");
-      H2OError error = e.toH2OError(uri);
-
-      Log.warn(error._dev_msg);
-      Log.warn(error._values.toJsonString());
-      Log.warn((Object[])error._stacktrace);
-
-      return wrap(new H2OErrorV1().fillFromImpl(error), type);
-    }
-
-    int version = Integer.valueOf(m.group(1));
-    String uripath = "/" + m.group(2);
-
-    String path = type.requestName(uripath); // Strip suffix type from middle of URI
-    String versioned_path = "/" + version + path;
-    alwaysLogRequest(path, method, parms);
-
     // Blank response used by R's uri.exists("/")
-    if (method.equals("HEAD") && uri.equals("/")) {
-      Response r = new Response(HTTP_OK, MIME_PLAINTEXT, "");
-      return r;
+    if (uri.equals("/") && method.equals("HEAD")) {
+        Response r = new Response(HTTP_OK, MIME_PLAINTEXT, "");
+        return r;
     }
+
+    String versioned_path = uri;
+    String path = uri;
+    int version = 1;
+
+    Matcher m = getVersionPattern().matcher(uri);
+    if (m.matches()) {
+      version = Integer.valueOf(m.group(1));
+      String uripath = "/" + m.group(2);
+      path = type.requestName(uripath); // Strip suffix type from middle of URI
+      versioned_path = "/" + version + path;
+    }
+
+    alwaysLogRequest(versioned_path, method, parms);
 
     // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
     if (uri.endsWith("/Logs/download")) {
@@ -512,9 +517,13 @@ public class RequestServer extends NanoHTTPD {
         Schema.registerAllSchemasIfNecessary();
 
       // if the request is not known, treat as resource request, or 404 if not found
-      if( route == null )
-        return getResource(version, type, uri);
-      else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
+      if( route == null) {
+        if (method.equals("GET")) {
+          return getResource(type, uri);
+        } else {
+          return response404(method + " " + uri, type);
+        }
+      } else if(route._handler_class ==  water.api.DownloadDataHandler.class) {
         // DownloadDataHandler will throw H2ONotFoundException if the resource is not found
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
@@ -607,7 +616,7 @@ public class RequestServer extends NanoHTTPD {
   // cache of all loaded resources
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
   // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(int version, RequestType request_type, String uri) {
+  private Response getResource(RequestType request_type, String uri) {
     byte[] bytes = _cache.get(uri);
     if( bytes == null ) {
       // Try-with-resource
@@ -630,8 +639,7 @@ public class RequestServer extends NanoHTTPD {
         } catch( IOException ignore ) { }
     }
     if( bytes == null || bytes.length == 0 ) // No resource found?
-      throw new H2ONotFoundArgumentException("Resource " + uri + " not found",
-                                             "Resource " + uri + " not found");
+      return response404("Resource " + uri, request_type);
 
     String mime = MIME_DEFAULT_BINARY;
     if( uri.endsWith(".css") )

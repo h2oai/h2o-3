@@ -17,7 +17,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   srcs <- .collapse.char(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs)
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
 
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
@@ -25,7 +25,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   if (!nzchar(key))
     key <- .key.make(data@conn, parseSetup$hexName)
   parse.params <- list(
-        srcs = srcs, # TODO: use the keys list output by ParseSetup
+        srcs = .collapse(srcs), # TODO: use the keys list output by ParseSetup
         hex  = key,
         columnNames = .collapse.char(col.names),
         sep = parseSetup$sep,
@@ -55,12 +55,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 #'
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
 .collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
-
-<<<<<<< HEAD
-=======
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 
->>>>>>> model and column related type fixes
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
   .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
 }
