@@ -32,7 +32,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
         pType = parseSetup$pType,
         ncols = ncols,
         checkHeader = parseSetup$checkHeader,
-        singleQuotes = parseSetup$singleQuotes
+        singleQuotes = parseSetup$singleQuotes,
+        delete_on_done = TRUE
         )
 
   # Perform the parse
@@ -41,9 +42,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
-
-  # Remove keys to unparsed data
-  h2o.rm(res$srcs[[1L]]$name, data@conn)
 
   # Return a new H2OFrame object
   nrows <- .h2o.fetchNRows(data@conn, hex)
