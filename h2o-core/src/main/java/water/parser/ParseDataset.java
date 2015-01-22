@@ -99,14 +99,18 @@ public final class ParseDataset extends Job<Frame> {
       totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
     }
     //Calc chunk-size
-    setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    //
+    Iced ice = DKV.getGet(keys[0]);
+    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
+      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;
+    } else {
+      setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    }
     Log.info("Chunk size " + setup._chunkSize);
     Vec update;
-    Iced ice;
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
       update = (Vec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
-      //update = ((Frame) DKV.getGet(keys[i])).vec(0);
       update.setChunkSize(setup._chunkSize);
       DKV.put(update._key, update);
     }
