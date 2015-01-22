@@ -144,7 +144,8 @@ class Expr(object):
             zeros = 0
             missing = 0
             for x in self._data:
-                if t != 'enum': ssq += (x - mean) * (x - mean)
+                delta = x - mean
+                if t != 'enum': ssq += delta * delta
                 if x == 0:  zeros += 1
                 if x is None or (t != 'enum' and isnan(x)): missing += 1
             stddev = sqrt(ssq / (n - 1)) if t != 'enum' else None
@@ -401,9 +402,11 @@ class Expr(object):
         __CMD__ += ")"
         if py_tmp:
             __CMD__ += ")"
+
         # Free children expressions; might flag some subexpresions as dead
         self._left = None  # Trigger GC/ref-cnt of temps
         self._rite = None
+
         # Keep LHS alive
         if assign_vec:
             if assign_vec.op() != "rawdata":  # Need to roll-up nested exprs

@@ -130,6 +130,24 @@ class H2OFrame(object):
                 raise ValueError("len(vec)=" + len(self._vecs[0]) +
                                  " cannot be broadcast across len(i)=" + len(i))
             return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
+
+        # have a list of numbers or strings
+        if isinstance(i, list):
+            vecs = []
+            for it in i:
+                if isinstance(it, int):
+                    vecs += [self._vecs[it]]
+                    continue
+                if isinstance(it, str):
+                    has_vec = False
+                    for v in self._vecs:
+                        if it == v.name():
+                            has_vec = True
+                            vecs += [v]
+                    if not has_vec:
+                        raise ValueError("Name " + it + " not in Frame")
+            return H2OFrame(vecs=vecs)
+
         raise NotImplementedError
 
     def __setitem__(self, b, c):
@@ -139,7 +157,7 @@ class H2OFrame(object):
         :param c: The vector that 'b' is replaced with.
         :return: Returns this H2OFrame.
         """
-        i, v = None
+        i = v = None
         #  b is a named column, fish out the H2OVec and its index
         if isinstance(b, str):
             for i, v in enumerate(self._vecs):
@@ -156,8 +174,8 @@ class H2OFrame(object):
             raise NotImplementedError
 
         # some error checking
-        if not i or not v:
-            raise ValueError("Name" + b + " not in Frame")
+        if not v:
+            raise ValueError("Name " + b + " not in Frame")
 
         if len(c) != len(v):
             raise ValueError("len(c)=" + len(c) +

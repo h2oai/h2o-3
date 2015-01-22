@@ -12,7 +12,10 @@ class H2OJob(object):
     A class representing an H2O Job.
     """
     def __init__(self, jobs):
-        job = jobs["job"]
+        if "jobs" in jobs:
+            job = jobs["jobs"][0]
+        else:
+            job = jobs["job"]
 
         self.jobs = jobs
         self.job = job
@@ -23,11 +26,14 @@ class H2OJob(object):
 
     def poll(self):
         sleep = 0.1
-        while self._is_running():
+        running = True
+        while running:
             H2OJob._update_progress(self.progress)
             time.sleep(sleep)
             if sleep < 1.0: sleep += 0.1
             self._refresh_job_view()
+            running = self._is_running()
+        H2OJob._update_progress(self.progress)
 
         # check if failed... and politely print relevant message
         if self._is_failed():
@@ -40,8 +46,8 @@ class H2OJob(object):
         return self
 
     def _refresh_job_view(self):
-        self.jobs = h2oConn.do_safe_get_json(url_suffix="Jobs")
-        self.job = self.jobs["job"][0]
+        jobs = h2oConn.do_safe_get_json(url_suffix="Jobs/" + self.job_key)
+        self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
         self.status = self.job["status"]
         self.progress += self.job["progress"]
 

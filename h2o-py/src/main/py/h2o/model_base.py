@@ -1,10 +1,8 @@
 """
-This module implements the abstract model class. All models inherit from this class.
+This module implements the abstract model class. All model things inherit from this class.
 """
 
 import abc
-import frame
-import h2o
 
 
 class ModelBase(object):
@@ -15,14 +13,15 @@ class ModelBase(object):
     """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, parameters=None):
+    def __init__(self, parameters=None, algo=None):
         """
         :param parameters: A dictionary of parameters the model was constructed with.
         :return: A new model object.
         """
-        self.model_type = None  # set after the model is fitted
-        self.parameters = parameters
-        self.model = None  # set after the model is fitted
+        self._model_type = "H2O{}Model"  # (e.g. "Binomial); set after model is fitted
+        self._algo = algo
+        self._parameters = parameters
+        self._fitted_model = None  # set after the model is fitted
 
     @abc.abstractmethod
     def predict(self, test_data=None):
@@ -50,16 +49,22 @@ class ModelBase(object):
         """
         return
 
-    @abc.abstractmethod
     def show(self):
         """
         Print a brief summary of the model.
-        :return:
+        :return: None
         """
-        return
+        print self._model_type + ": " + self._algo
+        print
+        print
+        print "Model Details:"
+        print
+
+
+        return None
 
     def get_type(self):
-        return self.model_type
+        return self._model_type
 
     def get_parameters(self):
-        return self.parameters
+        return self._parameters

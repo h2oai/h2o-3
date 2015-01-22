@@ -67,8 +67,8 @@ def parse(setup, h2o_name):
 
     # Extract only 'name' from each src in the array of srcs
     p['srcs'] = [src['name'] for src in setup['srcs']]
+
     # Request blocking parse
-    # TODO: POST vs GET
     j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p)).poll()
     return j.jobs
 
@@ -99,10 +99,10 @@ def frame(key):
     :return: Meta information on the Frame.
     """
 
-    return h2oConn.do_safe_get_json(url_suffix="Frames", params={"key": key})
+    return h2oConn.do_safe_get_json(url_suffix="Frames/" + key)
 
 
-def connect(ip="localhost", port=54321):
+def init(ip="localhost", port=54321):
     """
     Initiate an H2O connection to the specified ip and port
     :param ip: An IP address, default is "localhost"

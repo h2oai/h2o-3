@@ -1,15 +1,13 @@
-from h2o import H2OConnection
-from h2o import H2OFrame
-from h2o import H2OGBM
+import h2o
 
 ######################################################
 #
 # Sample Running GBM on prostate.csv
 
 # Connect to a pre-existing cluster
-cluster = H2OConnection()
+h2o.init()  # connect to localhost:54321
 
-df = H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
+df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
 print df.describe()
 
 # Remove ID from training frame

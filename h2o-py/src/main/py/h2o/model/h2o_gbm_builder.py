@@ -5,7 +5,7 @@ A GBM model builder.
 from h2o_model_builder import H2OModelBuilder
 
 
-class GBMBuilder(H2OModelBuilder):
+class H2OGBMBuilder(H2OModelBuilder):
     """
     Build a new GBM model.
 
@@ -27,7 +27,7 @@ class GBMBuilder(H2OModelBuilder):
     def __init__(self, x=None, y=None, training_frame=None, key=None,
                  loss=("AUTO", "bernoulli"), ntrees=50, max_depth=5, learn_rate=0.1,
                  nbins=20, group_split=True, variable_importance=False,
-                 validation_frame=False, balance_classes=False, max_after_balance_size=1,
+                 validation_frame=None, balance_classes=False, max_after_balance_size=1,
                  seed=None):
         """
         Instantiate a GBMBuilder.
@@ -48,12 +48,12 @@ class GBMBuilder(H2OModelBuilder):
         :param seed: A random seed.
         :return: A new GBMBuilder.
         """
-        super(GBMBuilder, self).__init__(locals(), "GBM", training_frame)
+        super(H2OGBMBuilder, self).__init__(locals(), "gbm", training_frame)
         self.x = x
         self.y = y
         self.training_frame = training_frame
-        self.destination_key = key
-        self.loss = loss
+        self.validation_frame = None
+        self.loss = "AUTO" if isinstance(loss, tuple) else loss
         self.ntrees = ntrees
         self.max_depth = max_depth
         self.learn_rate = learn_rate

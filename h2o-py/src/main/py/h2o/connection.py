@@ -11,6 +11,10 @@ __H2OCONN__ = None             # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = 3L  # const for the version of the rest api
 
 
+class H2OConnectionException(Exception):
+    pass
+
+
 # Python has no private classes; abuse the abc package to fake it.
 class H2OConnectionBase(object):
     """
@@ -24,13 +28,18 @@ class H2OConnectionBase(object):
     """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self):
+    def __init__(self, ip="localhost", port=54321):
+        """
+        Wipes out the current __H2OCONN__, expects __make__ to be called in conjunction.
+        :return: None
+        """
         global __H2OCONN__
         self._ip = None
         self._port = None
         self._session_id = None
         self._rest_version = __H2O_REST_API_VERSION__
         __H2OCONN__ = self
+        H2OConnectionBase.__make__(ip, port)
 
     @staticmethod
     def __make__(ip="localhost", port=54321):
@@ -68,7 +77,10 @@ class H2OConnectionBase(object):
         :param size: The number of H2O instances in the cloud.
         :return: The JSON response from a "stable" cluster.
         """
+        max_retries = 30
+        retries = 0
         while True:
+            retries += 1
             cld = H2OConnectionBase.do_safe_get_json(url_suffix="Cloud")
             if not cld['cloud_healthy']:
                 raise ValueError("Cluster reports unhealthy status", cld)
@@ -76,6 +88,11 @@ class H2OConnectionBase(object):
                 return cld
             # Cloud too small or voting in progress; sleep; try again
             time.sleep(0.1)
+            if retries > max_retries:
+                raise H2OConnectionException("Max retries exceeded. Could not establish "
+                                             "link to the H2O cloud @ "
+                                             + H2OConnectionBase.ip() + ":"
+                                             + str(H2OConnectionBase.port()))
 
     @staticmethod
     def get_attr(name):
@@ -187,7 +204,7 @@ class H2OConnectionBase(object):
         elapsed_time_millis = elapsed_time_seconds * 1000
 
         # TODO: is.logging? -> write to logs
-        print "Time to perform REST call (millis): " + str(elapsed_time_millis)
+        # print "Time to perform REST call (millis): " + str(elapsed_time_millis)
 
         return http_result
 
@@ -406,5 +423,4 @@ class H2OConnection(H2OConnectionBase):
         :param port: A port, default is 54321
         :return: None
         """
-        super(H2OConnection, self).__init__()
-        H2OConnection.__make__(ip, port)
+        super(H2OConnection, self).__init__(ip, port)

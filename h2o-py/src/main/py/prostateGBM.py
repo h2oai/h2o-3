@@ -1,6 +1,6 @@
-from h2o import H2OConnection
-from h2o import H2OFrame
-from h2o import H2OGBM
+from blah import H2OConnection
+from blah import H2OFrame
+from blah import H2OGBM
 from tabulate import tabulate
 
 ######################################################
