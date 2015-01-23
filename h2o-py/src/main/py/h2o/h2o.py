@@ -6,8 +6,6 @@ import urllib
 from connection import H2OConnection as h2oConn
 from job import H2OJob
 from frame import H2OFrame
-from frame import H2OVec
-from expr import Expr
 
 
 def import_file(path):
@@ -20,6 +18,9 @@ def import_file(path):
     if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
     return j['keys'][0]
 
+# def upload_file():
+#
+#
 
 def import_frame(path=None, vecs=None):
     """
@@ -111,19 +112,3 @@ def init(ip="localhost", port=54321):
     """
     h2oConn(ip=ip, port=port)
     return None
-
-
-# def GBM(self,distribution,shrinkage,ntrees,interaction_depth,x,train_frame,test_frame=None):
-#     p = {'loss':distribution,'learn_rate':shrinkage,'ntrees':ntrees,'max_depth':interaction_depth,'variable_importance':False,'response_column':x,'training_frame':train_frame}
-#     if test_frame: p['validation_frame'] = test_frame
-#     j = self._doJob(self._doSafeGet(self.buildURL("GBM",p)))
-#     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
-#     return j['models'][0]
-#
-# def DeepLearning(self,x,train_frame,test_frame=None,**kwargs):
-#     kwargs['response_column'] = x
-#     kwargs['training_frame'] = train_frame
-#     if test_frame: kwargs['validation_frame'] = test_frame
-#     j = self._doJob(self._doSafeGet(self.buildURL("DeepLearning",kwargs)))
-#     j = self._doSafeGet(self.buildURL("3/Models/"+j['dest']['name'],{}))
-#     return j['models'][0]

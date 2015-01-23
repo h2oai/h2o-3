@@ -3,11 +3,11 @@ An abstract model builder.
 """
 
 import abc
-from . import H2OFrame
-from . import h2oConn
+# from . import H2OFrame
+# from . import h2oConn
 from . import ModelBase
-from . import H2OJob
-import h2o
+# from . import H2OJob
+# import h2o
 
 
 class H2OMissingFrameException(Exception):

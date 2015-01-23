@@ -2,7 +2,7 @@
 Binomial Models should be comparable.
 """
 
-from . import ModelBase
+import ModelBase
 
 
 class H2OBinomialModel(ModelBase):
