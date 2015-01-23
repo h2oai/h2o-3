@@ -99,7 +99,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Admin
     addToNavbar(register("/1/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
-    register("/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
+    register("/1/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
     addToNavbar(register("/2/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
     addToNavbar(register("/2/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/2/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
@@ -167,9 +167,9 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Models"                                         ,"DELETE",ModelsHandler.class, "deleteAll",
       "Delete all Models from the H2O distributed K/V store.");
 
-    register("/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
+    register("/3/ModelBuilders/(?<algo>.*)"                      ,"GET"   ,ModelBuildersHandler.class, "fetch",                       new String[] {"algo"},
       "Return the Model Builder metadata for the specified algorithm.");
-    register("/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
+    register("/3/ModelBuilders"                                  ,"GET"   ,ModelBuildersHandler.class, "list",
       "Return the Model Builder metadata for all available algorithms.");
 
     // TODO: filtering isn't working for these first four; we get all results:
@@ -316,12 +316,16 @@ public class RequestServer extends NanoHTTPD {
       throw H2O.fail("Failed to find doc method: " + doc_method + " for handler class: " + handler_class);
 
 
-    if (uri_pattern_raw.matches("^/\\d+/.*")) {
-      // register specifies a version
-    } else {
-      // register all versions
-      uri_pattern_raw = "^(/\\d+)?" + uri_pattern_raw;
+    if (! "/".equals(uri_pattern_raw)) {
+      Matcher m = getVersionPattern().matcher(uri_pattern_raw);
+      if (!m.matches())
+        throw H2O.fail("Route URL pattern must begin with a version: " + uri_pattern_raw);
+
+      int version = Integer.valueOf(m.group(1));
+      if (version > Schema.getHighestSupportedVersion())
+        throw H2O.fail("Route version is greater than the max supported of: " + Schema.getHighestSupportedVersion() + ": " + uri_pattern_raw);
     }
+
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
     Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params);
