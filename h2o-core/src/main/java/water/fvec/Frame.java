@@ -86,6 +86,7 @@ public class Frame extends Lockable<Frame> {
       for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
       for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
       for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
+      _lastNameBig = true;
     } else {
       // Make empty to dodge asserts, then "add()" them all which will check
       // for compatible Vecs & names.
@@ -124,7 +125,7 @@ public class Frame extends Lockable<Frame> {
     int lastName = 0;
     if( name.length() > 0 && name.charAt(0)=='C' )
       lastName = pint(name);
-    if( _lastNameBig ) {
+    if( _lastNameBig && _names.length > 0 ) {
       String last = _names[_names.length-1];
       if( last.charAt(0)=='C' && lastName == pint(last)+1 )
         return name;
