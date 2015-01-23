@@ -84,6 +84,7 @@ import java.util.regex.Pattern;
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  private static final int HIGHEST_SUPPORTED_VERSION = 3;
 
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,7 +192,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
   // Bound the version search if we haven't yet registered all schemas
   public final static int getHighestSupportedVersion() {
-    return 10;
+    return HIGHEST_SUPPORTED_VERSION;
   }
 
   /** Register the given schema class. */
@@ -229,6 +230,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
       if (version > -1) {
         // Track highest version of all schemas; only valid after all are registered at startup time.
+        if (version > HIGHEST_SUPPORTED_VERSION)
+          throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
+
         if (version > latest_version) {
           synchronized (Schema.class) {
             if (version > latest_version) latest_version = version;
@@ -440,7 +444,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
-      String inside = s.substring(1,s.length()-1).trim();
+      String inside = s.substring(1,s.length() -1).trim();
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (inside.length() == 0)
         splits = new String[] {};
