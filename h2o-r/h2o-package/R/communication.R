@@ -345,11 +345,14 @@
                 (any(nzchar(x$colHeaders)) && length(x$colHeaders) == length(x$cellValues)) )
             tbl <- t(tbl)
         }
-        
-        if(any(nzchar(x$rowHeaders)))
+
+        if(any(nzchar(x$rowHeaders))) {
           dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
-        else
-          dimnames(tbl) <- list(NULL, x$colHeaders)
+        } else {
+          rownames(tbl) <- NULL
+          colnames(tbl) <- x$colHeaders
+          # dimnames(tbl) <- list(NULL, x$colHeaders)
+        }
         x <- tbl
       }
       else
