@@ -427,6 +427,22 @@ public final class AutoBuffer {
     assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
+
+  /**
+   * Copy raw bits from the (direct) buffer out.
+   * @param off offset marking the start of copied region.
+   * @return
+   */
+  public final byte[] copyRawBits(int off) {
+    int sz = position() - off;
+    byte [] res = MemoryManager.malloc1(sz);
+    // loop over individual bytes since the bulk interface does not work (throws AIOB even though it should not)
+    // and it does internally loop in the same way anyways.
+    for(int i = 0; i < res.length; ++i)
+      res[i] = _bb.get(i + off);
+    return res;
+  }
+
   public final byte[] bufClose() {
     byte[] res = _bb.array();
     bbFree();
