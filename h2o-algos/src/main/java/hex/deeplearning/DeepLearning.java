@@ -216,8 +216,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         }
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
-        Frame tra_fr = _train;
-        Frame val_fr = _valid;
+        Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
