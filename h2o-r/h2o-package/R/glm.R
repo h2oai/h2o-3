@@ -76,7 +76,7 @@ h2o.glm <- function(x, y, training_frame, ...,
                    stop("argument \"training_frame\" must be a valid H2OFrame or key")
                 })
 #required map for params with different names, assuming it will change in the RESTAPI end
-    .gbm.map <- c("x" = "ignored_columns",
+    .glm.map <- c("x" = "ignored_columns",
                 "y" = "response_column",
                 "key" = "destination_key")
 
@@ -87,7 +87,7 @@ h2o.glm <- function(x, y, training_frame, ...,
     parms$x <- args$x_ignore
     parms$y <- args$y
 
-    names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.gbm.map)) i <- .gbm.map[[i]]; i })
+    names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
 
     .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
 }

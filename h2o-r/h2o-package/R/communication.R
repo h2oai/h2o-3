@@ -320,24 +320,8 @@
     if (is.list(x)) {
       if ((length(tableElements) == length(x)) &&
           all(tableElements %in% names(x))) {
-        tbl <- x$cellValues
-        if (is.vector(tbl)) {
-          if (any(nzchar(x$rowHeaders))) {
-            if(length(x$rowHeaders) == 1)
-              tbl <- matrix(tbl, nrow = 1L)
-            else if(length(x$colHeaders) == 1)
-              tbl <- matrix(tbl, ncol = 1L)
-            else stop("Mismatched dimensions between row/column headers and data")
-            dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
-          } else
-            names(tbl) <- x$colHeaders
-        } else {
-          if (any(nzchar(x$rowHeaders)))
-            dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
-          else
-            dimnames(tbl) <- list(NULL, x$colHeaders)
-        }
-        tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
+        tbl <- data.frame(x$cellValues, check.names = FALSE, stringsAsFactors = FALSE)
+        
         for (j in seq_along(tbl)) {
           switch(x$colTypes[j],
                  integer = {
@@ -354,6 +338,21 @@
         attr(tbl, "header")  <- x$tableHeader
         attr(tbl, "formats") <- x$colFormats
         oldClass(tbl) <- c("H2OTable", "data.frame")
+        
+        # R automatically converts vectors into 1-col data frames. Transpose to 1-row if necessary to match dimensions.
+        if(is.vector(x$cellValues)) {
+          if( (any(nzchar(x$rowHeaders)) && length(x$rowHeaders) == 1) ||
+                (any(nzchar(x$colHeaders)) && length(x$colHeaders) == length(x$cellValues)) )
+            tbl <- t(tbl)
+        }
+
+        if(any(nzchar(x$rowHeaders))) {
+          dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
+        } else {
+          rownames(tbl) <- NULL
+          colnames(tbl) <- x$colHeaders
+          # dimnames(tbl) <- list(NULL, x$colHeaders)
+        }
         x <- tbl
       }
       else

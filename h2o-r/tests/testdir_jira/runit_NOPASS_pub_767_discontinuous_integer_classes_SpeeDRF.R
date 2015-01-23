@@ -39,7 +39,7 @@ test.pub.767 <- function(conn) {
   Log.info(head(cov))
 
   Log.info("Show the counts of each response level")
-  cnts <- h2o.ddply(cov, .("V55"), nrow)
+  cnts <- h2o.ddply(cov, "V55", nrow)
   print(as.data.frame(cnts))
  
   m <- h2o.randomForest(x = 1:54, y = 55, data = cov, ntree = 10, depth = 100) 

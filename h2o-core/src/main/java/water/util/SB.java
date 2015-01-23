@@ -18,6 +18,7 @@ public final class SB {
   public SB p( double s ) { if( Double.isNaN(s) ) _sb.append("Double.NaN"); else _sb.append(s); return this; }
   public SB p( char   s ) { _sb.append(s); return this; }
   public SB p( int    s ) { _sb.append(s); return this; }
+  public SB p( long   s ) { _sb.append(s); return this; }
   // Not spelled "p" on purpose: too easy to accidentally say "p(1.0)" and
   // suddenly call the the autoboxed version.
   public SB pobj( Object s ) { _sb.append(s.toString()); return this; }

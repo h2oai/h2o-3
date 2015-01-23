@@ -7,7 +7,7 @@ import water.fvec.*;
 import water.util.Log;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 

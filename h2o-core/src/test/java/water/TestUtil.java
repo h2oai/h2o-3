@@ -41,6 +41,7 @@ public class TestUtil extends Iced {
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
     if( leaked_keys > 0 ) {
+      int cnt=0;
       for( Key k : H2O.localKeySet() ) {
         Value value = H2O.raw_get(k);
         // Ok to leak VectorGroups and the Jobs list
@@ -48,8 +49,12 @@ public class TestUtil extends Iced {
             // Also leave around all attempted Jobs for the Jobs list
             (value.isJob() && value.<Job>get().isStopped()) ) 
           leaked_keys--;
-        else System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        else {
+          if( cnt++ < 10 )
+            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        }
       }
+      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
     assertTrue("No keys leaked", leaked_keys <= 0);
     _initial_keycnt = H2O.store_size();

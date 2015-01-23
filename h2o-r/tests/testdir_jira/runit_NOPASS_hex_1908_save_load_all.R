@@ -35,7 +35,7 @@ test.hex_1908 <- function(conn) {
   Log.info("Scoring on models and saving predictions to R")
   
   pred_df <- function(object, newdata) {
-    h2o_pred = h2o.predict(object, newdata)
+    h2o_pred = predict(object, newdata)
     as.data.frame(h2o_pred)
   }
       

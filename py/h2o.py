@@ -598,9 +598,9 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
 
         if algo:
-            result = self.__do_json_request('2/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('3/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('2/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('3/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -626,7 +626,7 @@ class H2O(object):
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
-        result = self.__do_json_request('/2/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
+        result = self.__do_json_request('/3/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result
@@ -657,7 +657,7 @@ class H2O(object):
 
         if destination_key is not None:
             parameters['destination_key'] = destination_key
-        result = self.__do_json_request('/2/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
+        result = self.__do_json_request('/3/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
             return result

@@ -11,10 +11,8 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A ByteBuffer backed mixed Input/OutputStream class.
@@ -218,22 +216,21 @@ public final class AutoBuffer {
   private static final boolean DEBUG = Boolean.getBoolean("h2o.find-ByteBuffer-leaks");
   private static long HWM=0;
   static class BBPool {
-    final AtomicInteger _made  = new AtomicInteger(0);
-    final AtomicInteger _freed = new AtomicInteger(0);
-    final AtomicInteger _cached= new AtomicInteger(0);
-    final LinkedBlockingDeque<ByteBuffer> _bbs = new LinkedBlockingDeque<>();
-    final int _size;
+    long _made, _cached, _freed;
+    long _numer, _denom, _goal=4*H2O.NUMCPUS, _lastGoal;
+    final ArrayList<ByteBuffer> _bbs = new ArrayList<>();
+    final int _size;            // Big or small size of ByteBuffers
     BBPool( int sz ) { _size=sz; }
     public final int size() { return _size; }
 
-    private ByteBuffer stats( AtomicInteger ai, ByteBuffer bb ) {
+    private ByteBuffer stats( ByteBuffer bb ) {
       if( !DEBUG ) return bb;
-      if( (ai.incrementAndGet()&255)!=255 ) return bb;
+      if( ((_made+_cached)&255)!=255 ) return bb; // Filter printing to 1 in 256
       long now = System.currentTimeMillis();
       if( now < HWM ) return bb;
       HWM = now+1000;
       water.util.SB sb = new water.util.SB();
-      sb.p("BB").p(this==BBP_BIG?1:0).p(" make=").p(_made.get()).p(" free=").p(_freed.get()).p(" cache=").p(_cached.get()).p(" size=").p(_bbs.size()).nl();
+      sb.p("BB").p(this==BBP_BIG?1:0).p(" made=").p(_made).p(" -freed=").p(_freed).p(", cache hit=").p(_cached).p(" ratio=").p(_numer/_denom).p(", goal=").p(_goal).p(" cache size=").p(_bbs.size()).nl();
       for( int i=0; i<H2O.MAX_PRIORITY; i++ ) {
         int x = H2O.getWrkQueueSize(i);
         if( x > 0 ) sb.p('Q').p(i).p('=').p(x).p(' ');
@@ -244,13 +241,17 @@ public final class AutoBuffer {
 
     ByteBuffer make() {
       while( true ) {             // Repeat loop for DBB OutOfMemory errors
-        ByteBuffer bb;
-        try { bb = _bbs.pollFirst(0,TimeUnit.SECONDS); }
-        catch( InterruptedException e ) { throw Log.throwErr(e); }
-        if( bb != null ) return stats(_cached,bb);
+        ByteBuffer bb=null;
+        synchronized(_bbs) { 
+          int sz = _bbs.size();
+          if( sz > 0 ) { bb = _bbs.remove(sz-1); _cached++; _numer++; }
+        }
+        if( bb != null ) return stats(bb);
+        // Cache empty; go get one from C/Native memory
         try {
           bb = ByteBuffer.allocateDirect(_size).order(ByteOrder.nativeOrder());
-          return stats(_made,bb);
+          synchronized(this) { _made++; _denom++; _goal = Math.max(_goal,_made-_freed); _lastGoal=System.nanoTime(); } // Goal was too low, raise it
+          return stats(bb);
         } catch( OutOfMemoryError oome ) {
           // java.lang.OutOfMemoryError: Direct buffer memory
           if( !"Direct buffer memory".equals(oome.getMessage()) ) throw oome;
@@ -260,9 +261,28 @@ public final class AutoBuffer {
       }
     }
     void free(ByteBuffer bb) {
-      assert bb.capacity() == _size;
-      stats(_freed,bb).clear();
-      _bbs.offerFirst(bb);
+      // Heuristic: keep the ratio of BB's made to cache-hits at a fixed level.
+      // Free to GC if ratio is high, free to internal cache if low.
+      long ratio = _numer/(_denom+1);
+      synchronized(_bbs) { 
+        if( ratio < 100 || _bbs.size() < _goal ) { // low hit/miss ratio or below goal
+          bb.clear();           // Clear-before-add
+          _bbs.add(bb);
+        } else _freed++;        // Toss the extras (above goal & ratio)
+
+        long now = System.nanoTime();
+        if( now-_lastGoal > 1000000000L ) { // Once/sec, drop goal by 10%
+          _lastGoal = now;
+          if( ratio > 110 )     // If ratio is really high, lower goal
+            _goal=Math.max(4*H2O.NUMCPUS,(long)(_goal*0.99));
+          // Once/sec, lower numer/denom... means more recent activity outweighs really old stuff
+          long denom = (long) (0.99 * _denom); // Proposed reduction
+          if( denom > 10 ) {                   // Keep a little precision
+            _numer = (long) (0.99 * _numer);   // Keep ratio between made & cached the same
+            _denom = denom;                    // ... by lowering both by 10%
+          }
+        }
+      }
     }
     static int FREE( ByteBuffer bb ) {
       (bb.capacity()==BBP_BIG._size ? BBP_BIG : BBP_SML).free(bb);
