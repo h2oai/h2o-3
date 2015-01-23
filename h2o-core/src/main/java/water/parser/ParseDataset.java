@@ -168,6 +168,8 @@ public final class ParseDataset extends Job<Frame> {
   // Top-level parser driver
   private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._ncols > 0;
+    if(setup._columnNames != null && setup._columnNames.length == 1 && setup._columnNames[0].isEmpty())
+      setup._columnNames = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
@@ -211,8 +213,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(avs.length),AppendableVec.closeAll(avs));
-
+      fr = setup._columnNames == null?new Frame(job.dest(),AppendableVec.closeAll(avs), true): new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -234,7 +235,7 @@ public final class ParseDataset extends Job<Frame> {
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
 
     } else {                    // No enums case
-      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(avs.length),AppendableVec.closeAll(avs));
+       fr = setup._columnNames == null?new Frame(job.dest(),AppendableVec.closeAll(avs), true): new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
