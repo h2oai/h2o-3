@@ -680,7 +680,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // apparently spuriously fail - and we avoid apparent spurious failure
         // by not allowing Keys to ever change.
         K = key(kvs,idx);       // CAS failed, get updated value
-        if(K == null) {
+        if( K == null ) {
           System.out.println("double null: "+K);
           continue;
         }

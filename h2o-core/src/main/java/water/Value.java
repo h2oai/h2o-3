@@ -426,13 +426,14 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   }
   // List of who is replicated where
   private volatile byte[] _replicas;
-  private final AtomicReferenceFieldUpdater<Value,byte[]> _replicasUpdater =
+  private static final AtomicReferenceFieldUpdater<Value,byte[]> REPLICAS_UPDATER =
     AtomicReferenceFieldUpdater.newUpdater(Value.class,byte[].class, "_replicas");
+  // Fills in the _replicas field atomically, on first set of a replica.
   private byte[] replicas( ) {
     byte[] r = _replicas;
     if( r != null ) return r;
-    byte[] nr = new byte[H2O.CLOUD.size()];
-    if( _replicasUpdater.compareAndSet(this,null,nr) ) return nr;
+    byte[] nr = new byte[H2O.CLOUD.size()+1/*1-based numbering*/+10/*limit of 10 clients*/];
+    if( REPLICAS_UPDATER.compareAndSet(this,null,nr) ) return nr;
     r = _replicas/*read again, since CAS failed must be set now*/;
     assert r!= null;
     return r;
@@ -517,7 +518,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = key;
     // Set the replica bit for the one node we know about, and leave the
     // rest clear.  
-    if( _replicas==null ) throw H2O.unimpl();
     replicas()[h2o._unique_idx]=1;
     _rwlock.set(0);             // No GETs are in-flight at this time. 
   }
