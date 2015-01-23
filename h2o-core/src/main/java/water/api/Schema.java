@@ -84,8 +84,13 @@ import java.util.regex.Pattern;
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
+  private static final int HIGHEST_SUPPORTED_VERSION = 3;
 
   public static final class Meta extends Iced {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
     public int schema_version;
 
@@ -181,6 +186,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
 
+  private static int latest_version = -1;
+  public final static int getLatestVersion() {
+    return latest_version;
+  }
+  // Bound the version search if we haven't yet registered all schemas
+  public final static int getHighestSupportedVersion() {
+    return HIGHEST_SUPPORTED_VERSION;
+  }
+
   /** Register the given schema class. */
   public static void register(Class<? extends Schema> clz) {
     synchronized(clz) {
@@ -210,7 +224,21 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
       }
 
-      if (extractVersion(clz.getSimpleName()) > -1) {
+      int version = extractVersion(clz.getSimpleName());
+      if (version > getHighestSupportedVersion())
+        throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
+
+      if (version > -1) {
+        // Track highest version of all schemas; only valid after all are registered at startup time.
+        if (version > HIGHEST_SUPPORTED_VERSION)
+          throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
+
+        if (version > latest_version) {
+          synchronized (Schema.class) {
+            if (version > latest_version) latest_version = version;
+          }
+        }
+
         Schema s = null;
         try {
           s = clz.newInstance();
@@ -416,7 +444,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
-      String[] splits = s.substring(1,s.length()-1).split(",");
+      String inside = s.substring(1,s.length() -1).trim();
+      String[] splits; // "".split(",") => {""} so handle the empty case explicitly
+      if (inside.length() == 0)
+        splits = new String[] {};
+      else
+          splits = inside.split(",");
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
@@ -429,21 +462,30 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         a = (E[]) Array.newInstance(afclz, splits.length);
       }
 
-      for( int i=0; i<splits.length; i++ )
-        a[i] = (E)parse(splits[i].trim(),afclz, required);
+      for( int i=0; i<splits.length; i++ ) {
+        if (String.class == afclz || KeySchema.class.isAssignableFrom(afclz)) {
+          // strip quotes off string values inside array
+          String stripped = splits[i].trim();
+          if (stripped.length() >= 2)
+            stripped = stripped.substring(1, stripped.length() - 1);
+          a[i] = (E) parse(stripped, afclz, required);
+        } else {
+          a[i] = (E) parse(splits[i].trim(), afclz, required);
+        }
+      }
       return a;
     }
 
     if( fclz.equals(Key.class) )
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       else if (!required && (s == null || s.length() == 0)) return null;
-      else return Key.make(s);
+      else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
     if( KeySchema.class.isAssignableFrom(fclz) ) {
       if ((s == null || s.length() == 0) && required) throw new IllegalArgumentException("Missing key"); // TODO: better message!
       if (!required && (s == null || s.length() == 0)) return null;
 
-      return KeySchema.make(fclz, Key.make(s));
+      return KeySchema.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
     if( Enum.class.isAssignableFrom(fclz) )
@@ -712,7 +754,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                     field_meta.level.name(),
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
-                    field_meta.is_schema ? field_meta.schema_name : "", field_meta.value,
+                    field_meta.is_schema ? field_meta.schema_name : "", (null == field_meta.value ? "(null)" : field_meta.value.toString()), // Something better for toString()?
                     field_meta.help,
                     (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
                     (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
@@ -738,7 +780,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
                     field_meta.type,
                     String.valueOf(field_meta.is_schema),
                     field_meta.is_schema ? field_meta.schema_name : "",
-                    field_meta.value,
+                    (null == field_meta.value ? "(null)" : field_meta.value.toString()), // something better than toString()?
                     field_meta.help,
                     (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
                     (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),

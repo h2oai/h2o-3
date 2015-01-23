@@ -70,6 +70,25 @@ public class Frame extends Lockable<Frame> {
   public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
   /** Creates an empty frame with given key. */
   public Frame( Key key ) { this(key,null,new Vec[0]); }
+
+  /**
+   * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
+   * @param key
+   * @param vecs
+   * @param noChecks
+   */
+  public Frame( Key key, Vec vecs[], boolean noChecks) {
+    super(key);
+    assert noChecks;
+    _vecs = vecs;
+    _names = new String[vecs.length];
+    _keys = new Key[vecs.length];
+    for (int i = 0; i < vecs.length; i++) {
+      _names[i] = defaultColName(i);
+      _keys[i] = vecs[i]._key;
+    }
+  }
+
   /** Creates a frame with given key, names and vectors. */
   public Frame( Key key, String names[], Vec vecs[] ) {
     super(key);
@@ -193,7 +212,7 @@ public class Frame extends Lockable<Frame> {
 
   /** A single column name.
    *  @return the column name */
-  public String name(int i) { return _names[i]; }
+  public String name(int i) { return _names[i]; } // TODO: saw a non-reproducible NPE here
 
   /** The array of keys.
    * @return the array of keys for each vec in the frame.

@@ -11,7 +11,7 @@ source('../h2o-runit.R')
 test.linkFunctions <- function(conn) {
 
 	print("Read in prostate data.")
-	prostate.data = h2o.importFile(conn, locate("smalldata/prostate/prostate_complete.csv.zip"), key="prostate.data")
+	prostate.data = h2o.importFile(conn, locate("smalldata/prostate/prostate.csv.zip"), key="prostate.data")
 	
 	print("Run test/train split at 20/80.")
 	prostate.data$split <- ifelse(h2o.runif(prostate.data)>0.8, yes=1, no=0)

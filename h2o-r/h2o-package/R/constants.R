@@ -184,8 +184,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__IMPORT         <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
 
 #' Parse Endpoints
-.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?srcs=[nfs://asdfsdf..., nfs://...]
-.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=[nfs://path/to/data]&hex=KEYNAME&pType=CSV&sep=44&n63=5&checkHeader=0&singleQuotes=false&columnNames=[C1,%20C2,%20C3,%20C4,%20C5]
+.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?srcs=["nfs://asdfsdf...", "nfs://..."]
+.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=["nfs://path/to/data"]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 
 #' Inspect/Summary Endpoints
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf

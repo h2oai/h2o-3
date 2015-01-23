@@ -1,9 +1,12 @@
 package water.api;
 
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.IcedWrapper;
+import water.Weaver;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +50,7 @@ public final class SchemaMetadata extends Iced {
     /**
      * Value for this field.  Set through reflection.
      */
-    public String value;
+    public Iced value;
 
     /**
      *  A short help description to appear alongside the field in a UI.  Set from the @API annotation.
@@ -117,7 +120,7 @@ public final class SchemaMetadata extends Iced {
      * @param values for enum-type fields this is a list of allowed string values
      * @param json should this field be included in generated JSON?
      */
-    public FieldMetadata(String name, String type, boolean is_schema, String schema_name, String value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json, String[] is_member_of_frames, String[] is_mutually_exclusive_with) {
+    public FieldMetadata(String name, String type, boolean is_schema, String schema_name, Iced value, String help, String label, boolean required, API.Level level, API.Direction direction, String[] values, boolean json, String[] is_member_of_frames, String[] is_mutually_exclusive_with) {
       // from the Field, using reflection
       this.name = name;
       this.type = type;
@@ -141,7 +144,7 @@ public final class SchemaMetadata extends Iced {
      * Create a new FieldMetadata object for the given Field of the given Schema.
      * @param schema water.api.Schema object
      * @param f java.lang.reflect.Field for the Schema class
-     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, String, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean, String[], String[])
+     * @see water.api.SchemaMetadata.FieldMetadata#FieldMetadata(String, String, boolean, String, Iced, String, String, boolean, water.api.API.Level, water.api.API.Direction, String[], boolean, String[], String[])
      */
     public FieldMetadata(Schema schema, Field f) {
       super();
@@ -257,10 +260,20 @@ public final class SchemaMetadata extends Iced {
       throw H2O.fail(msg);
     }
 
-    public static String consValue(Object o) {
+    public static Iced consValue(Object o) {
       if (null == o)
         return null;
 
+      Class clz = o.getClass();
+
+      if (water.Iced.class.isAssignableFrom(clz))
+        return (Iced)o;
+
+      if (clz.isArray()) {
+        return new IcedWrapper(o);
+      }
+
+/*
       if (water.Keyed.class.isAssignableFrom(o.getClass())) {
         Keyed k = (Keyed)o;
         return k._key.toString();
@@ -282,6 +295,26 @@ public final class SchemaMetadata extends Iced {
       }
       sb.append("]");
       return sb.toString();
+      */
+
+      // Primitive type
+      if (clz.isPrimitive())
+        return new IcedWrapper(o);
+
+      if (o instanceof Number)
+        return new IcedWrapper(o);
+
+      if (o instanceof Boolean)
+        return new IcedWrapper(o);
+
+      if (o instanceof String)
+        return new IcedWrapper(o);
+
+      if (o instanceof Enum)
+        return new IcedWrapper(o);
+
+
+      throw new H2OIllegalArgumentException("o", "consValue", o);
     }
 
   } // FieldMetadata

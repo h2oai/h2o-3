@@ -5,9 +5,6 @@ import water.util.Log;
 
 public class QuantilesHandler extends Handler {
 
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   protected void init(Quantiles q) throws IllegalArgumentException {
     if( q._source_key == null ) throw new IllegalArgumentException("Source key is missing");
     if( q._column == null )     throw new IllegalArgumentException("Column is missing");

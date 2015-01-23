@@ -12,6 +12,7 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.Parser.ColType;
 import water.parser.Parser.ColTypeInfo;
 import water.fvec.*;
@@ -68,7 +69,9 @@ public final class ParseDataset extends Job<Frame> {
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
   static ByteVec getByteVec(Key key) {
-    Iced ice = DKV.get(key).get();
+    Iced ice = DKV.getGet(key);
+    if(ice == null)
+      throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
   static String [] genericColumnNames(int ncols){
@@ -99,17 +102,23 @@ public final class ParseDataset extends Job<Frame> {
       bv = getByteVec(k);
       dcr = ZipUtil.decompressionRatio(bv);
       if (dcr > maxDecompRatio) maxDecompRatio = dcr;
-      totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
+      if (maxDecompRatio > 1.0)
+        totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
+      else  // numerical issues was distorting files sizes when no decompression
+        totalParseSize += bv.length();
     }
     //Calc chunk-size
-    setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    Iced ice = DKV.getGet(keys[0]);
+    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
+      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;
+    } else {
+      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+    }
     Log.info("Chunk size " + setup._chunkSize);
     Vec update;
-    Iced ice;
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
       update = (Vec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
-      //update = ((Frame) DKV.getGet(keys[i])).vec(0);
       update.setChunkSize(setup._chunkSize);
       DKV.put(update._key, update);
     }
@@ -167,6 +176,8 @@ public final class ParseDataset extends Job<Frame> {
   // Top-level parser driver
   private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._ncols > 0;
+    if(setup._columnNames != null && setup._columnNames.length == 1 && setup._columnNames[0].isEmpty())
+      setup._columnNames = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
@@ -210,8 +221,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(avs.length),AppendableVec.closeAll(avs));
-
+      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -233,7 +243,7 @@ public final class ParseDataset extends Job<Frame> {
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
 
     } else {                    // No enums case
-      fr = new Frame(job.dest(),setup._columnNames,AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
@@ -242,13 +252,16 @@ public final class ParseDataset extends Job<Frame> {
     // unify any vecs with enums and strings to strings only
     new UnifyStrVecTask().doAll(fr);
 
+
     // Log any errors
     if( mfpt._errors != null )
       for( String err : mfpt._errors )
         Log.warn(err);
     logParseResults(job, fr);
-
     // Release the frame for overwriting
+    fr.update(job._key);
+    Frame fr2 = DKV.getGet(fr._key);
+    assert fr2._names.length == fr2.numCols();
     fr.unlock(job._key);
     // Remove CSV files from H2O memory
     if( delete_on_done )

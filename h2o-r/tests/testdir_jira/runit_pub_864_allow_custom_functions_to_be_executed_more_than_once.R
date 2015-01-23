@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-test.pub_864_allow_addFunction_functions_to_be_executed_more_than_once <- function(localH2O) {
+test.pub_864_allow_custom_functions_to_be_executed_more_than_once <- function(localH2O) {
 
 covtype.hex <- h2o.importFile(localH2O, normalizePath(locate("smalldata/covtype/covtype.20k.data")), "cov")
 
@@ -16,12 +16,12 @@ expect_equal(55, dim(covtype.local)[2])
 ###########################################################
 
 fun = function(x) { mean( x[,2]) }
-h2o.addFunction(object = localH2O, fun = fun, name = "m" )
-h2o.exec(ddply(covtype.hex, c(2), m))
-h2o.exec(ddply(covtype.hex, c(2), m))
+# h2o.addFunction(object = localH2O, fun = fun, name = "m" )
+h2o.ddply(covtype.hex, c(2), fun)
+h2o.ddply(covtype.hex, c(2), fun)
 
 testEnd()
 
 }
 
-doTest("PUB-864 allow addFunction functions to be executed more than once.", test.pub_864_allow_addFunction_functions_to_be_executed_more_than_once)
+doTest("PUB-864 allow custom functions to be executed more than once.", test.pub_864_allow_custom_functions_to_be_executed_more_than_once)

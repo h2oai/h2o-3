@@ -60,9 +60,6 @@ public class LogsHandler extends Handler {
     }
   }
 
-  @Override protected int min_ver() { return 3; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public LogsV3 fetch(int version, LogsV3 s) {
     int nodeidx = s.nodeidx;

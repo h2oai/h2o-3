@@ -5,7 +5,7 @@ test.ifce<- function(conn) {
 
   hex <- as.h2o(conn, iris)
   zhex <- hex - hex
-  h2o.exec(zhex <- hex - hex)
+  # h2o.exec(zhex <- hex - hex)
   
   testEnd()
 }

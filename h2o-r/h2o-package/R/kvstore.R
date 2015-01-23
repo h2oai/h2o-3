@@ -160,7 +160,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     key <- conn
     conn <- temp
   }
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "GET")
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "POST")
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
   .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
 }
@@ -201,45 +201,29 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     if (!is.null(param$actual_value))
     {
       name <- param$name
-      if (is.null(param$default_value) || param$default_value != param$actual_value){
+      # TODO: Should we use !isTRUE(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || identical(param$default_value, param$actual_value)){
         value <- param$actual_value
         mapping <- .type.map[param$type,]
         type    <- mapping[1L, 1L]
         scalar  <- mapping[1L, 2L]
 
-        # Change Java Array to R list
-        if (!scalar) {
-          arr <- gsub("\\[", "", gsub("]", "", value))
-          value <- unlist(strsplit(arr, split=", "))
-        }
-
-        # Parse frame information to a key
-        if (type == "H2OFrame") {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        } else if (type == "numeric")
-          value <- as.numeric(value)
-        else if (type == "logical")
-          value <- as.logical(value)
+        # Prase frame information to a key
+        if (type == "H2OFrame")
+          value <- value$name
 
         # Response column needs to be parsed
         if (name == "response_column")
-        {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        }
+          value <- value$column_name
         parameters[[name]] <<- value
       }
     }
   })
 
   # Convert ignored_columns/response_column to valid R x/y
-  if (!is.null(parameters$ignored_columns))
-    parameters$x <- .verify_datacols(h2o.getFrame(conn, parameters$training_frame), parameters$ignored_columns)$cols_ignore
+  cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
+  
+  parameters$x <- setdiff(cols, parameters$ignored_columns)
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column

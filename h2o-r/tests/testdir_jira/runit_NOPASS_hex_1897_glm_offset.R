@@ -28,21 +28,21 @@ test.GLM.offset <- function(conn) {
   
   Log.info ('Check binomial models for GLM with and without offset')
   Log.info ('Import prostate dataset into H2O and R...')
-  prostate.hex = h2o.importFile(object = conn, system.file("extdata", "prostate.csv", package = "h2o"))
+  prostate.hex = h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
   prostate.csv = as.data.frame(prostate.hex)
   
   family_type = c("binomial", "poisson")
   
   check_models <- function (family_type) {
     Log.info (paste ("Checking", family_type, "models without offset..."))
-    prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, training_frame = prostate.csv)
+    prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv)
     prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F, higher_accuracy = T)
     compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
     compare_scores(prostate.glm.h2o, prostate.glm.r)
     
     Log.info (paste ("Checking", family_type, "models with offset..."))
     options(warn=-1)
-    prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, training_frame = prostate.csv, offset = prostate.csv$AGE)
+    prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv, offset = prostate.csv$AGE)
     prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, offset = "AGE", standardize = F, higher_accuracy = T)
     compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
     compare_scores(prostate.glm.h2o, prostate.glm.r)

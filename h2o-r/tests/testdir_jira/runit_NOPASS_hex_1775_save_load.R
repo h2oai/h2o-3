@@ -18,8 +18,8 @@ test.hex_1775 <- function(conn) {
   
   # Test saving and loading of GLM model
   Log.info("Importing prostate.csv...")
-  prostate.hex = h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
-  iris.hex = h2o.importFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
+  prostate.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')))
+  iris.hex = h2o.uploadFile(conn, normalizePath(locate('smalldata/iris/iris.csv')))
   
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
   Log.info("Build GLM model")

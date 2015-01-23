@@ -7,8 +7,6 @@ import water.fvec.Frame;
 import java.io.InputStream;
 
 public class DownloadDataHandler extends Handler { // TODO: recursive generics seem to prevent more specific types here
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public DownloadDataV1 fetch(int version, DownloadDataV1 server) {
