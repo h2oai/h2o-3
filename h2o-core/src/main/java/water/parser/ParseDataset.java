@@ -247,13 +247,16 @@ public final class ParseDataset extends Job<Frame> {
     // unify any vecs with enums and strings to strings only
     new UnifyStrVecTask().doAll(fr);
 
+
     // Log any errors
     if( mfpt._errors != null )
       for( String err : mfpt._errors )
         Log.warn(err);
     logParseResults(job, fr);
-
     // Release the frame for overwriting
+    fr.update(job._key);
+    Frame fr2 = DKV.getGet(fr._key);
+    assert fr2._names.length == fr2.numCols();
     fr.unlock(job._key);
     // Remove CSV files from H2O memory
     if( delete_on_done )
