@@ -40,18 +40,15 @@ public class AppendableVec extends Vec {
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
 
-
-
-  int _chunkOff;
+  public int _chunkOff;         // Public so the parser can find it
 
 
   public AppendableVec( Key key){
-    this(key, Vec.DFLT_CHUNK_SIZE, new long[4], 0);
+    this(key, new long[4], 0);
   }
 
-  public AppendableVec( Key key, int chunkSize, long [] espc, int chunkOff) {
+  public AppendableVec( Key key, long [] espc, int chunkOff) {
     super(key, null); // NOTE: passing null for espc and then keeping private copy so that the size can change
-    setChunkSize(chunkSize);
     _espc = espc;
     _chunkTypes = new byte[4];
     _chunkOff = chunkOff;
@@ -212,7 +209,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, domain(), type, _chunkSize);
+    Vec vec = new Vec(_key, espc, domain(), type);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

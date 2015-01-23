@@ -6,6 +6,7 @@ import org.junit.*;
 import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.FileVec;
 import water.fvec.Vec;
 
 public class MRThrow extends TestUtil {
@@ -17,7 +18,7 @@ public class MRThrow extends TestUtil {
   // and make sure it's forwarded to the invoke.
   @Test public void testInvokeThrow() {
     int sz = H2O.CLOUD.size();
-    Vec vec = Vec.makeZero((sz+1)*Vec.DFLT_CHUNK_SIZE+1);
+    Vec vec = Vec.makeZero((sz+1)*FileVec.DFLT_CHUNK_SIZE+1);
     try {
       for(int i = 0; i < sz; ++i){
         ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
@@ -39,7 +40,7 @@ public class MRThrow extends TestUtil {
 
   @Test public void testContinuationThrow() throws InterruptedException, ExecutionException {
     int sz = H2O.CLOUD.size();
-    Vec vec = Vec.makeZero((sz+1)*Vec.DFLT_CHUNK_SIZE+1);
+    Vec vec = Vec.makeZero((sz+1)*FileVec.DFLT_CHUNK_SIZE+1);
     try {
       for(int i = 0; i < H2O.CLOUD._memary.length; ++i){
         final ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);

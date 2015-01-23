@@ -107,19 +107,20 @@ public final class ParseDataset extends Job<Frame> {
       else  // numerical issues was distorting files sizes when no decompression
         totalParseSize += bv.length();
     }
-    //Calc chunk-size
+
+    // Calc chunk-size, and set into the incoming FileVecs
     Iced ice = DKV.getGet(keys[0]);
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
-      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;
+      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;
     } else {
-      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
     }
     Log.info("Chunk size " + setup._chunkSize);
-    Vec update;
+    FileVec update;
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
-      update = (Vec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
-      update.setChunkSize(setup._chunkSize);
+      update = (FileVec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
+      update._chunkSize = setup._chunkSize;
       DKV.put(update._key, update);
     }
 
@@ -485,7 +486,7 @@ public final class ParseDataset extends Job<Frame> {
         nchunks += dout.nChunks();
       long [] espc = MemoryManager.malloc8(nchunks);
       for(int i = 0; i < res.length; ++i) {
-        res[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i),_setup._chunkSize, espc, 0);
+        res[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), espc, 0);
         res[i].setTypes(MemoryManager.malloc1(nchunks));
       }
       for(int i = 0; i < _dout.length; ++i)
@@ -532,7 +533,7 @@ public final class ParseDataset extends Job<Frame> {
       AppendableVec [] avs = new AppendableVec[localSetup._ncols];
       long [] espc = MemoryManager.malloc8(nchunks);
       for(int i = 0; i < avs.length; ++i)
-        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), _setup._chunkSize, espc, chunkOff);
+        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._pType == ParserType.SVMLight
         ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _setup._chunkSize, avs)
         :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _setup._chunkSize, avs);
@@ -667,7 +668,7 @@ public final class ParseDataset extends Job<Frame> {
       @Override public void map( Chunk in ) {
         AppendableVec [] avs = new AppendableVec[_setup._ncols];
         for(int i = 0; i < avs.length; ++i)
-          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _setup._chunkSize, _espc, _startChunkIdx);
+          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
         Categorical [] enums = enums(_eKey,_setup._ncols);
         // Break out the input & output vectors before the parse loop
         FVecDataIn din = new FVecDataIn(in);
@@ -991,7 +992,7 @@ public final class ParseDataset extends Job<Frame> {
         _vecs  = Arrays.copyOf(_vecs  , ncols);
         _ctypes= Arrays.copyOf(_ctypes, ncols);
         for(int i = _nCols; i < ncols; ++i) {
-          _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart)); // todo - share espc!
+          _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff); // todo - share espc!
           _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
         }
       }
