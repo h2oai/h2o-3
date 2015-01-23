@@ -23,8 +23,6 @@ public class ParseSetupHandler extends Handler {
 
     // TODO: ParseSetup throws away the srcs list. . .
     PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "hex", "srcs" });
-
-    p.columnNames = ps._columnNames == null ? ParseDataset.genericColumnNames(p.ncols) : ps._columnNames;
     p.hexName = ParseSetup.hex(p.srcs[0].toString());
     if( p.checkHeader==1 ) p.data = Arrays.copyOfRange(p.data,1,p.data.length-1); // Drop header from the preview data
 
