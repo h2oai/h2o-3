@@ -1,11 +1,16 @@
 package water;
 
 import org.junit.*;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import jsr166y.ForkJoinPool;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
 
-@Ignore("Speed/perf test, not intended as a pre-push junit test")
+//@Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
 
-  static final int NCLOUD=5;
+  static final int NCLOUD=1;
   static final int NKEYS=1000000;
   @BeforeClass static public void setup() { stall_till_cloudsize(NCLOUD); }
 
@@ -68,6 +73,35 @@ public class KVSpeedTest extends TestUtil {
     logTime(start,"REMALL_DONE",NCLOUD);
 
     DKV.remove(k);
+  }
+
+  @Test @Ignore
+  public void testMillionInsertKeys() {
+    H2O.H2OCountedCompleter foo = H2O.submitTask(new H2O.H2OCountedCompleter() {
+        @Override public void compute2() {
+          long start = System.currentTimeMillis();
+          final int PAR=100;
+          final int NKEY=100000;      // PAR*NKEY = 10M keys
+          ArrayList<RecursiveAction> rs = new ArrayList<>();
+          for( int i = 0; i < PAR; ++i ) {
+            final int fi = i;
+            rs.add(new RecursiveAction() {
+                @Override public void compute() {
+                  // Now fill in appropriate-sized zero chunks
+                  for( int j = 0; j < NKEY; j++ ) {
+                    Key k = Key.make("Q"+(fi*NKEY+j));
+                    H2O.putIfMatch(k, new Value(k, k), null);
+                  }
+                }
+              });
+          }
+          ForkJoinTask.invokeAll(rs);
+          long end = System.currentTimeMillis();
+          System.out.println("msec="+(end-start)+", msec/op="+((double)(end-start))/PAR/NKEY);
+          tryComplete();
+        }
+      });
+    foo.join();
   }
 
   private long logTime( long start, String msg, int ncloud ) {

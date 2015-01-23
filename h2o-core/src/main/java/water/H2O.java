@@ -499,7 +499,7 @@ final public class H2O {
 
   // Hi-priority work, sorted into individual queues per-priority.
   // Capped at a small number of threads per pool.
-  private static final PrioritizedForkJoinPool FJPS[] = new PrioritizedForkJoinPool[MAX_PRIORITY+1];
+  static final PrioritizedForkJoinPool FJPS[] = new PrioritizedForkJoinPool[MAX_PRIORITY+1];
   static {
     // Only need 1 thread for the AckAck work, as it cannot block
     FJPS[ACK_ACK_PRIORITY] = new PrioritizedForkJoinPool(ACK_ACK_PRIORITY,1);

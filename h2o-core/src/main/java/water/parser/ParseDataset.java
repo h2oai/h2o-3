@@ -2,12 +2,15 @@ package water.parser;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.zip.*;
 import jsr166y.CountedCompleter;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
 import water.*;
 import water.parser.Parser.ColType;
 import water.parser.Parser.ColTypeInfo;
@@ -56,7 +59,7 @@ public final class ParseDataset extends Job<Frame> {
     }
   }
 
-  private static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
+  public static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
     byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
     ParseSetup globalSetup = ParseSetup.guessSetup(bits, singleQuote, checkHeader);
     if( globalSetup._ncols <= 0 ) throw new UnsupportedOperationException(globalSetup.toString());
@@ -230,7 +233,7 @@ public final class ParseDataset extends Job<Frame> {
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
 
     } else {                    // No enums case
-      fr = new Frame(job.dest(),setup._columnNames != null?setup._columnNames:genericColumnNames(avs.length),AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(),setup._columnNames,AppendableVec.closeAll(avs));
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
@@ -338,33 +341,42 @@ public final class ParseDataset extends Job<Frame> {
   private static class SVFTask extends MRTask<SVFTask> {
     private final Frame _f;
     private SVFTask( Frame f ) { _f = f; }
-    @Override public void map(Key key) {
+    @Override public void setupLocal() {
       Vec v0 = _f.anyVec();
+      ArrayList<RecursiveAction> rs = new ArrayList<RecursiveAction>();
       for( int i = 0; i < v0.nChunks(); ++i ) {
         if( !v0.chunkKey(i).home() ) continue;
-        // First find the nrows as the # rows of non-missing chunks; done on
-        // locally-homed chunks only - to keep the data distribution.
-        int nlines = 0;
-        for( Vec vec : _f.vecs() ) {
-          Value val = H2O.get(vec.chunkKey(i)); // Local-get only
-          if( val != null ) {
-            nlines = ((Chunk)val.get())._len;
-            break;
+        final int fi = i;
+        rs.add(new RecursiveAction() {
+          @Override
+          protected void compute() {
+            // First find the nrows as the # rows of non-missing chunks; done on
+            // locally-homed chunks only - to keep the data distribution.
+            int nlines = 0;
+            for( Vec vec : _f.vecs() ) {
+              Value val = H2O.get(vec.chunkKey(fi)); // Local-get only
+              if( val != null ) {
+                nlines = ((Chunk)val.get())._len;
+                break;
+              }
+            }
+            final int fnlines = nlines;
+            // Now fill in appropriate-sized zero chunks
+            for(int j = 0; j < _f.numCols(); ++j) {
+              Vec vec = _f.vec(j);
+              Key k = vec.chunkKey(fi);
+              Value val = H2O.get(k);   // Local-get only
+              if( val == null )         // Missing?  Fill in w/zero chunk
+                H2O.putIfMatch(k, new Value(k, new C0DChunk(0, fnlines)), null);
+            }
           }
-        }
-
-        // Now fill in appropriate-sized zero chunks
-        for( Vec vec : _f.vecs() ) {
-          Key k = vec.chunkKey(i);
-          if( !k.home() ) continue; // Local keys only
-          Value val = H2O.get(k);   // Local-get only
-          if( val == null )         // Missing?  Fill in w/zero chunk
-            H2O.putIfMatch(k, new Value(k,new C0DChunk(0, nlines)), null);
-        }
+        });
       }
+      ForkJoinTask.invokeAll(rs);
     }
+    @Override public void reduce( SVFTask drt ) {}
   }
-
+ 
   // --------------------------------------------------------------------------
   // Run once on all nodes; switch enum chunks over to string chunks
   private static class UnifyStrVecTask extends MRTask<UnifyStrVecTask> {
