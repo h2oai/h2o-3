@@ -9,6 +9,7 @@ import java.util.concurrent.Future;
 import java.util.zip.*;
 import jsr166y.CountedCompleter;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.Parser.ColType;
 import water.parser.Parser.ColTypeInfo;
 import water.fvec.*;
@@ -65,7 +66,9 @@ public final class ParseDataset extends Job<Frame> {
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
   static ByteVec getByteVec(Key key) {
-    Iced ice = DKV.get(key).get();
+    Iced ice = DKV.getGet(key);
+    if(ice == null)
+      throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
     return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
   }
   static String [] genericColumnNames(int ncols){
