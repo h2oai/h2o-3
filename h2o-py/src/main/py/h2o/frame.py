@@ -6,6 +6,7 @@ import numpy
 import csv
 import tabulate
 import uuid
+import collections
 import h2o
 from expr import Expr
 
@@ -42,22 +43,23 @@ class H2OFrame(object):
         H2O by using the H2OFrame constructor and the `python_obj` argument. (Note that if
         the `python_obj` argument is not `None`, then additional arguments are ignored).
 
-        The following types are permissible for the python_obj argument:
+        The following types are permissible for `python_obj`:
 
             tuple ()
             list  []
             dict  {}
+            collections.OrderedDict
             numpy.array
 
         The type of `python_obj` is inspected by performing an `isinstance` call. A
-        ValueError exception will be raised if the type of `python_obj` is not one of the
-        above types.
+        ValueError will be raised if the type of `python_obj` is not one of the above
+        types. Notably, sets, byte arrays, and un-contained types are not permissible.
 
         In the subsequent sections, each data type will be discussed in detail. Each
         discussion will be couched in terms of the "source" representation (the python
         object) and the "target" representation (the H2O object). Concretely, the topics
         of discussion will be on the following: Headers, Data Types, Number of Rows,
-        Number of Columns.
+        Number of Columns, and Missing Values.
 
         Aside: Why is Pandas' DataFrame not a permissible type?
 
@@ -81,21 +83,134 @@ class H2OFrame(object):
         Loading: tuple ()
         =================
 
-        Essentially, the tuple is an immutable list. This immutability does not map to the
-        H2OFrame. <em>So pythonistas be ware!</em>
+            Essentially, the tuple is an immutable list. This immutability does not map to
+            the H2OFrame. So pythonistas be ware!
 
+            The restrictions on what goes inside the tuple are fairly relaxed, but if they
+            are too unusual, a ValueError will be raised.
+
+            A tuple looks as follows:
+
+                (i1, i2, i3, ..., iN)
+
+            Restrictions are really on the types of the individual `iJ` (1 <= J <= N).
+
+            If `iJ` is {} for some J, then a ValueError will be raised.
+
+            If `iJ` is a () (tuple) or [] (list), then `iJ` must be a () or [] for all J;
+            otherwise a ValueError will be raised.
+
+            If `iJ` is a () or [], and if it is in fact a nested () or nested [], then a
+            ValueError will be raised. In other words, only a single level of nesting is
+            valid, all internal arrays must be flat -- H2O will not flatten them for you.
+
+            If `iJ` is not a () or [], then it must be of type String or a non-complex
+            numeric type (float or int). In other words, if `iJ` is not a tuple, list,
+            string, float, or int, for some J, then a ValueError will be raised.
+
+            Some acceptable inputs are:
+                Example A: (1,2,3)
+                Example B: ((1,2,3), (4,5,6), ("cat", "dog"))
+                Example C: ((1,2,3), [4,5,6], ["blue", "yellow"], (321.239, "green","hi"))
+                Example D: (3284.123891, "dog", 89)
+
+            Note that it is perfectly fine to mix () and [] within a tuple.
+
+            Onward.
+
+            Headers, Columns, Rows, Data Types, and Missing Values:
+
+            The form of the H2OFrame is as follows:
+
+                column1, column2, column3, ..., columnN
+                a11,     a12,     a13,     ..., a1N
+                .        .        .        ..., .
+                .        .        .        ..., .
+                .        .        .        ..., .
+                aM1,     aM2,     aM3,     ..., aMN
+
+            It looks exactly like an MxN matrix with an additional header "row". This
+            header cannot be specified when loading data from a () (or from a [] or a
+            numpy.array, but it is possible to specify a header with a python dictionary,
+            see below for details).
+
+            Headers:
+
+                Since no header row can be specified for this case, H2O will generate a
+                column header on your behalf and the column header will look like this:
+
+                    C1, C2, C3, ..., CN
+
+                Notably, these columns have a 1-based indexing (i.e. the 0th column is
+                "C1").
+
+            Rows and Columns and Missing Data:
+
+                The shape of the H2OFrame is determined by the two factors:
+                    the number of arrays nested in the ()
+                    the number of items in each array
+
+                If there are no nested arrays (as in Example A and Example D above), then
+                the resulting H2OFrame will have shape (rows x cols):
+
+                    len(tuple) x 1
+
+                (i.e. a Frame with a single vec). Note that this is still a 2D array.
+
+                If there are nested arrays (as in Example B and Example C above), then
+                (given the rules stated above) the resulting H2OFrame will have ROWS equal
+                to the number of arrays nested within and COLUMNS equal to the maximum sub
+                array:
+
+                    max( [len(l) for l in tuple] ) x len(tuple)
+
+                Note that this handles the issue with ragged sub arrays by assuming that
+                shorter sub arrays will pad themselves with NA (missing values) at the end
+                so that they become the correct length.
+
+                Because the Frame is uniformly typed, mixing and matching data types
+                within a column may produce unexpected results. Please read up on the H2O
+                parser for details on how a column type is determined for a column of
+                initially mixed type.
 
         Loading: list []
         ================
 
+            The same discussion applies for lists as it does for tuples. Lists are mutable
+            objects so there is no semantic difference regarding mutability between an
+            H2OFrame and a list (as there is for a tuple).
 
+            Additionally, a list [] is ordered (as is a tuple ()) and the data appearing
+            within
 
-        Loading: dict {}
-        ================
+        Loading: dict {} or collections.OrderedDict
+        ===========================================
+
+            Each entry in the {} is expected to represent a single column. Keys in the {}
+            must be character strings following the pattern: ^[a-zA-Z_][a-zA-Z0-9_.]*$
+            without restriction on length. That is a valid column name may begin with any
+            letter (capital or not) or an "_", it can then be followed by any number of
+            letters, digits, "_"s, or "."s.
+
+            Values in the {} may be a flat [], a flat (), or a single int, float, or
+            string value. Nested [] and () will raise a ValueError. This is the only
+            additional restriction on [] and () that applies in this context.
+
+            Note that the built-in dict does not provide any guarantees on ordering. This
+            has implications on the order of columns in the eventual H2OFrame, since they
+            may be written out of order from which they were initially put into the dict.
+
+            collections.OrderedDict will preserve the order of the key-value pairs in
+            which they were entered.
 
 
         Loading: numpy.array
         ====================
+
+        numpy.array objects follow the same rules as lists and tuples.
+
+        If a numpy.array appears in a dict or collections.OrderedDict, then a ValueError
+        will be raised.
 
     """
 
@@ -123,64 +238,21 @@ class H2OFrame(object):
         :return: An instance of an H2OFrame object.
         """
 
-        self.local_fname  = local_fname
+        self.local_fname = local_fname
         self.remote_fname = remote_fname
         self._vecs = None
 
         if python_obj:
-            # handle python [], python {}, and numpy.array
-
-            # handle []
-            if isinstance(python_obj, list):
-
-                # do we have a list of lists?
-                lol = any(isinstance(l, list) for l in python_obj)
-                lol_all = False
-
-                # if we have a list of lists, then all items in python_obj must be a list.
-                # otherwise, raise a ValueError exception.
-                if lol:
-                    lol_all = all(isinstance(l, list) for l in python_obj)
-                if not lol_all:
-                    raise ValueError(
-                        "`python_obj` is a mixture of nested lists and other types.")
-
-                if lol:
-                    # have list of lists, each list is a row
-                    # length of the longest list is the number of columns
-                    cols = max([len(l) for l in python_obj])
-                    header = H2OFrame._gen_header(cols)
-
-                    # write header
-                    # write each list
-                    # call upload_file
-                    # return
-
-                else:
-                    cols = len(python_obj)
-                    header = H2OFrame._gen_header(cols)
-
-                    # write header
-                    # write list
-                    # call upload_file
-                    # return
-
-                return
-            elif isinstance(python_obj, numpy.array):
-                return
-
-            elif isinstance(python_obj, dict):
-                return
-
-            raise ValueError("Object must be a python list of numbers or a numpy array")
+            self._upload_python_object(python_obj)
+            return
 
         # Import the data into H2O cluster
         if remote_fname:
-            rawkey  = h2o.import_file(remote_fname)
-            setup   = h2o.parse_setup(rawkey)
-            parse   = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-            cols    = parse['columnNames']
-            rows    = parse['rows']
+            rawkey = h2o.import_file(remote_fname)
+            setup = h2o.parse_setup(rawkey)
+            parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
+            cols = parse['columnNames']
+            rows = parse['rows']
             veckeys = parse['vecKeys']
             self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
             print "Imported", remote_fname, "into cluster with", \
@@ -209,6 +281,62 @@ class H2OFrame(object):
             self._vecs = vecs
         else:
             raise ValueError("Frame made from CSV file or an array of Vecs only")
+
+    def _upload_python_object(self, python_obj):
+        """
+        Properly handle native python data types. For a discussion of the rules and
+        permissible data types please refer to the main documentation for H2OFrame.
+
+        :param python_obj: A tuple, list, dict, collections.OrderedDict, or numpy.array
+        :return: None
+        """
+
+        # [] and () cases -- folded together since H2OFrame is mutable
+        if isinstance(python_obj, (list, tuple)):
+
+            # do we have a list of lists: [[...], ..., [...]] ?
+            lol = any(isinstance(l, (list, tuple)) for l in python_obj)
+
+            if lol:
+
+                # must be a list of flat lists, raise ValueError if not
+                H2OFrame._check_lists_of_lists(python_obj)
+
+                # have list of lists, each list is a row
+                # length of the longest list is the number of columns
+                cols = max([len(l) for l in python_obj])
+                header = H2OFrame._gen_header(cols)
+
+                # write header
+                # write each list
+                # call upload_file
+                # return
+
+            # not a list of lists, so just create the len(list) x 1 H2OFrame
+            else:
+                cols = len(python_obj)
+                header = H2OFrame._gen_header(cols)
+
+                # write header
+                # write list
+                # call upload_file
+                # return
+
+            return
+
+        elif isinstance(python_obj, dict):
+            return
+
+        elif isinstance(python_obj, collections.OrderedDict):
+            return
+
+        elif isinstance(python_obj, numpy.array):
+            return
+
+        else:
+            raise ValueError("`python_obj` must be a tuple, list, dict, "
+                             "collections.OrderedDict, or a numpy.array. "
+                             "Got: " + type(python_obj))
 
     def vecs(self):
         """
@@ -251,8 +379,9 @@ class H2OFrame(object):
         for vec in self._vecs:
             s += vec.show()
         return s
+
     # Comment out to help in debugging
-    #def __str__(self): return self.show()
+    # def __str__(self): return self.show()
 
     def describe(self):
         """
@@ -266,12 +395,12 @@ class H2OFrame(object):
         print "Rows:", len(self._vecs[0]), "Cols:", len(self)
         headers = [vec.name() for vec in self._vecs]
         table = [
-            self._row('type'   , None),
-            self._row('mins'   , 0),
-            self._row('mean'   , None),
-            self._row('maxs'   , 0),
-            self._row('sigma'  , None),
-            self._row('zeros'  , None),
+            self._row('type', None),
+            self._row('mins', 0),
+            self._row('mean', None),
+            self._row('maxs', 0),
+            self._row('sigma', None),
+            self._row('zeros', None),
             self._row('missing', None)
         ]
         print tabulate.tabulate(table, headers)
@@ -443,11 +572,29 @@ class H2OFrame(object):
     def _gen_header(cols):
         return ["C" + c for c in range(1, cols + 1, 1)]
 
+    @staticmethod
+    def _check_lists_of_lists(python_obj):
+
+        # all items in the list must be a list too
+        lol_all = all(isinstance(l, (tuple, list)) for l in python_obj)
+
+        # All items in the list must be a list!
+        if not lol_all:
+            raise ValueError(
+                "`python_obj` is a mixture of nested lists and other types.")
+
+        # in fact, we must have a list of flat lists!
+        for l in python_obj:
+            if any(isinstance(ll, (tuple, list)) for ll in l):
+                raise ValueError(
+                    "`python_obj` is not a list of flat lists!")
+
 
 class H2OVec(object):
     """
     A single column of data that is uniformly typed and possibly lazily computed.
     """
+
     def __init__(self, name, expr):
         """
         Create a new instance of an H2OVec object
@@ -497,7 +644,7 @@ class H2OVec(object):
         return self._name + " " + self._expr.show()
 
     # Comment out to help in debugging
-    #def __str__(self): return self.show()
+    # def __str__(self): return self.show()
 
     def summary(self):
         """
@@ -610,7 +757,6 @@ class H2OVec(object):
 
         # == compare on a Vec and a constant Vec
         if isinstance(i, (int, float)):
-
             # lazy new H2OVec
             return H2OVec(self._name + "==" + str(i), Expr("==", self, Expr(i)))
 
@@ -671,5 +817,6 @@ class H2OVec(object):
         """
         if not seed:
             import random
+
             seed = random.randint(123456789, 999999999)  # generate a seed
         return H2OVec("runif", Expr("h2o.runif", self.get_expr(), Expr(seed)))
