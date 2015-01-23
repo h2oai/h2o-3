@@ -47,7 +47,7 @@ cross2.km <- h2o.kmeans(training_frame = cross.hex, init = cross1.km@model$cente
 print(cross2.km)
 
 heading("Check k-means converged or maximum iterations reached")
-avg_change <- sum((cross1.km@model$centers - cross2@model$centers)^2)/ncent
+avg_change <- sum((cross1.km@model$centers - cross2.km@model$centers)^2)/ncent
 expect_true(avg_change < 1e-6 || cross1.km@model$iterations > miters)
 
 PASS_BANNER()
