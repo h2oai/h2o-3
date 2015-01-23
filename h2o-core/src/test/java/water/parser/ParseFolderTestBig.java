@@ -48,7 +48,7 @@ public class ParseFolderTestBig extends TestUtil {
     }
   }
 
-  @Test
+  @Test @Ignore
   public void testBIGSVM() {
     String fname = "bigdata/cust_K/100k.svm";
     Frame k1 = null;
