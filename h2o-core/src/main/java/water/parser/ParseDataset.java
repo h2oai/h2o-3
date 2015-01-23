@@ -99,15 +99,17 @@ public final class ParseDataset extends Job<Frame> {
       bv = getByteVec(k);
       dcr = ZipUtil.decompressionRatio(bv);
       if (dcr > maxDecompRatio) maxDecompRatio = dcr;
-      totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
+      if (maxDecompRatio > 1.0)
+        totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
+      else  // numerical issues was distorting files sizes when no decompression
+        totalParseSize += bv.length();
     }
     //Calc chunk-size
-    //
     Iced ice = DKV.getGet(keys[0]);
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       setup._chunkSize = Vec.DFLT_CHUNK_SIZE;
     } else {
-      setup._chunkSize = Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
+      setup._chunkSize = Vec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
     }
     Log.info("Chunk size " + setup._chunkSize);
     Vec update;
