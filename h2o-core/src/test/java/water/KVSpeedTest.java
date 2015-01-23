@@ -2,17 +2,15 @@ package water;
 
 import org.junit.*;
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
-import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 
 //@Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
 
-  static final int NCLOUD=1;
+  static final int NCLOUD=5;
   static final int NKEYS=1000000;
-  @BeforeClass static public void setup() { stall_till_cloudsize(NCLOUD); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
   // Make a million keys-per-node.  Make sure they are all cached/shared on at
   // least one other node.  Time removing them all.  Can be network bound as
@@ -77,31 +75,116 @@ public class KVSpeedTest extends TestUtil {
 
   @Test @Ignore
   public void testMillionInsertKeys() {
+    final int PAR=100;
+    final int NKEY=100000;      // PAR*NKEY = 10M keys
+    final int WARMKEY=100000;
     H2O.H2OCountedCompleter foo = H2O.submitTask(new H2O.H2OCountedCompleter() {
+        final Key  [][] keys = new Key  [PAR][NKEY];
+        final Value[][] vals = new Value[PAR][NKEY];
         @Override public void compute2() {
-          long start = System.currentTimeMillis();
-          final int PAR=100;
-          final int NKEY=100000;      // PAR*NKEY = 10M keys
+          long now, start = System.currentTimeMillis();
           ArrayList<RecursiveAction> rs = new ArrayList<>();
+
+          // Make a zillion keys
           for( int i = 0; i < PAR; ++i ) {
             final int fi = i;
             rs.add(new RecursiveAction() {
-                @Override public void compute() {
-                  // Now fill in appropriate-sized zero chunks
+                @Override public void compute() {  // Make & insert Keys in parallel
+                  for( int j = 0; j < NKEY; j++ )
+                    keys[fi][j] = Key.make("Q"+(fi*NKEY+j));
+                }
+              });
+          }
+          ForkJoinTask.invokeAll(rs);
+          now = System.currentTimeMillis();
+          System.out.println("create msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
+          start = now;
+
+          // Warmup hashmap
+          for( int X=0; X<4; X++ ) {
+            for( int i = 0; i < PAR; ++i ) {
+              final int fi = i;
+              rs.add(new RecursiveAction() {
+                  @Override public void compute() {  // Make & insert Keys in parallel
+                    for( int j = 0; j < WARMKEY; j++ ) {
+                      Key k = keys[fi][j];
+                      H2O.putIfMatch(k, vals[fi][j] = new Value(k, ""), null);
+                    }
+                  }
+                });
+            }
+            ForkJoinTask.invokeAll(rs);
+
+            for( int i = 0; i < PAR; ++i ) {
+              final int fi = i;
+              rs.set(fi,new RecursiveAction() {
+                  @Override public void compute() {  // Make & insert Keys in parallel
+                    for( int j = 0; j < WARMKEY; j++ )
+                      H2O.putIfMatch(keys[fi][j], null, vals[fi][j]);
+                  }
+                });
+            }
+            ForkJoinTask.invokeAll(rs);
+
+            now = System.currentTimeMillis();
+            System.out.println("warmup msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/WARMKEY);
+            try { Thread.sleep(1000); } catch( InterruptedException ie ) {}
+            start = System.currentTimeMillis();
+          }
+          System.out.println("Starting insert work");
+
+          // Make a zillion Values in parallel
+          for( int i = 0; i < PAR; ++i ) {
+            final int fi = i;
+            rs.add(new RecursiveAction() {
+                @Override public void compute() {  // Make & insert Keys in parallel
+                  for( int j = 0; j < NKEY; j++ )
+                    vals[fi][j] = new Value(keys[fi][j], "");
+                }
+              });
+          }
+          ForkJoinTask.invokeAll(rs);
+          now = System.currentTimeMillis();
+          System.out.println("Values msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
+          start = now;
+
+          // Insert a zillion keys in parallel
+          for( int i = 0; i < PAR; ++i ) {
+            final int fi = i;
+            rs.add(new RecursiveAction() {
+                @Override public void compute() {  // Make & insert Keys in parallel
                   for( int j = 0; j < NKEY; j++ ) {
-                    Key k = Key.make("Q"+(fi*NKEY+j));
-                    H2O.putIfMatch(k, new Value(k, k), null);
+                    Key k = keys[fi][j];
+                    H2O.putIfMatch(k, vals[fi][j], null);
                   }
                 }
               });
           }
           ForkJoinTask.invokeAll(rs);
-          long end = System.currentTimeMillis();
-          System.out.println("msec="+(end-start)+", msec/op="+((double)(end-start))/PAR/NKEY);
+          now = System.currentTimeMillis();
+          System.out.println("insert msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
+          start = now;
+
+          // Now remove them all
+          for( int i = 0; i < PAR; ++i ) {
+            final int fi = i;
+            rs.set(fi,new RecursiveAction() {
+                @Override public void compute() {  // Make & insert Keys in parallel
+                  for( int j = 0; j < NKEY; j++ )
+                    H2O.putIfMatch(keys[fi][j], null, vals[fi][j]);
+                }
+              });
+          }
+          ForkJoinTask.invokeAll(rs);
+          now = System.currentTimeMillis();
+          System.out.println("remove msec="+(now-start)+", msec/op="+((double)(now-start))/PAR/NKEY);
+          start = now;
+
           tryComplete();
         }
       });
     foo.join();
+
   }
 
   private long logTime( long start, String msg, int ncloud ) {
