@@ -20,10 +20,12 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
+  parsedSrcs <- sapply(parseSetup$srcs, function(asrc) asrc$name)
+
   if (!nzchar(key))
     key <- .key.make(data@conn, parseSetup$hexName)
   parse.params <- list(
-        srcs = .collapse(srcs), # TODO: use the keys list output by ParseSetup
+        srcs = .collapse.char(parsedSrcs),
         hex  = key,
         columnNames = .collapse.char(col.names),
         sep = parseSetup$sep,
