@@ -1085,13 +1085,11 @@ public final class ParseDataset extends Job<Frame> {
           }
         }
 
-        if (printLogSeparatorToStdout) {
+        if (printLogSeparatorToStdout)
           System.out.println("Additional column information only sent to log file...");
-        }
 
         String s = String.format(format, CStr, typeStr, minStr, maxStr, naStr, isConstantStr, numLevelsStr);
-        if( printColumnToStdout ) Log.info          (s);
-        else                      Log.info_no_stdout(s);
+        Log.info(s,printColumnToStdout);
       }
       Log.info(FrameUtils.chunkSummary(fr).toString());
     }

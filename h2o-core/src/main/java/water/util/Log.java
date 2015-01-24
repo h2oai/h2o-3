@@ -60,7 +60,7 @@ abstract public class Log {
     l.info(s);
   }
 
-  public static void info_no_stdout( String s ) { write0(INFO, false, s); }
+  public static void info( String s, boolean stdout ) { write0(INFO, stdout, s); }
 
   public static RuntimeException throwErr( Throwable e ) {
     err(e);                     // Log it
