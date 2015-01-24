@@ -61,13 +61,16 @@ def parse_setup(rawkey):
     return j
 
 
-def parse(setup, h2o_name):
+def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     """
     Trigger a parse; blocking; removeFrame just keep the Vec keys.
     :param setup: The result of calling parse_setup
     :param h2o_name: The name of the H2O Frame on the back end.
+    :param first_line_is_header: -1 means data, 0 means guess, 1 means header
     :return: Return a new parsed object
     """
+    if isinstance(first_line_is_header, tuple):
+        first_line_is_header = 0
     # Parse parameters (None values provided by setup)
     p = {'delete_on_done': True,
          'blocking': True,
@@ -75,16 +78,18 @@ def parse(setup, h2o_name):
          'hex': h2o_name,
          'ncols': None,
          'sep': None,
-         'columnNames': None,
          'pType': None,
-         'checkHeader': None,
          'singleQuotes': None,
+         'checkHeader' : None,
          }
-
-    setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
+    if setup["columnNames"]:
+        setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
+        p["columnNames"] = None
 
     # update the parse parameters with the parse_setup values
     p.update({k: v for k, v in setup.iteritems() if k in p})
+
+    p["checkHeader"] = first_line_is_header
 
 
     # Extract only 'name' from each src in the array of srcs

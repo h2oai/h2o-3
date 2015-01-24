@@ -2,6 +2,7 @@
 """
 This module contains the abstraction for H2OFrame and H2OVec objects.
 """
+import itertools
 import numpy
 import csv
 import tabulate
@@ -292,15 +293,18 @@ class H2OFrame(object):
         else:
             raise ValueError("Frame made from CSV file or an array of Vecs only")
 
-    def _handle_raw_fname(self, raw_fname):
+    def _handle_raw_fname(self, raw_fname, column_names=None):
         """
         Handle result of upload_file
         :param raw_fname: A raw key
         :return: Part of the H2OFrame constructor.
         """
         setup = h2o.parse_setup(raw_fname)
-        parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-        cols = parse['columnNames']
+        parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
+        if column_names and not parse["columnNames"]:
+            cols = column_names
+        else:
+            cols = parse['columnNames']
         rows = parse['rows']
         veckeys = parse['vecKeys']
         self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
@@ -360,14 +364,14 @@ class H2OFrame(object):
         tmp_file.close()
 
         # actually upload the data to H2O
-        self._upload_raw_data(tmp_file_path)
+        self._upload_raw_data(tmp_file_path, header)
 
-    def _upload_raw_data(self, tmp_file_path):
+    def _upload_raw_data(self, tmp_file_path, column_names):
         fui = {"file": os.path.abspath(tmp_file_path)}
         dest_key = H2OFrame.py_tmp_key()
         p = {'destination_key': dest_key}
         h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
-        self._handle_raw_fname(dest_key)
+        self._handle_raw_fname(dest_key, column_names=column_names)
 
     def vecs(self):
         """
@@ -668,7 +672,11 @@ class H2OFrame(object):
                 if H2OFrame._is_list_of_lists(v):
                     raise ValueError("Values in the dictionary must be flattened!")
 
-        return header, python_obj
+        rows = map(list, itertools.izip_longest(*python_obj.values()))
+
+        data_to_write = [dict(zip(header, row)) for row in rows]
+
+        return header, data_to_write
 
     @staticmethod
     def _handle_numpy_array(python_obj):

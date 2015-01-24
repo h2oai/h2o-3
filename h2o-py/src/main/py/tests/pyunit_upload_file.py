@@ -32,10 +32,30 @@ print py_tuple_to_h2o_2.describe()
 
 
 # using dicts {}
-py_dict_to_h2o = H2OFrame(python_obj={"column1": [5,4,3,2,1], "column2": [1,2,3,4,5]})
+py_dict_to_h2o = H2OFrame(python_obj={"column1": [5, 4, 3, 2, 1],
+                                      "column2": (1, 2, 3, 4, 5)})
 
 py_dict_to_h2o.describe()
 
 py_dict_to_h2o_2 = H2OFrame(python_obj={"colA": ["bilbo", "baggins"], "colB": ["meow"]})
 
-print py_doct_to_h2o_2.describe()
+print py_dict_to_h2o_2.describe()
+
+
+# using collections.OrderedDict
+
+import collections
+d = {"colA": ["bilbo", "baggins"], "colB": ["meow"]}  # still unordered!
+py_ordered_dict_to_h2o = H2OFrame(python_obj=collections.OrderedDict(d))
+
+py_ordered_dict_to_h2o.describe()
+
+
+# make an ordered dictionary!
+d2 = collections.OrderedDict()
+d2["colA"] = ["bilbo", "baggins"]
+d2["colB"] = ["meow"]
+
+
+py_ordered_dict_to_h2o_2 = H2OFrame(python_obj=collections.OrderedDict(d2))
+py_ordered_dict_to_h2o_2.describe()
