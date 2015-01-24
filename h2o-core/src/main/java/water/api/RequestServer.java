@@ -539,9 +539,7 @@ public class RequestServer extends NanoHTTPD {
     catch (H2OAbstractRuntimeException e) {
       H2OError error = e.toH2OError(uri);
 
-      Log.warn(error._dev_msg);
-      Log.warn(error._values.toJsonString());
-      Log.warn((Object[])error._stacktrace);
+      Log.warn("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       return wrap(new H2OErrorV1().fillFromImpl(error), type);
@@ -558,9 +556,7 @@ public class RequestServer extends NanoHTTPD {
       else if (e instanceof MalformedURLException)
         error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
 
-      Log.warn(error._dev_msg);
-      Log.warn(error._values.toJsonString());
-      Log.warn((Object[])error._stacktrace);
+      Log.warn("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
       return wrap(new H2OErrorV1().fillFromImpl(error), type);

@@ -3,6 +3,8 @@ package water;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import water.util.IcedHashMap;
 
+import java.util.Arrays;
+
 /**
  * Class which represents a back-end error which will be returned to the client.  Such
  * errors may be caused by the user (specifying an object which has been removed) or due
@@ -83,5 +85,18 @@ public class H2OError extends Iced {
 
     default: return status_code + " Unimplemented http status code";
     }
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(this._dev_msg != null ? this._dev_msg : this._msg);
+    sb.append("; ");
+    sb.append("Stacktrace: ").append(Arrays.toString(this._stacktrace));
+    if (!this._values.isEmpty()) {
+      sb.append("; Values: ");
+      sb.append(this._values.toJsonString());
+    }
+  return sb.toString();
   }
 }
