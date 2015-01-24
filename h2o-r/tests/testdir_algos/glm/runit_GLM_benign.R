@@ -10,7 +10,7 @@ glm2Benign <- function(conn) {
   X   <- X[ X != Y ] 
   
   Log.info("Build the model")
-  mFV <- h2o.glm(y = Y, x = colnames(bhexFV)[X], training_frame = bhexFV, family = "binomial", nfolds = 5, alpha = 0, lambda = 1e-5)
+  mFV <- h2o.glm(y = Y, x = colnames(bhexFV)[X], training_frame = bhexFV, family = "binomial", n_folds = 5, alpha = 0, lambda = 1e-5)
   
   Log.info("Check that the columns used in the model are the ones we passed in.")
   
