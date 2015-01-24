@@ -58,11 +58,13 @@ h2o.gbm <- function(x, y, training_frame, do_classification, ...,
 {
   dots <- list(...)
   
-  for(type in dots)
-    if (is.environment(type))
+  for(type in names(dots))
+    if (is.environment(dots[[type]]))
     {
-      dots$envir <- type
-      type <- NULL
+    dots$envir <- type
+    type <- NULL
+    } else {
+      stop(paste0("\n  unused argument (", type, " = ", dots[[type]], ")"))
     }
   if (is.null(dots$envir)) 
     dots$envir <- parent.frame()
