@@ -48,6 +48,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _leaf = leaf;
     _hcs  = hcs;
     _subset = subset;
+    _modifiesInputs = true;
   }
 
   /** Marker for already decided row. */

@@ -52,6 +52,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _dropNA20Cols;    // True if dropping cols > 20% NAs
+    public boolean _dropConsCols;    // True if dropping constant and all NA cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -66,7 +67,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _max_confusion_matrix_size = 20;
 
     // Public no-arg constructor for reflective creation
-    public Parameters() { _dropNA20Cols = defaultDropNA20Cols(); }
+    public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
+                          _dropConsCols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
@@ -91,6 +93,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Override in subclasses to change the default; e.g. true in GLM
     protected boolean defaultDropNA20Cols() { return false; }
+    protected boolean defaultDropConsCols() { return true; }
 
     /** Type of missing columns during adaptation between train/test datasets
      *  Overload this method for models that have sparse data handling - a zero

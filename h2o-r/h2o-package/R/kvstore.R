@@ -201,7 +201,8 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     if (!is.null(param$actual_value))
     {
       name <- param$name
-      if (is.null(param$default_value) || param$default_value != param$actual_value){
+      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
         value <- param$actual_value
         mapping <- .type.map[param$type,]
         type    <- mapping[1L, 1L]

@@ -59,7 +59,8 @@ import java.util.HashMap;
 public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
-  private Key<Vec>[] _keys;      // Keys for the vectors
+  private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
+  private Key<Vec>[] _keys;     // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
@@ -97,18 +98,23 @@ public class Frame extends Lockable<Frame> {
     for( Vec vec : vecs ) assert DKV.get(vec._key) != null;
 
     // Always require names
-    if( names==null ) {
-      names = new String[vecs.length];
-      for( int i=0; i<vecs.length; i++ ) names[i] = defaultColName(i);
+    if( names==null ) {         // Make default names, all known to be unique
+      _names = new String[vecs.length];
+      _keys  = new Key   [vecs.length];
+      _vecs  = vecs;
+      for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
+      for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
+      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
+      _lastNameBig = true;
+    } else {
+      // Make empty to dodge asserts, then "add()" them all which will check
+      // for compatible Vecs & names.
+      _names = new String[0];
+      _keys  = new Key   [0];
+      _vecs  = new Vec   [0];
+      add(names,vecs);
     }
-    assert names.length == vecs.length;
-
-    // Make empty to dodge asserts, then "add()" them all which will check for
-    // compatible Vecs & names.
-    _names = new String[0];
-    _keys  = new Key   [0];
-    _vecs  = new Vec   [0];
-    add(names,vecs);
+    assert _names.length == vecs.length;
   }
 
   /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
@@ -119,20 +125,41 @@ public class Frame extends Lockable<Frame> {
     _names= fr._names.clone();
     _keys = fr._keys .clone();
     _vecs = fr.vecs().clone();
+    _lastNameBig = fr._lastNameBig;
   }
 
   /** Default column name maker */
   public static String defaultColName( int col ) { return "C"+(1+col); }
 
+  // Make unique names.  Efficient for the special case of appending endless
+  // versions of "C123" style names where the next name is +1 over the prior
+  // name.  All other names take the O(n^2) lookup.
+  private int pint( String name ) {
+    try { return Integer.valueOf(name.substring(1)); } 
+    catch( NumberFormatException fe ) { }
+    return 0;
+  }
   private String uniquify( String name ) {
     String n = name;
-    int cnt=0, again;
+    int lastName = 0;
+    if( name.length() > 0 && name.charAt(0)=='C' )
+      lastName = pint(name);
+    if( _lastNameBig && _names.length > 0 ) {
+      String last = _names[_names.length-1];
+      if( last.charAt(0)=='C' && lastName == pint(last)+1 )
+        return name;
+    }
+    int cnt=0, again, max=0;
     do {
       again = cnt;
-      for( String s : _names )
+      for( String s : _names ) {
+        if( lastName > 0 && s.charAt(0)=='C' )
+          max = Math.max(max,pint(s));
         if( n.equals(s) )
           n = name+(cnt++);
+      }
     } while( again != cnt );
+    if( lastName == max+1 ) _lastNameBig = true;
     return n;
   }
 
@@ -140,7 +167,6 @@ public class Frame extends Lockable<Frame> {
    *  sharded using same number of rows per chunk, and all names are unique.
    *  Throw an IAE if something does not match.  */
   private void checkCompatible( String name, Vec vec ) {
-    if( ArrayUtils.find(_names,name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
     if( vec instanceof AppendableVec ) return; // New Vectors are endlessly compatible
     Vec v0 = anyVec();
     if( v0 == null ) return; // No fixed-size Vecs in the Frame

@@ -10,6 +10,8 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
  *  Java Objects, and maintain coherency around the cluster.  It contains an
@@ -298,7 +300,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(0);
-    _replicas = k.home() ? new NonBlockingSetInt() : null;
+    _replicas = null;
   }
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
   Value(Key k, String s ) { this(k, s.getBytes()); }
@@ -316,7 +318,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(0);
-    _replicas = k.home() ? new NonBlockingSetInt() : null;
+    _replicas = null;
   }
   /** Standard constructor to build a Value from a POJO and a Key.  */
   public Value(Key k, Freezable pojo) { this(k,pojo,ICE); }
@@ -329,7 +331,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(0);
-    _replicas = k.home() ? new NonBlockingSetInt() : null;
+    _replicas = null;
   }
 
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
@@ -352,7 +354,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // in progress) flips to -1 when the remote PUT is done, or +1 if a notify
     // needs to happen.
     _rwlock = new AtomicInteger(-1); // Set as 'remote put is done'
-    _replicas = new NonBlockingSetInt();
+    _replicas = null;
     touch();
     return this;
   }
@@ -423,7 +425,19 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return true;
   }
   // List of who is replicated where
-  private transient NonBlockingSetInt _replicas;
+  private volatile byte[] _replicas;
+  private static final AtomicReferenceFieldUpdater<Value,byte[]> REPLICAS_UPDATER =
+    AtomicReferenceFieldUpdater.newUpdater(Value.class,byte[].class, "_replicas");
+  // Fills in the _replicas field atomically, on first set of a replica.
+  private byte[] replicas( ) {
+    byte[] r = _replicas;
+    if( r != null ) return r;
+    byte[] nr = new byte[H2O.CLOUD.size()+1/*1-based numbering*/+10/*limit of 10 clients*/];
+    if( REPLICAS_UPDATER.compareAndSet(this,null,nr) ) return nr;
+    r = _replicas/*read again, since CAS failed must be set now*/;
+    assert r!= null;
+    return r;
+  }
 
   /** Atomically insert h2o into the replica list; reports false if the Value
    *  flagged against future replication with a -1.  Also bumps the active
@@ -441,7 +455,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // up, but the replica list does not account for the new replica.  However,
     // the rwlock cannot go down until an ACKACK is received, and the ACK
     // (hence ACKACK) doesn't go out until after this function returns.
-    _replicas.add(h2o._unique_idx);
+    replicas()[h2o._unique_idx] = 1;
     // Both rwlock taken, and replica count is up now.
     return true;
   }
@@ -454,7 +468,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       int old = _rwlock.get(); // Read the lock-word
       assert old > 0;      // Since lowering, must be at least 1
       assert old != -1;    // Not write-locked, because we are an active reader
-      assert _replicas.contains(h2o._unique_idx); // Self-bit is set
+      assert _replicas!=null && _replicas[h2o._unique_idx]==1; // Self-bit is set
       if( RW_CAS(old,old-1,"rlock-") ) {
         if( old-1 == 0 )   // GET count fell to zero?
           synchronized( this ) { notifyAll(); } // Notify any pending blocked PUTs
@@ -485,9 +499,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
         break;                  // Got the write-lock!
     }
     // We have the set of Nodes with replicas now.  Ship out invalidates.
-    int max = _replicas.length();
+    byte[] r = _replicas;
+    if( r==null ) return fs; // No replicas, nothing to invalidate
+    int max = r.length;
     for( int i=0; i<max; i++ )
-      if( _replicas.contains(i) && H2ONode.IDX[i] != sender )
+      if( r[i]==1 && H2ONode.IDX[i] != sender )
         TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,fs);
     return fs;
   }
@@ -502,7 +518,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = key;
     // Set the replica bit for the one node we know about, and leave the
     // rest clear.  
-    _replicas.add(h2o._unique_idx);
+    replicas()[h2o._unique_idx]=1;
     _rwlock.set(0);             // No GETs are in-flight at this time. 
   }
 
