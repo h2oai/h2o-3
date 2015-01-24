@@ -1,16 +1,12 @@
 package hex;
 
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import water.*;
 import water.api.ModelSchema;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 import water.util.ModelUtils;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
