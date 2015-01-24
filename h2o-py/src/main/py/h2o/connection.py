@@ -7,8 +7,8 @@ import abc
 import requests
 import time
 
-__H2OCONN__ = None             # the single active connection to H2O cloud
-__H2O_REST_API_VERSION__ = 3L  # const for the version of the rest api
+__H2OCONN__ = None                   # the single active connection to H2O cloud
+__H2O_REST_API_VERSION__ = "LATEST"  # const for the version of the rest api
 
 
 class H2OConnectionException(Exception):
@@ -283,7 +283,7 @@ class H2OConnectionBase(object):
 
     @staticmethod
     def do_safe_rest_json(url_suffix=None, params=None, method=None,
-                           file_upload_info=None, **kwargs):
+                          file_upload_info=None, **kwargs):
         raw_txt = H2OConnectionBase.do_safe_rest(url_suffix=url_suffix,
                                                  params=params,
                                                  method=method,
@@ -336,8 +336,8 @@ class H2OConnectionBase(object):
                 raise ValueError("Recieved file upload info "
                                  "and expected method to be POST. Got: " + method)
             try:
-                #  TODO: fileUploadInfo
-                http_result["http_payload"] = requests.post(url, params=params, **kwargs)
+                files = {file_upload_info["file"] : open(file_upload_info["file"], "rb")}
+                http_result["http_payload"] = requests.post(url, files=files, **kwargs)
             except requests.ConnectionError as e:
                 http_result["http_error"] = True
                 http_result["http_error_message"] = e.message

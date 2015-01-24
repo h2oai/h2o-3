@@ -1,5 +1,6 @@
 package water;
 
+import water.fvec.UploadFileVec;
 import water.util.Log;
 
 import java.io.*;
@@ -10,8 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import water.fvec.UploadFileVec;
 
 /**
  * A simple, tiny, nicely embeddable HTTP 1.0 (partially 1.1) server in Java
@@ -618,7 +617,9 @@ public class NanoHTTPD
             if (!validKeyName(destination_key)) {
               sendError(HTTP_BADREQUEST, "Invalid key name, contains illegal characters");
             }
-            boolean uploadFile = Pattern.matches("/PostFile.json", uri) || Pattern.matches("/[1-9][0-9]*/PostFile.json", uri);
+            boolean uploadFile = Pattern.matches("/PostFile.json", uri) ||               // no version
+                                 Pattern.matches("/[1-9][0-9]*/PostFile.json", uri) ||   // numbered version
+                                 Pattern.matches("/LATEST/PostFile.json", uri);          // use LATEST
             if (uploadFile) {
               //
               // Here is an example of how to upload a file from the command line.

@@ -7,7 +7,10 @@ import csv
 import tabulate
 import uuid
 import collections
+import tempfile
+import os
 import h2o
+from connection import H2OConnection as h2oConn
 from expr import Expr
 
 
@@ -214,7 +217,8 @@ class H2OFrame(object):
 
     """
 
-    def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None):
+    def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None,
+                 raw_fname=None):
         """
         Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -235,6 +239,7 @@ class H2OFrame(object):
         :param local_fname: A local path to a data source. Data is python-process-local.
         :param remote_fname: A remote path to a data source. Data is cluster-local.
         :param vecs: A list of H2OVec objects.
+        :param raw_fname: A raw key resulting from an upload_file.
         :return: An instance of an H2OFrame object.
         """
 
@@ -270,7 +275,7 @@ class H2OFrame(object):
             print "Imported", local_fname, "into local python process"
 
         # Construct from an array of Vecs already passed in
-        elif vecs is not None:
+        elif vecs:
             vlen = len(vecs[0])
             for v in vecs:
                 if not isinstance(v, H2OVec):
@@ -279,8 +284,27 @@ class H2OFrame(object):
                     raise ValueError("Vecs not the same size: "
                                      + str(vlen) + " != " + str(len(v)))
             self._vecs = vecs
+
+        elif raw_fname:
+            self._handle_raw_fname(raw_fname)
+
         else:
             raise ValueError("Frame made from CSV file or an array of Vecs only")
+
+    def _handle_raw_fname(self, raw_fname):
+        """
+        Handle result of upload_file
+        :param raw_fname: A raw key
+        :return: Part of the H2OFrame constructor.
+        """
+        setup = h2o.parse_setup(raw_fname)
+        parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
+        cols = parse['columnNames']
+        rows = parse['rows']
+        veckeys = parse['vecKeys']
+        self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+        print "Imported", raw_fname, "into cluster with", \
+            rows, "rows and", len(cols), "cols"
 
     def _upload_python_object(self, python_obj):
         """
@@ -291,52 +315,56 @@ class H2OFrame(object):
         :return: None
         """
 
+        # create a temporary file that will be written to
+        tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
+        tmp_file = open(tmp_file_path, 'wb')
+        header = None
+        data_to_write = None
+
         # [] and () cases -- folded together since H2OFrame is mutable
         if isinstance(python_obj, (list, tuple)):
 
-            # do we have a list of lists: [[...], ..., [...]] ?
-            lol = any(isinstance(l, (list, tuple)) for l in python_obj)
+            header, data_to_write = H2OFrame._handle_python_lists(python_obj)
 
-            if lol:
+        # {} and collections.OrderedDict cases
+        elif isinstance(python_obj, (dict, collections.OrderedDict)):
 
-                # must be a list of flat lists, raise ValueError if not
-                H2OFrame._check_lists_of_lists(python_obj)
+            header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
-                # have list of lists, each list is a row
-                # length of the longest list is the number of columns
-                cols = max([len(l) for l in python_obj])
-                header = H2OFrame._gen_header(cols)
-
-                # write header
-                # write each list
-                # call upload_file
-                # return
-
-            # not a list of lists, so just create the len(list) x 1 H2OFrame
-            else:
-                cols = len(python_obj)
-                header = H2OFrame._gen_header(cols)
-
-                # write header
-                # write list
-                # call upload_file
-                # return
-
-            return
-
-        elif isinstance(python_obj, dict):
-            return
-
-        elif isinstance(python_obj, collections.OrderedDict):
-            return
-
+        # handle a numpy.array
         elif isinstance(python_obj, numpy.array):
-            return
+
+            header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
 
         else:
             raise ValueError("`python_obj` must be a tuple, list, dict, "
                              "collections.OrderedDict, or a numpy.array. "
                              "Got: " + type(python_obj))
+
+        if header is None or data_to_write is None:
+            raise ValueError("No data to write")
+
+        # create a new csv writer object thingy
+        csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None,
+                                    dialect="excel", extrasaction="ignore",
+                                    delimiter=",")
+
+        # write the header
+        csv_writer.writeheader()
+
+        # write the data
+        csv_writer.writerows(data_to_write)
+
+        # close the streams
+        tmp_file.close()
+
+        # actually upload the data to H2O
+        fui = {"file": os.path.abspath(tmp_file_path)}
+
+        dest_key = H2OFrame.py_tmp_key()
+        p = {'destination_key': H2OFrame.py_tmp_key()}
+        h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+        self._handle_raw_fname(dest_key)
 
     def vecs(self):
         """
@@ -463,7 +491,7 @@ class H2OFrame(object):
             if b < 0 or b > self.__len__():
                 raise ValueError("Index out of range: 0 <= " + b + " < " + self.__len__())
             i = b
-            v = self.get_vecs()[i]
+            v = self.vecs()[i]
         else:
             raise NotImplementedError
 
@@ -515,7 +543,7 @@ class H2OFrame(object):
             if len(i) != len(self):
                 raise ValueError("ncol(self)" + len(self) +
                                  " cannot be broadcast across len(i)=" + len(i))
-            return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i.get_vecs())])
+            return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i.vecs())])
         if isinstance(i, H2OVec):
             if len(i) != len(self._vecs[0]):
                 raise ValueError("nrow(self)" + len(self._vecs[0]) +
@@ -551,11 +579,11 @@ class H2OFrame(object):
         # Send over the frame
         fr = H2OFrame.py_tmp_key()
         cbind = "(= !" + fr + " (cbind %"
-        cbind += " %".join([vec.get_expr().eager() for vec in dataset.get_vecs()]) + "))"
+        cbind += " %".join([vec.get_expr().eager() for vec in dataset.vecs()]) + "))"
         h2o.rapids(cbind)
         # And frame columns
         colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(dataset) - 1) + ")} {"
-        cnames = ';'.join([vec.name() for vec in dataset.get_vecs()])
+        cnames = ';'.join([vec.name() for vec in dataset.vecs()])
         colnames += cnames + "})"
         h2o.rapids(colnames)
         return fr
@@ -588,6 +616,38 @@ class H2OFrame(object):
             if any(isinstance(ll, (tuple, list)) for ll in l):
                 raise ValueError(
                     "`python_obj` is not a list of flat lists!")
+
+    @staticmethod
+    def _handle_python_lists(python_obj):
+
+        # do we have a list of lists: [[...], ..., [...]] ?
+        lol = any(isinstance(l, (list, tuple)) for l in python_obj)
+
+        cols = 1  # cols will be 1 if python_obj is not a list of lists
+        if lol:
+
+            # must be a list of flat lists, raise ValueError if not
+            H2OFrame._check_lists_of_lists(python_obj)
+
+            # have list of lists, each list is a row
+            # length of the longest list is the number of columns
+            cols = max([len(l) for l in python_obj])
+
+        # create the header
+        header = H2OFrame._gen_header(cols)
+
+        # shape up the data for csv.DictWriter
+        data_to_write = dict(zip(header, python_obj))
+
+        return header, data_to_write
+
+    @staticmethod
+    def _handle_python_dicts(python_obj):
+        return
+
+    @staticmethod
+    def _handle_numpy_array(python_obj):
+        return
 
 
 class H2OVec(object):

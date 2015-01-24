@@ -2,6 +2,8 @@
 This module implements the communication REST layer for the python <-> H2O connection.
 """
 
+import os
+import re
 import urllib
 from connection import H2OConnection as h2oConn
 from job import H2OJob
@@ -15,12 +17,24 @@ def import_file(path):
     :return: Return an H2OFrame.
     """
     j = h2oConn.do_safe_get_json(url_suffix="ImportFiles", params={'path': path})
-    if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
+    if j['fails']:
+        raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
     return j['keys'][0]
 
-# def upload_file():
-#
-#
+
+def upload_file(path, destination_key=""):
+    """
+    Upload a dataset at the path given from the local machine to the H2O cluster.
+    :param path:    A path specifying the location of the data to upload.
+    :param destination_key: The name of the H2O Frame in the H2O Cluster.
+    :return:    A new H2OFrame
+    """
+    fui = {"file": os.path.abspath(path)}
+    dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
+    p = {'destination_key': dest_key}
+    h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+    return H2OFrame(raw_fname=dest_key)
+
 
 def import_frame(path=None, vecs=None):
     """
@@ -38,8 +52,12 @@ def parse_setup(rawkey):
     :param rawkey:
     :return: A ParseSetup "object"
     """
-    j = h2oConn.do_safe_post_json(url_suffix="ParseSetup", params={'srcs': [rawkey]})
-    if not j['isValid']: raise ValueError("ParseSetup not Valid", j)
+
+    # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
+    raw_key = _quoted(rawkey)
+    j = h2oConn.do_safe_post_json(url_suffix="ParseSetup", params={'srcs': [raw_key]})
+    if not j['isValid']:
+        raise ValueError("ParseSetup not Valid", j)
     return j
 
 
@@ -63,15 +81,24 @@ def parse(setup, h2o_name):
          'singleQuotes': None,
          }
 
+    setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
+
     # update the parse parameters with the parse_setup values
     p.update({k: v for k, v in setup.iteritems() if k in p})
 
+
     # Extract only 'name' from each src in the array of srcs
-    p['srcs'] = [src['name'] for src in setup['srcs']]
+    p['srcs'] = [_quoted(src['name']) for src in setup['srcs']]
 
     # Request blocking parse
     j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p)).poll()
     return j.jobs
+
+
+def _quoted(key):
+    is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
+    key = key if is_quoted  else "\"" + key + "\""
+    return key
 
 
 def remove(key):
