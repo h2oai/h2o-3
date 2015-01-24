@@ -59,4 +59,5 @@ class H2OJob(object):
 
     @staticmethod
     def _update_progress(progress):
+        progress = min(progress, 1)
         print '\r[{0}] {1}%'.format('#'*int(progress*100), progress*100)

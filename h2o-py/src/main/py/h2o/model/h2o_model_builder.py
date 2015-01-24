@@ -3,11 +3,12 @@ An abstract model builder.
 """
 
 import abc
-# from . import H2OFrame
-# from . import h2oConn
+
+from ..h2o import H2OFrame
+from ..h2o import h2oConn
 from . import ModelBase
-# from . import H2OJob
-# import h2o
+from ..h2o import H2OJob
+import h2o
 
 
 class H2OMissingFrameException(Exception):
@@ -77,9 +78,10 @@ class H2OModelBuilder(ModelBase):
 
     def show(self):
         pass
+        # self._fitted_model.show()
 
     def performance(self, test_data=None):
-        pass
+        self._fitted_model.performace(test_data)
 
     def predict(self, test_data=None):
         pass

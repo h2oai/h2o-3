@@ -9,6 +9,7 @@ import uuid
 import collections
 import tempfile
 import os
+import re
 import h2o
 from connection import H2OConnection as h2oConn
 from expr import Expr
@@ -107,7 +108,7 @@ class H2OFrame(object):
             ValueError will be raised. In other words, only a single level of nesting is
             valid, all internal arrays must be flat -- H2O will not flatten them for you.
 
-            If `iJ` is not a () or [], then it must be of type String or a non-complex
+            If `iJ` is not a () or [], then it must be of type string or a non-complex
             numeric type (float or int). In other words, if `iJ` is not a tuple, list,
             string, float, or int, for some J, then a ValueError will be raised.
 
@@ -156,9 +157,9 @@ class H2OFrame(object):
                 If there are no nested arrays (as in Example A and Example D above), then
                 the resulting H2OFrame will have shape (rows x cols):
 
-                    len(tuple) x 1
+                    1 x len(tuple)
 
-                (i.e. a Frame with a single vec). Note that this is still a 2D array.
+                (i.e. a Frame with a single row).
 
                 If there are nested arrays (as in Example B and Example C above), then
                 (given the rules stated above) the resulting H2OFrame will have ROWS equal
@@ -303,7 +304,7 @@ class H2OFrame(object):
         rows = parse['rows']
         veckeys = parse['vecKeys']
         self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
-        print "Imported", raw_fname, "into cluster with", \
+        print "Uploaded", raw_fname, "into cluster with", \
             rows, "rows and", len(cols), "cols"
 
     def _upload_python_object(self, python_obj):
@@ -359,10 +360,12 @@ class H2OFrame(object):
         tmp_file.close()
 
         # actually upload the data to H2O
-        fui = {"file": os.path.abspath(tmp_file_path)}
+        self._upload_raw_data(tmp_file_path)
 
+    def _upload_raw_data(self, tmp_file_path):
+        fui = {"file": os.path.abspath(tmp_file_path)}
         dest_key = H2OFrame.py_tmp_key()
-        p = {'destination_key': H2OFrame.py_tmp_key()}
+        p = {'destination_key': dest_key}
         h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
         self._handle_raw_fname(dest_key)
 
@@ -598,7 +601,7 @@ class H2OFrame(object):
     # private static methods
     @staticmethod
     def _gen_header(cols):
-        return ["C" + c for c in range(1, cols + 1, 1)]
+        return ["C" + str(c) for c in range(1, cols + 1, 1)]
 
     @staticmethod
     def _check_lists_of_lists(python_obj):
@@ -620,10 +623,10 @@ class H2OFrame(object):
     @staticmethod
     def _handle_python_lists(python_obj):
 
-        # do we have a list of lists: [[...], ..., [...]] ?
-        lol = any(isinstance(l, (list, tuple)) for l in python_obj)
+        cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
 
-        cols = 1  # cols will be 1 if python_obj is not a list of lists
+        # do we have a list of lists: [[...], ..., [...]] ?
+        lol = H2OFrame._is_list_of_lists(python_obj)
         if lol:
 
             # must be a list of flat lists, raise ValueError if not
@@ -637,17 +640,40 @@ class H2OFrame(object):
         header = H2OFrame._gen_header(cols)
 
         # shape up the data for csv.DictWriter
-        data_to_write = dict(zip(header, python_obj))
+        data_to_write = [dict(zip(header, row)) for row in python_obj] \
+            if lol else [dict(zip(header, python_obj))]
 
         return header, data_to_write
 
     @staticmethod
+    def _is_list_of_lists(o): return any(isinstance(l, (list, tuple)) for l in o)
+
+    @staticmethod
     def _handle_python_dicts(python_obj):
-        return None, None
+        header = python_obj.keys()
+
+        # is this a valid header?
+        is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+
+        if not is_valid:
+            raise ValueError("Did not get a valid set of column names! Must match the"
+                             "regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+
+        # check that each value entry is a flat list/tuple
+        for k in python_obj:
+            v = python_obj[k]
+
+            # if value is a tuple/list, then it must be flat
+            if isinstance(v, (tuple, list)):
+                if H2OFrame._is_list_of_lists(v):
+                    raise ValueError("Values in the dictionary must be flattened!")
+
+        return header, python_obj
 
     @staticmethod
     def _handle_numpy_array(python_obj):
-        return None, None
+        header = H2OFrame._gen_header(python_obj.shape[1])
+        return header, dict(zip(header, python_obj.tolist()))
 
 
 class H2OVec(object):
