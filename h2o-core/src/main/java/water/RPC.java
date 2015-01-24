@@ -158,6 +158,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     return this;
   }
 
+  private byte [] _bits;
   // Make an initial RPC, or re-send a packet.  Always called on 1st send; also
   // called on a timeout.
   public synchronized RPC<V> call() {
@@ -193,9 +194,17 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         while( true ) {         // Retry loop for broken TCP sends
           AutoBuffer ab = new AutoBuffer(_target);
           try {
-            ab.putTask(UDP.udp.exec,_tasknum).put1(CLIENT_UDP_SEND).put(_dt);
-            boolean t = ab.hasTCP();
-            assert sz_check(ab) : "Resend of "+_dt.getClass()+" changes size from "+_size+" to "+ab.size()+" for task#"+_tasknum;
+            final boolean t;
+            if(_bits != null){
+              t = ab.putA1(_bits,_bits.length).hasTCP();
+            } else {
+              int offset = ab.position();
+              ab.putTask(UDP.udp.exec, _tasknum).put1(CLIENT_UDP_SEND).put(_dt);
+              t = ab.hasTCP();
+              if(_dt._modifiesInputs && !t)
+                _bits = ab.copyRawBits(offset);
+            }
+            assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
             ab.close();        // Then close; send final byte
             _sentTcp = t;      // Set after close (and any other possible fail)
             break;             // Break out of retry loop

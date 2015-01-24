@@ -389,7 +389,7 @@ algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                  } # additional params to add to the default params
 clean_up_after = False
 
-h2o.H2O.verboseprint("connected to: ", "127.0.0.1", 54321)
+h2o.H2O.verboseprint("connected to: ", str(host), ':', str(port))
 
 models = a_node.models()
 if h2o.H2O.verbose:
@@ -408,27 +408,47 @@ if h2o.H2O.verbose:
 
 ####################################
 # test schemas collection GET
-# print 'Testing /Metadata/schemas. . .'
-# schemas = a_node.schemas(timeoutSecs=240)
-# 
-# # if h2o.H2O.verbose:
-# print 'Schemas: '
-# pp.pprint(schemas)
+print 'Testing /Metadata/schemas. . .'
+schemas = a_node.schemas(timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
+assert len(schemas['schemas']) > 0, "'schemas' field in output of /Metadata/schemas is empty: " + repr(schemas)
+
+if verboser:
+    print 'Schemas: '
+    pp.pprint(schemas)
 
 
 ####################################
 # test schemas individual GET
-# print 'Testing /Metadata/schemas/FrameV2. . .'
-# schema = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
-# 
-# if h2o.H2O.verbose:
-#     print 'Schema: '
-#     pp.pprint(schema)
+print 'Testing /Metadata/schemas/FrameV2. . .'
+schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+
+if verboser:
+    print 'Schemas: '
+    pp.pprint(schemas)
 
 
+####################################
+# test HTML pages GET
+url_prefix = 'http://' + host + ':' + str(port)
 
+urls = {
+    '': 'Analytics',
+    '/': 'Analytics',
+    '/index.html': 'Analytics',
+    '/flow/index.html': 'modal',
+    '/LATEST/Cloud.html': 'Ready',
+}
 
-
+for (suffix, expected_word) in urls.iteritems():
+    url = url_prefix + suffix
+    h2o.H2O.verboseprint('Testing ' + url + '. . .')
+    r = requests.get(url)
+    assert r.text.find(expected_word), "FAIL: didn't find '" + expected_word + "' in: " + url
 
 
 ####################################
@@ -809,6 +829,32 @@ assert 'deeplearning_prostate_binomial' in models_dict, "FAIL: Failed to find " 
 assert 'deeplearning_prostate_binomial' in frames[0]['compatible_models'], "FAIL: failed to find deeplearning_prostate_binomial in compatible_models for prostate."
 assert 'kmeans_prostate' in frames[0]['compatible_models'], "FAIL: failed to find kmeans_prostate in compatible_models for prostate."
 h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(result))
+
+####################################
+# test schemas collection GET again
+print 'Testing /Metadata/schemas again. . .'
+schemas = a_node.schemas(timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
+assert len(schemas['schemas']) > 0, "'schemas' field in output of /Metadata/schemas is empty: " + repr(schemas)
+
+if verboser:
+    print 'Schemas: '
+    pp.pprint(schemas)
+
+
+####################################
+# test schemas individual GET again
+print 'Testing /Metadata/schemas/FrameV2 again. . .'
+schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+
+if verboser:
+    print 'Schemas: '
+    pp.pprint(schemas)
+
 
 # TODO: use built_models
 if clean_up_after:

@@ -17,6 +17,11 @@ test.quantile.golden <- function(conn) {
   expect_equal(as.numeric(quantile(vec.hex, probs = 0)), min(vec.hex))
   expect_equal(as.numeric(quantile(vec.hex, probs = 1)), max(vec.hex))
   
+  Log.info("Check constant vector returns constant for all quantiles")
+  vec.cons <- rep(5,1000)
+  vec.cons.hex <- as.h2o(conn, vec.cons)
+  expect_true(all(quantile(vec.cons.hex, probs = probs) == 5))
+  
   Log.info("Check quantiles are identical to R with type = 7")
   quant.r <- quantile(vec, probs = probs, type = 7)
   quant.h2o <- quantile(vec.hex, probs = probs)
