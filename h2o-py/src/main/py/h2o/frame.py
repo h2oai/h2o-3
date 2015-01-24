@@ -249,7 +249,7 @@ class H2OFrame(object):
         self.remote_fname = remote_fname
         self._vecs = None
 
-        if python_obj:
+        if python_obj is not None:  # avoids the truth value of an array is ambiguous err
             self._upload_python_object(python_obj)
             return
 
@@ -337,7 +337,7 @@ class H2OFrame(object):
             header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
         # handle a numpy.array
-        elif isinstance(python_obj, numpy.array):
+        elif isinstance(python_obj, numpy.ndarray):
 
             header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
 
@@ -684,7 +684,13 @@ class H2OFrame(object):
     @staticmethod
     def _handle_numpy_array(python_obj):
         header = H2OFrame._gen_header(python_obj.shape[1])
-        return header, dict(zip(header, python_obj.tolist()))
+
+        as_list = python_obj.tolist()
+        lol = H2OFrame._is_list_of_lists(as_list)
+        data_to_write = [dict(zip(header, row)) for row in as_list] \
+            if lol else [dict(zip(header, as_list))]
+
+        return header, data_to_write
 
 
 class H2OVec(object):

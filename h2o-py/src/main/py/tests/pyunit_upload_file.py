@@ -59,3 +59,12 @@ d2["colB"] = ["meow"]
 
 py_ordered_dict_to_h2o_2 = H2OFrame(python_obj=collections.OrderedDict(d2))
 py_ordered_dict_to_h2o_2.describe()
+
+
+# numpy.array
+
+import numpy as np
+
+py_numpy_ary_to_h2o = H2OFrame(python_obj=np.ones((50, 100), dtype=int))
+
+py_numpy_ary_to_h2o.describe()
