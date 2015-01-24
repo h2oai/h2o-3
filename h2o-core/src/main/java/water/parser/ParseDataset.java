@@ -116,12 +116,14 @@ public final class ParseDataset extends Job<Frame> {
       setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
     }
     Log.info("Chunk size " + setup._chunkSize);
-    FileVec update;
+
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
-      update = (FileVec)(ice instanceof Vec ? ice : ((Frame)ice).vec(0));
-      update._chunkSize = setup._chunkSize;
-      DKV.put(update._key, update);
+      Vec update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
+      if(update instanceof FileVec) { // does not work for byte vec
+        ((FileVec) update)._chunkSize = setup._chunkSize;
+        DKV.put(update._key, update);
+      }
     }
 
     long memsz = H2O.CLOUD.memsz();
@@ -791,22 +793,27 @@ public final class ParseDataset extends Job<Frame> {
       if( dout == null ) return this;
       _nCols = Math.max(_nCols,dout._nCols);
       _nChunks += dout._nChunks;
-      if(dout._vecs.length > _vecs.length){
-        AppendableVec [] v = _vecs;
-        _vecs = dout._vecs;
-        dout._vecs = v;
-      }
-      for(int i = 0; i < dout._vecs.length; ++i) {
-        // unify string and enum chunks
-        if (_vecs[i].isString() && !dout._vecs[i].isString())
-          dout.enumCol2StrCol(i);
-        else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
-          enumCol2StrCol(i);
-          _ctypes[i]._type = ColType.STR;
+      if( dout!=null && _vecs != dout._vecs) {
+        if(dout._vecs.length > _vecs.length) {
+          AppendableVec [] v = _vecs;
+          _vecs = dout._vecs;
+          for(int i = 1; i < _vecs.length; ++i)
+            _vecs[i]._espc = _vecs[0]._espc;
+          dout._vecs = v;
         }
+        for(int i = 0; i < dout._vecs.length; ++i) {
+          // unify string and enum chunks
+          if (_vecs[i].isString() && !dout._vecs[i].isString())
+            dout.enumCol2StrCol(i);
+          else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
+            enumCol2StrCol(i);
+            _ctypes[i]._type = ColType.STR;
+          }
 
-        _vecs[i].reduce(dout._vecs[i]);
+          _vecs[i].reduce(dout._vecs[i]);
+        }
       }
+
       return this;
     }
     @Override public FVecDataOut close(){
@@ -992,7 +999,7 @@ public final class ParseDataset extends Job<Frame> {
         _vecs  = Arrays.copyOf(_vecs  , ncols);
         _ctypes= Arrays.copyOf(_ctypes, ncols);
         for(int i = _nCols; i < ncols; ++i) {
-          _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff); // todo - share espc!
+          _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._espc,_vecs[0]._chunkOff);
           _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
         }
       }
@@ -1000,7 +1007,8 @@ public final class ParseDataset extends Job<Frame> {
   }
 
   // ------------------------------------------------------------------------
-  /** Parser data in taking data from fluid vec chunk.
+  /**
+   * Parser data in taking data from fluid vec chunk.
    *  @author tomasnykodym
    */
   private static class FVecDataIn implements Parser.DataIn {

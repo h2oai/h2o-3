@@ -261,12 +261,8 @@ public class Vec extends Keyed {
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
-    // Groups are equal?  Then only check length
-    if( group().equals(v.group()) ) return length()==v.length();
-    // Otherwise actual layout has to be the same, and size "small enough"
-    // to not worry about data-replication when things are not homed the same.
-    // The layout test includes an exactly-equals-length check.
-    return Arrays.equals(_espc,v._espc) && length() < 1e5;
+    // vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-ditribution)
+    return (VectorGroup.sameGroup(this,v) && (_espc == v._espc || Arrays.equals(_espc,v._espc)));
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -1017,6 +1013,16 @@ public class Vec extends Keyed {
       _len = 0;
     }
 
+    public static boolean sameGroup(Vec v1, Vec v2) {
+      byte [] bits1 = v1._key._kb;
+      byte [] bits2 = v2._key._kb;
+      if(bits1.length != bits2.length)
+        return false;
+      int res  = 0;
+      for(int i = 10; i < bits1.length; ++i)
+        res |= bits1[i] ^ bits2[i];
+      return res == 0;
+    }
     /** Returns Vec Key from Vec id# 
      *  @return Vec Key from Vec id# */
     public Key vecKey(int vecId) {
