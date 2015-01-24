@@ -4,6 +4,7 @@ import water.*;
 import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 import water.util.ModelUtils;
 
@@ -107,7 +108,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @return checksum
      */
     protected long checksum_impl() {
-      long xs = 1;
+      long xs = 0x600D;
       int count = 0;
       for (Field f : Weaver.getWovenFields(this.getClass())) {
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
@@ -118,22 +119,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (f.get(this) != null) {
               if (c.getComponentType() == Integer.TYPE){
                 int[] arr = (int[]) f.get(this);
-                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
               } else if (c.getComponentType() == Float.TYPE) {
                 float[] arr = (float[]) f.get(this);
-                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
               } else if (c.getComponentType() == Double.TYPE) {
                 double[] arr = (double[]) f.get(this);
-                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
-                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
               } else {
                 Object[] arr = (Object[]) f.get(this);
-                xs *= (0xDECAF + P * Arrays.deepHashCode(arr));
+                xs ^= (0xDECAF + P * (long)Arrays.deepHashCode(arr));
               } //else lead to ClassCastException
             } else {
-              xs *= (0xDECAF + P);
+              xs ^= (0xDECAF + P);
             }
           } catch (IllegalAccessException e) {
             e.printStackTrace();
@@ -143,9 +144,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         } else {
           try {
             if (f.get(this) != null) {
-              xs *= (0x1337 + P * (f.get(this)).hashCode());
+              xs ^= (0x1337 + P * (long)(f.get(this)).hashCode());
             } else {
-              xs *= (0x1337 + P);
+              xs ^= (0x1337 + P);
             }
           } catch (IllegalAccessException e) {
             e.printStackTrace();
@@ -155,7 +156,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         count++;
       }
-      xs *= train().checksum() * (_valid == null ? 17 : valid().checksum());
+      xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
       return xs;
     }
   }
