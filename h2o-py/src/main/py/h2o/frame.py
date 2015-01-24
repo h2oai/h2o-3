@@ -54,7 +54,7 @@ class H2OFrame(object):
             list  []
             dict  {}
             collections.OrderedDict
-            numpy.array
+            numpy.ndarray
 
         The type of `python_obj` is inspected by performing an `isinstance` call. A
         ValueError will be raised if the type of `python_obj` is not one of the above
