@@ -643,11 +643,11 @@ class H2OFrame(object):
 
     @staticmethod
     def _handle_python_dicts(python_obj):
-        return
+        return None, None
 
     @staticmethod
     def _handle_numpy_array(python_obj):
-        return
+        return None, None
 
 
 class H2OVec(object):
