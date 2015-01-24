@@ -1,12 +1,17 @@
 package hex;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import water.*;
 import water.api.ModelSchema;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.ModelUtils;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -101,12 +106,61 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  @return real-valued number (can be NaN)  */
     protected double missingColumnsType() { return Double.NaN; }
 
-    long checksum_impl() {
-      return 
-        (_dropNA20Cols?17:1) *
-        train().checksum() *
-        (_valid == null ? 17 : valid().checksum()) *
-        (null == _ignored_columns ? 23: Arrays.hashCode(_ignored_columns));
+    /**
+     * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones)
+     * @return checksum
+     */
+    protected long checksum_impl() {
+      long xs = 1;
+      int count = 0;
+      for (Field f : Weaver.getWovenFields(this.getClass())) {
+        final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
+        Class<?> c = f.getType();
+        if (c.isArray()) {
+          f.setAccessible(true);
+          try {
+            if (f.get(this) != null) {
+              if (c.getComponentType() == Integer.TYPE){
+                int[] arr = (int[]) f.get(this);
+                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Float.TYPE) {
+                float[] arr = (float[]) f.get(this);
+                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Double.TYPE) {
+                double[] arr = (double[]) f.get(this);
+                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Long.TYPE){
+                long[] arr = (long[]) f.get(this);
+                xs *= (0xDECAF + P * Arrays.hashCode(arr));
+              } else {
+                Object[] arr = (Object[]) f.get(this);
+                xs *= (0xDECAF + P * Arrays.deepHashCode(arr));
+              } //else lead to ClassCastException
+            } else {
+              xs *= (0xDECAF + P);
+            }
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          } catch (ClassCastException t) {
+            throw H2O.unimpl(); //no support yet for int[][] etc.
+          }
+        } else {
+          try {
+            if (f.get(this) != null) {
+              xs *= (0x1337 + P * (f.get(this)).hashCode());
+            } else {
+              xs *= (0x1337 + P);
+            }
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          } catch (Throwable t) {
+            t.printStackTrace();
+          }
+        }
+        count++;
+      }
+      xs *= train().checksum() * (_valid == null ? 17 : valid().checksum());
+      return xs;
     }
   }
 
