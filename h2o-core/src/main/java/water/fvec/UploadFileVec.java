@@ -75,7 +75,7 @@ public class UploadFileVec extends FileVec {
       assert uv.writable();
 
       byte prev[] = null;
-      byte bytebuf[] = new byte[Vec.DFLT_CHUNK_SIZE];
+      byte bytebuf[] = new byte[FileVec.DFLT_CHUNK_SIZE];
       int bytesInChunkSoFar = 0;
       while (true) {
         int rv = is.read(bytebuf, bytesInChunkSoFar, FileVec.DFLT_CHUNK_SIZE - bytesInChunkSoFar);

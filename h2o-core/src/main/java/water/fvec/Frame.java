@@ -172,10 +172,13 @@ public class Frame extends Lockable<Frame> {
     if( v0 == null ) return; // No fixed-size Vecs in the Frame
     // Vector group has to be the same, or else the layout has to be the same,
     // or else the total length has to be small.
-    if( !v0.checkCompatible(vec) )
-      throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
-    if( v0.length() != vec.length() )
-      throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+    if( !v0.checkCompatible(vec) ) {
+      if(!Vec.VectorGroup.sameGroup(v0,vec))
+        Log.err("Unexpected incompatible vector group, " + v0.group() + " != " + vec.group());
+      if(!Arrays.equals(v0._espc, vec._espc))
+        Log.err("Unexpected incompatible espc, " + Arrays.toString(v0._espc) + " != " + Arrays.toString(vec._espc));
+      throw new IllegalArgumentException("Vec " + name + " is not compatible with the rest of the frame");
+    }
   }
 
   /** Quick compatibility check between Frames.  Used by some tests for efficient equality checks. */
@@ -926,8 +929,11 @@ public class Frame extends Lockable<Frame> {
     if (anyVec() == null)      // Or it is small
       return f;                 // Then must be compatible
     // Same VectorGroup is also compatible
-    if (f.anyVec() == null ||
-        f.anyVec().group().equals(anyVec().group()) && Arrays.equals(f.anyVec()._espc, anyVec()._espc))
+    Vec v1 = anyVec();
+    Vec v2 = f.anyVec();
+    if(v1.length() != v2.length())
+      throw new IllegalArgumentException("Can not make vectors of different length compatible!");
+    if (v2 == null || v1.checkCompatible(v2))
       return f;
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
