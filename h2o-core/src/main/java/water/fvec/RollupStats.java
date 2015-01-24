@@ -67,9 +67,6 @@ class RollupStats extends Iced {
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
   private RollupStats map( Chunk c ) {
-    _checksum = 0;
-    long start = c._start;
-    long l = 81985529216486895L;
     _size = c.byteSize();
     _mins = new double[5];  Arrays.fill(_mins, Double.MAX_VALUE);
     _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
@@ -77,6 +74,49 @@ class RollupStats extends Iced {
     boolean isString = c._vec.isString();
     ValueString vs = new ValueString();
     if (isString) _isInt = false;
+    // Checksum support
+    long checksum = 0;
+    long start = c._start;
+    long l = 81985529216486895L;
+
+    // Check for popular easy cases: All Constant
+    double min=c.min(), max=c.max();
+    if( min==max ) {              // All constant, and not NaN
+      double d = min;             // It's the min, it's the max, it's the alpha and omega
+      _checksum = (c.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*c._len;
+      Arrays.fill(_mins,d);
+      Arrays.fill(_maxs,d);
+      if( d == Double.POSITIVE_INFINITY) _pinfs++;
+      else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
+      else {
+        if( d != 0 ) _nzCnt=c._len;
+        _mean = d;
+        _rows=c._len;
+      }
+      _isInt = ((long)d) == d;
+      _sigma = 0;               // No variance for constants
+      return this;
+    }
+
+    // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
+    if( min==0 && max==1 ) {
+      int zs = c._len-c.sparseLen(); // Easy zeros
+      int nans = 0;
+      // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) )
+        if( c.isNA(i) ) nans++;
+        else if( c.at8(i)==0 ) zs++;
+      int os = c._len-zs-nans;  // Ones
+      _nzCnt = os;
+      for( int i=0; i<Math.min(_mins.length,zs); i++ ) { min(0); max(0); }
+      for( int i=0; i<Math.min(_mins.length,os); i++ ) { min(1); max(1); }
+      _rows = zs+os;
+      _mean = (double)os/_rows;
+      _sigma = zs*(0.0-_mean)*(0.0-_mean) + os*(1.0-_mean)*(1.0-_mean);
+      return this;
+    }
+
+
     // Walk the non-zeros
     for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
       if( c.isNA(i) ) {
@@ -102,8 +142,9 @@ class RollupStats extends Iced {
         }
       }
       if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-        _checksum ^= (17 * (start+i)) ^ 23*l;
+        checksum ^= (17 * (start+i)) ^ 23*l;
     }
+    _checksum = checksum;
 
     // Sparse?  We skipped all the zeros; do them now
     if( c.isSparse() ) {
@@ -117,9 +158,14 @@ class RollupStats extends Iced {
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
-      for( int i=0; i< c._len; i++ ) {
-        if( !c.isNA(i) ) {
-          double d = c.atd(i)-_mean;
+      // Handle all zero rows
+      int zeros = c._len - c.sparseLen();
+      _sigma += _mean*_mean*zeros;
+      // Handle all non-zero rows
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        double d = c.atd(i);
+        if( !Double.isNaN(d) ) {
+          d -= _mean;
           _sigma += d*d;
         }
       }
@@ -188,7 +234,7 @@ class RollupStats extends Iced {
       fs.add(new RPC(vec.rollupStatsKey().home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
         @Override
         public void callback(H2OCountedCompleter h2OCountedCompleter) {
-          DKV.get(vec.rollupStatsKey()); // fetch new results via DKV to enable chaching of the results.
+          DKV.get(vec.rollupStatsKey()); // fetch new results via DKV to enable caching of the results.
         }
       }).call());
   }

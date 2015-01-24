@@ -514,6 +514,16 @@ public abstract class Chunk extends Iced implements Cloneable {
     return _len;
   }
 
+  /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
+   *  min can be higher than reported.  Used to short-cut RollupStats for
+   *  constant and boolean chunks. */
+  double min() { return Double.NaN; }
+  /** Report the Chunk max-value (excluding NAs), or NaN if unknown.  Actual
+   *  max can be lower than reported.  Used to short-cut RollupStats for
+   *  constant and boolean chunks. */
+  double max() { return Double.NaN; }
+
+
   public NewChunk inflate(){
     return inflate_impl(new NewChunk(this));
   }

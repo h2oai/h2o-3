@@ -11,6 +11,8 @@ public final class CX0Chunk extends CXIChunk {
   @Override protected final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
   @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
   @Override protected final boolean isNA_impl( int i ) { return false; }
+  @Override double min() { return 0; }
+  @Override double max() { return 1; }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
     final int slen = sparseLen();

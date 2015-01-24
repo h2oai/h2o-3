@@ -26,7 +26,7 @@ public class CreateFrameTest extends TestUtil {
     cf.execImpl();
     cf.get();
     Frame frame = DKV.getGet(cf.dest());
-    Assert.assertTrue(frame.checksum() == -1885667171979213105L);
+    Assert.assertTrue(frame.checksum() == -1885667171979215681L);
     frame.delete();
   }
 
@@ -46,7 +46,7 @@ public class CreateFrameTest extends TestUtil {
     cf.execImpl();
     cf.get();
     Frame frame = DKV.getGet(cf.dest());
-    Assert.assertTrue(frame.checksum() == 746L);
+    Assert.assertTrue(frame.checksum() == 43L);
     frame.delete();
   }
 }
