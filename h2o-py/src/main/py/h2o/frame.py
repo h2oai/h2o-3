@@ -366,6 +366,9 @@ class H2OFrame(object):
         # actually upload the data to H2O
         self._upload_raw_data(tmp_file_path, header)
 
+        # delete the tmp file
+        os.remove(tmp_file_path)  # not at all secure!
+
     def _upload_raw_data(self, tmp_file_path, column_names):
         fui = {"file": os.path.abspath(tmp_file_path)}
         dest_key = H2OFrame.py_tmp_key()
