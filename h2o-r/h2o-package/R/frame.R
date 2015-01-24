@@ -887,7 +887,7 @@ setMethod("summary", "H2OFrame", function(object, ...) {
         if(is.null(col$pctiles))
           params <- format(rep(signif(as.numeric(col$mean), digits), 6), digits = 4)
         else
-          params = format(signif(as.numeric(c(col$mins[1], col$pctiles[3], col$pctiles[5], col$mean, col$pctile[7], col$maxs[5])), digits), digits = 4)
+          params = format(signif(as.numeric(c(min(col$mins), col$pctiles[3], col$pctiles[5], col$mean, col$pctile[7], max(col$maxs))), digits), digits = 4)
         c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
           paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
           paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "))
