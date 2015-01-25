@@ -353,8 +353,9 @@ public class Frame extends Lockable<Frame> {
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
     }
+    _checksum *= (0xBABE + Arrays.hashCode(_names));
 
-    // TODO: include column names and types?  Vec.checksum() should include type?
+    // TODO: include column types?  Vec.checksum() should include type?
     return _checksum;
   }
 

@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class AtomicTest extends TestUtil {
-  public AtomicTest() { super(3); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
 
   public Key makeKey(String n, boolean remote) {
     if(!remote) return Key.make(n);

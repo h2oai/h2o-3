@@ -55,7 +55,6 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   public Frame getResult(){join(); return _out;}
 
   @Override public void compute2() {
-    _in.read_lock(_jobKey);
     // Simply create a bogus new vector (don't even put it into KV) with
     // appropriate number of lines per chunk and then use it as a source to do
     // multiple makeZero calls to create empty vecs and than call RebalanceTask
@@ -87,7 +86,6 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     assert _out.numRows() == _in.numRows();
     Vec vec = _out.anyVec();
     assert vec.nChunks() == _nchunks;
-    _in.unlock(_jobKey);
     _out.update(_jobKey);
     _out.unlock(_jobKey);
   }
