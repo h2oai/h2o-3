@@ -39,6 +39,8 @@ public class CXIChunk extends Chunk {
 
   @Override public final boolean isSparse() {return true;}
   @Override public final int sparseLen(){ return _sparse_len; }
+  /** Fills in a provided (recycled/reused) temp array of the NZ indices, and
+   *  returns the count of them.  Array must be large enough. */
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
     int off = _OFF;

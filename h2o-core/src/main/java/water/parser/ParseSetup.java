@@ -2,6 +2,7 @@ package water.parser;
 
 import water.*;
 import water.fvec.Vec;
+import water.fvec.FileVec;
 import water.util.IcedArrayList;
 import water.parser.Parser.ColTypeInfo;
 
@@ -33,7 +34,7 @@ public final class ParseSetup extends Iced {
   String[] _errors;           // Errors in this parse setup
   long _invalidLines; // Number of broken/invalid lines found
   long _headerlines; // Number of header lines found
-  int _chunkSize = Vec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
+  int _chunkSize = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
 
   public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, ColTypeInfo[] ctypes) {
     _isValid = isValid;

@@ -17,7 +17,7 @@ import water.rapids.Env;
 import water.rapids.Exec;
 import water.util.Log;
 
-import java.util.Random;
+import java.util.*;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
@@ -33,6 +33,7 @@ public class DeepLearningProstateTest extends TestUtil {
     int[][] responses = new int[datasets.length][];
     datasets[0] = "smalldata/logreg/prostate.csv"; responses[0] = new int[]{1,2,8}; //CAPSULE (binomial), AGE (regression), GLEASON (multi-class)
     datasets[1] = "smalldata/iris/iris.csv";  responses[1] = new int[]{4}; //Iris-type (multi-class)
+    HashSet<Long> checkSums = new LinkedHashSet<>();
 
     int testcount = 0;
     int count = 0;
@@ -146,6 +147,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       DeepLearning dl = new DeepLearning(p);
                                       try {
                                         model1 = dl.trainModel().get();
+                                        checkSums.add(model1.checksum());
                                       } catch (Throwable t) {
                                         t.printStackTrace();
                                         throw new RuntimeException(t);
@@ -310,15 +312,10 @@ public class DeepLearningProstateTest extends TestUtil {
         vframe.delete();
       }
     }
+    Assert.assertTrue(checkSums.size() == testcount);
     Log.info("\n\n=============================================");
     Log.info("Tested " + testcount + " out of " + count + " parameter combinations.");
     Log.info("=============================================");
-  }
-
-  public static class Long extends DeepLearningProstateTest {
-    @Test
-    @Ignore
-    public void run() throws Exception { runFraction(1f); }
   }
 
   public static class Mid extends DeepLearningProstateTest {

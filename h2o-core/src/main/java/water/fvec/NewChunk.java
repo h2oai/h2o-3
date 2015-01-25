@@ -431,11 +431,8 @@ public class NewChunk extends Chunk {
 
   // Slow-path append data
   private void append2slowd() {
-    if (this._vec != null) {
-      if (sparseLen() > this._vec._chunkSize)
-        throw new ArrayIndexOutOfBoundsException(sparseLen());
-    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
-        throw new ArrayIndexOutOfBoundsException(sparseLen());
+    if( sparseLen() > FileVec.DFLT_CHUNK_SIZE )
+      throw new ArrayIndexOutOfBoundsException(sparseLen());
 
     assert _ls==null;
     if(_ds != null && _ds.length > 0){
@@ -454,10 +451,7 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slowUUID() {
-    if (this._vec != null) {
-      if (sparseLen() > this._vec._chunkSize)
-        throw new ArrayIndexOutOfBoundsException(sparseLen());
-    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
+    if( sparseLen() > FileVec.DFLT_CHUNK_SIZE )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
 
     if( _ds==null && _ls!=null ) { // This can happen for columns with all NAs and then a UUID
@@ -477,10 +471,7 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append string
   private void append2slowstr() {
-    if (this._vec != null) {
-      if (sparseLen() > this._vec._chunkSize)
-        throw new ArrayIndexOutOfBoundsException(sparseLen());
-    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
+    if( sparseLen() > FileVec.DFLT_CHUNK_SIZE )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
 
     // In case of all NAs and then a string, convert NAs to string NAs
@@ -516,10 +507,7 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slow( ) {
-    if (this._vec != null) {
-      if (sparseLen() > this._vec._chunkSize)
-        throw new ArrayIndexOutOfBoundsException(sparseLen());
-    } else if( sparseLen() > Vec.DFLT_CHUNK_SIZE )
+    if( sparseLen() > FileVec.DFLT_CHUNK_SIZE )
       throw new ArrayIndexOutOfBoundsException(sparseLen());
 
     assert _ds==null;

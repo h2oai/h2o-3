@@ -11,24 +11,24 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   // static list of chunks for which statistics are to be gathered
   final transient static String[] chunkTypes = new String[]{
-          "C0L",
-          "C0D",
-          "CBS",
-          "C1",
-          "C1N",
-          "C1S",
-          "C2",
-          "C2S",
-          "C4",
-          "C4S",
-          "C4F",
-          "C8",
-          "C16",                // UUID
-          "CStr",               // Strings
-          "CX0",                // Sparser bitvector
-          "CXI",                // Sparse ints
-          "CXD",                // Sparse doubles
-          "C8D", //leave this as last -> no compression
+    "C0L",
+    "C0D",
+    "CBS",
+    "CX0",                   // Sparser bitvector; popular so near head of list
+    "CXI",                   // Sparse ints
+    "C1",
+    "C1N",
+    "C1S",
+    "C2",
+    "C2S",
+    "C4",
+    "C4S",
+    "C4F",
+    "C8",
+    "C16",                      // UUID
+    "CStr",                     // Strings
+    "CXD",                      // Sparse doubles
+    "C8D",                      //leave this as last -> no compression
   };
 
   // OUTPUT
@@ -47,33 +47,29 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     chunk_counts = new long[chunkTypes.length];
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
-    for (Chunk c : cs) {
-      boolean found = false;
-      for (int j = 0; j < chunkTypes.length; ++j) {
-        if (c.getClass().getSimpleName().equals(chunkTypes[j] + "Chunk")) {
-          found = true;
-          chunk_counts[j]++;
-          chunk_byte_sizes[j] += c.byteSize();
-          byte_size_per_node[H2O.SELF.index()] += c.byteSize();
-        }
-      }
-      if (!found) {
-        throw H2O.unimpl();
-      }
+    for( Chunk c : cs ) {       // Can be a big loop, for high column counts
+      // Pull out the class name; trim a trailing "Chunk"
+      String cname = c.getClass().getSimpleName();
+      int nlen = cname.length();
+      assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
+      String sname = cname.substring(0,nlen-5);
+      // Table lookup, roughly sorted by frequency
+      int j=0;
+      for( j = 0; j < chunkTypes.length; ++j )
+        if( sname.equals(chunkTypes[j]) )
+          break;
+      if( j==chunkTypes.length ) throw H2O.unimpl();
+      chunk_counts[j]++;
+      chunk_byte_sizes[j] += c.byteSize();
+      byte_size_per_node[H2O.SELF.index()] += c.byteSize();
     }
   }
 
   @Override
   public void reduce(ChunkSummary mrt) {
-    if (mrt.chunk_counts == chunk_counts) return;
-
-    for (int j = 0; j < chunkTypes.length; ++j) {
-      chunk_counts[j] += mrt.chunk_counts[j];
-      chunk_byte_sizes[j] += mrt.chunk_byte_sizes[j];
-    }
-    for (int i = 0; i<H2O.CLOUD.size(); ++i) {
-      byte_size_per_node[i] += mrt.byte_size_per_node[i];
-    }
+    ArrayUtils.add(chunk_counts,mrt.chunk_counts);
+    ArrayUtils.add(chunk_byte_sizes,mrt.chunk_byte_sizes);
+    ArrayUtils.add(byte_size_per_node,mrt.byte_size_per_node);
   }
 
   @Override

@@ -40,18 +40,15 @@ public class AppendableVec extends Vec {
   final long _timCnt[] = new long[ParseTime.TIME_PARSE.length];
   long _totalCnt;
 
-
-
-  int _chunkOff;
+  public int _chunkOff;         // Public so the parser can find it
 
 
   public AppendableVec( Key key){
-    this(key, Vec.DFLT_CHUNK_SIZE, new long[4], 0);
+    this(key, new long[4], 0);
   }
 
-  public AppendableVec( Key key, int chunkSize, long [] espc, int chunkOff) {
+  public AppendableVec( Key key, long [] espc, int chunkOff) {
     super(key, null); // NOTE: passing null for espc and then keeping private copy so that the size can change
-    setChunkSize(chunkSize);
     _espc = espc;
     _chunkTypes = new byte[4];
     _chunkOff = chunkOff;
@@ -113,21 +110,20 @@ public class AppendableVec extends Vec {
   // Called single-threaded from the M/R framework.
   public void reduce( AppendableVec nv ) {
     if( this == nv ) return;    // Trivially done
-
     // Combine arrays of elements-per-chunk
-    long e1[] = nv._espc;       // Shorter array of longs?
-    byte t1[] = nv._chunkTypes;
-    if( e1.length > _espc.length ) { // should not happen for shared espcs!
-      e1 = _espc;               // Keep the shorter one in e1
-      _espc = nv._espc;         // Keep longer in the object
+    if(_espc != nv._espc) {
+      long e1[] = nv._espc;       // Shorter array of longs?
+      if (e1.length > _espc.length) { // should not happen for shared espcs!
+        e1 = _espc;               // Keep the shorter one in e1
+        _espc = nv._espc;         // Keep longer in the object
+      }
+      for( int i=0; i<e1.length; i++ ) // Copy non-zero elements over
+        _espc[i] |= e1[i];
     }
+    byte t1[] = nv._chunkTypes;
     if(t1.length > _chunkTypes.length) {
       t1 = _chunkTypes;
       _chunkTypes = nv._chunkTypes;
-    }
-    for( int i=0; i<e1.length; i++ ){ // Copy non-zero elements over
-      if( e1[i] != 0 && _espc[i]==0 )
-        _espc[i] = e1[i];
     }
     for( int i =0 ; i < t1.length; ++i)
       _chunkTypes[i] |= t1[i];
@@ -212,7 +208,7 @@ public class AppendableVec extends Vec {
     }
     espc[nchunk]=x;             // Total element count in last
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, espc, domain(), type, _chunkSize);
+    Vec vec = new Vec(_key, espc, domain(), type);
     DKV.put(_key,vec,fs);       // Inject the header
     return vec;
   }

@@ -97,7 +97,7 @@ public abstract class JarHash {
   }
 
   private static InputStream loadResource(String uri, ClassLoader cl) {
-    Log.info_no_stdout("Trying to load resource " + uri + " via classloader " + cl);
+    Log.info("Trying to load resource " + uri + " via classloader " + cl,false);
     InputStream is = cl.getResourceAsStream("resources/www" + uri);
     if( is != null ) return is;
     is = cl.getResourceAsStream("resources/main/www" + uri);

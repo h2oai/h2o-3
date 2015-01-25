@@ -553,6 +553,7 @@ final public class H2O {
       int pp = ((PrioritizedForkJoinPool)t.getPool())._priority;
       // Drain the high priority queues before the normal F/J queue
       H2OCountedCompleter h2o = null;
+      boolean set_t_prior = false;
       try {
         assert  priority() == pp; // Job went to the correct queue?
         assert t._priority <= pp; // Thread attempting the job is only a low-priority?
@@ -563,6 +564,7 @@ final public class H2O {
           if( h2o != null ) {     // Got a hi-priority job?
             t._priority = p;      // Set & do it now!
             t.setPriority(Thread.MAX_PRIORITY-1);
+            set_t_prior = true;
             h2o.compute2();       // Do it ahead of normal F/J work
             p++;                  // Check again the same queue
           }
@@ -574,7 +576,7 @@ final public class H2O {
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
-        if( pp == MIN_PRIORITY ) t.setPriority(Thread.NORM_PRIORITY-1);
+        if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
       compute2();

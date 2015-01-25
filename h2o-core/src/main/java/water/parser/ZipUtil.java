@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.zip.*;
 import water.fvec.ByteVec;
 import water.fvec.Vec;
+import water.fvec.FileVec;
 import water.util.Log;
 import water.util.UnsafeUtils;
 
@@ -15,7 +16,7 @@ abstract class ZipUtil {
   static byte [] getFirstUnzippedBytes( ByteVec bv ) {
     try{
       byte[] bits = bv.getFirstBytes();
-      return unzipBytes(bits, guessCompressionMethod(bits), Vec.DFLT_CHUNK_SIZE);
+      return unzipBytes(bits, guessCompressionMethod(bits), FileVec.DFLT_CHUNK_SIZE);
     } catch(Exception e) { return null; }
   }
 
@@ -34,7 +35,7 @@ abstract class ZipUtil {
     if (cpr == Compression.NONE )
       return 1; // no compression
     else {
-      byte[] bits = ZipUtil.unzipBytes(zips, cpr, Vec.DFLT_CHUNK_SIZE);
+      byte[] bits = ZipUtil.unzipBytes(zips, cpr, FileVec.DFLT_CHUNK_SIZE);
       return bits.length / zips.length;
     }
   }

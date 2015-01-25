@@ -24,6 +24,8 @@ public class C0LChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return d==_con; }
   @Override boolean set_impl(int i, float f ) { return f==_con; }
   @Override boolean setNA_impl(int i) { return false; }
+  @Override double min() { return _con; }
+  @Override double max() { return _con; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
     if(_con != 0) {
       nc.alloc_mantissa(_len);
