@@ -631,6 +631,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // assumed to work (although might have been immediately overwritten).  Only
   // the path through copy_slot passes in an expected value of null, and
   // putIfMatch only returns a null if passed in an expected null.
+  static volatile int DUMMY_VOLATILE;
   private static final Object putIfMatch( final NonBlockingHashMap topmap, final Object[] kvs, final Object key, final Object putval, final Object expVal ) {
     assert putval != null;
     assert !(putval instanceof Prime);
@@ -649,6 +650,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
     // ---
     // Key-Claim stanza: spin till we can claim a Key (or force a resizing).
+    boolean debug_null_k=false;
     int reprobe_cnt=0;
     Object K=null, V=null;
     Object[] newkvs=null;
@@ -656,6 +658,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       V = val(kvs,idx);         // Get old value (before volatile read below!)
       K = key(kvs,idx);         // Get current key
       if( K == null ) {         // Slot is free?
+        if( debug_null_k ) System.out.print("Q");
         // Found an empty Key slot - which means this Key has never been in
         // this table.  No need to put a Tombstone - the Key is not here!
         if( putval == TOMBSTONE ) return putval; // Not-now & never-been in this table
@@ -679,11 +682,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // non-spurious-failure CAS (such as Azul has) into one that can
         // apparently spuriously fail - and we avoid apparent spurious failure
         // by not allowing Keys to ever change.
-        K = key(kvs,idx);       // CAS failed, get updated value
-        if( K == null ) {
-          System.out.println("double null: "+K);
-          continue;
-        }
+        DUMMY_VOLATILE = 1;     // Volatile write, to force loads of K to retry despite JIT
+        debug_null_k = true;    // Tried K once; if we get ANOTHER null for K its a bug
+        continue;
       }
       // Key slot was not null, there exists a Key here
 
