@@ -66,7 +66,8 @@ class H2OModelBuilder(ModelBase):
         self._set_ignored_columns(x, y, dataset)
 
         # set the ignored_columns list into self._parameters
-        self._set_response_column(y)
+        if y:  # y is None for CLUSTERING
+            self._set_response_column(y)
 
         # cbind the H2OVecs and create a tmp key and put this key into self._parameters
         self._set_training_frame(dataset)
@@ -111,8 +112,8 @@ class H2OModelBuilder(ModelBase):
 
     def _set_and_check_x_y(self, x, y):
         if not x or not y:
-            if not self._parameters["x"] or not self._parameters["y"]:
-                raise ValueError("No fit can be made, missing training data (x,y).")
+            if not self._parameters["x"]:  # y is None for CLUSTERING, don't check it!
+                raise ValueError("No fit can be made, missing feature variables.")
             if x:
                 self._parameters["x"] = x
             if y:
@@ -136,8 +137,11 @@ class H2OModelBuilder(ModelBase):
 
     @staticmethod
     def _indexed_columns_to_named_columns(x, y, dataset):
-        if isinstance(x[0], int): x = [dataset.names()[i] for i in x]
-        if isinstance(y, int): y = dataset.names()[y]
+        if isinstance(x[0], int):
+            x = [dataset.names()[i] for i in x]
+        if y:  # y is None for CLUSTERING
+            if isinstance(y, int):
+                y = dataset.names()[y]
         return x, y
 
     def _set_ignored_columns(self, x, y, dataset):
