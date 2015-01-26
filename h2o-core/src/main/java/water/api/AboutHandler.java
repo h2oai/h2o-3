@@ -7,6 +7,8 @@ import java.util.ArrayList;
 
 public class AboutHandler extends Handler {
   public static class AboutEntryV3 extends Schema<Iced, AboutEntryV3> {
+
+    public AboutEntryV3() {}
     public AboutEntryV3(String n, String v) {
       name = n;
       value = v;
