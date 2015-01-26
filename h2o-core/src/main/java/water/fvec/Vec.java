@@ -262,7 +262,8 @@ public class Vec extends Keyed {
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
     // vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-ditribution)
-    return (VectorGroup.sameGroup(this,v) && (_espc == v._espc || Arrays.equals(_espc,v._espc)));
+    if (VectorGroup.sameGroup(this,v) && (_espc == v._espc || Arrays.equals(_espc,v._espc))) return true;
+    return (Arrays.equals(_espc,v._espc) && length() < 1e5);
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -320,7 +321,7 @@ public class Vec extends Keyed {
       @Override public void map(Chunk c){
         Chunk c2 = (Chunk)c.clone();
         c2._mem = c2._mem.clone();
-        DKV.put(v.chunkKey(c.cidx()),c2,_fs);
+        DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
     DKV.put(v._key,v);
