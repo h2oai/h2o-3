@@ -66,7 +66,7 @@ class H2OModelBuilder(ModelBase):
         self._set_ignored_columns(x, y, dataset)
 
         # set the ignored_columns list into self._parameters
-        if y:  # y is None for CLUSTERING
+        if y:  # y is None for Unsupervised Learner (e.g. CLUSTERING)
             self._set_response_column(y)
 
         # cbind the H2OVecs and create a tmp key and put this key into self._parameters
@@ -111,14 +111,23 @@ class H2OModelBuilder(ModelBase):
         self._parameters = dict(zip(a, [getattr(o, i) for i in a]))
 
     def _set_and_check_x_y(self, x, y):
+        ret_x = x
+        ret_y = y
         if not x or not y:
-            if not self._parameters["x"]:  # y is None for CLUSTERING, don't check it!
+            if not self._parameters["x"]:  # y is None for Unsupervised, don't check it!
                 raise ValueError("No fit can be made, missing feature variables.")
             if x:
                 self._parameters["x"] = x
             if y:
                 self._parameters["y"] = y
-        return self._parameters["x"], self._parameters["y"]
+
+            # return the thing that was changed
+            ret_x = self._parameters["x"]
+
+            # if no "y", then we're doing unsupervised learning
+            ret_y = None if "y" not in self._parameters.keys() else self._parameters["y"]
+
+        return ret_x, ret_y
 
     def _check_training_frame(self, x):
         if not self.training_frame:
@@ -139,7 +148,7 @@ class H2OModelBuilder(ModelBase):
     def _indexed_columns_to_named_columns(x, y, dataset):
         if isinstance(x[0], int):
             x = [dataset.names()[i] for i in x]
-        if y:  # y is None for CLUSTERING
+        if y:  # y is None for Unsupervised Learner (e.g. CLUSTERING)
             if isinstance(y, int):
                 y = dataset.names()[y]
         return x, y
@@ -217,7 +226,14 @@ class H2OModelBuilder(ModelBase):
         # get the model type
         self._model_type = self._model_type.format(model["output"]["model_category"])
 
-        # create the type of model based on the model_category just obtained
+        # Create the type of model based on the model_category just obtained and stuff the
+        # new object into `self._fitted_model`.
+
+        # There is no additional packaging of the model at this point. This builder is
+        # responsible for is passing the raw output to the correct model category class
+        # and then call its "new", which does all of the necessary manufacturing of the
+        # model (i.e. mines the raw output suitable for showing, summarizing, predicting,
+        # plotting, and deriving model metrics).
 
         # BINOMIAL model
         if self._model_type == self.BINOMIAL:
