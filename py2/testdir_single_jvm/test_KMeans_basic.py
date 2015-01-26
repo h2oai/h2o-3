@@ -5,6 +5,7 @@ from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_kmeans
 
 
+
 class Basic(unittest.TestCase):
     def tearDown(self):
         h2o.check_sandbox_for_errors()
