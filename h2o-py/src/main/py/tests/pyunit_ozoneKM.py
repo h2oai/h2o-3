@@ -34,6 +34,6 @@ from h2o.model.h2o_km_builder import H2OKMeansBuilder
 
 my_km2 = H2OKMeansBuilder(training_frame=train,
                           x=range(0, train.ncol(), 1),
-                          km=10, max_iterations=100, 
+                          k=10, max_iterations=100,
                           init="PlusPlus").fit()
 my_km2.show()
