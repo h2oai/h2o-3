@@ -1,5 +1,5 @@
 """
-Binomial Models should be comparable.
+Multinomial Models should be comparable.
 """
 
 from model_base import *
@@ -10,7 +10,7 @@ class H2OMultinomialModel(ModelBase):
     def __init__(self, raw_model_output=None, algo=None):
         if raw_model_output is None:
             raise H2OModelInstantiationException(
-                "Failed to instantiate a Binomial model: no model output found!")
+                "Failed to instantiate a Multinomial model: no model output found!")
         super(H2OMultinomialModel, self).__init__()
         self.model_type = self.MULTINOMIAL
         self.algo = algo
