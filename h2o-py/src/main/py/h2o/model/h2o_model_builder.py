@@ -15,7 +15,7 @@ from regression import H2ORegressionModel
 import h2o
 
 
-class H2OMissingFrameException(Exception):
+class H2OMissingFrameError(Exception):
     pass
 
 
@@ -121,7 +121,7 @@ class H2OModelBuilder(ModelBase):
 
     def _check_training_frame(self, x):
         if not self.training_frame:
-            raise H2OMissingFrameException("No training frame supplied.")
+            raise H2OMissingFrameError("No training frame supplied.")
 
         dataset = self.training_frame
 
@@ -183,26 +183,26 @@ class H2OModelBuilder(ModelBase):
         model_params_raw = builders_response["model_builders"][self._algo]["parameters"]
 
         # build a dictionary of the default parameters that self._algo expects
-        model_params_defaults = {n["name"]: n["default_value"] for n in model_params_raw}
+        model_params_default = {n["name"]: n["default_value"] for n in model_params_raw}
 
         # take values from self.params if they map to model_params
-        parms_to_fill = [k for k in self._parameters.keys() if k in model_params_defaults]
+        params_to_fill = [k for k in self._parameters.keys() if k in model_params_default]
 
         # fill in the default parameters with the user-specified values
-        for k in parms_to_fill:
-            model_params_defaults[k] = self._parameters[k]
+        for k in params_to_fill:
+            model_params_default[k] = self._parameters[k]
 
         keys_to_pop = []
-        for k in model_params_defaults:
-            if model_params_defaults[k] is None:
+        for k in model_params_default:
+            if model_params_default[k] is None:
                 keys_to_pop += [k]
 
         if len(keys_to_pop) > 0:
             for k in keys_to_pop:
-                model_params_defaults.pop(k, None)
+                model_params_default.pop(k, None)
 
         # return the default parameters folded together with the user-specified params
-        return model_params_defaults
+        return model_params_default
 
     def _set_fitted_model_and_model_type(self, destination_key):
 
