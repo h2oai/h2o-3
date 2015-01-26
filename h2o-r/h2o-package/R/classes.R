@@ -60,6 +60,13 @@ setClass("H2OObject",
          prototype(conn=NULL, key=NA_character_, finalizers=list()),
          contains="VIRTUAL")
 
+setMethod("initialize", "H2OObject", function(.Object, ...) {
+  .Object <- callNextMethod()
+  .Object@finalizers <- .Object@finalizers[!duplicated(unlist(lapply(.Object@finalizers,
+                                                                     function(x) capture.output(print(x)))))]
+  .Object
+})
+
 .keyFinalizer <- function(envir) {
   try(h2o.rm(get("key", envir), get("conn", envir)), silent=TRUE)
 }
@@ -117,31 +124,48 @@ setClass("ASTElse",   representation(op="character", body      = "ASTBody"), con
 setClass("ASTFor",    representation(op="character", iterator  = "list",  body = "ASTBody"), contains="Node", prototype(op="for"))
 setClass("ASTReturn", representation(op="character", children  = "ASTNode"), contains="Node", prototype(op="return"))
 
+if (inherits(try(getRefClass("H2OFrameMutableState"), silent = TRUE), "try-error")) {
+# TODO: Address issue below
+# H2O.ai testing infrastructure sources .R files in addition to loading the h2o package
+# avoid redefinition of reference class
+
+#'
+#' The H2OFrameMutableState class
+#'
+setRefClass("H2OFrameMutableState",
+            fields = list(ast = "ASTNodeOrNULL", nrows = "numeric", ncols = "numeric", col_names = "character"),
+            methods = list(
+              initialize =
+              function(..., ast = NULL, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
+                .self$initFields(ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+                callSuper(...)
+              }))
+}
+
 #'
 #' The H2OFrame class
 #'
 setClass("H2OFrame",
-         representation(ast="ASTNodeOrNULL", nrows="numeric", ncols="numeric", col_names="character",
-                        factors="data.frameOrNULL"),
+         representation(mutable = "H2OFrameMutableState"),
          prototype(conn       = NULL,
                    key        = NA_character_,
                    finalizers = list(),
-                   ast        = NULL,
-                   nrows      = NA_integer_,
-                   ncols      = NA_integer_,
-                   col_names  = NA_character_,
-                   factors    = NULL),
+                   mutable    = new("H2OFrameMutableState")),
          contains ="H2OObject")
 
 setMethod("show", "H2OFrame", function(object) {
+  .byref.update.frame(object)
+
   nr <- nrow(object)
   nc <- ncol(object)
   cat(class(object), " with ",
-      nr, ifelse(nr == 1L, " row and ", " rows and "),
-      nc, ifelse(nc == 1L, " column\n", " columns\n"), sep = "")
-  if (nr > 10L)
-    cat("\nFirst 10 rows:\n")
-  print(head(object, 10L))
+      nr, ifelse(!is.na(nr) && nr == 1L, " row and ", " rows and "),
+      nc, ifelse(!is.na(nc) && nc == 1L, " column\n", " columns\n"), sep = "")
+  if (!is.na(nr)) {
+    if (nr > 10L)
+      cat("\nFirst 10 rows:\n")
+    print(head(object, 10L))
+  }
   invisible(object)
 })
 

@@ -41,7 +41,8 @@
 #' h2o.ls(localH2O)
 h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
-  fr <- .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE)
+  mutable <- new("H2OFrameMutableState", ast = ast)
+  fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@key, fr@conn)
   ret
@@ -133,15 +134,8 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  if (length(substitute(data)) > 1L) {
-    deparsedExpr <- "tmp_value"
-  } else {
-    deparsedExpr <- deparse(substitute(data), width.cutoff = 500L)
-  }
-  res <- .h2o.nary_op("rename", data, key)
-  .force.eval(conn = res@conn, ast = res@ast, deparsedExpr = deparsedExpr, env = parent.frame())
-  data@key <- key
-  data
+  res <- .h2o.nary_frame_op("rename", data, key, key = key, linkToGC = FALSE)
+  .byref.update.frame(res)
 }
 
 #'

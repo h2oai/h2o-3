@@ -59,8 +59,10 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names, linkToGC = TRUE)
-  .newH2OObject("H2OFrame", conn=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names, linkToGC=linkToGC)
+.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrows, ncols, col_names, linkToGC = TRUE) {
+  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn=conn, key=key, mutable=mutable, linkToGC=linkToGC)
+}
 
 #'
 #' Create new H2OFrame object for predictions
@@ -69,8 +71,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows
   ncols <- length(col_names)
-  factors <- sapply(predictions$columns, function(column) column$type == "enum")
-  names(factors) <- col_names
-  factors <- as.data.frame(factors)
-  .newH2OObject("H2OFrame", conn=conn, key=key, col_names=col_names, nrows=nrows, ncols=ncols, factors=factors, linkToGC=linkToGC)
+  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn=conn, key=key, mutable=mutable, linkToGC=linkToGC)
 }
