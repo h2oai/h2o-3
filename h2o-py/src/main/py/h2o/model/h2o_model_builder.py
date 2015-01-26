@@ -51,7 +51,7 @@ class H2OModelBuilder(ModelBase):
         """
 
         # Update self.parameters with any changes to the member vars
-        self._update()
+        saved_parameters = self._update()
 
         # check that x and y are not both None and update self._parameters
         x, y = self._set_and_check_x_y(x, y)
@@ -91,7 +91,8 @@ class H2OModelBuilder(ModelBase):
         if self._parameters["validation_frame"] is not None:
             h2o.remove(self._parameters["validation_frame"])
 
-        # flowing return
+        # flowing return,
+        self._parameters = saved_parameters
         return self
 
     def performance(self, test_data=None):
@@ -109,6 +110,7 @@ class H2OModelBuilder(ModelBase):
         o = self
         a = [n for n in dir(o) if not callable(getattr(o, n)) and not n.startswith("_")]
         self._parameters = dict(zip(a, [getattr(o, i) for i in a]))
+        return self._parameters
 
     def _set_and_check_x_y(self, x, y):
         ret_x = x
@@ -166,19 +168,29 @@ class H2OModelBuilder(ModelBase):
         dataset_key = H2OFrame.send_frame(dataset)
         self._parameters["training_frame"] = dataset_key
 
-    # TODO: clean up this method and add comments
     def _set_validation_frame(self, validation_frame):
-        validation_passed_to_fit = False
-        if validation_frame:
-            validation_frame = self._parameters["validation"]
-            validation_passed_to_fit = True
 
-        if validation_frame:
+        if validation_frame or "validation" in self._parameters.keys():
+            #   Two ways to get the validation set in:
+            #       A. It was passed in from the model builder
+            #       B. It was passed in to the fit method
+            validation_passed_to_fit = False
+
+            if validation_frame:
+                # even if self._parameters["validation"] is not None, the one passed to
+                # the `fit` call is king.
+                self._parameters["validation"] = validation_frame
+                validation_passed_to_fit = True
+
+            validation_frame = self._parameters["validation_frame"]
+
             message = "Validation passed to " + \
                       ("fit" if validation_passed_to_fit else "model builder")
             if not isinstance(validation_frame, H2OFrame):
                 raise ValueError(message + " must be of type H2OFrame. "
                                            "Got: " + str(type(validation_frame)))
+
+            # see the comment in _set_training_frame for more on send_frame
             validation_key = H2OFrame.send_frame(validation_frame)
             self._parameters["validation"] = validation_key
 
