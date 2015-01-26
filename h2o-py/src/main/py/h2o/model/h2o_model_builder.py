@@ -8,10 +8,18 @@ from ..h2o import H2OFrame
 from ..h2o import h2oConn
 from . import ModelBase
 from ..h2o import H2OJob
+from binomial import H2OBinomialModel
+from multinomial import H2OMultinomialModel
+from clustering import H2OClusteringModel
+from regression import H2ORegressionModel
 import h2o
 
 
 class H2OMissingFrameException(Exception):
+    pass
+
+
+class H2OUnknownModelError(Exception):
     pass
 
 
@@ -23,8 +31,16 @@ class H2OModelBuilder(ModelBase):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, parameters=None, algo="", training_frame=None):
-        super(H2OModelBuilder, self).__init__(parameters, algo)
+        super(H2OModelBuilder, self).__init__()
+
+        # IN
+        self._algo = algo
+        self._parameters = parameters
         self.training_frame = training_frame
+
+        # OUT
+        self._model_type = "H2O{}Model"  # (e.g. "Binomial")
+        self._fitted_model = None  # filled after a call to self.fit
 
     def fit(self, x=None, y=None, validation_frame=None):
         """
@@ -65,6 +81,7 @@ class H2OModelBuilder(ModelBase):
         url_suffix = "ModelBuilders/" + self._algo
         j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix, params=model_params))\
             .poll()
+
         # set the fitted_model and model_type fields
         self._set_fitted_model_and_model_type(j.destination_key)
 
@@ -76,18 +93,16 @@ class H2OModelBuilder(ModelBase):
         # flowing return
         return self
 
-    def show(self):
-        pass
-        # self._fitted_model.show()
-
     def performance(self, test_data=None):
-        self._fitted_model.performace(test_data)
+        self._fitted_model.performance(test_data=test_data)
 
     def predict(self, test_data=None):
-        pass
+        self._fitted_model.predict(test_data=test_data)
 
     def summary(self):
-        pass
+        self._fitted_model.summary()
+
+    # All "private" methods below.
 
     def _update(self):
         o = self
@@ -190,7 +205,32 @@ class H2OModelBuilder(ModelBase):
         return model_params_defaults
 
     def _set_fitted_model_and_model_type(self, destination_key):
+
+        # GET the model result
         url_suffix = "Models/" + destination_key
         model = h2oConn.do_safe_get_json(url_suffix=url_suffix)["models"][0]
-        self._fitted_model = model["output"]
-        self._model_type = self._model_type.format(self._fitted_model["model_category"])
+
+        # get the model type
+        self._model_type = self._model_type.format(model["output"]["model_category"])
+
+        # create the type of model based on the model_category just obtained
+
+        # BINOMIAL model
+        if self._model_type == self.BINOMIAL:
+            self._fitted_model = H2OBinomialModel(model["output"])
+
+        # MULTINOMIAL model
+        elif self._model_type == self.MULTINOMIAL:
+            self._fitted_model = H2OMultinomialModel(model["output"])
+
+        # CLUSTERING model
+        elif self._model_type == self.CLUSTERING:
+            self._fitted_model = H2OClusteringModel(model["output"])
+
+        # REGRESSION model
+        elif self._model_type == self.REGRESSION:
+            self._fitted_model = H2ORegressionModel(model["output"])
+
+        else:
+            raise H2OUnknownModelError("Don't know what to do with model type: "
+                                       + self._model_type)

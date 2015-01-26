@@ -29,9 +29,9 @@ train['CAPSULE'] = train['CAPSULE'].asfactor()
 print train.describe()
 
 # Run GBM
-from h2o import H2O_GBM
+from h2o import H2OGBM
 
-my_gbm = H2O_GBM()
+my_gbm = H2OGBM()
 my_gbm.training_frame = train
 my_gbm.y = "CAPSULE"  # 0th index
 my_gbm.x = range(1, train.ncol(), 1)  # train on the remaining columns

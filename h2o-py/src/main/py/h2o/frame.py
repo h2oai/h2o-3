@@ -136,8 +136,8 @@ class H2OFrame(object):
 
             It looks exactly like an MxN matrix with an additional header "row". This
             header cannot be specified when loading data from a () (or from a [] or a
-            numpy.array, but it is possible to specify a header with a python dictionary,
-            see below for details).
+            numpy.ndarray, but it is possible to specify a header with a python
+            dictionary, see below for details).
 
             Headers:
 
@@ -209,12 +209,12 @@ class H2OFrame(object):
             which they were entered.
 
 
-        Loading: numpy.array
+        Loading: numpy.ndarray
         ====================
 
-        numpy.array objects follow the same rules as lists and tuples.
+        numpy.ndarray objects follow the same rules as lists and tuples.
 
-        If a numpy.array appears in a dict or collections.OrderedDict, then a ValueError
+        If a numpy.ndarray appears in a dict or collections.OrderedDict, then a ValueError
         will be raised.
 
     """
@@ -231,7 +231,7 @@ class H2OFrame(object):
         at the time of object creation.
 
         If `python_obj` is not None, then an attempt to upload the python object to H2O
-        will be made. A valid python object has type `list`, `dict`, or `numpy.array`.
+        will be made. A valid python object has type `list`, `dict`, or `numpy.ndarray`.
 
         For more information on the structure of the input for the various native python
         data types ("native" meaning non-H2O), please see the general documentation for
@@ -293,38 +293,14 @@ class H2OFrame(object):
         else:
             raise ValueError("Frame made from CSV file or an array of Vecs only")
 
-    def _handle_raw_fname(self, raw_fname, column_names=None):
-        """
-        Handle result of upload_file
-        :param raw_fname: A raw key
-        :return: Part of the H2OFrame constructor.
-        """
-        setup = h2o.parse_setup(raw_fname)
-        parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
-        if column_names and not parse["columnNames"]:
-            cols = column_names
-        else:
-            cols = parse['columnNames']
-        rows = parse['rows']
-        veckeys = parse['vecKeys']
-        self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
-        print "Uploaded", raw_fname, "into cluster with", \
-            rows, "rows and", len(cols), "cols"
-
     def _upload_python_object(self, python_obj):
         """
         Properly handle native python data types. For a discussion of the rules and
         permissible data types please refer to the main documentation for H2OFrame.
 
-        :param python_obj: A tuple, list, dict, collections.OrderedDict, or numpy.array
+        :param python_obj: A tuple, list, dict, collections.OrderedDict, or numpy.ndarray
         :return: None
         """
-
-        # create a temporary file that will be written to
-        tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
-        tmp_file = open(tmp_file_path, 'wb')
-        header = None
-        data_to_write = None
 
         # [] and () cases -- folded together since H2OFrame is mutable
         if isinstance(python_obj, (list, tuple)):
@@ -336,18 +312,25 @@ class H2OFrame(object):
 
             header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
-        # handle a numpy.array
+        # handle a numpy.ndarray
         elif isinstance(python_obj, numpy.ndarray):
 
             header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
 
         else:
             raise ValueError("`python_obj` must be a tuple, list, dict, "
-                             "collections.OrderedDict, or a numpy.array. "
+                             "collections.OrderedDict, or a numpy.ndarray. "
                              "Got: " + type(python_obj))
 
         if header is None or data_to_write is None:
             raise ValueError("No data to write")
+
+        self._write_python_data_to_file_and_upload(header, data_to_write)
+
+    def _write_python_data_to_file_and_upload(self, header, data_to_write):
+        # create a temporary file that will be written to
+        tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
+        tmp_file = open(tmp_file_path, 'wb')
 
         # create a new csv writer object thingy
         csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None,
@@ -369,11 +352,53 @@ class H2OFrame(object):
         # delete the tmp file
         os.remove(tmp_file_path)  # not at all secure!
 
+    def _handle_raw_fname(self, raw_fname, column_names=None):
+        """
+        Handle result of upload_file
+        :param raw_fname: A raw key
+        :return: Part of the H2OFrame constructor.
+        """
+
+        # perform the parse setup
+        setup = h2o.parse_setup(raw_fname)
+
+        # blocking parse, first line is always a header (since "we" wrote the data out)
+        parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
+
+        # a hack to get the column names correct since "parse" does not provide them
+        if column_names and not parse["columnNames"]:
+            cols = column_names
+        else:
+            cols = parse['columnNames']
+
+        # set the rows
+        rows = parse['rows']
+
+        # set the vector keys
+        veckeys = parse['vecKeys']
+
+        # create a new vec[] array
+        self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+
+        # print some information on the *uploaded* data
+        print "Uploaded", raw_fname, "into cluster with", \
+            rows, "rows and", len(cols), "cols"
+
     def _upload_raw_data(self, tmp_file_path, column_names):
+
+        # file upload info is the normalized path to a local file
         fui = {"file": os.path.abspath(tmp_file_path)}
+
+        # create a random name for the data
         dest_key = H2OFrame.py_tmp_key()
+
+        # params to the URL are the destination key that was just made in the prev step.
         p = {'destination_key': dest_key}
+
+        # do the POST -- blocking, and "fast" (does not real data upload)
         h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+
+        # actually parse the data and setup self._vecs
         self._handle_raw_fname(dest_key, column_names=column_names)
 
     def vecs(self):

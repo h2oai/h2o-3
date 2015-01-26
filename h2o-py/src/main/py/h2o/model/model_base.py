@@ -5,6 +5,10 @@ This module implements the abstract model class. All model things inherit from t
 import abc
 
 
+class H2OModelInstantiationException(Exception):
+    pass
+
+
 class ModelBase(object):
     """Abstract base class for H2O model objects.
 
@@ -13,15 +17,11 @@ class ModelBase(object):
     """
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, parameters=None, algo=None):
-        """
-        :param parameters: A dictionary of parameters the model was constructed with.
-        :return: A new model object.
-        """
-        self._model_type = "H2O{}Model"  # (e.g. "Binomial); set after model is fitted
-        self._algo = algo
-        self._parameters = parameters
-        self._fitted_model = None  # set after the model is fitted
+    BINOMIAL    = "H2OBinomialModel"
+    MULTINOMIAL = "H2OMultinomialModel"
+    CLUSTERING  = "H2OClusteringModel"
+    REGRESSION  = "H2ORegressionModel"
+
 
     @abc.abstractmethod
     def predict(self, test_data=None):
@@ -54,17 +54,9 @@ class ModelBase(object):
         Print a brief summary of the model.
         :return: None
         """
-        print self._model_type + ": " + self._algo
+        print self.model_type + ": " + self.algo
         print
         print
         print "Model Details:"
         print
-
-
-        return None
-
-    def get_type(self):
-        return self._model_type
-
-    def get_parameters(self):
-        return self._parameters
+        print
