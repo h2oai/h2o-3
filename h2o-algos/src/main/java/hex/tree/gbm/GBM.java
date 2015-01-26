@@ -9,6 +9,7 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
@@ -48,16 +49,40 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
-    super.init(expensive);
+    if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
+      if (null != _response && _response.isInt()) {
+        long[] domain = new Vec.CollectDomain().doAll(_response).domain();
+        if (domain.length == 2) { //bernoulli behavior is desired
+          _parms._convert_to_enum = true;
+        }
+      }
+      super.init(expensive);
+    }
+    else if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli || _parms._loss == GBMModel.GBMParameters.Family.multinomial) {
+      _parms._convert_to_enum = true;
+      super.init(true);
+      if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli) {
+        if (_nclass != 2) {
+          error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+        }
+        // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+        double mean = _response.mean();
+        _initialPrediction = Math.log(mean / (1.0f - mean));
+      }
+    }
+    else if(_parms._loss == GBMModel.GBMParameters.Family.gaussian){
+      _parms._convert_to_enum = false;
+      super.init(expensive);
+      if( _nclass != 1 ) {
+        error("_loss","Gaussian requires the response to be numeric");
+      }
+    }
+    else {
+      error("_loss","Loss must be specified");
+    }
+
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
-    if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      if( _nclass != 2 )
-        error("_loss","Bernoulli requires the response to be a 2-class categorical");
-      // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-      double mean = _response.mean();
-      _initialPrediction = Math.log(mean/(1.0f-mean));
-    }
   }
 
   // ----------------------
@@ -435,7 +460,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // ---
   static class GBMLeafNode extends LeafNode {
     GBMLeafNode( DTree tree, int pid ) { super(tree,pid); }
-    GBMLeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
+    GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
     @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
