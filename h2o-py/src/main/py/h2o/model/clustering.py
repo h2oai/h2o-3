@@ -23,7 +23,7 @@ class H2OClusteringModel(ModelBase):
         """
         print "Model Summary:"
         print
-        print self.raw_model_output["centers"]
+        pp(self.raw_model_output["centers"])
         print
         print "Cluster Sizes: " + str(self.raw_model_output["size"])
         print
