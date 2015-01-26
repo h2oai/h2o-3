@@ -76,8 +76,8 @@ public class KVSpeedTest extends TestUtil {
   @Test @Ignore
   public void testMillionInsertKeys() {
     final int PAR=100;
-    final int NKEY=100000;      // PAR*NKEY = 10M keys
-    final int WARMKEY=100000;
+    final int NKEY=1000000;     // PAR*NKEY = 100M keys
+    final int WARMKEY=10000;    // PAR*WARMKEY = 1M keys
     H2O.H2OCountedCompleter foo = H2O.submitTask(new H2O.H2OCountedCompleter() {
         final Key  [][] keys = new Key  [PAR][NKEY];
         final Value[][] vals = new Value[PAR][NKEY];
