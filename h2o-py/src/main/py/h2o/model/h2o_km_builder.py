@@ -45,3 +45,4 @@ class H2OKMeansBuilder(H2OModelBuilder):
         self.standardize = standardize
         self.init = "Random" if isinstance(init, tuple) else init
         self.seed = seed
+        self.validation_frame = None
