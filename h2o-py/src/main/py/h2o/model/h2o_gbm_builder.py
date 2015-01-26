@@ -12,7 +12,6 @@ class H2OGBMBuilder(H2OModelBuilder):
     Example Usage:
 
         from h2o.model.gbm_builder import H2OGBM    # import this builder
-
         my_gbm = H2OGBM()                           # create a new gbm object
         my_gbm.x = [0,1,2,3]                        # fill in parameters:
         my_gbm.y = 4
@@ -21,7 +20,7 @@ class H2OGBMBuilder(H2OModelBuilder):
         my_gbm.max_depth = 5
         my_gbm.learning_rate = 0.01
 
-        my_gbm.fit()                                # perform the model fit
+        my_gbm.fit()                                  # perform the model fit
     """
 
     def __init__(self, x=None, y=None, training_frame=None, key=None,
