@@ -11,10 +11,9 @@ class H2OGBMBuilder(H2OModelBuilder):
 
     Example Usage:
 
-        from h2o.model.h2o_gbm_builder import H2OGBM  # import this builder
-
-        my_gbm = H2OGBM()                             # create a new gbm object
-        my_gbm.x = [0,1,2,3]                          # fill in parameters:
+        from h2o.model.gbm_builder import H2OGBM    # import this builder
+        my_gbm = H2OGBM()                           # create a new gbm object
+        my_gbm.x = [0,1,2,3]                        # fill in parameters:
         my_gbm.y = 4
         my_gbm.training_frame = <training_frame>
         my_gbm.ntrees = 100
