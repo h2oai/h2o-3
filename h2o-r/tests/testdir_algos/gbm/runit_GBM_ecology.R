@@ -49,7 +49,8 @@ test.GBM.ecology <- function(conn) {
                    ntrees = n.trees,
                 max_depth = 5,
                  min_rows = 10,
-               learn_rate = 0.1)
+               learn_rate = 0.1,
+               loss="gaussian")
 
   print(ecology.h2o)
   
