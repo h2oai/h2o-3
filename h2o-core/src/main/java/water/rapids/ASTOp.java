@@ -1204,7 +1204,7 @@ abstract class ASTReducerOp extends ASTOp {
 
   private static class RedOp extends MRTask<RedOp> {
     final ASTReducerOp _bin;
-    RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
+    RedOp( ASTReducerOp bin ) { _bin = bin; _d = ASTReducerOp._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
@@ -1220,7 +1220,7 @@ abstract class ASTReducerOp extends ASTOp {
 
   private static class NaRmRedOp extends MRTask<NaRmRedOp> {
     final ASTReducerOp _bin;
-    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
+    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = ASTReducerOp._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
