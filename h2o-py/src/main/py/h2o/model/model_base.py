@@ -54,9 +54,10 @@ class ModelBase(object):
         Print a brief summary of the model.
         :return: None
         """
-        print self.model_type + ": " + self.algo
         print
-        print
-        print "Model Details:"
-        print
-        print
+        # print self.model_type + ": " + self.algo
+        # print
+        # print
+        # print "Model Details:"
+        # print
+        # print
