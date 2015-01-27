@@ -1,9 +1,6 @@
 package hex.tree;
 
-import hex.ConfusionMatrix;
-import hex.ModelMetrics;
-import hex.SupervisedModelBuilder;
-import hex.VarImp;
+import hex.*;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCountedCompleter;
@@ -384,9 +381,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       Log.info("============================================================== ");
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
-      ConfusionMatrix cm = mm._cm;
-      Log.info(cm.toASCII());
-      Log.info( (_nclass > 1 ? "Total of "+cm.errCount()+" errors" : "Reported")+ " on "+cm.totalRows()+" rows");
+      if (mm instanceof ModelMetricsBinomial) { // TODO: multinomial
+        ConfusionMatrix cm = ((ModelMetricsBinomial)mm)._cm;
+        Log.info(cm.toASCII());
+        Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
+      }
       _timeLastScoreEnd = System.currentTimeMillis();
     }
 

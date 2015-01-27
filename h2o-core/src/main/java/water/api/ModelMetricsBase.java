@@ -5,7 +5,6 @@ import hex.ModelMetrics;
 import water.api.KeyV1.FrameKeyV1;
 import water.api.KeyV1.ModelKeyV1;
 import water.fvec.Frame;
-import water.util.PojoUtils;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.
@@ -36,31 +35,8 @@ public abstract class ModelMetricsBase<I extends ModelMetrics, S extends ModelMe
   @API(help="The time in mS since the epoch for the start of this scoring run.", direction=API.Direction.OUTPUT)
   public long scoring_time;
 
-  @API(help="The AUC object for this scoring run.", direction=API.Direction.OUTPUT)
-  public AUCBase auc;
-
-  @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
-  public ConfusionMatrixBase cm;
-
   @API(help="Predictions Frame.", direction=API.Direction.OUTPUT)
   public FrameV2 predictions;
-
-  // Non-version-specific filling into the impl
-  @Override public I createImpl() {
-//    ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl());
-//     ModelMetrics m = new ModelMetrics((Model)this.model.createImpl(), this.frame.createImpl().get());
-    ModelMetrics m = new ModelMetrics(this.model.createImpl().get(), this.frame.createImpl().get());
-    return (I) m;
-  }
-
-  public I fillImpl(ModelMetrics m) {
-    PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[] {"auc", "cm"});
-    //m._aucdata = (AUCData)this.auc.createImpl();
-    /*
-     * m._cm = this.cm.createImpl();
-     */
-    return (I) m;
-  }
 
   @Override public S fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
@@ -77,14 +53,6 @@ public abstract class ModelMetricsBase<I extends ModelMetrics, S extends ModelMe
       this.frame = new FrameKeyV1(f._key);
       this.frame_checksum = f.checksum();
     }
-
-    // super.fillFromImpl(modelMetrics);
-
-    if (null != modelMetrics._aucdata)
-      this.auc = (AUCBase)Schema.schema(this.getSchemaVersion(), modelMetrics._aucdata).fillFromImpl(modelMetrics._aucdata);
-
-    if (null != modelMetrics._cm)
-      this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
 
     return (S) this;
   }

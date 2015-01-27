@@ -1,8 +1,6 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import static hex.ConfusionMatrix.buildCM;
-import static hex.Model.adaptTestForTrain;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -11,14 +9,16 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Env;
 import water.rapids.Exec;
 import water.util.Log;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Random;
 
+import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
@@ -219,7 +219,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       Frame pred = null, pred2 = null;
                                       try {
                                         pred = model2.score(valid);
-                                        hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
+                                        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model2, valid);
                                         double error = 0;
                                         // binary
                                         if (model2._output.nclasses() == 2) {

@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.FrameTask.DataInfo;
+import hex.ModelMetricsBinomial;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.ColGradientTask;
 import org.junit.BeforeClass;
@@ -477,10 +478,10 @@ public class GLMTest  extends TestUtil {
       assertEquals(396.3, val.aic(),1e-1);
       score = model.score(fr);
 
-      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
+      AUCData adata = ((ModelMetricsBinomial)mm)._aucdata;
+      assertEquals(val.auc(), adata.AUC(), 1e-2);
 
-      AUCData adata = mm._aucdata;
-      assertEquals(val.auc(),adata.AUC(),1e-2);
       GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
       assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
       assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
@@ -516,10 +517,10 @@ public class GLMTest  extends TestUtil {
       assertEquals(1,val.auc,1e-2);
       score = model.score(fr);
 
-      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
-      AUCData adata = mm._aucdata;
-      assertEquals(val.auc(),adata.AUC(),1e-2);
+      AUCData adata = ((ModelMetricsBinomial)mm)._aucdata;
+      assertEquals(val.auc(), adata.AUC(), 1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();
