@@ -29,6 +29,8 @@ my_km.fit()
 my_km.show()
 my_km.summary()
 
+# my_pred = my_km.predict(train)
+# my_pred.show()
 
 # Alternative Look:
 from h2o.model.h2o_km_builder import H2OKMeansBuilder
