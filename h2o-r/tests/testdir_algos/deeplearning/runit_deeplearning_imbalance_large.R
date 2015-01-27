@@ -5,9 +5,9 @@ check.deeplearning_imbalanced <- function(conn) {
   Log.info("Test checks if Deep Learning works fine with an imbalanced dataset")
   
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
-  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",hidden=c(200,200,200),epochs=5,training_frame=covtype,balance_classes=F, do_classification = TRUE)
+  hh_imbalanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",loss="CrossEntropy",hidden=c(200,200,200),epochs=5,training_frame=covtype,balance_classes=F, do_classification = TRUE)
   print(hh_imbalanced)
-  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",hidden=c(200,200,200),epochs=5,training_frame=covtype,balance_classes=T, do_classification = TRUE)
+  hh_balanced<-h2o.deeplearning(x=c(1:54),y=55,l1=1e-5,activation="Rectifier",loss="CrossEntropy",hidden=c(200,200,200),epochs=5,training_frame=covtype,balance_classes=T, do_classification = TRUE)
   print(hh_balanced)
 
   #compare error for class 6 (difficult minority)
