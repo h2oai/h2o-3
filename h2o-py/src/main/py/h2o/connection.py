@@ -6,6 +6,7 @@ H2OConnection object will be active at any one time.
 import abc
 import requests
 import time
+from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None                   # the single active connection to H2O cloud
 __H2O_REST_API_VERSION__ = "LATEST"  # const for the version of the rest api
@@ -388,17 +389,25 @@ class H2OConnectionBase(object):
 
     @staticmethod
     def _process_tables(x=None):
+        elts = ["tableHeader", "rowHeaders", "colHeaders",
+                "colTypes", "colFormats", "cellValues"]
+
         if x:
-            elts = ["tableHeader", "rowHeaders", "colHeaders",
-                    "colTypes",    "colFormats", "cellValues"]
             if isinstance(x, dict):
                 have_table = all([True if i in elts else False for i in x.keys()])
-                if len(x) == len(elts) and have_table:
+                have_table &= len(x) == len(elts)
+                if have_table:
                     tbl = x["cellValues"]
+                    tbl = H2OTwoDimTable(x["rowHeaders"], x["colHeaders"], x["colTypes"],
+                                         x["tableHeader"], x["cellValues"],
+                                         x["colFormats"])
                     x = tbl
-            else:
-                for k in x:
-                    x[k] = H2OConnectionBase._process_tables(x[k])
+                else:
+                    for k in x:
+                        x[k] = H2OConnectionBase._process_tables(x[k])
+            if isinstance(x, list):
+                for it in range(len(x)):
+                    x[it] = H2OConnectionBase._process_tables(x[it])
         return x
 
     @staticmethod
