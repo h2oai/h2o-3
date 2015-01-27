@@ -23,7 +23,7 @@ import static java.lang.Double.isNaN;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
     public int _n_folds;
@@ -667,15 +667,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  public static class DeepLearningOutput extends SupervisedModel.SupervisedOutput {
-    public DeepLearningOutput() { super(); }
-    public DeepLearningOutput( DeepLearning b ) { super(b); }
+  public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
+    public DeepLearningModelOutput() { super(); }
+    public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
-    DeepLearningScoring errors;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1016,7 +1015,51 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
-    public TwoDimTable calcSummaryTable() {
+    public TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
+      TwoDimTable table = new TwoDimTable(
+              "Scoring History",
+              new String[errors.length],
+              new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
+                      (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
+                      (get_params()._adaptive_rate ? "" : "Momentum"),
+                      "Weight (Mean,RMS)",
+                      "Bias (Mean,RMS)"
+              },
+              new String[]{"integer", "integer", "string", "double", "double", "double",
+                      "string", "string", "string", "string"},
+              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"}
+      );
+
+      final String format = "%7g";
+      for (int i = 0; i < neurons.length; ++i) {
+        table.set(i, 0, i + 1);
+        table.set(i, 1, neurons[i].units);
+        table.set(i, 2, neurons[i].getClass().getSimpleName());
+
+        if (i == 0) {
+          table.set(i, 3, neurons[i].params._input_dropout_ratio);
+          continue;
+        } else if (i < neurons.length - 1) {
+          if (neurons[i].params._hidden_dropout_ratios == null) {
+            table.set(i, 3, 0);
+          } else {
+            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]);
+          }
+        }
+        table.set(i, 4, neurons[i].params._l1);
+        table.set(i, 5, neurons[i].params._l2);
+        table.set(i, 6, (get_params()._adaptive_rate ? (" (" + String.format(format, mean_rate[i]) + ", " + String.format(format, rms_rate[i]) + ")")
+                : (String.format("%10g", neurons[i].rate(get_processed_total())))));
+        table.set(i, 7, get_params()._adaptive_rate ? "" : String.format("%5f", neurons[i].momentum(get_processed_total())));
+        table.set(i, 8, " (" + String.format(format, mean_weight[i])
+                + ", " + String.format(format, rms_weight[i]) + ")");
+        table.set(i, 9, " (" + String.format(format, mean_bias[i])
+                + ", " + String.format(format, rms_bias[i]) + ")");
+      }
+      summaryTable = table;
+      return summaryTable;
+    }
+    public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers",
@@ -1327,7 +1370,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    *  @param cp Checkpoint to restart from
    * @param store_best_model Store only the best model instead of the latest one  */
   public DeepLearningModel(final Key destKey, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
-    super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningOutput)cp._output.clone());
+    super(destKey, (DeepLearningParameters)cp._parms.clone(), (DeepLearningModelOutput)cp._output.clone());
     if (store_best_model) {
       model_info = cp.model_info.deep_clone(); //don't want to interfere with model being built, just make a deep copy and store that
       model_info.data_info = dataInfo.deep_clone(); //replace previous data_info with updated version that's passed in (contains enum for classification)
@@ -1349,7 +1392,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
-    _output.errors = last_scored();
+    _output.scoringHistory = createScoringHistoryTable(errors);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1359,7 +1402,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
 
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningOutput output, Frame train, Frame valid) {
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
     run_time = 0;
     start_time = System.currentTimeMillis();
@@ -1379,7 +1422,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
-      _output.errors = last_scored();
+      _output.scoringHistory = createScoringHistoryTable(errors);
     }
     assert _key.equals(destKey);
   }
@@ -1504,9 +1547,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
-        _output.errors = last_scored();
+        _output.scoringHistory = createScoringHistoryTable(errors);
         if (_output.modelSummary == null)
-          _output.modelSummary = model_info.calcSummaryTable();
+          _output.modelSummary = model_info.createSummaryTable();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
