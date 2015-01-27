@@ -645,9 +645,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public static class DeepLearningOutput extends SupervisedModel.SupervisedOutput {
     public DeepLearningOutput() { super(); }
     public DeepLearningOutput( DeepLearning b ) { super(b); }
-    Errors errors;
     boolean autoencoder;
     TwoDimTable modelSummary;
+    TwoDimTable scoringHistory;
+    ModelMetrics trainMetrics;
+    ModelMetrics validMetrics;
+    DeepLearningScoring errors;
+
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
@@ -672,8 +676,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public long validation_rows;
 
-  private Errors[] errors;
-  public Errors[] scoring_history() { return errors; }
+  private DeepLearningScoring[] errors;
+  public DeepLearningScoring[] scoring_history() { return errors; }
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
   private float _bestError = Float.POSITIVE_INFINITY;
@@ -681,7 +685,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public Key actual_best_model_key;
 
   // return the most up-to-date model metrics
-  Errors last_scored() { return errors == null ? null : errors[errors.length-1]; }
+  DeepLearningScoring last_scored() { return errors == null ? null : errors[errors.length-1]; }
 
 //  @Override
   public final DeepLearningParameters get_params() { return _parms; }
@@ -699,7 +703,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return (error() < o.error() ? -1 : error() > o.error() ? 1 : 0);
   }
 
-  public static class Errors extends Iced {
+  public static class DeepLearningScoring extends Iced {
 //    static final int API_WEAVER = 1;
 //    static public DocGen.FieldDoc[] DOC_FIELDS;
 
@@ -733,11 +737,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     public long scoring_time;
 
-    Errors deep_clone() {
+    DeepLearningScoring deep_clone() {
       AutoBuffer ab = new AutoBuffer();
       this.write(ab);
       ab.flipForReading();
-      return (Errors) new Errors().read(ab);
+      return (DeepLearningScoring) new DeepLearningScoring().read(ab);
     }
 
     @Override public String toString() {
@@ -778,7 +782,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   /** for grid search error reporting */
 //  @Override
   public ConfusionMatrix cm() {
-    final Errors lasterror = last_scored();
+    final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
     ConfusionMatrix cm = lasterror.validation || lasterror.num_folds > 0 ?
             lasterror.valid_confusion_matrix :
@@ -1346,8 +1350,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     actual_best_model_key = Key.makeUserHidden(Key.make());
     if (parms._n_folds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
-      errors = new Errors[1];
-      errors[0] = new Errors();
+      errors = new DeepLearningScoring[1];
+      errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
       _output.errors = last_scored();
@@ -1409,7 +1413,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
         if (get_params()._diagnostics) model_info().computeStats();
-        Errors err = new Errors();
+        DeepLearningScoring err = new DeepLearningScoring();
         err.training_time_ms = run_time;
         err.epoch_counter = epoch_counter;
         err.training_samples = model_info().get_processed_total();
@@ -1441,6 +1445,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err.train_err = mm1._cm.err();
           err.train_hitratio = mm1._hr;
           err.train_mse = mm1._mse;
+          _output.trainMetrics = mm1;
 
           if (ftest != null) {
             Frame validPred = score(ftest);
@@ -1452,6 +1457,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               err.valid_err = mm2._cm.err();
               err.valid_hitratio = mm2._hr;
               err.valid_mse = mm2._mse;
+              _output.validMetrics = mm2;
             }
           }
 
@@ -1466,9 +1472,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         err.scoring_time = System.currentTimeMillis() - now;
         // enlarge the error array by one, push latest score back
         if (errors == null) {
-          errors = new Errors[]{err};
+          errors = new DeepLearningScoring[]{err};
         } else {
-          Errors[] err2 = new Errors[errors.length + 1];
+          DeepLearningScoring[] err2 = new DeepLearningScoring[errors.length + 1];
           System.arraycopy(errors, 0, err2, 0, errors.length);
           err2[err2.length - 1] = err;
           errors = err2;

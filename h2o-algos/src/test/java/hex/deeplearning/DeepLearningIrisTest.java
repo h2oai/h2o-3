@@ -15,7 +15,7 @@ import water.util.RandomUtils;
 import java.util.Random;
 
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import static hex.deeplearning.DeepLearningModel.Errors;
+import static hex.deeplearning.DeepLearningModel.DeepLearningScoring;
 import static water.util.ModelUtils.getPrediction;
 
 public class DeepLearningIrisTest extends TestUtil {
@@ -312,7 +312,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                 // get the actual best error on training data
                                 float best_err = Float.MAX_VALUE;
-                                for (Errors err : mymodel.scoring_history()) {
+                                for (DeepLearningScoring err : mymodel.scoring_history()) {
                                   best_err = Math.min(best_err, (float) err.train_err); //multi-class classification
                                 }
                                 Log.info("Actual best error : " + best_err * 100 + "%.");
