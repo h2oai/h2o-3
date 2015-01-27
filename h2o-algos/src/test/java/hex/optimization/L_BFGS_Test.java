@@ -10,6 +10,7 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
 import hex.optimization.L_BFGS.L_BFGS_Params;
+import hex.optimization.L_BFGS.ProgressMonitor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -63,7 +64,8 @@ public class L_BFGS_Test  extends TestUtil {
       parms._stepDec = .9;
       parms._nBetas = 3;
       parms._minStep = 1e-18;
-      L_BFGS.Result r = L_BFGS.solve(gs, parms, L_BFGS.startCoefs(2,987654321));
+
+      L_BFGS.Result r = L_BFGS.solve(gs, parms, L_BFGS.startCoefs(2, 987654321));
       if (Math.abs(r.ginfo._objVal) > 1e-4)
         ++fails;
     }

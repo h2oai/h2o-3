@@ -13,9 +13,7 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.*;
 import hex.glm.LSMSolver.ADMMSolver;
 import hex.optimization.L_BFGS;
-import hex.optimization.L_BFGS.GradientInfo;
-import hex.optimization.L_BFGS.GradientSolver;
-import hex.optimization.L_BFGS.L_BFGS_Params;
+import hex.optimization.L_BFGS.*;
 import hex.schemas.GLMV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
@@ -25,6 +23,7 @@ import water.H2O.H2OCountedCompleter;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils.ParallelTasks;
+import water.util.MathUtils;
 import water.util.ModelUtils;
 
 import java.util.ArrayList;
@@ -67,6 +66,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     return new GLMV2();
   }
 
+  private static final int WORK_TOTAL = 100000000;
   private boolean _clean_enums;
   @Override
   public Job<GLMModel> trainModel() {
@@ -100,7 +100,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         return false;
       }
     };
-    start(cmp, 100);
+    start(cmp, WORK_TOTAL);
     H2O.submitTask(new GLMDriver(cmp, dinfo));
     return this;
   }
@@ -381,6 +381,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
 
+    private static final boolean isSparse(water.fvec.Frame f) {
+      int scount = 0;
+      for(water.fvec.Vec v:f.vecs())
+        if((v.nzCnt() << 3) > v.length())
+          scount++;
+      return (f.numCols() >> 1) < scount;
+    }
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
@@ -402,19 +409,33 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(_taskInfo._params._alpha[0] > 0 || _activeCols != null)
           throw H2O.unimpl();
         Log.info("current lambda = " + _currentLambda);
-        GLMGradientSolver solver = new GLMGradientSolver(_taskInfo._params, _activeData, _currentLambda,_taskInfo._ymu, _taskInfo._nobs);
+        GradientSolver solver = (_activeData._adaptedFrame.numCols() >= 100 || isSparse(_activeData._adaptedFrame))
+          ?new GLMColBasedGradientSolver(_taskInfo._params,_activeData,_currentLambda,_taskInfo._ymu,_taskInfo._nobs)
+          :new GLMGradientSolver(_taskInfo._params, _activeData, _currentLambda,_taskInfo._ymu, _taskInfo._nobs);
         if(beta == null) {
           beta = MemoryManager.malloc8d(_activeData.fullN() + 1);
           beta[beta.length-1] = _taskInfo._params.link(_taskInfo._ymu);
         }
-        L_BFGS.Result r = L_BFGS.solve(solver, new L_BFGS_Params(), beta);
-        GLMGradientInfo ginfo = (GLMGradientInfo)r.ginfo;
+        long t1 = System.currentTimeMillis();
+        L_BFGS_Params lParms = new L_BFGS_Params();
+        final int workInc = WORK_TOTAL/_taskInfo._params._lambda.length/lParms._maxIter;
+        L_BFGS.Result r = L_BFGS.solve(solver,lParms, beta, new History(20,beta.length), new ProgressMonitor() {
+          @Override
+          public boolean progress(GradientInfo ginfo) {
+            update(workInc, _jobKey);
+            // todo update the model here wo we can show intermediate results
+            return Job.isRunning(_jobKey);
+          }
+        });
+        long t2 = System.currentTimeMillis();
+        Log.info("LBFGS done in " + r.iter + " iterations and " + ((t2-t1)/1000) + " seconds, objval = " + r.ginfo._objVal + ", gradient norm = " + MathUtils.l2norm2(r.ginfo._gradient));
+        GradientInfo ginfo = r.ginfo;
         double [] newBeta = r.coefs;
         // update the state
         _taskInfo._beta = newBeta;
         _taskInfo._gradient = ginfo._gradient;
         _taskInfo._iter = (_iter += r.iter);
-        setSubmodel(newBeta,ginfo._val,this);
+        setSubmodel(newBeta,null,this);
         tryComplete();
       } else // fork off ADMM iteration
         new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, false, false, beta, _taskInfo._ymu, 1.0 / _taskInfo._nobs, _taskInfo._thresholds, new Iteration(this)).asyncExec(_activeData._adaptedFrame);
