@@ -244,7 +244,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         try {
           s = clz.newInstance();
         } catch (Exception e) {
-          Log.err("Failed to instantiate schema class: " + clz);
+          Log.err("Failed to instantiate schema class: " + clz + " because: " + e.getMessage());
         }
         if (null != s) {
           Log.debug("Instantiated: " + clz.getSimpleName());

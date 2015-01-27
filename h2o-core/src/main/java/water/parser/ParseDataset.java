@@ -179,7 +179,9 @@ public final class ParseDataset extends Job<Frame> {
   // Top-level parser driver
   private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._ncols > 0;
-    if(setup._columnNames != null && setup._columnNames.length == 1 && setup._columnNames[0].isEmpty())
+    if( setup._columnNames != null && 
+        ( (setup._columnNames.length == 0) ||
+          (setup._columnNames.length == 1 && setup._columnNames[0].isEmpty())) )
       setup._columnNames = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if( fkeys.length == 0) { job.cancel();  return;  }
 

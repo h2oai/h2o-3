@@ -52,7 +52,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
    *  Validate the very large number of arguments in the DL Parameter directly. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    _parms.validate(this);
+    _parms.validate(this, expensive);
   }
 
   public class DeepLearningDriver extends H2O.H2OCountedCompleter<DeepLearningDriver> {

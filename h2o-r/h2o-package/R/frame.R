@@ -191,8 +191,7 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
 h2o.table <- function(x, y = NULL) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if (!is.null(y) && !is(y, "H2OFrame")) stop("`y` must be an H2OFrame object")
-  ast <- .h2o.nary_op("table", x, y)
-  .force.eval(conn = x@conn, ast = ast@ast)
+  .h2o.nary_frame_op("table", x, y)
 }
 
 
@@ -232,12 +231,12 @@ function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab
   if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
   if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
     stop("`breaks` must be a numeric vector")
-  .h2o.nary_op("cut", x, breaks, labels, include.lowest, right, dig.lab)
+  .h2o.nary_row_op("cut", x, breaks, labels, include.lowest, right, dig.lab)
 }
 
 # `match` or %in% for H2OFrame
 setMethod("match", "H2OFrame", function(x, table, nomatch = 0, incomparables = NULL) {
-  .h2o.nary_op("match", x, table, nomatch, incomparables)
+  .h2o.nary_row_op("match", x, table, nomatch, incomparables)
 })
 
 # %in% method
@@ -280,8 +279,7 @@ h2o.runif <- function(x, seed = -1) {
   if (!is(x, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) stop("`seed` must be an integer >= 0")
   if (seed == -1) seed <- runif(1,1,.Machine$integer.max*100)
-  ast <- .h2o.nary_op("h2o.runif", x, seed)
-  .newH2OObject("H2OFrame", ast = ast@ast, conn = x@conn, key = .key.make(x@conn, "runif"), finalizers = x@finalizers, linkToGC = TRUE)
+  .h2o.nary_row_op("h2o.runif", x, seed)
 }
 
 
@@ -307,8 +305,7 @@ h2o.runif <- function(x, seed = -1) {
 #' h2o.anyFactor(iris.hex)
 h2o.anyFactor <- function(x) {
   if(!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
-  ast <- .h2o.unary_op("any.factor", x)
-  .force.eval(conn = x@conn, ast = ast@ast)
+  .h2o.unary_scalar_op("any.factor", x)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -349,19 +346,27 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   finalizers <- x@finalizers
 
-  if (missingI)
+  if (missingI) {
+    nrows <- x@mutable$nrows
     rows <- "\"null\""
-  else if (is(i, "H2OFrame")) {
-    finalizers <- c(finalizers, i@finalizers)
-    rows <- .get(i)
-  } else if (is(i, "ASTNode"))
-    rows <- i
-  else
-    rows <- .eval(substitute(i), parent.frame())
+  } else {
+    nrows <- NA_integer_
+    if (is(i, "H2OFrame")) {
+      finalizers <- c(finalizers, i@finalizers)
+      rows <- .get(i)
+    } else if (is(i, "ASTNode"))
+      rows <- i
+    else
+      rows <- .eval(substitute(i), parent.frame())
+  }
 
-  if (missingJ)
+  if (missingJ) {
+    ncols <- x@mutable$ncols
+    col_names <- x@mutable$col_names
     cols <- "\"null\""
-  else {
+  } else {
+    ncols <- NA_integer_
+    col_names <- NA_character_
     if (is.logical(j))
       j <- which(rep(j, length.out = ncol(x)))
     else if (is.character(j)) {
@@ -374,7 +379,9 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
-  .newH2OObject("H2OFrame", ast = ast, conn = x@conn, key = .key.make(x@conn, "subset"), finalizers = finalizers, linkToGC = TRUE)
+  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 })
 
 #' @rdname H2OFrame-Extract
@@ -461,9 +468,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  o <- new("H2OFrame", ast = ast, conn = x@conn, key = x@key, finalizers = finalizers)
-  .force.eval(conn = o@conn, ast = o@ast, new.assign = FALSE)
-  o
+  .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
 })
 
 #' @rdname H2OFrame-Extract
@@ -491,9 +496,8 @@ setMethod("$<-", "H2OFrame", function(x, name, value) {
     else
       stop("`value` can only be an H2OFrame object, numeric or NULL")
 
-    res <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
-    res <- new("H2OFrame", ast = res, conn = x@conn, key = x@key, finalizers = finalizers)
-    .force.eval(conn = res@conn, ast = res@ast, new.assign = FALSE)
+    ast <- new("ASTNode", root = new("ASTApply", op = "="), children = list(lhs, rhs))
+    res <- .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
     colnames(res)[idx] <- name
   }
   res
@@ -509,8 +513,8 @@ setMethod("[[<-", "H2OFrame", function(x, i, value) {
 setMethod("colnames<-", signature(x="H2OFrame", value="H2OFrame"),
   function(x, value) {
     if(ncol(value) != ncol(x)) stop("Mismatched number of columns")
-    colnames(x) <- value@col_names
-    x@col_names <- NA_character_
+    colnames(x) <- value@mutable$col_names
+    x@mutable$col_names <- NA_character_
     x
 })
 
@@ -521,8 +525,8 @@ setMethod("colnames<-", signature(x="H2OFrame", value="character"),
     else if(any(duplicated(value))) stop("Column names must be unique")
     else if(length(value) != (num = ncol(x))) stop("Must specify a vector of exactly ", num, " column names")
     idxs <- 0L:(ncol(x) - 1L)
-    res <- .h2o.nary_op("colnames=", x, idxs, value, .key = x@key)
-    .force.eval(conn = res@conn, ast = res@ast, key = res@key, finalizers = c(res@finalizers, x@finalizers), new.assign = FALSE)
+    ast <- .h2o.nary_op_ast("colnames=", x, idxs, value)
+    .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = x@finalizers)
 })
 
 #' @rdname h2o.colnames
@@ -625,23 +629,15 @@ NULL
 #'
 #' @rdname h2o.nrow
 setMethod("nrow", "H2OFrame", function(x) {
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
-  if (is.na(x@nrows))
-    x <- h2o.getFrame(x@key, x@conn)
-  x@nrows
+  .byref.update.frame(x)
+  x@mutable$nrows
 })
 
 #'
 #' @rdname h2o.nrow
 setMethod("ncol", "H2OFrame", function(x) {
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
-  if (is.na(x@ncols))
-    x <- h2o.getFrame(x@key, x@conn)
-  x@ncols
+  .byref.update.frame(x)
+  x@mutable$ncols
 })
 
 #'
@@ -663,23 +659,15 @@ NULL
 
 #' @rdname h2o.colnames
 setMethod("colnames", "H2OFrame", function(x) {
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
-  if (is.na(x@col_names[1L]))
-    x <- h2o.getFrame(x@key, x@conn)
-  x@col_names
+  .byref.update.frame(x)
+  x@mutable$col_names
 })
 
 
 #' @rdname h2o.colnames
 setMethod("names", "H2OFrame", function(x) {
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  if (!is.null(x@ast) && !.is.eval(x))
-    x <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
-  if (is.na(x@nrows))
-    x <- h2o.getFrame(x@key, x@conn)
-  x@col_names
+  .byref.update.frame(x)
+  x@mutable$col_names
 })
 
 #'
@@ -698,7 +686,14 @@ setMethod("names", "H2OFrame", function(x) {
 NULL
 
 #' @rdname h2o.length
-setMethod("length", "H2OFrame", function(x) if (ncol(x) == 1L) nrow(x) else ncol(x))
+setMethod("length", "H2OFrame", function(x) {
+  .byref.update.frame(x)
+  nc <- ncol(x)
+  if (!is.na(nc) && nc == 1L)
+    nrow(x)
+  else
+    nc
+})
 
 #'
 #' Returns the Dimensions of a Parsed H2O Data Object.
@@ -738,12 +733,8 @@ NULL
 #' @rdname h2o.head
 setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  ret <- NULL
-  if (!is.null(x@ast) && !.is.eval(x))
-    ret <- .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
-  if (!is.null(ret) && is.numeric(ret))
-    return(ret)
+  .byref.update.frame(x)
+
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   if(n == 0L)
@@ -760,9 +751,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 #'  @rdname h2o.head
 setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   stopifnot(length(n) == 1L)
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-  if (!is.null(x@ast) && !.is.eval(x))
-    .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
+  .byref.update.frame(x)
 
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
@@ -799,8 +788,7 @@ NULL
 #'
 #' Returns Boolean.
 setMethod("is.factor", "H2OFrame", function(x) {
-  res <- .h2o.unary_op("is.factor", x)
-  .force.eval(conn = res@conn, ast = res@ast)
+  .h2o.unary_scalar_op("is.factor", x)
 })
 
 #'
@@ -949,8 +937,7 @@ setMethod("mean", "H2OFrame", function(x, trim = 0, na.rm = FALSE, ...) {
   if (trim != 0) stop("unimplemented: trim must be 0", call.=FALSE)
   if (trim < 0) trim <- 0
   if (trim > .5) trim <- .5
-  res <- .h2o.nary_op("mean", x, trim, na.rm, ...)
-  .force.eval(conn = res@conn, ast = res@ast)
+  .h2o.nary_scalar_op("mean", x, trim, na.rm, ...)
 })
 
 #
@@ -989,8 +976,10 @@ setMethod("var", "H2OFrame",
       stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
   } else
     use <- "everything"
-  res <- .h2o.nary_op("var", x, y, na.rm, use)
-  .force.eval(conn = res@conn, ast = res@ast)
+  if ((ncol(x) == 1L) && (is.null(y) || ncol(y) == 1L))
+    .h2o.nary_scalar_op("var", x, y, na.rm, use)
+  else
+    .h2o.nary_frame_op("var", x, y, na.rm, use)
 })
 
 #'
@@ -1009,8 +998,7 @@ setMethod("var", "H2OFrame",
 #' sd(prostate.hex$AGE)
 setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
   if(ncol(x) != 1L) stop("can only compute sd of a single column.")
-  res <- .h2o.nary_op("sd", x, na.rm)
-  .force.eval(conn = res@conn, ast = res@ast)
+  .h2o.nary_scalar_op("sd", x, na.rm)
 })
 
 #'
@@ -1033,8 +1021,7 @@ setMethod("sd", "H2OFrame", function(x, na.rm = FALSE) {
 #' h2o.scale(iris.hex[, 1:4])
 scale.H2OFrame<-
 function(x, center = TRUE, scale = TRUE) {
-  res <- .h2o.nary_op("scale", x, center, scale)
-  .force.eval(conn = res@conn, ast = res@ast)
+  .h2o.nary_row_op("scale", x, center, scale)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1083,9 +1070,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' as.data.frame.H2OFrame(prostate.hex)
 as.data.frame.H2OFrame <- function(x, ...) {
-  deparsedExpr <- deparse(substitute(x), width.cutoff = 500L)
-   if (!is.null(x@ast) && !.is.eval(x))
-     .force.eval(conn = x@conn, ast = x@ast, key = x@key, finalizers = x@finalizers, deparsedExpr = deparsedExpr, env = parent.frame())
+  .byref.update.frame(x)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
@@ -1160,15 +1145,17 @@ setMethod("as.environment", "H2OFrame", function(x) {
   env
 })
 
-setMethod("as.factor",    "H2OFrame", function(x) .h2o.unary_op("as.factor", x))
-setMethod("as.character", "H2OFrame", function(x) .h2o.unary_op("as.character", x))
+setMethod("as.factor",    "H2OFrame", function(x)
+  .h2o.unary_frame_op("as.factor", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
+setMethod("as.character", "H2OFrame", function(x)
+  .h2o.unary_frame_op("as.character", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
 
 setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no)
-  .h2o.nary_op("ifelse", test, yes, no))
+  .h2o.nary_row_op("ifelse", test, yes, no))
 
 #' Combine H2O Datasets by Columns
 #'
@@ -1193,7 +1180,7 @@ NULL
 h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
-  .h2o.nary_op("cbind", ...)
+  .h2o.nary_frame_op("cbind", ...)
 }
 
 #' Combine H2O Datasets by Rows
@@ -1221,11 +1208,11 @@ h2o.rbind <- function(...) {
   if (is.list(l)) {
     klazzez <- unlist(lapply(l, function(i) is(i, "H2OFrame")))
     if (any(!klazzez)) stop("`h2o.rbind` accepts only of H2OFrame objects")
-    .h2o.nary_op("rbind", .args=l)
+    .h2o.nary_frame_op("rbind", .args=l)
   } else {
     klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
     if (any(!klasses)) stop("`h2o.rbind` must consist of H2O objects only.")
-    .h2o.nary_op("rbind", ...)
+    .h2o.nary_frame_op("rbind", ...)
   }
 }
 
@@ -1348,7 +1335,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
 
 #  vars <- paste0('{', paste(vars, collapse = ";"), '}')
 
-  .h2o.nary_op("h2o.ddply", .data, vars, fun.ast)
+  .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
 #  .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 }
 
@@ -1445,9 +1432,9 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
   if (is.null(fun.ast)) stop("argument FUN was invalid")
 
   if(length(l) == 0L)
-    .h2o.nary_op("apply", X, MARGIN, fun.ast)
+    .h2o.nary_frame_op("apply", X, MARGIN, fun.ast)
   else
-    .h2o.nary_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+    .h2o.nary_frame_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
 setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
@@ -1495,9 +1482,9 @@ setMethod("sapply", "H2OFrame", function(X, FUN, ...) {
   invisible(.h2o.post.function(fun.ast))
 
   if(length(l) == 0L)
-    .h2o.nary_op("sapply", X, fun.ast)
+    .h2o.nary_frame_op("sapply", X, fun.ast)
   else
-    .h2o.nary_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
+    .h2o.nary_frame_op("sapply", X, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
 })
 
 #str.H2OFrame <- function(object, ...) {

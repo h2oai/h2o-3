@@ -15,6 +15,7 @@ exportMethods(
 )
 exportClasses(
   "H2ORawData",
+  "H2OFrameMutableState",
   "H2OFrame",
   "H2OModel",
   "H2OUnknownModel",

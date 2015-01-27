@@ -50,7 +50,7 @@ public class ParseFolderTestBig extends TestUtil {
 
   @Test @Ignore
   public void testBIGSVM() {
-    String fname = "bigdata/cust_K/100k.svm";
+    String fname = "bigdata/cust_K/1m.svm";
     Frame k1 = null;
     try {
       File f = find_test_file(fname);

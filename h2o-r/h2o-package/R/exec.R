@@ -12,45 +12,62 @@
 #' Prefix Operation With A Single Argument
 #'
 #' Operation on an object that inherits from H2OFrame.
-.h2o.unary_op<-
+.h2o.unary_op_ast<-
 function(op, x) {
   if (!is.na(.op.map[op])) op <- .op.map[op]
   op <- new("ASTApply", op = op)
 
   if (is(x, "H2OFrame")) {
     conn <- x@conn
-    finalizers <- x@finalizers
     x <- .get(x)
   } else {
     conn <- h2o.getConnection()
-    finalizers <- list()
     if (is(x, "ASTNode"))       x <- x
     else if (is.numeric(x))     x <- paste0('#', x)
     else if (is.character(x))   x <- deparse(eval(x))
     else if (is(x, "ASTEmpty")) x <- paste0('%', x@key)
     else stop("operand type not handled: ", class(x))
   }
-  ast <- new("ASTNode", root=op, children=list(x))
-  .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(conn, "unary_op"), finalizers = finalizers, linkToGC = TRUE)
+  new("ASTNode", root=op, children=list(x))
+}
+
+.h2o.unary_scalar_op<-
+function(op, x) {
+  ast <- .h2o.unary_op_ast(op, x)
+  .h2o.eval.scalar(x@conn, ast)
+}
+
+.h2o.unary_frame_op<-
+function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
+  if (is(x, "H2OFrame"))
+    finalizers <- x@finalizers
+  else
+    finalizers <- list()
+
+  ast <- .h2o.unary_op_ast(op, x)
+  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "unary_op"),
+                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+}
+
+.h2o.unary_row_op<-
+function(op, x) {
+  .h2o.unary_frame_op(op, x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names)
 }
 
 #'
 #' Binary Operation
 #'
 #' Operation between H2OFrame objects and/or base R objects.
-.h2o.binary_op<-
+.h2o.binary_op_ast<-
 function(op, e1, e2) {
   # Prep the op
   op <- new("ASTApply", op=.op.map[op])
 
   # Prep the LHS
   if (is(e1, "H2OFrame")) {
-    lhsconn <- e1@conn
-    finalizers <- e1@finalizers
     lhs <- .get(e1)
   } else {
-    lhsconn <- h2o.getConnection()
-    finalizers <- list()
     if (is(e1, "ASTNode"))        lhs <- e1
     else if (is.numeric(e1))      lhs <- paste0('#', e1)
     else if (is.character(e1))    lhs <- deparse(eval(e1))
@@ -60,11 +77,8 @@ function(op, e1, e2) {
 
   # Prep the RHS
   if (is(e2, "H2OFrame")) {
-    rhsconn <- e2@conn
-    finalizers <- c(finalizers, e2@finalizers)
     rhs <- .get(e2)
   } else {
-    rhsconn <- h2o.getConnection()
     if (is(e2, "ASTNode"))        rhs <- e2
     else if (is.numeric(e2))      rhs <- paste0('#', e2)
     else if (is.character(e2))    rhs <- deparse(eval(e2))
@@ -72,24 +86,83 @@ function(op, e1, e2) {
     else stop("RHS operand type not handled: ", class(e2))
   }
 
-  if (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port)
+  new("ASTNode", root=op, children=list(left = lhs, right = rhs))
+}
+
+.h2o.binary_scalar_op<-
+function(op, e1, e2) {
+  ast <- .h2o.binary_op_ast(op, e1, e2)
+  .h2o.eval.scalar(x@conn, ast)
+}
+
+.h2o.binary_frame_op<-
+function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
+  if (is(e1, "H2OFrame")) {
+    lhsconn <- e1@conn
+    finalizers <- e1@finalizers
+  } else {
+    lhsconn <- NULL
+    finalizers <- list()
+  }
+  if (is(e2, "H2OFrame")) {
+    rhsconn <- e2@conn
+    finalizers <- c(finalizers, e2@finalizers)
+  } else {
+    rhsconn <- NULL
+  }
+
+  if (is.null(lhsconn))
+    lhsconn <- rhsconn
+  else if (!is.null(rhsconn) && (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port))
     stop("LHS and RHS are using different H2O connections")
 
-  ast <- new("ASTNode", root=op, children=list(left = lhs, right = rhs))
-  .newH2OObject("H2OFrame", ast = ast, conn = lhsconn, key = .key.make(lhsconn, "binary_op"), finalizers = finalizers, linkToGC = TRUE)
+  ast <- .h2o.binary_op_ast(op, e1, e2)
+  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn = lhsconn, key = .key.make(lhsconn, "binary_op"),
+                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+}
+
+.h2o.binary_row_op<-
+function(op, e1, e2) {
+  if (is(e1, "H2OFrame"))
+    .h2o.binary_frame_op(op, e1, e2, nrows = e1@mutable$nrows, ncols = e1@mutable$ncols, col_names = e1@mutable$col_names)
+  else
+    .h2o.binary_frame_op(op, e1, e2, nrows = e2@mutable$nrows, ncols = e2@mutable$ncols, col_names = e2@mutable$col_names)
 }
 
 #'
 #' Prefix Operation With Multiple Arguments
 #'
 #' Operation on an H2OFrame object with some extra parameters.
-.h2o.nary_op<-
-function(op, ..., .args = list(...), .key = .key.make(h2o.getConnection(), "nary_op")) {
+.h2o.nary_op_ast<-
+function(op, ..., .args = list(...)) {
   op <- new("ASTApply", op = op)
-  finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
   children <- .args.to.ast(.args = .args)
-  ast <- new("ASTNode", root = op, children = children)
-  .newH2OObject("H2OFrame", ast = ast, conn = h2o.getConnection(), key = .key, finalizers = finalizers, linkToGC = TRUE)
+  new("ASTNode", root = op, children = children)
+}
+
+.h2o.nary_scalar_op<-
+function(op, ..., .args = list(...)) {
+  x <- .args[[1L]]
+  ast <- .h2o.nary_op_ast(op, .args = .args)
+  .h2o.eval.scalar(x@conn, ast)
+}
+
+.h2o.nary_frame_op<-
+function(op, ..., .args = list(...), key = .key.make(h2o.getConnection(), "nary_op"), linkToGC = TRUE,
+         nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
+  finalizers <- do.call(c, lapply(.args, function(x) if (is(x, "H2OFrame")) x@finalizers else list()))
+
+  ast <- .h2o.nary_op_ast(op, .args = .args)
+  mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn = h2o.getConnection(), key = key,
+                finalizers = finalizers, linkToGC = linkToGC, mutable = mutable)
+}
+
+.h2o.nary_row_op<-
+function(op, ..., .args = list(...)) {
+  x <- .args[[1L]]
+  .h2o.nary_frame_op(op, .args = .args, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names)
 }
 
 #'
@@ -107,47 +180,77 @@ function(op, ..., .args = list(...), .key = .key.make(h2o.getConnection(), "nary
 #'
 #' Here's a quick diagram to illustrate what is going on here
 #'
-.force.eval<-
-function(conn, ast, key=.key.make(conn, "rapids"), finalizers=list(), new.assign=TRUE, deparsedExpr=NULL, env=parent.frame()) {
-  # Prepare the AST
-  if (new.assign) {
-    if (is(key, "H2OFrame")) key <- key@key
-    ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
-  }
+.h2o.eval.scalar<-
+function(conn, ast) {
+  key <- .key.make(conn, "rapids")
+  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
   ast <- .visitor(ast)
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
   if (!is.null(res$error)) stop(res$error, call.=FALSE)
+
   if (!is.null(res$string)) {
     # String or boolean result
     ret <- res$string
     if (ret == "TRUE")  ret <- TRUE
     if (ret == "FALSE") ret <- FALSE
-  } else if (res$result == "") {
-    # H2OFrame result
-    ret <- .h2o.parsedData(conn, res$key$name, res$num_rows, res$num_cols, res$col_names, linkToGC=FALSE)
-    ret@key <- if(is.null(key)) NA_character_ else key
-    ret@finalizers <- c(ret@finalizers, finalizers)
   } else {
     # Scalar result
     ret <- res$scalar
     if (ret == "NaN") ret <- NA_real_
   }
 
-  # Modify an H2OFrame object in another environment
-  # TODO Refactor H2OFrame class to be an S4 RefClass to avoid this non-standard operation
-  if (!is.null(deparsedExpr) && exists(deparsedExpr, envir=env)) {
-    if (is(ret, "H2OFrame")) {
-      assign(deparsedExpr, ret, env)
-    } else {
-      expr <- paste0(deparsedExpr, "@ast <- NULL")
-      eval(parse(text=expr), env)
-    }
+  ret
+}
+
+.h2o.eval.frame<-
+function(conn, ast, key=.key.make(conn, "rapids"), linkToGC=FALSE) {
+  # Prepare the AST
+  ast <- new("ASTNode", root=new("ASTApply", op="="), children=list(left=paste0('!', key), right=ast))
+  ast <- .visitor(ast)
+
+  # Process the results
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  if (!is.null(res$error)) stop(res$error, call.=FALSE)
+
+  h2o.getFrame(key, conn, linkToGC=linkToGC)
+}
+
+.h2o.replace.frame<-
+function(conn, ast, key, finalizers) {
+  # Prepare the AST
+  ast <- .visitor(ast)
+
+  # Process the results
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
+  if (!is.null(res$error)) stop(res$error, call.=FALSE)
+
+  res <- h2o.getFrame(key, conn, linkToGC=FALSE)
+  res@finalizers <- finalizers
+  res
+}
+
+.byref.update.frame<-
+function(x) {
+  .update_x <- function(x, temp) {
+    x@mutable$ast       <- temp@mutable$ast
+    x@mutable$nrows     <- temp@mutable$nrows
+    x@mutable$ncols     <- temp@mutable$ncols
+    x@mutable$col_names <- temp@mutable$col_names
+    invisible(x)
   }
 
-  # Return the value
-  ret
+  if (is.na(x@key)) {
+    # Nothing to do
+  } else if (!is.null(x@mutable$ast) && !.is.eval(x)) {
+    temp <- .h2o.eval.frame(conn = x@conn, ast = x@mutable$ast, key = x@key, linkToGC = FALSE)
+    .update_x(x, temp)
+  } else if (is.na(x@mutable$nrows) || is.na(x@mutable$ncols) || is.na(x@mutable$col_names[1L])) {
+    temp <- h2o.getFrame(x@key, x@conn, linkToGC = FALSE)
+    .update_x(x, temp)
+  }
+  invisible(x)
 }
 
 #'

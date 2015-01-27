@@ -40,7 +40,7 @@ function(node) {
   if(.is.eval(H2OFrame))
     paste0('%', H2OFrame@key)
   else
-    H2OFrame@ast
+    H2OFrame@mutable$ast
 }
 
 #'

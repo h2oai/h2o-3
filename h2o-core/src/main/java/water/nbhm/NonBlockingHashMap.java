@@ -93,9 +93,12 @@ public class NonBlockingHashMap<TypeK, TypeV>
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   private static final int _Obase  = _unsafe.arrayBaseOffset(Object[].class);
   private static final int _Oscale = _unsafe.arrayIndexScale(Object[].class);
+  private static final int _Olog   = _Oscale==4?2:(_Oscale==8?3:9999);
   private static long rawIndex(final Object[] ary, final int idx) {
     assert idx >= 0 && idx < ary.length;
-    return _Obase + idx * _Oscale;
+    // Note the long-math requirement, to handle arrays of more than 2^31 bytes
+    // - or 2^28 - or about 268M - 8-byte pointer elements.
+    return _Obase + ((long)idx << _Olog);
   }
 
   // --- Setup to use Unsafe
@@ -631,6 +634,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // assumed to work (although might have been immediately overwritten).  Only
   // the path through copy_slot passes in an expected value of null, and
   // putIfMatch only returns a null if passed in an expected null.
+  static volatile int DUMMY_VOLATILE;
   private static final Object putIfMatch( final NonBlockingHashMap topmap, final Object[] kvs, final Object key, final Object putval, final Object expVal ) {
     assert putval != null;
     assert !(putval instanceof Prime);
@@ -670,8 +674,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
         //
         // This re-read of the Key points out an annoying short-coming of Java
         // CAS.  Most hardware CAS's report back the existing value - so that
-        // if you fail you have a *witness* - the value which caused the CAS
-        // to fail.  The Java API turns this into a boolean destroying the
+        // if you fail you have a *witness* - the value which caused the CAS to
+        // fail.  The Java API turns this into a boolean destroying the
         // witness.  Re-reading does not recover the witness because another
         // thread can write over the memory after the CAS.  Hence we can be in
         // the unfortunate situation of having a CAS fail *for cause* but
@@ -679,11 +683,12 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // non-spurious-failure CAS (such as Azul has) into one that can
         // apparently spuriously fail - and we avoid apparent spurious failure
         // by not allowing Keys to ever change.
-        K = key(kvs,idx);       // CAS failed, get updated value
-        if( K == null ) {
-          System.out.println("double null: "+K);
-          continue;
-        }
+
+        // Volatile read, to force loads of K to retry despite JIT, otherwise
+        // it is legal to e.g. haul the load of "K = key(kvs,idx);" outside of
+        // this loop (since failed CAS ops have no memory ordering semantics).
+        int dummy = DUMMY_VOLATILE;
+        continue;
       }
       // Key slot was not null, there exists a Key here
 

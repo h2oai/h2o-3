@@ -68,7 +68,7 @@
 #' dep <- names(iris.hex)[5]
 #' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
 
-h2o.deeplearning <- function(x, y, training_frame, key = "",
+h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
                              do_classification = TRUE,
                              n_folds = 0,
