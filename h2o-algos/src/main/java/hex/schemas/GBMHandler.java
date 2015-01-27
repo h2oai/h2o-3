@@ -11,9 +11,6 @@ import water.api.Schema;
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHandler does this for all the algos.  */
 @Deprecated
 public class GBMHandler extends SharedTreeHandler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public GBMHandler() {}
 
   public Schema train(int version, GBMV2 s) {

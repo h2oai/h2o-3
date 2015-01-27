@@ -8,9 +8,11 @@ import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -156,13 +158,6 @@ import java.util.UUID;
  * @author Cliff Click
  */
 public class Vec extends Keyed {
-  /** Log-2 of Chunk size. */
-  static final int LOG_CHK = 20/*1Meg*/+2/*4Meg*/;
-  /** Default Chunk size in bytes, useful when breaking up large arrays into
-   *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
-   *  costs, lower increases fine-grained parallelism. */
-  public static final int CHUNK_SZ = 1 << LOG_CHK;
-
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
@@ -266,12 +261,9 @@ public class Vec extends Keyed {
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
-    // Groups are equal?  Then only check length
-    if( group().equals(v.group()) ) return length()==v.length();
-    // Otherwise actual layout has to be the same, and size "small enough"
-    // to not worry about data-replication when things are not homed the same.
-    // The layout test includes an exactly-equals-length check.
-    return Arrays.equals(_espc,v._espc) && length() < 1e5;
+    // vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-ditribution)
+    if (VectorGroup.sameGroup(this,v) && (_espc == v._espc || Arrays.equals(_espc,v._espc))) return true;
+    return (Arrays.equals(_espc,v._espc) && length() < 1e5);
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -292,7 +284,7 @@ public class Vec extends Keyed {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len) {
-    int log_rows_per_chunk = LOG_CHK;
+    int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
     return makeCon(x, len, log_rows_per_chunk);
   }
 
@@ -329,7 +321,7 @@ public class Vec extends Keyed {
       @Override public void map(Chunk c){
         Chunk c2 = (Chunk)c.clone();
         c2._mem = c2._mem.clone();
-        DKV.put(v.chunkKey(c.cidx()),c2,_fs);
+        DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
     DKV.put(v._key,v);
@@ -1022,6 +1014,16 @@ public class Vec extends Keyed {
       _len = 0;
     }
 
+    public static boolean sameGroup(Vec v1, Vec v2) {
+      byte [] bits1 = v1._key._kb;
+      byte [] bits2 = v2._key._kb;
+      if(bits1.length != bits2.length)
+        return false;
+      int res  = 0;
+      for(int i = 10; i < bits1.length; ++i)
+        res |= bits1[i] ^ bits2[i];
+      return res == 0;
+    }
     /** Returns Vec Key from Vec id# 
      *  @return Vec Key from Vec id# */
     public Key vecKey(int vecId) {
@@ -1053,6 +1055,22 @@ public class Vec extends Keyed {
       tsk.invoke(_key);
       return tsk._n;
     }
+
+
+    /**
+     * Task to atomically add vectors into existing group.
+     * @author tomasnykodym
+     */
+    private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
+      final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      final int _oldCnt;
+      private ReturnKeysTsk(Key key, int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
+      @Override public VectorGroup atomic(VectorGroup old) {
+        return (old._len == _oldCnt)? new VectorGroup(_key, _newCnt):old;
+      }
+    }
+    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(_key,oldCnt,newCnt).fork(_key);}
+
 
     /** Gets the next n keys of this group.
      *  @param n number of keys to make

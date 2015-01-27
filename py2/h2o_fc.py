@@ -65,7 +65,7 @@ def create_node(possMember, h2oNodes, expectedSize, hdfsSetup):
     # print "http_addr:", http_addr, "port:", port
 
     possMemberList = []
-    gc = do_json_request(http_addr, port, 'Cloud.json', timeout=10)
+    gc = do_json_request(http_addr, port, '/1/Cloud.json', timeout=10)
     if gc is None:
         return possMemberList
         

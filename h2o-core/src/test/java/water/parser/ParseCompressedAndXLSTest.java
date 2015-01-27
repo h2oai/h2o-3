@@ -8,7 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
 public class ParseCompressedAndXLSTest extends TestUtil {
-  public ParseCompressedAndXLSTest() { super(3); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;

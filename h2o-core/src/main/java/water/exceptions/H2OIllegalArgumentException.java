@@ -24,4 +24,17 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
   public H2OIllegalArgumentException(String message, String dev_message) {
     super(message, dev_message);
   }
+
+  public static H2OIllegalArgumentException wrongKeyType(String fieldName, String keyName, String expectedType, Class actualType) {
+    H2OIllegalArgumentException e =
+            new H2OIllegalArgumentException(
+                  expectedType + " argument: " + fieldName + " with value: " + keyName + " points to a non-" + expectedType + " object: " + actualType.getSimpleName(),
+                  expectedType + " argument: " + fieldName + " with value: " + keyName + " points to a non-" + expectedType + " object: " + actualType.getName());
+    e.values = new IcedHashMap<String, Object>();
+    e.values.put("argument", fieldName);
+    e.values.put("value", keyName);
+    e.values.put("expected_type", expectedType);
+    e.values.put("actual_type", actualType);
+    return e;
+  }
 }

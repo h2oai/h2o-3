@@ -15,22 +15,19 @@ expect_equal(55, dim(covtype.hex)[2])
 # execs
 ###########################################################
 
-fun = function(x) { mean( x[,2]) }
-h2o.addFunction(object = localH2O, fun = fun, name = "m" )
-h2o.exec(ddply(covtype.hex, c(2), m))
+m = function(x) { mean( x[,2]) }
+h2o.ddply(covtype.hex, c(2), m)
 
-fun = function(x) { sd( x[,2]) }
-h2o.addFunction(object = localH2O, fun = fun, name = "s" )
-h2o.exec(ddply(covtype.hex, c(2), s))
+s = function(x) { sd( x[,2]) }
+h2o.ddply(covtype.hex, c(2), s)
 
-fun = function(x) { quantile(x[,2] , c(0.9) ) }
-h2o.addFunction(object = localH2O, fun = fun, name = "q" )
-h2o.exec(ddply(covtype.hex, c(2), q))
+q = function(x) { quantile(x[,2] , c(0.9) ) }
+h2o.ddply(covtype.hex, c(2), q)
 
-h2o.exec(ddply(covtype.hex, c(2), nrow))
-h2o.exec(ddply(covtype.hex, c(2), ncol))
-h2o.exec(ddply(covtype.hex, c(2), length))
-h2o.exec(ddply(covtype.hex, c(2), is.factor))
+h2o.ddply(covtype.hex, c(2), nrow)
+h2o.ddply(covtype.hex, c(2), ncol)
+h2o.ddply(covtype.hex, c(2), length)
+h2o.ddply(covtype.hex, c(2), is.factor)
 
 testEnd()
 

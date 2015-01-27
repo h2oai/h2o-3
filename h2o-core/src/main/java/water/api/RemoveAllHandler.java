@@ -6,9 +6,6 @@ import water.util.Log;
 import java.util.Set;
 
 public class RemoveAllHandler extends Handler {
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public RemoveAllV1 remove(int version, RemoveAllV1 u) {
     Log.info("Removing all keys");

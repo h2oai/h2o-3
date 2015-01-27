@@ -1,10 +1,12 @@
 package water.parser;
 
-import water.DKV;
-import water.H2O;
-import water.Iced;
-import water.Key;
+import water.*;
+import water.fvec.Vec;
+import water.fvec.FileVec;
+import water.util.IcedArrayList;
+import water.parser.Parser.ColTypeInfo;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 /**
@@ -26,14 +28,15 @@ public final class ParseSetup extends Iced {
   int _ncols;                 // Columns to parse
   String[] _columnNames;
   String[][] _domains;        // Domains for each column (null if numeric)
-  byte[] _ctypes;             // Column types using types defined by FVecDataOut (UCOL, NCOL, etc).
+  ColTypeInfo[] _ctypes;      // Column types
   String[][] _data;           // First few rows of parsed/tokenized data
   boolean _isValid;           // The initial parse is sane
   String[] _errors;           // Errors in this parse setup
   long _invalidLines; // Number of broken/invalid lines found
   long _headerlines; // Number of header lines found
+  int _chunkSize = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
 
-  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, byte[] ctypes) {
+  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, ColTypeInfo[] ctypes) {
     _isValid = isValid;
     _invalidLines = invalidLines;
     _headerlines = headerlines;
@@ -47,6 +50,10 @@ public final class ParseSetup extends Iced {
     _data = data;
     _checkHeader = checkHeader;
     _ctypes = ctypes;
+  }
+
+  public ParseSetup(boolean singleQuotes, int checkHeader) {
+    this(false, 0, 0, null, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, null, null, null, checkHeader, null);
   }
 
   // Invalid setup based on a prior valid one
@@ -116,6 +123,44 @@ public final class ParseSetup extends Iced {
   public static ParseSetup guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) {
     return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null, null);
   }
+  public static ParseSetup guessSetup( byte[] bits, ParseSetup userSetup ) {
+    return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, userSetup._singleQuotes, userSetup._checkHeader, null, null);
+  }
+
+  public static ParseSetup guessSetup( Key[] fkeys, ParseSetup userSetup ) {
+    ParseSetup gSetup = null;
+    if(fkeys.length > 1){
+      GuessSetupTsk t = new GuessSetupTsk(userSetup);
+      t.doAll(fkeys);
+      gSetup = t._gSetup;
+      if(gSetup._isValid && (!t._failedSetup.isEmpty() || !t._conflicts.isEmpty())){
+        // run guess setup once more, this time knowing the global setup to get rid of conflicts (turns them into failures) and bogus failures (i.e. single line files with unexpected separator)
+        GuessSetupTsk t2 = new GuessSetupTsk(gSetup);
+        HashSet<Key> keySet = new HashSet<Key>(t._conflicts);
+        keySet.addAll(t._failedSetup);
+        Key [] keys2 = new Key[keySet.size()];
+        t2.doAll(keySet.toArray(keys2));
+        t._failedSetup = t2._failedSetup;
+        t._conflicts = t2._conflicts;
+/*        if(!gSetup._setup._header && t2._gSetup._setup._header){
+          gSetup._setup._header = true;
+          gSetup._setup._columnNames = t2._gSetup._setup._columnNames;
+          t._gSetup._hdrFromFile = t2._gSetup._hdrFromFile;
+        }*/
+      }
+      assert t._conflicts.isEmpty(); // we should not have any conflicts here, either we failed to find any valid global setup, or conflicts should've been converted into failures in the second pass
+      if(!t._failedSetup.isEmpty()){
+        // TODO throw and exception ("Can not parse: Got incompatible files.", gSetup, t._failedSetup.keys);
+      }
+    } else if(fkeys.length == 1) {
+      byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(fkeys[0]));
+      gSetup = guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, userSetup._singleQuotes, userSetup._checkHeader, null, null);
+    }
+    if( gSetup == null || !gSetup._isValid){
+      //TODO throw an exception
+    }
+    return gSetup;
+  }
 
   private static final ParserType guessTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
   public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[][] domains ) {
@@ -156,6 +201,99 @@ public final class ParseSetup extends Iced {
       return new ParseSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
     return ps;
   }
+
+  public boolean isCompatible(ParseSetup other){
+    if(other == null || _pType != other._pType)return false;
+    if(_pType == ParserType.CSV && (_sep != other._sep || _ncols != other._ncols))
+      return false;
+    if(_ctypes == null) _ctypes = other._ctypes;
+    else if(other._ctypes != null){
+      for(int i = 0; i < _ctypes.length; ++i)
+        _ctypes[i].merge(other._ctypes[i]);
+    }
+    return true;
+  }
+
+  public static class GuessSetupTsk extends MRTask<GuessSetupTsk> {
+    final ParseSetup _userSetup;
+    boolean _empty = true;
+    public ParseSetup _gSetup;
+    IcedArrayList<Key> _failedSetup;
+    IcedArrayList<Key> _conflicts;
+
+    public GuessSetupTsk(ParseSetup userSetup) {
+      _userSetup = userSetup;
+    }
+
+    public static final int MAX_ERRORS = 64;
+
+    @Override public void map(Key key) {
+      byte [] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(key));
+      if(bits.length > 0) {
+        _empty = false;
+        _failedSetup = new IcedArrayList<Key>();
+        _conflicts = new IcedArrayList<Key>();
+        _gSetup = ParseSetup.guessSetup(bits, _userSetup);
+        if (_gSetup == null || !_gSetup._isValid)
+          _failedSetup.add(key);
+        //else {
+        //  _gSetup._setupFromFile = key;
+        //  if (_checkHeader && _gSetup._setup._header)
+        //    _gSetup._hdrFromFile = key;
+        //}
+      }
+    }
+
+    @Override
+    public void reduce(GuessSetupTsk drt) {
+      if (drt._empty) return;
+      if (_gSetup == null || !_gSetup._isValid) {
+        _empty = false;
+        _gSetup = drt._gSetup;
+        if (_gSetup == null)
+          System.out.println("haha");
+/*        try {
+          _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
+          _gSetup._setupFromFile = drt._gSetup._setupFromFile;
+//        }
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }*/
+      } else if (drt._gSetup._isValid && !_gSetup.isCompatible(drt._gSetup)) {
+     //   if (_conflicts.contains(_gSetup._setupFromFile) && !drt._conflicts.contains(drt._gSetup._setupFromFile)) {
+     //     _gSetup = drt._gSetup; // setups are not compatible, select random setup to send up (thus, the most common setup should make it to the top)
+     //     _gSetup._setupFromFile = drt._gSetup._setupFromFile;
+     //     _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
+     //   } else if (!drt._conflicts.contains(drt._gSetup._setupFromFile)) {
+     //     _conflicts.add(_gSetup._setupFromFile);
+      //    _conflicts.add(drt._gSetup._setupFromFile);
+      //  }
+      } else if (drt._gSetup._isValid) { // merge the two setups
+/*        if (!_gSetup._setup._header && drt._gSetup._setup._header) {
+          _gSetup._setup._header = true;
+          _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
+          _gSetup._setup._columnNames = drt._gSetup._setup._columnNames;
+        } */
+        if (_gSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
+          int n = _gSetup._data.length;
+          int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + drt._gSetup._data.length - 1);
+          _gSetup._data = Arrays.copyOf(_gSetup._data, m);
+          for (int i = n; i < m; ++i) {
+            _gSetup._data[i] = drt._gSetup._data[i - n + 1];
+          }
+        }
+      }
+      // merge failures
+      if (_failedSetup == null) {
+        _failedSetup = drt._failedSetup;
+        _conflicts = drt._conflicts;
+      } else {
+        _failedSetup.addAll(drt._failedSetup);
+        _conflicts.addAll(drt._conflicts);
+      }
+    }
+  }
+
 
   public static String hex( String n ) {
     // blahblahblah/myName.ext ==> myName

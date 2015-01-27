@@ -10,14 +10,14 @@ expect_equal(20000, dim(covtype.hex)[1])
 expect_equal(55, dim(covtype.hex)[2])
 
 # currently works:
-h2o.exec(covtype.hex$C55^2)
-h2o.exec(covtype.hex$C55^(-2))
+covtype.hex$C55^2
+covtype.hex$C55^(-2)
 
 # currently fails:
-val0 <- h2o.exec(covtype.hex$C55^-2)
-h2o.exec(covtype.hex$C55^ -2)
-h2o.exec(covtype.hex$C55 ^-2)
-h2o.exec(covtype.hex$C55 ^-2 )
+val0 <- covtype.hex$C55^-2
+covtype.hex$C55^ -2
+covtype.hex$C55 ^-2
+covtype.hex$C55 ^-2 
 
 
 #w/o h2o.exec:

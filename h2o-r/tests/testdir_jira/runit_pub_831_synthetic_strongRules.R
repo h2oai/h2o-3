@@ -16,7 +16,10 @@ test <- function(conn) {
         BIN <- h2o.importFile(conn, locate("smalldata/prostate/prostate.bin.csv.zip"), key="BIN", header=FALSE)
         FLOAT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.float.csv.zip"), key="FLOAT", header=FALSE)
         INT <- h2o.importFile(conn, locate("smalldata/prostate/prostate.int.csv.zip"), key="INT", header=FALSE)
-    
+        colnames(BIN) <- "BIN"
+        colnames(FLOAT) <- "FLOAT"
+        colnames(INT) <- "INT"
+
     print("Bind synthetic columns to original data.")
         prostate.data <- h2o.assign(h2o.cbind(prostate.hex, BIN, FLOAT, INT),"prostate.data")
    

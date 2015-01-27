@@ -9,7 +9,7 @@ import water.TestUtil;
 import java.util.Random;
 
 public class NewChunkTest extends TestUtil {
-  final int K = 1 + (int)(new Random().nextFloat() * (water.fvec.Vec.CHUNK_SZ >> 4));
+  final int K = 1 + (int)(new Random().nextFloat() * (FileVec.DFLT_CHUNK_SIZE >> 4));
   AppendableVec av;
   NewChunk nc;
   Chunk cc;

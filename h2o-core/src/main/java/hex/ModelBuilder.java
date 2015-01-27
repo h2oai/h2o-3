@@ -184,19 +184,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    // Drop all-constant and all-bad columns.
-    String cstr="";             // Log of dropped columns
-    for( int i=0; i<_train.vecs().length; i++ ) {
-      if( _train.vecs()[i].isConst() || _train.vecs()[i].isBad() ) {
-        if(cstr.length() > 0) cstr += ", "; // Log dropped cols
-        cstr += _train._names[i];
-        _train.remove(i);
-        i--; // Re-run at same iteration after dropping a col
+    if( _parms._dropConsCols ) {    // Drop all-constant and all-bad columns.
+      String cstr = "";             // Log of dropped columns
+      for (int i = 0; i < _train.vecs().length; i++) {
+        if (_train.vecs()[i].isConst() || _train.vecs()[i].isBad()) {
+          if (cstr.length() > 0) cstr += ", "; // Log dropped cols
+          cstr += _train._names[i];
+          _train.remove(i);
+          i--; // Re-run at same iteration after dropping a col
+        }
       }
-    }
-    if( cstr.length() > 0 ) {
-      warn("_train", "Dropping constant columns: " + cstr);
-      if(expensive) Log.info("Dropping constant columns: " + cstr);
+      if (cstr.length() > 0) {
+        warn("_train", "Dropping constant columns: " + cstr);
+        if (expensive) Log.info("Dropping constant columns: " + cstr);
+      }
     }
 
     if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs

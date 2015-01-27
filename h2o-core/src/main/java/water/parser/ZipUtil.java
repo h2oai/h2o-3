@@ -3,9 +3,9 @@ package water.parser;
 import java.io.*;
 import java.util.Arrays;
 import java.util.zip.*;
-import water.UDP;
 import water.fvec.ByteVec;
 import water.fvec.Vec;
+import water.fvec.FileVec;
 import water.util.Log;
 import water.util.UnsafeUtils;
 
@@ -16,7 +16,7 @@ abstract class ZipUtil {
   static byte [] getFirstUnzippedBytes( ByteVec bv ) {
     try{
       byte[] bits = bv.getFirstBytes();
-      return unzipBytes(bits, guessCompressionMethod(bits));
+      return unzipBytes(bits, guessCompressionMethod(bits), FileVec.DFLT_CHUNK_SIZE);
     } catch(Exception e) { return null; }
   }
 
@@ -29,7 +29,18 @@ abstract class ZipUtil {
     return Compression.NONE;
   }
 
-  static byte[] unzipBytes( byte[] bs, Compression cmp ) {
+  static float decompressionRatio(ByteVec bv) {
+    byte[] zips = bv.getFirstBytes();
+    ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
+    if (cpr == Compression.NONE )
+      return 1; // no compression
+    else {
+      byte[] bits = ZipUtil.unzipBytes(zips, cpr, FileVec.DFLT_CHUNK_SIZE);
+      return bits.length / zips.length;
+    }
+  }
+
+  static byte[] unzipBytes( byte[] bs, Compression cmp, int chkSize ) {
     if( cmp == Compression.NONE ) return bs; // No compression
     // Wrap the bytes in a stream
     ByteArrayInputStream bais = new ByteArrayInputStream(bs);
@@ -56,7 +67,7 @@ abstract class ZipUtil {
           break;
         off += len;
         if( off == bs.length ) { // Dataset is uncompressing alot! Need more space...
-          if( bs.length >= Vec.CHUNK_SZ )
+          if( bs.length >= chkSize )
             break; // Already got enough
           bs = Arrays.copyOf(bs, bs.length * 2);
         }

@@ -38,6 +38,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int validation_error_count;
 
+  @API(help="HTTP status to return for this build.", json = false)
   private int __http_status; // The handler sets this to 400 if we're building and validation_error_count > 0, else 200.
 
   public ModelBuilderSchema() {

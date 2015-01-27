@@ -189,8 +189,8 @@ public class ConfusionMatrixTest extends TestUtil {
     try {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
+      v2 = v1.makeCompatible(v2);
       simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug, toEnum);
-      // now v1/v2 might be changed (enums or train/test adaptation), so the simpleCMTest must do the cleanup as well
     } catch (IOException e) {
       e.printStackTrace();
     }

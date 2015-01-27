@@ -22,10 +22,6 @@ public abstract class Handler extends H2OCountedCompleter {
 
   private long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
 
-  // TODO: REMOVE ASAP:
-  abstract protected int min_ver();         // TODO: should be static
-  abstract protected int max_ver();         // TODO: should be static
-
   public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
   }
@@ -36,11 +32,6 @@ public abstract class Handler extends H2OCountedCompleter {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   final Schema handle(int version, Route route, Properties parms) throws Exception {
-    // TODO: remove:
-    if( !(min_ver() <= version && version <= max_ver()) ) // Version check!
-      throw new H2ONotFoundArgumentException("Version " + version + " is not in range " + min_ver() + "- " + max_ver(),
-                                     "Version " + version + " is not in range " + min_ver() + "- " + max_ver() + " for route: " + route);
-
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 

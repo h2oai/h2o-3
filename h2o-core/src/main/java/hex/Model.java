@@ -5,8 +5,10 @@ import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.ModelUtils;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -52,6 +54,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // column strip/ignore code.
     public String[] _ignored_columns;// column names to ignore for training
     public boolean _dropNA20Cols;    // True if dropping cols > 20% NAs
+    public boolean _dropConsCols;    // True if dropping constant and all NA cols
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -66,7 +69,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _max_confusion_matrix_size = 20;
 
     // Public no-arg constructor for reflective creation
-    public Parameters() { _dropNA20Cols = defaultDropNA20Cols(); }
+    public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
+                          _dropConsCols = defaultDropConsCols(); }
 
     /** @return the training frame instance */
     public final Frame train() { return _train.get(); }
@@ -91,6 +95,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Override in subclasses to change the default; e.g. true in GLM
     protected boolean defaultDropNA20Cols() { return false; }
+    protected boolean defaultDropConsCols() { return true; }
 
     /** Type of missing columns during adaptation between train/test datasets
      *  Overload this method for models that have sparse data handling - a zero
@@ -98,12 +103,61 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  @return real-valued number (can be NaN)  */
     protected double missingColumnsType() { return Double.NaN; }
 
-    long checksum_impl() {
-      return 
-        (_dropNA20Cols?17:1) *
-        train().checksum() *
-        (_valid == null ? 17 : valid().checksum()) *
-        (null == _ignored_columns ? 23: Arrays.hashCode(_ignored_columns));
+    /**
+     * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones)
+     * @return checksum
+     */
+    protected long checksum_impl() {
+      long xs = 0x600D;
+      int count = 0;
+      for (Field f : Weaver.getWovenFields(this.getClass())) {
+        final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
+        Class<?> c = f.getType();
+        if (c.isArray()) {
+          f.setAccessible(true);
+          try {
+            if (f.get(this) != null) {
+              if (c.getComponentType() == Integer.TYPE){
+                int[] arr = (int[]) f.get(this);
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Float.TYPE) {
+                float[] arr = (float[]) f.get(this);
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Double.TYPE) {
+                double[] arr = (double[]) f.get(this);
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+              } else if (c.getComponentType() == Long.TYPE){
+                long[] arr = (long[]) f.get(this);
+                xs ^= (0xDECAF + P * (long)Arrays.hashCode(arr));
+              } else {
+                Object[] arr = (Object[]) f.get(this);
+                xs ^= (0xDECAF + P * (long)Arrays.deepHashCode(arr));
+              } //else lead to ClassCastException
+            } else {
+              xs ^= (0xDECAF + P);
+            }
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          } catch (ClassCastException t) {
+            throw H2O.unimpl(); //no support yet for int[][] etc.
+          }
+        } else {
+          try {
+            if (f.get(this) != null) {
+              xs ^= (0x1337 + P * (long)(f.get(this)).hashCode());
+            } else {
+              xs ^= (0x1337 + P);
+            }
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          } catch (Throwable t) {
+            t.printStackTrace();
+          }
+        }
+        count++;
+      }
+      xs ^= train().checksum() * (_valid == null ? 17 : valid().checksum());
+      return xs;
     }
   }
 
@@ -430,8 +484,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
 
   @Override protected Futures remove_impl( Futures fs ) {
-    for( Key k : _output._model_metrics )
-      k.remove(fs);
+    if (_output._model_metrics != null)
+      for( Key k : _output._model_metrics )
+        k.remove(fs);
     return fs;
   }
 

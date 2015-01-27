@@ -50,6 +50,10 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     return __fields_cache;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   // Parameters common to all models:
   @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
   public ModelKeyV1 destination_key;

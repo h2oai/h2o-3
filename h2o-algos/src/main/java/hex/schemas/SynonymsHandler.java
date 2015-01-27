@@ -8,9 +8,6 @@ import java.util.HashMap;
 
 public class SynonymsHandler extends Handler {
 
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   /**
    *  Synonym: A process in which information is successively passed on.
    */

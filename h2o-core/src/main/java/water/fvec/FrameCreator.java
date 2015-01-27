@@ -47,7 +47,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         _domain[0] = _createFrame.response_factors == 1 ? null : new String[_createFrame.response_factors];
         if (_domain[0] != null) {
           for (int i = 0; i < _domain[0].length; ++i) {
-            _domain[0][i] = "resp." + i;
+            _domain[0][i] = new Integer(i).toString();
           }
         }
       }
@@ -64,7 +64,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       }
     }
     // All columns together fill one chunk
-    final int log_rows_per_chunk = Math.max(1, Vec.LOG_CHK - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
+    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int)Math.floor(Math.log(_createFrame.cols)/Math.log(2.)));
     _v = makeCon(_createFrame.value, _createFrame.rows, log_rows_per_chunk);
   }
 

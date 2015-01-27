@@ -1,9 +1,13 @@
 package water.parser;
 
+import java.io.File;
 import java.util.Arrays;
 import org.junit.*;
+import water.Job;
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 
 public class ParseFolderTestBig extends TestUtil {
@@ -44,4 +48,25 @@ public class ParseFolderTestBig extends TestUtil {
     }
   }
 
+  @Test @Ignore
+  public void testBIGSVM() {
+    String fname = "bigdata/cust_K/1m.svm";
+    Frame k1 = null;
+    try {
+      File f = find_test_file(fname);
+      assert f != null && f.exists():" file not found: " + fname;
+      NFSFileVec nfs = NFSFileVec.make(f);
+      Job<Frame> job = ParseDataset.parse(Key.make("BIGSVM.hex"),new Key[]{nfs._key},true,ParseDataset.setup(nfs._key, false, 0),false);
+      while( job.progress() < 1.0 ) {
+        System.out.print(((int)(job.progress()*1000.0))/10.0 + "% ");
+        try { Thread.sleep(1000); } catch( InterruptedException ie ) { }
+      }
+      System.out.println();
+      k1 = job.get();
+      System.out.println(k1.toString());
+
+    } finally {
+      if( k1 != null ) k1.delete();
+    }
+  }
 }

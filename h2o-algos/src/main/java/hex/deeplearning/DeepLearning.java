@@ -195,8 +195,9 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       }
       trainModel(cp);
 
-      // clean up, but don't delete the model
-      Scope.exit(dest());
+      // clean up, but don't delete the model and the (last) model metrics
+      Key[] mms = cp._output._model_metrics;
+      Scope.exit(dest(),mms.length==0 ? null : mms[mms.length-1]);
     }
 
 
@@ -215,13 +216,13 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         }
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
-        Frame tra_fr = _train;
-        Frame val_fr = _valid;
+        Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = tra_fr;
-        if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/);
+        if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".train");
         if (model._output.isClassifier() && mp._balance_classes) {
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
@@ -248,7 +249,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           } else {
             validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
           }
-          if (mp._force_load_balance) validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/);
+          if (mp._force_load_balance) validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".valid");
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
         }
 
@@ -317,7 +318,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
      * @param local whether to only create enough chunks to max out all cores on one node only
      * @return Frame that has potentially more chunks
      */
-    private Frame reBalance(final Frame fr, boolean local) {
+    private Frame reBalance(final Frame fr, boolean local, String name) {
       int chunks = (int)Math.min( 4 * H2O.NUMCPUS * (local ? 1 : H2O.CLOUD.size()), fr.numRows());
       if (fr.anyVec().nChunks() > chunks && !_parms._reproducible) {
         Log.info("Dataset already contains " + fr.anyVec().nChunks() + " chunks. No need to rebalance.");
@@ -327,9 +328,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         chunks = 1;
       }
       if (!_parms._quiet_mode) Log.info("ReBalancing dataset into (at least) " + chunks + " chunks.");
-//      return MRUtils.shuffleAndBalance(fr, chunks, seed, local, shuffle_training_data);
-      Key newKey = fr._key != null ? Key.make(fr._key.toString() + ".balanced") : Key.make();
-      newKey = Key.makeUserHidden(newKey);
+      Key newKey = Key.make(name + ".chunks" + chunks);
       RebalanceDataSet rb = new RebalanceDataSet(fr, newKey, chunks);
       H2O.submitTask(rb);
       rb.join();

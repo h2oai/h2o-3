@@ -24,8 +24,6 @@ import java.util.regex.Pattern;
  * </p>
  */
 public class ImportFilesHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ImportFilesV2 importFiles(int version, ImportFilesV2 importFiles) {

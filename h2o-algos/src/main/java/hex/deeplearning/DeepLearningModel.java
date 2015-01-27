@@ -496,9 +496,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if( !classification || !_balance_classes )
           dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
 
-        if (classification && !_balance_classes || !classification)
-          dl.hide("_max_after_balance_size", "max_after_balance_size required regression OR classification with balance_classes.");
-
 
         if (!classification && _valid != null || _valid == null)
           dl.hide("_score_validation_sampling", "score_validation_sampling requires regression and a validation frame OR no validation frame.");
@@ -1815,11 +1812,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
-//    bestModel.get_params()._state = Job.JobState.DONE; //FIXME
-//    bestModel.get_params()._key = get_params().self(); //FIXME : is private
-    final Key job = null;
-    bestModel.delete_and_lock(job);
-    bestModel.unlock(job);
+    DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
     assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);

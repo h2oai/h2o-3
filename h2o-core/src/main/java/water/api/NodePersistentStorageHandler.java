@@ -7,9 +7,6 @@ import water.init.NodePersistentStorage.NodePersistentStorageEntry;
 import java.util.UUID;
 
 public class NodePersistentStorageHandler extends Handler {
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public NodePersistentStorageV1 put(int version, NodePersistentStorageV1 s) {
     NodePersistentStorage nps = H2O.getNPS();

@@ -96,14 +96,14 @@
   delete_train <- !.is.eval(params$training_frame)
   if (delete_train) {
     temp_train_key <- params$training_frame@key
-    .force.eval(conn = conn, ast = params$training_frame@ast, key = temp_train_key)
+    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, key = temp_train_key)
   }
   if (!is.null(params$validation_frame)){
     params$validation_frame <- get("validation_frame", parent.frame())
     delete_valid <- !.is.eval(params$validation_frame)
     if (delete_valid) {
       temp_valid_key <- params$validation_frame@key
-      .force.eval(conn = conn, ast = params$validation_frame@ast, key = temp_valid_key)
+      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
 
@@ -128,7 +128,7 @@
       scalar  <- mapping[1L, 2L]
       if (is.na(type))
         stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) {
+      if (scalar) { # Scalar == TRUE
         if (!inherits(params[[i$name]], type))
           e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
@@ -137,9 +137,11 @@
             e <- paste0(e, " \"", fact, "\",")
           e <- paste(e, "but got", params[[i$name]])
         }
-      } else {
+      } else {      # scalar == FALSE
         if (!inherits(params[[i$name]], type))
           e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
+        else if (type == "character")
+          params[[i$name]] <<- .collapse.char(params[[i$name]])
         else
           params[[i$name]] <<- .collapse(params[[i$name]])
       }

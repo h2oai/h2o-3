@@ -207,7 +207,7 @@ class Cleaner extends Thread {
     // here and will be only computed into one-at-a-time.
     synchronized Histo histo( boolean force ) {
       final Histo h = H; // Grab current best histogram
-      if( !force && System.currentTimeMillis() < h._when+100 )
+      if( !force && System.currentTimeMillis() < h._when+1000 )
         return h; // It is recent; use it
       if( h._clean && _dirty==Long.MAX_VALUE )
         return h; // No change to the K/V store, so no point

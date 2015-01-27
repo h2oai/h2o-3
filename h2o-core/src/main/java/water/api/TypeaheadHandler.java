@@ -11,9 +11,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 class TypeaheadHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   // Find files
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema files(int version, TypeaheadV2 t) {

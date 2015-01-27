@@ -92,11 +92,8 @@ public final class PersistHdfs extends Persist {
 
   @Override public byte[] load(final Value v) {
     final byte[] b = MemoryManager.malloc1(v._max);
-    long skip = 0;
     Key k = v._key;
-    if(k._kb[0] == Key.CHK){
-      skip = water.fvec.NFSFileVec.chunkOffset(k); // The offset
-    }
+    long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
     final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));
     final long skip_ = skip;
     run(new Callable() {

@@ -41,7 +41,8 @@
 #' h2o.ls(localH2O)
 h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
-  fr <- .newH2OObject("H2OFrame", ast = ast, conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE)
+  mutable <- new("H2OFrameMutableState", ast = ast)
+  fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
   ret <- as.data.frame(fr)
   h2o.rm(fr@key, fr@conn)
   ret
@@ -133,15 +134,8 @@ h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  if (length(substitute(data)) > 1L) {
-    deparsedExpr <- "tmp_value"
-  } else {
-    deparsedExpr <- deparse(substitute(data), width.cutoff = 500L)
-  }
-  res <- .h2o.nary_op("rename", data, key)
-  .force.eval(conn = res@conn, ast = res@ast, deparsedExpr = deparsedExpr, env = parent.frame())
-  data@key <- key
-  data
+  res <- .h2o.nary_frame_op("rename", data, key, key = key, linkToGC = FALSE)
+  .byref.update.frame(res)
 }
 
 #'
@@ -160,7 +154,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     key <- conn
     conn <- temp
   }
-  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "GET")
+  res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=paste0("(%", key, ")"), method = "POST")
   cnames <- if( is.null(res$col_names) ) NA_character_ else res$col_names
   .h2o.parsedData(conn, key, res$num_rows, res$num_cols, cnames, linkToGC = linkToGC)
 }
@@ -201,45 +195,29 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
     if (!is.null(param$actual_value))
     {
       name <- param$name
-      if (is.null(param$default_value) || param$default_value != param$actual_value){
+      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
         value <- param$actual_value
         mapping <- .type.map[param$type,]
         type    <- mapping[1L, 1L]
         scalar  <- mapping[1L, 2L]
 
-        # Change Java Array to R list
-        if (!scalar) {
-          arr <- gsub("\\[", "", gsub("]", "", value))
-          value <- unlist(strsplit(arr, split=", "))
-        }
-
-        # Parse frame information to a key
-        if (type == "H2OFrame") {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        } else if (type == "numeric")
-          value <- as.numeric(value)
-        else if (type == "logical")
-          value <- as.logical(value)
+        # Prase frame information to a key
+        if (type == "H2OFrame")
+          value <- value$name
 
         # Response column needs to be parsed
         if (name == "response_column")
-        {
-          toParse <- unlist(strsplit(value, split=","))
-          key_toParse <- toParse[grep("\\\"column_name\\\"", toParse)]
-          key <- unlist(strsplit(key_toParse[[1L]],split=":"))[2L]
-          value <- gsub("\\\"", "", key)
-        }
+          value <- value$column_name
         parameters[[name]] <<- value
       }
     }
   })
 
   # Convert ignored_columns/response_column to valid R x/y
-  if (!is.null(parameters$ignored_columns))
-    parameters$x <- .verify_datacols(h2o.getFrame(conn, parameters$training_frame), parameters$ignored_columns)$cols_ignore
+  cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
+  
+  parameters$x <- setdiff(cols, parameters$ignored_columns)
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column

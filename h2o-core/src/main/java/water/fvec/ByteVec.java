@@ -21,7 +21,7 @@ public class ByteVec extends Vec {
   @Override public boolean isInt(){return true; }
 
   /** Get an unspecified amount of initial bytes; typically a whole C1NChunk of
-   *  length Vec.CHUNK_SZ but no guarantees.  Useful for previewing the start
+   *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start
    *  of large files.
    *  @return array of initial bytes */
   public byte[] getFirstBytes() { return chunkForChunkIdx(0)._mem; }

@@ -159,13 +159,13 @@ function(stmnt) {
     if (.is.binary_op(op)) {
       e1 <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
       e2 <- .stmnt.to.ast.switchboard(stmnt_list[[3L]])
-      return(.h2o.binary_op(deparse(op), e1, e2))
+      return(.h2o.binary_op_ast(deparse(op), e1, e2))
 
     # Case 1, 3A above unless it's `log`, or `[`, or `$`
     } else if (.is.unary_op(op)) {
       if (.is.slice(op)) return(.process.slice.stmnt(stmnt))
       x <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
-      return(.h2o.unary_op(deparse(op), x))
+      return(.h2o.unary_op_ast(deparse(op), x))
 
     # all nary_ops
     } else if(.is.nary_op(op)) {
@@ -207,7 +207,7 @@ function(stmnt) {
     # prefix op, 1 arg
     } else if(.is.prefix(op)) {
       arg <- .stmnt.to.ast.switchboard(stmnt_list[[2L]])
-      return(.h2o.unary_op(deparse(op), arg))
+      return(.h2o.unary_op_ast(deparse(op), arg))
 
     # should never get here
     } else {
@@ -269,7 +269,7 @@ function(stmnt) {
 
 .process.for.stmnt    <- function(stmnt) stop("`for` unimplemented")
 .process.else.stmnt   <- function(stmnt) new("ASTElse", body = .process.body(stmnt, TRUE))
-.process.return.stmnt <- function(stmnt) .h2o.unary_op("return", .stmnt.to.ast.switchboard(as.list(stmnt)[[2L]]))
+.process.return.stmnt <- function(stmnt) .h2o.unary_op_ast("return", .stmnt.to.ast.switchboard(as.list(stmnt)[[2L]]))
 
 .process.assign.stmnt<-
 function(stmnt) {
@@ -400,9 +400,9 @@ function(s) {
   } else if (is(s, "H2OFrame")) {
     tmp <- .get(s)
     if (is(tmp, "ASTNode")) {
-      paste0(" ", .visitor(s@ast))
+      paste0(" ", .visitor(s@mutable$ast))
     } else {
-      paste0(" ", s)
+      paste0(" ", tmp)
     }
   } else if (is(s, "ASTEmpty")) {
     paste0(" %", s@key)

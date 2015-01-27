@@ -5,10 +5,6 @@ import water.H2ONode;
 import water.Paxos;
 
 class CloudHandler extends Handler {
-  // Supported at V1 same as always
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public CloudV1 status(int version, CloudV1 cloud) {
     // TODO: this really ought to be in the water package

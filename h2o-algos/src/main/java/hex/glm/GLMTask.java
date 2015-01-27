@@ -275,7 +275,8 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         for(int r = 0; r < c._len; ++r) {
           if(skp[r] || c.isNA(r)) {
             skp[r] = true;
-            System.out.println("skipping row " + r);
+            // CNC Removed debugging printout 1/22/2015
+            //System.out.println("skipping row " + r);
             continue;
           }
           double d = c.atd(r);

@@ -10,9 +10,6 @@ import java.util.Map;
  * and payload entities (aka Schemas).
  */
 public class DocsHandler extends Handler {
-  @Override protected int min_ver() { return 1; }
-  @Override protected int max_ver() { return 1; }
-
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return a list of all REST API Routes and a Markdown Table of Contents. */

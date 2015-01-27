@@ -47,10 +47,11 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
   // Custom adapters go here
 
   // Version&Schema-specific filling into the impl
-  @Override public J createImpl( ) { return (J)new Job(key.key(), description); }
+  @SuppressWarnings("unchecked")
+  @Override public J createImpl( ) { return (J) new Job(key.key(), description); }
 
   // Version&Schema-specific filling from the impl
-  @Override public JobV2 fillFromImpl(Job job) {
+  @Override public S fillFromImpl(Job job) {
     // Handle fields in subclasses:
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this, job, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make consistent and remove
@@ -62,7 +63,7 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
     dest = KeySchema.make(job.dest());
     exception = job._exception;
-    return this;
+    return (S) this;
   }
 
   //==========================

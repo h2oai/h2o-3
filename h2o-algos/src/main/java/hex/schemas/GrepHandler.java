@@ -6,9 +6,6 @@ import water.api.Handler;
 /** TODO: only used by old-school web ui: remove!  ModelBuilderHander does this for all the algos.  */
 @Deprecated
 public class GrepHandler extends Handler {
-  @Override protected int min_ver() { return 2; }
-  @Override protected int max_ver() { return Integer.MAX_VALUE; }
-
   public GrepHandler() {}
   public GrepV2 train(int version, GrepV2 s) {
     Grep e = s.createAndFillImpl();

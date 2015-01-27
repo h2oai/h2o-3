@@ -36,61 +36,61 @@ public class VecTest extends TestUtil {
   @Test public void testMakeConSeq() {
     Vec v;
 
-    v = makeCon(0xCAFE,2*Vec.CHUNK_SZ);
+    v = makeCon(0xCAFE,2*FileVec.DFLT_CHUNK_SIZE);
     assertTrue(v.at(234) == 0xCAFE);
     assertTrue(v._espc.length == 3);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ
+            v._espc[1] == FileVec.DFLT_CHUNK_SIZE
     );
     v.remove(new Futures()).blockForPending();
 
-    v = makeCon(0xCAFE,3*Vec.CHUNK_SZ);
+    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(3*Vec.CHUNK_SZ-1) == 0xCAFE);
+    assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
     assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*2
+            v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+            v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2
     );
     v.remove(new Futures()).blockForPending();
 
-    v = makeCon(0xCAFE,3*Vec.CHUNK_SZ+1);
+    v = makeCon(0xCAFE,3*FileVec.DFLT_CHUNK_SIZE+1);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(3*Vec.CHUNK_SZ) == 0xCAFE);
+    assertTrue(v.at(3*FileVec.DFLT_CHUNK_SIZE) == 0xCAFE);
     assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*2 &&
-            v._espc[3] == Vec.CHUNK_SZ*3+1
+            v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+            v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+            v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3+1
     );
     v.remove(new Futures()).blockForPending();
 
-    v = makeCon(0xCAFE,4*Vec.CHUNK_SZ);
+    v = makeCon(0xCAFE,4*FileVec.DFLT_CHUNK_SIZE);
     assertTrue(v.at(234) == 0xCAFE);
-    assertTrue(v.at(4*Vec.CHUNK_SZ-1) == 0xCAFE);
+    assertTrue(v.at(4*FileVec.DFLT_CHUNK_SIZE-1) == 0xCAFE);
     assertTrue(v._espc.length == 5);
     assertTrue(
             v._espc[0] == 0              &&
-            v._espc[1] == Vec.CHUNK_SZ   &&
-            v._espc[2] == Vec.CHUNK_SZ*2 &&
-            v._espc[3] == Vec.CHUNK_SZ*3
+            v._espc[1] == FileVec.DFLT_CHUNK_SIZE   &&
+            v._espc[2] == FileVec.DFLT_CHUNK_SIZE*2 &&
+            v._espc[3] == FileVec.DFLT_CHUNK_SIZE*3
     );
     v.remove(new Futures()).blockForPending();
   }
 
   @Test public void testMakeSeq() {
-    Vec v = makeSeq(3*Vec.CHUNK_SZ);
+    Vec v = makeSeq(3*FileVec.DFLT_CHUNK_SIZE);
     assertTrue(v.at(0) == 1);
     assertTrue(v.at(234) == 235);
-    assertTrue(v.at(2*Vec.CHUNK_SZ) == 2*Vec.CHUNK_SZ+1);
+    assertTrue(v.at(2*FileVec.DFLT_CHUNK_SIZE) == 2*FileVec.DFLT_CHUNK_SIZE+1);
     assertTrue(v._espc.length == 4);
     assertTrue(
             v._espc[0] == 0 &&
-            v._espc[1] == Vec.CHUNK_SZ &&
-            v._espc[2] == Vec.CHUNK_SZ * 2
+            v._espc[1] == FileVec.DFLT_CHUNK_SIZE &&
+            v._espc[2] == FileVec.DFLT_CHUNK_SIZE * 2
     );
     v.remove(new Futures()).blockForPending();
   }

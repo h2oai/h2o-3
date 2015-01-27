@@ -14,25 +14,26 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Prep srcs: must be of the form [src1,src2,src3,...]
   srcs <- data@key
-  srcs <- .collapse(srcs)
+  srcs <- .collapse.char(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs)
-
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
+  parsedSrcs <- sapply(parseSetup$srcs, function(asrc) asrc$name)
 
   if (!nzchar(key))
     key <- .key.make(data@conn, parseSetup$hexName)
   parse.params <- list(
-        srcs = srcs,
+        srcs = .collapse.char(parsedSrcs),
         hex  = key,
-        columnNames = .collapse(col.names),
+        columnNames = .collapse.char(col.names),
         sep = parseSetup$sep,
         pType = parseSetup$pType,
         ncols = ncols,
         checkHeader = parseSetup$checkHeader,
-        singleQuotes = parseSetup$singleQuotes
+        singleQuotes = parseSetup$singleQuotes,
+        delete_on_done = TRUE
         )
 
   # Perform the parse
@@ -41,20 +42,16 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
-
-  # Remove keys to unparsed data
-  h2o.rm(res$srcs[[1L]]$name, data@conn)
-
   # Return a new H2OFrame object
-  nrows <- .h2o.fetchNRows(data@conn, hex)
-  .h2o.parsedData(data@conn, hex, nrows, ncols, col.names, linkToGC = TRUE)
+  h2o.getFrame(key=hex, linkToGC=TRUE)    
 }
 
 #'
 #' Helper Collapse Function
 #'
 #' Collapse a character vector into a ','-sep array of the form: [thing1,thing2,...]
-.collapse <- function(v) paste0('[', paste(v, collapse=","), ']')
+.collapse <- function(v) paste0('[', paste(v, collapse=','), ']')
+.collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
   .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
@@ -62,8 +59,10 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
 
 #'
 #' The H2OFrame Constructor
-.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrow, ncol, col_names, linkToGC = TRUE)
-  .newH2OObject("H2OFrame", conn=conn, key=key, nrows=nrow, ncols=ncol, col_names=col_names, linkToGC=linkToGC)
+.h2o.parsedData <- function(conn = h2o.getConnection(), key, nrows, ncols, col_names, linkToGC = TRUE) {
+  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn=conn, key=key, mutable=mutable, linkToGC=linkToGC)
+}
 
 #'
 #' Create new H2OFrame object for predictions
@@ -72,8 +71,6 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   col_names <- sapply(predictions$columns, function(column) column$label)
   nrows <- predictions$rows
   ncols <- length(col_names)
-  factors <- sapply(predictions$columns, function(column) column$type == "enum")
-  names(factors) <- col_names
-  factors <- as.data.frame(factors)
-  .newH2OObject("H2OFrame", conn=conn, key=key, col_names=col_names, nrows=nrows, ncols=ncols, factors=factors, linkToGC=linkToGC)
+  mutable <- new("H2OFrameMutableState", nrows = nrows, ncols = ncols, col_names = col_names)
+  .newH2OObject("H2OFrame", conn=conn, key=key, mutable=mutable, linkToGC=linkToGC)
 }

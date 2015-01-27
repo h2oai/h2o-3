@@ -4,8 +4,7 @@ import water.AutoBuffer;
 import water.H2O;
 
 /** A simple chunk for boolean values. In fact simple bit vector.
- * Each boolean is represented by 2bits since we need to represent
- * NA.
+ *  Each boolean is represented by 2bits since we need to represent NA.
  */
 public class CBSChunk extends Chunk {
   static protected final byte _NA  = 0x02; // Internal representation of NA
@@ -76,6 +75,8 @@ public class CBSChunk extends Chunk {
     int len = (values*bpv) >> 3;
     return values*bpv % 8 == 0 ? len : len + 1;
   }
+  @Override double min() { return 0; }
+  @Override double max() { return 1; }
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
   @Override public CBSChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();

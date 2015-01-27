@@ -448,16 +448,16 @@ final public class H2O {
   // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
   // done, the next lower level jobs get unblocked, etc.
   public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
-  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0;
-  public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1;
-  public static final byte        ACK_PRIORITY = MAX_PRIORITY-2;
-  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3;
-  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-3;
-  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-4;
-  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-5;
-  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-6;
-  public static final byte        GUI_PRIORITY = MAX_PRIORITY-7;
-  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-7;
+  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0; //126
+  public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1; //125
+  public static final byte        ACK_PRIORITY = MAX_PRIORITY-2; //124
+  public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3; //123
+  public static final byte INVALIDATE_PRIORITY = MAX_PRIORITY-3; //123
+  public static final byte    GET_KEY_PRIORITY = MAX_PRIORITY-4; //122
+  public static final byte    PUT_KEY_PRIORITY = MAX_PRIORITY-5; //121
+  public static final byte     ATOMIC_PRIORITY = MAX_PRIORITY-6; //120
+  public static final byte        GUI_PRIORITY = MAX_PRIORITY-7; //119
+  public static final byte     MIN_HI_PRIORITY = MAX_PRIORITY-7; //119
   public static final byte        MIN_PRIORITY = 0;
 
   // F/J threads that remember the priority of the last task they started
@@ -553,6 +553,7 @@ final public class H2O {
       int pp = ((PrioritizedForkJoinPool)t.getPool())._priority;
       // Drain the high priority queues before the normal F/J queue
       H2OCountedCompleter h2o = null;
+      boolean set_t_prior = false;
       try {
         assert  priority() == pp; // Job went to the correct queue?
         assert t._priority <= pp; // Thread attempting the job is only a low-priority?
@@ -563,6 +564,7 @@ final public class H2O {
           if( h2o != null ) {     // Got a hi-priority job?
             t._priority = p;      // Set & do it now!
             t.setPriority(Thread.MAX_PRIORITY-1);
+            set_t_prior = true;
             h2o.compute2();       // Do it ahead of normal F/J work
             p++;                  // Check again the same queue
           }
@@ -574,7 +576,7 @@ final public class H2O {
         else ex.printStackTrace();
       } finally {
         t._priority = pp;
-        if( pp == MIN_PRIORITY ) t.setPriority(Thread.NORM_PRIORITY-1);
+        if( pp == MIN_PRIORITY && set_t_prior ) t.setPriority(Thread.NORM_PRIORITY-1);
       }
       // Now run the task as planned
       compute2();
