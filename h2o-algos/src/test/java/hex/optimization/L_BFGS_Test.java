@@ -9,12 +9,11 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.optimization.L_BFGS.GradientInfo;
 import hex.optimization.L_BFGS.GradientSolver;
-import hex.optimization.L_BFGS.L_BFGS_Params;
-import hex.optimization.L_BFGS.ProgressMonitor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,12 +59,8 @@ public class L_BFGS_Test  extends TestUtil {
     int fails = 0;
     int N = 1000;
     for (int i = 0; i < N; ++i) {
-      L_BFGS_Params parms = new L_BFGS_Params();
-      parms._stepDec = .9;
-      parms._nBetas = 3;
-      parms._minStep = 1e-18;
-
-      L_BFGS.Result r = L_BFGS.solve(gs, parms, L_BFGS.startCoefs(2, 987654321));
+      L_BFGS lbfgs = new L_BFGS().setMinStep(1e-18).setGradEps(1e-12);
+      L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
       if (Math.abs(r.ginfo._objVal) > 1e-4)
         ++fails;
     }
@@ -87,11 +82,11 @@ public class L_BFGS_Test  extends TestUtil {
       dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE);
       DKV.put(dinfo._key,dinfo);
       GLMGradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.vec("CAPSULE").mean(), source.numRows());
-      L_BFGS_Params lp = new L_BFGS_Params();
-      lp._gradEps = 1e-8;
+      L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
+
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.vec("CAPSULE").mean());
-      L_BFGS.Result r = L_BFGS.solve(solver, lp, beta);
+      L_BFGS.Result r = lbfgs.solve(solver, beta);
       GLMGradientInfo ginfo = (GLMGradientInfo)r.ginfo;
       assertEquals(378.34, ginfo._val.residualDeviance(), 1e-1);
     } finally {
@@ -118,22 +113,21 @@ public class L_BFGS_Test  extends TestUtil {
 
       DKV.put(dinfo._key,dinfo);
       GradientSolver solver = new GLMColBasedGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
-      L_BFGS_Params lp = new L_BFGS_Params();
-      lp._minStep = 1e-8;
+      L_BFGS lbfgs = new L_BFGS().setMinStep(1e-8);
+
       long t1 = System.currentTimeMillis();
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.lastVec().mean());
-      L_BFGS.solve(solver, lp, beta.clone());
-      L_BFGS.Result r = L_BFGS.solve(solver, lp, beta.clone());
+      lbfgs.solve(solver, beta.clone());
+      L_BFGS.Result r = lbfgs.solve(solver, beta.clone());
       long t2 = System.currentTimeMillis();
       GradientInfo ginfo = r.ginfo;
-      assertEquals( .5 * glmp._lambda[0] * GLM.l2norm(r.coefs), ginfo._objVal, 1e-3);
+      assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r.coefs,true), ginfo._objVal, 1e-3);
       assertTrue("iter# expected < 100, got " + r.iter, r.iter < 100);
-      lp = new L_BFGS_Params();
-      lp._minStep = 1e-8;
+      lbfgs = new L_BFGS().setMinStep(1e-8);
       solver = new GLM.GLMGradientSolver(glmp,dinfo,1e-5,source.lastVec().mean(), source.numRows());
-      L_BFGS.solve(solver, lp, beta.clone());
-      L_BFGS.Result r2 = L_BFGS.solve(solver, lp, beta.clone());
+      lbfgs.solve(solver, beta.clone());
+      L_BFGS.Result r2 = new L_BFGS().setMinStep(1e-8).solve(solver, beta.clone());
       long t3 = System.currentTimeMillis();
       System.out.println("solver1 took " + (t2-t1) + "ms, objval = " + r.ginfo._objVal);
       System.out.println("solver2 took " + (t3-t2) + "ms, objval = " + r2.ginfo._objVal);
