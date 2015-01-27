@@ -3,6 +3,8 @@ sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_kmeans
+# test
+
 
 class Basic(unittest.TestCase):
     def tearDown(self):
