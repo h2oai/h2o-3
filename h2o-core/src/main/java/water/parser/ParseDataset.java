@@ -2,6 +2,7 @@ package water.parser;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -1039,25 +1040,40 @@ public final class ParseDataset extends Job<Frame> {
     try {
       long numRows = fr.anyVec().length();
       Log.info("Parse result for " + job.dest() + " (" + Long.toString(numRows) + " rows):");
+      // get all rollups started in parallell, otherwise this takes ages!
       Futures fs = new Futures();
       Vec[] vecArr = fr.vecs();
       for(Vec v:vecArr)  v.startRollupStats(fs);
       fs.blockForPending();
+
       int namelen = 0;
       for (String s : fr.names()) namelen = Math.max(namelen, s.length());
-      String format = " %"+namelen+"s %11s %12s %12s %11s %8s %6s";
+      String format = " %"+namelen+"s %7s %12.12s %12.12s %11s %8s %6s";
       Log.info(String.format(format, "ColV2", "type", "min", "max", "NAs", "constant", "numLevels"));
-      // get all rollups started in parallell, otherwise this takes ages!
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
       for( int i = 0; i < vecArr.length; i++ ) {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
         boolean isString = v.isString();
+        boolean isTime = v.isTime();
         String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
-        String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : "numeric"))));
+        String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : (isTime ? "time" : "numeric")))));
         String minStr = isString ? "" : String.format("%g", v.min());
         String maxStr = isString ? "" : String.format("%g", v.max());
+
+        switch( v.get_type() ) {
+        case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
+        case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
+        case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
+        case Vec.T_ENUM:  typeStr = "factor" ;  minStr = v.factor(0);  maxStr = v.factor(v.cardinality()-1); break;
+        case Vec.T_TIME:
+        case Vec.T_TIME+1:
+        case Vec.T_TIME+2: typeStr="time"    ;  minStr = sdf.format(v.min());  maxStr = sdf.format(v.max());  break;
+        default: throw H2O.unimpl();
+        }
+
         long numNAs = v.naCnt();
         String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
         String isConstantStr = isConstant ? "constant" : "";
