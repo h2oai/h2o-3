@@ -267,46 +267,67 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
             eta[j][r] += _beta[j][off];
         }
       }
+
+      final int numStart = _dinfo.numStart();
+      // compute default eta offset for 0s
+      if(_dinfo._normMul != null && _dinfo._normSub != null) {
+        for (int j = 0; j < eta.length; ++j) {
+          double off = 0;
+          for (int i = 0; i < _dinfo._nums; ++i)
+            off -= _beta[j][numStart + i] * _dinfo._normSub[i] * _dinfo._normMul[i];
+          for(int r = 0; r < chks[0]._len; ++r)
+            eta[j][r] += off;
+        }
+      }
+
       // now numerics
-      for (int i = _dinfo._cats; i < nxs; ++i) {
-        Chunk c = chks[i];
+      for (int i = 0; i < _dinfo._nums; ++i) {
+        Chunk c = chks[i + _dinfo._cats];
         // todo: use sparse interface here (need to adjust for data normalization)
-//        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        for(int r = 0; r < c._len; ++r) {
+        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if(skp[r] || c.isNA(r)) {
             skp[r] = true;
-            // CNC Removed debugging printout 1/22/2015
-            //System.out.println("skipping row " + r);
             continue;
           }
           double d = c.atd(r);
           if (_dinfo._normMul != null)
-            d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
-          int numStart = _dinfo.numStart() - _dinfo._cats;
+            d *= _dinfo._normMul[i];
           for (int j = 0; j < eta.length; ++j)
             eta[j][r] += _beta[j][numStart + i] * d;
         }
       }
+      double [] eta_sums = MemoryManager.malloc8d(eta.length);
+
+
       // next compute the predicted mean and variance and gradient for each row
       for(int r = 0; r < chks[0]._len; ++r){
         if(skp[r] || responseChunk.isNA(r))
           continue;
-        double off = _dinfo._offset?offsetChunk.atd(r):0;
+        double off = (_dinfo._offset?offsetChunk.atd(r):0);
         double y = responseChunk.atd(r);
         for(int j = 0; j < eta.length; ++j) {
-
           double offset = off + (_dinfo._intercept?_beta[j][_beta[j].length-1]:0);
           double mu = _params.linkInv(eta[j][r] + offset);
           obj[j] += _params.deviance(y,mu);
           double var = _params.variance(mu);
           if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
           eta[j][r] = (mu-y) / (var * _params.linkDeriv(mu));
-          if(_dinfo._intercept)
-            _gradient[j][_gradient[j].length-1] += eta[j][r];
+          eta_sums[j] += eta[j][r];
+//          if(_dinfo._intercept)
+//            _gradient[j][_gradient[j].length-1] += eta[j][r];
         }
       }
+
       // finally go over the columns again and compute gradient for each column
-      // do categoricals first
+      // first handle eta offset and intercept
+      for(int j = 0; j < _gradient.length; ++j) {
+        if(_dinfo._intercept)
+          _gradient[j][_gradient[j].length-1] = eta_sums[j];
+        if(_dinfo._normMul != null && _dinfo._normSub != null)
+        for(int i = 0; i < _dinfo._nums; ++i)
+          _gradient[j][numStart + i] = -_dinfo._normSub[i]*_dinfo._normMul[i]*eta_sums[j];
+      }
+      // now categoricals
       for(int i = 0; i < _dinfo._cats; ++i) {
         Chunk c = chks[i];
         for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
@@ -322,18 +343,14 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         }
       }
       // now numerics
-      for (int i = _dinfo._cats; i < nxs; ++i) {
-        Chunk c = chks[i];
-        // for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        for(int r = 0; r < c._len; ++r) {
-          if(skp[r] || c.isNA(r)) {
-            skp[r] = true;
+      for (int i = 0; i < _dinfo._nums; ++i) {
+        Chunk c = chks[i + _dinfo._cats];
+        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+          if(skp[r] || c.isNA(r))
             continue;
-          }
           double d = c.atd(r);
           if (_dinfo._normMul != null)
-            d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
-          int numStart = _dinfo.numStart() - _dinfo._cats;
+            d = d*_dinfo._normMul[i];
           for (int j = 0; j < eta.length; ++j)
             _gradient[j][numStart + i] += eta[j][r] * d;
         }
@@ -349,7 +366,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
     public void reduce(ColGradientTask grt){
       ArrayUtils.add(_objVals, grt._objVals);
       for(int i = 0; i < _beta.length; ++i)
-        ArrayUtils.add(_beta[i],grt._beta[i]);
+        ArrayUtils.add(_gradient[i],grt._gradient[i]);
     }
   }
   /**
