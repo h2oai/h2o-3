@@ -127,10 +127,9 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * The number and size of each hidden layer in the model.
      * For example, if a user specifies "100,200,100" a model with 3 hidden
      * layers will be produced, and the middle hidden layer will have 200
-     * neurons.To specify a grid search, add parentheses around each
-     * model's specification: "(100,100), (50,50,50), (20,20,20,20)".
+     * neurons.
      */
-    @API(help = "Hidden layer sizes (e.g. 100,100). Grid search: (10,10), (20,20,20)", level = API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "Hidden layer sizes (e.g. 100,100).", level = API.Level.critical, direction=API.Direction.INOUT)
     public int[] hidden;
 
     /**
