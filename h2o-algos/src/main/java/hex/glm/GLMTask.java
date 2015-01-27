@@ -426,6 +426,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
         w = 1;
         z = y;
         mu = (_validate || _computeGradient)?computeEta(ncats,cats,nums,_beta):0;
+        var = 1;
       } else {
         if( _beta == null ) {
           mu = _glm.mustart(y, _ymu);
@@ -434,7 +435,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
           eta = computeEta(ncats, cats,nums,_beta);
           mu = _glm.linkInv(eta);
         }
-        var = Math.max(1e-5, _glm.variance(mu)); // avoid numerical problems with 0 variance
+        var = Math.max(1e-6, _glm.variance(mu)); // avoid numerical problems with 0 variance
         d = _glm.linkDeriv(mu);
         z = eta + (y-mu)*d;
         w = 1.0/(var*d*d);
@@ -452,7 +453,7 @@ public abstract class GLMTask<T extends GLMTask<T>> extends FrameTask<T> {
       final double wz = w * z;
       _yy += wz * z;
       if(_computeGradient || _computeGram){
-        final double grad = _computeGradient?w*d*(mu-y):0;
+        final double grad = _computeGradient?((mu-y) / (var * d)):0;
         for(int i = 0; i < ncats; ++i){
           final int ii = cats[i];
           if(_computeGradient)_grad[ii] += grad;
