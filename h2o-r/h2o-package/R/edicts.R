@@ -1,4 +1,6 @@
 #'
+#' TODO: No objects in this file are being used. Either remove file or use objects.
+#'
 #' Append a <key,value> pair to a list.
 #'
 #' Contained here are a set of helper methods that perform type checking on the value passed in.
@@ -80,7 +82,7 @@
   .addNumericArrayParm(parms, k, v)
 }
 
-.putParm <- function(parms, t, k, v) {
+.putParm <- function(parms, type, k, v) {
   switch(type,
     int     = .addIntParm(parms,k,v),
     long    = .addLongParm(parms,k,v),
