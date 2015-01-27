@@ -84,6 +84,7 @@ class H2OModelBuilder(ModelBase):
             .poll()
 
         # set the fitted_model and model_type fields
+        self._model_key = j.destination_key
         self._set_fitted_model_and_model_type(j.destination_key)
 
         # do some cleanup
@@ -99,7 +100,14 @@ class H2OModelBuilder(ModelBase):
         self._fitted_model.performance(test_data=test_data)
 
     def predict(self, test_data=None):
-        self._fitted_model.predict(test_data=test_data)
+        if not test_data:
+            raise ValueError("Must specify test data")
+        self._set_training_frame(test_data)
+        url_suffix = "Predictions/models/" + self._model_key + "/frames/" + self._parameters["training_frame"]
+        j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix)).poll()
+        # self._fitted_model.predict(test_data=test_data)
+        h2o.remove(self._parameters["training_frame"])
+        return H2OFrame(raw_fname=j.destination_key)
 
     def summary(self):
         self._fitted_model.summary()
