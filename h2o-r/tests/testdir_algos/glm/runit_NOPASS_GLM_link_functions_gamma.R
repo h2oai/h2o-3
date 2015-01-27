@@ -51,7 +51,7 @@ test.linkFunctions <- function(conn) {
 	}
 
 	print("Create models with link: IDENTITY")
-	model.h2o.gamma.identity <- h2o.glm(x=myX, y=myY, data=h2o.data, family="gamma", link="identity",alpha=0.5, lambda=0, nfolds=0)
+	model.h2o.gamma.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gamma", link="identity",alpha=0.5, lambda=0, nfolds=0)
 	model.R.gamma.identity <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
