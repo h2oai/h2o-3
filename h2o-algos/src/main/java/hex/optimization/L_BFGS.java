@@ -40,6 +40,13 @@ public class L_BFGS  {
       return getGradient(new double[][]{betas})[0];
     }
   }
+
+  public static class ProgressMonitor {
+    public boolean progress(GradientInfo ginfo){return true;}
+  }
+
+
+
   // constants used in line search
   public static final double c1 = 1e-1;
 
@@ -106,12 +113,12 @@ public class L_BFGS  {
    * Contains parameters affecting number of iterations, conevrgence criterium and line search details.
    */
   public static final class L_BFGS_Params extends Iced {
-    public int _maxIter = 1000;
-    public double _gradEps = 1e-5;
+    public int _maxIter = 500;
+    public double _gradEps = 1e-6;
     // line search params
-    public int _nBetas = 16; // number of line search steps done in each pass (to minimize passes over the whole data)
-    public double _stepDec = .8; // line search step decrement
-    public double _minStep = Math.pow(_stepDec,_nBetas*2);
+    public int _nBetas = 32; // number of line search steps done in each pass (to minimize passes over the whole data)
+    public double _stepDec = .7; // line search step decrement
+    public double _minStep = Math.pow(_stepDec,_nBetas);
   }
 
 
@@ -129,7 +136,7 @@ public class L_BFGS  {
    * function evaluated at the found optmimum.
    */
   public static final Result solve(GradientSolver gslvr, L_BFGS_Params params, double [] coefs){
-    return solve(gslvr,params, new History(20,coefs.length),coefs);
+    return solve(gslvr,params, coefs, new History(20,coefs.length), new ProgressMonitor());
   }
 
   /**
@@ -145,7 +152,7 @@ public class L_BFGS  {
    * @return Optimal solution (coefficients) + gradient info returned by the user gradient
    * function evaluated at the found optmimum.
    */
-  public static final Result solve(GradientSolver gslvr, final L_BFGS_Params params, History hist,final double [] coefs) {
+  public static final Result solve(GradientSolver gslvr, final L_BFGS_Params params, final double [] coefs, History hist, ProgressMonitor pm) {
     GradientInfo gOld = gslvr.getGradient(coefs);
     final double [] beta = coefs;
     int iter = 0;
@@ -155,7 +162,7 @@ public class L_BFGS  {
     double step = 1;
     // jsut loop until good enough or line search can not progress
 _MAIN:
-    while(iter++ < params._maxIter && MathUtils.l2norm2(gOld._gradient) > params._gradEps) {
+    while(pm.progress(gOld) && iter++ < params._maxIter && MathUtils.l2norm2(gOld._gradient) > params._gradEps) {
       double[] pk = getSearchDirection(iter-1, hist, gOld._gradient);
       double t = step;
       while (t > params._minStep) {
