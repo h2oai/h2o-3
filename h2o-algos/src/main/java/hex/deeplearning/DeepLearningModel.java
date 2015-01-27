@@ -470,7 +470,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             "_max_categorical_features",
     };
 
-    void validate( DeepLearning dl ) {
+    void validate( DeepLearning dl, boolean expensive ) {
       boolean classification = dl.isClassifier();
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
@@ -506,9 +506,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       if (_hidden_dropout_ratios == null) {
         if (_activation == Activation.TanhWithDropout || _activation == Activation.MaxoutWithDropout || _activation == Activation.RectifierWithDropout) {
-          _hidden_dropout_ratios = new double[_hidden.length];
-          if (!_quiet_mode) dl.info("_hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
-          Arrays.fill(_hidden_dropout_ratios, 0.5);
+          if (expensive) {
+            _hidden_dropout_ratios = new double[_hidden.length];
+            if (!_quiet_mode)
+              dl.info("_hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
+            Arrays.fill(_hidden_dropout_ratios, 0.5);
+          }
         }
       }
       else if (_hidden_dropout_ratios.length != _hidden.length) {
@@ -523,13 +526,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if (H2O.CLOUD.size() == 1 && _replicate_training_data) {
         dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
-        dl.info("_replicate_training_data", "Disabling replicate_training_data on 1 node.");
-        _replicate_training_data = false;
+        if (expensive) {
+          dl.info("_replicate_training_data", "Disabling replicate_training_data on 1 node.");
+          _replicate_training_data = false;
+        }
       }
       if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data)) {
         dl.hide("_single_node_mode", "single_node_mode is only used with multi-node operation with replicated training data.");
-        dl.info("_single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
-        _single_node_mode = false;
+        if (expensive) {
+          dl.info("_single_node_mode", "Disabling single_node_mode (only for multi-node operation with replicated training data).");
+          _single_node_mode = false;
+        }
       }
 
       if (_autoencoder) {
@@ -537,15 +544,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_convert_to_enum", "convert_to_enum is unsupported in combination with autoencoder.");
       }
       if (!_use_all_factor_levels && _autoencoder ) {
-        dl.warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
-        _use_all_factor_levels = true;
+        if (expensive) {
+          dl.warn("_use_all_factor_levels", "Enabling all_factor_levels for auto-encoders.");
+          _use_all_factor_levels = true;
+        }
       }
 
       if (_n_folds != 0)
         dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
       if(_override_with_best_model && _n_folds != 0) {
-        dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
-        _override_with_best_model = false;
+        if (expensive) {
+          dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
+          _override_with_best_model = false;
+        }
       }
 
       if (_adaptive_rate) {
@@ -563,15 +574,19 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
       if (!_quiet_mode) {
         if (_adaptive_rate) {
-          dl.info("_adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
-                      + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
-          _momentum_start = 0;
-          _momentum_stable = 0;
+          if (expensive) {
+            dl.info("_adaptive_rate", "Using automatic learning rate.  Ignoring the following input parameters: "
+                    + "rate, rate_decay, rate_annealing, momentum_start, momentum_ramp, momentum_stable, nesterov_accelerated_gradient.");
+            _momentum_start = 0;
+            _momentum_stable = 0;
+          }
         } else {
-          dl.info("_adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
-                      + "rho, epsilon.");
-          _rho = 0;
-          _epsilon = 0;
+          if (expensive) {
+            dl.info("_adaptive_rate", "Using manual learning rate.  Ignoring the following input parameters: "
+                    + "rho, epsilon.");
+            _rho = 0;
+            _epsilon = 0;
+          }
         }
 
         if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
@@ -579,25 +594,27 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           dl.info("_initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (_n_folds != 0) {
-          if (_override_with_best_model) {
-            dl.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
-            _override_with_best_model = false;
+          if (expensive) {
+            if (_override_with_best_model) {
+              dl.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
+              _override_with_best_model = false;
+            }
           }
         }
       }
 
       if(_loss == Loss.Automatic) {
-        if (!classification) {
-          if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for regression.");
-          _loss = Loss.MeanSquare;
-        }
-        else if (_autoencoder) {
-          if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for auto-encoder.");
-          _loss = Loss.MeanSquare;
-        }
-        else {
-          if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to Cross-Entropy for classification.");
-          _loss = Loss.CrossEntropy;
+        if (expensive) {
+          if (!classification) {
+            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for regression.");
+            _loss = Loss.MeanSquare;
+          } else if (_autoencoder) {
+            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for auto-encoder.");
+            _loss = Loss.MeanSquare;
+          } else {
+            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to Cross-Entropy for classification.");
+            _loss = Loss.CrossEntropy;
+          }
         }
       }
 
@@ -631,13 +648,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
       }
       if (_reproducible) {
-        if (!_quiet_mode)
-          Log.info("Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\nand setting train_samples_per_iteration to -1 to enforce reproducibility.");
-        _force_load_balance = true;
-        _single_node_mode = false;
-        _train_samples_per_iteration = -1;
-        _replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
-        //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
+        if (expensive) {
+          if (!_quiet_mode)
+            Log.info("Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\nand setting train_samples_per_iteration to -1 to enforce reproducibility.");
+          _force_load_balance = true;
+          _single_node_mode = false;
+          _train_samples_per_iteration = -1;
+          _replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+          //      replicate_training_data = true; //doesn't hurt, but does replicated identical work
+        }
       }
     }
   }
