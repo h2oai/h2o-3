@@ -27,6 +27,7 @@ my_km.max_iterations = 100
 my_km.fit()
 
 my_km.show()
+my_km.summary()
 
 
 # Alternative Look:

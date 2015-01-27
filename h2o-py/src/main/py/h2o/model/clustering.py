@@ -1,8 +1,9 @@
 """
-Binomial Models should be comparable.
+Clustering Models should be comparable.
 """
 
 from model_base import *
+from pprint import pprint as pp
 
 
 class H2OClusteringModel(ModelBase):
@@ -10,7 +11,7 @@ class H2OClusteringModel(ModelBase):
     def __init__(self, raw_model_output=None, algo=None):
         if raw_model_output is None:
             raise H2OModelInstantiationException(
-                "Failed to instantiate a Binomial model: no model output found!")
+                "Failed to instantiate a Clustering model: no model output found!")
         super(H2OClusteringModel, self).__init__()
         self.model_type = self.CLUSTERING
         self.algo = algo
@@ -18,11 +19,19 @@ class H2OClusteringModel(ModelBase):
 
     def summary(self):
         """
-        This method prints out various relevant pieces of information for a clustering
-        model.
-        :return:
+        This method prints out various relevant pieces of information for a clustering model.
         """
-        pass
+        print "Model Summary:"
+        print
+        pp(self.raw_model_output["centers"])
+        print
+        print "Cluster Sizes: " + str(self.raw_model_output["size"])
+        print
+        print "Within-Cluster MSE: " + str(self.raw_model_output["within_mse"])
+        print
+        print "Average Between-Cluster SSE: " + str(self.raw_model_output["avg_between_ss"])
+        print "Average Overall SSE: " + str(self.raw_model_output["avg_ss"])
+        print
 
     def performance(self, test_data=None):
         pass

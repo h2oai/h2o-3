@@ -237,7 +237,7 @@ class H2OModelBuilder(ModelBase):
 
         # get the model type
         self._model_type = self._model_type.format(model["output"]["model_category"])
-
+        
         # Create the type of model based on the model_category just obtained and stuff the
         # new object into `self._fitted_model`.
 
