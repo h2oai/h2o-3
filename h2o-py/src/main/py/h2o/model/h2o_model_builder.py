@@ -257,19 +257,19 @@ class H2OModelBuilder(ModelBase):
 
         # BINOMIAL model
         if self._model_type == self.BINOMIAL:
-            self._fitted_model = H2OBinomialModel(model["output"])
+            self._fitted_model = H2OBinomialModel(model["output"], algo=self._algo)
 
         # MULTINOMIAL model
         elif self._model_type == self.MULTINOMIAL:
-            self._fitted_model = H2OMultinomialModel(model["output"])
+            self._fitted_model = H2OMultinomialModel(model["output"], algo=self._algo)
 
         # CLUSTERING model
         elif self._model_type == self.CLUSTERING:
-            self._fitted_model = H2OClusteringModel(model["output"])
+            self._fitted_model = H2OClusteringModel(model["output"], algo=self._algo)
 
         # REGRESSION model
         elif self._model_type == self.REGRESSION:
-            self._fitted_model = H2ORegressionModel(model["output"])
+            self._fitted_model = H2ORegressionModel(model["output"], algo=self._algo)
 
         else:
             raise H2OUnknownModelError("Don't know what to do with model type: "

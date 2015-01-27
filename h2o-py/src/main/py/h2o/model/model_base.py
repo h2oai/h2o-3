@@ -3,6 +3,8 @@ This module implements the abstract model class. All model things inherit from t
 """
 
 import abc
+from ..two_dim_table import H2OTwoDimTable
+import tabulate
 
 
 class H2OModelInstantiationException(Exception):
@@ -54,11 +56,21 @@ class ModelBase(object):
         Print a brief summary of the model.
         :return: None
         """
-        model_type = getattr(self, "_model_type")
-        algo = getattr(self, "_algo")
-        print
-        print model_type + ": " + algo
+        fitted_model = getattr(self, "_fitted_model")
+        model = fitted_model.raw_model_output
+        sub = [k for k in model.keys() if k in model["help"].keys()
+               and not k.startswith("_") and k != "help"]
+        val = [[model[k]] for k in sub]
+        lab = [model["help"][k] + ":" for k in sub if k != "help"]
+
+        for i in range(len(val)):
+            val[i].insert(0, lab[i])
+
         print
         print "Model Details:"
         print
+        print tabulate.tabulate(val, headers=["Description", "Value"])
         print
+        for v in val:
+            if isinstance(v[1], H2OTwoDimTable):
+                v[1].show()

@@ -3,7 +3,6 @@ Clustering Models should be comparable.
 """
 
 from model_base import *
-from pprint import pprint as pp
 
 
 class H2OClusteringModel(ModelBase):
@@ -16,21 +15,26 @@ class H2OClusteringModel(ModelBase):
         self.model_type = self.CLUSTERING
         self.algo = algo
         self.raw_model_output = raw_model_output
+        self.average_ss = self.raw_model_output["avg_ss"]
+        self.average_between_ss = self.raw_model_output["avg_between_ss"]
+        self.within_mse = self.raw_model_output["within_mse"]
+        self.cluster_sizes = self.raw_model_output["size"]
+        self.centers = self.raw_model_output["centers"]
 
     def summary(self):
         """
-        This method prints out various relevant pieces of information for a clustering model.
+        This method prints out various relevant pieces of information for a clustering
+        model.
         """
         print "Model Summary:"
         print
-        pp(self.raw_model_output["centers"])
         print
-        print "Cluster Sizes: " + str(self.raw_model_output["size"])
+        print "Cluster Sizes: " + self.cluster_sizes
         print
-        print "Within-Cluster MSE: " + str(self.raw_model_output["within_mse"])
+        print "Within-Cluster MSE: " + self.within_mse
         print
-        print "Average Between-Cluster SSE: " + str(self.raw_model_output["avg_between_ss"])
-        print "Average Overall SSE: " + str(self.raw_model_output["avg_ss"])
+        print "Average Between-Cluster SSE: " + self.average_between_ss
+        print "Average Overall SSE: " + self.average_ss
         print
 
     def performance(self, test_data=None):
