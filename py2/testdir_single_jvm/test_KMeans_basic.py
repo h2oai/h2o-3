@@ -4,8 +4,6 @@ import h2o, h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_kmeans
 
-
-
 class Basic(unittest.TestCase):
     def tearDown(self):
         h2o.check_sandbox_for_errors()
