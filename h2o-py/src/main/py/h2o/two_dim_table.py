@@ -44,4 +44,5 @@ def _parse_values(values, types):
         else:
             for j, val in enumerate(v):
                 values[k][j] = val
+        i += 1
     return values
