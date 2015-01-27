@@ -43,6 +43,9 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
+  @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
+  public Key[] veckeys;
+
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
     public ColSpecifierV2(String column_name) {
@@ -187,6 +190,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     len = (int)Math.min(len2,rows);
     byteSize = fr.byteSize();
     columns = new ColV2[fr.numCols()];
+    veckeys = fr.keys();
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
       columns[i] = new ColV2(fr._names[i],vecs[i],off,len);
@@ -213,6 +217,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     len = (int)Math.min(len,rows);
     byteSize = _fr.byteSize();
     columns = new ColV2[_fr.numCols()];
+    veckeys = _fr.keys();
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )
       columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);

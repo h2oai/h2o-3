@@ -62,4 +62,4 @@ from frame import H2OFrame
 from frame import H2OVec
 
 
-__all__ = ["H2OFrame", "h2oConn"]
+__all__ = ["H2OFrame", "h2oConn", "H2OVec"]

@@ -5,6 +5,7 @@ An abstract model builder.
 import abc
 
 from ..h2o import H2OFrame
+from ..frame import H2OVec
 from ..h2o import h2oConn
 from . import ModelBase
 from ..h2o import H2OJob
@@ -41,6 +42,7 @@ class H2OModelBuilder(ModelBase):
         # OUT
         self._model_type = "H2O{}Model"  # (e.g. "Binomial")
         self._fitted_model = None  # filled after a call to self.fit
+        self._model_key = None     # filled after a call to self.fit
 
     def fit(self, x=None, y=None, validation_frame=None):
         """
@@ -84,7 +86,6 @@ class H2OModelBuilder(ModelBase):
             .poll()
 
         # set the fitted_model and model_type fields
-        self._model_key = j.destination_key
         self._set_fitted_model_and_model_type(j.destination_key)
 
         # do some cleanup
@@ -99,15 +100,47 @@ class H2OModelBuilder(ModelBase):
     def performance(self, test_data=None):
         self._fitted_model.performance(test_data=test_data)
 
-    def predict(self, test_data=None):
+    def predict(self, test_data=None, **kwargs):
+        """
+        Predict on a data set.
+        :param test_data: A set of data that is compatible with the model.
+        :return: A new H2OFrame filled with predictions.
+        """
         if not test_data:
             raise ValueError("Must specify test data")
-        self._set_training_frame(test_data)
-        url_suffix = "Predictions/models/" + self._model_key + "/frames/" + self._parameters["training_frame"]
-        j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix)).poll()
-        # self._fitted_model.predict(test_data=test_data)
+
+        # cbind the test_data vecs together and produce a temp key
+        test_data_key = H2OFrame.send_frame(test_data)
+
+        # get the predictions
+        url_suffix = "Predictions/models/" + self._model_key + "/frames/" + test_data_key
+
+        # this job call is blocking
+        j = h2oConn.do_safe_post_json(url_suffix=url_suffix)
+
+        # retrieve the prediction frame
+        prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
+
+        # get the actual frame meta dta
+        pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
+
+        # collect the veckeys
+        veckeys = pred_frame_meta["veckeys"]
+
+        # get the number of rows
+        rows = pred_frame_meta["rows"]
+
+        # get the column names
+        cols = [col["label"] for col in pred_frame_meta["columns"]]
+
+        # create a set of H2OVec objects
+        vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+
+        # toast the cbound frame
         h2o.remove(self._parameters["training_frame"])
-        return H2OFrame(raw_fname=j.destination_key)
+
+        # return a new H2OFrame object
+        return H2OFrame(vecs=vecs)
 
     def summary(self):
         self._fitted_model.summary()
@@ -238,6 +271,9 @@ class H2OModelBuilder(ModelBase):
         return model_params_default
 
     def _set_fitted_model_and_model_type(self, destination_key):
+
+        # first set the model key
+        self._model_key = destination_key
 
         # GET the model result
         url_suffix = "Models/" + destination_key

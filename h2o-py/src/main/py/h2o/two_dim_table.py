@@ -31,18 +31,14 @@ class H2OTwoDimTable(object):
 
 
 def _parse_values(values, types):
-    i = 0
     for k, v in enumerate(values):
-        if types[i] == 'integer':
-            for j, val in enumerate(v):
+        for j, val in enumerate(v):
+            if types[j] == 'integer':
                 values[k][j] = int(float.fromhex(val))
 
-        elif types[i] == 'double' or types[i] == 'float' or types[i] == 'long':
-            for j, val in enumerate(v):
+            elif types[j] == 'double' or types[j] == 'float' or types[j] == 'long':
                 values[k][j] = float.fromhex(val)
 
-        else:
-            for j, val in enumerate(v):
-                values[k][j] = val
-        i += 1
+            else:
+                continue
     return values

@@ -29,12 +29,12 @@ class H2OClusteringModel(ModelBase):
         print "Model Summary:"
         print
         print
-        print "Cluster Sizes: " + self.cluster_sizes
+        print "Cluster Sizes: " + str(self.cluster_sizes)
         print
-        print "Within-Cluster MSE: " + self.within_mse
+        print "Within-Cluster MSE: " + str(self.within_mse)
         print
-        print "Average Between-Cluster SSE: " + self.average_between_ss
-        print "Average Overall SSE: " + self.average_ss
+        print "Average Between-Cluster SSE: " + str(self.average_between_ss)
+        print "Average Overall SSE: " + str(self.average_ss)
         print
 
     def performance(self, test_data=None):
