@@ -617,6 +617,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
         }
       }
+      if (_score_training_samples < 0) {
+        dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
+      }
+      if (_score_validation_samples < 0) {
+        dl.error("_score_validation_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
+      }
 
       if(_autoencoder && _sparsity_beta > 0) {
         if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
