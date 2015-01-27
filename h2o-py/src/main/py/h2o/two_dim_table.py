@@ -37,7 +37,7 @@ def _parse_values(values, types):
             for j, val in enumerate(v):
                 values[k][j] = int(float.fromhex(val))
 
-        if types[i] == 'double' or types[i] == 'float' or types[i] == 'long':
+        elif types[i] == 'double' or types[i] == 'float' or types[i] == 'long':
             for j, val in enumerate(v):
                 values[k][j] = float.fromhex(val)
 
