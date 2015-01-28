@@ -15,7 +15,7 @@ from clustering import H2OClusteringModel
 from regression import H2ORegressionModel
 import h2o
 
-from math import isinf  # needed because stupid backend doesn't read inf
+from math import isinf  # needed because st00pid backend doesn't read inf
 import sys
 
 
@@ -85,8 +85,9 @@ class H2OModelBuilder(ModelBase):
 
         # launch the job and poll
         url_suffix = "ModelBuilders/" + self._algo
-        j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix, params=model_params))\
-            .poll()
+        job_type = self._algo + " Model Build"
+        j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix, params=model_params),
+                   job_type=job_type).poll()
 
         # set the fitted_model and model_type fields
         self._set_fitted_model_and_model_type(j.destination_key)

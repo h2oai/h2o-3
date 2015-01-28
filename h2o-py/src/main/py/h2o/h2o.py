@@ -96,7 +96,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p['srcs'] = [_quoted(src['name']) for src in setup['srcs']]
 
     # Request blocking parse
-    j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p)).poll()
+    j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p), "Parse").poll()
     return j.jobs
 
 

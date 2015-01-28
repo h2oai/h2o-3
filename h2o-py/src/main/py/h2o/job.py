@@ -12,7 +12,7 @@ class H2OJob(object):
     """
     A class representing an H2O Job.
     """
-    def __init__(self, jobs):
+    def __init__(self, jobs, job_type):
         if "jobs" in jobs:
             job = jobs["jobs"][0]
         else:
@@ -26,10 +26,12 @@ class H2OJob(object):
         self.progress = 0
         self._100_percent = False
         self._progress_bar_width = 50
+        self._job_type = job_type
 
     def poll(self):
         sleep = 0.1
         running = True
+        print  # create a new line for distinguished progress bar
         while running:
             self._update_progress()
             time.sleep(sleep)
@@ -69,7 +71,7 @@ class H2OJob(object):
             self._100_percent = True
 
         p = int(self._progress_bar_width * progress)
-        sys.stdout.write("\rJob Progress: [%s%s] %02d%%" %
+        sys.stdout.write("\r" + self._job_type + " Progress: [%s%s] %02d%%" %
                          ("#" * p,
                           " " * (self._progress_bar_width - p),
                           100 * progress))
