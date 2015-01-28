@@ -38,7 +38,7 @@ test <- function(conn) {
    leadsCol = data.hex$Leads
    summary(leadsCol) ## Resulting 5577 to 181377 ratio
 
-   data.split = h2o.splitFrame(data=data.hex, ratios=0.8, shuffle = T)
+   data.split = h2o.splitFrame(data=data.hex, ratios=0.8)
    data.train = data.split[[1]]
    data.valid = data.split[[2]]
 
