@@ -408,7 +408,7 @@ if h2o.H2O.verbose:
 
 ####################################
 # test schemas collection GET
-print 'Testing /Metadata/schemas. . .'
+if verbose: print 'Testing /Metadata/schemas. . .'
 schemas = a_node.schemas(timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
@@ -421,7 +421,7 @@ if verboser:
 
 ####################################
 # test schemas individual GET
-print 'Testing /Metadata/schemas/FrameV2. . .'
+if verbose: print 'Testing /Metadata/schemas/FrameV2. . .'
 schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
@@ -839,7 +839,7 @@ h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(r
 
 ####################################
 # test schemas collection GET again
-print 'Testing /Metadata/schemas again. . .'
+if verbose: print 'Testing /Metadata/schemas again. . .'
 schemas = a_node.schemas(timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
@@ -852,7 +852,7 @@ if verboser:
 
 ####################################
 # test schemas individual GET again
-print 'Testing /Metadata/schemas/FrameV2 again. . .'
+if verbose: print 'Testing /Metadata/schemas/FrameV2 again. . .'
 schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
