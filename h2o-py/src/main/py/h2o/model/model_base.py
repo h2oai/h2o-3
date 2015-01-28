@@ -60,8 +60,10 @@ class ModelBase(object):
         model = fitted_model.raw_model_output
         sub = [k for k in model.keys() if k in model["help"].keys()
                and not k.startswith("_") and k != "help"]
-        val = [[model[k]] for k in sub]
+        val = [[model[k]] for k in sub if not isinstance(model[k], H2OTwoDimTable)]
         lab = [model["help"][k] + ":" for k in sub if k != "help"]
+
+        two_dim_tables = [model[k] for k in sub if isinstance(model[k], H2OTwoDimTable)]
 
         for i in range(len(val)):
             val[i].insert(0, lab[i])
@@ -71,6 +73,5 @@ class ModelBase(object):
         print
         print tabulate.tabulate(val, headers=["Description", "Value"])
         print
-        for v in val:
-            if isinstance(v[1], H2OTwoDimTable):
-                v[1].show()
+        for v in two_dim_tables:
+            v.show()

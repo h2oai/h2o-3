@@ -16,7 +16,7 @@ class H2OTwoDimTable(object):
         self.col_header = col_header
         self.col_types = col_types
         self.table_header = table_header
-        self.cell_values = _parse_values(cell_values, col_types)
+        self.cell_values = H2OTwoDimTable._parse_values(cell_values, col_types)
         self.col_formats = col_formats
 
     def show(self):
@@ -29,22 +29,22 @@ class H2OTwoDimTable(object):
         header += self.col_header
         print tabulate.tabulate(table, headers=header, numalign="left", stralign="left")
 
+    @staticmethod
+    def _parse_values(values, types):
+        for k, v in enumerate(values):
+            for j, val in enumerate(v):
+                if types[j] == 'integer':
+                    if isinstance(val, unicode) and val == "":
+                        values[k][j] = float("nan")
+                    else:
+                        values[k][j] = int(float.fromhex(val))
 
-def _parse_values(values, types):
-    for k, v in enumerate(values):
-        for j, val in enumerate(v):
-            if types[j] == 'integer':
-                if isinstance(val, unicode) and val == "":
-                    values[k][j] = float("nan")
+                elif types[j] == 'double' or types[j] == 'float' or types[j] == 'long':
+                    if isinstance(val, unicode) and val == "":
+                        values[k][j] = float("nan")
+                    else:
+                        values[k][j] = float.fromhex(val)
+
                 else:
-                    values[k][j] = int(float.fromhex(val))
-
-            elif types[j] == 'double' or types[j] == 'float' or types[j] == 'long':
-                if isinstance(val, unicode) and val == "":
-                    values[k][j] = float("nan")
-                else:
-                    values[k][j] = float.fromhex(val)
-
-            else:
-                continue
-    return values
+                    continue
+        return values

@@ -5,6 +5,7 @@ A job can be polled for completion and reports the progress so far if it is stil
 
 from connection import H2OConnectionBase as h2oConn
 import time
+import sys
 
 
 class H2OJob(object):
@@ -23,17 +24,19 @@ class H2OJob(object):
         self.job_key = job['key']['name']
         self.destination_key = job['dest']['name']
         self.progress = 0
+        self._100_percent = False
+        self._progress_bar_width = 50
 
     def poll(self):
         sleep = 0.1
         running = True
         while running:
-            H2OJob._update_progress(self.progress)
+            self._update_progress()
             time.sleep(sleep)
             if sleep < 1.0: sleep += 0.1
             self._refresh_job_view()
             running = self._is_running()
-        H2OJob._update_progress(self.progress)
+        self._update_progress()
         print
 
         # check if failed... and politely print relevant message
@@ -58,7 +61,16 @@ class H2OJob(object):
     def _is_running(self):
         return self.status == "RUNNING" or self.status == "CREATED"
 
-    @staticmethod
-    def _update_progress(progress):
-        progress = min(progress, 1)
-        print '\r[{0}] {1}%'.format('#'*int(progress*100), progress*100)
+    def _update_progress(self):
+        if self._100_percent:
+            return
+        progress = min(self.progress, 1)
+        if progress == 1:
+            self._100_percent = True
+
+        p = int(self._progress_bar_width * progress)
+        sys.stdout.write("\rJob Progress: [%s%s] %02d%%" %
+                         ("#" * p,
+                          " " * (self._progress_bar_width - p),
+                          100 * progress))
+        sys.stdout.flush()
