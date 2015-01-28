@@ -186,8 +186,8 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
-    stop("model_category missing in the output")
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder")))
+    stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   parameters <- list()
