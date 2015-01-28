@@ -300,8 +300,8 @@ public class DeepLearningIrisTest extends TestUtil {
                                 final double  testErr = ref._nn.Accuracy(ref. _testData);
                                 trainPredict = mymodel.score(_train);
                                 testPredict  = mymodel.score(_test );
-                                hex.ModelMetrics mmtrain = hex.ModelMetrics.getFromDKV(mymodel,_train);
-                                hex.ModelMetrics mmtest  = hex.ModelMetrics.getFromDKV(mymodel,_test );
+                                hex.ModelMetricsBinomial mmtrain = hex.ModelMetricsBinomial.getFromDKV(mymodel,_train);
+                                hex.ModelMetricsBinomial mmtest  = hex.ModelMetricsBinomial.getFromDKV(mymodel,_test );
                                 final double myTrainErr = mmtrain._cm.err();
                                 final double  myTestErr = mmtest ._cm.err();
                                 Log.info("H2O  training error : " + myTrainErr * 100 + "%, test error: " + myTestErr * 100 + "%");
@@ -322,7 +322,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   Frame bestPredict = null;
                                   try {
                                     bestPredict = mymodel.score(_train);
-                                    hex.ModelMetrics mmbest = hex.ModelMetrics.getFromDKV(mymodel,_train);
+                                    hex.ModelMetricsBinomial mmbest = hex.ModelMetricsBinomial.getFromDKV(mymodel,_train);
                                     final double bestErr = mmbest._cm.err();
                                     Log.info("Best_model's error : " + bestErr * 100 + "%.");
                                     compareVal(bestErr, best_err, abseps, releps);

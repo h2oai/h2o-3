@@ -4,7 +4,6 @@ import water.*;
 import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.MathUtils;
 import water.util.ModelUtils;
 
@@ -389,19 +388,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
-    if (_output.isClassifier()) assert(mdomain != null); // label must be enum
-
-    ConfusionMatrix cm = ModelMetrics.getFromDKV(this,fr)._cm;
-    if (cm._domain != null) { //don't print table for regression
-      assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
-      cm._cmTable = cm.toTable();
-      if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-        water.util.Log.info(cm._cmTable.toString(1));
-    }
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.  
     if( _output.isClassifier() ) {
+      assert(mdomain != null); // label must be enum
+
+      ConfusionMatrix cm = ModelMetricsBinomial.getFromDKV(this,fr)._cm;
+      if (cm._domain != null) { //don't print table for regression
+        assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
+        cm._cmTable = cm.toTable();
+        if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+          water.util.Log.info(cm._cmTable.toString(1));
+      }
+
       String sdomain[] = actual.domain(); // Scored/test domain; can be null
       if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
         output.replace(0,new EnumWrappedVec(actual.group().addVec(),actual.get_espc(),sdomain,predicted._key));

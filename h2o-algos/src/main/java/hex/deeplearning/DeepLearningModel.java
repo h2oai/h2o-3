@@ -1465,22 +1465,25 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           trainPredict.delete();
 
           hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
-          err.trainAUC = mm1._aucdata;
-          err.train_confusion_matrix = mm1._cm;
-          err.train_err = mm1._cm.err();
-          err.train_hitratio = mm1._hr;
-          err.train_mse = mm1._mse;
-          _output.trainMetrics = mm1;
+          if (mm1 instanceof ModelMetricsBinomial) { // TODO: multinomial
+
+            err.trainAUC = ((ModelMetricsBinomial)mm1)._aucdata;
+            err.train_confusion_matrix = ((ModelMetricsBinomial)mm1)._cm;
+            err.train_err = ((ModelMetricsBinomial)mm1)._cm.err();
+            err.train_hitratio = ((ModelMetricsBinomial)mm1)._hr;
+            err.train_mse = mm1._mse;
+            _output.trainMetrics = mm1;
+          }
 
           if (ftest != null) {
             Frame validPred = score(ftest);
             validPred.delete();
             hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
-            if (mm2 != null) {
-              err.validAUC = mm2._aucdata;
-              err.valid_confusion_matrix = mm2._cm;
-              err.valid_err = mm2._cm.err();
-              err.valid_hitratio = mm2._hr;
+            if (mm2 != null && mm2 instanceof ModelMetricsBinomial) {   // TODO: multinomial
+              err.validAUC = ((ModelMetricsBinomial)mm2)._aucdata;
+              err.valid_confusion_matrix = ((ModelMetricsBinomial)mm2)._cm;
+              err.valid_err = ((ModelMetricsBinomial)mm2)._cm.err();
+              err.valid_hitratio = ((ModelMetricsBinomial)mm2)._hr;
               err.valid_mse = mm2._mse;
               _output.validMetrics = mm2;
             }
