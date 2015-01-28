@@ -7,24 +7,24 @@ public class ModelMetricsBinomial extends ModelMetrics {
 
   public final AUCData _aucdata;
   public final ConfusionMatrix _cm;
-  public final HitRatio _hr;
-
 
   public ModelMetricsBinomial(Model model, Frame frame) {
     super(model, frame);
-
     _aucdata = null;
     _cm = null;
-    _hr = null;
   }
 
-  // TODO: make private
-  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, ConfusionMatrix cm, HitRatio hr, double sigma, double mse) {
-    super(model, frame, sigma, mse);
-
+  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, ConfusionMatrix cm, HitRatio hr) {
+    super(model, frame);
     _aucdata = aucdata;
     _cm = cm;
-    _hr = hr;
+  }
+
+  @Override public ConfusionMatrix cm() {
+    return _cm;
+  }
+  @Override public AUCData auc() {
+    return _aucdata;
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {

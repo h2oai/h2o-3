@@ -1,17 +1,16 @@
 package water.api;
 
 import hex.ModelMetricsMultinomial;
-import water.util.PojoUtils;
 
 public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMultinomial, ModelMetricsMultinomialV3> {
+  @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
+  public ConfusionMatrixBase cm;
+
+  @API(help="The HitRatio object for this scoring run.", direction=API.Direction.OUTPUT)
+  public HitRatioBase hr;
+
   @Override public ModelMetricsMultinomial createImpl() {
-    ModelMetricsMultinomial m = new ModelMetricsMultinomial(this.model.createImpl().get(), this.frame.createImpl().get());
-    return (ModelMetricsMultinomial) m;
+    return new ModelMetricsMultinomial(this.model.createImpl().get(), this.frame.createImpl().get());
   }
 
-  @Override
-  public ModelMetricsMultinomial fillImpl(ModelMetricsMultinomial m) {
-    PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[]{"cm"});
-    return m;
-  }
 }

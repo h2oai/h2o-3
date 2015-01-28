@@ -24,14 +24,7 @@ public class ModelMetrics extends Keyed {
   long duration_in_ms = -1L;
   long scoring_time = -1L;
 
-  public final double _sigma;   // stddev of the response (if any)
-  public final double _mse;     // Mean Squared Error
-
   public ModelMetrics(Model model, Frame frame) {
-    this(model, frame, Double.NaN, Double.NaN);
-  }
-
-  public ModelMetrics(Model model, Frame frame, double sigma, double mse) {
     super(buildKey(model, frame));
     _modelKey = model._key;
     _frameKey = frame._key;
@@ -41,8 +34,6 @@ public class ModelMetrics extends Keyed {
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
 
-    _sigma = sigma;
-    _mse = mse;
     DKV.put(this);
   }
 
@@ -50,10 +41,10 @@ public class ModelMetrics extends Keyed {
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   // r2 => improvement over random guess of the mean
-  public double r2() {
-    double var = _sigma*_sigma;
-    return 1.0-(_mse/var);
-  }
+  public double r2() { return Double.NaN; }
+  public ConfusionMatrix cm() { return null; }
+  public HitRatio hr() { return null; }
+  public AUCData auc() { return null; }
 
   private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
@@ -73,10 +64,6 @@ public class ModelMetrics extends Keyed {
   }
 
   @Override protected long checksum_impl() { return _frame_checksum * 13 + _model_checksum * 17; }
-
-  ////////////////////////////////////////////////////////////////////////////////////
-  // TODO: split this into MetricsBuilders for each metrics type, in the subclasses:
-  ////////////////////////////////////////////////////////////////////////////////////
 
   /** Class used to compute AUCs, CMs & HRs "on the fly" during other passes
    *  over Big Data.  This class is intended to be embedded in other MRTask
@@ -155,7 +142,17 @@ public class ModelMetrics extends Keyed {
       }
       double mse = _sumsqe / cm.totalRows();
       HitRatio hr = null;       // TODO
-      return m._output.addModelMetrics(new ModelMetricsBinomial(m,f,aucdata,cm,hr,sigma,mse));
+
+
+      switch (m._output.getModelCategory()) {
+        case Binomial:    return m._output.addModelMetrics(new ModelMetricsBinomial(   m, f, aucdata, cm, hr));
+        case Multinomial: return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr));
+        case Regression:  return m._output.addModelMetrics(new ModelMetricsRegression( m, f, sigma, mse));
+        case Clustering:  return m._output.addModelMetrics(new ModelMetricsClustering( m, f, null)); //FIXME: Each model should make its ModelMetrics object!
+        case AutoEncoder: return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f, mse));
+//        case DimReduction: return m._output.addModelMetrics(new ModelMetricsDimReduction(m, f));
+      }
+      throw H2O.unimpl();
     }
   }
 }
