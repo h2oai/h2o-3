@@ -448,7 +448,7 @@ class H2OFrame(object):
         else:
             vecs = [vec.show(noprint=True) for vec in self]
             vecs.insert(0, range(1, len(vecs[0]) + 1, 1))
-            print "Showing the first " + str(len(vecs[0])) + " rows:"
+            print "Displaying " + str(len(vecs[0])) + " row(s):"
             print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
             print
 
@@ -469,8 +469,6 @@ class H2OFrame(object):
         print tabulate.tabulate(head, headers=["Row ID"] + colnames)
         print
 
-    # Comment out to help in debugging
-    # def __str__(self): return self.show()
     def describe(self):
         """
         Generate an in-depth description of this H2OFrame.
@@ -493,6 +491,10 @@ class H2OFrame(object):
         ]
         print tabulate.tabulate(table, headers)
         print
+
+    def __repr__(self):
+        self.show()
+        return ""
 
     # Column selection via integer, string (name) returns a Vec
     # Column selection via slice returns a subset Frame
@@ -807,8 +809,9 @@ class H2OVec(object):
             print tabulate.tabulate(to_show, headers=["Row ID", header])
             print
 
-    # Comment out to help in debugging
-    # def __str__(self): return self.show()
+    def __repr__(self):
+        self.show()
+        return ""
 
     def summary(self):
         """

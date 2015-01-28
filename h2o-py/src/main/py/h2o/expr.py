@@ -149,8 +149,9 @@ class Expr(object):
             print tabulate.tabulate(zip(rows, data), headers=["Row ID", header])
             print
 
-    # Comment out to help in debugging
-    # def __str__(self): return self.show()
+    def __repr__(self):
+        self.show()
+        return ""
 
     # Compute summary data
     def summary(self):

@@ -138,7 +138,8 @@ class H2OConnectionBase(object):
     def check_conn():
         global __H2OCONN__
         if not __H2OCONN__:
-            raise EnvironmentError("No active connection to an H2O cluster.")
+            raise EnvironmentError("No active connection to an H2O cluster. " +
+                                   "Try calling `h2o.init()`")
         return __H2OCONN__
 
     """
