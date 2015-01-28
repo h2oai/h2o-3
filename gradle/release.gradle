@@ -1,4 +1,5 @@
 apply plugin: 'release'
+apply plugin: 'nexus-workflow'
 
 release {
   tagPrefix = "RELEASE"

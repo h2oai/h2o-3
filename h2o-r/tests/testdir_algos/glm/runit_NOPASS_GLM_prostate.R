@@ -17,7 +17,7 @@ test.GLM.prostate <- function(conn) {
     # myX = paste(myX, collapse=",")
     
     Log.info(cat("B)H2O GLM (binomial) with parameters:\nX:", myX, "\nY:", myY, "\n"))
-    prostate.glm.h2o = h2o.glm(y = myY, x = myX, training_frame = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
+    prostate.glm.h2o = h2o.glm(y = myY, x = myX, training_frame = prostate.hex, family = "binomial", n_folds = 10, alpha = 0.5)
     print(prostate.glm.h2o)
     
     # prostate.glm = glm.fit(y = prostate.data[,myY], x = prostate.data[,myX], family = binomial)

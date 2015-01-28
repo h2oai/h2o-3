@@ -73,7 +73,7 @@ class ModelMetricsHandler extends Handler {
       if (null != model_metrics) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ )
-          mml._model_metrics[i++] = model_metrics[i].createImpl();
+          mml._model_metrics[i++] = (ModelMetrics)model_metrics[i].createImpl();
       }
       return mml;
     }
@@ -90,7 +90,7 @@ class ModelMetricsHandler extends Handler {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ ) {
           ModelMetrics mm = mml._model_metrics[i];
-          this.model_metrics[i] = mm.schema().fillFromImpl(mm);
+          this.model_metrics[i] = (ModelMetricsBase) Schema.schema(3, mm.getClass()).fillFromImpl(mm);
         }
       } else {
         this.model_metrics = new ModelMetricsBase[0];
@@ -146,8 +146,7 @@ class ModelMetricsHandler extends Handler {
       mm = new ModelMetricsListSchemaV3();
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
-      mm.model_metrics = new ModelMetricsV3[1];
-      mm.model_metrics[0] = new ModelMetricsV3();
+      Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     }
 
     return mm;
@@ -169,8 +168,7 @@ class ModelMetricsHandler extends Handler {
       mm = new ModelMetricsListSchemaV3();
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
-      mm.model_metrics = new ModelMetricsV3[1];
-      mm.model_metrics[0] = new ModelMetricsV3();
+      Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     }
 
     Frame persisted = new Frame(Key.make("predictions_" + Key.rand()), predictions.names(), predictions.vecs());

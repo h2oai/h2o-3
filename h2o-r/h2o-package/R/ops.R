@@ -38,7 +38,7 @@
 #' @name OpsIntro-descrip
 NULL
 
-# Ops Generic
+# Ops Generic:
 
 #' @describeIn H2OFrame For \code{'missing','H2OFrame'}
 #'
@@ -46,6 +46,7 @@ NULL
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,0,e2))
+
 #' @describeIn H2OFrame For \code{'H2OFrame','missing'}
 #'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
@@ -53,28 +54,34 @@ setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,0))
 
+#' @describeIn H2OFrame For \code{'H2OFrame','H2OFrame'}
+#'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
+
 #' @describeIn H2OFrame For \code{'numeric','H2OFrame'}
 #' 
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
+
 #' @describeIn H2OFrame For \code{'H2OFrame','numeric'}
 #' 
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
+
 #' @describeIn H2OFrame For \code{'H2OFrame','character'}
 #' 
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
 setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
+
 #' @describeIn H2OFrame For \code{'character','H2OFrame'}
 #' 
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
@@ -93,7 +100,6 @@ setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o
 #'             \code{"cos"}, \code{"cosh"}, \code{"cospi"}, \code{"sin"}, \code{"sinh"}, \code{"sinpi"}, 
 #'             \code{"tan"}, \code{"tanh"}, \code{"tanpi"}, 
 #'             \code{"gamma"}, \code{"lgamma"}, \code{"digamma"}, \code{"trigamma"}
-#' @include classes.R
 setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unary_row_op(.Generic,x) })
 
 # Math2 Generics
@@ -113,11 +119,8 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
   .h2o.nary_scalar_op(.Generic, x, ..., na.rm)
 })
 
-
-setMethod("%*%", c("H2OFrame", "H2OFrame"), function(x,y) .h2o.binary_frame_op("%*%",x,y))
-
 #'
-#' Methods that don't fit into the S4 group generics
+#' Methods that don't fit into the S4 group generics:
 #'
 #' This also handles the cases where the Math ops have multiple args (e.g. ’log’ and ‘trunc’)
 #'
@@ -135,3 +138,5 @@ setMethod("t",     "H2OFrame", function(x) .h2o.unary_frame_op("t", x) )
 setMethod("log",   "H2OFrame", function(x, ...) .h2o.nary_row_op("log", x, ...))
 #' @describeIn H2OFrame Generic \code{"trunc"}
 setMethod("trunc", "H2OFrame", function(x, ...) .h2o.nary_row_op("trunc", x, ...))
+
+setMethod("%*%", c("H2OFrame", "H2OFrame"), function(x,y) .h2o.binary_frame_op("%*%",x,y))

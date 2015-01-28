@@ -4,6 +4,7 @@ import hex.glm.GLMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
+import water.util.TwoDimTable;
 //import water.util.DocGen.HTML;
 
 public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMModel.GLMOutput> {
@@ -24,6 +25,9 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 
     @API(help="fill me in GLMModelOutputV2")
     String   [] coefficient_names;
+
+    @API(help="fill me in GLMModelOutputV2")
+    TwoDimTable coefficients_table;
 
     @API(help="fill me in GLMModelOutputV2; I think I'm redundant")
     boolean binomial; // TODO: isn't this redundant, given model_category?
@@ -47,6 +51,6 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
   @Override public GLMModel createImpl() {
     GLMV2.GLMParametersV2 p = ((GLMV2.GLMParametersV2)this.parameters);
     GLMModel.GLMParameters parms = p.createImpl();
-    return new GLMModel( key, parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0 );
+    return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0 );
   }
 }

@@ -37,10 +37,11 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
-  public static double l2norm2(double [] x){
+  public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
-    for(double d:x)
-      sum += d*d;
+    int last = x.length - (skipLast?1:0);
+    for(int i = 0; i < last; ++i)
+      sum += x[i]*x[i];
     return sum;
   }
   public static double l1norm(double [] x){
@@ -49,8 +50,8 @@ public class ArrayUtils {
       sum += d >= 0?d:-d;
     return sum;
   }
-  public static double l2norm(double [] x){
-    return Math.sqrt(l2norm2(x));
+  public static double l2norm(double [] x, boolean skipLast){
+    return Math.sqrt(l2norm2(x, skipLast));
   }
 
   // Add arrays, element-by-element

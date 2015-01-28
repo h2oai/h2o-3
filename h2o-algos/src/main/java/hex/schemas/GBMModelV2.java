@@ -27,6 +27,6 @@ public class GBMModelV2 extends ModelSchema<GBMModel, GBMModelV2, GBMModel.GBMPa
   @Override public GBMModel createImpl() {
     GBMV2.GBMParametersV2 p = ((GBMV2.GBMParametersV2)this.parameters);
     GBMModel.GBMParameters parms = p.createImpl();
-    return new GBMModel( key, parms, new GBMModel.GBMOutput(null, Double.NaN, Double.NaN) );
+    return new GBMModel( key.key(), parms, new GBMModel.GBMOutput(null, Double.NaN, Double.NaN) );
   }
 }

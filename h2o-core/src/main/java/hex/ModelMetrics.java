@@ -1,20 +1,18 @@
 package hex;
 
 import water.*;
-import water.api.ModelMetricsBase;
-import water.api.ModelMetricsV3;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
 
-/** Container to hold the metric for a model as scored on a specific frame. 
- *  
+/** Container to hold the metric for a model as scored on a specific frame.
+ *
  *  The MetricBuilder class is used in a hot inner-loop of a Big Data pass, and
  *  when given a class-distribution, can be used to compute CM's, and AUC's "on
  *  the fly" during ModelBuilding - or after-the-fact with a Model and a new
  *  Frame to be scored.
  */
-public final class ModelMetrics extends Keyed {
+public class ModelMetrics extends Keyed {
   final Key _modelKey;
   final Key _frameKey;
   final Model.ModelCategory _model_category;
@@ -26,14 +24,7 @@ public final class ModelMetrics extends Keyed {
   long duration_in_ms = -1L;
   long scoring_time = -1L;
 
-  public final double _sigma;   // stddev of the response (if any)
-  public final double _mse;     // Mean Squared Error
-  public final AUCData _aucdata;
-  public final ConfusionMatrix _cm;
-  public final HitRatio _hr;
-
-  public ModelMetrics(Model model, Frame frame) {this(model,frame,null,null,null,Double.NaN,Double.NaN); }
-  private ModelMetrics(Model model, Frame frame, AUCData aucdata, ConfusionMatrix cm, HitRatio hr, double sigma, double mse) {
+  public ModelMetrics(Model model, Frame frame) {
     super(buildKey(model, frame));
     _modelKey = model._key;
     _frameKey = frame._key;
@@ -42,11 +33,7 @@ public final class ModelMetrics extends Keyed {
     _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
-    _sigma = sigma;
-    _mse = mse;
-    _aucdata = aucdata;
-    _cm = cm;
-    _hr = hr;
+
     DKV.put(this);
   }
 
@@ -54,10 +41,29 @@ public final class ModelMetrics extends Keyed {
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   // r2 => improvement over random guess of the mean
-  public double r2() {
-    double var = _sigma*_sigma;
-    return 1.0-(_mse/var);
+  public double r2() { return Double.NaN; }
+  public ConfusionMatrix cm() { return null; }
+  public HitRatio hr() { return null; }
+  public AUCData auc() { return null; }
+
+  private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+    return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
+
+  private static Key buildKey(Model model, Frame frame) {
+    return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
+  }
+
+  public boolean isForModel(Model m) { return _model_checksum == m.checksum(); }
+  public boolean isForFrame(Frame f) { return _frame_checksum == f.checksum(); }
+
+  public static ModelMetrics getFromDKV(Model model, Frame frame) {
+    Key metricsKey = buildKey(model, frame);
+    Value v = DKV.get(metricsKey);
+    return null == v ? null : (ModelMetrics)v.get();
+  }
+
+  @Override protected long checksum_impl() { return _frame_checksum * 13 + _model_checksum * 17; }
 
   /** Class used to compute AUCs, CMs & HRs "on the fly" during other passes
    *  over Big Data.  This class is intended to be embedded in other MRTask
@@ -73,7 +79,7 @@ public final class ModelMetrics extends Keyed {
     public double _sumsqe;      // Sum-squared-error
     transient public float[] _work;
     public MetricBuilder( String[] domain ) { this(domain,new float[]{0.5f}); }
-    public MetricBuilder( String[] domain, float[] thresholds ) { 
+    public MetricBuilder( String[] domain, float[] thresholds ) {
       _domain = domain;
       int nclasses = _nclasses = (domain==null ? 1 : domain.length);
       // Thresholds are only for binomial classes
@@ -90,7 +96,7 @@ public final class ModelMetrics extends Keyed {
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
       final int nclass = ds.length-1;
       final int iact = (int)yact;
-      // Compute error 
+      // Compute error
       float err;
       if( nclass>1 ) {          // Classification
         float sum = 0;          // Check for sane class distribution
@@ -118,11 +124,11 @@ public final class ModelMetrics extends Keyed {
       return ds;                // Flow coding
     }
     public void reduce( MetricBuilder mb ) {
-      ArrayUtils.add(_cms,mb._cms);
+      ArrayUtils.add(_cms, mb._cms);
       _sumsqe += mb._sumsqe;
     }
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) { 
+    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       AUCData aucdata;
       ConfusionMatrix cm;
       if( _cms.length > 1 ) {
@@ -136,34 +142,17 @@ public final class ModelMetrics extends Keyed {
       }
       double mse = _sumsqe / cm.totalRows();
       HitRatio hr = null;       // TODO
-      return m._output.addModelMetrics(new ModelMetrics(m,f,aucdata,cm,hr,sigma,mse));
+
+
+      switch (m._output.getModelCategory()) {
+        case Binomial:    return m._output.addModelMetrics(new ModelMetricsBinomial(   m, f, aucdata, cm, hr));
+        case Multinomial: return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr));
+        case Regression:  return m._output.addModelMetrics(new ModelMetricsRegression( m, f, sigma, mse));
+        case Clustering:  return m._output.addModelMetrics(new ModelMetricsClustering( m, f, null)); //FIXME: Each model should make its ModelMetrics object!
+        case AutoEncoder: return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f, mse));
+//        case DimReduction: return m._output.addModelMetrics(new ModelMetricsDimReduction(m, f));
+      }
+      throw H2O.unimpl();
     }
   }
-
-  /**
-   * Externally visible default schema
-   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-   * This puts a reverse edge into the dependency graph.
-   */
-  public ModelMetricsBase schema() { return new ModelMetricsV3(); }
-
-
-  private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
-    return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
-  }
-
-  private static Key buildKey(Model model, Frame frame) {
-    return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
-  }
-
-  public boolean isForModel(Model m) { return _model_checksum == m.checksum(); }
-  public boolean isForFrame(Frame f) { return _frame_checksum == f.checksum(); }
-
-  public static ModelMetrics getFromDKV(Model model, Frame frame) {
-    Key metricsKey = buildKey(model, frame);
-    Value v = DKV.get(metricsKey);
-    return null == v ? null : (ModelMetrics)v.get();
-  }
-
-  @Override protected long checksum_impl() { return _frame_checksum * 13 + _model_checksum * 17; }
 }

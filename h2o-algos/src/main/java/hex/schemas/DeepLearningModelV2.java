@@ -1,19 +1,25 @@
 package hex.schemas;
 
+import hex.ModelMetrics;
 import hex.deeplearning.DeepLearningModel;
 import water.Key;
-import water.api.API;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
-import water.util.TwoDimTable;
+import water.api.*;
 
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModelV2, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
     @API(help="Scoring information")
-    DeepLearningModel.Errors errors;
+    DeepLearningScoringV2 errors;
     @API(help="Model summary")
-    TwoDimTable modelSummary;
+    TwoDimTableV1 modelSummary;
+    @API(help="Whether the model is an autoencoder")
+    boolean autoencoder;
+    @API(help="Scoring history")
+    TwoDimTableV1 scoringHistory;
+    @API(help="Training data model metrics")
+    ModelMetricsBase trainMetrics;
+    @API(help="Validation data model metrics")
+    ModelMetricsBase validMetrics;
   } // DeepLearningModelOutputV2
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

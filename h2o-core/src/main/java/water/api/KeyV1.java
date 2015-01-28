@@ -5,6 +5,7 @@ import water.Job;
 import water.Key;
 import water.Keyed;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 public class KeyV1<I extends Keyed, S extends KeyV1<I, S>> extends KeySchema<I, S> {
 // KeyV1<T extends Keyed> extends KeySchema<T> {
@@ -32,5 +33,10 @@ public class KeyV1<I extends Keyed, S extends KeyV1<I, S>> extends KeySchema<I, 
     public ModelKeyV1(Key<Model> key) {
       super(key);
     }
+  }
+
+  public static class VecKeyV1 extends KeySchema<Vec, VecKeyV1> {
+    public VecKeyV1() {}
+    public VecKeyV1(Key<Vec> key) { super(key); }
   }
 }

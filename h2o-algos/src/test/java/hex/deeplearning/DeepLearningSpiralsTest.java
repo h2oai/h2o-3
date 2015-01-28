@@ -1,15 +1,19 @@
 package hex.deeplearning;
 
-import hex.ModelMetrics;
-import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.Log;
+
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningSpiralsTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
@@ -78,7 +82,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
         {
           DeepLearningModel mymodel = DKV.getGet(dest);
           Frame pred = mymodel.score(frame);
-          ModelMetrics mm = ModelMetrics.getFromDKV(mymodel,frame);
+          ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
           double error = mm._aucdata.err();
           Log.info("Error: " + error);
           if (error >= 0.025) {

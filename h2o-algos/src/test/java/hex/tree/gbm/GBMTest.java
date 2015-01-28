@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.ConfusionMatrix;
+import hex.ModelMetricsBinomial;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -283,13 +284,11 @@ public class GBMTest extends TestUtil {
         if( job != null ) job.remove();
       }
 
-      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(gbm,parms.valid());
-
-      double auc = mm._aucdata.AUC();
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
+      double auc = ((ModelMetricsBinomial)mm)._aucdata.AUC();
       Assert.assertTrue(0.83 <= auc && auc < 0.85); // Sanely good model
-      ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(324,69),ar(35,72)),cmf1._arr);
-
+      ConfusionMatrix cmf1 = ((ModelMetricsBinomial)mm)._aucdata.CM();
+      Assert.assertArrayEquals(ar(ar(324, 69), ar(35, 72)), cmf1.confusion_matrix);
     } finally {
       parms._train.remove();
       parms._valid.remove();

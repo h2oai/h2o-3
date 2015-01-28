@@ -20,6 +20,7 @@ public class HitRatio extends Iced {
   private String [] actual_domain; // domain of the actual response
   private float[] hit_ratios; // Hit ratios for k=1...K
 
+  public HitRatio(float[] hr) { hit_ratios = hr; }
   public HitRatio(Vec actuals, Frame predictions, int max_k) {
     _max_k = max_k;
     throw water.H2O.unimpl();

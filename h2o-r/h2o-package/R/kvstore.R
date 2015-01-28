@@ -17,12 +17,12 @@
 }
 
 .key.make <- function(conn, prefix = "rapids") {
-  key_count <- get("key_count", conn@envir)
-  if (key_count == .Machine$integer.max)
-    stop("current H2OConnection has reached its maximum number of keys. Use h2o.init() to open another connection.")
-  key_count <- key_count + 1L
-  key <- sprintf("%s_%d%s", prefix, key_count, conn@session_id) # session_id has leading underscore
-  assign("key_count", key_count, conn@envir)
+  if (conn@mutable$key_count == .Machine$integer.max) {
+    conn@mutable$session_id <- .init.session_id(conn)
+    conn@mutable$key_count  <- 0L
+  }
+  conn@mutable$key_count <- conn@mutable$key_count + 1L
+  key <- sprintf("%s_%d%s", prefix, conn@mutable$key_count, conn@mutable$session_id) # session_id has leading underscore
   key
 }
 
@@ -98,7 +98,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 # TODO: This is an older version; need to go back through git and find the "good" one...
 .h2o.gc <- function(conn = h2o.getConnection()) {
   frame_keys <- as.vector(h2o.ls()[,1L])
-  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@session_id), frame_keys)]
+  frame_keys <- frame_keys[grepl(sprintf("%s$", data@conn@mutable$session_id), frame_keys)]
   # no reference? then destroy!
   # TODO in order for this function to work properly, you would need to search (recursively)
   # TODO through ALL objects for H2OFrame and H2OModel objects including lists, environments,
@@ -186,8 +186,8 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering")))
-    stop("model_category missing in the output")
+  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder")))
+    stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   parameters <- list()
