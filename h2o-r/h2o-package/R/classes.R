@@ -233,6 +233,7 @@ setClass("H2OBinomialModel",    contains="H2OModel")
 setClass("H2OMultinomialModel", contains="H2OModel")
 setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
+setClass("H2OAutoEncoderModel", contains="H2OModel")
 
 #' 
 #' The H2OModelMetrics Object.
