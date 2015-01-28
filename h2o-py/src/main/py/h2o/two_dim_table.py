@@ -34,10 +34,16 @@ def _parse_values(values, types):
     for k, v in enumerate(values):
         for j, val in enumerate(v):
             if types[j] == 'integer':
-                values[k][j] = int(float.fromhex(val))
+                if isinstance(val, unicode) and val == "":
+                    values[k][j] = float("nan")
+                else:
+                    values[k][j] = int(float.fromhex(val))
 
             elif types[j] == 'double' or types[j] == 'float' or types[j] == 'long':
-                values[k][j] = float.fromhex(val)
+                if isinstance(val, unicode) and val == "":
+                    values[k][j] = float("nan")
+                else:
+                    values[k][j] = float.fromhex(val)
 
             else:
                 continue

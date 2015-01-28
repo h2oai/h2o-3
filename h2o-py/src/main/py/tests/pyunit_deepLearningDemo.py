@@ -1,31 +1,43 @@
-from h2o import H2OConnection
-from h2o import H2OFrame
-from h2o import H2ODeepLearning
+import h2o
 from h2o import H2OGBM
+from h2o import H2ODeeplearning
 
-######################################################
-#
-# Sample Running GBM and DeepLearning on ecology_XXX.csv
-
-# Connect to a pre-existing cluster
-cluster = H2OConnection()
+h2o.init()
 
 # Training data
-train_data = H2OFrame(remote_fname="smalldata/gbm_test/ecology_model.csv")
+train_data = h2o.import_frame(path="smalldata/gbm_test/ecology_model.csv")
 train_data = train_data.drop('Site')
 train_data['Angaus'] = train_data['Angaus'].asfactor()
 print train_data.describe()
+train_data.head()
 
 # Testing data
-test_data = H2OFrame(remote_fname="smalldata/gbm_test/ecology_eval.csv")
+test_data = h2o.import_frame(path="smalldata/gbm_test/ecology_eval.csv")
 test_data['Angaus'] = test_data['Angaus'].asfactor()
 print test_data.describe()
+test_data.head()
+
 
 # Run GBM
-gbm = H2OGBM(dataset=train_data,validation_dataset=test_data,x="Angaus",ntrees=100)
-print gbm._model
+gbm = H2OGBM(training_frame=train_data, validation_frame=test_data, y="Angaus",
+             x=[name for name in train_data.names() if name != "Angaus"],
+             ntrees=100)
+
+gbm.fit()
+
+gbm.show()
 
 # Run DeepLearning
-dl = H2ODeepLearning(dataset=train_data,validation_dataset=test_data,x="Angaus",epochs=1000,hidden=[20,20,20])
-print dl._model
+
+dl = H2ODeeplearning()
+dl.training_frame = train_data
+dl.x = [name for name in train_data.names() if name != "Angaus"]
+dl.y = "Angaus"
+dl.epochs = 1000
+dl.hidden = [20, 20, 20]
+
+
+dl.fit()
+
+dl.show()
 

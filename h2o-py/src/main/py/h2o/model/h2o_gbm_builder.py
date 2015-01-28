@@ -23,6 +23,8 @@ class H2OGBMBuilder(H2OModelBuilder):
         my_gbm.fit()                                  # perform the model fit
     """
 
+    SELF = "gbm"
+
     def __init__(self, x=None, y=None, training_frame=None, key=None,
                  loss=("AUTO", "bernoulli"), ntrees=50, max_depth=5, learn_rate=0.1,
                  nbins=20, group_split=True, variable_importance=False,
@@ -47,19 +49,8 @@ class H2OGBMBuilder(H2OModelBuilder):
         :param seed: A random seed.
         :return: A new GBMBuilder.
         """
-        super(H2OGBMBuilder, self).__init__(locals(), "gbm", training_frame)
-        self.x = x
-        self.y = y
-        self.training_frame = training_frame
-        self.validation_frame = None
+        super(H2OGBMBuilder, self).__init__(locals(), self.SELF, training_frame)
+        self.__dict__.update(locals())
+
+        # deal with "tuple" defaults
         self.loss = "AUTO" if isinstance(loss, tuple) else loss
-        self.ntrees = ntrees
-        self.max_depth = max_depth
-        self.learn_rate = learn_rate
-        self.nbins = nbins
-        self.group_split = group_split
-        self.variable_importance = variable_importance
-        self.validation_frame = validation_frame
-        self.balance_classes = balance_classes
-        self.max_after_balance_size = max_after_balance_size
-        self.seed = seed

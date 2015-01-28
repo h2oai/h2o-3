@@ -262,9 +262,10 @@ class H2OConnectionBase(object):
                                    .format(res["http_error_message"]))
         elif res["http_status_code"] != 200:
             raise EnvironmentError("h2o-py got an unexpected HTTP status code:\n"
-                                   " {} {} (url = {})"
+                                   " {} {} (method = {}; url = {})"
                                    .format(res["http_status_code"],
                                            res["http_status_message"],
+                                           method,
                                            res["url"]))
         return res["http_payload"]
 

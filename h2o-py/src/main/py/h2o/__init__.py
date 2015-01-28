@@ -20,10 +20,14 @@ H2O is a piece of java software for data modeling and general computing. There a
 different views of the H2O software, but the primary view of H2O is that of a distributed
 (many machines), parallel (many CPUs), in memory (several hundred GBs Xmx) processing
 "engine". How H2O achieves within node parallelism and efficient horizontal scaling is
-discussed in detail elsewhere.
+discussed in detail elsewhere, but it suffices to state that Doug Lea's Fork Join
+framework (which can be thought of as a classical recursive descent divide and conquer
+approach to doing "work") enables parallelism per JVM, and a distributed version of Cliff
+Click's non-blocking hash map enables coherency across nodes in a cluster allowing for
+lateral scaling.
 
-H2O has a distributed key-value store (the "DKV"), which contains pointers to the various
-objects that make up the H2O ecosystem. Briefly, these objects are:
+H2O sports a distributed key-value store (the "DKV"), which contains pointers to the
+various objects that make up the H2O ecosystem. Briefly, these objects are:
 
     Key:    A key is an entry in the DKV that maps to an object in H2O.
     Frame:  A Frame is a collection of Vec objects. It is a 2D array of elements.
@@ -33,11 +37,13 @@ objects that make up the H2O ecosystem. Briefly, these objects are:
     Model:  A model is an immutable object having `predict` and `metrics` methods.
     Job:    A Job is a non-blocking task that performs a finite amount of work.
 
-H2O Objects
-===========
+Many of these objects have no meaning to an end python user, but in order to make sense of
+the objects available in this module it is helpful to understand how these objects map to
+objects in the JVM (because after all, this module is merely a facade that allows the
+manipulation of a distributed system).
 
-blah blah blah h2o objects
-
+Objects In This Module
+======================
 
 
 
@@ -53,8 +59,30 @@ H2OVec
 ======
 
 
-ModelBuilder
+
+Model Builders
 ============
+
+* How to create new models
+* The fit() method
+* train and validation data
+* parameter specification
+
+
+Model Results and Metrics
+=========================
+
+* After models are built: (show, summary, predict, performance)
+* Model categories: binomial, regression, multinomial, clustering
+
+
+Feature Generation and Extended Data Flows
+==========================================
+
+* Discuss Rapids
+# Data manipulation in python
+* Executing python functions in H2O via Rapids
+
 """
 from h2o import *
 from model import *

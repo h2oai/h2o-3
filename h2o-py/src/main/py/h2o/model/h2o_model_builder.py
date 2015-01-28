@@ -15,6 +15,9 @@ from clustering import H2OClusteringModel
 from regression import H2ORegressionModel
 import h2o
 
+from math import isinf  # needed because stupid backend doesn't read inf
+import sys
+
 
 class H2OMissingFrameError(Exception):
     pass
@@ -90,10 +93,11 @@ class H2OModelBuilder(ModelBase):
 
         # do some cleanup
         h2o.remove(self._parameters["training_frame"])
-        if self._parameters["validation_frame"] is not None:
+        if "validation_frame" in self._parameters and \
+                self._parameters["validation_frame"] is not None:
             h2o.remove(self._parameters["validation_frame"])
 
-        # flowing return,
+        # flowing return
         self._parameters = saved_parameters
         return self
 
@@ -151,6 +155,10 @@ class H2OModelBuilder(ModelBase):
         o = self
         a = [n for n in dir(o) if not callable(getattr(o, n)) and not n.startswith("_")]
         self._parameters = dict(zip(a, [getattr(o, i) for i in a]))
+        for key in self._parameters:
+            if isinstance(self._parameters[key], float):
+                if isinf(self._parameters[key]):
+                    self._parameters[key] = sys.maxint
         return self._parameters
 
     def _set_and_check_x_y(self, x, y):
@@ -211,7 +219,11 @@ class H2OModelBuilder(ModelBase):
 
     def _set_validation_frame(self, validation_frame):
 
-        if validation_frame or "validation" in self._parameters.keys():
+        if validation_frame or "validation_frame" in self._parameters.keys():
+
+            if not validation_frame and not self._parameters["validation_frame"]:
+                return
+
             #   Two ways to get the validation set in:
             #       A. It was passed in from the model builder
             #       B. It was passed in to the fit method
@@ -220,7 +232,7 @@ class H2OModelBuilder(ModelBase):
             if validation_frame:
                 # even if self._parameters["validation"] is not None, the one passed to
                 # the `fit` call is king.
-                self._parameters["validation"] = validation_frame
+                self._parameters["validation_frame"] = validation_frame
                 validation_passed_to_fit = True
 
             validation_frame = self._parameters["validation_frame"]
@@ -233,7 +245,7 @@ class H2OModelBuilder(ModelBase):
 
             # see the comment in _set_training_frame for more on send_frame
             validation_key = H2OFrame.send_frame(validation_frame)
-            self._parameters["validation"] = validation_key
+            self._parameters["validation_frame"] = validation_key
 
     def _fold_default_params_with_user_params(self):
         """

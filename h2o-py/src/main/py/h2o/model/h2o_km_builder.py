@@ -22,7 +22,9 @@ class H2OKMeansBuilder(H2OModelBuilder):
 
         my_km.fit()                                   # perform the model fit
     """
-    
+
+    SELF = "kmeans"
+
     def __init__(self, x=None, k=5, training_frame=None, key=None, max_iterations=1000,
                  standardize=True, init=("Furthest", "Random", "PlusPlus"), seed=None):
         """
@@ -40,12 +42,8 @@ class H2OKMeansBuilder(H2OModelBuilder):
         :param seed: A random seed.
         :return: A new KMeansBuilder.
         """
-        super(H2OKMeansBuilder, self).__init__(locals(), "kmeans", training_frame)
-        self.x = x
-        self.k = k
-        self.training_frame = training_frame
-        self.max_iterations = max_iterations
-        self.standardize = standardize
+        super(H2OKMeansBuilder, self).__init__(locals(), self.SELF, training_frame)
+        self.__dict__.update(locals())
+
+        # deal with "tuple" defaults
         self.init = "Random" if isinstance(init, tuple) else init
-        self.seed = seed
-        self.validation_frame = None
