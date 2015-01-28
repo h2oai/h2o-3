@@ -5,7 +5,7 @@ import water.H2O;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.fvec.Frame;
+import water.api.FrameV2;
 import water.util.PojoUtils;
 
 public class SplitFrameModelV2 extends ModelSchema<SplitFrameModel, SplitFrameModelV2, SplitFrameModel.SplitFrameParameters, SplitFrameModel.SplitFrameOutput> {
@@ -14,7 +14,7 @@ public class SplitFrameModelV2 extends ModelSchema<SplitFrameModel, SplitFrameMo
 
     // Output fields
     @API(help="Output frames for each output split part")
-    public Frame[] splits;
+    public FrameV2[] splits;
 
     @Override public SplitFrameModel.SplitFrameOutput createImpl() {
       SplitFrameModel.SplitFrameOutput impl = new SplitFrameModel.SplitFrameOutput(null);

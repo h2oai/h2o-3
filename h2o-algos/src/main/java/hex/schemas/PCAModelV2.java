@@ -41,7 +41,7 @@ public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAPa
     public int num_pc;
 
     @API(help = "Model parameters")
-    PCA parameters;
+    PCAV2 parameters;
 
   } // PCAModelOutputV2
 
@@ -56,6 +56,6 @@ public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAPa
   @Override public PCAModel createImpl() {
     PCAV2.PCAParametersV2 p = ((PCAV2.PCAParametersV2)this.parameters);
     PCAModel.PCAParameters parms = p.createImpl();
-    return new PCAModel( key, parms, null );
+    return new PCAModel( key.key(), parms, null );
   }
 }

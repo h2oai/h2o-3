@@ -3,7 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
-import water.Key;
+import water.api.KeyV1.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
@@ -23,7 +23,7 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  protected Key key;
+  protected ModelKeyV1 key;
 
   // Output fields
   @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
@@ -46,7 +46,7 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
   }
 
   /* Key-only constructor, for the times we only want to return the key. */
-  ModelSchema( Key key ) { this.key = key; }
+  ModelSchema( ModelKeyV1 key ) { this.key = key; }
 
   public ModelSchema(M m) {
     this();
@@ -68,7 +68,7 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
     this.algo = ModelBuilder.getAlgo(m);
-    this.key = m._key;
+    this.key = new ModelKeyV1(m._key);
     this.checksum = m.checksum();
 
     parameters = createParametersSchema();
