@@ -46,7 +46,7 @@ function(op, x, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_charact
 
   ast <- .h2o.unary_op_ast(op, x)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "unary_op"),
+  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "unary_op"),
                 finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 }
 
@@ -59,6 +59,27 @@ function(op, x) {
 #' Binary Operation
 #'
 #' Operation between H2OFrame objects and/or base R objects.
+.h2o.binary_op_conn <-
+function(e1, e2) {
+  if (is(e1, "H2OFrame")) {
+    lhsconn <- e1@conn
+  } else {
+    lhsconn <- NULL
+  }
+  if (is(e2, "H2OFrame")) {
+    rhsconn <- e2@conn
+  } else {
+    rhsconn <- NULL
+  }
+
+  if (is.null(lhsconn))
+    lhsconn <- rhsconn
+  else if (!is.null(rhsconn) && (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port))
+    stop("LHS and RHS are using different H2O connections")
+
+  lhsconn
+}
+
 .h2o.binary_op_ast<-
 function(op, e1, e2) {
   # Prep the op
@@ -91,34 +112,24 @@ function(op, e1, e2) {
 
 .h2o.binary_scalar_op<-
 function(op, e1, e2) {
-  ast <- .h2o.binary_op_ast(op, e1, e2)
-  .h2o.eval.scalar(x@conn, ast)
+  conn <- .h2o.binary_op_conn(e1, e2)
+  ast  <- .h2o.binary_op_ast(op, e1, e2)
+  .h2o.eval.scalar(conn, ast)
 }
 
 .h2o.binary_frame_op<-
 function(op, e1, e2, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_) {
-  if (is(e1, "H2OFrame")) {
-    lhsconn <- e1@conn
+  if (is(e1, "H2OFrame") && is(e2, "H2OFrame"))
+    finalizers <- c(e1@finalizers, e2@finalizers)
+  else if (is(e1, "H2OFrame"))
     finalizers <- e1@finalizers
-  } else {
-    lhsconn <- NULL
-    finalizers <- list()
-  }
-  if (is(e2, "H2OFrame")) {
-    rhsconn <- e2@conn
-    finalizers <- c(finalizers, e2@finalizers)
-  } else {
-    rhsconn <- NULL
-  }
+  else
+    finalizers <- e2@finalizers
 
-  if (is.null(lhsconn))
-    lhsconn <- rhsconn
-  else if (!is.null(rhsconn) && (lhsconn@ip != rhsconn@ip || lhsconn@port != rhsconn@port))
-    stop("LHS and RHS are using different H2O connections")
-
-  ast <- .h2o.binary_op_ast(op, e1, e2)
+  conn <- .h2o.binary_op_conn(e1, e2)
+  ast  <- .h2o.binary_op_ast(op, e1, e2)
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
-  .newH2OObject("H2OFrame", conn = lhsconn, key = .key.make(lhsconn, "binary_op"),
+  .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "binary_op"),
                 finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
 }
 

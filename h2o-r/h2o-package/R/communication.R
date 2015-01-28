@@ -10,9 +10,10 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 .skip_if_not_developer <- function() {
-  if (Sys.getenv("USER") %in% c("tomk", "amy"))
-    return()
-  skip("Not a developer")
+  # TODO: Verify this function serves a useful purpose
+  if (!(Sys.getenv("USER") %in% c("tomk", "amy")))
+    stop("Not a developer")
+  invisible(NULL)
 }
 
 .h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {
@@ -35,7 +36,7 @@
   else {
     stopifnot(is.list(parms))
     # Uncomment line below if all keys should contain a session ID suffix
-    #if (!is.null(parms[["key"]]) && !grepl(sprintf("%s$", conn@session_id), parms[["key"]])) parms[["key"]] <- paste0(parms[["key"]], conn@session_id)
+    #if (!is.null(parms[["key"]]) && !grepl(sprintf("%s$", conn@mutable$session_id), parms[["key"]])) parms[["key"]] <- paste0(parms[["key"]], conn@session_id)
   }
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
@@ -367,7 +368,7 @@
 #' Print method for H2OTable objects
 #'
 #' @param x An H2OTable object
-#' @param ... Additional arguments to print method for data.frame objects
+#' @param ... Further arguments passed to or from other methods.
 #' @return The original x object
 print.H2OTable <- function(x, ...) {
   # format columns
