@@ -235,6 +235,10 @@ public class TwoDimTable extends Iced {
         case "float":
           cellValues[row][col] = Double.toHexString(d);
           break;
+        case "long":
+        case "int":
+          cellValues[row][col] = Long.toString((long)d);
+          break;
         default:
           cellValues[row][col] = Double.toString(d);
           break;

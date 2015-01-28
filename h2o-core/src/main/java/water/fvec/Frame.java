@@ -1,10 +1,14 @@
 package water.fvec;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import water.*;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -827,6 +831,67 @@ public class Frame extends Lockable<Frame> {
       }
     }
   }
+
+
+
+
+  // Convert first 100 rows to a 2-d table
+  @Override public String toString( ) { return toString(0,20); }
+
+  // Convert len rows starting at off to a 2-d ascii table
+  public String toString( long off, int len ) {
+
+    String[] rowHeaders = new String[len+4];
+    rowHeaders[0] = "min";
+    rowHeaders[1] = "mean";
+    rowHeaders[2] = "stddev";
+    rowHeaders[3] = "max";
+    for( int i=0; i<len; i++ ) rowHeaders[i+4]=""+(off+i);
+
+    final int ncols = numCols();
+    final Vec[] vecs = vecs();
+    String[] coltypes = new String[ncols];
+    String[][] strCells = new String[len+4][ncols];
+    double[][] dblCells = new double[len+4][ncols];
+    for( int i=0; i<ncols; i++ ) {
+      Vec vec = vecs[i];
+      dblCells[0][i] = vec.min();
+      dblCells[1][i] = vec.mean();
+      dblCells[2][i] = vec.sigma();
+      dblCells[3][i] = vec.max();
+      switch( vec.get_type() ) {
+      case Vec.T_STR : {
+        coltypes[i] = "string"; 
+        ValueString vstr = new ValueString();
+        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.atStr(vstr,off+j).toString(); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        break;
+      }
+      case Vec.T_ENUM: {
+        coltypes[i] = "string"; 
+        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.factor(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        break;
+      }
+      case Vec.T_TIME:
+      case Vec.T_TIME+1:
+      case Vec.T_TIME+2: {
+        coltypes[i] = "string"; 
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        for( int j=0; j<len; j++ ) { strCells[j+4][i] = fmt.print(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        break;
+      }
+      case Vec.T_NUM: {
+        coltypes[i] = vec.isInt() ? "long" : "double"; 
+        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.at(off + j); strCells[j+4][i] = null; }
+        break;
+      }
+      case Vec.T_UUID:
+      default: throw H2O.unimpl();
+      }
+    }
+
+    return new TwoDimTable("Frame "+_key,rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+  }
+
 
   // Bulk (expensive) copy from 2nd cols into 1st cols.
   // Sliced by the given cols & rows
