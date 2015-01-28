@@ -34,6 +34,7 @@ class H2OJob(object):
             self._refresh_job_view()
             running = self._is_running()
         H2OJob._update_progress(self.progress)
+        print
 
         # check if failed... and politely print relevant message
         if self._is_failed():

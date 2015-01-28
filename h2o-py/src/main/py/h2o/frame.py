@@ -383,6 +383,7 @@ class H2OFrame(object):
         # print some information on the *uploaded* data
         print "Uploaded", raw_fname, "into cluster with", \
             rows, "rows and", len(cols), "cols"
+        print
 
     def _upload_raw_data(self, tmp_file_path, column_names):
 
@@ -400,6 +401,9 @@ class H2OFrame(object):
 
         # actually parse the data and setup self._vecs
         self._handle_raw_fname(dest_key, column_names=column_names)
+
+    def __iter__(self):
+        return (vec for vec in self.vecs().__iter__() if vec is not None)
 
     def vecs(self):
         """
@@ -438,14 +442,35 @@ class H2OFrame(object):
 
     # Print [col, cols...]
     def show(self):
-        s = ""
-        for vec in self._vecs:
-            s += vec.show()
-        return s
+        if len(self) == 1:
+            to_show = [[v] for v in self._vecs[0].show(noprint=True)]
+            print tabulate.tabulate(to_show, headers=self.names())
+        else:
+            vecs = [vec.show(noprint=True) for vec in self]
+            vecs.insert(0, range(1, len(vecs[0]) + 1, 1))
+            print "Showing the first " + str(len(vecs[0])) + " rows:"
+            print tabulate.tabulate(zip(*vecs), headers=["Row ID"] + self.names())
+            print
+
+    def head(self, rows=10, cols=200, **kwargs):
+        nrows = min(self.nrow(), rows)
+        ncols = min(self.ncol(), cols)
+        colnames = self.names()[0:ncols]
+
+        fr = H2OFrame.py_tmp_key()
+        cbind = "(= !" + fr + " (cbind %"
+        cbind += " %".join([vec.get_expr().eager() for vec in self]) + "))"
+        res = h2o.rapids(cbind)
+        h2o.remove(fr)
+        head_rows = [range(1, nrows + 1, 1)]
+        head_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
+        head = zip(*head_rows)
+        print "First", str(nrows), "rows and first", str(ncols), "columns: "
+        print tabulate.tabulate(head, headers=["Row ID"] + colnames)
+        print
 
     # Comment out to help in debugging
     # def __str__(self): return self.show()
-
     def describe(self):
         """
         Generate an in-depth description of this H2OFrame.
@@ -467,6 +492,7 @@ class H2OFrame(object):
             self._row('missing', None)
         ]
         print tabulate.tabulate(table, headers)
+        print
 
     # Column selection via integer, string (name) returns a Vec
     # Column selection via slice returns a subset Frame
@@ -764,12 +790,22 @@ class H2OVec(object):
         self._expr.data().append(__x__)
         self._expr.set_len(self._expr.get_len() + 1)
 
-    def show(self):
+    def show(self, noprint=False):
         """
-        Pretty print this H2OVec.
-        :return: void
+        Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
+        :param noprint: A boolean stating whether to print or to return data.
+        :return: If noprint is False, then self._expr is returned.
         """
-        return self._name + " " + self._expr.show()
+        if noprint:
+            return self._expr.show(noprint=True)
+        else:
+            to_show = [[v] for v in self._expr.show(noprint=True)]
+            nrows = min(11, len(to_show) + 1) - 1
+            for i in range(1, min(11, len(to_show) + 1), 1):
+                to_show[i - 1].insert(0, i)
+            header = self.name() + " (first " + str(nrows) + " row(s))"
+            print tabulate.tabulate(to_show, headers=["Row ID", header])
+            print
 
     # Comment out to help in debugging
     # def __str__(self): return self.show()

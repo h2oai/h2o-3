@@ -6,6 +6,7 @@ import sys
 from math import sqrt, isnan
 import h2o
 import frame
+import tabulate
 
 __CMD__ = None
 __TMPS__ = None
@@ -42,12 +43,14 @@ class Expr(object):
 
         # instance variables
         self._op      = None
-        self._data    = None  # the "head" of a frame, or a float, or int
+        self._data    = None   # the "head" of a frame, or a float, or int
         self._left    = None
         self._rite    = None
         self._name    = None
-        self._summary = None  # computed lazily
+        self._summary = None   # computed lazily
         self._len     = None
+        self._vecname = ""     # the name of the Vec, if any
+        self._isslice = False  # if a slice, then return a new H2OVec from show
 
         self._op, self._data = (op, None) if isinstance(op, str) else ("rawdata", op)
         self._name = self._op  # Set an initial name, generally overwritten
@@ -66,9 +69,14 @@ class Expr(object):
             self._len = length
         elif self.is_local():
             self._len = len(self._data) if isinstance(self._data, list) else 1
+        elif self.is_slice():
+            self._len = self._data.stop - self._data.start
         else:
             self._len = length if length else len(self._left)
         assert self._len is not None
+
+        if left and isinstance(left, frame.H2OVec):
+            self._vecname = left.name()
 
     def name(self): return self._name
 
@@ -84,6 +92,8 @@ class Expr(object):
 
     def rite(self): return self._rite
 
+    def vecname(self): return self._vecname
+
     def is_local(self): return isinstance(self._data, (list, int, float))
 
     def is_remote(self): return isinstance(self._data, unicode)
@@ -92,10 +102,12 @@ class Expr(object):
 
     def is_computed(self): return not self.is_pending()
 
+    def is_slice(self): return isinstance(self._data, slice)
+
     def _is_valid(self, obj=None):
         if obj:  # not None'ness depends on short-circuiting `or`; see python docs
             return isinstance(obj, Expr) or isinstance(self._data, unicode)
-        return self.is_local() or self.is_remote() or self.is_pending()
+        return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
 
     def __len__(self):
         """
@@ -114,17 +126,28 @@ class Expr(object):
                 str(self._rite.name() if isinstance(self._rite, Expr) else self._rite) +
                 " = " + str(type(self._data)) + ")")
 
-    def show(self):
+    def show(self, noprint=False):
         """
         Evaluate and print.
         :return:
         """
         self.eager()
-        if isinstance(self._data, unicode):
-            j = h2o.frame(self._data)
-            data = j['frames'][0]['columns'][0]['data']
-            return str(data)
-        return self._data.__str__()
+        if noprint:
+            if isinstance(self._data, unicode):
+                j = h2o.frame(self._data)
+                data = j['frames'][0]['columns'][0]['data'][0:10]
+                return data
+            return self._data
+        else:
+            if isinstance(self._data, unicode):
+                j = h2o.frame(self._data)
+                data = j['frames'][0]['columns'][0]['data'][0:10]
+            else:
+                data = [self._data]
+            header = self._vecname + " (first " + str(len(data)) + " row(s))"
+            rows = range(1, len(data) + 1, 1)
+            print tabulate.tabulate(zip(rows, data), headers=["Row ID", header])
+            print
 
     # Comment out to help in debugging
     # def __str__(self): return self.show()
@@ -176,7 +199,7 @@ class Expr(object):
     def __del__(self):
         # Dead pending op or local data; nothing to delete
         if self.is_pending() or self.is_local(): return
-        assert self.is_remote()
+        assert self.is_remote(), "Data wasn't remote. Hrm..."
         global __CMD__
         if __CMD__ is None:
             h2o.remove(self.data())
@@ -230,6 +253,11 @@ class Expr(object):
                 __CMD__ += "#" + str(child.data())
             elif isinstance(child.data(), unicode):
                 __CMD__ += "%" + str(child.data())
+            elif isinstance(child.data(), slice):
+                __CMD__ += \
+                    "(: #" + str(child.data().start) + " #" + str(child.data().stop - 1) \
+                    + ")"
+                child._data = None  # trigger GC now
             else:
                 pass
         __CMD__ += " "
