@@ -394,7 +394,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
       assert(mdomain != null); // label must be enum
 
-      ConfusionMatrix cm = ModelMetricsBinomial.getFromDKV(this,fr)._cm;
+      ConfusionMatrix cm = ModelMetrics.getFromDKV(this, fr).cm();
       if (cm._domain != null) { //don't print table for regression
         assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
         cm._cmTable = cm.toTable();

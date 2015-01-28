@@ -206,8 +206,8 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'model_metrics' in p, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a model_metrics object."
     mm = p['model_metrics'][0]
     h2o.H2O.verboseprint('mm: ', repr(mm))
-    assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
-    assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
+    #assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
+    #assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
     assert 'predictions' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an predictions section."
     assert 'key' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
     assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."

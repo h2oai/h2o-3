@@ -146,7 +146,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  conn@session_id <- .init.session_id(conn)
+  conn@mutable$session_id <- .init.session_id(conn)
   assign("SERVER", conn, .pkg.env)
   conn
 }

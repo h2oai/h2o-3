@@ -22,7 +22,7 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -219,17 +219,17 @@ public class DeepLearningProstateTest extends TestUtil {
                                       Frame pred = null, pred2 = null;
                                       try {
                                         pred = model2.score(valid);
-                                        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model2, valid);
+                                        hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
                                         double error = 0;
                                         // binary
                                         if (model2._output.nclasses() == 2) {
                                           assert (resp == 1);
-                                          threshold = mm._aucdata.threshold();
-                                          error = mm._aucdata.err();
+                                          threshold = mm.auc().threshold();
+                                          error = mm.auc().err();
                                           // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm(), new String[]{"0", "1"}).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix(mm.auc().cm(), new String[]{"0", "1"}).err(), error, 1e-15);
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                          Assert.assertEquals(mm._cm.err(), error, 1e-15);
+                                          Assert.assertEquals(mm.cm().err(), error, 1e-15);
                                         }
                                         double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
 

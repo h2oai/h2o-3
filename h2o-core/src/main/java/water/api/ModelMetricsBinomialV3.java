@@ -11,8 +11,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBase<ModelMetricsBinomia
   public ConfusionMatrixBase cm;
 
   @Override public ModelMetricsBinomial createImpl() {
-    ModelMetricsBinomial m = new ModelMetricsBinomial(this.model.createImpl().get(), this.frame.createImpl().get());
-    return (ModelMetricsBinomial) m;
+    return new ModelMetricsBinomial(this.model.createImpl().get(), this.frame.createImpl().get());
   }
 
   @Override

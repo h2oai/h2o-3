@@ -127,9 +127,9 @@ h2o.splitFrame <- function(data, ratios = 0.75) {
   if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
   res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-  .h2o.__waitOnJob(conn, .res$job$key$name)
+  .h2o.__waitOnJob(data@conn, res$job$key$name)
 
-  model.view <- .h2o.__remoteSend(conn, method="GET", paste0(.h2o.__MODELS, "/", .res$job$dest$name))
+  model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
   splits <- lapply(model.view$models[[1L]]$output$splits,
                    function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
   names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
@@ -211,6 +211,7 @@ h2o.table <- function(x, y = NULL) {
 #'        versa.
 #' @param dig.lab Integer which is used when labels are not given, determines the number of digits used in formatting
 #'        the beak numbers.
+#' @param ... Further arguments passed to or from other methods.
 #' @return Returns an \linkS4class{H2OFrame} object containing the factored data with intervals as levels.
 #' @examples
 #' library(h2o)
@@ -227,7 +228,7 @@ NULL
 
 #' @rdname h2o.cut
 cut.H2OFrame<-
-function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3) {
+function(x, breaks, labels = NULL, include.lowest = FALSE, right = TRUE, dig.lab = 3, ...) {
   if (!is(x, "H2OFrame")) stop("`x` must be an H2O Frame.")
   if (!is.numeric(breaks) || length(breaks) == 0L || !all(is.finite(breaks)))
     stop("`breaks` must be a numeric vector")
@@ -544,7 +545,7 @@ setMethod("names<-", "H2OFrame", function(x, value) { colnames(x) <- value; x })
 #' Functions that facilitate column transformations of an \linkS4class{H2OFrame} object.
 #'
 #' @name transform.H2OFrame
-#' @param `_data`, data An \linkS4class{H2OFrame} object.
+#' @param _data,data An \linkS4class{H2OFrame} object.
 #' @param expr For \code{within} method, column transformations specified as an expression.
 #' @param ... For \code{transform} method, column transformations in the form \code{tag=value}.
 #' @seealso \code{\link[base]{transform}}, \code{\link[base]{within}} for the base R methods.
@@ -718,7 +719,7 @@ setMethod("dim", "H2OFrame", function(x) c(nrow(x), ncol(x)))
 #' @name h2o.head
 #' @param x An \linkS4class{H2OFrame} object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
-#' @param ... Arguments to be passed to or from other methods. ##(Currently unimplemented).
+#' @param ... Further arguments passed to or from other methods.
 #' @return A data frame containing the first or last n rows of an \linkS4class{H2OFrame} object.
 #' @examples
 #' library(h2o)
@@ -802,6 +803,7 @@ setMethod("is.factor", "H2OFrame", function(x) {
 #' @name quantile
 #' @param x An \code{\linkS4class{H2OFrame}} object with a single numeric column.
 #' @param probs Numeric vector of probabilities with values in [0,1].
+#' @param ... Further arguments passed to or from other methods.
 #' @return A vector describing the percentiles at the given cutoffs for the \code{\linkS4class{H2OFrame}} object.
 #' @examples
 #' # Request quantiles for an H2O parsed data set:
@@ -818,8 +820,6 @@ quantile.H2OFrame <- function(x,
                      probs = c(0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99),
                      ...)
 {
-  parms <- list()
-
   # verify input parameters
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
   if(ncol(x) != 1L) stop("quantile only operates on a single column")
@@ -851,7 +851,7 @@ quantile.H2OFrame <- function(x,
 #'
 #' @name summary
 #' @param object An \linkS4class{H2OFrame} object.
-#' @param ... Arguments to be passed to or from other methods. ##(Currently unimplemented).
+#' @param ... Further arguments passed to or from other methods.
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each 
 #' numeric column, and the levels and category counts of the levels in each categorical column. 
 #' @examples
