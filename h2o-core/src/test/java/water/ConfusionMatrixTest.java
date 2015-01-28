@@ -2,12 +2,12 @@ package water;
 
 import hex.ConfusionMatrix;
 import static hex.ConfusionMatrix.buildCM;
-import static hex.Model.adaptTestForTrain;
+
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
-import water.fvec.Vec;
+
 import static water.util.FrameUtils.parseFrame;
 
 import java.io.IOException;
@@ -206,10 +206,10 @@ public class ConfusionMatrixTest extends TestUtil {
       if (debug) {
         System.err.println("actual            : " + Arrays.toString(actualDomain));
         System.err.println("predicted         : " + Arrays.toString(predictedDomain));
-        System.err.println("CM domain         : " + Arrays.toString(cm._domain));
+        System.err.println("CM domain         : " + Arrays.toString(cm.domain));
         System.err.println("expected CM domain: " + Arrays.toString(expectedDomain) + "\n");
-        for (int i=0; i<cm._arr.length; i++)
-          System.err.println(Arrays.toString(cm._arr[i]));
+        for (int i=0; i<cm.confusion_matrix.length; i++)
+          System.err.println(Arrays.toString(cm.confusion_matrix[i]));
         System.err.println("");
         System.err.println(cm.toASCII());
       }
@@ -223,8 +223,8 @@ public class ConfusionMatrixTest extends TestUtil {
   }
 
   private void assertCMEqual(String[] expectedDomain, long[][] expectedCM, ConfusionMatrix actualCM) {
-    Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM._domain);
-    long[][] acm = actualCM._arr;
+    Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM.domain);
+    long[][] acm = actualCM.confusion_matrix;
     Assert.assertEquals("CM dimension differs", expectedCM.length, acm.length);
     for (int i=0; i < acm.length; i++) Assert.assertArrayEquals("CM row " +i+" differs!", expectedCM[i], acm[i]);
   }

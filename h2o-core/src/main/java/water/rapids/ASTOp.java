@@ -3019,7 +3019,7 @@ class ASTTranspose extends ASTOp {
 //      chunk.close(0, fs);
 //      Vec vec = avec.close(fs);
 //      fs.blockForPending();
-//      vec._domain = null;
+//      vec.domain = null;
 //      Frame fr = new Frame(new String[] {"C1"}, new Vec[] {vec});
 //      env.poppush(2,new Matrix(fr).trans(),null);
 //    } else

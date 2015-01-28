@@ -20,6 +20,6 @@ public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModelV2,
   @Override public Word2VecModel createImpl() {
     Word2VecV2.Word2VecParametersV2 p = ((Word2VecV2.Word2VecParametersV2)this.parameters);
     Word2VecModel.Word2VecParameters parms = p.createImpl();
-    return new Word2VecModel( key, parms, null);
+    return new Word2VecModel( key.key(), parms, null);
   }
 }
