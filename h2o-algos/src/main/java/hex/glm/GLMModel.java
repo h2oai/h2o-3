@@ -12,6 +12,7 @@ import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -466,6 +467,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     float       _threshold;
     double   [] _global_beta;
     String   [] _coefficient_names;
+    TwoDimTable _coefficients_table;
     boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
@@ -474,8 +476,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       super(b);
       String [] cnames = dinfo.coefNames();
       String [] pnames = dinfo._adaptedFrame.names();
+      String [] colTypes = new String[cnames.length+1];
+      String [] colFormat = new String[cnames.length+1];
+      Arrays.fill(colTypes, "double");
+      Arrays.fill(colFormat, "%5f");
       _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       _coefficient_names[cnames.length] = "Intercept";
+      _coefficients_table = new TwoDimTable(
+              "Best Lambda",
+              new String []{"Coefficients", "Norm Coefficients"},
+              _coefficient_names,
+              colTypes,
+              colFormat
+      );
       _binomial = binomial;
     }
 
@@ -544,8 +557,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficient_names.length);
       else Arrays.fill(_global_beta,0);
       int j = 0;
-      for(int i:_submodels[l].idxs)
-        _global_beta[i] = _submodels[l].beta[j++];
+      for(int i:_submodels[l].idxs) {
+        _global_beta[i] = _submodels[l].beta[j];
+        _coefficients_table.set(0, i, _submodels[l].beta[j]);
+        _coefficients_table.set(1, i, _submodels[l].beta[j++]);
+      }
     }
   }
   public static void setXvalidation(H2OCountedCompleter cmp, Key modelKey, final double lambda, final GLMValidation val){
