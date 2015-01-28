@@ -16,15 +16,14 @@ import java.util.Random;
  * Use by calling solve() and passing in your own gradient computation function.
  *
 */
-public class L_BFGS extends Iced {
+public final class L_BFGS extends Iced {
   int _maxIter = 500;
-  double _gradEps = 1e-6;
+  double _gradEps = 1e-8;
   // line search params
   int _nBetas = 32; // number of line search steps done in each pass (to minimize passes over the whole data)
   double _stepDec = .7; // line search step decrement
   double _minStep = Math.pow(_stepDec,_nBetas);
   int _historySz = 20;
-  int _iter;
   History _hist;
 
 
@@ -41,6 +40,7 @@ public class L_BFGS extends Iced {
     return this;
   }
 
+  public int k() {return _hist._k;}
   public int maxIter(){ return _maxIter;}
 
   public static class GradientInfo {
@@ -125,19 +125,46 @@ public class L_BFGS extends Iced {
         Arrays.fill(_y[i], Double.NaN);
       }
     }
-    double [] getY(int k){ return _y[k % _m];}
-    double [] getS(int k){ return _s[k % _m];}
-    double rho(int i){return _rho[i % _m];}
+    double [] getY(int k){ return _y[(_k + k) % _m];}
+    double [] getS(int k){ return _s[(_k + k) % _m];}
+    double rho(int k){return _rho[(_k + k) % _m];}
 
-    private final void update(int iter, double [] pk, double [] gNew, double [] gOld){
-      assert(iter >= 0);
-      int id = iter % _m;
+    int _k;
+
+    private final void update(double [] pk, double [] gNew, double [] gOld){
+      int id = _k % _m;
       final double[] gradDiff = _y[id];
       for (int i = 0; i < gNew.length; ++i)
         gradDiff[i] = gNew[i] - gOld[i];
       System.arraycopy(pk,0,_s[id],0,pk.length);
       _rho[id] = 1.0/ArrayUtils.innerProduct(_s[id],_y[id]);
+      ++_k;
     }
+
+    // the actual core of L-BFGS algo
+    private  final double [] getSearchDirection(final double [] gradient) {
+      // get search direction
+      double[] alpha = MemoryManager.malloc8d(_m);
+      double [] q = gradient.clone();
+      for (int i = 1; i <= Math.min(_k,_m); ++i) {
+        alpha[i-1] = rho(-i) * ArrayUtils.innerProduct(getS(-i), q);
+        MathUtils.wadd(q, getY( - i), -alpha[i - 1]);
+      }
+      if(_k > 0) {
+        final double [] s = getS(-1);
+        final double [] y = getY(-1);
+        double Hk0 = ArrayUtils.innerProduct(s,y) / ArrayUtils.innerProduct(y, y);
+        ArrayUtils.mult(q, Hk0);
+      }
+      for (int i = Math.min(_k,_m); i > 0; --i) {
+        double beta = rho(-i)*ArrayUtils.innerProduct(getY(-i),q);
+        MathUtils.wadd(q,getS(-i),alpha[i-1]-beta);
+      }
+      ArrayUtils.mult(q,-1);
+      // q now has the search direction
+      return q;
+    }
+
   }
 
 
@@ -180,15 +207,15 @@ public class L_BFGS extends Iced {
   public final Result solve(GradientSolver gslvr, final double [] beta, GradientInfo gOld, ProgressMonitor pm) {
     if(_hist == null)
       _hist = new History(_historySz, beta.length);
-    int iter = 0;
     double [][] lsBetas = new double[_nBetas][]; // do 32 line-search steps at once to minimize passes through the whole dataset
     for(int i = 0; i < lsBetas.length; ++i)
       lsBetas[i] = MemoryManager.malloc8d(beta.length);
     double step = 1;
     // just loop until good enough or line search can not progress
+    int iter = 0;
 _MAIN:
-    while(pm.progress(gOld) && iter++ < _maxIter && MathUtils.l2norm2(gOld._gradient) > _gradEps) {
-      double[] pk = getSearchDirection(iter-1, gOld._gradient);
+    while(pm.progress(gOld) && MathUtils.l2norm2(gOld._gradient) > _gradEps && iter++ < _maxIter) {
+      double[] pk = _hist.getSearchDirection(gOld._gradient);
       double t = step;
       while (t > _minStep) {
         for (int i = 0; i < _nBetas; ++i) {
@@ -204,8 +231,7 @@ _MAIN:
           if (ginfos[i].isValid() && !needLineSearch(t, gOld._objVal, ginfos[i]._objVal, pk, gOld._gradient)) {
             // we got admissible solution
             ArrayUtils.mult(pk, t);
-            if(iter > 0)
-              _hist.update(_iter + iter-1, pk, ginfos[i]._gradient, gOld._gradient);
+            _hist.update(pk, ginfos[i]._gradient, gOld._gradient);
             gOld = ginfos[i];
             ArrayUtils.add(beta, pk);
             assert Arrays.equals(beta, lsBetas[i]);
@@ -217,37 +243,15 @@ _MAIN:
         step = t;
       }
       // line search did not progress -> converged
+      --iter; // decrement iteration since we did not reallyupdate the result in the last one
       break _MAIN;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + gOld._objVal + ", penalty = " + (.5 * ArrayUtils.l2norm2(beta,true)) + ",  converged = " + (MathUtils.l2norm2(gOld._gradient) <= _gradEps) );
-    _iter += iter-1;
+    Log.info("L_BFGS done after " + iter + " iterations, objval = " + gOld._objVal + ", gradient norm2 = " + MathUtils.l2norm2(gOld._gradient) + ",  converged = " + (MathUtils.l2norm2(gOld._gradient) <= _gradEps) );
     return new Result(iter,beta, gOld);
   }
 
 
-  // the actual core of L-BFGS algo
-  private  final double [] getSearchDirection(int iter, final double [] gradient) {
-    // get search direction
-    double[] alpha = MemoryManager.malloc8d(_hist._m);
-    double [] q = gradient.clone();
-    for (int i = 1; i <= Math.min(iter,_hist._m); ++i) {
-      alpha[i-1] = _hist.rho(iter-i) * ArrayUtils.innerProduct(_hist.getS(iter-i), q);
-      MathUtils.wadd(q, _hist.getY(iter - i), -alpha[i - 1]);
-    }
-    if(iter > 0) {
-      final double [] s = _hist.getS(iter - 1);
-      final double [] y = _hist.getY(iter - 1);
-      double Hk0 = ArrayUtils.innerProduct(s,y) / ArrayUtils.innerProduct(y, y);
-      ArrayUtils.mult(q, Hk0);
-    }
-    for (int i = Math.min(iter,_hist._m); i > 0; --i) {
-      double beta = _hist.rho(iter-i)*ArrayUtils.innerProduct(_hist.getY(iter-i),q);
-      MathUtils.wadd(q,_hist.getS(iter-i),alpha[i-1]-beta);
-    }
-    ArrayUtils.mult(q,-1);
-    // q now has the search direction
-    return q;
-  }
+
 
   private static final double [] wadd(double [] res, double [] x, double [] y, double w){
     for(int i = 0; i < x.length; ++i)

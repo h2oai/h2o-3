@@ -397,6 +397,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         ginfo._gradient[i] += lambdaDiff * coefs[i];
       return ginfo;
     }
+
+    // GLMIterationTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
+    private MRTask makeGLMTask(Key jobKey, DataInfo dinfo, GLMParameters params, boolean computeGram, boolean validate, boolean computeGradient, double [] beta) {
+      return null;
+    }
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
@@ -441,7 +446,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
         });
         long t2 = System.currentTimeMillis();
-        Log.info("L_BFGS done after " + r.iter + " iterations and " + ((t2-t1)/1000) + " seconds, objval = " + r.ginfo._objVal + ", penalty = " + (_currentLambda * .5 * ArrayUtils.l2norm2(beta,true)) + ",  gradient norm2 = " + (MathUtils.l2norm2(gOld._gradient)));
+        Log.info("L_BFGS (k = " + _taskInfo._lbfgs.k() + ") done after " + r.iter + " iterations and " + ((t2-t1)/1000) + " seconds, objval = " + r.ginfo._objVal + ", penalty = " + (_currentLambda * .5 * ArrayUtils.l2norm2(beta,true)) + ",  gradient norm2 = " + (MathUtils.l2norm2(r.ginfo._gradient)));
+
         _taskInfo._gOld = r.ginfo;
         double [] newBeta = r.coefs;
         // update the state

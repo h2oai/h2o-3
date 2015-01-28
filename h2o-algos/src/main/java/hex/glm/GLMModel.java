@@ -541,9 +541,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xvalidation : _submodels[i].validation;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.auc > bestVal.auc)
-            || (xval && val.residual_deviance < bestVal.residual_deviance)
-            || (((bestVal.residual_deviance - val.residual_deviance) / val.null_deviance) >= 0.01)) {
+          if ((useAuc && val.auc > bestVal.auc) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
             bestId = i;
           }
