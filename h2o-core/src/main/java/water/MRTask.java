@@ -63,6 +63,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     }
     return new Frame(key,names,vecs);
   }
+  public AppendableVec[] appendables() { return _appendables; }
+  
 
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
