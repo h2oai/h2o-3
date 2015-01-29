@@ -210,7 +210,7 @@ class H2OCloudNode:
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
                #"-hdfs_version", "cdh3",
-               ]
+        ]
 
         # Add S3N credentials to cmd if they exist.
         #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -516,8 +516,8 @@ class Test:
         if (is_python_test_file(self.test_name)):
             cmd = ["python",
                    self.test_name,
-                   self.ip,
-                   str(self.port)]
+                   "--usecloud",
+                   self.ip + ":" + str(self.port)]
         elif (is_python_file(self.test_name)):
             cmd = ["python",
                    self.test_name,

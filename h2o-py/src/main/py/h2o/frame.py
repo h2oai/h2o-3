@@ -3,7 +3,7 @@
 This module contains the abstraction for H2OFrame and H2OVec objects.
 """
 import itertools
-import numpy
+# import numpy    no numpy cuz windoz
 import csv
 import tabulate
 import uuid
@@ -54,7 +54,6 @@ class H2OFrame(object):
             list  []
             dict  {}
             collections.OrderedDict
-            numpy.ndarray
 
         The type of `python_obj` is inspected by performing an `isinstance` call. A
         ValueError will be raised if the type of `python_obj` is not one of the above
@@ -135,9 +134,9 @@ class H2OFrame(object):
                 aM1,     aM2,     aM3,     ..., aMN
 
             It looks exactly like an MxN matrix with an additional header "row". This
-            header cannot be specified when loading data from a () (or from a [] or a
-            numpy.ndarray, but it is possible to specify a header with a python
-            dictionary, see below for details).
+            header cannot be specified when loading data from a () (or from a []
+            but it is possible to specify a header with a python dictionary, see below
+            for details).
 
             Headers:
 
@@ -208,15 +207,6 @@ class H2OFrame(object):
             collections.OrderedDict will preserve the order of the key-value pairs in
             which they were entered.
 
-
-        Loading: numpy.ndarray
-        ====================
-
-        numpy.ndarray objects follow the same rules as lists and tuples.
-
-        If a numpy.ndarray appears in a dict or collections.OrderedDict, then a ValueError
-        will be raised.
-
     """
 
     def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None,
@@ -231,13 +221,13 @@ class H2OFrame(object):
         at the time of object creation.
 
         If `python_obj` is not None, then an attempt to upload the python object to H2O
-        will be made. A valid python object has type `list`, `dict`, or `numpy.ndarray`.
+        will be made. A valid python object has type `list`, or `dict`.
 
         For more information on the structure of the input for the various native python
         data types ("native" meaning non-H2O), please see the general documentation for
         this object.
 
-        :param python_obj: A "native" python object - numpy array, Pandas DataFrame, list.
+        :param python_obj: A "native" python object - list, dict, tuple.
         :param local_fname: A local path to a data source. Data is python-process-local.
         :param remote_fname: A remote path to a data source. Data is cluster-local.
         :param vecs: A list of H2OVec objects.
@@ -298,7 +288,7 @@ class H2OFrame(object):
         Properly handle native python data types. For a discussion of the rules and
         permissible data types please refer to the main documentation for H2OFrame.
 
-        :param python_obj: A tuple, list, dict, collections.OrderedDict, or numpy.ndarray
+        :param python_obj: A tuple, list, dict, collections.OrderedDict
         :return: None
         """
 
@@ -313,13 +303,13 @@ class H2OFrame(object):
             header, data_to_write = H2OFrame._handle_python_dicts(python_obj)
 
         # handle a numpy.ndarray
-        elif isinstance(python_obj, numpy.ndarray):
-
-            header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
+        # elif isinstance(python_obj, numpy.ndarray):
+        #
+        #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
 
         else:
             raise ValueError("`python_obj` must be a tuple, list, dict, "
-                             "collections.OrderedDict, or a numpy.ndarray. "
+                             "collections.OrderedDict. "
                              "Got: " + type(python_obj))
 
         if header is None or data_to_write is None:
@@ -734,16 +724,16 @@ class H2OFrame(object):
 
         return header, data_to_write
 
-    @staticmethod
-    def _handle_numpy_array(python_obj):
-        header = H2OFrame._gen_header(python_obj.shape[1])
-
-        as_list = python_obj.tolist()
-        lol = H2OFrame._is_list_of_lists(as_list)
-        data_to_write = [dict(zip(header, row)) for row in as_list] \
-            if lol else [dict(zip(header, as_list))]
-
-        return header, data_to_write
+    # @staticmethod
+    # def _handle_numpy_array(python_obj):
+    #     header = H2OFrame._gen_header(python_obj.shape[1])
+    #
+    #     as_list = python_obj.tolist()
+    #     lol = H2OFrame._is_list_of_lists(as_list)
+    #     data_to_write = [dict(zip(header, row)) for row in as_list] \
+    #         if lol else [dict(zip(header, as_list))]
+    #
+    #     return header, data_to_write
 
 
 class H2OVec(object):
