@@ -122,8 +122,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   });
 
       for (Field f : fields) {
-        if (f.getAnnotations().length == 0) continue; // skip fields that don't have an @API annotation
-
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
