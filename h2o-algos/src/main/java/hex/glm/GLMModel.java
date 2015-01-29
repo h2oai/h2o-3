@@ -14,7 +14,8 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
-
+import water.fvec.Vec;
+import water.fvec.Frame;
 /**
  * Created by tomasnykodym on 8/27/14.
  * TODO: should be a subclass of SupervisedModel.
@@ -150,6 +151,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public void validate(GLM glm) {
+      if(_family == Family.binomial) {
+        Vec response = DKV.<Frame>getGet(_train).vec(_response_column);
+        if(response.min() != 0 || response.max() != 1) {
+          glm.error("_response_column", "Illegal response for family binomial, must be binary, got  min = " + response.min() + ", max = " + response.max() + ")");
+        }
+      }
       if (_solver == Solver.L_BFGS) {
         glm.hide("_alpha", "L1 penalty is currently only available for ADMM solver.");
         glm.hide("_higher_accuracy","only available for ADMM");
