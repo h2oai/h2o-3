@@ -10,11 +10,11 @@ import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 public class ConfusionMatrix extends Iced {
-  public TwoDimTable _cmTable;
-  public long[][] _arr; // [actual][predicted]
-  public final double[] _classErr;
-  public double _predErr;
-  public String[] _domain;
+  public TwoDimTable table;
+  public long[][] confusion_matrix; // [actual][predicted]
+  public final double[] prediction_error_by_class;
+  public double prediction_error;
+  public String[] domain;
 
 //  public enum ErrMetric {
 //    MAXC, SUMC, TOTAL;
@@ -35,10 +35,10 @@ public class ConfusionMatrix extends Iced {
    * @param domain class labels (unified domain between actual and predicted class labels)
    */
   public ConfusionMatrix(long[][] value, String[] domain) {
-    _arr = value;
-    _classErr = classErr();
-    _predErr = err();
-    _domain = domain;
+    confusion_matrix = value;
+    prediction_error_by_class = classErr();
+    prediction_error = err();
+    this.domain = domain;
   }
 
   /** Build the CM data from the actuals and predictions, using the default
@@ -78,43 +78,43 @@ public class ConfusionMatrix extends Iced {
 
 
   public void add(int i, int j) {
-    _arr[i][j]++;
+    confusion_matrix[i][j]++;
   }
 
   public double[] classErr() {
-    double[] res = new double[_arr.length];
+    double[] res = new double[confusion_matrix.length];
     for( int i = 0; i < res.length; ++i )
       res[i] = classErr(i);
     return res;
   }
 
   public final int size() {
-    return _arr.length;
+    return confusion_matrix.length;
   }
 
   public void reComputeErrors(){
-    for(int i = 0; i < _arr.length; ++i)
-      _classErr[i] = classErr(i);
-    _predErr = err();
+    for(int i = 0; i < confusion_matrix.length; ++i)
+      prediction_error_by_class[i] = classErr(i);
+    prediction_error = err();
   }
   public final long classErrCount(int c) {
-    long s = ArrayUtils.sum(_arr[c]);
-    return s - _arr[c][c];
+    long s = ArrayUtils.sum(confusion_matrix[c]);
+    return s - confusion_matrix[c][c];
   }
   public final double classErr(int c) {
-    long s = ArrayUtils.sum(_arr[c]);
+    long s = ArrayUtils.sum(confusion_matrix[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
-    return (double) (s - _arr[c][c]) / s;
+    return (double) (s - confusion_matrix[c][c]) / s;
   }
   public long totalRows() {
     long n = 0;
-    for (long[] a_arr : _arr)
+    for (long[] a_arr : confusion_matrix)
       n += ArrayUtils.sum(a_arr);
     return n;
   }
 
   public void add(ConfusionMatrix other) {
-    ArrayUtils.add(_arr, other._arr);
+    ArrayUtils.add(confusion_matrix, other.confusion_matrix);
   }
 
   /**
@@ -123,15 +123,15 @@ public class ConfusionMatrix extends Iced {
   public double err() {
     long n = totalRows();
     long err = n;
-    for( int d = 0; d < _arr.length; ++d )
-      err -= _arr[d][d];
+    for( int d = 0; d < confusion_matrix.length; ++d )
+      err -= confusion_matrix[d][d];
     return (double) err / n;
   }
   public long errCount() {
     long n = totalRows();
     long err = n;
-    for( int d = 0; d < _arr.length; ++d )
-      err -= _arr[d][d];
+    for( int d = 0; d < confusion_matrix.length; ++d )
+      err -= confusion_matrix[d][d];
     return err;
   }
   /**
@@ -144,8 +144,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double specificity() {
     if(!isBinary())throw new UnsupportedOperationException("specificity is only implemented for 2 class problems.");
-    double tn = _arr[0][0];
-    double fp = _arr[0][1];
+    double tn = confusion_matrix[0][0];
+    double fp = confusion_matrix[0][1];
     return tn / (tn + fp);
   }
   /**
@@ -154,8 +154,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double recall() {
     if(!isBinary())throw new UnsupportedOperationException("recall is only implemented for 2 class problems.");
-    double tp = _arr[1][1];
-    double fn = _arr[1][0];
+    double tp = confusion_matrix[1][1];
+    double fn = confusion_matrix[1][0];
     return tp / (tp + fn);
   }
   /**
@@ -164,8 +164,8 @@ public class ConfusionMatrix extends Iced {
    */
   public double precision() {
     if(!isBinary())throw new UnsupportedOperationException("precision is only implemented for 2 class problems.");
-    double tp = _arr[1][1];
-    double fp = _arr[0][1];
+    double tp = confusion_matrix[1][1];
+    double fp = confusion_matrix[0][1];
     return tp / (tp + fp);
   }
   /**
@@ -176,10 +176,10 @@ public class ConfusionMatrix extends Iced {
    */
   public double mcc() {
     if(!isBinary())throw new UnsupportedOperationException("precision is only implemented for 2 class problems.");
-    double tn = _arr[0][0];
-    double fp = _arr[0][1];
-    double tp = _arr[1][1];
-    double fn = _arr[1][0];
+    double tn = confusion_matrix[0][0];
+    double fp = confusion_matrix[0][1];
+    double tp = confusion_matrix[1][1];
+    double fn = confusion_matrix[1][0];
     double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
     return mcc;
   }
@@ -196,7 +196,7 @@ public class ConfusionMatrix extends Iced {
     return res;
   }
 
-  public final int nclasses(){return _arr == null?0:_arr.length;}
+  public final int nclasses(){return confusion_matrix == null?0: confusion_matrix.length;}
   public final boolean isBinary(){return nclasses() == 2;}
 
   /**
@@ -231,7 +231,7 @@ public class ConfusionMatrix extends Iced {
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    for( long[] r : _arr )
+    for( long[] r : confusion_matrix)
       sb.append(Arrays.toString(r) + "\n");
     return sb.toString();
   }
@@ -247,9 +247,9 @@ public class ConfusionMatrix extends Iced {
   }
 
   public String toASCII() {
-    if (_cmTable == null && _domain != null) {
-      _cmTable = toTable();
-      return _cmTable.toString();
+    if (table == null && domain != null) {
+      table = toTable();
+      return table.toString();
     }
     return "";
   }
@@ -259,21 +259,21 @@ public class ConfusionMatrix extends Iced {
    * @return TwoDimTable
    */
   TwoDimTable toTable() {
-    assert (_arr != null && _domain != null);
-    for (int i=0; i<_arr.length; ++i) assert(_arr.length == _arr[i].length);
+    assert (confusion_matrix != null && domain != null);
+    for (int i=0; i< confusion_matrix.length; ++i) assert(confusion_matrix.length == confusion_matrix[i].length);
     // Sum up predicted & actuals
-    long acts [] = new long[_arr   .length];
-    long preds[] = new long[_arr[0].length];
-    for( int a=0; a<_arr.length; a++ ) {
+    long acts [] = new long[confusion_matrix.length];
+    long preds[] = new long[confusion_matrix[0].length];
+    for( int a=0; a< confusion_matrix.length; a++ ) {
       long sum=0;
-      for( int p=0; p<_arr[a].length; p++ ) {
-        sum += _arr[a][p];
-        preds[p] += _arr[a][p];
+      for( int p=0; p< confusion_matrix[a].length; p++ ) {
+        sum += confusion_matrix[a][p];
+        preds[p] += confusion_matrix[a][p];
       }
       acts[a] = sum;
     }
-    String adomain[] = createConfusionMatrixHeader(acts , _domain);
-    String pdomain[] = createConfusionMatrixHeader(preds, _domain);
+    String adomain[] = createConfusionMatrixHeader(acts , domain);
+    String pdomain[] = createConfusionMatrixHeader(preds, domain);
     assert adomain.length == pdomain.length : "The confusion matrix should have the same length for both directions.";
 
     String[] rowHeader = new String[adomain.length+1];
@@ -302,14 +302,14 @@ public class ConfusionMatrix extends Iced {
 
     // Main CM Body
     long terr = 0;
-    for (int a = 0; a < _arr.length; a++) {
+    for (int a = 0; a < confusion_matrix.length; a++) {
       if (adomain[a] == null) continue;
       long correct = 0;
       for (int p = 0; p < pdomain.length; p++) {
         if (pdomain[p] == null) continue;
         boolean onDiag = adomain[a].equals(pdomain[p]);
-        if (onDiag) correct = _arr[a][p];
-        table.set(a, p, _arr[a][p]);
+        if (onDiag) correct = confusion_matrix[a][p];
+        table.set(a, p, confusion_matrix[a][p]);
       }
       long err = acts[a] - correct;
       terr += err;

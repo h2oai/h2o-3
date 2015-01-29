@@ -122,8 +122,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   });
 
       for (Field f : fields) {
-        if (f.getAnnotations().length == 0) continue; // skip fields that don't have an @API annotation
-
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
@@ -407,12 +405,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
       assert(mdomain != null); // label must be enum
 
-      ConfusionMatrix cm = ModelMetrics.getFromDKV(this, fr).cm();
-      if (cm._domain != null) { //don't print table for regression
-        assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
-        cm._cmTable = cm.toTable();
-        if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-          water.util.Log.info(cm._cmTable.toString(1));
+        ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
+        ModelCategory model_cat = this._output.getModelCategory();
+        ConfusionMatrix cm = mm.cm();
+        if(model_cat == ModelCategory.Binomial)
+            cm = ((ModelMetricsBinomial)mm)._cm;
+        else if(model_cat == ModelCategory.Multinomial)
+            cm = ((ModelMetricsMultinomial)mm)._cm;
+        else if(model_cat == ModelCategory.Regression)
+            cm = ((ModelMetricsRegression)mm).cm();
+
+        if (cm.domain != null) { //don't print table for regression
+        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
+        cm.table = cm.toTable();
+        if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+          water.util.Log.info(cm.table.toString(1));
       }
 
       String sdomain[] = actual.domain(); // Scored/test domain; can be null

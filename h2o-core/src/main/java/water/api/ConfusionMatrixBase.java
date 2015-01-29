@@ -14,21 +14,12 @@ public class ConfusionMatrixBase<I extends ConfusionMatrix, S extends ConfusionM
   public double prediction_error;
 
   @API(help="Annotated confusion matrix", direction=API.Direction.OUTPUT)
-  public TwoDimTable table;
+  public TwoDimTableV1 table;
 
   // Version&Schema-specific filling into the implementation object
   public I createImpl() {
     // TODO: this is bogus. . .
     ConfusionMatrix cm = new ConfusionMatrix(this.confusion_matrix, null);
     return (I)cm;
-  }
-
-  // Version&Schema-specific filling from the implementation object
-  public S fillFromImpl(I cm) {
-    this.confusion_matrix = cm._arr;
-    this.prediction_error_by_class = cm._classErr;
-    this.prediction_error = cm._predErr;
-    this.table = cm._cmTable;
-    return (S)this;
   }
 }

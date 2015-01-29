@@ -479,7 +479,7 @@ public class GLMTest  extends TestUtil {
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
-      AUCData adata = ((ModelMetricsBinomial)mm)._aucdata;
+      AUCData adata = mm._aucdata;
       assertEquals(val.auc(), adata.AUC(), 1e-2);
 
       GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
@@ -519,7 +519,7 @@ public class GLMTest  extends TestUtil {
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
-      AUCData adata = ((ModelMetricsBinomial)mm)._aucdata;
+      AUCData adata = mm._aucdata;
       assertEquals(val.auc(), adata.AUC(), 1e-2);
     } finally {
       fr.remove();

@@ -1,8 +1,15 @@
 package water.api;
 
 import hex.HitRatio;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
-public class HitRatioBase<I extends HitRatio, S extends HitRatioBase> extends Schema<I, HitRatioBase<I, S>> {
-  @API(help="Hit Ratios", direction=API.Direction.OUTPUT)
-  private float[] hit_ratios; // Hit ratios for k=1...K
+import java.util.Random;
+
+public class HitRatioBase<I extends HitRatio, S extends HitRatioBase<I, S>> extends Schema<I, S> {
+    @API(help="Domain of the actual response", direction=API.Direction.OUTPUT)
+    public String [] actual_domain;
+
+    @API(help="Hit ratios for k = 1,...,K", direction=API.Direction.OUTPUT)
+    public float[] hit_ratios;
 }

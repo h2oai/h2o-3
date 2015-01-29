@@ -191,6 +191,30 @@ public class TwoDimTable extends Iced {
     return cell;
   }
 
+  public String getTableHeader() {
+    return tableHeader;
+  }
+
+  public String[] getRowHeaders() {
+    return rowHeaders;
+  }
+
+  public String[] getColHeaders() {
+    return colHeaders;
+  }
+
+  public String[] getColTypes() {
+    return colTypes;
+  }
+
+  public String[] getColFormats() {
+    return colFormats;
+  }
+
+  public String[][] getCellValues() {
+    return cellValues;
+  }
+
   /**
    * Get row dimension
    * @return int
@@ -234,6 +258,10 @@ public class TwoDimTable extends Iced {
         case "double":
         case "float":
           cellValues[row][col] = Double.toHexString(d);
+          break;
+        case "long":
+        case "int":
+          cellValues[row][col] = Long.toString((long)d);
           break;
         default:
           cellValues[row][col] = Double.toString(d);

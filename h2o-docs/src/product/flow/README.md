@@ -613,6 +613,8 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
+**NOTE**: To view the current version, click the **Help** menu, then click **About**. 
+
 ###Viewing Cluster Status
 
 Click the **Admin** menu, then select **Cluster Status**. A summary of the status of the cluster (also known as a cloud) displays, which includes the same information: 
@@ -628,7 +630,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
  ![Cluster Status](images/Flow_CloudStatus.png)
 
 
-The following information displays for each node: 
+The following information displays for each node:   
 
 - IP address (name)
 - Time of last ping
@@ -641,6 +643,12 @@ The following information displays for each node:
 - Percentage of free disk space 
 
 To view more information, click the **Show Advanced** button. 
+
+---
+
+###Viewing CPU Status (Water Meter)
+
+To view the current CPU usage, click the **Admin** menu, then click **Water Meter (CPU Meter)**. A new window opens, displaying the current CPU use statistics. 
 
 ---
 
@@ -691,7 +699,7 @@ To view a timeline of events in Flow, click the **Admin** menu, then click **Tim
 
  ![Timeline](images/Flow_timeline.png)
 
-To obtain the most recent information, click the **Refresh** button. 
+To obtain the most recent information, click the **Refresh** button.  
 
 
 

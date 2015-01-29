@@ -4,7 +4,7 @@ import hex.kmeans.KMeansModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.TwoDimTable;
+import water.api.TwoDimTableV1;
 //import water.util.DocGen.HTML;
 
 public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput> {
@@ -12,9 +12,8 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
   public static final class KMeansModelOutputV2 extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelOutputV2> {
     // Output fields; input fields are in the parameters list
     @API(help="Cluster Centers[k][features]")
-    public TwoDimTable centers;
-    public double[/*k*/][/*features*/] centers_raw;
-
+    public TwoDimTableV1 centers;
+    
     @API(help="Cluster Size[k]")
     public long[/*k*/] size;
 
@@ -49,6 +48,6 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
   @Override public KMeansModel createImpl() {
     KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
     KMeansModel.KMeansParameters parms = p.createImpl();
-    return new KMeansModel( key, parms, null );
+    return new KMeansModel( key.key(), parms, null );
   }
 }

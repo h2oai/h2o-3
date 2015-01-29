@@ -319,6 +319,9 @@
     tableElements <- c("tableHeader", "rowHeaders", "colHeaders",
                        "colTypes",    "colFormats", "cellValues")
     if (is.list(x)) {
+      # Get rid of metadata since it's not a TwoDimTable
+      if (!is.null(x$'__meta')) x$'__meta' = NULL
+      
       if ((length(tableElements) == length(x)) &&
           all(tableElements %in% names(x))) {
         tbl <- data.frame(x$cellValues, check.names = FALSE, stringsAsFactors = FALSE)
