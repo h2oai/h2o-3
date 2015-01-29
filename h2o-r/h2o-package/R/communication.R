@@ -18,18 +18,16 @@
 
 .h2o.calcBaseURL <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix) {
   stopifnot(is(conn, "H2OConnection"))
-  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
 
-  if (missing(h2oRestApiVersion) || (h2oRestApiVersion < 0L))
+  if (missing(h2oRestApiVersion))
     sprintf("http://%s:%s/%s", conn@ip, as.character(conn@port), urlSuffix)
   else
-    sprintf("http://%s:%s/%d/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
+    sprintf("http://%s:%s/%s/%s", conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
 .h2o.doRawREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   stopifnot(is(conn, "H2OConnection"))
-  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   if (missing(parms))
     parms = list()
@@ -212,7 +210,6 @@
 
 .h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   stopifnot(is(conn, "H2OConnection"))
-  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
 
@@ -250,7 +247,6 @@
 
 .h2o.doSafeREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo) {
   stopifnot(is(conn, "H2OConnection"))
-  if (!missing(h2oRestApiVersion)) stopifnot(is.numeric(h2oRestApiVersion))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
@@ -316,18 +312,32 @@
     x
   }
   processTables <- function(x) {
-    tableElements <- c("tableHeader", "rowHeaders", "colHeaders",
-                       "colTypes",    "colFormats", "cellValues")
     if (is.list(x)) {
-      # Get rid of metadata since it's not a TwoDimTable
-      if (!is.null(x$'__meta')) x$'__meta' = NULL
-      
-      if ((length(tableElements) == length(x)) &&
-          all(tableElements %in% names(x))) {
-        tbl <- data.frame(x$cellValues, check.names = FALSE, stringsAsFactors = FALSE)
-        
+      if (is.list(x$"__meta") && identical(x$"__meta"$schema_type, "TwoDimTable")) {
+        if (is.matrix(x$data))
+          tbl <- t(x$data)
+        else
+          tbl <- do.call(cbind, lapply(x$data, sapply, function(cell) if (is.null(cell)) "" else cell))
+
+        cnms <- sapply(x$columns, `[[`, "name")
+        fmts <- sapply(x$columns, `[[`, "format")
+        if (nzchar(cnms[1L]))
+          colnames(tbl) <- make.unique(cnms)
+        else {
+          x$columns <- x$columns[-1L]
+          rnms <- tbl[, 1L, drop = TRUE]
+          cnms <- cnms[-1L]
+          fmts <- fmts[-1L]
+          tbl <- tbl[, -1L, drop = FALSE]
+          if (all(nzchar(rnms)))
+            dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
+          else
+            colnames(tbl) <- make.unique(cnms)
+        }
+        tbl <- data.frame(tbl, check.names = FALSE, stringsAsFactors = FALSE)
+
         for (j in seq_along(tbl)) {
-          switch(x$colTypes[j],
+          switch(x$columns[[j]]$type,
                  integer = {
                    tbl[[j]] <- as.integer(tbl[[j]])
                  },
@@ -339,24 +349,9 @@
                  string = {},
                  {})
         }
-        attr(tbl, "header")  <- x$tableHeader
-        attr(tbl, "formats") <- x$colFormats
+        attr(tbl, "header")  <- x$name
+        attr(tbl, "formats") <- fmts
         oldClass(tbl) <- c("H2OTable", "data.frame")
-        
-        # R automatically converts vectors into 1-col data frames. Transpose to 1-row if necessary to match dimensions.
-        if(is.vector(x$cellValues)) {
-          if( (any(nzchar(x$rowHeaders)) && length(x$rowHeaders) == 1) ||
-                (any(nzchar(x$colHeaders)) && length(x$colHeaders) == length(x$cellValues)) )
-            tbl <- t(tbl)
-        }
-
-        if(any(nzchar(x$rowHeaders))) {
-          dimnames(tbl) <- list(x$rowHeaders, x$colHeaders)
-        } else {
-          rownames(tbl) <- NULL
-          colnames(tbl) <- x$colHeaders
-          # dimnames(tbl) <- list(NULL, x$colHeaders)
-        }
         x <- tbl
       }
       else
