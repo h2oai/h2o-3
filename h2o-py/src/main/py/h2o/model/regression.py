@@ -24,7 +24,7 @@ class H2ORegressionModel(ModelBase):
         """
         pass
 
-    def performance(self, test_data=None):
+    def model_performance(self, test_data=None):
         pass
 
     def predict(self, test_data=None):

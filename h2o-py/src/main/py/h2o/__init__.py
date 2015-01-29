@@ -84,6 +84,7 @@ Feature Generation and Extended Data Flows
 * Executing python functions in H2O via Rapids
 
 """
+__version__ = "0.0.0a1"
 from h2o import *
 from model import *
 from frame import H2OFrame

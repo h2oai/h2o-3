@@ -37,7 +37,7 @@ class H2OClusteringModel(ModelBase):
         print "Average Overall SSE: " + str(self.average_ss)
         print
 
-    def performance(self, test_data=None):
+    def model_performance(self, test_data=None):
         pass
 
     def predict(self, test_data=None):

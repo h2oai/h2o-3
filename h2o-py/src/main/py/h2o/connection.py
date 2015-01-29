@@ -5,6 +5,7 @@ H2OConnection object will be active at any one time.
 
 import abc
 import requests
+import sys
 import time
 from two_dim_table import H2OTwoDimTable
 
@@ -51,7 +52,7 @@ class H2OConnectionBase(object):
         :return: None
         """
         global __H2OCONN__
-        assert isinstance(port, int) and 0 <= port <= 65535
+        assert isinstance(port, int) and 0 <= port <= sys.maxint
         __H2OCONN__._ip = ip
         __H2OCONN__._port = port
 
