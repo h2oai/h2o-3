@@ -15,10 +15,10 @@ public class ModelMetricsBinomial extends ModelMetrics {
     _cm = null;
   }
 
-  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, ConfusionMatrix cm, HitRatio hr) {
+  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata) {
     super(model, frame);
     _aucdata = aucdata;
-    _cm = cm;
+    _cm = aucdata.CM();
   }
 
   @Override public ConfusionMatrix cm() {
@@ -70,9 +70,7 @@ public class ModelMetricsBinomial extends ModelMetrics {
       for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
 
       AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
-      ConfusionMatrix cm = aucdata.CM();
-      HitRatio hr = null;       // TODO
-      return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, cm, hr));
+      return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata));
     }
   }
 }
