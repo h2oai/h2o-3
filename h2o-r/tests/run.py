@@ -516,8 +516,8 @@ class Test:
         if (is_python_test_file(self.test_name)):
             cmd = ["python",
                    self.test_name,
-                   "--usecloud",
-                   self.ip + ":" + str(self.port)]
+                   self.ip,
+                   str(self.port)]
         elif (is_python_file(self.test_name)):
             cmd = ["python",
                    self.test_name,

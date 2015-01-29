@@ -1,0 +1,34 @@
+
+To Upload:
+
+Step 1:
+python setup.py bdist_wheel
+
+Step 2:
+Register here:
+https://pypi.python.org/pypi?%3Aaction=submit_form
+
+Step 3: Use twine to upload the wheel
+twine upload dist/*whl
+
+
+To Download:
+
+(may have to upgrade pip)
+
+pip install --upgrade pip
+
+
+If you've downloaded before:
+
+pip install --pre h2o --upgrade
+
+
+If it's your first time:
+
+ppip install --pre h2o
+
+
+
+
+

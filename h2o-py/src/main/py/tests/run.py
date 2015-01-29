@@ -201,6 +201,11 @@ class H2OCloudNode:
         # to match the cdh3 cluster we're hardwiring tests to
         # i.e. it won't make s3n/s3 break on ec2
 
+        here = os.path.abspath(os.path.dirname(__file__))
+        there = os.path.abspath(os.path.join("..", "..", "..", "..", ".."))
+
+        os.chdir(there)
+
         cmd = ["java",
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
@@ -217,13 +222,14 @@ class H2OCloudNode:
         #    cmd.append("-hdfs_config")
         #    cmd.append(ec2_hdfs_config_file_name)
 
-        self.output_file_name = \
-            os.path.join(self.output_dir, "java_" + str(self.cloud_num) + "_" + str(self.node_num) + ".out.txt")
+        self.output_file_name = os.path.abspath(
+            os.path.join(self.output_dir, "java_" + str(self.cloud_num) + "_" + str(self.node_num) + ".out.txt"))
         f = open(self.output_file_name, "w")
         self.child = subprocess.Popen(args=cmd,
                                       stdout=f,
                                       stderr=subprocess.STDOUT,
-                                      cwd=self.output_dir)
+                                      cwd=there)
+        os.chdir(here)
         self.pid = self.child.pid
         print("+ CMD: " + ' '.join(cmd))
 
@@ -515,8 +521,8 @@ class Test:
         if (is_python_test_file(self.test_name)):
             cmd = ["python",
                    self.test_name,
-                   "--usecloud",
-                   self.ip + ":" + str(self.port)]
+                   self.ip,
+                   str(self.port)]
         elif (is_python_file(self.test_name)):
             cmd = ["python",
                    self.test_name,

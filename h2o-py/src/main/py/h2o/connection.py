@@ -83,7 +83,14 @@ class H2OConnectionBase(object):
         retries = 0
         while True:
             retries += 1
-            cld = H2OConnectionBase.do_safe_get_json(url_suffix="Cloud")
+            cld = None
+            try:
+                cld = H2OConnectionBase.do_safe_get_json(url_suffix="Cloud")
+            except EnvironmentError:
+                pass
+            if cld is None:
+                time.sleep(0.1)
+                continue
             if not cld['cloud_healthy']:
                 raise ValueError("Cluster reports unhealthy status", cld)
             if cld['cloud_size'] >= size and cld['consensus']:

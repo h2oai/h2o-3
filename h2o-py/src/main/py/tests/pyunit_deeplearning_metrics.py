@@ -2,12 +2,8 @@ import sys
 import h2o
 from h2o import H2ODeeplearning
 
-ip = "localhost"
-port = 54321
 
-
-def deep_learning_metrics_test():
-    global ip, port
+def deep_learning_metrics_test(ip, port):
     h2o.init(ip, port)               # connect to existing cluster
     df = h2o.H2OFrame(remote_fname="smalldata/logreg/prostate.csv")
 
@@ -43,9 +39,11 @@ def deep_learning_metrics_test():
 
 if __name__ == "__main__":
     args = sys.argv
-    global ip
-    global port
+    print args
     if len(args) > 1:
         ip = args[1]
-        port = args[2]
-    deep_learning_metrics_test()
+        port = int(args[2])
+    else:
+        ip = "localhost"
+        port = 54321
+    deep_learning_metrics_test(ip, port)
