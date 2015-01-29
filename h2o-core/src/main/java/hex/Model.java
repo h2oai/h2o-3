@@ -405,17 +405,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
       assert(mdomain != null); // label must be enum
 
-        ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-        ModelCategory model_cat = this._output.getModelCategory();
-        ConfusionMatrix cm = mm.cm();
-        if(model_cat == ModelCategory.Binomial)
-            cm = ((ModelMetricsBinomial)mm)._cm;
-        else if(model_cat == ModelCategory.Multinomial)
-            cm = ((ModelMetricsMultinomial)mm)._cm;
-        else if(model_cat == ModelCategory.Regression)
-            cm = ((ModelMetricsRegression)mm).cm();
+      ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
+      ModelCategory model_cat = this._output.getModelCategory();
+      ConfusionMatrix cm = mm.cm();
+      if(model_cat == ModelCategory.Binomial)
+        cm = ((ModelMetricsBinomial)mm)._cm;
+      else if(model_cat == ModelCategory.Multinomial)
+        cm = ((ModelMetricsMultinomial)mm)._cm;
 
-        if (cm.domain != null) { //don't print table for regression
+      if (cm.domain != null) { //don't print table for regression
         assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -471,7 +469,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
       double[] tmp = new double[_output.nfeatures()];
-      _mb = new ModelMetrics.MetricBuilder(_domain,_output.nclasses()==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f});
+      switch (_output.getModelCategory()) {
+        case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(_domain, ModelUtils.DEFAULT_THRESHOLDS); break;
+        case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain, new float[]{0.5f}); break;
+        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(_domain, new float[]{0.5f}); break;
+        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_domain, new float[]{0.5f}); break;
+        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_domain, new float[]{0.5f}); break;
+        default: throw H2O.unimpl();
+      }
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for( int row=0; row<len; row++ ) {
