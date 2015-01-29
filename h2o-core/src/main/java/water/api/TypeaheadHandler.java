@@ -9,13 +9,16 @@ import water.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 class TypeaheadHandler extends Handler {
   // Find files
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema files(int version, TypeaheadV2 t) {
-    if( t.src.startsWith("hdfs://" ) ) return serveHDFS(version, t);
-    //else if( p2.startsWith("s3n://"  ) ) serveHdfs();
+    if (t.src.startsWith("hdfs://" ))
+      return serveHDFS(version, t);
+    else if( t.src.startsWith("s3n://"  ) )
+      return serveHDFS(version, t);
     //else if( p2.startsWith("maprfs:/") ) serveHdfs();
     //else if( p2.startsWith("s3://"   ) ) serveS3();
     //else if( p2.startsWith("http://" ) ) serveHttp();
@@ -54,10 +57,18 @@ class TypeaheadHandler extends Handler {
     return t;
   }
 
+  private static final Pattern S3N_BARE_BUCKET = Pattern.compile("s3n://[^/]*");
+
   private Schema serveHDFS(int version, TypeaheadV2 t) {
     // Get HDFS configuration
     Configuration conf = PersistHdfs.CONF;
     String filter = t.src;
+    // Handle S3N bare buckets - s3n://bucketname should be always suffixed by '/'
+    // since underlying Jets3n will throw NPE, i.e. right filter name should be
+    // s3n://bucketname/
+    if (S3N_BARE_BUCKET.matcher(filter).matches()) {
+      filter += "/";
+    }
     // Output matches
     ArrayList<String> array = new ArrayList<>();
     try {
