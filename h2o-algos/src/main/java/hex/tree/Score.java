@@ -35,9 +35,9 @@ public class Score extends MRTask<Score> {
     switch (_mcat) {
       case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS); break;
       case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(domain, new float[]{0.5f}); break;
-      case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(domain, new float[]{0.5f}); break;
-      case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(domain, new float[]{0.5f}); break;
-      case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(domain, new float[]{0.5f}); break;
+      case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(domain); break;
+      case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(domain); break;
+      case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(domain); break;
       default: throw H2O.unimpl();
     }
     final float[] cdists = _mb._work; // Temp working array for class distributions
