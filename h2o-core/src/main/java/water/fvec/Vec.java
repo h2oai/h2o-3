@@ -12,6 +12,7 @@ import water.util.Log;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.Random;
 import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
@@ -444,6 +445,18 @@ public class Vec extends Keyed {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
+  /** Make a new vector initialized random numbers with the given seed */
+  public Vec makeRand( final long seed ) {
+    Vec randVec = makeZero();
+    new MRTask() {
+      @Override public void map(Chunk c){
+        Random rng = new Random(seed*c.cidx());
+        for(int i = 0; i < c._len; ++i)
+          c.set(i, rng.nextFloat());
+      }
+    }.doAll(randVec);
+    return randVec;
+  }
 
   // ======= Rollup Stats ======
 

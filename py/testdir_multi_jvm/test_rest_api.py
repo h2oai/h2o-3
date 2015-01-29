@@ -206,8 +206,8 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'model_metrics' in p, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a model_metrics object."
     mm = p['model_metrics'][0]
     h2o.H2O.verboseprint('mm: ', repr(mm))
-    assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
-    assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
+    #assert 'auc' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an AUC."
+    #assert 'cm' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a CM."
     assert 'predictions' in mm, "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain an predictions section."
     assert 'key' in mm['predictions'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key."
     assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
@@ -408,7 +408,7 @@ if h2o.H2O.verbose:
 
 ####################################
 # test schemas collection GET
-print 'Testing /Metadata/schemas. . .'
+if verbose: print 'Testing /Metadata/schemas. . .'
 schemas = a_node.schemas(timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
@@ -421,7 +421,7 @@ if verboser:
 
 ####################################
 # test schemas individual GET
-print 'Testing /Metadata/schemas/FrameV2. . .'
+if verbose: print 'Testing /Metadata/schemas/FrameV2. . .'
 schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
@@ -749,8 +749,15 @@ mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame=
 assert mm is not None, "FAIL: Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial'
 assert 'model_category' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a model_category."
 assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + str(mm['model_category'])
-assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an AUC."
+assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc element: " + h2o_util.dump_json(mm)
+assert 'AUC' in mm['auc'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc/AUC element: " + h2o_util.dump_json(mm)
+assert type(mm['auc']['AUC']) is float, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " auc/AUC element is not a float: " + h2o_util.dump_json(mm)
+
 assert 'cm' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a CM."
+assert 'confusion_matrix' in mm['cm'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a cm/confusion_matrix element: " + h2o_util.dump_json(mm)
+assert type(mm['cm']['confusion_matrix']) is list, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " cm/confusion_matrix element is not a list: " + h2o_util.dump_json(mm)
+
+# print h2o_util.dump_json(mm)
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
 
 ###################################
@@ -832,7 +839,7 @@ h2o.H2O.verboseprint('/Frames/prosate.hex?find_compatible_models=true: ', repr(r
 
 ####################################
 # test schemas collection GET again
-print 'Testing /Metadata/schemas again. . .'
+if verbose: print 'Testing /Metadata/schemas again. . .'
 schemas = a_node.schemas(timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas is not a list: " + repr(schemas)
@@ -845,7 +852,7 @@ if verboser:
 
 ####################################
 # test schemas individual GET again
-print 'Testing /Metadata/schemas/FrameV2 again. . .'
+if verbose: print 'Testing /Metadata/schemas/FrameV2 again. . .'
 schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
 assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
 assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)

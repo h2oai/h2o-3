@@ -244,7 +244,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   # nfold_vec <- h2o.sample(fr, 1:nfolds)
   nfold_vec <- sample(rep(1:nfolds, length.out = data.len), data.len)
 
-  fnum_id <- as.h2o(conn, nfold_vec)
+  fnum_id <- as.h2o(nfold_vec, model@conn)
   fnum_id <- h2o.cbind(fnum_id, data)
 
   xval <- lapply(1:nfolds, function(i) {

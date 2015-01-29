@@ -1030,6 +1030,8 @@ final public class H2O {
     try {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
+
+      Log.info("Cur dir: " + System.getProperty("user.dir"));
     }
     catch (Exception e) {
       System.err.println("ERROR: Log.getLogDir() failed, exiting now.");

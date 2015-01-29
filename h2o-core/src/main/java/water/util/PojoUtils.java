@@ -216,12 +216,12 @@ public class PojoUtils {
             //
             Object o = orig_field.get(origin);
             dest_field.set(dest, (o == null ? null : o.toString()));
-          } else if (Schema.class.isAssignableFrom(dest_field.getType()) && ((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(orig_field.getType())) {
+          } else if (Schema.class.isAssignableFrom(dest_field.getType()) && Schema.getImplClass((Class<? extends Schema>) dest_field.getType()).isAssignableFrom(orig_field.getType())) {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, ((Schema) dest_field.getType().newInstance()).fillFromImpl((Iced) orig_field.get(origin)));
-          } else if (Schema.class.isAssignableFrom(orig_field.getType()) && ((Schema)orig_field.get(origin)).getImplClass().isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, Schema.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3, (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
+          } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Schema.getImplClass((Class<? extends Schema>)orig_field.getType()).isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters.
             //

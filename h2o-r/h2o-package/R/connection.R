@@ -146,7 +146,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
     cat("           > localH2O = h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  conn@session_id <- .init.session_id(conn)
+  conn@mutable$session_id <- .init.session_id(conn)
   assign("SERVER", conn, .pkg.env)
   conn
 }
@@ -219,27 +219,26 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 
 h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
-  .h2o.__checkUp(conn)
-  myURL  <- paste0("http://", conn@ip, ":", conn@port, "/", .h2o.__PAGE_CLOUD)
-  params <- list(quiet="true", skip_ticks="true")
-  res    <- .h2o.fromJSON(.h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__PAGE_CLOUD, params = params))
-  
+  if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
+
+  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = .h2o.__CLOUD))
+
   cat("Version:", res$version, "\n")
   cat("Cloud name:", res$cloud_name, "\n")
-  cat("Node name:", res$node_name, "\n")
   cat("Cloud size:", res$cloud_size, "\n")
   if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
   if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found")
   
   # Calculate how many seconds ago we last contacted cloud
   cur_time <- Sys.time()
-  for(i in 1:length(res$nodes)) {
+  for(i in seq_len(length(res$nodes))) {
     last_contact_sec <- as.numeric(res$nodes[[i]]$last_contact)/1e3
     time_diff <- cur_time - as.POSIXct(last_contact_sec, origin = "1970-01-01")
     res$nodes[[i]]$last_contact <- as.numeric(time_diff)
   }
-  cnames <- c("name", "value_size_bytes", "free_mem_bytes", "max_mem_bytes", "free_disk_bytes",
-              "max_disk_bytes", "num_cpus", "system_load", "rpcs", "last_contact")
+  cnames <- c("h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size", "total_value_size",
+              "free_mem", "tot_mem", "max_mem", "free_disk", "max_disk",
+              "pid", "num_keys", "tcps_active", "open_fds", "rpcs_active")
   temp <- data.frame(t(sapply(res$nodes, c)))
   temp[,cnames]
 }

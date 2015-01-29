@@ -1,8 +1,6 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import static hex.ConfusionMatrix.buildCM;
-import static hex.Model.adaptTestForTrain;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -11,18 +9,20 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Env;
 import water.rapids.Exec;
 import water.util.Log;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Random;
 
+import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -224,12 +224,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                         // binary
                                         if (model2._output.nclasses() == 2) {
                                           assert (resp == 1);
-                                          threshold = mm._aucdata.threshold();
-                                          error = mm._aucdata.err();
+                                          threshold = mm.auc().threshold();
+                                          error = mm.auc().err();
                                           // check that auc.cm() is the right CM
-                                          Assert.assertEquals(new ConfusionMatrix(mm._aucdata.cm(), new String[]{"0", "1"}).err(), error, 1e-15);
+                                          Assert.assertEquals(new ConfusionMatrix(mm.auc().cm(), new String[]{"0", "1"}).err(), error, 1e-15);
                                           // check that calcError() is consistent as well (for CM=null, AUC!=null)
-                                          Assert.assertEquals(mm._cm.err(), error, 1e-15);
+                                          Assert.assertEquals(mm.cm().err(), error, 1e-15);
                                         }
                                         double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
 

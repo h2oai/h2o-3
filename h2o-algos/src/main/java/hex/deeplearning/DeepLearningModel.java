@@ -1508,23 +1508,43 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           trainPredict.delete();
 
           hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
-          err.trainAUC = mm1._aucdata;
-          err.train_confusion_matrix = mm1._cm;
-          err.train_err = mm1._cm.err();
-          err.train_hitratio = mm1._hr;
-          err.train_mse = mm1._mse;
+          if (mm1 instanceof ModelMetricsBinomial) {
+            ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
+            err.trainAUC = mm._aucdata;
+            err.train_confusion_matrix = mm._cm;
+            err.train_err = mm._cm.err();
+          }
+          else if (mm1 instanceof ModelMetricsMultinomial) {
+            ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
+            err.train_confusion_matrix = mm._cm;
+            err.train_err = mm._cm.err();
+            err.train_hitratio = mm._hr;
+          }
+          else if (mm1 instanceof ModelMetricsRegression) {
+            ModelMetricsRegression mm = (ModelMetricsRegression)(mm1);
+            err.train_mse = mm._mse;
+          }
           _output.trainMetrics = mm1;
 
           if (ftest != null) {
             Frame validPred = score(ftest);
             validPred.delete();
-            hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this,ftest);
+            hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this, ftest);
             if (mm2 != null) {
-              err.validAUC = mm2._aucdata;
-              err.valid_confusion_matrix = mm2._cm;
-              err.valid_err = mm2._cm.err();
-              err.valid_hitratio = mm2._hr;
-              err.valid_mse = mm2._mse;
+              if (mm2 instanceof ModelMetricsBinomial) {
+                ModelMetricsBinomial mm = (ModelMetricsBinomial) (mm2);
+                err.validAUC = mm._aucdata;
+                err.valid_confusion_matrix = mm._cm;
+                err.valid_err = mm._cm.err();
+              } else if (mm2 instanceof ModelMetricsMultinomial) {
+                ModelMetricsMultinomial mm = (ModelMetricsMultinomial) (mm2);
+                err.valid_confusion_matrix = mm._cm;
+                err.valid_err = mm._cm.err();
+                err.valid_hitratio = mm._hr;
+              } else if (mm2 instanceof ModelMetricsRegression) {
+                ModelMetricsRegression mm = (ModelMetricsRegression) (mm2);
+                err.valid_mse = mm._mse;
+              }
               _output.validMetrics = mm2;
             }
           }

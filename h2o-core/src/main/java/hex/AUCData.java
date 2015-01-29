@@ -152,7 +152,7 @@ public class AUCData extends Iced {
         }
       }
       // Set members for JSON, float to save space
-      confusion_matrix_for_criteria[id] = _cms[idxCriter[id]]._arr;
+      confusion_matrix_for_criteria[id] = _cms[idxCriter[id]].confusion_matrix;
       F1_for_criteria[id] = (float)_cms[idxCriter[id]].F1();
       F2_for_criteria[id] = (float)_cms[idxCriter[id]].F2();
       F0point5_for_criteria[id] = (float)_cms[idxCriter[id]].F0point5();
@@ -182,7 +182,7 @@ public class AUCData extends Iced {
     mcc = new float[_cms.length];
     max_per_class_error = new float[_cms.length];
     for(int i=0;i<_cms.length;++i) {
-      confusion_matrices[i] = _cms[i]._arr;
+      confusion_matrices[i] = _cms[i].confusion_matrix;
       F1[i] = (float)_cms[i].F1();
       F2[i] = (float)_cms[i].F2();
       F0point5[i] = (float)_cms[i].F0point5();

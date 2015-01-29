@@ -4,6 +4,7 @@ import hex.splitframe.SplitFrame;
 import hex.splitframe.SplitFrameModel;
 import water.Key;
 import water.api.API;
+import water.api.KeyV1;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 
@@ -16,7 +17,7 @@ public class SplitFrameV2 extends ModelBuilderSchema<SplitFrame,SplitFrameV2,Spl
     public double[] ratios;
 
     @API(help="Destination keys for each output frame split.")
-    public Key[] destKeys;
+    public KeyV1[] destKeys;
   }
 
 

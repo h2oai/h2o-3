@@ -383,7 +383,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 //      // Display the CM
 //      if( cm != null && domain != null ) {
 //        // Top row of CM
-//        assert cm._arr.length==domain.length;
+//        assert cm.confusion_matrix.length==domain.length;
 //        DocGen.HTML.title(sb,"Scoring");
 //        if( testKey == null ) {
 //          if (_have_cv_results)
