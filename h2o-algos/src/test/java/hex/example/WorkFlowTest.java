@@ -1,7 +1,6 @@
 package hex.example;
 
-import hex.splitframe.SplitFrame;
-import hex.splitframe.SplitFrameModel;
+import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import java.io.File;
@@ -14,7 +13,7 @@ import water.fvec.*;
 import water.parser.ParseDataset;
 import org.joda.time.*;
 
-//@Ignore("Test DS end-to-end workflow; not intended as a junit yet")
+@Ignore("Test DS end-to-end workflow; not intended as a junit yet")
 public class WorkFlowTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
@@ -77,17 +76,13 @@ public class WorkFlowTest extends TestUtil {
     stoptime.remove();
 
     // Split into train, test and holdout sets
-    SplitFrameModel.SplitFrameParameters sf_parms = new SplitFrameModel.SplitFrameParameters();
-    sf_parms._train = data._key;
-    sf_parms._ratios = new double[]{0.6,0.3}; // and 0.1 leftover for holdout set
-    sf_parms._destKeys = new Key[]{Key.make("train.hex"),Key.make("test.hex"),Key.make("hold.hex")};
-    Job sf_job = new SplitFrame(sf_parms).trainModel();
-    sf_job.get().remove();
-    sf_job.remove();
-    data.remove();              // Toss original dataset
-    Frame train = DKV.getGet(sf_parms._destKeys[0]);
-    Frame test  = DKV.getGet(sf_parms._destKeys[1]);
-    Frame hold  = DKV.getGet(sf_parms._destKeys[2]);
+    Key[] keys = new Key[]{Key.make("train.hex"),Key.make("test.hex"),Key.make("hold.hex")};
+    double[] ratios = new double[]{0.6,0.3,0.1};
+    Frame[] frs = ShuffleSplitFrame.shuffleSplitFrame(data,keys,ratios,1234567689L);
+    Frame train = frs[0];
+    Frame test  = frs[1];
+    Frame hold  = frs[2];
+    data.remove();
 
     System.out.println(train);
     System.out.println(test);
@@ -103,10 +98,10 @@ public class WorkFlowTest extends TestUtil {
     gbm_parms._convert_to_enum = false; // regression
 
     // SharedTreeModel.Parameters
-    gbm_parms._ntrees = 100;        // default is 50
-    gbm_parms._max_depth = 8;       // default
+    gbm_parms._ntrees = 200;        // default is 50
+    gbm_parms._max_depth = 7;       // default
     gbm_parms._min_rows = 10;       // default
-    gbm_parms._nbins = 200;         // default
+    gbm_parms._nbins = 20;          // default
 
     // GBMModel.Parameters
     gbm_parms._loss = GBMModel.GBMParameters.Family.AUTO; // default
