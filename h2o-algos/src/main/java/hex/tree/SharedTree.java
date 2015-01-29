@@ -372,7 +372,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _model.update(_key);  updated = true;
 
       _timeLastScoreStart = now;
-      Score sc = new Score(this,oob).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
+      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       Log.info("============================================================== ");
       if (mm instanceof ModelMetricsRegression) { // TODO: also show r2 for classification

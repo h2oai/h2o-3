@@ -1,6 +1,8 @@
 package hex.tree;
 
-import hex.ModelMetrics;
+import hex.*;
+import hex.Model.ModelCategory;
+import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -11,13 +13,14 @@ import water.util.ModelUtils;
 public class Score extends MRTask<Score> {
   final SharedTree _bldr;
   final boolean _oob;           // Computed on OOB
+  final ModelCategory _mcat;    // Model category (Binomial, Regression, etc)
   ModelMetrics.MetricBuilder _mb;
 
   /** Compute ModelMetrics on the testing dataset.
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
-  public Score(SharedTree bldr, boolean oob) { _bldr = bldr; _oob = oob; }
+  public Score(SharedTree bldr, boolean oob, ModelCategory mcat) { _bldr = bldr; _oob = oob; _mcat = mcat; }
   
   @Override public void map( Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
@@ -29,7 +32,14 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = new ModelMetrics.MetricBuilder(domain,nclass==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f} );
+    switch (_mcat) {
+      case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS); break;
+      case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(domain, new float[]{0.5f}); break;
+      case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(domain, new float[]{0.5f}); break;
+      case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(domain, new float[]{0.5f}); break;
+      case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(domain, new float[]{0.5f}); break;
+      default: throw H2O.unimpl();
+    }
     final float[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
