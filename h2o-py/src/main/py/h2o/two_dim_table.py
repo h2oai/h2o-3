@@ -11,15 +11,19 @@ class H2OTwoDimTable(object):
     A class representing an 2D table (for pretty printing output).
     """
     def __init__(self, row_header=None, col_header=None, col_types=None,
-                 table_header=None, cell_values=None, col_formats=None):
+                 table_header=None, raw_cell_values=None, cell_values=None,
+                 col_formats=None):
         self.row_header = row_header
         self.col_header = col_header
         self.col_types = col_types
         self.table_header = table_header
-        self.cell_values = H2OTwoDimTable._parse_values(cell_values, col_types)
+        self.cell_values = cell_values \
+            if cell_values \
+            else H2OTwoDimTable._parse_values(raw_cell_values, col_types)
         self.col_formats = col_formats
 
     def show(self):
+        print
         print self.table_header + ":"
         print
         table = copy.deepcopy(self.cell_values)
@@ -28,6 +32,11 @@ class H2OTwoDimTable(object):
         header = ["Row"]
         header += self.col_header
         print tabulate.tabulate(table, headers=header, numalign="left", stralign="left")
+        print
+
+    def __repr__(self):
+        self.show()
+        return ""
 
     @staticmethod
     def _parse_values(values, types):

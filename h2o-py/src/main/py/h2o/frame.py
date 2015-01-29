@@ -838,7 +838,7 @@ class H2OVec(object):
         :param vec: An H2OVec.
         :return: A new H2OVec.
         """
-        return H2OVec(self._name + "[" + vec.name() + "]", Expr("[", self, vec))
+        return H2OVec(self.name(), Expr("[", self, vec))
 
     def __setitem__(self, b, c):
         """
@@ -886,7 +886,7 @@ class H2OVec(object):
                 raise ValueError("len(self)=" + len(self) +
                                  " cannot be broadcast across len(i)=" + len(i))
             # lazy new H2OVec
-            return H2OVec(self._name + "+" + i._name, Expr("+", self, i))
+            return H2OVec(self.name(), Expr("+", self, i))
 
         # H2OVec + number
         if isinstance(i, (int, float)):
@@ -894,7 +894,7 @@ class H2OVec(object):
                 return self
 
             # lazy new H2OVec
-            return H2OVec(self._name + "+" + str(i), Expr("+", self, Expr(i)))
+            return H2OVec(self.name(), Expr("+", self, Expr(i)))
         raise NotImplementedError
 
     def __radd__(self, i):
@@ -920,12 +920,12 @@ class H2OVec(object):
                 raise ValueError("len(self)=" + len(self) +
                                  " cannot be broadcast across len(i)=" + len(i))
             # lazy new H2OVec
-            return H2OVec(self._name + "==" + i._name, Expr("==", self, i))
+            return H2OVec(self.name(), Expr("==", self, i))
 
         # == compare on a Vec and a constant Vec
         if isinstance(i, (int, float)):
             # lazy new H2OVec
-            return H2OVec(self._name + "==" + str(i), Expr("==", self, Expr(i)))
+            return H2OVec(self.name(), Expr("==", self, Expr(i)))
 
         raise NotImplementedError
 
@@ -935,11 +935,11 @@ class H2OVec(object):
             if len(i) != len(self):
                 raise ValueError("len(self)=" + len(self) +
                                  " cannot be broadcast across len(i)=" + len(i))
-            return H2OVec(self.name() + "<" + i.name(), Expr("<", self, i))
+            return H2OVec(self.name(), Expr("<", self, i))
 
         # Vec < number
         elif isinstance(i, (int, float)):
-            return H2OVec(self.name() + "<" + str(i), Expr("<", self, Expr(i)))
+            return H2OVec(self.name(), Expr("<", self, Expr(i)))
 
         else:
             raise NotImplementedError
@@ -950,11 +950,11 @@ class H2OVec(object):
             if len(i) != len(self):
                 raise ValueError("len(self)=" + len(self) +
                                  " cannot be broadcast across len(i)=" + len(i))
-            return H2OVec(self.name() + ">=" + i.name(), Expr(">=", self, i))
+            return H2OVec(self.name(), Expr(">=", self, i))
 
         # Vec >= number
         elif isinstance(i, (int, float)):
-            return H2OVec(self.name() + ">=" + str(i), Expr(">=", self, Expr(i)))
+            return H2OVec(self.name(), Expr(">=", self, Expr(i)))
 
         else:
             raise NotImplementedError
@@ -975,7 +975,7 @@ class H2OVec(object):
         """
         :return: A transformed H2OVec from numeric to categorical.
         """
-        return H2OVec(self._name, Expr("as.factor", self._expr, None))
+        return H2OVec(self.name(), Expr("as.factor", self._expr, None))
 
     def runif(self, seed=None):
         """
@@ -986,4 +986,4 @@ class H2OVec(object):
             import random
 
             seed = random.randint(123456789, 999999999)  # generate a seed
-        return H2OVec("runif", Expr("h2o.runif", self.get_expr(), Expr(seed)))
+        return H2OVec("", Expr("h2o.runif", self.get_expr(), Expr(seed)))

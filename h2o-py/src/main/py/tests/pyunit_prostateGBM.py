@@ -41,6 +41,9 @@ my_gbm.fit()
 
 my_gbm.show()
 
+my_gbm_metrics = my_gbm.model_performance(train)
+
+my_gbm_metrics.show()
 
 # Alternative Look:
 from h2o.model.h2o_gbm_builder import H2OGBMBuilder
@@ -51,3 +54,8 @@ my_gbm2 = H2OGBMBuilder(training_frame=train,
                         ntrees=50,
                         learn_rate=0.1).fit()
 my_gbm2.show()
+
+my_gbm_metrics2 = my_gbm2.model_performance(train)
+my_gbm_metrics2.show()
+
+my_gbm_metrics2.show(criterion=my_gbm_metrics2.theCriteria.PRECISION)

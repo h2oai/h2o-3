@@ -102,8 +102,10 @@ class H2OModelBuilder(ModelBase):
         self._parameters = saved_parameters
         return self
 
-    def performance(self, test_data=None):
-        self._fitted_model.performance(test_data=test_data)
+    def model_performance(self, test_data=None):
+        if self._fitted_model is None:
+            raise ValueError("No model available. Did you call fit()?")
+        return self._fitted_model.model_performance(test_data=test_data)
 
     def predict(self, test_data=None, **kwargs):
         """
@@ -323,3 +325,5 @@ class H2OModelBuilder(ModelBase):
         else:
             raise H2OUnknownModelError("Don't know what to do with model type: "
                                        + self._model_type)
+
+        self._fitted_model._key = destination_key

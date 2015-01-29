@@ -35,7 +35,7 @@ class ModelBase(object):
         return
 
     @abc.abstractmethod
-    def performance(self, test_data=None):
+    def model_performance(self, test_data=None):
         """
         Generate model metrics for this model on test_data.
         :param test_data: Data set for which model metrics shall be computed against.
