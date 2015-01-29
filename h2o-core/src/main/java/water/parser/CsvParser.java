@@ -1,5 +1,6 @@
 package water.parser;
 
+import water.fvec.FileVec;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -589,7 +590,7 @@ MAIN_LOOP:
       }
     }
     if( nlines==0 )
-      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null);
+      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -601,7 +602,7 @@ MAIN_LOOP:
         if( lines[0].split(",").length > 2 ) sep = (byte)',';
         else if( lines[0].split(" ").length > 2 ) sep = ' ';
         else 
-          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
@@ -664,6 +665,6 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Return the final setup
-    return new ParseSetup( true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
+    return new ParseSetup( true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
   }
 }

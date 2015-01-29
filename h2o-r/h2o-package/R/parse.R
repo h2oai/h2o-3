@@ -33,7 +33,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
         ncols = ncols,
         checkHeader = parseSetup$checkHeader,
         singleQuotes = parseSetup$singleQuotes,
-        delete_on_done = TRUE
+        delete_on_done = TRUE,
+        chunkSize = parseSetup$chunkSize
         )
 
   # Perform the parse

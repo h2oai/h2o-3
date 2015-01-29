@@ -48,6 +48,9 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   @API(help="Remove Frame after blocking parse, and return array of Vecs")
   boolean removeFrame;
 
+  @API(help="Size of individual parse tasks", direction=API.Direction.INPUT)
+  int chunkSize;
+
   // Output fields
   @API(help="Parse Job", direction=API.Direction.OUTPUT)
   JobV2 job;

@@ -51,6 +51,9 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   @API(help="Number of header lines found", direction=API.Direction.OUTPUT)
   long headerlines;
 
+  @API(help="Size of individual parse tasks", direction=API.Direction.OUTPUT)
+  int chunkSize;
+
 
   //==========================
   // Helper so ImportV1 can link to ParseSetupV2

@@ -35,13 +35,13 @@ public final class ParseDataset extends Job<Frame> {
   // Suitable for e.g. testing setups, where the data is known to be sane.
   // NOT suitable for random user input!
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, boolean singleQuote, int checkHeader) {
-    return parse(okey,keys,delete_on_done,setup(keys[0],singleQuote,checkHeader));
+    return parse(okey,keys,delete_on_done,ParseSetup.guessSetup(keys, singleQuote, checkHeader));
   }
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     return parse(okey,keys,delete_on_done,globalSetup,true).get();
   }
   public static ParseDataset parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
-    ParseDataset job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
+    ParseDataset job = forkParseDataset(okey, keys, globalSetup, delete_on_done);
     try { if( blocking ) job.get(); return job; } 
     catch( Throwable ex ) {
 
@@ -59,13 +59,6 @@ public final class ParseDataset extends Job<Frame> {
       assert DKV.<Job>getGet(job._key).isStopped();
       throw ex;
     }
-  }
-
-  public static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
-    ParseSetup globalSetup = ParseSetup.guessSetup(bits, singleQuote, checkHeader);
-    if( globalSetup._ncols <= 0 ) throw new UnsupportedOperationException(globalSetup.toString());
-    return globalSetup;
   }
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
@@ -88,8 +81,6 @@ public final class ParseDataset extends Job<Frame> {
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long totalParseSize=0;
-    ByteVec bv;
-    float dcr, maxDecompRatio = 0;
     for( int i=0; i<keys.length; i++ ) {
       Key k = keys[i];
       if( dest.equals(k) )
@@ -100,29 +91,17 @@ public final class ParseDataset extends Job<Frame> {
             throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
 
       // estimate total size in bytes
-      bv = getByteVec(k);
-      dcr = ZipUtil.decompressionRatio(bv);
-      if (dcr > maxDecompRatio) maxDecompRatio = dcr;
-      if (maxDecompRatio > 1.0)
-        totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
-      else  // numerical issues was distorting files sizes when no decompression
-        totalParseSize += bv.length();
+      totalParseSize += getByteVec(k).length();
     }
 
-    // Calc chunk-size, and set into the incoming FileVecs
-    Iced ice = DKV.getGet(keys[0]);
-    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
-      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;
-    } else {
-      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
-    }
-    Log.info("Chunk size " + setup._chunkSize);
-
+    Vec update;
+    Iced ice;
+    Log.info("Parse chunk size " + setup._chunkSize);
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
-      Vec update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
+      update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update)._chunkSize = setup._chunkSize;
+        ((FileVec) update).setChunkSize(setup._chunkSize);
         DKV.put(update._key, update);
       }
     }

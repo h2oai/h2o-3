@@ -50,7 +50,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (header.size() == 0)
-        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, null, null, checkHeader, null);
+        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, checkHeader);
       headerlines = header.toArray(headerlines);
 
       // process header
@@ -64,10 +64,10 @@ class ARFFParser extends CsvParser {
       for (int i=0; i<ncols; ++i) {
         data[i] = headerlines[i].split("\\s+");
         if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
-          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,data,checkHeader);
         } else {
           if (data[i].length != 3 ) {
-            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,data,checkHeader);
           }
           labels[i] = data[i][1];
           String type = data[i][2];
@@ -105,7 +105,7 @@ class ARFFParser extends CsvParser {
           }
 
           // only get here if data is invalid ARFF
-          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,data,checkHeader);
         }
       }
     }
@@ -129,7 +129,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (datablock.size() == 0)
-        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, null, null, checkHeader, null);
+        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, checkHeader);
       datalines = datablock.toArray(datalines);
 
       // process data section
@@ -142,7 +142,7 @@ class ARFFParser extends CsvParser {
           if (datalines[0].split(",").length > 2) sep = (byte) ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else
-            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, ncols, singleQuotes, null, null, data, checkHeader, null);
+            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, ncols, singleQuotes, data, checkHeader);
         }
         data[0] = determineTokens(datalines[0], sep, single_quote);
         ncols = (ncols > 0) ? ncols : data[0].length;
