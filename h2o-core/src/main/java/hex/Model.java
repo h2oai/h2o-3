@@ -472,9 +472,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       switch (_output.getModelCategory()) {
         case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(_domain, ModelUtils.DEFAULT_THRESHOLDS); break;
         case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain, new float[]{0.5f}); break;
-        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(_domain, new float[]{0.5f}); break;
-        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_domain, new float[]{0.5f}); break;
-        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_domain, new float[]{0.5f}); break;
+        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(_domain); break;
+        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_domain); break;
+        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_domain); break;
         default: throw H2O.unimpl();
       }
       float[] preds = _mb._work;  // Sized for the union of test and train classes

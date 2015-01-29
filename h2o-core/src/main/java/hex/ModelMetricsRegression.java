@@ -23,7 +23,6 @@ public class ModelMetricsRegression extends ModelMetrics {
 
   public static class MetricBuilderRegression extends MetricBuilder {
     public MetricBuilderRegression( String[] domain ) { super(domain); }
-    public MetricBuilderRegression( String[] domain, float[] thresholds ) { super(domain, thresholds); }
 
     public float[] perRow( float ds[], float yact ) {
       if( Float.isNaN(yact) ) return ds; // No errors if   actual   is missing
