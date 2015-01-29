@@ -450,6 +450,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         if(old._output._submodels == null){
           old._output._submodels = new Submodel[]{sm};
         } else {
+          old._output._submodels = old._output._submodels.clone();
           int id = old._output.submodelIdForLambda(lambda);
           if (id < 0) {
             id = -id - 1;
