@@ -191,6 +191,30 @@ public class TwoDimTable extends Iced {
     return cell;
   }
 
+  public String getTableHeader() {
+    return tableHeader;
+  }
+
+  public String[] getRowHeaders() {
+    return rowHeaders;
+  }
+
+  public String[] getColHeaders() {
+    return colHeaders;
+  }
+
+  public String[] getColTypes() {
+    return colTypes;
+  }
+
+  public String[] getColFormats() {
+    return colFormats;
+  }
+
+  public String[][] getCellValues() {
+    return cellValues;
+  }
+
   /**
    * Get row dimension
    * @return int
