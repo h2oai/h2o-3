@@ -24,6 +24,9 @@ var/
 *.egg
 MANIFEST
 
+# Tests
+tests/results/*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

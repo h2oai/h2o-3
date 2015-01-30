@@ -71,7 +71,7 @@ Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\P
 
     npm install -g bower
 
-##### Step 3. Install R, the required packages, and Rtools
+##### Step 3a. Install R, the required packages, and Rtools
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
@@ -99,6 +99,24 @@ You may alternatively install these packages from within an R session:
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which are a collection of command line tools to facilitate R development on Windows.
+
+##### Step 3b. Install pip (Upgrade pip) and the wheel module
+
+The version of Python that we test is 2.7; other versions may work, but they are untested.
+
+To install pip, please follow the directions here:
+
+https://pip.pypa.io/en/latest/installing.html
+
+If you already have pip installed, then please ensure that it is upgraded:
+  
+    pip install --upgrade pip
+    
+After this, you'll need to grab the wheel module:
+
+    pip install wheel --upgrade
+    
+This will auto-update your wheel module if you already have it installed, or just perform an install of the latest version.
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 

@@ -3,8 +3,9 @@ package hex;
 import water.fvec.Frame;
 
 public class ModelMetricsClustering extends ModelMetricsUnsupervised {
+  public final double _mse;
   public final double[] _within_mse; //TODO: add Clustering specific members
-  public final double _mse; //TODO: add Clustering specific members
+
   public ModelMetricsClustering(Model model, Frame frame) {
     super(model, frame);
     _mse = Double.NaN;

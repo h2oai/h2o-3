@@ -6,7 +6,6 @@ import water.util.ArrayUtils;
 import water.util.ModelUtils;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
-
   public final AUCData _aucdata;
   public final ConfusionMatrix _cm;
 
@@ -54,7 +53,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    public float[] perRow( float ds[], float[] yact ) {
+    @Override public float[] perRow( float ds[], float[] yact ) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
@@ -74,6 +73,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold
         _cms[i][iact][p]++;   // Increase matrix
       }
+      _count++;
       return ds;                // Flow coding
     }
     @Override public void reduce( MetricBuilder mb ) {

@@ -45,7 +45,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    public float[] perRow( float ds[], float [] yact ) {
+    @Override public float[] perRow( float ds[], float [] yact ) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
@@ -60,13 +60,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
       // Plain Olde Confusion Matrix
       _cm[iact][(int)ds[0]]++; // actual v. predicted
+      _count++;
       return ds;                // Flow coding
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       HitRatio hr = null;       // TODO
-      final double mse = _sumsqe / cm.totalRows();
+      final double mse = _sumsqe / _count;
       return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
     }
   }
