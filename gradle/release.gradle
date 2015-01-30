@@ -7,5 +7,17 @@ release {
   //requireBranch = "release"
 }
 
+// Helper task uploading all artifacts
+task uploadAll
+uploadAll.dependsOn {
+  subprojects.uploadArchives
+}
+
+// Helper task uploading and releasing all staged artifacts 
+task stageAll
+stageAll.dependsOn uploadAll, nexusStagingRelease
+nexusStagingRelease.mustRunAfter uploadAll
+
+
 // Upload artifacts after release
-createReleaseTag.dependsOn { subprojects.uploadArchives }
+createReleaseTag.dependsOn stageAll
