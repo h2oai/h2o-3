@@ -4,6 +4,7 @@ Setup and Installation
 This module depends on *requests* and *tabulate* modules. Both of which are available on pypi.
 
     $ pip install requests
+
     $ pip install tabulate
 
 
