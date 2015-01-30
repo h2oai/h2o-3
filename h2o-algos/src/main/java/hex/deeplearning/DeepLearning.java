@@ -22,7 +22,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
@@ -129,7 +129,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       Scope.enter();
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -295,8 +295,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
         }
 
-        Log.info(model);
+        Log.info("==============================================================================================");
         Log.info("Finished training the Deep Learning model.");
+        Log.info(model);
+        Log.info("==============================================================================================");
       }
       catch(RuntimeException ex) {
         model = DKV.get(dest()).get();

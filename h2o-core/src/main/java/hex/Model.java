@@ -463,26 +463,30 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
-    final int _ncols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _ncols = ncols; }
+    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
       double[] tmp = new double[_output.nfeatures()];
       switch (_output.getModelCategory()) {
         case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(_domain, ModelUtils.DEFAULT_THRESHOLDS); break;
-        case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain, new float[]{0.5f}); break;
-        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(_domain); break;
-        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_domain); break;
-        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_domain); break;
+        case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain); break;
+        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(); break;
+        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures()); break;
+        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures()); break;
         default: throw H2O.unimpl();
       }
+      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
-      for( int row=0; row<len; row++ ) {
-        float[] p = score0(chks,row,tmp,preds);
-        _mb.perRow(preds,(float)ys.atd(row));
-        for( int c=0; c<_ncols; c++ )  // Output predictions; sized for train only (excludes extra test classes)
+      for (int row = 0; row < len; row++) {
+        float[] p = score0(chks, row, tmp, preds);
+        float[] actual = new float[chks.length-startcol];
+        for (int c = startcol; c < chks.length; c++) {
+          actual[c-startcol] = (float)chks[c].atd(row);
+        }
+        _mb.perRow(preds, actual);
+        for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
     }

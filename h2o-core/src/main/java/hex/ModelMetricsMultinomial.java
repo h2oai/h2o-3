@@ -4,7 +4,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ModelUtils;
 
-public class ModelMetricsMultinomial extends ModelMetrics {
+public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final ConfusionMatrix _cm;
   public final HitRatio _hr;
 
@@ -13,8 +13,8 @@ public class ModelMetricsMultinomial extends ModelMetrics {
     _cm=null;
     _hr=null;
   }
-  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, HitRatio hr) {
-    super(model, frame);
+  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, HitRatio hr, double sigma, double mse) {
+    super(model, frame, sigma, mse);
     _cm = cm;
     _hr = hr;
   }
@@ -36,14 +36,19 @@ public class ModelMetricsMultinomial extends ModelMetrics {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static class MetricBuilderMultinomial extends MetricBuilder {
-    public MetricBuilderMultinomial( String[] domain ) { super(domain); }
-    public MetricBuilderMultinomial( String[] domain, float[] thresholds ) { super(domain, thresholds); }
+  public static class MetricBuilderMultinomial extends MetricBuilderSupervised {
+    long[/*nclasses*/][/*nclasses*/] _cm;
+    public MetricBuilderMultinomial( String[] domain ) {
+      super(domain);
+      _cm = new long[_nclasses][_nclasses];
+    }
 
-    public float[] perRow( float ds[], float yact ) {
-      if( Float.isNaN(yact) ) return ds; // No errors if   actual   is missing
+    // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
+    // distribution;
+    @Override public float[] perRow( float ds[], float [] yact ) {
+      if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
-      final int iact = (int)yact;
+      final int iact = (int)yact[0];
 
       // Compute error
       float sum = 0;          // Check for sane class distribution
@@ -54,14 +59,16 @@ public class ModelMetricsMultinomial extends ModelMetrics {
       assert !Double.isNaN(_sumsqe);
 
       // Plain Olde Confusion Matrix
-      _cms[0][iact][(int)ds[0]]++; // actual v. predicted
+      _cm[iact][(int)ds[0]]++; // actual v. predicted
+      _count++;
       return ds;                // Flow coding
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      ConfusionMatrix cm = new ConfusionMatrix(_cms[0], _domain);
+      ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       HitRatio hr = null;       // TODO
-      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr));
+      final double mse = _sumsqe / _count;
+      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
     }
   }
 }

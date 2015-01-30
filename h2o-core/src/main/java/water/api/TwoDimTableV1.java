@@ -36,6 +36,9 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
   @API(help="Column Specification", direction=API.Direction.OUTPUT)
   public ColumnSpecs[] columns;
 
+  @API(help="Number of Rows", direction=API.Direction.OUTPUT)
+  public int rowcount;
+
   @API(help="Table Data (col-major)", direction=API.Direction.OUTPUT)
   public String[][] data;
 
@@ -48,6 +51,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     name = t.getTableHeader();
     final int cols = t.getColDim()+1;
     final int rows = t.getRowDim();
+    rowcount = rows;
     columns = new ColumnSpecs[cols];
     columns[0] = new ColumnSpecs();
     columns[0].name = "";
@@ -82,6 +86,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
    */
   public TwoDimTable fillImpl(TwoDimTable impl) {
     final int rows = data[0].length;
+    assert(rows == rowcount);
     final int cols = data.length+1;
     String tableHeader = name;
     String[] rowHeaders = new String[rows];

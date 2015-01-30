@@ -3,6 +3,9 @@ package water.api;
 import hex.ModelMetricsMultinomial;
 
 public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMultinomial, ModelMetricsMultinomialV3> {
+  @API(help="The Mean Squared Error of the prediction for this scoring run.", direction=API.Direction.OUTPUT)
+  public double mse;
+
   @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
   public ConfusionMatrixBase cm;
 

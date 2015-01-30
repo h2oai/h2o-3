@@ -63,6 +63,7 @@ ext {
     ]
 
     pythonProjects = [
+      project(':h2o-py')
     ]
 
     // Supported Hadoop versions used at compile time
@@ -143,6 +144,10 @@ subprojects {
 
     if (project in rProjects) {
         apply from: "$rootDir/gradle/r.gradle"
+    }
+
+    if (project in pythonProjects) {
+        apply from: "$rootDir/gradle/r.gradle"   // same plugins
     }
 }
 
