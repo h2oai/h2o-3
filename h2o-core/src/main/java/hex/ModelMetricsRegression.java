@@ -1,5 +1,6 @@
 package hex;
 
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
@@ -9,6 +10,17 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public ModelMetricsRegression(Model model, Frame frame, double sigma, double mse) {
     super(model, frame, sigma, mse);
   }
+
+  public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
+    ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
+
+    if (! (mm instanceof ModelMetricsRegression))
+      throw new H2OIllegalArgumentException("Expected to find a Regression ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
+              "Expected to find a ModelMetricsRegression for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
+
+    return (ModelMetricsRegression) mm;
+  }
+
 
   public static class MetricBuilderRegression extends MetricBuilderSupervised {
     public MetricBuilderRegression() {
