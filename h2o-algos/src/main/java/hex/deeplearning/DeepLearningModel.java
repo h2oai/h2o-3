@@ -773,8 +773,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("Training MSE: " + train_mse + "\n");
-      sb.append("Training R^2: " + train_r2 + "\n");
       if (classification) {
+        sb.append("Training R^2: " + train_r2 + "\n");
         sb.append("Training " + train_confusion_matrix.table.toString(1));
         sb.append("Training Misclassification"
                 + (trainAUC != null ? " [using threshold for " + trainAUC.threshold_criterion.toString().replace("_", " ") + "]: " : ": ")
