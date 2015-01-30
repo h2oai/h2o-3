@@ -5,9 +5,9 @@ import hex.deeplearning.DeepLearningModel;
 import water.Key;
 import water.api.*;
 
-public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModelV2, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningOutput> {
+public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModelV2, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningModelOutput> {
 
-  public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningOutput, DeepLearningModelOutputV2> {
+  public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningModelOutput, DeepLearningModelOutputV2> {
     @API(help="Scoring information")
     DeepLearningScoringV2 errors;
     @API(help="Model summary")
@@ -33,6 +33,6 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
   @Override public DeepLearningModel createImpl() {
     DeepLearningV2.DeepLearningParametersV2 p = ((DeepLearningV2.DeepLearningParametersV2)this.parameters);
     DeepLearningModel.DeepLearningParameters parms = p.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningOutput(null), null, null);
+    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModel.DeepLearningModelOutput(null), null, null);
   }
 }

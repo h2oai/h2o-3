@@ -21,8 +21,15 @@ public class ModelMetrics extends Keyed {
   transient Model _model;
   transient Frame _frame;
 
+  public double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
+
   long duration_in_ms = -1L;
   long scoring_time = -1L;
+
+  public ModelMetrics(Model model, Frame frame, double mse) {
+    this(model, frame);
+    _mse = mse;
+  }
 
   public ModelMetrics(Model model, Frame frame) {
     super(buildKey(model, frame));
@@ -33,6 +40,7 @@ public class ModelMetrics extends Keyed {
     _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
+    _mse = Double.NaN;
 
     DKV.put(this);
   }
@@ -40,8 +48,6 @@ public class ModelMetrics extends Keyed {
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
-  // r2 => improvement over random guess of the mean
-  public double r2() { return Double.NaN; }
   public ConfusionMatrix cm() { return null; }
   public HitRatio hr() { return null; }
   public AUCData auc() { return null; }
@@ -72,30 +78,14 @@ public class ModelMetrics extends Keyed {
    *  <init>} called once per MRTask.map.
    */
   public static abstract class MetricBuilder extends Iced {
-    final String[] _domain;
-    final int _nclasses;
-    final float[] _thresholds;
-    long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
     public double _sumsqe;      // Sum-squared-error
     transient public float[] _work;
+    public long _count;
 
-    public MetricBuilder( String[] domain ) { this(domain,new float[]{0.5f}); }
-    public MetricBuilder( String[] domain, float[] thresholds ) {
-      _domain = domain;
-      int nclasses = _nclasses = (domain==null ? 1 : domain.length);
-      // Thresholds are only for binomial classes
-      assert (nclasses==2 && thresholds.length>0) || (nclasses!=2 && thresholds.length==1);
-      _thresholds = thresholds;
-      _cms = new long[thresholds.length][nclasses][nclasses];
-      _work = new float[nclasses+1];
-    }
-
-    // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
-    // distribution; (for regression, ds[0] has the prediction and ds[1] is ignored)
-    public abstract float[] perRow( float ds[], float yact );
+    abstract public float[] perRow( float ds[], float yact[] );
     public void reduce( MetricBuilder mb ) {
-      ArrayUtils.add(_cms, mb._cms);
       _sumsqe += mb._sumsqe;
+      _count += mb._count;
     }
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public abstract ModelMetrics makeModelMetrics( Model m, Frame f, double sigma);
