@@ -758,6 +758,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     // regression
     public double train_mse = Double.POSITIVE_INFINITY;
     public double valid_mse = Double.POSITIVE_INFINITY;
+    public double train_r2 = Double.NaN;
+    public double valid_r2 = Double.NaN;
 
     public long scoring_time;
 
@@ -770,22 +772,28 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
+      sb.append("Training MSE: " + train_mse + "\n");
+      sb.append("Training R^2: " + train_r2 + "\n");
       if (classification) {
-        sb.append("Error on training data (misclassification)"
-                + (trainAUC != null ? " [using threshold for " + trainAUC.threshold_criterion.toString().replace("_"," ") +"]: ": ": ")
-                + String.format("%.2f", 100*train_err) + "%");
-
-        if (trainAUC != null) sb.append(", AUC on training data: " + String.format("%.4f", 100*trainAUC.AUC) + "%");
-        if (validation || num_folds>0)
-          sb.append("\nError on " + (num_folds>0 ? num_folds + "-fold cross-":"")+ "validation data (misclassification)"
-                + (validAUC != null ? " [using threshold for " + validAUC.threshold_criterion.toString().replace("_"," ") +"]: ": ": ")
-                + String.format("%.2f", (100*valid_err)) + "%");
-        if (validAUC != null) sb.append(", AUC on validation data: " + String.format("%.4f", 100*validAUC.AUC) + "%");
-      } else if (!Double.isInfinite(train_mse)) {
-        sb.append("Error on training data (MSE): " + train_mse);
-        if (validation || num_folds>0)
-          sb.append("\nError on "+ (num_folds>0 ? num_folds + "-fold cross-":"")+ "validation data (MSE): " + valid_mse);
+        sb.append("Training " + train_confusion_matrix.table.toString(1));
+        sb.append("Training Misclassification"
+                + (trainAUC != null ? " [using threshold for " + trainAUC.threshold_criterion.toString().replace("_", " ") + "]: " : ": ")
+                + String.format("%.2f", 100 * train_err) + "%");
+        if (trainAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * trainAUC.AUC) + "%");
       }
+      if (validation || num_folds>0) {
+        sb.append("\nValidation data metrics" + (num_folds > 0 ? (" (using " + num_folds + "-fold cross-validation):") : ":"));
+        sb.append("\nValidation MSE: " + valid_mse + "\n");
+        sb.append("Validation R^2: " + valid_r2 + "\n");
+        if (classification) {
+          sb.append("Validation " + valid_confusion_matrix.table.toString(1));
+          sb.append("Validation Misclassification"
+                  + (validAUC != null ? " [using threshold for " + validAUC.threshold_criterion.toString().replace("_", " ") + "]: " : ": ")
+                  + String.format("%.2f", (100 * valid_err)) + "%");
+          if (validAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * validAUC.AUC) + "%");
+        }
+      }
+      sb.append("\n");
       return sb.toString();
     }
   }
@@ -963,6 +971,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
               Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
             }
+            count++;
           }
         }
         Log.warn("Suggestions:");
@@ -1457,9 +1466,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       final long samples = model_info().get_processed_total();
       if (!keep_running || sinceLastPrint > get_params()._score_interval *1000) {
         _timeLastPrintStart = now;
-        Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-                + ". Processed " + String.format("%,d", samples) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-                + " Speed: " + String.format("%.3f", 1000.*samples/run_time) + " samples/sec.");
+//        Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
+//                + ". Processed " + String.format("%,d", samples) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+//                + " Speed: " + String.format("%.3f", 1000.*samples/run_time) + " samples/sec.");
       }
 
       // this is potentially slow - only do every so often
@@ -1495,7 +1504,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           final Frame trainPredict = score(ftrain);
           trainPredict.delete();
 
-          hex.ModelMetrics mm1 = hex.ModelMetrics.getFromDKV(this,ftrain);
+          hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
             err.trainAUC = mm._aucdata;
@@ -1508,16 +1517,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             err.train_err = mm._cm.err();
             err.train_hitratio = mm._hr;
           }
-          else if (mm1 instanceof ModelMetricsRegression) {
-            ModelMetricsRegression mm = (ModelMetricsRegression)(mm1);
-            err.train_mse = mm._mse;
-          }
+          err.train_mse = mm1._mse;
+          err.train_r2 = mm1.r2();
           _output.trainMetrics = mm1;
 
           if (ftest != null) {
             Frame validPred = score(ftest);
             validPred.delete();
-            hex.ModelMetrics mm2 = hex.ModelMetrics.getFromDKV(this, ftest);
+            hex.ModelMetricsSupervised mm2 = (ModelMetricsSupervised)hex.ModelMetrics.getFromDKV(this, ftest);
             if (mm2 != null) {
               if (mm2 instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial) (mm2);
@@ -1529,10 +1536,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 err.valid_confusion_matrix = mm._cm;
                 err.valid_err = mm._cm.err();
                 err.valid_hitratio = mm._hr;
-              } else if (mm2 instanceof ModelMetricsRegression) {
-                ModelMetricsRegression mm = (ModelMetricsRegression) (mm2);
-                err.valid_mse = mm._mse;
               }
+              err.valid_mse = mm2._mse;
+              err.valid_r2 = mm2.r2();
               _output.validMetrics = mm2;
             }
           }
@@ -1636,6 +1642,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
+    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
+            + ". Processed " + String.format("%,d", training_rows) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+            + " Speed: " + String.format("%.3f", 1000.*training_rows/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
     sb.append(last_scored().toString());
     return sb.toString();
@@ -1643,6 +1652,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public String toStringAll() {
     StringBuilder sb = new StringBuilder();
+    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
+            + ". Processed " + String.format("%,d", training_rows) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+            + " Speed: " + String.format("%.3f", 1000.*training_rows/run_time) + " samples/sec.\n");
     sb.append(model_info.toStringAll());
     sb.append(last_scored().toString());
     return sb.toString();

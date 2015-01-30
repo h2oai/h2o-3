@@ -295,8 +295,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
         }
 
-        Log.info(model);
+        Log.info("==============================================================================================");
         Log.info("Finished training the Deep Learning model.");
+        Log.info(model);
+        Log.info("==============================================================================================");
       }
       catch(RuntimeException ex) {
         model = DKV.get(dest()).get();
