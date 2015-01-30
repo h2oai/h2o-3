@@ -65,5 +65,5 @@ setup(
     install_requires=['requests', 'tabulate', 'numpy'],
 
 
-    data_files=[('h2o_jar', ['../../../../build/h2o.jar'])],
+    data_files=[('h2o_jar', ['../build/h2o.jar'])],
 )
