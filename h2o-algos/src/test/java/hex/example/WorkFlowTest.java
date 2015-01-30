@@ -1,20 +1,22 @@
 package hex.example;
 
 import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
+import hex.SupervisedModel;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import java.io.File;
 import java.util.Arrays;
+import org.joda.time.*;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
-import org.joda.time.*;
 
 @Ignore("Test DS end-to-end workflow; not intended as a junit yet")
 public class WorkFlowTest extends TestUtil {
@@ -104,7 +106,7 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._convert_to_enum = false; // regression
       
       // SharedTreeModel.Parameters
-      gbm_parms._ntrees = 100;        // default is 50, 1000 is 0.90, 10000 is 0.91
+      gbm_parms._ntrees = 1000;        // default is 50, 1000 is 0.90, 10000 is 0.91
       gbm_parms._max_depth = 7;       // default is 5
       gbm_parms._min_rows = 10;       // default
       gbm_parms._nbins = 20;          // default
@@ -140,20 +142,20 @@ public class WorkFlowTest extends TestUtil {
       // -------------------------------------------------
       // 4- Score on holdout set & report
       gbm.score(train).remove();
-      double train_r2_gbm = ModelMetrics.getFromDKV(gbm, train).r2();
+      double train_r2_gbm = r2(gbm,train);
       gbm.score(test ).remove();
-      double  test_r2_gbm = ModelMetrics.getFromDKV(gbm, test ).r2();
+      double  test_r2_gbm = r2(gbm,test );
       gbm.score(hold ).remove();
-      double  hold_r2_gbm = ModelMetrics.getFromDKV(gbm, hold ).r2();
+      double  hold_r2_gbm = r2(gbm,hold );
       System.out.println("GBM R2 TRAIN="+train_r2_gbm+", R2 TEST="+test_r2_gbm+", R2 HOLDOUT="+hold_r2_gbm);
       gbm.remove();
 
       glm.score(train).remove();
-      double train_r2_glm = ModelMetrics.getFromDKV(glm, train).r2();
+      double train_r2_glm = r2(glm, train);
       glm.score(test ).remove();
-      double  test_r2_glm = ModelMetrics.getFromDKV(glm, test ).r2();
+      double  test_r2_glm = r2(glm, test );
       glm.score(hold ).remove();
-      double  hold_r2_glm = ModelMetrics.getFromDKV(glm, hold ).r2();
+      double  hold_r2_glm = r2(glm, hold );
       System.out.println("GLM R2 TRAIN="+train_r2_glm+", R2 TEST="+test_r2_glm+", R2 HOLDOUT="+hold_r2_glm);
       glm.remove();
 
@@ -165,6 +167,10 @@ public class WorkFlowTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  private double r2( SupervisedModel model, Frame fr ) {
+    return ((ModelMetricsSupervised)ModelMetrics.getFromDKV(model, fr)).r2();    
   }
 
   // Load a set of files, then parse them all together
