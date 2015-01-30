@@ -3,6 +3,9 @@
 # module h2o
 # from (h2o)
 """
+The H2O Python Module
+=====================
+
 This module provides access to the H2O JVM (and extensions thereof), its objects, its
 machine-learning algorithms, and modeling support (basic munging and feature generation)
 capabilities.
