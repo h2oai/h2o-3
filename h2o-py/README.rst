@@ -1,7 +1,11 @@
 Setup and Installation
 ======================
 
-This module depends on the `requests` and `tabulate` modules.
+This module depends on *requests* and *tabulate* modules. Both of which are available on pypi.
+
+    $ pip install requests
+    $ pip install tabulate
+
 
 The H2O Python Module
 =====================
@@ -13,7 +17,7 @@ capabilities.
 The H2O JVM sports a web server such that all communication occurs on a socket (specified
 by an IP address and a port) via a series of REST calls (see connection.py for the REST
 layer implementation and details). There is a single active connection to the H2O JVM at
-any one time, and this handle is stashed in the __H2OCONN__ global object. The __H2OCONN__
+any one time, and this handle is stashed in the \_\_H2OCONN\_\_ global object. The \_\_H2OCONN\_\_
 is not currently a singleton object (but it may become one in the future).
 
 What is H2O?
