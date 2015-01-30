@@ -1016,47 +1016,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     public TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-      TwoDimTable table = new TwoDimTable(
-              "Scoring History",
-              new String[errors.length],
-              new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
-                      (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
-                      (get_params()._adaptive_rate ? "" : "Momentum"),
-                      "Weight (Mean,RMS)",
-                      "Bias (Mean,RMS)"
-              },
-              new String[]{"integer", "integer", "string", "double", "double", "double",
-                      "string", "string", "string", "string"},
-              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"}
-      );
-
-      final String format = "%7g";
-      for (int i = 0; i < neurons.length; ++i) {
-        table.set(i, 0, i + 1);
-        table.set(i, 1, neurons[i].units);
-        table.set(i, 2, neurons[i].getClass().getSimpleName());
-
-        if (i == 0) {
-          table.set(i, 3, neurons[i].params._input_dropout_ratio);
-          continue;
-        } else if (i < neurons.length - 1) {
-          if (neurons[i].params._hidden_dropout_ratios == null) {
-            table.set(i, 3, 0);
-          } else {
-            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]);
-          }
-        }
-        table.set(i, 4, neurons[i].params._l1);
-        table.set(i, 5, neurons[i].params._l2);
-        table.set(i, 6, (get_params()._adaptive_rate ? (" (" + String.format(format, mean_rate[i]) + ", " + String.format(format, rms_rate[i]) + ")")
-                : (String.format("%10g", neurons[i].rate(get_processed_total())))));
-        table.set(i, 7, get_params()._adaptive_rate ? "" : String.format("%5f", neurons[i].momentum(get_processed_total())));
-        table.set(i, 8, " (" + String.format(format, mean_weight[i])
-                + ", " + String.format(format, rms_weight[i]) + ")");
-        table.set(i, 9, " (" + String.format(format, mean_bias[i])
-                + ", " + String.format(format, rms_bias[i]) + ")");
-      }
-      summaryTable = table;
+      //FIXME
       return summaryTable;
     }
     public TwoDimTable createSummaryTable() {
@@ -1113,7 +1073,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for (int k = 0; k < get_params()._hidden.length; k++)
             sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
         }
-        if (summaryTable == null) calcSummaryTable();
+        if (summaryTable == null) createSummaryTable();
         sb.append(summaryTable.toString(1));
       }
       return sb.toString();
@@ -1392,7 +1352,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
-    _output.scoringHistory = createScoringHistoryTable(errors);
+    _output.scoringHistory = null; //createScoringHistoryTable(errors);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1422,7 +1382,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
-      _output.scoringHistory = createScoringHistoryTable(errors);
+      _output.scoringHistory = null; //createScoringHistoryTable(errors);
     }
     assert _key.equals(destKey);
   }
@@ -1567,7 +1527,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
-        _output.scoringHistory = createScoringHistoryTable(errors);
+        _output.scoringHistory = null; //createScoringHistoryTable(errors);
         if (_output.modelSummary == null)
           _output.modelSummary = model_info.createSummaryTable();
 
