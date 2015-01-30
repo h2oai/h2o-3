@@ -202,7 +202,7 @@ class H2OCloudNode:
         # i.e. it won't make s3n/s3 break on ec2
 
         here = os.path.abspath(os.path.dirname(__file__))
-        there = os.path.abspath(os.path.join("..", "..", "..", "..", ".."))
+        there = os.path.abspath(os.path.join("..", ".."))
 
         os.chdir(there)
 

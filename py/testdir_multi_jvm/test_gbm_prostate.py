@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, '../../h2o-py/src/main/py')
+sys.path.insert(1, '../../h2o-py/')
 
 import h2o
 from h2o import H2OFrame
