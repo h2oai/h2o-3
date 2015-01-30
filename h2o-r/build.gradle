@@ -177,7 +177,20 @@ task cleaner << {
     new File(T).eachFile { if (it.name =~ "tar" || it.name =~ "zip" || it.name =~ "gz") it.delete() }
 }
 
-clean.dependsOn cleanUp
+def testsPath = new File("./tests")
+
+task smokeTest(type: Exec) {
+    dependsOn build
+    println "R smoke test (run.py --wipeall --testsize s)..."
+    workingDir testsPath
+    commandLine 'python', 'run.py', '--wipeall', '--testsize', 's'
+}
+
+task cleanUpSmokeTest {
+    new File([T, "tests/results"].join(File.separator)).deleteDir()
+}
+
+clean.dependsOn cleanUp, cleanUpSmokeTest
 setProperties.dependsOn gitbranch, getRVersion, pdflatex
 setPackageFiles.dependsOn setProperties
 buildPackageDocumentation.dependsOn setPackageFiles
