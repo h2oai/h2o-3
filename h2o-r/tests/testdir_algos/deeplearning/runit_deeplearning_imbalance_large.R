@@ -13,9 +13,6 @@ check.deeplearning_imbalanced <- function(conn) {
   #compare error for class 6 (difficult minority)
   #confusion_matrix element at position A,P for N classes is at: model$confusion[P*(N+1)-(N-A+1)]
   #Here, A=6 P=8, N=7 -> need element 8*(7+1)-(7-6+1) = 62
-print(hh_imbalanced@model)
-print(hh_imbalanced@model$errors)
-print(hh_imbalanced@model$errors$train_confusion_matrix)
   class_6_err_imbalanced <- hh_imbalanced@model$errors$train_confusion_matrix$prediction_error_by_class[6]
   class_6_err_balanced <- hh_balanced@model$errors$train_confusion_matrix$prediction_error_by_class[6]
 
