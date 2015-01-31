@@ -6,7 +6,7 @@ import abc
 
 from ..h2o import H2OFrame
 from ..frame import H2OVec
-from ..h2o import h2oConn
+from ..h2o import H2OConnection
 from . import ModelBase
 from ..h2o import H2OJob
 from binomial import H2OBinomialModel
@@ -86,7 +86,7 @@ class H2OModelBuilder(ModelBase):
         # launch the job and poll
         url_suffix = "ModelBuilders/" + self._algo
         job_type = self._algo + " Model Build"
-        j = H2OJob(h2oConn.do_safe_post_json(url_suffix=url_suffix, params=model_params),
+        j = H2OJob(H2OConnection.post_json(url_suffix=url_suffix, params=model_params),
                    job_type=job_type).poll()
 
         # set the fitted_model and model_type fields
@@ -123,7 +123,7 @@ class H2OModelBuilder(ModelBase):
         url_suffix = "Predictions/models/" + self._model_key + "/frames/" + test_data_key
 
         # this job call is blocking
-        j = h2oConn.do_safe_post_json(url_suffix=url_suffix)
+        j = H2OConnection.post_json(url_suffix=url_suffix)
 
         # retrieve the prediction frame
         prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
@@ -258,7 +258,7 @@ class H2OModelBuilder(ModelBase):
         url_suffix = "ModelBuilders/" + self._algo
 
         # ask h2o what the default parameters are
-        builders_response = h2oConn.do_safe_get_json(url_suffix=url_suffix)
+        builders_response = H2OConnection.get_json(url_suffix=url_suffix)
 
         # fish out the parameters from the builders_response json object
         model_params_raw = builders_response["model_builders"][self._algo]["parameters"]
@@ -292,7 +292,7 @@ class H2OModelBuilder(ModelBase):
 
         # GET the model result
         url_suffix = "Models/" + destination_key
-        model = h2oConn.do_safe_get_json(url_suffix=url_suffix)["models"][0]
+        model = H2OConnection.get_json(url_suffix=url_suffix)["models"][0]
 
         # get the model type
         self._model_type = self._model_type.format(model["output"]["model_category"])

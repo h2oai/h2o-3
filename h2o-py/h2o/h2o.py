@@ -5,7 +5,7 @@ This module implements the communication REST layer for the python <-> H2O conne
 import os
 import re
 import urllib
-from connection import H2OConnection as h2oConn
+from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame
 
@@ -16,7 +16,7 @@ def import_file(path):
     :param path: A path to a data file (remote or local)
     :return: Return an H2OFrame.
     """
-    j = h2oConn.do_safe_get_json(url_suffix="ImportFiles", params={'path': path})
+    j = H2OConnection.get_json(url_suffix="ImportFiles", params={'path': path})
     if j['fails']:
         raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
     return j['keys'][0]
@@ -32,7 +32,7 @@ def upload_file(path, destination_key=""):
     fui = {"file": os.path.abspath(path)}
     dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
     p = {'destination_key': dest_key}
-    h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+    H2OConnection.post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
     return H2OFrame(raw_fname=dest_key)
 
 
@@ -55,7 +55,7 @@ def parse_setup(rawkey):
 
     # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
     raw_key = _quoted(rawkey)
-    j = h2oConn.do_safe_post_json(url_suffix="ParseSetup", params={'srcs': [raw_key]})
+    j = H2OConnection.post_json(url_suffix="ParseSetup", params={'srcs': [raw_key]})
     if not j['isValid']:
         raise ValueError("ParseSetup not Valid", j)
     return j
@@ -96,7 +96,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     p['srcs'] = [_quoted(src['name']) for src in setup['srcs']]
 
     # Request blocking parse
-    j = H2OJob(h2oConn.do_safe_post_json(url_suffix="Parse", params=p), "Parse").poll()
+    j = H2OJob(H2OConnection.post_json(url_suffix="Parse", params=p), "Parse").poll()
     return j.jobs
 
 
@@ -112,7 +112,7 @@ def remove(key):
     :param key: The key pointing to the object to be removed.
     :return: void
     """
-    h2oConn.do_safe_rest(url_suffix="Remove", params={"key": key}, method="DELETE")
+    H2OConnection.delete("Remove", {"key": key})
 
 
 def rapids(expr):
@@ -121,7 +121,7 @@ def rapids(expr):
     :param expr: The rapids expression (ascii string)
     :return: The JSON response of the Rapids execution.
     """
-    return h2oConn.do_safe_post_json(url_suffix="Rapids",
+    return H2OConnection.post_json(url_suffix="Rapids",
                                      params={"ast": urllib.quote(expr)})
 
 
@@ -132,7 +132,7 @@ def frame(key):
     :return: Meta information on the Frame.
     """
 
-    return h2oConn.do_safe_get_json(url_suffix="Frames/" + key)
+    return H2OConnection.get_json(url_suffix="Frames/" + key)
 
 
 def init(ip="localhost", port=54321):
@@ -142,5 +142,5 @@ def init(ip="localhost", port=54321):
     :param port: A port, default is 54321
     :return: None
     """
-    h2oConn(ip=ip, port=port)
+    H2OConnection(ip=ip, port=port)
     return None
