@@ -881,7 +881,7 @@ public class Frame extends Lockable<Frame> {
       }
       case Vec.T_NUM: {
         coltypes[i] = vec.isInt() ? "long" : "double"; 
-        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.at(off + j); strCells[j+4][i] = null; }
+        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+4][i] = null; }
         break;
       }
       case Vec.T_UUID:
