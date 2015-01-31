@@ -1,10 +1,11 @@
 package hex.tree;
 
-import hex.SupervisedModel;
-import hex.VarImp;
+import hex.*;
 import water.DKV;
 import water.Futures;
+import water.H2O;
 import water.Key;
+import water.util.ModelUtils;
 
 import java.util.Arrays;
 
@@ -29,6 +30,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
+  }
+
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    switch(_output.getModelCategory()) {
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+      default: throw H2O.unimpl();
+    }
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
