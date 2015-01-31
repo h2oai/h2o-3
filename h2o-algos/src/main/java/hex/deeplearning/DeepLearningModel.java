@@ -631,6 +631,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
+    DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
     ModelMetrics trainMetrics;
@@ -812,6 +813,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (errors == null) return null;
     return last_scored().variable_importances;
   }
+
+  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
+    return null;
+  }
+
 
   // This describes the model, together with the parameters
   // This will be shared: one per node
@@ -1024,10 +1030,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
-    public TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-      //FIXME
-      return summaryTable;
-    }
     public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
@@ -1361,7 +1363,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
-    _output.scoringHistory = null; //createScoringHistoryTable(errors);
+    _output.errors = last_scored();
+    _output.scoringHistory = createScoringHistoryTable(errors);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1391,7 +1394,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
-      _output.scoringHistory = null; //createScoringHistoryTable(errors);
+      _output.errors = last_scored();
+      _output.scoringHistory = createScoringHistoryTable(errors);
     }
     assert _key.equals(destKey);
   }
@@ -1533,7 +1537,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
-        _output.scoringHistory = null; //createScoringHistoryTable(errors);
+        _output.errors = last_scored();
+        _output.scoringHistory = createScoringHistoryTable(errors);
         if (_output.modelSummary == null)
           _output.modelSummary = model_info.createSummaryTable();
 

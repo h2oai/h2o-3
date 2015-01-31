@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.ModelMetrics;
 import hex.deeplearning.DeepLearningModel;
 import water.Key;
 import water.api.*;
