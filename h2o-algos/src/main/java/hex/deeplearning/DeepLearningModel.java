@@ -773,8 +773,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("Training MSE: " + train_mse + "\n");
-      sb.append("Training R^2: " + train_r2 + "\n");
       if (classification) {
+        sb.append("Training R^2: " + train_r2 + "\n");
         sb.append("Training " + train_confusion_matrix.table.toString(1));
         sb.append("Training Misclassification"
                 + (trainAUC != null ? " [using threshold for " + trainAUC.threshold_criterion.toString().replace("_", " ") + "]: " : ": ")
@@ -782,7 +782,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (trainAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * trainAUC.AUC) + "%");
       }
       if (validation || num_folds>0) {
-        sb.append("\nValidation data metrics" + (num_folds > 0 ? (" (using " + num_folds + "-fold cross-validation):") : ":"));
+        if (num_folds > 0) {
+          sb.append("\nDoing " + num_folds + "-fold cross-validation:");
+        }
         sb.append("\nValidation MSE: " + valid_mse + "\n");
         sb.append("Validation R^2: " + valid_r2 + "\n");
         if (classification) {
@@ -1643,8 +1645,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", training_rows) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*training_rows/run_time) + " samples/sec.\n");
+            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
     sb.append(last_scored().toString());
     return sb.toString();
@@ -1653,8 +1655,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public String toStringAll() {
     StringBuilder sb = new StringBuilder();
     sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", training_rows) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*training_rows/run_time) + " samples/sec.\n");
+            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toStringAll());
     sb.append(last_scored().toString());
     return sb.toString();
