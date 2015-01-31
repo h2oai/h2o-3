@@ -6,7 +6,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param data An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param key (Optional) The unique hex key assigned to the resulting model. If none is given, a key will automatically
 #'        be generated.
 #' @param loss \code{Defaults to "AUTO"} A \code{character} string. The loss function to be implemented. Must be "AUTO"
