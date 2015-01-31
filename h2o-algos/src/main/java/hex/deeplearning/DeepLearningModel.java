@@ -591,7 +591,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
           dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
-          dl.info("_initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (_n_folds != 0) {
           if (expensive) {
