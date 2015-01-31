@@ -3,6 +3,8 @@ package hex.example;
 import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
 import hex.SupervisedModel;
+import hex.quantile.QuantileModel;
+import hex.quantile.Quantile;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
@@ -72,13 +74,25 @@ public class WorkFlowTest extends TestUtil {
   
       // Convert start times to: Month, Weekday, Hour
       Vec startime = data.vec("starttime");
-      data.add(new TimeSplit().doIt(startime,"s"));
+      data.add(new TimeSplit().doIt(startime));
 
-      // Now do a monster Group-By.  Count bike starts per-station per-hour per-month.
+      // Now do a monster Group-By.  Count bike starts per-station per-hour per-day
+      Vec days = data.vec("Days");
       long start = System.currentTimeMillis();
-      Frame bph = new CountBikes().doAll(data.vec("s_Month"),data.vec("s_Day"),data.vec("s_Hour"),data.vec("start station name")).makeFrame(Key.make("bph.hex"));
+      Frame bph = new CountBikes(days).doAll(days,data.vec("start station name")).makeFrame(Key.make("bph.hex"));
       System.out.println("Groupby took "+(System.currentTimeMillis()-start));
+      System.out.println(bph);
+      System.out.println(bph.toString(10000,20));
       data.remove();
+
+      QuantileModel.QuantileParameters quantile_parms = new QuantileModel.QuantileParameters();
+      quantile_parms._train = bph._key;
+      Job<QuantileModel> job2 = new Quantile(quantile_parms).trainModel();
+      QuantileModel quantile = job2.get();
+      job2.remove();
+      System.out.println(Arrays.deepToString(quantile._output._quantiles));
+      quantile.remove();
+      
 
       // Split into train, test and holdout sets
       Key[] keys = new Key[]{Key.make("train.hex"),Key.make("test.hex"),Key.make("hold.hex")};
@@ -89,6 +103,7 @@ public class WorkFlowTest extends TestUtil {
       Frame hold  = frs[2];
       bph.remove();
       System.out.println(train);
+      System.out.println(test );
   
 
       // -------------------------------------------------
@@ -106,14 +121,14 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._convert_to_enum = false; // regression
       
       // SharedTreeModel.Parameters
-      gbm_parms._ntrees = 1000;        // default is 50, 1000 is 0.90, 10000 is 0.91
-      gbm_parms._max_depth = 7;       // default is 5
+      gbm_parms._ntrees = 500;        // default is 50, 1000 is 0.90, 10000 is 0.91
+      gbm_parms._max_depth = 6;       // default is 5
       gbm_parms._min_rows = 10;       // default
       gbm_parms._nbins = 20;          // default
       
       // GBMModel.Parameters
       gbm_parms._loss = GBMModel.GBMParameters.Family.AUTO; // default
-      gbm_parms._learn_rate = 0.3f;   // default
+      gbm_parms._learn_rate = 0.1f;   // default
 
       // Train model; block for results
       Job<GBMModel> job = new GBM(gbm_parms).trainModel();
@@ -193,57 +208,46 @@ public class WorkFlowTest extends TestUtil {
     }
   }
 
-  // Split out Month, DayOfWeek and HourOfDay from Unix Epoch msec
+  // Split out Days, Month, DayOfWeek and HourOfDay from Unix Epoch msec
   class TimeSplit extends MRTask<TimeSplit> {
-    public Frame doIt(Vec time, String title) {
-      String[] colNames = new String[]{title+"_Month", title+"_Day", title+"_Hour"};
-      String[][] domains = new String[][] {
-        {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"},
-        {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}, // Order comes from JODA
-        null
-      };
-      return doAll(3, time).outputFrame(colNames, domains);
+    public Frame doIt(Vec time) {
+      return doAll(1, time).outputFrame(new String[]{"Days"}, null);
     }
 
-    @Override public void map(Chunk chk[], NewChunk[] ncs) {
-      Chunk msec = chk[0];
-      NewChunk month = ncs[0];
-      NewChunk wkday = ncs[1];
-      NewChunk hour  = ncs[2];
-      MutableDateTime mdt = new MutableDateTime(); // Recycle same MDT
+    @Override public void map(Chunk msec, NewChunk day) {
       for( int i=0; i<msec._len; i++ ) {
-        mdt.setMillis(msec.at8(i)); // Set time in msec of unix epoch
-        month.addNum(mdt.getMonthOfYear()-1); // Convert to 0-based from 1-based
-        wkday.addNum(mdt.getDayOfWeek()  -1); // Convert to 0-based from 1-based
-        hour .addNum(mdt.getHourOfDay()    ); // zero based already
+        day.addNum(msec.at8(i)/(1000*60*60*24)); // Days since the Epoch
       }
     }
   }
 
   // Monster Group-By.  Count bike starts per-station per-hour per-month.
   class CountBikes extends MRTask<CountBikes> {
-    int _bikes[/*month*//*day*//*hour*//*station*/];
+    int _bikes[/*days*//*station*/];
+    final int _day0, _last_day;
     int _num_sid;
-    private int idx( long mon, long day, long hr, long sid ) {
-      return (int)(((mon*7+day)*24+hr)*_num_sid+sid);
+    private int idx( long day, long sid ) {
+      return (int)((day-_day0)*_num_sid+sid);
+    }
+    CountBikes( Vec vday ) {
+      _day0 = (int)vday.at8(0);
+      _last_day = (int)vday.at8((int)vday.length()-1)+1;
     }
     @Override public void map( Chunk chk[] ) {
-      Chunk mon = chk[0];
-      Chunk day = chk[1];
-      Chunk hr  = chk[2];
-      Chunk sid = chk[3];
+      Chunk day = chk[0];
+      Chunk sid = chk[1];
       _num_sid = sid.vec().cardinality();
       int len = chk[0]._len;
-      _bikes = new int[idx(12-1,7-1,24-1,_num_sid-1)+1];
+      _bikes = new int[idx(_last_day,0)];
       for( int i=0; i<len; i++ )
-        _bikes[idx(mon.at8(i),day.at8(i),hr.at8(i),sid.at8(i))]++;
+        _bikes[idx(day.at8(i),sid.at8(i))]++;
     }
     @Override public void reduce( CountBikes cb ) {
       water.util.ArrayUtils.add(_bikes,cb._bikes);
     }
 
     Frame makeFrame(Key key) {
-      final int ncols = 5;
+      final int ncols = 4;
       AppendableVec[] avecs = new AppendableVec[ncols];
       NewChunk ncs[] = new NewChunk[ncols];
       Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
@@ -252,39 +256,37 @@ public class WorkFlowTest extends TestUtil {
 
       Futures fs = new Futures();
       int chunknum=0;
-
-      for( int mon = 0; mon < 12; mon++ ) {
-        for( int day = 0; day < 7; day++ ) {
-          for( int hr = 0; hr < 24; hr++ ) {
-            for( int sid = 0; sid < _num_sid; sid++ ) {
-              int bikecnt = _bikes[idx(mon,day,hr,sid)];
-              if( bikecnt == 0 ) continue;
-              if( ncs[0] == null )  
-                for( int c=0; c<ncols; c++ ) 
-                  ncs[c] = new NewChunk(avecs[c],chunknum);
-              ncs[0].addNum(mon);
-              ncs[1].addNum(day);
-              ncs[2].addNum(hr);
-              ncs[3].addNum(sid);
-              ncs[4].addNum(bikecnt);
-            }
-          }
-          if( ncs[0] != null ) {
-            for( int c=0; c<ncols; c++ ) ncs[c].close(chunknum,fs);
-            chunknum++;
-            ncs[0] = null;
-          }
+      MutableDateTime mdt = new MutableDateTime(); // Recycle same MDT
+      for( int day = _day0; day < _last_day; day++ ) {
+        for( int sid = 0; sid < _num_sid; sid++ ) {
+          int bikecnt = _bikes[idx(day,sid)];
+          if( bikecnt == 0 ) continue;
+          if( ncs[0] == null )  
+            for( int c=0; c<ncols; c++ ) 
+              ncs[c] = new NewChunk(avecs[c],chunknum);
+          ncs[0].addNum(sid);
+          ncs[1].addNum(bikecnt);
+          long msec = day*(1000L*60*60*24); // msec since the Epoch
+          mdt.setMillis(msec);             // Set time in msec of unix epoch
+          ncs[2].addNum(mdt.getMonthOfYear()-1); // Convert to 0-based from 1-based
+          ncs[3].addNum(mdt.getDayOfWeek()  -1); // Convert to 0-based from 1-based
+        }
+        if( ncs[0] != null ) {
+          for( int c=0; c<ncols; c++ ) ncs[c].close(chunknum,fs);
+          chunknum++;
+          ncs[0] = null;
         }
       }
 
       Vec[] vecs = new Vec[ncols];
-      for( int c = 0; c < avecs.length; c++ ) {
+      for( int c = 0; c < avecs.length; c++ )
         vecs[c] = avecs[c].close(fs);
-        if( c < _fr.numCols() )
-          vecs[c].setDomain(_fr.vecs()[c].domain());
-      }
+      vecs[0].setDomain(_fr.vec(1).domain());
+      vecs[1].setDomain(null);
+      vecs[2].setDomain(new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
+      vecs[3].setDomain(new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}); // Order comes from Joda
       fs.blockForPending();
-      Frame fr = new Frame(key,new String[]{"Month","Day","Hour","Station","bikes"}, vecs);
+      Frame fr = new Frame(key,new String[]{"Station","bikes","Month","DayOfWeek"}, vecs);
       DKV.put(fr);
       return fr;
     }

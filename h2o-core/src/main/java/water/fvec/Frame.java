@@ -889,7 +889,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
 
-    return new TwoDimTable("Frame "+_key,rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
   }
 
 
