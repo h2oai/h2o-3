@@ -435,50 +435,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Automatic, MeanSquare, CrossEntropy
     }
 
-
-    // the following parameters can only be specified in expert mode
-    transient final String [] expert_options = new String[] {
-            "_use_all_factor_levels",
-            "_loss",
-            "_max_w2",
-            "_score_training_samples",
-            "_score_validation_samples",
-            "_initial_weight_distribution",
-            "_initial_weight_scale",
-            "_diagnostics",
-            "_rate_decay",
-            "_score_duty_cycle",
-            "_variable_importances",
-            "_fast_mode",
-            "_score_validation_sampling",
-            "_ignore_const_cols",
-            "_force_load_balance",
-            "_shuffle_training_data",
-            "_nesterov_accelerated_gradient",
-            "_classification_stop",
-            "_regression_stop",
-            "_quiet_mode",
-            "_max_confusion_matrix_size",
-            "_max_hit_ratio_k",
-            "_hidden_dropout_ratios",
-            "_single_node_mode",
-            "_sparse",
-            "_col_major",
-            "_autoencoder",
-            "_average_activation",
-            "_sparsity_beta",
-            "_max_categorical_features",
-    };
-
     void validate( DeepLearning dl, boolean expensive ) {
       boolean classification = dl.isClassifier();
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
       for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
-
-      if (!_expert_mode) {
-        for (String s : expert_options) dl.hide(s, "Only in expert mode.");
-      }
 
       if (!_autoencoder) {
         if (_valid == null)
@@ -591,7 +552,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
           dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
-          dl.info("_initial_weight_scale", "Ignoring initial_weight_scale for UniformAdaptive weight distribution.");
         }
         if (_n_folds != 0) {
           if (expensive) {
@@ -671,6 +631,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
+    DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
     ModelMetrics trainMetrics;
@@ -720,6 +681,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
   @Override public boolean isSupervised() { return !model_info.get_params()._autoencoder; }
+
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    switch(_output.getModelCategory()) {
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+      case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
+      default: throw H2O.unimpl();
+    }
+  }
 
   public int compareTo(DeepLearningModel o) {
     if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
@@ -842,6 +813,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (errors == null) return null;
     return last_scored().variable_importances;
   }
+
+  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
+    return null;
+  }
+
 
   // This describes the model, together with the parameters
   // This will be shared: one per node
@@ -1054,10 +1030,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
-    public TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-      //FIXME
-      return summaryTable;
-    }
     public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
@@ -1391,7 +1363,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     errors = cp.errors.clone();
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
-    _output.scoringHistory = null; //createScoringHistoryTable(errors);
+    _output.errors = last_scored();
+    _output.scoringHistory = createScoringHistoryTable(errors);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1421,7 +1394,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
-      _output.scoringHistory = null; //createScoringHistoryTable(errors);
+      _output.errors = last_scored();
+      _output.scoringHistory = createScoringHistoryTable(errors);
     }
     assert _key.equals(destKey);
   }
@@ -1563,7 +1537,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err2[err2.length - 1] = err;
           errors = err2;
         }
-        _output.scoringHistory = null; //createScoringHistoryTable(errors);
+        _output.errors = last_scored();
+        _output.scoringHistory = createScoringHistoryTable(errors);
         if (_output.modelSummary == null)
           _output.modelSummary = model_info.createSummaryTable();
 

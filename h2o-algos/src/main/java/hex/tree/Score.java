@@ -1,8 +1,8 @@
 package hex.tree;
 
-import hex.*;
 import hex.Model.ModelCategory;
-import water.H2O;
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -32,14 +32,7 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    switch (_mcat) {
-      case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS); break;
-      case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(domain); break;
-      case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(); break;
-      case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(chks.length); break;
-      case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(chks.length); break;
-      default: throw H2O.unimpl();
-    }
+    _mb = _bldr._model.makeMetricBuilder(domain);
     final float[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.

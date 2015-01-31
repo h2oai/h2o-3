@@ -2,8 +2,6 @@ package hex;
 
 import water.*;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.ModelUtils;
 
 /** Container to hold the metric for a model as scored on a specific frame.
  *
@@ -87,6 +85,8 @@ public class ModelMetrics extends Keyed {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
     }
+
+    public void postGlobal() {}
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public abstract ModelMetrics makeModelMetrics( Model m, Frame f, double sigma);
   }

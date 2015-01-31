@@ -168,7 +168,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Object B = _parms;
           for (Field fA : A.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
-              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
+//              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
               for (Field fB : B.getClass().getDeclaredFields()) {
                 if (fA.equals(fB)) {
                   try {
