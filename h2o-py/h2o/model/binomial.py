@@ -3,7 +3,7 @@ Binomial Models should be comparable.
 """
 
 from model_base import *
-from h2o import h2oConn
+from h2o import H2OConnection
 from h2o import H2OFrame
 from ..metrics import H2OBinomialModelMetrics
 
@@ -47,7 +47,7 @@ class H2OBinomialModel(ModelBase):
         fr_key = H2OFrame.send_frame(test_data)
 
         url_suffix = "ModelMetrics/models/" + self._key + "/frames/" + fr_key
-        res = h2oConn.do_safe_post_json(url_suffix=url_suffix)
+        res = H2OConnection.post_json(url_suffix=url_suffix)
         raw_metrics = res["model_metrics"][0]
         return H2OBinomialModelMetrics(raw_metrics)
 

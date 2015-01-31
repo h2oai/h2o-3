@@ -3,7 +3,7 @@ A job is an object with states: CREATED, RUNNING, DONE, FAILED, CANCELLED
 A job can be polled for completion and reports the progress so far if it is still RUNNING.
 """
 
-from connection import H2OConnectionBase as h2oConn
+from connection import H2OConnection
 import time
 import sys
 
@@ -52,7 +52,7 @@ class H2OJob(object):
         return self
 
     def _refresh_job_view(self):
-        jobs = h2oConn.do_safe_get_json(url_suffix="Jobs/" + self.job_key)
+        jobs = H2OConnection.get_json(url_suffix="Jobs/" + self.job_key)
         self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
         self.status = self.job["status"]
         self.progress += self.job["progress"]

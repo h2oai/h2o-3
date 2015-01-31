@@ -1,7 +1,9 @@
 package hex.pca;
 
 import hex.Model;
+import hex.ModelMetrics;
 import hex.schemas.PCAModelV2;
+import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
 
@@ -63,6 +65,11 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   @Override
   public boolean isSupervised() {return false;}
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    throw H2O.unimpl("No model metrics for PCA.");
+  }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new PCAModelV2(); }

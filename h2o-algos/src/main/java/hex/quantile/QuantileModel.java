@@ -1,6 +1,7 @@
 package hex.quantile;
 
 import hex.Model;
+import hex.ModelMetrics;
 import hex.schemas.QuantileModelV2;
 import water.H2O;
 import water.Key;
@@ -22,6 +23,11 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
   }
 
   QuantileModel( Key selfKey, QuantileParameters parms, QuantileOutput output) { super(selfKey,parms,output); }
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    throw H2O.unimpl("No model metrics for Quantile.");
+  }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new QuantileModelV2(); }

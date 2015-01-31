@@ -12,7 +12,7 @@ import tempfile
 import os
 import re
 import h2o
-from connection import H2OConnection as h2oConn
+from connection import H2OConnection
 from expr import Expr
 
 
@@ -387,7 +387,7 @@ class H2OFrame(object):
         p = {'destination_key': dest_key}
 
         # do the POST -- blocking, and "fast" (does not real data upload)
-        h2oConn.do_safe_post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+        H2OConnection.post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
 
         # actually parse the data and setup self._vecs
         self._handle_raw_fname(dest_key, column_names=column_names)

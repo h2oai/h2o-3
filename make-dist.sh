@@ -47,7 +47,7 @@ mkdir -p target/R/src
 cp -rp h2o-r/R/src/contrib target/R/src
 
 # Add Python dist to target.
-mkdir -p target/Python/dist
+mkdir -p target/Python
 
 name=""
 for f in h2o-py/dist/*
@@ -55,7 +55,7 @@ do
   name=${f##*/}
 done
 
-cp h2o-py/dist/*whl target/Python/dist
+cp h2o-py/dist/*whl target/Python
 
 # Add documentation to target.
 mkdir target/docs-website

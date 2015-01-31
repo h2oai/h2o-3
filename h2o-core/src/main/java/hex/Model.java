@@ -5,7 +5,6 @@ import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
-import water.util.ModelUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -265,6 +264,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public O _output; // TODO: move things around so that this can be protected
 
+  public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 
   /**
    * Externally visible default schema
@@ -468,14 +468,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       double[] tmp = new double[_output.nfeatures()];
-      switch (_output.getModelCategory()) {
-        case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(_domain, ModelUtils.DEFAULT_THRESHOLDS); break;
-        case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain); break;
-        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(); break;
-        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures()); break;
-        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures()); break;
-        default: throw H2O.unimpl();
-      }
+      _mb = Model.this.makeMetricBuilder(_domain);
       int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
@@ -491,6 +484,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
     @Override public void reduce( BigScore bs ) { _mb.reduce(bs._mb); }
+
+    @Override protected void postGlobal() { _mb.postGlobal(); }
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
