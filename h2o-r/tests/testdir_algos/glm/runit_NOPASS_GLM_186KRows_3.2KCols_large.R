@@ -35,27 +35,33 @@ test <- function(conn) {
    names(data.hex) <- colNames
 
    ## Examine O/L distribution of Leads column
-   leadsCol = data.hex$Leads
-   summary(leadsCol) ## Resulting 5577 to 181377 ratio
+   #leadsCol = data.hex$Leads
+   #summary(leadsCol) ## Resulting 5577 to 181377 ratio
 
-   data.split = h2o.splitFrame(data=data.hex, ratios=0.8)
-   data.train = data.split[[1]]
-   data.valid = data.split[[2]]
+   #data.split = h2o.splitFrame(data=data.hex, ratios=0.8)
+   #data.train = data.split[[1]]
+   #data.valid = data.split[[2]]
 
    ## Run a gbm with variable importance
-   myY = "Leads"
+   #myY = "Leads"
+   myY = "C1"
    myX = setdiff(names(data.hex), myY)
 
 
    # Start modeling
    # GLM
-   data1.glm <- h2o.glm(x=myX, y=myY, data=data.hex, nfolds=10, lambda_search=T, family="binomial", max_predictors=100) 
+   data1.glm <- h2o.glm(x=myX, y=myY, training_frame = data.hex, family="binomial") 
    data1.glm
 
-   # GLM on train dataset
-   data2.glm <- h2o.glm(x=myX, y=myY, data=data.train, lambda_search=T, family="binomial", max_predictors=100) 
-   data2.glm
-   
+   #GBM on original dataset
+   data1.gbm = h2o.gbm(x = myX, y = myY, training_frame = data.hex,
+                    ntrees = 20, max_depth = 10, variable_importance = T)
+   data1.gbm 
+
+  #Deep Learning
+  data1.dl <- h2o.deeplearning(x=myX, y=myY, training_frame=data.hex)
+  data1.dl 
+
    testEnd()
 }
 doTest("Testing glm for dataset 186k rows and 3200 columns", test)
