@@ -2029,16 +2029,8 @@ class ASTRunif extends ASTUniPrefixOp {
 
   @Override void apply(Env env) {
     final long seed = _seed == -1 ? (new Random().nextLong()) : _seed;
-    Frame fr = env.popAry();
-    Vec randVec = fr.anyVec().makeZero();
-    new MRTask() {
-      @Override public void map(Chunk c){
-        Random rng = new Random(seed*c.cidx());
-        for(int i = 0; i < c._len; ++i)
-          c.set(i, (float)rng.nextDouble());
-      }
-    }.doAll(randVec);
-    Frame f = new Frame(new String[]{"rnd"}, new Vec[]{randVec});
+    Vec rnd = env.popAry().anyVec().makeRand(seed);
+    Frame f = new Frame(new String[]{"rnd"}, new Vec[]{rnd});
     env.pushAry(f);
   }
 }
@@ -3019,7 +3011,7 @@ class ASTTranspose extends ASTOp {
 //      chunk.close(0, fs);
 //      Vec vec = avec.close(fs);
 //      fs.blockForPending();
-//      vec._domain = null;
+//      vec.domain = null;
 //      Frame fr = new Frame(new String[] {"C1"}, new Vec[] {vec});
 //      env.poppush(2,new Matrix(fr).trans(),null);
 //    } else

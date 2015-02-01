@@ -7,6 +7,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.api.KeyV1.VecKeyV1;
 
 class ParseHandler extends Handler {
   // Entry point for parsing.
@@ -24,7 +25,15 @@ class ParseHandler extends Handler {
       Frame fr = DKV.getGet(parse.hex.key());
       parse.rows = fr.numRows();
       if( parse.removeFrame ) {
-        parse.vecKeys = fr.keys();
+        Key[] keys = fr.keys();
+        parse.vecKeys = null;
+        if(keys != null && keys.length > 0) {
+          VecKeyV1[] vecKeys = new VecKeyV1[keys.length];
+          for (int i = 0; i < keys.length; i++)
+            vecKeys[i] = new VecKeyV1(keys[i]);
+          parse.vecKeys = vecKeys;
+        }
+        // parse.vecKeys = new VecKeyV1(fr.keys());
         fr.restructure(new String[0],new Vec[0]);
         fr.delete();
       }

@@ -7,7 +7,7 @@ localH2O = h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 
 prostate.hex = h2o.uploadFile(localH2O, path = system.file("extdata", "prostate.csv", package="h2o"), key = "prostate.hex")
 summary(prostate.hex)
-prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
+prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial", n_folds = 10, alpha = 0.5)
 print(prostate.glm)
 
 myLabels = c(prostate.glm@model$x, "Intercept")

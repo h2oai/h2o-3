@@ -210,7 +210,7 @@ class H2OCloudNode:
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
                #"-hdfs_version", "cdh3",
-               ]
+        ]
 
         # Add S3N credentials to cmd if they exist.
         #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")

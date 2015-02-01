@@ -1,11 +1,13 @@
 package hex.kmeans;
 
 import hex.Model;
+import hex.ModelMetrics;
+import hex.ModelMetricsClustering;
 import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
-import water.util.TwoDimTable;
 import water.fvec.Frame;
+import water.util.TwoDimTable;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
@@ -55,6 +57,11 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   }
 
   public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
+
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    assert domain == null;
+    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures());
+  }
 
   // Default publicly visible Schema is V2
   @Override public ModelSchema schema() { return new KMeansModelV2(); }

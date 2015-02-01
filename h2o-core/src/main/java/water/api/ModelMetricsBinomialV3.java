@@ -4,6 +4,9 @@ import hex.ModelMetricsBinomial;
 import water.util.PojoUtils;
 
 public class ModelMetricsBinomialV3 extends ModelMetricsBase<ModelMetricsBinomial, ModelMetricsBinomialV3> {
+  @API(help="The Mean Squared Error of the prediction for this scoring run.", direction=API.Direction.OUTPUT)
+  public double mse;
+
   @API(help="The AUC object for this scoring run.", direction=API.Direction.OUTPUT)
   public AUCBase auc;
 
@@ -16,12 +19,14 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBase<ModelMetricsBinomia
 
   @Override
   public ModelMetricsBinomial fillImpl(ModelMetricsBinomial m) {
-    PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[]{"auc", "cm"});
+    PojoUtils.copyProperties(m, this, PojoUtils.FieldNaming.CONSISTENT, new String[]{"mse", "auc", "cm"});
     return m;
   }
 
   @Override public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
+    this.mse = modelMetrics._mse;
+
     if (null != modelMetrics._aucdata)
       this.auc = (AUCBase)Schema.schema(this.getSchemaVersion(), modelMetrics._aucdata).fillFromImpl(modelMetrics._aucdata);
 
@@ -30,5 +35,4 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBase<ModelMetricsBinomia
 
     return this;
   }
-
 }

@@ -522,7 +522,7 @@ class ASTElse extends ASTStatement {
 class ASTFor extends ASTStatement {
   protected int _start;
   protected int _end;
-//  protected Object[] _arr;
+//  protected Object[] confusion_matrix;
 
   // (for #start #end body)
   @Override ASTFor parse_impl(Exec E) {

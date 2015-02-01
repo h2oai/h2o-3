@@ -1,17 +1,15 @@
 package hex.glm;
 
-import hex.FrameTask;
+import hex.*;
 import hex.FrameTask.DataInfo;
-import hex.SupervisedModel;
-import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.optimization.L_BFGS;
 import hex.schemas.GLMModelV2;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
+import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -47,6 +45,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       sm = (Submodel) sm.clone();
       _res._output._submodels = new Submodel[]{sm};
       _res._output.setSubmodelIdx(0);
+    }
+  }
+
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    switch(_output.getModelCategory()) {
+      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Regression: return new ModelMetricsRegression.MetricBuilderRegression();
+      default: throw H2O.unimpl();
     }
   }
 

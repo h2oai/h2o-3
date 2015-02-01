@@ -5,7 +5,6 @@ import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
-import water.util.ModelUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -122,8 +121,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                   });
 
       for (Field f : fields) {
-        if (f.getAnnotations().length == 0) continue; // skip fields that don't have an @API annotation
-
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
@@ -267,6 +264,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public O _output; // TODO: move things around so that this can be protected
 
+  public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 
   /**
    * Externally visible default schema
@@ -407,12 +405,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
       assert(mdomain != null); // label must be enum
 
-      ConfusionMatrix cm = ModelMetrics.getFromDKV(this, fr).cm();
-      if (cm._domain != null) { //don't print table for regression
-        assert (java.util.Arrays.deepEquals(cm._domain,mdomain));
-        cm._cmTable = cm.toTable();
-        if( cm._arr.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-          water.util.Log.info(cm._cmTable.toString(1));
+      ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
+      ModelCategory model_cat = this._output.getModelCategory();
+      ConfusionMatrix cm = mm.cm();
+      if(model_cat == ModelCategory.Binomial)
+        cm = ((ModelMetricsBinomial)mm)._cm;
+      else if(model_cat == ModelCategory.Multinomial)
+        cm = ((ModelMetricsMultinomial)mm)._cm;
+
+      if (cm.domain != null) { //don't print table for regression
+        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
+        cm.table = cm.toTable();
+        if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+          water.util.Log.info(cm.table.toString(1));
       }
 
       String sdomain[] = actual.domain(); // Scored/test domain; can be null
@@ -458,23 +463,29 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
-    final int _ncols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _ncols = ncols; }
+    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
       double[] tmp = new double[_output.nfeatures()];
-      _mb = new ModelMetrics.MetricBuilder(_domain,_output.nclasses()==2 ? ModelUtils.DEFAULT_THRESHOLDS : new float[]{0.5f});
+      _mb = Model.this.makeMetricBuilder(_domain);
+      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
-      for( int row=0; row<len; row++ ) {
-        float[] p = score0(chks,row,tmp,preds);
-        _mb.perRow(preds,(float)ys.atd(row));
-        for( int c=0; c<_ncols; c++ )  // Output predictions; sized for train only (excludes extra test classes)
+      for (int row = 0; row < len; row++) {
+        float[] p = score0(chks, row, tmp, preds);
+        float[] actual = new float[chks.length-startcol];
+        for (int c = startcol; c < chks.length; c++) {
+          actual[c-startcol] = (float)chks[c].atd(row);
+        }
+        _mb.perRow(preds, actual);
+        for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
     }
     @Override public void reduce( BigScore bs ) { _mb.reduce(bs._mb); }
+
+    @Override protected void postGlobal() { _mb.postGlobal(); }
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,

@@ -46,6 +46,17 @@ mv $IMAGEDIR/../h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
 mkdir -p target/R/src
 cp -rp h2o-r/R/src/contrib target/R/src
 
+# Add Python dist to target.
+mkdir -p target/Python
+
+name=""
+for f in h2o-py/dist/*
+do
+  name=${f##*/}
+done
+
+cp h2o-py/dist/*whl target/Python
+
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-r
@@ -59,5 +70,4 @@ cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
 
 
 # Create index file.
-cat h2o-dist/index.html | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html
-
+cat h2o-dist/index.html | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html

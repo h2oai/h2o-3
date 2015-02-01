@@ -9,7 +9,7 @@ import java.util.Comparator;
 
 public class VarImp extends Iced {
   /** Variable importance measurement method. */
-  enum VarImpMethod {
+  public enum VarImpMethod {
     PERMUTATION_IMPORTANCE("Mean decrease accuracy"),
     RELATIVE_IMPORTANCE("Relative importance");
     private final String title;

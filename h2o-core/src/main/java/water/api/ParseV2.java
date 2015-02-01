@@ -3,6 +3,7 @@ package water.api;
 import water.api.KeyV1.FrameKeyV1;
 import water.Iced;
 import water.Key;
+import water.api.KeyV1.VecKeyV1;
 import water.fvec.Vec;
 import water.parser.ParserType;
 import water.util.DocGen.HTML;
@@ -57,7 +58,7 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
 
   // Only not-null if blocking==true and removeFrame=true
   @API(help="Vec keys", direction=API.Direction.OUTPUT)
-  Key<Vec>[] vecKeys;
+  VecKeyV1[] vecKeys;
 
 
   //==========================

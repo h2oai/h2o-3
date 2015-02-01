@@ -1,6 +1,7 @@
 package hex.example;
 
 import hex.Model;
+import hex.ModelMetrics;
 import hex.SupervisedModel;
 import hex.schemas.ExampleModelV2;
 import water.H2O;
@@ -22,6 +23,11 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
   }
 
   ExampleModel( Key selfKey, ExampleParameters parms, ExampleOutput output) { super(selfKey,parms,output); }
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    throw H2O.unimpl("No Model Metrics for ExampleModel.");
+  }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new ExampleModelV2(); }

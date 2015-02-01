@@ -58,7 +58,6 @@ public class GBMTest extends TestUtil {
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.1233,mse,0.1);
       assertEquals(79152.1233,gbm._output._mse_train[1],0.1);
-
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
@@ -103,7 +102,6 @@ public class GBMTest extends TestUtil {
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.1233,mse,0.1);
       assertEquals(79152.1233,gbm._output._mse_train[1],0.1);
-
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
@@ -285,10 +283,10 @@ public class GBMTest extends TestUtil {
       }
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
-      double auc = ((ModelMetricsBinomial)mm)._aucdata.AUC();
+      double auc = mm._aucdata.AUC();
       Assert.assertTrue(0.83 <= auc && auc < 0.85); // Sanely good model
-      ConfusionMatrix cmf1 = ((ModelMetricsBinomial)mm)._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(324, 69), ar(35, 72)), cmf1._arr);
+      ConfusionMatrix cmf1 = mm._aucdata.CM();
+      Assert.assertArrayEquals(ar(ar(324, 69), ar(35, 72)), cmf1.confusion_matrix);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -325,7 +323,8 @@ public class GBMTest extends TestUtil {
       // be used to predict Z, and instead relies on factor C which does not appear
       // in the test set.
       Assert.assertArrayEquals("",ps,new int[]{1,1,2,2,1,2,3,1,2});
-
+      hex.ModelMetricsMultinomial mm = hex.ModelMetricsMultinomial.getFromDKV(gbm,parms.valid());
+      Assert.assertTrue(mm.r2() > 0.5);
       res.remove();
 
     } finally {
@@ -366,6 +365,8 @@ public class GBMTest extends TestUtil {
       // in the test set.
       Assert.assertArrayEquals("",ps,new int[]{1,1,2,2,1,2,3,1,2});
 
+      hex.ModelMetricsMultinomial mm = hex.ModelMetricsMultinomial.getFromDKV(gbm,parms.valid());
+      Assert.assertTrue(mm.r2() > 0.5);
       res.remove();
 
     } finally {

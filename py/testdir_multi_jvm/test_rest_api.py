@@ -1,6 +1,10 @@
 # TODO: ugh:
-import sys, pprint
-sys.path.extend(['.','..','py'])
+import sys, pprint, os
+
+sys.path.insert(1, '..')
+sys.path.insert(1, '.')
+sys.path.insert(1, os.path.join("..", "py"))
+
 import h2o, h2o_util
 import os
 import argparse
