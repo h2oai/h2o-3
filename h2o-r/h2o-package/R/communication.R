@@ -503,7 +503,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   checker <- function(node, conn = h2o.getConnection()) {
     status <- as.logical(node$healthy)
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
-    nport <- unlist(strsplit(node$h2o$node, ":"))[2L]
+    # nport <- unlist(strsplit(node$h2o, ":"))[2L]
     if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 60*1000) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 10*1000 && retries < max_retries) {
