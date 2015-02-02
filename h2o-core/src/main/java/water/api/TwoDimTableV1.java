@@ -13,7 +13,7 @@ import water.util.TwoDimTable;
  *
  */
 public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
-  public static class ColumnSpecsV1 extends Iced {
+  public static class ColumnSpecsV1 extends Schema<Iced, ColumnSpecsV1> {
     @API(help="Column Name", direction=API.Direction.OUTPUT)
     String name;
     @API(help="Column Type", direction=API.Direction.OUTPUT)

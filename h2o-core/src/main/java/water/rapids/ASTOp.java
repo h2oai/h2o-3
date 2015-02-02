@@ -7,6 +7,7 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
+import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
@@ -188,13 +189,13 @@ public abstract class ASTOp extends AST {
 //    putPrefix(new ASTPrint ());
     putPrefix(new ASTCat   ());
 //Time extractions, to and from msec since the Unix Epoch
-//    putPrefix(new ASTYear  ());
-//    putPrefix(new ASTMonth ());
-//    putPrefix(new ASTDay   ());
-//    putPrefix(new ASTHour  ());
-//    putPrefix(new ASTMinute());
-//    putPrefix(new ASTSecond());
-//    putPrefix(new ASTMillis());
+    putPrefix(new ASTYear  ());
+    putPrefix(new ASTMonth ());
+    putPrefix(new ASTDay   ());
+    putPrefix(new ASTHour  ());
+    putPrefix(new ASTMinute());
+    putPrefix(new ASTSecond());
+    putPrefix(new ASTMillis());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -774,58 +775,60 @@ class ASTScale extends ASTUniPrefixOp {
     env.pushAry(scaled);
   }
 }
+
+abstract class ASTTimeOp extends ASTOp {
+  ASTTimeOp() { super(VARS1); }
+
+  @Override ASTTimeOp parse_impl(Exec E) {
+    AST arg = E.parse();
+    if (arg instanceof ASTId) arg = Env.staticLookup((ASTId)arg);
+    ASTTimeOp res = (ASTTimeOp) clone();
+    res._asts = new AST[]{arg};
+    return res;
+  }
+
+  abstract long op( MutableDateTime dt );
+
+  @Override void apply(Env env) {
+    // Single instance of MDT for the single call
+    if( !env.isAry() ) {        // Single point
+      double d = env.peekDbl();
+      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d));
+      env.poppush(1, new ValNum(d));
+      return;
+    }
+    // Whole column call
+    Frame fr = env.peekAry();
+    final ASTTimeOp uni = this;
+    Frame fr2 = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+        MutableDateTime dt = new MutableDateTime(0);
+        for( int i=0; i<nchks.length; i++ ) {
+          NewChunk n =nchks[i];
+          Chunk c = chks[i];
+          int rlen = c._len;
+          for( int r=0; r<rlen; r++ ) {
+            double d = c.atd(r);
+            if( !Double.isNaN(d) ) {
+              dt.setMillis((long)d);
+              d = uni.op(dt);
+            }
+            n.addNum(d);
+          }
+        }
+      }
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
+   env.poppush(1, new ValFrame(fr2));
+  }
+}
 //
-//// ----
-//abstract class ASTTimeOp extends ASTOp {
-//  static Type[] newsig() {
-//    Type t1 = Type.dblary();
-//    return new Type[]{t1,t1};
-//  }
-//  ASTTimeOp() { super(VARS1,newsig(),OPF_PREFIX,OPP_PREFIX,OPA_RIGHT); }
-//  abstract long op( MutableDateTime dt );
-//  @Override void apply(Env env, int argcnt, ASTApply apply) {
-//    // Single instance of MDT for the single call
-//    if( !env.isAry() ) {        // Single point
-//      double d = env.popDbl();
-//      if( !Double.isNaN(d) ) d = op(new MutableDateTime((long)d));
-//      env.poppush(d);
-//      return;
-//    }
-//    // Whole column call
-//    Frame fr = env.popAry();
-//    String skey = env.key();
-//    final ASTTimeOp uni = this;  // Final 'this' so can use in closure
-//    Frame fr2 = new MRTask() {
-//      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-//        MutableDateTime dt = new MutableDateTime(0);
-//        for( int i=0; i<nchks.length; i++ ) {
-//          NewChunk n =nchks[i];
-//          Chunk c = chks[i];
-//          int rlen = c._len;
-//          for( int r=0; r<rlen; r++ ) {
-//            double d = c.atd(r);
-//            if( !Double.isNaN(d) ) {
-//              dt.setMillis((long)d);
-//              d = uni.op(dt);
-//            }
-//            n.addNum(d);
-//          }
-//        }
-//      }
-//    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
-//    env.subRef(fr,skey);
-//    env.pop();                  // Pop self
-//    env.push(fr2);
-//  }
-//}
-//
-//class ASTYear  extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
-//class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
-//class ASTDay   extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
-//class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
-//class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
-//class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
-//class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTYear  extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
+class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
+class ASTDay   extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
+class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
+class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
+class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
+class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
 //
 //// Finite backward difference for user-specified lag
 //// http://en.wikipedia.org/wiki/Finite_difference

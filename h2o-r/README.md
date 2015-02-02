@@ -21,8 +21,8 @@ The output of the build is an CRAN-like layout in the R directory.
 
 ### 1.  Installation from the command line
 
-\# Make sure your currrent directory is the h2o-dev top directory.  
-`$ R CMD INSTALL h2o-r/R/src/contrib/h2o_0.1.6.99999.tar.gz`
+\# Make sure your current directory is the h2o-dev top directory.
+`$ R CMD INSTALL h2o-r/R/src/contrib/h2o_0.1.23.99999.tar.gz`
 
 ```
 * installing to library ‘/Users/tomk/.Rlibrary’
@@ -31,8 +31,24 @@ The output of the build is an CRAN-like layout in the R directory.
 ** demo
 ** inst
 ** preparing package for lazy loading
-Creating a generic function for ‘summary’ from package ‘base’ in package ‘h2o’
-Creating a generic function for ‘t’ from package ‘base’ in package ‘h2o’
+Creating a generic function for 't' from package 'base' in package 'h2o'
+Creating a generic function for 'match' from package 'base' in package 'h2o'
+Creating a generic function for '%in%' from package 'base' in package 'h2o'
+Creating a generic function for 'colnames<-' from package 'base' in package 'h2o'
+Creating a generic function for 'nrow' from package 'base' in package 'h2o'
+Creating a generic function for 'ncol' from package 'base' in package 'h2o'
+Creating a generic function for 'colnames' from package 'base' in package 'h2o'
+Creating a generic function for 'head' from package 'utils' in package 'h2o'
+Creating a generic function for 'tail' from package 'utils' in package 'h2o'
+Creating a generic function for 'is.factor' from package 'base' in package 'h2o'
+Creating a generic function for 'summary' from package 'base' in package 'h2o'
+Creating a generic function for 'mean' from package 'base' in package 'h2o'
+Creating a generic function for 'var' from package 'stats' in package 'h2o'
+Creating a generic function for 'sd' from package 'stats' in package 'h2o'
+Creating a generic function for 'as.factor' from package 'base' in package 'h2o'
+Creating a generic function for 'ifelse' from package 'base' in package 'h2o'
+Creating a generic function for 'apply' from package 'base' in package 'h2o'
+Creating a generic function for 'sapply' from package 'base' in package 'h2o'
 ** help
 *** installing help indices
 ** building package indices
@@ -58,7 +74,7 @@ Creating a generic function for ‘t’ from package ‘base’ in package ‘h2
 ```
 
 \# Install the H2O R package from your build directory.  
-`install.packages("h2o", repos=(c("file:///.../h2o-dev/h2o-R/R", getOption("repos"))))`  
+`install.packages("h2o", repos=c("file:///.../h2o-dev/h2o-R/R", getOption("repos")))`
 
 ```
 Installing package into ‘/Users/tomk/.Rlibrary’
@@ -73,7 +89,7 @@ The downloaded binary packages are in
 
 ### 1.  Start H2O from the command line
 
-\# Make sure your currrent directory is the h2o-dev top directory.  
+\# Make sure your current directory is the h2o-dev top directory.
 `$ java -jar h2o-app/build/libs/h2o-app.jar`  
 
 ```
@@ -110,11 +126,7 @@ The downloaded binary packages are in
 `library(h2o)`  
 
 ```
-Loading required package: RCurl
-Loading required package: bitops
-Loading required package: rjson
 Loading required package: statmod
-Loading required package: tools
 
 ----------------------------------------------------------------------
 
@@ -122,29 +134,14 @@ Your next step is to start H2O and get a connection object (named
 'localH2O', for example):
     > localH2O = h2o.init()
 
-For H2O package documentation, first call init() and then ask for help:
-    > localH2O = h2o.init()
+For H2O package documentation, ask for help:
     > ??h2o
-
-To stop H2O you must explicitly call shutdown (either from R, as shown
-here, or from the Web UI):
-    > h2o.shutdown(localH2O)
 
 After starting H2O, you can use the Web UI at http://localhost:54321
 For more information visit http://docs.0xdata.com
 
 ----------------------------------------------------------------------
 
-
-Attaching package: ‘h2o’
-
-The following objects are masked from ‘package:stats’:
-
-    sd, var
-
-The following objects are masked from ‘package:base’:
-
-    cbind, colnames, dim, length, match, mean, names, ncol, nrow
 ```
 
 

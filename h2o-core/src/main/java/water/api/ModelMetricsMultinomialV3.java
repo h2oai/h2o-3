@@ -24,5 +24,4 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
 
     return this;
   }
-
 }
