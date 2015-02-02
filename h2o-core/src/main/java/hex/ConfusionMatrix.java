@@ -39,6 +39,7 @@ public class ConfusionMatrix extends Iced {
     prediction_error_by_class = classErr();
     prediction_error = err();
     this.domain = domain;
+    table = toTable();
   }
 
   /** Build the CM data from the actuals and predictions, using the default
