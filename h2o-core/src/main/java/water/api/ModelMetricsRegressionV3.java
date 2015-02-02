@@ -8,8 +8,4 @@ public class ModelMetricsRegressionV3 extends ModelMetricsBase<ModelMetricsRegre
 
   @API(help="The Mean Squared Error of the prediction for this scoring run.", direction=API.Direction.OUTPUT)
   public double mse;
-
-  @Override public ModelMetricsRegression createImpl() {
-    return new ModelMetricsRegression(this.model.createImpl().get(), this.frame.createImpl().get());
-  }
 }
