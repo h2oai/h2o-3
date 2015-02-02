@@ -16,4 +16,17 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
     return new ModelMetricsMultinomial(this.model.createImpl().get(), this.frame.createImpl().get());
   }
 
+@Override public ModelMetricsMultinomialV3 fillFromImpl(ModelMetricsMultinomial modelMetrics) {
+  super.fillFromImpl(modelMetrics);
+  this.mse = modelMetrics._mse;
+
+  if (null != modelMetrics._hr)
+    this.hr = (HitRatioBase)Schema.schema(this.getSchemaVersion(), modelMetrics._hr).fillFromImpl(modelMetrics._hr);
+
+  if (null != modelMetrics._cm)
+    this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
+
+  return this;
+}
+
 }
