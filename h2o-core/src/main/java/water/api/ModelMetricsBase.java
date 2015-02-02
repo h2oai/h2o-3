@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import water.api.KeyV1.FrameKeyV1;
 import water.api.KeyV1.ModelKeyV1;
 import water.fvec.Frame;
+import water.util.PojoUtils;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.
@@ -53,6 +54,9 @@ public abstract class ModelMetricsBase<I extends ModelMetrics, S extends ModelMe
       this.frame = new FrameKeyV1(f._key);
       this.frame_checksum = f.checksum();
     }
+
+    PojoUtils.copyProperties(this, modelMetrics, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES,
+            new String[]{"model", "model_category", "model_checksum", "frame", "frame_checksum"});
 
     return (S) this;
   }
