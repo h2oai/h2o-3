@@ -439,13 +439,13 @@ class H2OFrame(object):
     print "Rows:", len(self._vecs[0]), "Cols:", len(self)
     headers = [vec.name() for vec in self._vecs]
     table = [
-        self._row('type', None),
-        self._row('mins', 0),
-        self._row('mean', None),
-        self._row('maxs', 0),
-        self._row('sigma', None),
-        self._row('zeros', None),
-        self._row('missing', None)
+      self._row('type', None),
+      self._row('mins', 0),
+      self._row('mean', None),
+      self._row('maxs', 0),
+      self._row('sigma', None),
+      self._row('zeros', None),
+      self._row('missing', None)
     ]
     print tabulate.tabulate(table, headers)
     print
@@ -613,74 +613,56 @@ class H2OFrame(object):
 
   @staticmethod
   def _check_lists_of_lists(python_obj):
+    # all items in the list must be a list too
+    lol_all = all(isinstance(l, (tuple, list)) for l in python_obj)
+    # All items in the list must be a list!
+    if not lol_all:
+      raise ValueError("`python_obj` is a mixture of nested lists and other types.")
 
-      # all items in the list must be a list too
-      lol_all = all(isinstance(l, (tuple, list)) for l in python_obj)
-
-      # All items in the list must be a list!
-      if not lol_all:
-          raise ValueError(
-              "`python_obj` is a mixture of nested lists and other types.")
-
-      # in fact, we must have a list of flat lists!
-      for l in python_obj:
-          if any(isinstance(ll, (tuple, list)) for ll in l):
-              raise ValueError(
-                  "`python_obj` is not a list of flat lists!")
+    # in fact, we must have a list of flat lists!
+    for l in python_obj:
+      if any(isinstance(ll, (tuple, list)) for ll in l):
+        raise ValueError("`python_obj` is not a list of flat lists!")
 
   @staticmethod
   def _handle_python_lists(python_obj):
+    cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
+    # do we have a list of lists: [[...], ..., [...]] ?
+    lol = H2OFrame._is_list_of_lists(python_obj)
+    if lol:
+      # must be a list of flat lists, raise ValueError if not
+      H2OFrame._check_lists_of_lists(python_obj)
+      # have list of lists, each list is a row
+      # length of the longest list is the number of columns
+      cols = max([len(l) for l in python_obj])
 
-      cols = len(python_obj)  # cols will be len(python_obj) if not a list of lists
-
-      # do we have a list of lists: [[...], ..., [...]] ?
-      lol = H2OFrame._is_list_of_lists(python_obj)
-      if lol:
-
-          # must be a list of flat lists, raise ValueError if not
-          H2OFrame._check_lists_of_lists(python_obj)
-
-          # have list of lists, each list is a row
-          # length of the longest list is the number of columns
-          cols = max([len(l) for l in python_obj])
-
-      # create the header
-      header = H2OFrame._gen_header(cols)
-
-      # shape up the data for csv.DictWriter
-      data_to_write = [dict(zip(header, row)) for row in python_obj] \
-          if lol else [dict(zip(header, python_obj))]
-
-      return header, data_to_write
+    # create the header
+    header = H2OFrame._gen_header(cols)
+    # shape up the data for csv.DictWriter
+    data_to_write = [dict(zip(header, row)) for row in python_obj] if lol else [dict(zip(header, python_obj))]
+    return header, data_to_write
 
   @staticmethod
   def _is_list_of_lists(o): return any(isinstance(l, (list, tuple)) for l in o)
 
   @staticmethod
   def _handle_python_dicts(python_obj):
-      header = python_obj.keys()
+    header = python_obj.keys()
+    # is this a valid header?
+    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
+    if not is_valid:
+      raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
+    # check that each value entry is a flat list/tuple
+    for k in python_obj:
+      v = python_obj[k]
+      # if value is a tuple/list, then it must be flat
+      if isinstance(v, (tuple, list)):
+        if H2OFrame._is_list_of_lists(v):
+          raise ValueError("Values in the dictionary must be flattened!")
 
-      # is this a valid header?
-      is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])
-
-      if not is_valid:
-          raise ValueError("Did not get a valid set of column names! Must match the"
-                           "regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
-
-      # check that each value entry is a flat list/tuple
-      for k in python_obj:
-          v = python_obj[k]
-
-          # if value is a tuple/list, then it must be flat
-          if isinstance(v, (tuple, list)):
-              if H2OFrame._is_list_of_lists(v):
-                  raise ValueError("Values in the dictionary must be flattened!")
-
-      rows = map(list, itertools.izip_longest(*python_obj.values()))
-
-      data_to_write = [dict(zip(header, row)) for row in rows]
-
-      return header, data_to_write
+    rows = map(list, itertools.izip_longest(*python_obj.values()))
+    data_to_write = [dict(zip(header, row)) for row in rows]
+    return header, data_to_write
 
   # @staticmethod
   # def _handle_numpy_array(python_obj):
@@ -700,238 +682,215 @@ class H2OVec(object):
   """
 
   def __init__(self, name, expr):
-      """
-      Create a new instance of an H2OVec object
-      :param name: The name of the column corresponding to this H2OVec.
-      :param expr: The lazy expression representing this H2OVec
-      :return: A new H2OVec
-      """
-      assert isinstance(name, str)
-      assert isinstance(expr, Expr)
-      self._name = name  # String
-      self._expr = expr  # Always an expr
-      expr._name = name  # Pass name along to expr
+    """
+    Create a new instance of an H2OVec object
+    :param name: The name of the column corresponding to this H2OVec.
+    :param expr: The lazy expression representing this H2OVec
+    :return: A new H2OVec
+    """
+    assert isinstance(name, str)
+    assert isinstance(expr, Expr)
+    self._name = name  # String
+    self._expr = expr  # Always an expr
+    expr._name = name  # Pass name along to expr
 
   @staticmethod
   def new_vecs(vecs=None, rows=-1):
-      if not vecs:
-          return vecs
-      return [H2OVec(str(col), Expr(op=veckey['name'], length=rows))
-              for idx, (col, veckey) in enumerate(vecs)]
+    if not vecs:  return vecs
+    return [H2OVec(str(col), Expr(op=veckey['name'], length=rows))  for idx, (col, veckey) in enumerate(vecs)]
 
   def name(self):
-      return self._name
+    return self._name
 
   def get_expr(self):
-      return self._expr
+    return self._expr
 
   def append(self, data):
-      """
-      Append a value during CSV read, convert to float.
+    """
+    Append a value during CSV read, convert to float.
 
-      :param data: An element being appended to the end of this H2OVec
-      :return: void
-      """
-      __x__ = data
-      try:
-          __x__ = float(data)
-      except ValueError:
-          pass
-      self._expr.data().append(__x__)
-      self._expr.set_len(self._expr.get_len() + 1)
+    :param data: An element being appended to the end of this H2OVec
+    :return: void
+    """
+    __x__ = data
+    try:
+      __x__ = float(data)
+    except ValueError:
+      pass
+    self._expr.data().append(__x__)
+    self._expr.set_len(self._expr.get_len() + 1)
 
   def show(self, noprint=False):
-      """
-      Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
-      :param noprint: A boolean stating whether to print or to return data.
-      :return: If noprint is False, then self._expr is returned.
-      """
-      if noprint:
-          return self._expr.show(noprint=True)
-      else:
-          to_show = [[v] for v in self._expr.show(noprint=True)]
-          nrows = min(11, len(to_show) + 1) - 1
-          for i in range(1, min(11, len(to_show) + 1), 1):
-              to_show[i - 1].insert(0, i)
-          header = self.name() + " (first " + str(nrows) + " row(s))"
-          print tabulate.tabulate(to_show, headers=["Row ID", header])
-          print
+    """
+    Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
+    :param noprint: A boolean stating whether to print or to return data.
+    :return: If noprint is False, then self._expr is returned.
+    """
+    if noprint:
+      return self._expr.show(noprint=True)
+    else:
+      to_show = [[v] for v in self._expr.show(noprint=True)]
+      nrows = min(11, len(to_show) + 1) - 1
+      for i in range(1, min(11, len(to_show) + 1), 1):
+        to_show[i - 1].insert(0, i)
+      header = self.name() + " (first " + str(nrows) + " row(s))"
+      print tabulate.tabulate(to_show, headers=["Row ID", header])
+      print
 
   def __repr__(self):
-      self.show()
-      return ""
+    self.show()
+    return ""
 
   def summary(self):
-      """
-      Compute the rollup data summary (min, max, mean, etc.)
-      :return: the summary from this Expr object
-      """
-      return self._expr.summary()
+    """
+    Compute the rollup data summary (min, max, mean, etc.)
+    :return: the summary from this Expr object
+    """
+    return self._expr.summary()
 
   def __getitem__(self, i):
-      """
-      Basic index/sliced lookup
-      :param i: An Expr or an H2OVec
-      :return: A new Expr object corresponding to the input query
-      """
-      if isinstance(i, H2OVec):
-          return self.row_select(i)
-      e = Expr(i)
-      return Expr("[", self, e, length=len(e))
+    """
+    Basic index/sliced lookup
+    :param i: An Expr or an H2OVec
+    :return: A new Expr object corresponding to the input query
+    """
+    if isinstance(i, H2OVec):
+      return self.row_select(i)
+    e = Expr(i)
+    return Expr("[", self, e, length=len(e))
 
   # Boolean column select lookup
   def row_select(self, vec):
-      """
-      Boolean column select lookup
-      :param vec: An H2OVec.
-      :return: A new H2OVec.
-      """
-      return H2OVec(self.name(), Expr("[", self, vec))
+    """
+    Boolean column select lookup
+    :param vec: An H2OVec.
+    :return: A new H2OVec.
+    """
+    return H2OVec(self.name(), Expr("[", self, vec))
 
   def __setitem__(self, b, c):
-      """
-      Update-in-place of a Vec.
-      This interface currently only supports whole vector replacement.
+    """
+    Update-in-place of a Vec.
+    This interface currently only supports whole vector replacement.
 
-      If `c` has length 1, then it's assumed that `c` represents a constant vector
-      of its current value.
+    If `c` has length 1, then it's assumed that `c` represents a constant vector
+    of its current value.
 
-      :param b: An H2OVec for selecting rows to update in-place.
-      :param c: The "new" values that will write over the values stipulated by `b`.
-      :return: void
-      """
-      if c and len(c) != 1 and len(c) != len(self):
-          raise ValueError("len(self)=" + len(self) +
-                           " cannot be broadcast across len(c)=" + len(c))
-      # row-wise assignment
-      if isinstance(b, H2OVec):
-
-          # whole vec replacement
-          if len(b) != len(self):
-              raise ValueError("len(self)=" + len(self) +
-                               " cannot be broadcast across len(b)=" + len(b))
-
-          # lazy update in-place of the whole vec
-          self._expr = Expr("=", Expr("[", self._expr, b), c)
-
-      else:
-          raise NotImplementedError("Only vector replacement is currently supported.")
+    :param b: An H2OVec for selecting rows to update in-place.
+    :param c: The "new" values that will write over the values stipulated by `b`.
+    :return: void
+    """
+    if c and len(c) != 1 and len(c) != len(self):
+      raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(c)=" + len(c))
+    # row-wise assignment
+    if isinstance(b, H2OVec):
+      # whole vec replacement
+      if len(b) != len(self):
+        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(b)=" + len(b))
+      # lazy update in-place of the whole vec
+      self._expr = Expr("=", Expr("[", self._expr, b), c)
+    else:
+      raise NotImplementedError("Only vector replacement is currently supported.")
 
   def __add__(self, i):
-      """
-      Basic binary addition.
+    """
+    Basic binary addition.
+    Supports H2OVec + H2OVec and H2OVec + int
+    :param i: A Vec or a float
+    :return: A new H2OVec.
+    """
+    # H2OVec + H2OVec
+    if isinstance(i, H2OVec):
+      # can only add two vectors of the same length
+      if len(i) != len(self):
+        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      # lazy new H2OVec
+      return H2OVec(self.name(), Expr("+", self, i))
 
-      Supports H2OVec + H2OVec and H2OVec + int
-
-      :param i: A Vec or a float
-      :return: A new H2OVec.
-      """
-      # H2OVec + H2OVec
-      if isinstance(i, H2OVec):
-
-          # can only add two vectors of the same length
-          if len(i) != len(self):
-              raise ValueError("len(self)=" + len(self) +
-                               " cannot be broadcast across len(i)=" + len(i))
-          # lazy new H2OVec
-          return H2OVec(self.name(), Expr("+", self, i))
-
-      # H2OVec + number
-      if isinstance(i, (int, float)):
-          if i == 0:
-              return self
-
-          # lazy new H2OVec
-          return H2OVec(self.name(), Expr("+", self, Expr(i)))
-      raise NotImplementedError
+    # H2OVec + number
+    if isinstance(i, (int, float)):
+      if i == 0:  return self
+      # lazy new H2OVec
+      return H2OVec(self.name(), Expr("+", self, Expr(i)))
+    raise NotImplementedError
 
   def __radd__(self, i):
-      """
-      Add is commutative: call __add__(i)
-      :param i: A Vec or a float.
-      :return: A new H2OVec.
-      """
-      return self.__add__(i)
+    """
+    Add is commutative: call __add__(i)
+    :param i: A Vec or a float.
+    :return: A new H2OVec.
+    """
+    return self.__add__(i)
 
   def __eq__(self, i):
-      """
-      Perform the '==' operation.
-      :param i: An H2OVec or a number.
-      :return: A new H2OVec.
-      """
-
-      # == compare on two H2OVecs
-      if isinstance(i, H2OVec):
-
-          # can only compare two vectors of the same length
-          if len(i) != len(self):
-              raise ValueError("len(self)=" + len(self) +
-                               " cannot be broadcast across len(i)=" + len(i))
-          # lazy new H2OVec
-          return H2OVec(self.name(), Expr("==", self, i))
-
-      # == compare on a Vec and a constant Vec
-      if isinstance(i, (int, float)):
-          # lazy new H2OVec
-          return H2OVec(self.name(), Expr("==", self, Expr(i)))
-
-      raise NotImplementedError
+    """
+    Perform the '==' operation.
+    :param i: An H2OVec or a number.
+    :return: A new H2OVec.
+    """
+    # == compare on two H2OVecs
+    if isinstance(i, H2OVec):
+      # can only compare two vectors of the same length
+      if len(i) != len(self):
+          raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      # lazy new H2OVec
+      return H2OVec(self.name(), Expr("==", self, i))
+    # == compare on a Vec and a constant Vec
+    if isinstance(i, (int, float)):
+      # lazy new H2OVec
+      return H2OVec(self.name(), Expr("==", self, Expr(i)))
+    raise NotImplementedError
 
   def __lt__(self, i):
-      # Vec < Vec
-      if isinstance(i, H2OVec):
-          if len(i) != len(self):
-              raise ValueError("len(self)=" + len(self) +
-                               " cannot be broadcast across len(i)=" + len(i))
-          return H2OVec(self.name(), Expr("<", self, i))
+    # Vec < Vec
+    if isinstance(i, H2OVec):
+      if len(i) != len(self):
+        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      return H2OVec(self.name(), Expr("<", self, i))
 
-      # Vec < number
-      elif isinstance(i, (int, float)):
-          return H2OVec(self.name(), Expr("<", self, Expr(i)))
+    # Vec < number
+    elif isinstance(i, (int, float)):
+      return H2OVec(self.name(), Expr("<", self, Expr(i)))
 
-      else:
-          raise NotImplementedError
+    else:
+      raise NotImplementedError
 
   def __ge__(self, i):
-      # Vec >= Vec
-      if isinstance(i, H2OVec):
-          if len(i) != len(self):
-              raise ValueError("len(self)=" + len(self) +
-                               " cannot be broadcast across len(i)=" + len(i))
-          return H2OVec(self.name(), Expr(">=", self, i))
-
-      # Vec >= number
-      elif isinstance(i, (int, float)):
-          return H2OVec(self.name(), Expr(">=", self, Expr(i)))
-
-      else:
-          raise NotImplementedError
+    # Vec >= Vec
+    if isinstance(i, H2OVec):
+      if len(i) != len(self):
+        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      return H2OVec(self.name(), Expr(">=", self, i))
+    # Vec >= number
+    elif isinstance(i, (int, float)):
+      return H2OVec(self.name(), Expr(">=", self, Expr(i)))
+    else:
+      raise NotImplementedError
 
   def __len__(self):
-      """
-      :return: The length of this H2OVec
-      """
-      return len(self._expr)
+    """
+    :return: The length of this H2OVec
+    """
+    return len(self._expr)
 
   def mean(self):
-      """
-      :return: A lazy Expr representing the mean of this H2OVec.
-      """
-      return Expr("mean", self._expr, None, length=1)
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self._expr, None, length=1)
 
   def asfactor(self):
-      """
-      :return: A transformed H2OVec from numeric to categorical.
-      """
-      return H2OVec(self.name(), Expr("as.factor", self._expr, None))
+    """
+    :return: A transformed H2OVec from numeric to categorical.
+    """
+    return H2OVec(self.name(), Expr("as.factor", self._expr, None))
 
   def runif(self, seed=None):
-      """
-      :param seed: A random seed. If None, then one will be generated.
-      :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
-      """
-      if not seed:
-          import random
-
-          seed = random.randint(123456789, 999999999)  # generate a seed
-      return H2OVec("", Expr("h2o.runif", self.get_expr(), Expr(seed)))
+    """
+    :param seed: A random seed. If None, then one will be generated.
+    :return: A new H2OVec filled with doubles sampled uniformly from [0,1).
+    """
+    if not seed:
+      import random
+      seed = random.randint(123456789, 999999999)  # generate a seed
+    return H2OVec("", Expr("h2o.runif", self.get_expr(), Expr(seed)))
