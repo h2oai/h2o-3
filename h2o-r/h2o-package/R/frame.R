@@ -338,7 +338,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     if (missingI)
       return(x)
 
-    if ((nargs() - !missing(drop)) < 3L) {
+    if (((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L)) {
       j <- i
       missingI <- TRUE
       missingJ <- FALSE
