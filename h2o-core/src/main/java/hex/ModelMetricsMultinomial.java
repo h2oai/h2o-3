@@ -45,7 +45,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public float[] perRow( float ds[], float [] yact ) {
+    @Override public float[] perRow( float ds[], float [] yact, Model m ) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
