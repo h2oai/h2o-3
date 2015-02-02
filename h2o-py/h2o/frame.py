@@ -454,13 +454,18 @@ class H2OFrame(object):
     self.show()
     return ""
 
+  # Find a named H2OVec and return it.  Error is name is missing
+  def _find(self,name):
+    for v in self._vecs:
+      if name == v._name:
+        return v
+    raise ValueError("Name " + name + " not in Frame")
+
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
   def __getitem__(self, i):
     if isinstance(i, int):   return self._vecs[i]
-    if isinstance(i, str):
-      for v in self._vecs:   if i == v.name():  return v
-      raise ValueError("Name " + i + " not in Frame")
+    if isinstance(i, str):   return self._find(i)
     # Slice; return a Frame not a Vec
     if isinstance(i, slice): return H2OFrame(vecs=self._vecs[i])
     # Row selection from a boolean Vec
@@ -474,15 +479,10 @@ class H2OFrame(object):
       vecs = []
       for it in i:
         if isinstance(it, int):
-          vecs += [self._vecs[it]]
+          vecs += self._vecs[it]
           continue
         if isinstance(it, str):
-          has_vec = False
-          for v in self._vecs:
-            if it == v.name():
-              has_vec = True
-              vecs += [v]
-          if not has_vec:   raise ValueError("Name " + it + " not in Frame")
+          vecs += self._find(it)
       return H2OFrame(vecs=vecs)
 
     raise NotImplementedError
@@ -580,21 +580,19 @@ class H2OFrame(object):
     return unicode("py" + str(uuid.uuid4()))
 
   # Send over a frame description to H2O
-  @staticmethod
-  def send_frame(dataset):
+  def _send_frame(self):
     """
     Send a frame description to H2O, returns a key.
-    :param dataset: An H2OFrame object
     :return: A key
     """
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec.get_expr().eager() for vec in dataset.vecs()]) + "))"
+    cbind += " %".join([vec.get_expr().eager() for vec in self.vecs()]) + "))"
     h2o.rapids(cbind)
     # And frame columns
-    colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(dataset) - 1) + ")} {"
-    cnames = ';'.join([vec.name() for vec in dataset.vecs()])
+    colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
+    cnames = ';'.join([vec.name() for vec in self.vecs()])
     colnames += cnames + "})"
     h2o.rapids(colnames)
     return fr
@@ -733,7 +731,7 @@ class H2OVec(object):
       nrows = min(11, len(to_show) + 1) - 1
       for i in range(1, min(11, len(to_show) + 1), 1):
         to_show[i - 1].insert(0, i)
-      header = self.name() + " (first " + str(nrows) + " row(s))"
+      header = self._name + " (first " + str(nrows) + " row(s))"
       print tabulate.tabulate(to_show, headers=["Row ID", header])
       print
 
@@ -766,7 +764,7 @@ class H2OVec(object):
     :param vec: An H2OVec.
     :return: A new H2OVec.
     """
-    return H2OVec(self.name(), Expr("[", self, vec))
+    return H2OVec(self._name, Expr("[", self, vec))
 
   def __setitem__(self, b, c):
     """
@@ -805,13 +803,13 @@ class H2OVec(object):
       if len(i) != len(self):
         raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
       # lazy new H2OVec
-      return H2OVec(self.name(), Expr("+", self, i))
+      return H2OVec(self._name, Expr("+", self, i))
 
     # H2OVec + number
     if isinstance(i, (int, float)):
       if i == 0:  return self
       # lazy new H2OVec
-      return H2OVec(self.name(), Expr("+", self, Expr(i)))
+      return H2OVec(self._name, Expr("+", self, Expr(i)))
     raise NotImplementedError
 
   def __radd__(self, i):
@@ -834,11 +832,11 @@ class H2OVec(object):
       if len(i) != len(self):
         raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
       # lazy new H2OVec
-      return H2OVec(self.name(), Expr("==", self, i))
+      return H2OVec(self._name, Expr("==", self, i))
     # == compare on a Vec and a constant Vec
     if isinstance(i, (int, float)):
       # lazy new H2OVec
-      return H2OVec(self.name(), Expr("==", self, Expr(i)))
+      return H2OVec(self._name, Expr("==", self, Expr(i)))
     raise NotImplementedError
 
   def __lt__(self, i):
@@ -846,11 +844,11 @@ class H2OVec(object):
     if isinstance(i, H2OVec):
       if len(i) != len(self):
         raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
-      return H2OVec(self.name(), Expr("<", self, i))
+      return H2OVec(self._name, Expr("<", self, i))
 
     # Vec < number
     elif isinstance(i, (int, float)):
-      return H2OVec(self.name(), Expr("<", self, Expr(i)))
+      return H2OVec(self._name, Expr("<", self, Expr(i)))
 
     else:
       raise NotImplementedError
@@ -860,10 +858,10 @@ class H2OVec(object):
     if isinstance(i, H2OVec):
       if len(i) != len(self):
         raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
-      return H2OVec(self.name(), Expr(">=", self, i))
+      return H2OVec(self._name, Expr(">=", self, i))
     # Vec >= number
     elif isinstance(i, (int, float)):
-      return H2OVec(self.name(), Expr(">=", self, Expr(i)))
+      return H2OVec(self._name, Expr(">=", self, Expr(i)))
     else:
       raise NotImplementedError
 
@@ -883,7 +881,7 @@ class H2OVec(object):
     """
     :return: A transformed H2OVec from numeric to categorical.
     """
-    return H2OVec(self.name(), Expr("as.factor", self._expr, None))
+    return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
   def runif(self, seed=None):
     """
