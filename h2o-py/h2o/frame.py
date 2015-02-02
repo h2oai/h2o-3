@@ -522,12 +522,12 @@ class H2OFrame(object):
 
   def __delitem__(self, i):
     if isinstance(i, str):
-        for v in self._vecs:
-          if i == v.name():
-            self._vecs.remove(v)
-            return
-          raise KeyError("Name " + i + " not in Frames")
-        raise NotImplementedError
+      for v in self._vecs:
+        if i == v.name():
+          self._vecs.remove(v)
+          return
+        raise KeyError("Name " + i + " not in Frames")
+      raise NotImplementedError
 
   def drop(self, i):
     """
@@ -832,7 +832,7 @@ class H2OVec(object):
     if isinstance(i, H2OVec):
       # can only compare two vectors of the same length
       if len(i) != len(self):
-          raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
       # lazy new H2OVec
       return H2OVec(self.name(), Expr("==", self, i))
     # == compare on a Vec and a constant Vec
