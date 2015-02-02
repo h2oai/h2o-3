@@ -15,5 +15,4 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   @Override public ModelMetricsMultinomial createImpl() {
     return new ModelMetricsMultinomial(this.model.createImpl().get(), this.frame.createImpl().get());
   }
-
 }
