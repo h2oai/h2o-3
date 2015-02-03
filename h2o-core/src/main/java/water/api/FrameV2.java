@@ -2,6 +2,7 @@ package water.api;
 
 import water.*;
 import water.api.KeyV1.FrameKeyV1;
+import water.api.KeyV1.VecKeyV1;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
@@ -44,7 +45,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public String[] compatible_models;
 
   @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
-  public Key[] veckeys;
+  public VecKeyV1[] veckeys;
 
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
@@ -190,7 +191,12 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     len = (int)Math.min(len2,rows);
     byteSize = fr.byteSize();
     columns = new ColV2[fr.numCols()];
-    veckeys = fr.keys();
+    Key[] keys = fr.keys();
+    if(keys != null && keys.length > 0) {
+      veckeys = new VecKeyV1[keys.length];
+      for (int i = 0; i < keys.length; i++)
+        veckeys[i] = new VecKeyV1(keys[i]);
+    }
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
       columns[i] = new ColV2(fr._names[i],vecs[i],off,len);
@@ -217,7 +223,12 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     len = (int)Math.min(len,rows);
     byteSize = _fr.byteSize();
     columns = new ColV2[_fr.numCols()];
-    veckeys = _fr.keys();
+    Key[] keys = _fr.keys();
+    if(keys != null && keys.length > 0) {
+      veckeys = new VecKeyV1[keys.length];
+      for (int i = 0; i < keys.length; i++)
+        veckeys[i] = new VecKeyV1(keys[i]);
+    }
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )
       columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);

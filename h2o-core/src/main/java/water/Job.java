@@ -205,7 +205,7 @@ public class Job<T extends Keyed> extends Keyed {
 
   /** Signal exceptional cancellation of this job.
    *  @param ex exception causing the termination of job. */
-  public void cancel2(Throwable ex) {
+  public void failed(Throwable ex) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     ex.printStackTrace(pw);

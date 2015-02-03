@@ -12,6 +12,7 @@ class ModelMetricsHandler extends Handler {
     public Model _model;
     public Frame _frame;
     public ModelMetrics[] _model_metrics;
+    public String _destination_key;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -63,6 +64,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Key of Frame of interest (optional)", json = false)
     public String frame;
 
+    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = false, required = false)
+    public String destination_key;
+
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBase[] model_metrics;
@@ -70,6 +74,8 @@ class ModelMetricsHandler extends Handler {
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
       mml._model = DKV.getGet(this.model);
       mml._frame = DKV.getGet(this.frame);
+      mml._destination_key = this.destination_key;
+
       if (null != model_metrics) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ )
@@ -85,6 +91,7 @@ class ModelMetricsHandler extends Handler {
       // Shouldn't need to do this manually. . .
       this.model = (null == mml._model ? null : mml._model._key.toString());
       this.frame = (null == mml._frame ? null : mml._frame._key.toString());
+      this.destination_key = mml._destination_key;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
@@ -130,14 +137,7 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetricsList parms = s.createAndFillImpl();
-    ModelMetrics metrics = ModelMetrics.getFromDKV(parms._model, parms._frame);
-
-    if (null != metrics) {
-      Log.debug("using ModelMetrics from the cache. . .");
-      return this.fetch(version, s);
-    }
-    Log.debug("Cache miss: computing ModelMetrics. . .");
-    parms._model.score(parms._frame); // throw away predictions
+    parms._model.score(parms._frame, parms._destination_key); // throw away predictions
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -159,7 +159,10 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // No caching for predict()
     ModelMetricsList parms = s.createAndFillImpl();
-    Frame predictions = parms._model.score(parms._frame);
+    if (null == parms._destination_key)
+      parms._destination_key = "predictions_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+
+    Frame predictions = parms._model.score(parms._frame, parms._destination_key);
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -171,9 +174,7 @@ class ModelMetricsHandler extends Handler {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     }
 
-    Frame persisted = new Frame(Key.make("predictions_" + Key.rand()), predictions.names(), predictions.vecs());
-    DKV.put(persisted);
-    mm.model_metrics[0].predictions = new FrameV2(persisted, 0, 100); // TODO: Should call schema(version)
+    mm.model_metrics[0].predictions = new FrameV2(predictions, 0, 100); // TODO: Should call schema(version)
     return mm;
   }
 

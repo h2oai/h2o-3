@@ -362,7 +362,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         Field f = fields.get(key); // No such field error, if parm is junk
 
         if (null == f) {
-          throw new H2OIllegalArgumentException(key, "fillFromParms", this.getClass().getSimpleName());
+          throw new H2OIllegalArgumentException("Unknown parameter: " + key, "Unknown parameter in fillFromParms: " + key + " for class: " + this.getClass().toString());
         }
 
         int mods = f.getModifiers();

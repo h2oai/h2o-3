@@ -166,7 +166,7 @@ public final class ParseDataset extends Job<Frame> {
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      if( _job != null ) _job.cancel2(ex);
+      if( _job != null ) _job.failed(ex);
       return true;
     }
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }

@@ -380,6 +380,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return msgs.toArray(new String[msgs.size()]);
   }
 
+  /**
+   * Bulk score the frame, and auto-name the resulting predictions frame.
+   * @see #score(Frame, String)
+   * @param fr frame which should be scored
+   * @return A new frame containing a predicted values. For classification it
+   *         contains a column with prediction and distribution for all
+   *         response classes. For regression it contains only one column with
+   *         predicted values.
+   * @throws IllegalArgumentException
+   */
+  public Frame score(Frame fr) throws IllegalArgumentException {
+    return score(fr, null);
+  }
+
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
    *  distributions.  For Regression (single-class) models, the 1st and only
@@ -391,12 +405,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *         contains a column with prediction and distribution for all
    *         response classes. For regression it contains only one column with
    *         predicted values.
+   * @throws IllegalArgumentException
    */
-  public Frame score(Frame fr) throws IllegalArgumentException {
+  public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     Vec actual = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
     adaptTestForTrain(adaptFr,true);   // Adapt
-    Frame output = scoreImpl(fr,adaptFr); // Score
+    Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
 
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
@@ -445,7 +460,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame scoreImpl(Frame fr, Frame adaptFrm) {
+  protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
     assert Arrays.equals(_output._names,adaptFrm._names); // Already adapted
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -459,7 +474,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols).doAll(ncols,adaptFrm);
     bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
-    Frame res = bs.outputFrame(Key.make(),names,domains);
+    Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
     return res;
   }
