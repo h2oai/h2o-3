@@ -67,7 +67,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         _parms.read_unlock_frames(DeepLearning.this);

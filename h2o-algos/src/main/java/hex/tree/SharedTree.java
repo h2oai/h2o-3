@@ -185,7 +185,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildModel();
         done();                 // Job done!
       } catch( Throwable t ) {
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( _model != null ) _model.unlock(_key);

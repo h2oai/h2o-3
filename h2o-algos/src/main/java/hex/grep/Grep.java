@@ -89,7 +89,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         done();                 // Job done!
       } catch( Throwable t ) {
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);

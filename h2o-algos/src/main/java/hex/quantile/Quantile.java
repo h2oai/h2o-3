@@ -92,7 +92,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
       } catch( Throwable t ) {
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);

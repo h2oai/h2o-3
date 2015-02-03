@@ -91,7 +91,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         //_state = JobState.CANCELLED; //for JSON REST response
         Log.info("Word2Vec model building was cancelled.");
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
