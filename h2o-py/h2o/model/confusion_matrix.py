@@ -2,7 +2,7 @@
 A confusion matrix from H2O.
 """
 
-from two_dim_table import H2OTwoDimTable
+from . import H2OTwoDimTable
 
 
 class ConfusionMatrix(object):

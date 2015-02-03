@@ -3,10 +3,11 @@ This module implements the base model class.  All model things inherit from this
 """
 
 import h2o
-from frame import *
-from two_dim_table import H2OTwoDimTable
-from connection import H2OConnection
 import tabulate
+from . import H2OFrame
+from . import H2OVec
+from . import H2OTwoDimTable
+from . import H2OConnection
 
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
