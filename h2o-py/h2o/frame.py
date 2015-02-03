@@ -275,7 +275,7 @@ class H2OFrame(object):
       self._vecs = vecs
 
     elif raw_fname:
-      self._handle_raw_fname(raw_fname)
+      self._handle_raw_fname(raw_fname, None)
 
     else:
       raise ValueError("Frame made from CSV file or an array of Vecs only")
@@ -288,7 +288,6 @@ class H2OFrame(object):
     :param python_obj: A tuple, list, dict, collections.OrderedDict
     :return: None
     """
-
     # [] and () cases -- folded together since H2OFrame is mutable
     if isinstance(python_obj, (list, tuple)):
       header, data_to_write = H2OFrame._handle_python_lists(python_obj)
@@ -302,7 +301,7 @@ class H2OFrame(object):
     #
     #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
     else:
-        raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + type(python_obj))
+      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + type(python_obj))
 
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
@@ -324,7 +323,7 @@ class H2OFrame(object):
     # actually upload the data to H2O
     self._upload_raw_data(tmp_file_path, header)
     # delete the tmp file
-    os.remove(tmp_file_path)  # not at all secure!
+    #os.remove(tmp_file_path)  # not at all secure!
 
   def _handle_raw_fname(self, raw_fname, column_names=None):
     """
@@ -353,12 +352,10 @@ class H2OFrame(object):
     fui = {"file": os.path.abspath(tmp_file_path)}
     # create a random name for the data
     dest_key = H2OFrame.py_tmp_key()
-    # params to the URL are the destination key that was just made in the prev step.
-    p = {'destination_key': dest_key}
     # do the POST -- blocking, and "fast" (does not real data upload)
-    H2OConnection.post_json(url_suffix="PostFile", params=p, file_upload_info=fui)
+    H2OConnection.post_json("PostFile", fui, destination_key=dest_key)
     # actually parse the data and setup self._vecs
-    self._handle_raw_fname(dest_key, column_names=column_names)
+    self._handle_raw_fname(dest_key, column_names)
 
   def __iter__(self):
     return (vec for vec in self.vecs().__iter__() if vec is not None)

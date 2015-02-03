@@ -61,7 +61,12 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
     from model.binomial import H2OBinomialModel
     model = H2OBinomialModel(job.dest_key,model_json)
 
+  elif model_type=="Clustering":
+    from model.clustering import H2OClusteringModel
+    model = H2OClusteringModel(job.dest_key,model_json)
+
   else:
+    print model_type
     raise NotImplementedError
 
   # Cleanup

@@ -2,23 +2,46 @@
 This module implements the base model class.  All model things inherit from this class.
 """
 
-from frame import H2OFrame
+import h2o
+from frame import *
 from two_dim_table import H2OTwoDimTable
 from connection import H2OConnection
 import tabulate
 
 class ModelBase(object):
-  def __init__(self, dest_key, model_json):
+  def __init__(self, dest_key, model_json, metrics_class):
     self._key = dest_key
     self._model_json = model_json
+    self._metrics_class = metrics_class
 
   def predict(self, test_data):
     """
     Predict on a dataset.
     :param test_data: Data to be predicted on.
-    :return: An object of class H2OFrame.
+    :return: A new H2OFrame filled with predictions.
     """
-    raise NotImplementedError
+    if not test_data: raise ValueError("Must specify test data")
+    # cbind the test_data vecs together and produce a temp key
+    test_data_key = H2OFrame.send_frame(test_data)
+    # get the predictions
+    # this job call is blocking
+    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+    # retrieve the prediction frame
+    prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
+    # get the actual frame meta dta
+    pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
+    # collect the veckeys
+    veckeys = pred_frame_meta["veckeys"]
+    # get the number of rows
+    rows = pred_frame_meta["rows"]
+    # get the column names
+    cols = [col["label"] for col in pred_frame_meta["columns"]]
+    # create a set of H2OVec objects
+    vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+    # toast the cbound frame
+    h2o.remove(test_data_key)
+    # return a new H2OFrame object
+    return H2OFrame(vecs=vecs)
 
   def model_performance(self, test_data):
     """
@@ -32,7 +55,7 @@ class ModelBase(object):
     fr_key = H2OFrame.send_frame(test_data)
     res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
     raw_metrics = res["model_metrics"][0]
-    return H2OBinomialModelMetrics(raw_metrics)
+    return self._metrics_class(raw_metrics)
 
   def summary(self):
     """

@@ -2,6 +2,7 @@
 This module implements the communication REST layer for the python <-> H2O connection.
 """
 
+import os
 import re
 import urllib
 from connection import H2OConnection
@@ -68,19 +69,20 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :param first_line_is_header: -1 means data, 0 means guess, 1 means header
   :return: Return a new parsed object
   """
+  # Parse parameters (None values provided by setup)
+  p = { 'delete_on_done' : True,
+        'blocking' : True,
+        'removeFrame' : True,
+        'hex' : h2o_name,
+        'ncols' : None,
+        'sep' : None,
+        'pType' : None,
+        'singleQuotes' : None,
+        'checkHeader'  : None
+  }
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = 0
-    # Parse parameters (None values provided by setup)
-    p = {'delete_on_done': True,
-         'blocking': True,
-         'removeFrame': True,
-         'hex': h2o_name,
-         'ncols': None,
-         'sep': None,
-         'pType': None,
-         'singleQuotes': None,
-         'checkHeader' : None,
-        }
+
   if setup["columnNames"]:
     setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
     p["columnNames"] = None
@@ -141,8 +143,23 @@ def init(ip="localhost", port=54321):
   H2OConnection(ip=ip, port=port)
   return None
 
+
+
+def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a supervised Deep Learning model
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
+
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
+
+def kmeans(x,validation_x=None,**kwargs):
+  """
+  Build a KMeans model
+  """
+  return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
+

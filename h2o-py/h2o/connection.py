@@ -133,7 +133,7 @@ class H2OConnection(object):
     return self._process_tables(raw_txt.json())
 
   # Massage arguments into place, call _attempt_rest
-  def _do_raw_rest(self, url_suffix, method, file_upload_info=None, **kwargs):
+  def _do_raw_rest(self, url_suffix, method, file_upload_info, **kwargs):
     if not url_suffix:
       raise ValueError("No url suffix supplied.")
     url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix + ".json")

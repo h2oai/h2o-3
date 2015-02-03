@@ -13,30 +13,16 @@ def ozoneKM(ip, port):
     print train.describe()
 
     # Run KMeans
-    from h2o import H2OKMeans
-
-    my_km = H2OKMeans()
-    my_km.training_frame = train
-    my_km.x = range(0, train.ncol(), 1)  # train on the remaining columns
-    my_km.k = 10
-    my_km.init = "PlusPlus"
-    my_km.max_iterations = 100
-    my_km.fit()
+    my_km = h2o.kmeans(x=train,
+                       k=10,
+                       init = "PlusPlus",
+                       max_iterations = 100)
 
     my_km.show()
     my_km.summary()
 
     my_pred = my_km.predict(train)
     my_pred.describe()
-
-    # Alternative Look:
-    from h2o.model.h2o_km_builder import H2OKMeansBuilder
-
-    my_km2 = H2OKMeansBuilder(training_frame=train,
-                              x=range(0, train.ncol(), 1),
-                              k=10, max_iterations=100,
-                              init="PlusPlus").fit()
-    my_km2.show()
 
 if __name__ == "__main__":
     args = sys.argv
