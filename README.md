@@ -321,16 +321,16 @@ Sparkling Water
 ---------------------------------
 Sparkling Water combines two open source technologies: Apache Spark and H2O - a machine learning engine.  It makes H2O’s library of Advanced Algorithms including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest accessible from Spark workflows. Spark users are provided with the options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
 
-# Prerequisites
+### Prerequisites
 
 Spark 1.2 for Sparkling Water v0.2.4-65+
 Spark 1.1 for older versions
 
-# Sparkling Water on Hadoop
+### Sparkling Water on Hadoop
 
 Compatiable Hadoop Distribution: CDH4, CDH5, and HDP2.1.
 
-## Install on Hadoop
+#### Install on Hadoop
 
 - To install on your Hadoop Cluster clone the git repository and make a build:
 
@@ -353,7 +353,7 @@ export SPARK_HOME="/opt/cloudera/parcels/CDH-5.2.0-1.cdh5.2.0.p0.11/lib/spark"
 ./bin/sparkling-shell
 ```
 
-## Import Data from HDFS
+#### Import Data from HDFS
 
 The initialization of H2O remains the same with the exception of importing data from a HDFS path. Please change path variable below to one suitable for your data.
 
