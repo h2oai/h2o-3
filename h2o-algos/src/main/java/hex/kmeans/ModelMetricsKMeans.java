@@ -7,6 +7,7 @@ import water.fvec.Frame;
 
 public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
 
+  public String _foo = null;
 
   public ModelMetricsKMeans(Model model, Frame frame) {
     super(model, frame);
@@ -26,7 +27,9 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
-      return m.addMetrics(new ModelMetricsKMeans( m, f));
+      ModelMetricsKMeans mm = new ModelMetricsKMeans( m, f);
+      mm._foo = "f00!";
+      return m.addMetrics(mm);
     }
   }
 }
