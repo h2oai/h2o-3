@@ -417,7 +417,7 @@ class H2OFrame(object):
 
     fr = H2OFrame.py_tmp_key()
     cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec.get_expr().eager() for vec in self]) + "))"
+    cbind += " %".join([vec._expr.eager() for vec in self]) + "))"
     res = h2o.rapids(cbind)
     h2o.remove(fr)
     head_rows = [range(1, nrows + 1, 1)]
@@ -450,9 +450,9 @@ class H2OFrame(object):
     print tabulate.tabulate(table, headers)
     print
 
-  def __repr__(self):
-    self.show()
-    return ""
+  #def __repr__(self):
+  #  self.show()
+  #  return ""
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):
@@ -588,7 +588,7 @@ class H2OFrame(object):
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec.get_expr().eager() for vec in self.vecs()]) + "))"
+    cbind += " %".join([vec._expr.eager() for vec in self.vecs()]) + "))"
     h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
@@ -735,9 +735,9 @@ class H2OVec(object):
       print tabulate.tabulate(to_show, headers=["Row ID", header])
       print
 
-  def __repr__(self):
-    self.show()
-    return ""
+  #def __repr__(self):
+  #  self.show()
+  #  return ""
 
   def summary(self):
     """
@@ -891,4 +891,4 @@ class H2OVec(object):
     if not seed:
       import random
       seed = random.randint(123456789, 999999999)  # generate a seed
-    return H2OVec("", Expr("h2o.runif", self.get_expr(), Expr(seed)))
+    return H2OVec("", Expr("h2o.runif", self._expr, Expr(seed)))

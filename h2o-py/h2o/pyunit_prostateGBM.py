@@ -10,7 +10,7 @@ def prostateGBM(ip,port):
   h2o.init(ip,port)  # connect to localhost:54321
 
   df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
-  print df.describe()
+  df.describe()
 
   # Remove ID from training frame
   train = df.drop("ID")
@@ -25,7 +25,7 @@ def prostateGBM(ip,port):
   train['CAPSULE'] = train['CAPSULE'].asfactor()
 
   # See that the data is ready
-  print train.describe()
+  train.describe()
 
   # Run GBM
   my_gbm = h2o.gbm(           y=train["CAPSULE"],

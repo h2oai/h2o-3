@@ -145,4 +145,4 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model
   """
-  return h2o_model_build.supervised_model_build(x,y,validation_x=None,validation_y=None,algo_url="gbm",**kwargs)
+  return h2o_model_build.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)

@@ -76,7 +76,7 @@ class Expr(object):
     assert self._len is not None
 
     if left and isinstance(left, frame.H2OVec):
-      self._vecname = left.name()
+      self._vecname = left._name
 
   def name(self): return self._name
 
@@ -120,10 +120,10 @@ class Expr(object):
     """
     :return: The structure of this object without evaluating.
     """
-    return ("([" + self.name() + "] = " +
-            str(self._left.name() if isinstance(self._left, Expr) else self._left) +
+    return ("([" + self._name + "] = " +
+            str(self._left._name if isinstance(self._left, Expr) else self._left) +
             " " + self._op + " " +
-            str(self._rite.name() if isinstance(self._rite, Expr) else self._rite) +
+            str(self._rite._name if isinstance(self._rite, Expr) else self._rite) +
             " = " + str(type(self._data)) + ")")
 
   def show(self, noprint=False):
@@ -202,9 +202,9 @@ class Expr(object):
     assert self.is_remote(), "Data wasn't remote. Hrm..."
     global __CMD__
     if __CMD__ is None:
-      h2o.remove(self.data())
+      h2o.remove(self._data)
     else:
-      s = " (del %" + self.data() + " #0)"
+      s = " (del %" + self._data + " #0)"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s
@@ -229,7 +229,7 @@ class Expr(object):
     tmps = __TMPS__  # Stop  gathering rapids commands
     __CMD__ = None
     __TMPS__ = None
-    if self.is_local():  return self.data()  # Local computation, all done
+    if self.is_local():  return self._data  # Local computation, all done
 
     # Remote computation - ship Rapids over wire, assigning key to result
     if tmps:
@@ -243,19 +243,19 @@ class Expr(object):
     return self._data
 
   def _do_child(self, left=True):
-    child = self.left() if left else self.rite()
+    child = self._left if left else self._rite
     assert child is None or isinstance(child, Expr)
     global __CMD__
     if child:
       if child.is_pending():
         child._do_it()
-      elif isinstance(child.data(), (int, float)):
-        __CMD__ += "#" + str(child.data())
-      elif isinstance(child.data(), unicode):
-        __CMD__ += "%" + str(child.data())
-      elif isinstance(child.data(), slice):
+      elif isinstance(child._data, (int, float)):
+        __CMD__ += "#" + str(child._data)
+      elif isinstance(child._data, unicode):
+        __CMD__ += "%" + str(child._data)
+      elif isinstance(child._data, slice):
         __CMD__ += \
-            "(: #" + str(child.data().start) + " #" + str(child.data().stop - 1) \
+            "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
             + ")"
         child._data = None  # trigger GC now
       else:
@@ -275,7 +275,7 @@ class Expr(object):
     # vector.  Must fetch it now, before it goes dead after eval'ing the slice.
     # Shape: (= ([ %vec bool_slice_expr) vals_to_assign)
     # Need to fetch %vec out
-    assign_vec = self.left().left() if self._op == "=" and self.left().op() == "[" else None
+    assign_vec = self._left._left if self._op == "=" and self._left._op == "[" else None
 
     # See if this is not a temp and not a scalar; if so it needs a name
     # Remove one count for the call to getrefcount itself
@@ -292,35 +292,35 @@ class Expr(object):
     left = self._do_child(True)   # down the left
     rite = self._do_child(False)  # down the right
 
-    if self.op() == "+":
+    if self._op == "+":
 
       #   num + num
       #   num + []
-      if isinstance(left.data(), (int, float)):
-        if isinstance(rite.data(), (int, float)):   self._data = left + rite
-        elif rite.is_local():                       self._data = [left + x for x in rite.data()]
+      if isinstance(left._data, (int, float)):
+        if isinstance(rite._data, (int, float)):   self._data = left + rite
+        elif rite.is_local():                       self._data = [left + x for x in rite._data]
         else:                                       pass
 
       #   [] + num
-      elif isinstance(rite.data(), (int, float)):
-        if left.is_local():   self._data = [x + rite for x in left.data()]
+      elif isinstance(rite._data, (int, float)):
+        if left.is_local():   self._data = [x + rite for x in left._data]
         else:                 pass
 
       #   [] + []
       else:
-        if left.is_local() and rite.is_local():              self._data = [x + y for x, y in zip(left.data(), rite.data())]
-        elif (left.is_remote() or left.data() is None) and \
-             (rite.is_remote() or rite.data() is None):      pass
+        if left.is_local() and rite.is_local():              self._data = [x + y for x, y in zip(left._data, rite._data)]
+        elif (left.is_remote() or left._data is None) and \
+             (rite.is_remote() or rite._data is None):      pass
         else:                                                raise NotImplementedError
 
     elif self._op == "==":
 
       #   num ==
-      if isinstance(left.data(), (int, float)):   raise NotImplementedError
+      if isinstance(left._data, (int, float)):   raise NotImplementedError
  
       #   [] == num
       elif isinstance(rite._data, (int, float)):
-        if left.is_local():  self._data = [x == rite.data() for x in left.data()]
+        if left.is_local():  self._data = [x == rite._data for x in left._data]
         else:                pass
 
       else:                  raise NotImplementedError
@@ -328,29 +328,29 @@ class Expr(object):
     elif self._op == "<":
 
       # num < []
-      if isinstance(left.data(), (int, float)):   raise NotImplementedError
+      if isinstance(left._data, (int, float)):   raise NotImplementedError
 
       # [] < num
-      elif isinstance(rite.data(), (int, float)):
-        if left.is_local():   self._data = [x < rite.data() for x in left.data()]
+      elif isinstance(rite._data, (int, float)):
+        if left.is_local():   self._data = [x < rite._data for x in left._data]
         else:                 pass
       else:   raise NotImplementedError
 
     elif self._op == ">=":
 
       # num < []
-      if isinstance(left.data(), (int, float)):   raise NotImplementedError
+      if isinstance(left._data, (int, float)):   raise NotImplementedError
 
       # [] < num
-      elif isinstance(rite.data(), (int, float)):
-        if left.is_local():  self._data = [x >= rite.data() for x in left.data()]
+      elif isinstance(rite._data, (int, float)):
+        if left.is_local():  self._data = [x >= rite._data for x in left._data]
         else:                pass
       else:                  raise NotImplementedError
 
     elif self._op == "[":
 
       #   [] = []
-      if left.is_local():    self._data = left.data()[rite.data()]
+      if left.is_local():    self._data = left._data[rite._data]
       #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
       else:                  __CMD__ += ' "null"'
 
@@ -362,16 +362,16 @@ class Expr(object):
 
     elif self._op == "mean":
 
-      if left.is_local():   self._data = sum(left.data()) / len(left.data())
+      if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                  __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
 
     elif self._op == "as.factor":
 
-      if left.is_local():   self._data = map(str, left.data())
+      if left.is_local():   self._data = map(str, left._data)
       else:                 pass
 
     elif self._op == "h2o.runif":
-      if left.is_local():   self._data = map(str, left.data())
+      if left.is_local():   self._data = map(str, left._data)
       else:                 pass
 
     else:
@@ -388,7 +388,7 @@ class Expr(object):
 
     # Keep LHS alive
     if assign_vec:
-      if assign_vec.op() != "rawdata":  # Need to roll-up nested exprs
+      if assign_vec._op != "rawdata":  # Need to roll-up nested exprs
         raise NotImplementedError
       self._left = assign_vec
-      self._data = assign_vec.data()
+      self._data = assign_vec._data
