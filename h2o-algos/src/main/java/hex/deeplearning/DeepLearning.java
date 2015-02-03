@@ -63,6 +63,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         init(true);
         if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
         buildModel();
+        done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
         t.printStackTrace();
@@ -71,7 +72,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       } finally {
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
-        done();                 // Job done!
       }
       tryComplete();
     }
