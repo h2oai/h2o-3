@@ -204,32 +204,29 @@ class H2OConnection(object):
 
   @staticmethod
   def _process_tables(x=None):
-      elts = ["tableHeader", "rowHeaders", "colHeaders",
-              "colTypes", "colFormats", "cellValues"]
+    elts = ["tableHeader", "rowHeaders", "colHeaders", "colTypes", "colFormats", "cellValues"]
 
-      if x:
-          if isinstance(x, dict):
-              have_table = all([True if i in elts else False for i in x.keys()])
-              have_table &= len(x) == len(elts)
-              if have_table:
-                  tbl = x["cellValues"]
-                  tbl = H2OTwoDimTable(x["rowHeaders"], x["colHeaders"], x["colTypes"],
-                                       x["tableHeader"], x["cellValues"],
-                                       x["colFormats"])
-                  x = tbl
-              else:
-                  for k in x:
-                      x[k] = H2OConnection._process_tables(x[k])
-          if isinstance(x, list):
-              for it in range(len(x)):
-                  x[it] = H2OConnection._process_tables(x[it])
-      return x
+    if x:
+      if isinstance(x, dict):
+        have_table = all([True if i in elts else False for i in x.keys()])
+        have_table &= len(x) == len(elts)
+        if have_table:
+          tbl = x["cellValues"]
+          tbl = H2OTwoDimTable(x["rowHeaders"], x["colHeaders"], x["colTypes"], x["tableHeader"], x["cellValues"], x["colFormats"])
+          x = tbl
+        else:
+          for k in x:
+            x[k] = H2OConnection._process_tables(x[k])
+      if isinstance(x, list):
+        for it in range(len(x)):
+          x[it] = H2OConnection._process_tables(x[it])
+    return x
 
 def get_human_readable_size(num):
-    exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]
-    i = 0
-    rounded_val = 0
-    while i + 1 < len(exp_str) and num >= (2 ** exp_str[i + 1][0]):
-        i += 1
-        rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
-    return '%s %s' % (rounded_val, exp_str[i][1])
+  exp_str = [(0, 'B'), (10, 'KB'), (20, 'MB'), (30, 'GB'), (40, 'TB'), (50, 'PB'), ]
+  i = 0
+  rounded_val = 0
+  while i + 1 < len(exp_str) and num >= (2 ** exp_str[i + 1][0]):
+    i += 1
+    rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
+  return '%s %s' % (rounded_val, exp_str[i][1])

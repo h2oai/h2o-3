@@ -7,7 +7,7 @@ import urllib
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame
-import h2o_model_build
+import h2o_model_builder
 
 
 def import_file(path):
@@ -145,4 +145,4 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Gradient Boosted Method model
   """
-  return h2o_model_build.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
