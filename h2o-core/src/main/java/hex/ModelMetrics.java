@@ -80,7 +80,7 @@ public class ModelMetrics extends Keyed {
     transient public float[] _work;
     public long _count;
 
-    abstract public float[] perRow( float ds[], float yact[] );
+    abstract public float[] perRow( float ds[], float yact[], Model m);
     public void reduce( MetricBuilder mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

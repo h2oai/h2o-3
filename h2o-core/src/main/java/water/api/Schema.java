@@ -562,35 +562,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // normally not allowed because it has no version:
     new Schema();
 
-    for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(Schema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(Schema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelOutputSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelOutputSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("water")).getSubTypesOf(ModelParameterSchemaV2.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("hex")).getSubTypesOf(ModelParameterSchemaV2.class))
+    for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(Schema.class))
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);
 

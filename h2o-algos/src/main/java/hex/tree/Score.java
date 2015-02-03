@@ -50,7 +50,7 @@ public class Score extends MRTask<Score> {
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
       if( nclass > 1 ) cdists[0] = ModelUtils.getPrediction(cdists,row); // Fill in prediction
       val[0] = (float)ys.atd(row);
-      _mb.perRow(cdists,val);
+      _mb.perRow(cdists,val, _bldr._model);
     }
   }
 
