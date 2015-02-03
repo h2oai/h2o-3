@@ -124,6 +124,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         model._output._propVar = propVar;
         model._output._cumVar = cumVar;
+        done();                 // Job done!
       } catch( Throwable t ) {
         t.printStackTrace();
         failed(t);
@@ -132,7 +133,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if( model != null ) model.unlock(_key);
         DKV.remove(dinfo._key);
         _parms.read_unlock_frames(PCA.this);
-        done();                 // Job done!
       }
       tryComplete();
     }
