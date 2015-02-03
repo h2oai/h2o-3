@@ -580,7 +580,7 @@ class H2OFrame(object):
     return unicode("py" + str(uuid.uuid4()))
 
   # Send over a frame description to H2O
-  def _send_frame(self):
+  def send_frame(self):
     """
     Send a frame description to H2O, returns a key.
     :return: A key

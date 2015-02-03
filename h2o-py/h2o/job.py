@@ -22,7 +22,7 @@ class H2OJob(object):
     self.job = job
     self.status = job["status"]
     self.job_key = job['key']['name']
-    self.destination_key = job['dest']['name']
+    self.dest_key = job['dest']['name']
     self.progress = 0
     self._100_percent = False
     self._progress_bar_width = 50
