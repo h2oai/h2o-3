@@ -1642,9 +1642,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr) {
+  @Override protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
     if (!get_params()._autoencoder) {
-      return super.scoreImpl(orig,adaptedFr);
+      return super.scoreImpl(orig,adaptedFr,destination_key);
     } else {
       // Reconstruction
 
@@ -1738,13 +1738,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return adaptFrm.extractFrame(len, adaptFrm.numCols());
   }
 
-  @Override public Frame score(Frame fr) {
+  @Override public Frame score(Frame fr, String destination_key) {
     if (!_parms._autoencoder)
-      return super.score(fr);
+      return super.score(fr, destination_key);
     else {
       Frame adaptFr = new Frame(fr);
       adaptTestForTrain(adaptFr, true);   // Adapt
-      Frame output = scoreImpl(fr, adaptFr); // Score
+      Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
 
       Vec[] vecs = adaptFr.vecs();
       for (int i = 0; i < vecs.length; i++)

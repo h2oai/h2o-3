@@ -135,13 +135,30 @@ def validate_validation_messages(result, expected_error_fields):
     assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['validation_messages'])
 
 
-def validate_model_exists(model_name, models):
+def validate_model_exists(model_name, models=None):
     '''
     Validate that a given model key is found in the models list.
     '''
+    if models is None:
+        result = a_node.models()
+        models = result['models']
+
     models_dict = list_to_dict(models, 'key/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
+
+
+def validate_frame_exists(frame_name, frames=None):
+    '''
+    Validate that a given frame key is found in the frames list.
+    '''
+    if frames is None:
+        result = a_node.frames()
+        frames = result['frames']
+
+    frames_dict = list_to_dict(frames, 'key/name')
+    assert frame_name in frames_dict, "FAIL: Failed to find " + frame_name + " in frames list: " + repr(frames_dict.keys())
+    return frames_dict[frame_name]
 
 
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
@@ -788,8 +805,9 @@ assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deepl
 
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
-p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial')
+p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
 validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380)
+validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 
 ###################################
