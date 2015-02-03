@@ -4,7 +4,7 @@ import hex.glm.GLMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.util.TwoDimTable;
+import water.api.TwoDimTableV1;
 //import water.util.DocGen.HTML;
 
 public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMModel.GLMOutput> {
@@ -27,7 +27,7 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     String   [] coefficient_names;
 
     @API(help="fill me in GLMModelOutputV2")
-    TwoDimTable coefficients_table;
+    TwoDimTableV1 coefficients_table;
 
     @API(help="fill me in GLMModelOutputV2; I think I'm redundant")
     boolean binomial; // TODO: isn't this redundant, given model_category?

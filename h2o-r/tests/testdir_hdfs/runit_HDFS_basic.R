@@ -14,10 +14,10 @@ source('../h2o-runit.R')
 # the HDP2.1 namenode. Update if using other clusters.
 # Note this should fail on home networks, since 176 is not likely to exist
 # also should fail in ec2.
-running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=1)
+running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=5)
 
 if (running_inside_hexdata) {
-    # cdh3 cluster
+    # hdp2.1 cluster
     hdfs_name_node = "mr-0xd6"    
     hdfs_iris_file = "/datasets/iris_wheader.csv"
     hdfs_iris_dir  = "/datasets/iris_test_train"

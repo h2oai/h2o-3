@@ -6,13 +6,13 @@ import water.*;
 
 public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
   public static class DStackTrace extends Iced {
-    final String _node;         // Node name
-    final long _time;           // Unix epoch time
-    final String[] _traces;     // One per thread
+    public final String _node;         // Node name
+    public final long _time;           // Unix epoch time
+    public final String[] _thread_traces;     // One per thread
     DStackTrace( String[] traces ) {
       _node = H2O.getIpPortString();
       _time = System.currentTimeMillis();
-      _traces = traces;
+      _thread_traces = traces;
     }
   }
   public DStackTrace _traces[];        // One per Node

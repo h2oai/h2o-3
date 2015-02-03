@@ -39,6 +39,7 @@ public class ConfusionMatrix extends Iced {
     prediction_error_by_class = classErr();
     prediction_error = err();
     this.domain = domain;
+    table = toTable();
   }
 
   /** Build the CM data from the actuals and predictions, using the default
@@ -259,7 +260,7 @@ public class ConfusionMatrix extends Iced {
    * @return TwoDimTable
    */
   TwoDimTable toTable() {
-    assert (confusion_matrix != null && domain != null);
+    if (confusion_matrix == null || domain == null) return null;
     for (int i=0; i< confusion_matrix.length; ++i) assert(confusion_matrix.length == confusion_matrix[i].length);
     // Sum up predicted & actuals
     long acts [] = new long[confusion_matrix.length];

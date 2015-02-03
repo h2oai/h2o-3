@@ -243,12 +243,21 @@ function(conn, ast, key, finalizers) {
 }
 
 .byref.update.frame<-
-function(x) {
+function(x, scalarAsFrame = TRUE) {
   .update_x <- function(x, temp) {
-    x@mutable$ast       <- temp@mutable$ast
-    x@mutable$nrows     <- temp@mutable$nrows
-    x@mutable$ncols     <- temp@mutable$ncols
-    x@mutable$col_names <- temp@mutable$col_names
+    x@mutable$ast <- temp@mutable$ast
+    # FIXME: JSON returns a 1 x 1 Frame as a scalar (nrows = 0, ncols = 0)
+    if ((temp@mutable$nrows == 0L) && (temp@mutable$ncols == 0L)) {
+      if (scalarAsFrame) {
+        x@mutable$nrows     <- 1L
+        x@mutable$ncols     <- 1L
+        x@mutable$col_names <- colnames(as.data.frame(x))
+      }
+    } else {
+      x@mutable$nrows     <- temp@mutable$nrows
+      x@mutable$ncols     <- temp@mutable$ncols
+      x@mutable$col_names <- temp@mutable$col_names
+    }
     invisible(x)
   }
 
