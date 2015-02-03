@@ -2,7 +2,6 @@ package hex.kmeans;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.ModelMetricsClustering;
 import hex.schemas.KMeansModelV2;
 import water.Key;
 import water.api.ModelSchema;
@@ -60,7 +59,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;
-    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures());
+    return new ModelMetricsKMeans.MetricBuilderKMeans(_output.nfeatures());
   }
 
   // Default publicly visible Schema is V2

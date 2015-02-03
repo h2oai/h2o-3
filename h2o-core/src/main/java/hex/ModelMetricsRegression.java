@@ -28,7 +28,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     // ds[0] has the prediction and ds[1] is ignored
-    public float[] perRow( float ds[], float[] yact ) {
+    public float[] perRow( float ds[], float[] yact, Model m ) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
 

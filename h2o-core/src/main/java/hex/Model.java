@@ -264,6 +264,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public O _output; // TODO: move things around so that this can be protected
 
+  public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
+
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 
   /**
@@ -493,7 +495,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual);
+        _mb.perRow(preds, actual, Model.this);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }

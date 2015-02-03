@@ -18,7 +18,7 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
       _work = new float[dims];
     }
 
-    @Override public float[] perRow( float ds[], float yact[] ) {
+    @Override public float[] perRow( float ds[], float yact[], Model m) {
       return null; //FIXME
     }
 

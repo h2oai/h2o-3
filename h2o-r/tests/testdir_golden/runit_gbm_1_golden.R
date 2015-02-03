@@ -12,7 +12,7 @@ Log.info("Test H2O generation of MSE for GBM")
 fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, loss="gaussian", min_rows=2, learn_rate=.1, training_frame=smtreesH2O)
 
 #Reported MSE from H2O through R
-err <- as.data.frame(fith2o@model$err)
+err <- as.data.frame(fith2o@model$mse_train)
 REPMSE <- err[4,]
 
 #MSE Calculated by hand From H2O predicted values
@@ -22,11 +22,11 @@ diffsq <- diff^2
 EXPMSE <- mean(diffsq)
 
 Log.info("Print model MSE... \n")
-Log.info(paste("Length of H2O MSE Vec: ", length(fith2o@model$err),      "\t\t", "Expected Length   : ", 4))
+Log.info(paste("Length of H2O MSE Vec: ", length(fith2o@model$mse_train),      "\t\t", "Expected Length   : ", 4))
 Log.info(paste("H2O Reported MSE  : ", REPMSE, "\t\t", "R Expected MSE   : ", EXPMSE))
 
 Log.info("Compare model statistics in R to model statistics in H2O")
-expect_equal(length(fith2o@model$err), 4) # 3 errs per for each subforest + one error for empty forest.
+expect_equal(length(fith2o@model$mse_train), 4) # 3 errs per for each subforest + one error for empty forest.
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 

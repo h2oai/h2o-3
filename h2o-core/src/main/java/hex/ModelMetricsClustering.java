@@ -23,16 +23,18 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     }
 
     // Compare row against centroid it was assigned to - compute MSE
-    @Override public float[] perRow( float ds[], float[] yact ) {
-      assert(ds.length == yact.length);
+    @Override public float[] perRow( float[] dataRow, float[] preds, Model m) {
+
+      assert(dataRow.length == preds.length);
       // Compute error
-      for (int i=0; i<ds.length; ++i) {
-        float err = yact[i] - ds[i]; // Error: distance from the actual
+      for (int i=0; i<dataRow.length; ++i) {
+        float err = preds[i] - dataRow[i]; // Error: distance from the actual
         _sumsqe += err*err;       // Squared error
       }
       assert !Double.isNaN(_sumsqe);
       _count++;
-      return ds;                // Flow coding
+      return dataRow;                // Flow coding
+
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
