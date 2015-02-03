@@ -85,7 +85,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         Log.info("Total time :" + ((float)(tstop-tstart))/1000f);
         Log.info("Finished training the Word2Vec model.");
         model.buildModelOutput();
-
+        done();                 // Job done!
       } catch (Throwable t) {
         //model = DKV.get(dest()).get();
         //_state = JobState.CANCELLED; //for JSON REST response
@@ -96,7 +96,6 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Word2Vec.this);
-        done();                 // Job done!
       }
       tryComplete();
     }

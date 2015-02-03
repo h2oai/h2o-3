@@ -86,7 +86,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         sb.append(Arrays.toString(model._output._matches)).append("\n");
         sb.append(Arrays.toString(model._output._offsets)).append("\n");
         Log.info(sb);
-
+        done();                 // Job done!
       } catch( Throwable t ) {
         t.printStackTrace();
         cancel2(t);
@@ -95,7 +95,6 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Grep.this);
         Scope.exit(model == null ? null : model._key);
-        done();                 // Job done!
       }
       tryComplete();
     }
