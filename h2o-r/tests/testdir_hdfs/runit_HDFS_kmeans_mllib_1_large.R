@@ -11,10 +11,10 @@ source('../h2o-runit.R')
 # Check if we are running inside the 0xdata network by seeing if we can touch
 # the HDP2.1 namenode. Update if using other clusters.
 # Note this should fail on home networks, since 186 is not likely to exist.
-running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=1)
+running_inside_hexdata = url.exists("http://mr-0xd6:50070", timeout=5)
 
 if (running_inside_hexdata) {
-    # cdh3 cluster
+    # hdp2.1 cluster
     hdfs_name_node = "mr-0xd6"
     hdfs_cross_file = "/datasets/BigCross.data"
 } else {
