@@ -681,7 +681,7 @@ class H2OFrame(object):
   #     return header, data_to_write
   def _len_check(self,x):
     if len(self) == 0: return
-    return _vecs[0]._len_check(x)
+    return self._vecs[0]._len_check(x)
 
 class H2OVec(object):
   """
