@@ -298,8 +298,8 @@ class Expr(object):
       #   num + []
       if isinstance(left._data, (int, float)):
         if isinstance(rite._data, (int, float)):   self._data = left + rite
-        elif rite.is_local():                       self._data = [left + x for x in rite._data]
-        else:                                       pass
+        elif rite.is_local():                      self._data = [left + x for x in rite._data]
+        else:                                      pass
 
       #   [] + num
       elif isinstance(rite._data, (int, float)):
@@ -308,10 +308,31 @@ class Expr(object):
 
       #   [] + []
       else:
-        if left.is_local() and rite.is_local():              self._data = [x + y for x, y in zip(left._data, rite._data)]
+        if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
         elif (left.is_remote() or left._data is None) and \
              (rite.is_remote() or rite._data is None):      pass
-        else:                                                raise NotImplementedError
+        else:                                               raise NotImplementedError
+
+    if self._op == "/":
+
+      #   num / num
+      #   num / []
+      if isinstance(left._data, (int, float)):
+        if isinstance(rite._data, (int, float)):   self._data = left / rite
+        elif rite.is_local():                      self._data = [left / x for x in rite._data]
+        else:                                      pass
+
+      #   [] / num
+      elif isinstance(rite._data, (int, float)):
+        if left.is_local():   self._data = [x / rite for x in left._data]
+        else:                 pass
+
+      #   [] / []
+      else:
+        if left.is_local() and rite.is_local():             self._data = [x / y for x, y in zip(left._data, rite._data)]
+        elif (left.is_remote() or left._data is None) and \
+             (rite.is_remote() or rite._data is None):      pass
+        else:                                               raise NotImplementedError
 
     elif self._op == "==":
 
@@ -359,6 +380,11 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:
         if rite is None: __CMD__ += "#NaN"
+
+    elif self._op == "floor":
+
+      if left.is_local():   self._data = [math.floor(x) for x in left._data]
+      else:                 pass
 
     elif self._op == "mean":
 

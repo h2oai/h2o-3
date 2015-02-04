@@ -72,7 +72,7 @@ public class WorkFlowTest extends TestUtil {
       // -------------------------------------------------
       // 2- light data munging
   
-      // Convert start times to: Month, Weekday, Hour
+      // Convert start time to: Day since the Epoch
       Vec startime = data.vec("starttime");
       data.add(new TimeSplit().doIt(startime));
 

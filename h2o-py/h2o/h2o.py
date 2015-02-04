@@ -13,15 +13,18 @@ import h2o_model_builder
 
 def import_file(path):
   """
-  Import a single file.
+  Import a single file or collection of files
   :param path: A path to a data file (remote or local)
   :return: Return an H2OFrame.
   """
+  paths = [path] if isinstance(path,str) else path
+  return [ _import1(fname) for fname in paths ]
+
+def _import1(path):
   j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
   if j['fails']:
     raise ValueError("ImportFiles of " + path + " failed on " + j['fails'])
   return j['keys'][0]
-
 
 def upload_file(path, destination_key=""):
   """
@@ -47,15 +50,12 @@ def import_frame(path=None, vecs=None):
 
 def parse_setup(rawkey):
   """
-  Unable to use 'requests.params=' syntax because it flattens array parameters,
-  but ParseSetup really expects a real array of Keys.
-  :param rawkey:
+  :param A collection of imported file keys
   :return: A ParseSetup "object"
   """
 
   # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
-  raw_key = _quoted(rawkey)
-  j = H2OConnection.post_json(url_suffix="ParseSetup", srcs=[raw_key])
+  j = H2OConnection.post_json(url_suffix="ParseSetup", srcs=[_quoted(key) for key in rawkey])
   if not j['isValid']:
     raise ValueError("ParseSetup not Valid", j)
   return j

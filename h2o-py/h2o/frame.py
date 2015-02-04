@@ -34,6 +34,7 @@ class H2OFrame(object):
           XLS
 
       Data sources may be:
+          NFS / Local File / List of Files
           HDFS
           URL
           A Directory (with many data files inside at the *same* level -- no support for
@@ -214,7 +215,8 @@ class H2OFrame(object):
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
     If `remote_fname` is not None, then a REST call will be made to import the
-    data specified at the location `remote_fname`.
+    data specified at the location `remote_fname`.  This path is relative to the
+    H2O cluster, NOT the local Python process
 
     If `local_fname` is not None, then the data is not imported into the H2O cluster
     at the time of object creation.
@@ -467,8 +469,7 @@ class H2OFrame(object):
     if isinstance(i, slice): return H2OFrame(vecs=self._vecs[i])
     # Row selection from a boolean Vec
     if isinstance(i, H2OVec):
-      if len(i) != len(self._vecs[0]):
-        raise ValueError("len(vec)=" + len(self._vecs[0]) + " cannot be broadcast across len(i)=" + len(i))
+      self._len_check(i)
       return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
 
     # have a list of numbers or strings
@@ -549,13 +550,10 @@ class H2OFrame(object):
   # Addition
   def __add__(self, i):
     if len(self) == 0: return self
+    self._len_check(i)
     if isinstance(i, H2OFrame):
-      if len(i) != len(self):
-        raise ValueError("ncol(self)" + len(self) + " cannot be broadcast across len(i)=" + len(i))
       return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i.vecs())])
     if isinstance(i, H2OVec):
-      if len(i) != len(self._vecs[0]):
-        raise ValueError("nrow(self)" + len(self._vecs[0]) + " cannot be broadcast across len(i)=" + len(i))
       return H2OFrame(vecs=[x + i for x in self._vecs])
     if isinstance(i, int):
       return H2OFrame(vecs=[x + i for x in self._vecs])
@@ -568,6 +566,18 @@ class H2OFrame(object):
     :return: Return a new H2OFrame
     """
     return self.__add__(i)
+
+  # Division
+  def __div__(self, i):
+    if len(self) == 0: return self
+    self._len_check(i)
+    if isinstance(i, H2OFrame):
+      return H2OFrame(vecs=[x / y for x, y in zip(self._vecs, i.vecs())])
+    if isinstance(i, H2OVec):
+      return H2OFrame(vecs=[x / i for x in self._vecs])
+    if isinstance(i, int):
+      return H2OFrame(vecs=[x / i for x in self._vecs])
+    raise NotImplementedError
 
   @staticmethod
   def py_tmp_key():
@@ -659,7 +669,7 @@ class H2OFrame(object):
     data_to_write = [dict(zip(header, row)) for row in rows]
     return header, data_to_write
 
-  # @staticmethod
+# @staticmethod
   # def _handle_numpy_array(python_obj):
   #     header = H2OFrame._gen_header(python_obj.shape[1])
   #
@@ -669,7 +679,9 @@ class H2OFrame(object):
   #         if lol else [dict(zip(header, as_list))]
   #
   #     return header, data_to_write
-
+  def _len_check(self,x):
+    if len(self) == 0: return
+    return _vecs[0]._len_check(x)
 
 class H2OVec(object):
   """
@@ -775,13 +787,11 @@ class H2OVec(object):
     :param c: The "new" values that will write over the values stipulated by `b`.
     :return: void
     """
-    if c and len(c) != 1 and len(c) != len(self):
-      raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(c)=" + len(c))
+    self._len_check(c)
     # row-wise assignment
     if isinstance(b, H2OVec):
       # whole vec replacement
-      if len(b) != len(self):
-        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(b)=" + len(b))
+      self._len_check(b)
       # lazy update in-place of the whole vec
       self._expr = Expr("=", Expr("[", self._expr, b), c)
     else:
@@ -797,8 +807,7 @@ class H2OVec(object):
     # H2OVec + H2OVec
     if isinstance(i, H2OVec):
       # can only add two vectors of the same length
-      if len(i) != len(self):
-        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      self._len_check(i)
       # lazy new H2OVec
       return H2OVec(self._name, Expr("+", self, i))
 
@@ -817,6 +826,21 @@ class H2OVec(object):
     """
     return self.__add__(i)
 
+  def __div__(self, i):
+    """
+    :param i: A Vec or a float
+    :return: A new H2OVec.
+    """
+    # H2OVec / H2OVec
+    if isinstance(i, H2OVec):
+      self._len_check(i)
+      return H2OVec(self._name, Expr("/", self, i))
+
+    # H2OVec / number
+    if isinstance(i, (int, float)):
+      return H2OVec(self._name, Expr("/", self, Expr(i)))
+    raise NotImplementedError
+
   def __eq__(self, i):
     """
     Perform the '==' operation.
@@ -826,8 +850,7 @@ class H2OVec(object):
     # == compare on two H2OVecs
     if isinstance(i, H2OVec):
       # can only compare two vectors of the same length
-      if len(i) != len(self):
-        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      self._len_check(i)
       # lazy new H2OVec
       return H2OVec(self._name, Expr("==", self, i))
     # == compare on a Vec and a constant Vec
@@ -839,8 +862,7 @@ class H2OVec(object):
   def __lt__(self, i):
     # Vec < Vec
     if isinstance(i, H2OVec):
-      if len(i) != len(self):
-        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      self._len_check(i)
       return H2OVec(self._name, Expr("<", self, i))
 
     # Vec < number
@@ -853,8 +875,7 @@ class H2OVec(object):
   def __ge__(self, i):
     # Vec >= Vec
     if isinstance(i, H2OVec):
-      if len(i) != len(self):
-        raise ValueError("len(self)=" + len(self) + " cannot be broadcast across len(i)=" + len(i))
+      self._len_check(i)
       return H2OVec(self._name, Expr(">=", self, i))
     # Vec >= number
     elif isinstance(i, (int, float)):
@@ -867,6 +888,12 @@ class H2OVec(object):
     :return: The length of this H2OVec
     """
     return len(self._expr)
+
+  def floor(self):
+    """
+    :return: A lazy Expr representing the Math.floor() of this H2OVec.
+    """
+    return Expr("floor", self._expr, None)
 
   def mean(self):
     """
@@ -889,3 +916,10 @@ class H2OVec(object):
       import random
       seed = random.randint(123456789, 999999999)  # generate a seed
     return H2OVec("", Expr("h2o.runif", self._expr, Expr(seed)))
+
+  def _len_check(self,x):
+    if not x: return
+    if isinstance(x,H2OFrame): x = x._vecs[0]
+    if not isinstance(x,H2OVec): return
+    if len(self) != len(x):
+      raise ValueError("H2OVec length mismatch: "+len(self)+" vs "+len(x))
