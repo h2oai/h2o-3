@@ -267,7 +267,7 @@ public final class ParseSetup extends Iced {
       }
 
       // guesser chunk uses default
-      if (bv instanceof FileVec)
+      if (bv instanceof FileVec && !(bv instanceof UploadFileVec))
         ((FileVec) bv).clearCachedChunk(0);
     }
 
@@ -276,12 +276,11 @@ public final class ParseSetup extends Iced {
      */
     @Override
     public void reduce(GuessSetupTsk other) {
-      if (other._empty) return;
+      if (other._empty || other == null) return;
       if (_gblSetup == null || !_gblSetup._isValid) {
         _empty = false;
         _gblSetup = other._gblSetup;
-        if (_gblSetup == null)
-          System.out.println("haha");
+        assert (_gblSetup != null);
 /*        try {
           _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;
           _gblSetup._setupFromFile = other._gblSetup._setupFromFile;
@@ -290,12 +289,6 @@ public final class ParseSetup extends Iced {
           t.printStackTrace();
         }*/
       }
-
-      //unify parse types to ARFF if present
-      if(_gblSetup._pType == ParserType.ARFF && other._gblSetup._pType == ParserType.CSV)
-        other._gblSetup._pType = ParserType.ARFF;
-      if(_gblSetup._pType == ParserType.CSV && other._gblSetup._pType == ParserType.ARFF)
-        _gblSetup._pType = ParserType.ARFF;
 
       if (other._gblSetup._isValid && !_gblSetup.isCompatible(other._gblSetup)) {
         //   if (_conflicts.contains(_gblSetup._setupFromFile) && !other._conflicts.contains(other._gblSetup._setupFromFile)) {
@@ -306,10 +299,6 @@ public final class ParseSetup extends Iced {
         //     _conflicts.add(_gblSetup._setupFromFile);
         //    _conflicts.add(other._gblSetup._setupFromFile);
         //  }
-      } else if (other._gblSetup._isValid) { // merge the two setups
-/*        if (!_gblSetup._setup._header && other._gblSetup._setup._header) {
-          _gblSetup._setup._header = true;
-          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;*/
 
         // unify column names
         if (other._gblSetup._columnNames != null) {
@@ -322,6 +311,36 @@ public final class ParseSetup extends Iced {
                 Log.warn("Column names do not match between files");
             }
           }
+        }
+      } else if (other._gblSetup._isValid) { // merge the two setups
+        //merge ARFF and CSV
+        if (_gblSetup._pType == ParserType.CSV && other._gblSetup._pType == ParserType.ARFF)
+          _gblSetup._pType = ParserType.ARFF;
+
+        //merge header settings
+/*        if (!_gblSetup._setup._header && other._gblSetup._setup._header) {
+          _gblSetup._setup._header = true;
+          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;*/
+
+        // merge column names
+        if (other._gblSetup._columnNames != null) {
+          if (_gblSetup._columnNames == null) {
+            _gblSetup._columnNames = other._gblSetup._columnNames;
+          } else {
+            for (int i = 0; i < _gblSetup._columnNames.length; i++) {
+              if (_gblSetup._columnNames[i].equals(other._gblSetup._columnNames[i]))
+                //TODO throw something more serious
+                Log.warn("Column names do not match between files");
+            }
+          }
+
+          //merge column types
+          if (_gblSetup._ctypes == null) _gblSetup._ctypes = other._gblSetup._ctypes;
+          else if (other._gblSetup._ctypes != null) {
+            for (int i = 0; i < _gblSetup._ctypes.length; ++i)
+              _gblSetup._ctypes[i].merge(other._gblSetup._ctypes[i]);
+          }
+
         }
 
         if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
@@ -370,9 +389,9 @@ public final class ParseSetup extends Iced {
       case XLS:      return      XlsParser.   guessSetup(bits);
       case ARFF:     return      ARFFParser.  guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames);
       case AUTO:
-        for( ParserType pType2 : guessTypeOrder ) {
+        for( ParserType pTypeGuess : guessTypeOrder ) {
           try {
-            ParseSetup ps = guessSetup(bits,pType2,sep,ncols,singleQuotes,checkHeader,columnNames,domains);
+            ParseSetup ps = guessSetup(bits,pTypeGuess,sep,ncols,singleQuotes,checkHeader,columnNames,domains);
             if( ps != null && ps._isValid ) return ps;
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
@@ -403,14 +422,16 @@ public final class ParseSetup extends Iced {
   }
 
   public boolean isCompatible(ParseSetup other){
-    if(other == null || _pType != other._pType)return false;
+    // incompatible file types
+    if ((_pType != other._pType)
+            && !(_pType == ParserType.ARFF && other._pType == ParserType.CSV )
+              && !(_pType == ParserType.CSV && other._pType == ParserType.ARFF ))
+        return false;
+
+    //different separators or col counts
     if(_pType == ParserType.CSV && (_sep != other._sep || _ncols != other._ncols))
       return false;
-    if(_ctypes == null) _ctypes = other._ctypes;
-    else if(other._ctypes != null){
-      for(int i = 0; i < _ctypes.length; ++i)
-        _ctypes[i].merge(other._ctypes[i]);
-    }
+
     return true;
   }
 

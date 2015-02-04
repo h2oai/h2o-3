@@ -81,6 +81,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
          'pType': None,
          'singleQuotes': None,
          'checkHeader' : None,
+         'chunkSize' : None,
          }
     if setup["columnNames"]:
         setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
