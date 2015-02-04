@@ -770,13 +770,11 @@ mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame=
 assert mm is not None, "FAIL: Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial'
 assert 'model_category' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a model_category."
 assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + str(mm['model_category'])
-assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc element: " + h2o_util.dump_json(mm)
-assert 'AUC' in mm['auc'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc/AUC element: " + h2o_util.dump_json(mm)
-assert type(mm['auc']['AUC']) is float, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " auc/AUC element is not a float: " + h2o_util.dump_json(mm)
+assert 'AUC' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an AUC element: " + h2o_util.dump_json(mm)
+assert type(mm['AUC']) is float, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " AUC element is not a float: " + h2o_util.dump_json(mm)
 
-assert 'cm' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a CM."
-assert 'confusion_matrix' in mm['cm'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a cm/confusion_matrix element: " + h2o_util.dump_json(mm)
-assert type(mm['cm']['confusion_matrix']) is list, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " cm/confusion_matrix element is not a list: " + h2o_util.dump_json(mm)
+assert 'confusion_matrices' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a confusion_matrices element: " + h2o_util.dump_json(mm)
+assert type(mm['confusion_matrices']) is list, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " confusion_matrices element is not a list: " + h2o_util.dump_json(mm)
 
 # print h2o_util.dump_json(mm)
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
