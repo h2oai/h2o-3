@@ -34,9 +34,9 @@ public class FrameSplitter extends H2OCountedCompleter {
   /** Dataset to split */
   final Frame   dataset;
   /** Split ratios - resulting number of split is ratios.length+1 */
-  final double[] ratios;
+  final float[] ratios;
   /** Destination keys for each output frame split. */
-  public Key[]   destKeys;
+  final Key[]   destKeys;
   /** Optional job key */
   final Key     jobKey;
 
@@ -45,10 +45,10 @@ public class FrameSplitter extends H2OCountedCompleter {
   /** Temporary variable holding exceptions of workers */
   private Throwable[] workersExceptions;
 
-  public FrameSplitter(Frame dataset, double[] ratios) {
+  public FrameSplitter(Frame dataset, float[] ratios) {
     this(dataset, ratios, null, null);
   }
-  public FrameSplitter(Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
+  public FrameSplitter(Frame dataset, float[] ratios, Key[] destKeys, Key jobKey) {
     assert ratios.length > 0 : "No ratio specified!";
     assert ratios.length < 100 : "Too many frame splits demanded!";
     this.dataset  = dataset;
@@ -61,10 +61,8 @@ public class FrameSplitter extends H2OCountedCompleter {
   @Override public void compute2() {
     // Lock all possible data
     dataset.read_lock(jobKey);
-
     // Create a template vector for each segment
     final Vec[][] templates = makeTemplates(dataset, ratios);
-
     final int nsplits = templates.length;
     assert nsplits == ratios.length+1 : "Unexpected number of split templates!";
     // Launch number of distributed FJ for each split part
@@ -77,20 +75,15 @@ public class FrameSplitter extends H2OCountedCompleter {
     }
     setPendingCount(1);
     H2O.submitTask(new H2OCountedCompleter(FrameSplitter.this) {
-      @Override
-      public void compute2() {
+      @Override public void compute2() {
         setPendingCount(nsplits);
-        for (int s = 0; s < nsplits; s++) {
+        for (int s=0; s<nsplits; s++) {
           new FrameSplitTask(new H2OCountedCompleter(this) { // Completer for this task
-            @Override
-            public void compute2() {
-            }
-
-            @Override
-            public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-              synchronized (FrameSplitter.this) { // synchronized on this since can be accessed from different workers
-                workersExceptions = workersExceptions != null ? Arrays.copyOf(workersExceptions, workersExceptions.length + 1) : new Throwable[1];
-                workersExceptions[workersExceptions.length - 1] = ex;
+            @Override public void compute2() { }
+            @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+              synchronized( FrameSplitter.this ) { // synchronized on this since can be accessed from different workers
+                workersExceptions = workersExceptions!=null ? Arrays.copyOf(workersExceptions, workersExceptions.length+1) : new Throwable[1];
+                workersExceptions[workersExceptions.length-1] = ex;
               }
               tryComplete(); // we handle the exception so wait perform normal completion
               return false;
@@ -126,11 +119,10 @@ public class FrameSplitter extends H2OCountedCompleter {
         }
       }
     }
-    ((Job)DKV.getGet(jobKey)).done();
   }
 
   // Make vector templates for all output frame vectors
-  private Vec[][] makeTemplates(Frame dataset, double[] ratios) {
+  private Vec[][] makeTemplates(Frame dataset, float[] ratios) {
     Vec anyVec = dataset.anyVec();
     final long[][] espcPerSplit = computeEspcPerSplit(anyVec._espc, anyVec.length(), ratios);
     final int num = dataset.numCols(); // number of columns in input frame
@@ -149,7 +141,7 @@ public class FrameSplitter extends H2OCountedCompleter {
   }
 
   // The task computes ESPC per split
-  static long[/*nsplits*/][/*nchunks*/] computeEspcPerSplit(long[] espc, long len, double[] ratios) {
+  static long[/*nsplits*/][/*nchunks*/] computeEspcPerSplit(long[] espc, long len, float[] ratios) {
     assert espc.length>0 && espc[0] == 0;
     assert espc[espc.length-1] == len;
     long[] partSizes = partitione(len, ratios); // Split of whole vector
@@ -174,13 +166,13 @@ public class FrameSplitter extends H2OCountedCompleter {
    * into output chunk.*/
   private static class FrameSplitTask extends MRTask<FrameSplitTask> {
     final Vec  [] _srcVecs; // a source frame given by list of its columns
-    final double[] _ratios;  // split ratios
+    final float[] _ratios;  // split ratios
     final int     _partIdx; // part index
 
     transient int _pcidx; // Start chunk index for this partition
     transient int _psrow; // Start row in chunk for this partition
 
-    public FrameSplitTask(H2OCountedCompleter completer, Vec[] srcVecs, double[] ratios, int partIdx) {
+    public FrameSplitTask(H2OCountedCompleter completer, Vec[] srcVecs, float[] ratios, int partIdx) {
       super(completer);
       _srcVecs = srcVecs;
       _ratios  = ratios;
@@ -209,7 +201,7 @@ public class FrameSplitter extends H2OCountedCompleter {
       }
     }
   }
-  static final long[] partitione(long len, double[] ratio) {
+  static final long[] partitione(long len, float[] ratio) {
     long[] r = new long[ratio.length+1];
     long sum = 0;
     int i = 0;
