@@ -1223,12 +1223,12 @@ class TestRunner:
 
     def _get_summary_filehandle_for_appending(self):
         summary_file_name = os.path.join(self.output_dir, "summary.txt")
-        f = open(summary_file_name, "a")
+        f = open(summary_file_name, "a+")
         return f
 
     def _get_failed_filehandle_for_appending(self):
         summary_file_name = os.path.join(self.output_dir, "failed.txt")
-        f = open(summary_file_name, "a")
+        f = open(summary_file_name, "a+")
         return f
 
     def __str__(self):
