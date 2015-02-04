@@ -1,6 +1,7 @@
 package hex.gram;
 
 
+import hex.DataInfo;
 import hex.FrameTask;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
@@ -672,7 +673,51 @@ public final class Gram extends Iced<Gram> {
     public final void setSPD(boolean b) {_isSPD = b;}
   }
 
-  public final void addRow(final double[] x, final int catN, final int [] catIndexes, final double w) {
+  public final void addRowSparse(DataInfo.Row r, double w) {
+    final int intercept = _hasIntercept?1:0;
+    final int denseRowStart = _fullN - _denseN - _diagN - intercept; // we keep dense numbers at the right bottom of the matrix, -1 is for intercept
+    final int denseColStart = _fullN - _denseN - intercept;
+
+    assert _denseN + denseRowStart == _xx.length-intercept;
+    final double [] interceptRow = _hasIntercept?_xx[_xx.length-1]:null;
+    // nums
+    for(int i = 0; i < r.nNums; ++i) {
+      int cid = r.numIds[i];
+      final double [] mrow = _xx[cid - _diagN];
+      final double d = w*r.numVals[i];
+      for(int j = 0; j <= i; ++j)
+        mrow[r.numIds[j] - _diagN] += d*r.numVals[j];
+      if(_hasIntercept)
+        interceptRow[cid] += d; // intercept*x[i]
+      // nums * cats
+      for(int j = 0; j < r.nBins; ++j)
+        mrow[r.binIds[j] - _diagN] += d;
+    }
+    if(_hasIntercept){
+      // intercept*intercept
+      interceptRow[_denseN+denseColStart] += w;
+      // intercept X cat
+      for(int j = 0; j < r.nBins; ++j)
+        interceptRow[r.binIds[j]] += w;
+    }
+    final boolean hasDiag = (_diagN > 0 && r.nBins > 0 && r.binIds[0] < _diagN);
+    // cat X cat
+    for(int i = hasDiag?1:0; i < r.nBins; ++i){
+      final double [] mrow = _xx[r.binIds[i] - _diagN];
+      for(int j = 0; j <= i; ++j)
+        mrow[r.binIds[j]] += w;
+    }
+    // DIAG
+    if(hasDiag && r.nBins > 0)
+      _diag[r.binIds[0]] += w;
+  }
+  public final void addRow(DataInfo.Row row, double w) {
+    if(row.numIds == null)
+      addRowDense(row,w);
+    else
+      addRowSparse(row, w);
+  }
+  public final void addRowDense(DataInfo.Row row, double w) {
     final int intercept = _hasIntercept?1:0;
     final int denseRowStart = _fullN - _denseN - _diagN - intercept; // we keep dense numbers at the right bottom of the matrix, -1 is for intercept
     final int denseColStart = _fullN - _denseN - intercept;
@@ -680,34 +725,34 @@ public final class Gram extends Iced<Gram> {
     assert _denseN + denseRowStart == _xx.length-intercept;
     final double [] interceptRow = _hasIntercept?_xx[_denseN + denseRowStart]:null;
     // nums
-    for(int i = 0; i < _denseN; ++i) if(x[i] != 0) {
+    for(int i = 0; i < _denseN; ++i) if(row.numVals[i] != 0) {
       final double [] mrow = _xx[i+denseRowStart];
-      final double d = w*x[i];
-      for(int j = 0; j <= i; ++j)if(x[j] != 0)
-        mrow[j+denseColStart] += d*x[j];
+      final double d = w* row.numVals[i];
+      for(int j = 0; j <= i; ++j)if(row.numVals[j] != 0)
+        mrow[j+denseColStart] += d* row.numVals[j];
       if(_hasIntercept)
         interceptRow[i+denseColStart] += d; // intercept*x[i]
       // nums * cats
-      for(int j = 0; j < catN; ++j)
-        mrow[catIndexes[j]] += d;
+      for(int j = 0; j < row.nBins; ++j)
+        mrow[row.binIds[j]] += d;
     }
     if(_hasIntercept){
       // intercept*intercept
       interceptRow[_denseN+denseColStart] += w;
       // intercept X cat
-      for(int j = 0; j < catN; ++j)
-        interceptRow[catIndexes[j]] += w;
+      for(int j = 0; j < row.nBins; ++j)
+        interceptRow[row.binIds[j]] += w;
     }
-    final boolean hasDiag = (_diagN > 0 && catN > 0 && catIndexes[0] < _diagN);
+    final boolean hasDiag = (_diagN > 0 && row.nBins > 0 && row.binIds[0] < _diagN);
     // cat X cat
-    for(int i = hasDiag?1:0; i < catN; ++i){
-      final double [] mrow = _xx[catIndexes[i] - _diagN];
+    for(int i = hasDiag?1:0; i < row.nBins; ++i){
+      final double [] mrow = _xx[row.binIds[i] - _diagN];
       for(int j = 0; j <= i; ++j)
-        mrow[catIndexes[j]] += w;
+        mrow[row.binIds[j]] += w;
     }
     // DIAG
-    if(hasDiag && catN > 0)
-      _diag[catIndexes[0]] += w;
+    if(hasDiag && row.nBins > 0)
+      _diag[row.binIds[0]] += w;
   }
   public void mul(double x){
     if(_diag != null)for(int i = 0; i < _diag.length; ++i)
@@ -745,46 +790,23 @@ public final class Gram extends Iced<Gram> {
    */
   public static class GramTask extends FrameTask<GramTask> {
     public Gram _gram;
-    public double [][] _XY;
     public long _nobs;
-    public final boolean _hasIntercept;
-    public final boolean _isWeighted; // last response is weight vector?
 
-    public GramTask(Key jobKey, DataInfo dinfo, boolean hasIntercept, boolean isWeighted){
+
+    public GramTask(Key jobKey, DataInfo dinfo){
       super(jobKey,dinfo._key,dinfo._activeCols);
-      _hasIntercept = hasIntercept;
-      _isWeighted = isWeighted;
     }
     @Override protected void chunkInit(){
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,_hasIntercept);
-      final int responses = _dinfo._responses - (_isWeighted?1:0);
-      if(responses > 0){
-        _XY = new double[responses][];
-        for(int i = 0; i < responses; ++i)
-          _XY[i] = MemoryManager.malloc8d(_gram._fullN);
-      }
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,false);
     }
-    @Override protected void processRow(long gid, double[] nums, int ncats, int[] cats, double [] responses) {
-      double w = _isWeighted?responses[responses.length-1]:1;
-      _gram.addRow(nums, ncats, cats, w);
-      if(_XY != null){
-        for(int i = 0 ; i < _XY.length; ++i){
-          final double y = responses[i]*w;
-          for(int j = 0; j < ncats; ++i)
-            _XY[i][cats[j]] += y;
-          int numoff = _dinfo.numStart();
-          for(int j = 0; j < nums.length; ++j)
-            _XY[i][numoff+j] += nums[j]*y;
-        }
-      }
+    @Override protected void processRow(long gid, DataInfo.Row r) {
+      double w = 1; // todo add weights to dinfo?
+      _gram.addRow(r, w);
       ++_nobs;
     }
     @Override protected void chunkDone(long n){
       double r = 1.0/_nobs;
       _gram.mul(r);
-      if(_XY != null)for(int i = 0; i < _XY.length; ++i)
-        for(int j = 0; j < _XY[i].length; ++j)
-          _XY[i][j] *= r;
     }
     @Override public void reduce(GramTask gt){
       double r1 = (double)_nobs/(_nobs+gt._nobs);
@@ -792,9 +814,6 @@ public final class Gram extends Iced<Gram> {
       double r2 = (double)gt._nobs/(_nobs+gt._nobs);
       gt._gram.mul(r2);
       _gram.add(gt._gram);
-      if(_XY != null)for(int i = 0; i < _XY.length; ++i)
-        for(int j = 0; j < _XY[i].length; ++j)
-          _XY[i][j] = _XY[i][j]*r1 + gt._XY[i][j]*r2;
       _nobs += gt._nobs;
     }
   }
