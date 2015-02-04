@@ -47,7 +47,7 @@ public class DeepLearningMissingTest extends TestUtil {
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
 
           // Create holdout test data on clean data (before adding missing values)
-          FrameSplitter fs = new FrameSplitter(data, new float[]{0.75f});
+          FrameSplitter fs = new FrameSplitter(data, new double[]{0.75f});
           H2O.submitTask(fs).join();
           Frame[] train_test = fs.getResult();
           train = train_test[0];
