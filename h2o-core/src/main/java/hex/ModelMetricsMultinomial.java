@@ -67,12 +67,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public static class MetricBuilderMultinomial extends MetricBuilderSupervised {
     long[/*nclasses*/][/*nclasses*/] _cm;
     long[/*K*/] _hits;            //the number of hits, length: K
-    final private int _K = 10;   // TODO: Let user set K and seed
+    private int _K = 10;          // TODO: Let user set K and seed
     private long _seed = 12345;
 
     public MetricBuilderMultinomial( String[] domain ) {
       super(domain);
       _cm = new long[_nclasses][_nclasses];
+      _K = Math.min(10, _nclasses-1);
     }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
