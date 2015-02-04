@@ -13,6 +13,8 @@ import water.parser.ParseDataset;
 import water.persist.Persist;
 
 public class FrameUtils {
+
+
   /** Parse given file into the form of frame represented by the given key.
    *
    * @param okey  destination key for parsed frame
@@ -73,5 +75,19 @@ public class FrameUtils {
         }
       }
     }
+  }
+
+  /**
+   * compute fraction of sparse chunks in this array.
+   * @param chks
+   * @return
+   */
+  public static double sparseRatio(Chunk [] chks) {
+    int cnt = 0;
+    double reg = 1.0/chks.length;
+    for(Chunk c :chks)
+      if(c.isSparse())
+        ++cnt;
+    return cnt * reg;
   }
 }
