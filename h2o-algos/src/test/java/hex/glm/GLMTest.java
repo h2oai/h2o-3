@@ -1,9 +1,8 @@
 package hex.glm;
 
-import hex.FrameTask.DataInfo;
-import hex.ModelMetricsBinomial;
+import hex.DataInfo;
 import hex.glm.GLMTask.GLMIterationTask;
-import hex.glm.GLMTask.ColGradientTask;
+import hex.glm.GLMTask.GLMGradientTask;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -211,7 +210,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless",fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
       double ymu = 0;
       double [][] beta = new double[5][];
@@ -224,15 +223,14 @@ public class GLMTest  extends TestUtil {
       GLMIterationTask [] glmts = new GLMIterationTask[beta.length];
       for(int i = 0; i < beta.length; ++i)
         glmts[i] = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta[i],ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-      ColGradientTask grt = new ColGradientTask(dinfo,params,beta,1).doAll(dinfo._adaptedFrame);
-      for(int i = 0; i < beta.length; ++i) {
+      GLMGradientTask grt = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).doAll(dinfo._adaptedFrame);
+      for(int i = 0; i < beta.length; ++i)
         for (int j = 0; j < beta[i].length; ++j)
           assertEquals("gradients differ: " + Arrays.toString(glmts[i]._grad) + " != " + Arrays.toString(grt._gradient[i]), glmts[i]._grad[j], grt._gradient[i][j], 1e-4);
-      }
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
       params._use_all_factor_levels = false;
       dinfo.remove();
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
       beta = new double[5][];
       for(int i = 0; i < beta.length; ++i)
@@ -244,7 +242,7 @@ public class GLMTest  extends TestUtil {
       glmts = new GLMIterationTask[beta.length];
       for(int i = 0; i < beta.length; ++i)
         glmts[i] = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta[i],ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-      grt = new ColGradientTask(dinfo,params,beta,1).doAll(dinfo._adaptedFrame);
+      grt = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i) {
         for (int j = 0; j < beta[i].length; ++j)
           assertEquals("gradients differ: " + Arrays.toString(glmts[i]._grad) + " != " + Arrays.toString(grt._gradient[i]), glmts[i]._grad[j], grt._gradient[i][j], 1e-4);
@@ -256,7 +254,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
       ymu = 0;
       beta = new double[5][];
@@ -269,7 +267,7 @@ public class GLMTest  extends TestUtil {
       glmts = new GLMIterationTask[beta.length];
       for(int i = 0; i < beta.length; ++i)
         glmts[i] = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta[i],ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-      grt = new ColGradientTask(dinfo,params,beta,1).doAll(dinfo._adaptedFrame);
+      grt = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i) {
         for (int j = 0; j < beta[i].length; ++j)
           assertEquals("gradients differ: " + Arrays.toString(glmts[i]._grad) + " != " + Arrays.toString(grt._gradient[i]), glmts[i]._grad[j], grt._gradient[i][j], 1e-4);
@@ -281,7 +279,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
       ymu = 0;
       beta = new double[1][];
@@ -294,7 +292,7 @@ public class GLMTest  extends TestUtil {
       glmts = new GLMIterationTask[beta.length];
       for(int i = 0; i < beta.length; ++i)
         glmts[i] = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta[i],ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-      grt = new ColGradientTask(dinfo,params,beta,1).doAll(dinfo._adaptedFrame);
+      grt = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i) {
         for (int j = 0; j < beta[i].length; ++j)
           assertEquals("gradients differ", glmts[i]._grad[j], grt._gradient[i][j], 1e-4);

@@ -191,7 +191,6 @@ public final class L_BFGS extends Iced {
 
 
 
-
   /**
    * Solve the optimization problem defined by the user-supplied gradient function using L-BFGS algorithm.
    *
@@ -223,6 +222,7 @@ _MAIN:
           t *= _stepDec;
         }
         GradientInfo[] ginfos = gslvr.getGradient(lsBetas);
+
         t = step;
         // check the line search, we do several steps at once each time to limit number of passes over all data
         for (int i = 0; i < ginfos.length; ++i) {
@@ -268,12 +268,39 @@ _MAIN:
   }
 
   // Armijo line-search rule
-  private static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] pk, final double [] gradOld){
+  public static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] pk, final double [] gradOld){
     // line search
     double f_hat = 0;
     for(int i = 0; i < pk.length; ++i)
       f_hat += gradOld[i] * pk[i];
     f_hat = c1*step*f_hat + objOld;
+    return objNew > f_hat;
+  }
+
+  // Armijo line-search rule - to be used with glm (to avoid making explicit pk [] array)
+  public static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] betaOld,final double [] betaNew, final double [] gradOld){
+    // line search
+    double f_hat = 0;
+    for(int i = 0; i < betaNew.length; ++i)
+      f_hat += gradOld[i] * (betaNew[i] - betaOld[i]);
+    f_hat = c1*step*f_hat + objOld;
+    return objNew > f_hat;
+  }
+
+  // Generalized Armijo line-search rule
+  // assuming objective f(beta) =  g(beta) + h(beta), only g is differentiable
+  // objOld and objNew are g(betaOld) and g(betaNew), gradient is g'
+  // betaNew = S_{t,l}(betaOld - t g'(betaOld)) , where S_{t,l} is a proximal operator of h (e.g. shrinkage for L1)
+  public static final boolean generalizedLineSearch(double step, final double objOld, final double objNew, final double [] betaOld, final double [] betaNew, final double [] gradOld){
+    // line search
+    double f_hat = 0;
+    double pk = 0;
+    for(int i = 0; i < betaNew.length; ++i) {
+      double diff = (betaNew[i] - betaOld[i]);
+      f_hat += gradOld[i] * diff;
+      pk += diff*diff;
+    }
+    f_hat = step*f_hat + objOld + 1.0/(2.0*step) * pk;
     return objNew > f_hat;
   }
 

@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.FrameTask.DataInfo;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.schemas.GLMModelV2;
 import water.*;
@@ -72,10 +71,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
@@ -103,10 +102,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   protected float[] score0(double[] data, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)data[i]];
     }
@@ -239,7 +238,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public double [] nullModelBeta(FrameTask.DataInfo dinfo, double ymu){
+    public double [] nullModelBeta(DataInfo dinfo, double ymu){
       double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
       res[res.length-1] = link(ymu);
       return res;
