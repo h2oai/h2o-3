@@ -177,7 +177,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   FrameV2( Key key ) { this.key = new FrameKeyV1(key); }
 
   FrameV2( Frame fr ) {
-    this(fr, 1, (int)fr.vec(0).length()); // NOTE: possible len truncation
+    this(fr, 1, (int)fr.numRows()); // NOTE: possible len truncation
   }
 
   /** TODO: refactor together with fillFromImpl(). */
