@@ -317,6 +317,60 @@ H2O node 172.16.2.185:54321 reports H2O cluster size 3
 H2O node 172.16.2.184:54321 reports H2O cluster size 3
 ```
 
+Sparkling Water
+---------------------------------
+Sparkling Water combines two open source technologies: Apache Spark and H2O - a machine learning engine.  It makes H2O’s library of Advanced Algorithms including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest accessible from Spark workflows. Spark users are provided with the options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
+
+### Prerequisites
+
+Spark 1.2 for Sparkling Water v0.2.4-65+
+Spark 1.1 for older versions
+
+### Sparkling Water on Hadoop
+
+Compatiable Hadoop Distribution: CDH4, CDH5, and HDP2.1.
+
+#### Install on Hadoop
+
+- To install on your Hadoop Cluster clone the git repository and make a build:
+
+```
+git clone https://github.com/0xdata/sparkling-water.git 
+cd sparkling-water
+./gradlew build
+```
+
+- Then set MASTER to the IP address of where your Spark Master Node is launched and set SPARK_HOME to the location of your Spark installation. In the example below the path for SPARK_HOME is the default location of Spark preinstalled on a CDH5 cluster. Please change MASTER below:
+
+```
+export MASTER="spark://mr-0xd9-precise1.0xdata.loc:7077"
+export SPARK_HOME="/opt/cloudera/parcels/CDH-5.2.0-1.cdh5.2.0.p0.11/lib/spark"
+```
+
+- Launch Sparkling Shell:
+
+```
+./bin/sparkling-shell
+```
+
+#### Import Data from HDFS
+
+The initialization of H2O remains the same with the exception of importing data from a HDFS path. Please change path variable below to one suitable for your data.
+
+```scala
+import org.apache.spark.h2o._
+import org.apache.spark.examples.h2o._
+// Create H2O context
+val h2oContext = new H2OContext(sc).start()
+// Export H2O context to the 
+import h2oContext._
+
+// URI to access HDFS file
+val path = "hdfs://mr-0xd6-precise1.0xdata.loc:8020/datasets/airlines_all.05p.csv"
+val d = new java.net.URI(path)
+val f = new DataFrame(d)
+```
+
 Community
 ---------------------------------
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
