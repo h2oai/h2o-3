@@ -493,7 +493,10 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
-  public int nextNZ(int rid){return rid+1;}
+  public int nextNZ(int rid){
+    while(++rid < _len && atd(rid) == 0);
+    return rid;
+  }
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
@@ -547,6 +550,8 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _chk2 != null ) s += _chk2.byteSize();
     return s;
   }
+
+
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
