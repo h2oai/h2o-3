@@ -12,7 +12,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static java.lang.Double.isNaN;
@@ -815,7 +817,86 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-    return null;
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Training Time"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%,d");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%g");
+    if (_output.getModelCategory() == ModelCategory.Binomial) {
+      colHeaders.add("Training AUC");
+      colTypes.add("double");
+      colFormat.add("%g");
+    }
+    if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
+      colHeaders.add("Training Classification Error");
+      colTypes.add("double");
+      colFormat.add("%g");
+    }
+    if (get_params()._valid != null) {
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Validation AUC");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+      if (_output.isClassifier()) {
+        colHeaders.add("Validation Classification Error");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+    } else if (get_params()._n_folds > 0) {
+      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+//      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Cross-Validation AUC");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+      if (_output.isClassifier()) {
+        colHeaders.add("Cross-Validation Classification Error");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+    }
+
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History",
+            new String[errors.length],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0])
+    );
+
+    for( int i = errors.length - 1; i >= 0; i-- ) {
+      final DeepLearningScoring e = errors[i];
+      int row = i;
+      int col = 0;
+      table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
+      table.set(row, col++, e.epoch_counter);
+      table.set(row, col++, e.training_samples);
+      table.set(row, col++, e.train_mse);
+      table.set(row, col++, e.train_r2);
+      if (_output.getModelCategory() == ModelCategory.Binomial)
+        table.set(row, col++, e.trainAUC != null ? e.trainAUC.AUC() : Double.NaN);
+      if (_output.isClassifier())
+        table.set(row, col++, e.train_err);
+      if (get_params()._valid != null) {
+        table.set(row, col++, e.valid_mse);
+        table.set(row, col++, e.valid_r2);
+        if (_output.getModelCategory() == ModelCategory.Binomial)
+          table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
+        if (_output.isClassifier())
+          table.set(row, col++, e.valid_err);
+      }
+      else if(get_params()._n_folds > 0) {
+        throw H2O.unimpl();
+      }
+    }
+    return table;
   }
 
 
@@ -1623,7 +1704,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
             + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
-    sb.append(last_scored().toString());
+    //sb.append(last_scored().toString());
+    sb.append(_output.scoringHistory.toString());
     return sb.toString();
   }
 
