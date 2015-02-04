@@ -927,16 +927,33 @@ class TestRunner:
             self._log("Setting up R H2O package...")
             out_file_name = os.path.join(self.output_dir, "runnerSetupPackage.out.txt")
             out = open(out_file_name, "w")
-            cloud = self.clouds[0]
-            port = cloud.get_port()
-            #ip = "127.0.0.1:"
-            ip = cloud.get_ip()+":"
-            if (g_use_cloud2):
-                ip = cloud.get_ip()+":"
+
+            runner_setup_package_r = None
+            if (True):
+                possible_utils_parent_dir = self.test_root_dir
+                while (True):
+                    possible_utils_dir = os.path.join(possible_utils_parent_dir, "Utils")
+                    possible_runner_setup_package_r = os.path.join(possible_utils_dir, "runnerSetupPackage.R")
+                    if (os.path.exists(possible_runner_setup_package_r)):
+                        runner_setup_package_r = possible_runner_setup_package_r
+                        break
+
+                    next_possible_utils_parent_dir = os.path.dirname(possible_utils_parent_dir)
+                    if (next_possible_utils_parent_dir == possible_utils_parent_dir):
+                        break
+
+                    possible_utils_parent_dir = next_possible_utils_parent_dir
+
+            if (runner_setup_package_r is None):
+                print("")
+                print("ERROR: runnerSetupPackage.R not found.")
+                print("")
+                sys.exit(1)
+
             cmd = ["R",
                    "--quiet",
                    "-f",
-                   os.path.join(self.test_root_dir, "Utils/runnerSetupPackage.R")]
+                   runner_setup_package_r]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
@@ -945,7 +962,7 @@ class TestRunner:
                 return
             if (rv != 0):
                 print("")
-                print("ERROR: Utils/runnerSetupPackage.R failed.")
+                print("ERROR: " + runner_setup_package_r + " failed.")
                 print("       (See " + out_file_name + ")")
                 print("")
                 sys.exit(1)
