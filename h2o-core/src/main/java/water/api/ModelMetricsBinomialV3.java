@@ -25,7 +25,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBase<ModelMetricsBinomia
     public TwoDimTableV1 maxCriteriaAndMetricScores;
 
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
-    public HitRatioBase hr;
+    public float[] hr;
 
     @Override
     public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
