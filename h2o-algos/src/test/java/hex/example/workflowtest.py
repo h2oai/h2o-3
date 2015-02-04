@@ -32,4 +32,5 @@ startime = data["starttime"]
 data["Days"] = (startime/(1000*60*60*24)).floor()
 data.describe()
 
-# Now do a monster Group-By.  Count bike starts per-station per-hour per-day
+# Now do a monster Group-By.  Count bike starts per-station per-day
+bph = h2o.ddply(data,["Days","start station name"],"nrow")

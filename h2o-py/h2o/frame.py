@@ -374,7 +374,7 @@ class H2OFrame(object):
     Retrieve the column names (one name per H2OVec) for this H2OFrame.
     :return: A character list[] of column names.
     """
-    return [i.name() for i in self._vecs]
+    return [i._name for i in self._vecs]
 
   def names(self):
     """
@@ -436,7 +436,7 @@ class H2OFrame(object):
     :return: None (print to stdout)
     """
     print "Rows:", len(self._vecs[0]), "Cols:", len(self)
-    headers = [vec.name() for vec in self._vecs]
+    headers = [vec._name for vec in self._vecs]
     table = [
       self._row('type', None),
       self._row('mins', 0),
@@ -455,9 +455,13 @@ class H2OFrame(object):
 
   # Find a named H2OVec and return it.  Error is name is missing
   def _find(self,name):
-    for v in self._vecs:
+    return self._vecs[self._find_idx(name)];
+
+  # Find a named H2OVec and return the zero-based index for it.  Error is name is missing
+  def _find_idx(self,name):
+    for i,v in enumerate(self._vecs):
       if name == v._name:
-        return v
+        return i
     raise ValueError("Name " + name + " not in Frame")
 
   # Column selection via integer, string (name) returns a Vec
@@ -492,41 +496,26 @@ class H2OFrame(object):
     :param c: The vector that 'b' is replaced with.
     :return: Returns this H2OFrame.
     """
-    i = v = None
     #  b is a named column, fish out the H2OVec and its index
-    if isinstance(b, str):
-      for i, v in enumerate(self._vecs):
-        if b == v.name():
-          break
-
+    if isinstance(b, str):  i = self._find_idx(b)
     # b is a 0-based column index
     elif isinstance(b, int):
       if b < 0 or b > self.__len__():
         raise ValueError("Index out of range: 0 <= " + b + " < " + self.__len__())
       i = b
-      v = self.vecs()[i]
-    else:
-      raise NotImplementedError
-
-    # some error checking
-    if not v:
-      raise ValueError("Name " + b + " not in Frame")
-
-    if len(c) != len(v):
-      raise ValueError("len(c)=" + len(c) + " not compatible with Frame len()=" + len(v))
-
-    c._name = b
+    else:  raise NotImplementedError
+    self._len_check(c)
+    # R-like behavior: the column name remains the same, even if replacing via index
+    c._name = self._vecs[i]._name
     self._vecs[i] = c
 
+  # Modifies the collection in-place to remove a named item
   def __delitem__(self, i):
     if isinstance(i, str):
-      for v in self._vecs:
-        if i == v.name():
-          self._vecs.remove(v)
-          return
-        raise KeyError("Name " + i + " not in Frames")
-      raise NotImplementedError
+      return self._vecs.pop(self._find_idx(i))
+    raise NotImplementedError
 
+  # Makes a new collection
   def drop(self, i):
     """
     Column selection via integer, string(name) returns a Vec
@@ -536,8 +525,8 @@ class H2OFrame(object):
     """
     if isinstance(i, str):
       for v in self._vecs:
-        if i == v.name():
-          return H2OFrame(vecs=[v for v in self._vecs if i != v.name()])
+        if i == v._name:
+          return H2OFrame(vecs=[v for v in self._vecs if i != v._name])
       raise ValueError("Name " + i + " not in Frame")
     raise NotImplementedError
 
@@ -599,7 +588,7 @@ class H2OFrame(object):
     h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
-    cnames = ';'.join([vec.name() for vec in self.vecs()])
+    cnames = ';'.join([vec._name for vec in self.vecs()])
     colnames += cnames + "})"
     h2o.rapids(colnames)
     return fr
@@ -682,6 +671,23 @@ class H2OFrame(object):
   def _len_check(self,x):
     if len(self) == 0: return
     return self._vecs[0]._len_check(x)
+
+  # ddply in h2o
+  def ddply(self,cols,fun):
+    # Confirm all names present in dataset; collect column indices
+    colnums = [self._find_idx(name) for name in cols]
+    rapids_series = "{"+";".join(colnums)+"}"
+      
+    # Eagerly eval and send the cbind'd frame over
+    key = self.send_frame()
+    x = "(ddply %{} {} {})".format(key,rapids_series,fun)
+    print x
+    h2o.rapids(x)
+
+    # Remove h2o temp frame
+    h2o.remove(key)
+    raise NotImplementedError
+
 
 class H2OVec(object):
   """
