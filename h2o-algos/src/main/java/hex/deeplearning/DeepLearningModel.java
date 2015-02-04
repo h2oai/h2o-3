@@ -725,8 +725,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public double valid_err = 1;
     public AUCData trainAUC;
     public AUCData validAUC;
-    public HitRatio train_hitratio; // "Hit ratio on training data"
-    public HitRatio valid_hitratio; // "Hit ratio on validation data"
+    public float[] train_hitratio; // "Hit ratio on training data"
+    public float[] valid_hitratio; // "Hit ratio on validation data"
 
     // regression
     public double train_mse = Double.POSITIVE_INFINITY;
@@ -1572,7 +1572,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
             err.train_confusion_matrix = mm._cm;
             err.train_err = mm._cm.err();
-            err.train_hitratio = mm._hr;
+            err.train_hitratio = mm._hit_ratios;
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
@@ -1592,7 +1592,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial) (mm2);
                 err.valid_confusion_matrix = mm._cm;
                 err.valid_err = mm._cm.err();
-                err.valid_hitratio = mm._hr;
+                err.valid_hitratio = mm._hit_ratios;
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();

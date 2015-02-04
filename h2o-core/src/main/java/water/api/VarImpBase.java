@@ -10,6 +10,6 @@ public class VarImpBase<I extends VarImp, S extends VarImpBase<I, S>> extends Sc
     @API(help="Names of variables", direction=API.Direction.OUTPUT)
     protected String[] variables;
 
-    @API(help="Variable importance measurement method", direction=API.Direction.OUTPUT)
+    @API(help="Variable importance measurement method", direction=API.Direction.OUTPUT, values = { "PERMUTATION_IMPORTANCE", "RELATIVE_IMPORTANCE" })
     public VarImpMethod method;
 }
