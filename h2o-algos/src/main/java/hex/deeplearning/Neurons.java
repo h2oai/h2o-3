@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.DataInfo;
 import hex.FrameTask;
 import water.Iced;
 import water.MemoryManager;
@@ -638,11 +639,11 @@ public abstract class Neurons {
    */
   public static class Input extends Neurons {
 
-    private FrameTask.DataInfo _dinfo; //training data
+    private DataInfo _dinfo; //training data
     SparseVector _svec;
     DenseVector _dvec;
 
-    Input(int units, final FrameTask.DataInfo d) {
+    Input(int units, final DataInfo d) {
       super(units);
       _dinfo = d;
       _a = new DenseVector(units);
