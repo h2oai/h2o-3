@@ -257,7 +257,29 @@
   if (rv$curlError) {
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
   } else if (rv$httpStatusCode != 200) {
-    stop(sprintf("Unexpected HTTP Status code: %d %s (url = %s)", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+    cat("\n")
+    cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+    cat("\n")
+
+    jsonObject = fromJSON(rv$payload)
+
+    exceptionType = jsonObject$exception_type
+    if (! is.null(exceptionType)) {
+      cat(sprintf("%s\n", exceptionType))
+    }
+
+    stacktrace = jsonObject$stacktrace
+    if (! is.null(stacktrace)) {
+      print(jsonObject$stacktrace)
+      cat("\n")
+    }
+
+    msg = jsonObject$msg
+    if (! is.null(msg)) {
+      stop(msg)
+    } else {
+      stop("Unexpected HTTP Status code")
+    }
   }
 
   rv$payload
