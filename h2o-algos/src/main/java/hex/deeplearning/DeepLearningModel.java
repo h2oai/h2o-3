@@ -5,6 +5,8 @@ import hex.FrameTask.DataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
@@ -820,7 +822,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
-    colHeaders.add("Training Time"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Time"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%,d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
@@ -875,6 +878,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       final DeepLearningScoring e = errors[i];
       int row = i;
       int col = 0;
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
