@@ -360,7 +360,7 @@ class H2OFrame(object):
     self._handle_raw_fname(dest_key, column_names)
 
   def __iter__(self):
-    return (vec for vec in self.vecs().__iter__() if vec is not None)
+    return (vec for vec in self._vecs.__iter__() if vec is not None)
 
   def vecs(self):
     """
@@ -497,17 +497,25 @@ class H2OFrame(object):
     :return: Returns this H2OFrame.
     """
     #  b is a named column, fish out the H2OVec and its index
-    if isinstance(b, str):  i = self._find_idx(b)
+    ncols = len(self._vecs)
+    if isinstance(b, str):  
+      for i in xrange(ncols):
+        if b == self._vecs[i]._name:
+          break
+      else:
+        i = ncols               # Not found, so append at end
     # b is a 0-based column index
     elif isinstance(b, int):
       if b < 0 or b > self.__len__():
         raise ValueError("Index out of range: 0 <= " + b + " < " + self.__len__())
       i = b
+      b = self._vecs[i]._name
     else:  raise NotImplementedError
     self._len_check(c)
     # R-like behavior: the column name remains the same, even if replacing via index
-    c._name = self._vecs[i]._name
-    self._vecs[i] = c
+    c._name = b
+    if i >= ncols: self._vecs.append(c)
+    else:          self._vecs[i] = c
 
   # Modifies the collection in-place to remove a named item
   def __delitem__(self, i):
@@ -541,7 +549,7 @@ class H2OFrame(object):
     if len(self) == 0: return self
     self._len_check(i)
     if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i.vecs())])
+      return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i._vecs)])
     if isinstance(i, H2OVec):
       return H2OFrame(vecs=[x + i for x in self._vecs])
     if isinstance(i, int):
@@ -556,12 +564,24 @@ class H2OFrame(object):
     """
     return self.__add__(i)
 
+  def __and__(self, i):
+    print "FRAME AND"
+    if len(self) == 0: return self
+    self._len_check(i)
+    if isinstance(i, H2OFrame):
+      return H2OFrame(vecs=[x and y for x, y in zip(self._vecs, i._vecs)])
+    if isinstance(i, H2OVec):
+      return H2OFrame(vecs=[x and i for x in self._vecs])
+    if isinstance(i, int,bool):
+      return H2OFrame(vecs=[x and i for x in self._vecs])
+    raise NotImplementedError
+
   # Division
   def __div__(self, i):
     if len(self) == 0: return self
     self._len_check(i)
     if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x / y for x, y in zip(self._vecs, i.vecs())])
+      return H2OFrame(vecs=[x / y for x, y in zip(self._vecs, i._vecs)])
     if isinstance(i, H2OVec):
       return H2OFrame(vecs=[x / i for x in self._vecs])
     if isinstance(i, int):
@@ -584,11 +604,11 @@ class H2OFrame(object):
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
     cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec._expr.eager() for vec in self.vecs()]) + "))"
+    cbind += " %".join([vec._expr.eager() for vec in self._vecs]) + "))"
     h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
-    cnames = ';'.join([vec._name for vec in self.vecs()])
+    cnames = ';'.join([vec._name for vec in self._vecs])
     colnames += cnames + "})"
     h2o.rapids(colnames)
     return fr
@@ -672,21 +692,32 @@ class H2OFrame(object):
     if len(self) == 0: return
     return self._vecs[0]._len_check(x)
 
+  # Quantiles
+  def quantile(self, prob=None):
+    if len(self) == 0: return self
+    return H2OFrame(vecs=[vec.quantile(prob) for vec in self._vecs ])
+
   # ddply in h2o
   def ddply(self,cols,fun):
     # Confirm all names present in dataset; collect column indices
-    colnums = [self._find_idx(name) for name in cols]
+    colnums = [str(self._find_idx(name)) for name in cols]
     rapids_series = "{"+";".join(colnums)+"}"
-      
+  
     # Eagerly eval and send the cbind'd frame over
     key = self.send_frame()
-    x = "(ddply %{} {} {})".format(key,rapids_series,fun)
-    print x
-    h2o.rapids(x)
-
-    # Remove h2o temp frame
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (h2o.ddply %{} {} {}))".format(tmp_key,key,rapids_series,fun)
+    h2o.rapids(expr) # ddply in h2o
+    # Remove h2o temp frame after ddply
     h2o.remove(key)
-    raise NotImplementedError
+    # Make backing H2OVecs for the remote h2o vecs
+    j = h2o.frame(tmp_key) # Fetch the frame as JSON
+    fr = j['frames'][0]    # Just the first (only) frame
+    rows = fr['rows']      # Row count
+    veckeys = fr['veckeys']# List of h2o vec keys
+    cols = fr['columns']   # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
 
 class H2OVec(object):
@@ -772,14 +803,17 @@ class H2OVec(object):
     e = Expr(i)
     return Expr("[", self, e, length=len(e))
 
-  # Boolean column select lookup
+  # Boolean column select lookup.  Eager, to compute the result length
   def row_select(self, vec):
     """
     Boolean column select lookup
     :param vec: An H2OVec.
     :return: A new H2OVec.
     """
-    return H2OVec(self._name, Expr("[", self, vec))
+    e = Expr("[", self, vec)
+    j = h2o.frame(e.eager())
+    e.set_len(j['frames'][0]['rows'])
+    return H2OVec(self._name, e)
 
   def __setitem__(self, b, c):
     """
@@ -803,91 +837,23 @@ class H2OVec(object):
     else:
       raise NotImplementedError("Only vector replacement is currently supported.")
 
-  def __add__(self, i):
-    """
-    Basic binary addition.
-    Supports H2OVec + H2OVec and H2OVec + int
-    :param i: A Vec or a float
-    :return: A new H2OVec.
-    """
-    # H2OVec + H2OVec
-    if isinstance(i, H2OVec):
-      # can only add two vectors of the same length
-      self._len_check(i)
-      # lazy new H2OVec
-      return H2OVec(self._name, Expr("+", self, i))
-
-    # H2OVec + number
-    if isinstance(i, (int, float)):
-      if i == 0:  return self
-      # lazy new H2OVec
-      return H2OVec(self._name, Expr("+", self, Expr(i)))
+  # Simple boolean operators, which auto-expand a right scalar argument
+  def _simple_bin_op( self, i, op):
+    if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
+    if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     raise NotImplementedError
 
-  def __radd__(self, i):
-    """
-    Add is commutative: call __add__(i)
-    :param i: A Vec or a float.
-    :return: A new H2OVec.
-    """
-    return self.__add__(i)
+  def __add__(self, i):  return self._simple_bin_op(i,"+" )
+  def __and__(self, i):  return self._simple_bin_op(i,"&" )
+  def __div__(self, i):  return self._simple_bin_op(i,"/" )
+  def __eq__ (self, i):  return self._simple_bin_op(i,"==")
+  def __ge__ (self, i):  return self._simple_bin_op(i,">=")
+  def __gt__ (self, i):  return self._simple_bin_op(i,">" )
+  def __le__ (self, i):  return self._simple_bin_op(i,"<=")
+  def __lt__ (self, i):  return self._simple_bin_op(i,"<" )
 
-  def __div__(self, i):
-    """
-    :param i: A Vec or a float
-    :return: A new H2OVec.
-    """
-    # H2OVec / H2OVec
-    if isinstance(i, H2OVec):
-      self._len_check(i)
-      return H2OVec(self._name, Expr("/", self, i))
+  def __radd__(self, i):   return self.__add__(i)
 
-    # H2OVec / number
-    if isinstance(i, (int, float)):
-      return H2OVec(self._name, Expr("/", self, Expr(i)))
-    raise NotImplementedError
-
-  def __eq__(self, i):
-    """
-    Perform the '==' operation.
-    :param i: An H2OVec or a number.
-    :return: A new H2OVec.
-    """
-    # == compare on two H2OVecs
-    if isinstance(i, H2OVec):
-      # can only compare two vectors of the same length
-      self._len_check(i)
-      # lazy new H2OVec
-      return H2OVec(self._name, Expr("==", self, i))
-    # == compare on a Vec and a constant Vec
-    if isinstance(i, (int, float)):
-      # lazy new H2OVec
-      return H2OVec(self._name, Expr("==", self, Expr(i)))
-    raise NotImplementedError
-
-  def __lt__(self, i):
-    # Vec < Vec
-    if isinstance(i, H2OVec):
-      self._len_check(i)
-      return H2OVec(self._name, Expr("<", self, i))
-
-    # Vec < number
-    elif isinstance(i, (int, float)):
-      return H2OVec(self._name, Expr("<", self, Expr(i)))
-
-    else:
-      raise NotImplementedError
-
-  def __ge__(self, i):
-    # Vec >= Vec
-    if isinstance(i, H2OVec):
-      self._len_check(i)
-      return H2OVec(self._name, Expr(">=", self, i))
-    # Vec >= number
-    elif isinstance(i, (int, float)):
-      return H2OVec(self._name, Expr(">=", self, Expr(i)))
-    else:
-      raise NotImplementedError
 
   def __len__(self):
     """
@@ -899,13 +865,20 @@ class H2OVec(object):
     """
     :return: A lazy Expr representing the Math.floor() of this H2OVec.
     """
-    return Expr("floor", self._expr, None)
+    return H2OVec(self._name,Expr("floor", self._expr, None))
 
   def mean(self):
     """
     :return: A lazy Expr representing the mean of this H2OVec.
     """
     return Expr("mean", self._expr, None, length=1)
+
+  def quantile(self,prob=None):
+    """
+    :return: A lazy Expr representing the quantiles of this H2OVec.
+    """
+    if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
+    return H2OVec(self._name,Expr("quantile", self, Expr(prob), length=len(prob)))
 
   def asfactor(self):
     """
@@ -923,9 +896,12 @@ class H2OVec(object):
       seed = random.randint(123456789, 999999999)  # generate a seed
     return H2OVec("", Expr("h2o.runif", self._expr, Expr(seed)))
 
+  # Error if lengths are not compatible.  Return self for flow-coding
   def _len_check(self,x):
-    if not x: return
+    if not x: return self
     if isinstance(x,H2OFrame): x = x._vecs[0]
-    if not isinstance(x,H2OVec): return
+    if isinstance(x,Expr): raise ValueError("Mixing Vec and Expr")
+    if not isinstance(x,H2OVec): return self
     if len(self) != len(x):
       raise ValueError("H2OVec length mismatch: "+len(self)+" vs "+len(x))
+    return self

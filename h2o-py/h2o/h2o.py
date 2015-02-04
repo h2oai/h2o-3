@@ -157,6 +157,12 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
 
+def glm(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a Generalized Linear Model
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
+
 def kmeans(x,validation_x=None,**kwargs):
   """
   Build a KMeans model

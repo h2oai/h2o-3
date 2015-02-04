@@ -65,6 +65,10 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
     from model.clustering import H2OClusteringModel
     model = H2OClusteringModel(job.dest_key,model_json)
 
+  elif model_type=="Regression":
+    from model.regression import H2ORegressionModel
+    model = H2ORegressionModel(job.dest_key,model_json)
+
   else:
     print model_type
     raise NotImplementedError

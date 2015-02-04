@@ -1848,7 +1848,6 @@ class ASTRepLen extends ASTUniPrefixOp {
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   protected static boolean _narm = false;
-  protected static boolean _names= true;  // _names = true, create a  vec of names as %1, %2, ...; _names = false -> no vec.
   protected static int     _type = 7;
   protected static double[] _probs = null;  // if probs is null, pop the _probs frame etc.
 
@@ -1879,9 +1878,6 @@ class ASTQtile extends ASTUniPrefixOp {
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.skipWS().parse());
     _narm = ((ASTNum)a).dbl() == 1;
-    // Get the names
-    AST b = E._env.lookup((ASTId)E.skipWS().parse());
-    _names = ((ASTNum)b).dbl() == 1;
     //Get the type
     try {
       _type = (int) ((ASTNum) E.skipWS().parse()).dbl();
@@ -1923,9 +1919,6 @@ class ASTQtile extends ASTUniPrefixOp {
 
     // create output vec
     Vec res = Vec.makeZero(p.length);
-    Vec p_names = Vec.makeSeq(res.length());
-    p_names.setDomain(names);
-
 
     final int MAX_ITERATIONS = 16;
     final int MAX_QBINS = 1000; // less uses less memory, can take more passes
@@ -1958,12 +1951,8 @@ class ASTQtile extends ASTUniPrefixOp {
       }
     }
     res.chunkForChunkIdx(0).close(0,null);
-    p_names.chunkForChunkIdx(0).close(0, null);
-    Futures pf = p_names.postWrite(new Futures());
-    pf.blockForPending();
-    Futures f = res.postWrite(new Futures());
-    f.blockForPending();
-    Frame fr = new Frame(new String[]{"P", "Q"}, new Vec[]{p_names, res});
+    res.postWrite(new Futures()).blockForPending();
+    Frame fr = new Frame(new String[]{"Quantiles"}, new Vec[]{res});
     env.pushAry(fr);
   }
 }

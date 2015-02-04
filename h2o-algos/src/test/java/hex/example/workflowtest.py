@@ -21,10 +21,12 @@ big_test =   ["bigdata/laptop/citibike-nyc/2013-07.csv",
               "bigdata/laptop/citibike-nyc/2014-07.csv",
               "bigdata/laptop/citibike-nyc/2014-08.csv"]
 
+# ----------
 # 1- Load data
-data = h2o.import_frame(path=small_test)
+data = h2o.import_frame(path=big_test)
 
 
+# ----------
 # 2- light data munging
 
 # Convert start time to: Day since the Epoch
@@ -33,4 +35,53 @@ data["Days"] = (startime/(1000*60*60*24)).floor()
 data.describe()
 
 # Now do a monster Group-By.  Count bike starts per-station per-day
-bph = h2o.ddply(data,["Days","start station name"],"nrow")
+bph = h2o.ddply(data,["Days","start station name"],"(%nrow)")
+bph["C1"]._name = "bikes"
+bph.describe()
+
+bph["bikes"].quantile().show()
+
+# Test/train split
+r = bph['Days'].runif()
+r.show()
+train = bph[ r < 0.6  ]
+test  = bph[(0.6 <= r) & (r < 0.9)]
+hold  = bph[ 0.9 <= r ]
+train.describe()
+test .describe()
+
+# ----------
+# 3- build model on train; using test as validation
+
+# Run GBM
+gbm = h2o.gbm(x           =train.drop("bikes"),
+              y           =train     ["bikes"],
+              validation_x=test .drop("bikes"),
+              validation_y=test      ["bikes"],
+              ntrees=500, # 500 works well
+              max_depth=6,
+              min_rows=10,
+              nbins=20,
+              learn_rate=0.1)
+#gbm.show()
+
+# Run GLM
+glm = h2o.glm(x           =train.drop("bikes"),
+              y           =train     ["bikes"],
+              validation_x=test .drop("bikes"),
+              validation_y=test      ["bikes"])
+#glm.show()
+
+
+# ----------
+# 4- Score on holdout set & report
+train_r2_gbm = gbm.model_performance(train).r2()
+test_r2_gbm  = gbm.model_performance(test ).r2()
+hold_r2_gbm  = gbm.model_performance(hold ).r2()
+print "GBM R2 TRAIN=",train_r2_gbm,", R2 TEST=",test_r2_gbm,", R2 HOLDOUT=",hold_r2_gbm
+
+train_r2_glm = glm.model_performance(train).r2()
+test_r2_glm  = glm.model_performance(test ).r2()
+hold_r2_glm  = glm.model_performance(hold ).r2()
+print "GLM R2 TRAIN=",train_r2_glm,", R2 TEST=",test_r2_glm,", R2 HOLDOUT=",hold_r2_glm
+
