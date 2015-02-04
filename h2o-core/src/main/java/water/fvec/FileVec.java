@@ -102,7 +102,7 @@ public abstract class FileVec extends ByteVec {
    * Calculates safe and hopefully optimal chunk sizes.  Four cases
    * exist.
    * <p>
-   * very small data < 128K per proc - uses default chunk size and
+   * very small data < 256K per proc - uses default chunk size and
    * all data will be in one chunk
    * <p>
    * small data - data is partitioned into chunks that at least
@@ -126,8 +126,8 @@ public abstract class FileVec extends ByteVec {
     int chunkSize = (int) (localParseSize /
             (Runtime.getRuntime().availableProcessors() * 4));
 
-    // Super small data check - less than 32K/thread
-    if (chunkSize <= (1 << 15)) {
+    // Super small data check - less than 64K/thread
+    if (chunkSize <= (1 << 16)) {
       return DFLT_CHUNK_SIZE;
     }
 
@@ -161,7 +161,10 @@ public abstract class FileVec extends ByteVec {
    */
   public void clearCachedChunk(int cidx) {
     Key cckey = chunkKey(cidx);
-    if (DKV.get(cckey) != null)
-      DKV.remove(cckey);
+    if (DKV.get(cckey) != null) {
+      Futures fs = new Futures();
+      DKV.remove(cckey, fs);
+      fs.blockForPending();
+    }
   }
 }
