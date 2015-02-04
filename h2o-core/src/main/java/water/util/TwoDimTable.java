@@ -257,7 +257,7 @@ public class TwoDimTable extends Iced {
       switch (colTypes[col]) {
         case "double":
         case "float":
-          cellValues[row][col] = Double.toHexString(d);
+          cellValues[row][col] = Double.toString(d);
           break;
         case "long":
         case "int":
@@ -280,7 +280,7 @@ public class TwoDimTable extends Iced {
     switch (colTypes[col]) {
       case "double":
       case "float":
-        cellValues[row][col] = Float.toHexString(f);
+        cellValues[row][col] = Float.toString(f);
         break;
       default:
         cellValues[row][col] = Float.toString(f);
