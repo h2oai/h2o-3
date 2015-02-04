@@ -168,6 +168,11 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
+    if (mfpt._errors != null) {
+      job.cancel();
+      //TODO replace with H2OParseException
+      throw new RuntimeException(mfpt._errors[0]);
+    }
     AppendableVec [] avs = mfpt.vecs();
 
     Frame fr = null;
@@ -586,7 +591,7 @@ public final class ParseDataset extends Job<Frame> {
     // Roll-up other meta data
     @Override public void reduce( MultiFileParseTask mfpt ) {
       assert this != mfpt;
-      // Collect & combine columns across files
+
       // Collect & combine columns across files
       if( _dout == null ) _dout = mfpt._dout;
       else if(_dout != mfpt._dout) _dout = ArrayUtils.append(_dout,mfpt._dout);
