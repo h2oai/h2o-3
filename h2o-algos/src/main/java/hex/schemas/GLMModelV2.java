@@ -29,6 +29,9 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     @API(help="fill me in GLMModelOutputV2")
     TwoDimTableV1 coefficients_table;
 
+    @API(help="fill me in GLMModelOutputV2")
+    TwoDimTableV1 variable_importance;
+
     @API(help="fill me in GLMModelOutputV2; I think I'm redundant")
     boolean binomial; // TODO: isn't this redundant, given model_category?
 
