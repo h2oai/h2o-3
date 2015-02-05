@@ -3,7 +3,7 @@ package water.api;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
-public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetricsBinomial, ModelMetricsBinomialV3> {
+public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialBaseV3<I, S>> extends ModelMetricsBase<I, S> {
     @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
     public double mse;
 
@@ -23,10 +23,10 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
     public TwoDimTableV1 maxCriteriaAndMetricScores;
 
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
-    public float[] hr;
+    public HitRatioBase hr;
 
     @Override
-    public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
+    public S fillFromImpl(I modelMetrics) {
         super.fillFromImpl(modelMetrics);
         this.mse = modelMetrics._mse;
 
@@ -151,6 +151,6 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
             }
             this.maxCriteriaAndMetricScores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
         }
-        return this;
+        return (S)this;
     }
 }
