@@ -328,6 +328,15 @@ h2o.giniCoef <- function(object) {
   }
 }
 
+h2o.mse <- function(object) {
+  if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
+    object@metrics$mse
+  }
+  else{
+    stop(paste0("No MSE for ",class(object)))
+  }
+}
+
 h2o.F0point5 <- function(object, thresholds){
   metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
   h2o.metric(object, thresholds, metric)
@@ -420,5 +429,15 @@ h2o.confusionMatrices <- function(object, thresholds) {
   }
   else{
     stop(paste0("No Confusion Matrices for ",class(object)))
+  }
+}
+
+plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
+  # TODO: add more types (i.e. cutoffs)
+  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(type == "roc") {
+    xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
+    plot(1 - perf_class@metrics$thresholdsAndMetricScores$specificity, object@metrics$thresholdsAndMetricScores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    abline(0, 1, lty = 2)
   }
 }
