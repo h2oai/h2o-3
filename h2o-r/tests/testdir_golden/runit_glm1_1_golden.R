@@ -8,9 +8,9 @@ fitH2O <- h2o.glm(x = c('Distance', 'Origin', 'Dest', 'UniqueCarrier'), y = 'IsD
 
 #Print deviances make sure we're returning a number
 Log.info("Print model statistics for R and H2O... \n")
-Log.info(paste("H2O Deviance  : ", fitH2O@model$deviance))
-Log.info(paste("H2O Null Dev  : ", fitH2O@model$null.deviance))
-expect_false(fitH2O@model$null.deviance=="NaN")
+Log.info(paste("H2O Deviance  : ", fitH2O@model$residual_deviance))
+Log.info(paste("H2O Null Dev  : ", fitH2O@model$null_deviance))
+expect_false(fitH2O@model$null_deviance=="NaN")
 
 testEnd()
 }

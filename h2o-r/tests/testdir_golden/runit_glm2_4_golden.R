@@ -44,32 +44,34 @@ fitH2O<- h2o.glm(x=c("V8", "V9", "V10", "V11", "V12"), y="V13", family="gaussian
 
 #test that R coefficients and basic descriptives are equal
 Rcoeffsglmnet<- sort(as.matrix(coefficients(fitRglmnet)))
-H2Ocoeffs<- sort(fitH2O@model$coefficients)
+print(Rcoeffsglmnet)
+H2Ocoeffs<- sort(fitH2O@model$coefficients_table[1,])
 H2Ocoeffs<- as.data.frame(H2Ocoeffs)
+print(H2Ocoeffs[2,1])
 
 RTcoeffs<- sort(as.matrix(RT1)) 
 
 #Log.info(paste("H2O Coeffs  : ", H2Ocoeffs,  "\t\t\t", "R GLMNET Coeffs  :", Rcoeffsglmnet))
 
 expect_equal(H2Ocoeffs[1,1], Rcoeffsglmnet[1], tolerance = 0.1)
-expect_equal(H2Ocoeffs[2,1], Rcoeffsglmnet[2], tolerance = 0.1)
-expect_equal(H2Ocoeffs[3,1], Rcoeffsglmnet[3], tolerance = 0.9)
-expect_equal(H2Ocoeffs[4,1], Rcoeffsglmnet[4], tolerance = 0.1)
-expect_equal(H2Ocoeffs[5,1], Rcoeffsglmnet[5], tolerance = 0.1)
-expect_equal(H2Ocoeffs[6,1], Rcoeffsglmnet[6], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,2], Rcoeffsglmnet[2], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,3], Rcoeffsglmnet[3], tolerance = 0.9)
+expect_equal(H2Ocoeffs[1,4], Rcoeffsglmnet[4], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,5], Rcoeffsglmnet[5], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,6], Rcoeffsglmnet[6], tolerance = 0.1)
 expect_equal(H2Ocoeffs[1,1], RTcoeffs[1], tolerance = 0.1)
-expect_equal(H2Ocoeffs[2,1], RTcoeffs[2], tolerance = 0.1)
-expect_equal(H2Ocoeffs[3,1], RTcoeffs[3], tolerance = 0.1)
-expect_equal(H2Ocoeffs[4,1], RTcoeffs[4], tolerance = 0.1)
-expect_equal(H2Ocoeffs[5,1], RTcoeffs[5], tolerance = 0.1)
-expect_equal(H2Ocoeffs[6,1], RTcoeffs[6], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,2], RTcoeffs[2], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,3], RTcoeffs[3], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,4], RTcoeffs[4], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,5], RTcoeffs[5], tolerance = 0.1)
+expect_equal(H2Ocoeffs[1,6], RTcoeffs[6], tolerance = 0.1)
 
 
-H2Oratio<- 1-(fitH2O@model$deviance/fitH2O@model$null.deviance)
-Log.info(paste("H2O Deviance  : ", fitH2O@model$deviance,      "\t\t\t", "R Deviance   : ", deviance(fitRglmnet)))
-Log.info(paste("H2O Null Dev  : ", fitH2O@model$null.deviance, "\t\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
+H2Oratio<- 1-(fitH2O@model$residual_deviance/fitH2O@model$null_deviance)
+Log.info(paste("H2O Deviance  : ", fitH2O@model$residual_deviance,      "\t\t\t", "R Deviance   : ", fitRglmnet$deviance))
+Log.info(paste("H2O Null Dev  : ", fitH2O@model$null_deviance, "\t\t", "R Null Dev   : ", fitRglmnet$nulldev))
 Log.info(paste("H2O Dev Ratio  : ", H2Oratio, "\t\t", "R Dev Ratio   : ", fitRglmnet$dev.ratio))
-expect_equal(fitH2O@model$null.deviance, fitRglmnet$nulldev, tolerance = 0.01)
+expect_equal(fitH2O@model$null_deviance, fitRglmnet$nulldev, tolerance = 0.01)
 expect_equal(H2Oratio, fitRglmnet$dev.ratio, tolerance = 0.01)
 
 

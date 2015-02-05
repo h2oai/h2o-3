@@ -25,17 +25,17 @@ ridgeGLMNet <- function (X,y,L){
 #H2O RIDGE
 ridgeH2O <- function (X,y,L){
   fitH2O=h2o.glm(X, y, training_frame=handmadeH2O, n_folds=0, alpha=0, lambda=L, family="gaussian", standardize=T)        
-  betah <- fitH2O@model$normalized_coefficients[hX]
+  betah <- fitH2O@model$coefficients_table[2, hX]
   
-  betah <- c(betah, fitH2O@model$normalized_coefficients[length(fitH2O@model$normalized_coefficients)])
+  betah <- c(betah, fitH2O@model$coefficients_table[2,length(fitH2O@model$coefficients_table[2, ])])
   names(betah) <- c(hX,"Intercept")    
  
 
   print("DEBUG CHECKKING")
-  print(fitH2O@model$normalized_coefficients)
+  print(fitH2O@model$coefficients_table[2, ])
   print(betah)
  
-	betah;
+  betah;
 }
 
 #RT made ridge reg function
@@ -86,6 +86,7 @@ glmnetObjective <- function(beta,X,y,lambda){
 }
 
 ridgeObjective <- function(beta,X,y,lambda){
+    t(X)
 	nobs <- dim(X)[1];	
 	ncols<- dim(X)[2]; 
 	x <- cbind(as.matrix(X),1);
