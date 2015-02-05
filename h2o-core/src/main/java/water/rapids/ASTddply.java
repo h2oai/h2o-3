@@ -196,6 +196,18 @@ public class ASTddply extends ASTOp {
       }.doAll(ff.numCols(), ff).outputFrame(null, ff.names(), ff.domains());
       ff.delete();
     }
+
+    // Auto-Rebalance afterwards, as ddply's often make few fat chunks
+    int chunks = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), res.numRows());
+    if( res.anyVec().nChunks() < chunks && res.numRows() > 10*chunks ) { // Rebalance
+      Key newKey = Key.make(".chunks" + chunks);
+      RebalanceDataSet rb = new RebalanceDataSet(res, newKey, chunks);
+      H2O.submitTask(rb);
+      rb.join();
+      res.delete();
+      res = DKV.getGet(newKey);
+    }
+
     // Delete the group row vecs
     env.pushAry(res);
   }

@@ -480,11 +480,9 @@ class H2OFrame(object):
     if isinstance(i, list):
       vecs = []
       for it in i:
-        if isinstance(it, int):
-          vecs += self._vecs[it]
-          continue
-        if isinstance(it, str):
-          vecs += self._find(it)
+        if isinstance(it, int):    vecs.append(self._vecs[it])
+        elif isinstance(it, str):  vecs.append(self._find(it))
+        else:                      raise NotImplementedError
       return H2OFrame(vecs=vecs)
 
     raise NotImplementedError
@@ -846,6 +844,7 @@ class H2OVec(object):
   def __add__(self, i):  return self._simple_bin_op(i,"+" )
   def __and__(self, i):  return self._simple_bin_op(i,"&" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
+  def __mul__(self, i):  return self._simple_bin_op(i,"*" )
   def __eq__ (self, i):  return self._simple_bin_op(i,"==")
   def __ge__ (self, i):  return self._simple_bin_op(i,">=")
   def __gt__ (self, i):  return self._simple_bin_op(i,">" )
@@ -886,6 +885,18 @@ class H2OVec(object):
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
+  def month(self):
+    """
+    :return: Returns a new month column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("month", self._expr, None))
+
+  def dayOfWeek(self):
+    """
+    :return: Returns a new Day-of-Week column from a msec-since-Epoch column
+    """
+    return H2OVec(self._name, Expr("dayOfWeek", self._expr, None))
+
   def runif(self, seed=None):
     """
     :param seed: A random seed. If None, then one will be generated.
@@ -903,5 +914,5 @@ class H2OVec(object):
     if isinstance(x,Expr): raise ValueError("Mixing Vec and Expr")
     if not isinstance(x,H2OVec): return self
     if len(self) != len(x):
-      raise ValueError("H2OVec length mismatch: "+len(self)+" vs "+len(x))
+      raise ValueError("H2OVec length mismatch: "+str(len(self))+" vs "+str(len(x)))
     return self

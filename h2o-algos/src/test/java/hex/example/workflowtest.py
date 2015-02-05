@@ -31,19 +31,26 @@ data = h2o.import_frame(path=big_test)
 
 # Convert start time to: Day since the Epoch
 startime = data["starttime"]
-data["Days"] = (startime/(1000*60*60*24)).floor()
+secsPerDay=1000*60*60*24
+data["Days"] = (startime/secsPerDay).floor()
 data.describe()
 
 # Now do a monster Group-By.  Count bike starts per-station per-day
-bph = h2o.ddply(data,["Days","start station name"],"(%nrow)")
+ddplycols=["Days","start station name"]
+bph = h2o.ddply(data[ddplycols],ddplycols,"(%nrow)")
 bph["C1"]._name = "bikes"
-bph.describe()
-
 bph["bikes"].quantile().show()
+
+# A little feature engineering
+# Add in month-of-year (seasonality; fewer bike rides in winter than summer)
+secs = bph["Days"]*secsPerDay
+bph["Month"]     = secs.month()
+# Add in day-of-week (work-week; more bike rides on Sunday than Monday)
+bph["DayOfWeek"] = secs.dayOfWeek()
+bph.describe()
 
 # Test/train split
 r = bph['Days'].runif()
-r.show()
 train = bph[ r < 0.6  ]
 test  = bph[(0.6 <= r) & (r < 0.9)]
 hold  = bph[ 0.9 <= r ]

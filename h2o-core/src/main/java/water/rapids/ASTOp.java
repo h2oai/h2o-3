@@ -192,6 +192,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTYear  ());
     putPrefix(new ASTMonth ());
     putPrefix(new ASTDay   ());
+    putPrefix(new ASTDayOfWeek());
     putPrefix(new ASTHour  ());
     putPrefix(new ASTMinute());
     putPrefix(new ASTSecond());
@@ -776,9 +777,10 @@ class ASTScale extends ASTUniPrefixOp {
   }
 }
 
-abstract class ASTTimeOp extends ASTOp {
+abstract class ASTTimeOp extends ASTUniPrefixOp {
   ASTTimeOp() { super(VARS1); }
-
+  // Override for e.g. month and day-of-week
+  protected String[][] factors() { return null; }
   @Override ASTTimeOp parse_impl(Exec E) {
     AST arg = E.parse();
     if (arg instanceof ASTId) arg = Env.staticLookup((ASTId)arg);
@@ -817,18 +819,32 @@ abstract class ASTTimeOp extends ASTOp {
           }
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
-   env.poppush(1, new ValFrame(fr2));
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, factors());
+    env.poppush(1, new ValFrame(fr2));
   }
 }
 //
 class ASTYear  extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
-class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
 class ASTDay   extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
 class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
 class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
 class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
 class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTMonth extends ASTTimeOp { 
+  static private final String[][] FACTORS = new String[][]{{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}};
+  @Override protected String[][] factors() { return FACTORS; }
+  @Override String opStr(){ return "month"; } 
+  @Override ASTOp make() {return new ASTMonth ();} 
+  @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}
+}
+class ASTDayOfWeek extends ASTTimeOp { 
+  static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
+  @Override protected String[][] factors() { return FACTORS; }
+  @Override String opStr(){ return "dayOfWeek"; } 
+  @Override ASTOp make() {return new ASTDayOfWeek();} 
+  @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
+}
+
 //
 //// Finite backward difference for user-specified lag
 //// http://en.wikipedia.org/wiki/Finite_difference
