@@ -121,7 +121,7 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string)
   :return: The JSON response of the Rapids execution.
   """
-  return H2OConnection.post_json(url_suffix="Rapids", ast=urllib.quote(expr))
+  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
 
 
 def frame(key):
@@ -130,7 +130,7 @@ def frame(key):
   :param key: A pointer to a Frame in H2O.
   :return: Meta information on the Frame.
   """
-  return H2OConnection.get_json(url_suffix="Frames/" + key)
+  return H2OConnection.get_json("Frames/" + key)
 
 
 def init(ip="localhost", port=54321):
@@ -157,9 +157,19 @@ def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
 
+def glm(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a Generalized Linear Model
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
+
 def kmeans(x,validation_x=None,**kwargs):
   """
   Build a KMeans model
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
+def ddply(frame,cols,fun):
+  return frame.ddply(cols,fun)
+  
+  

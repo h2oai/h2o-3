@@ -52,7 +52,7 @@ class H2OJob(object):
       jobs = H2OConnection.get_json(url_suffix="Jobs/" + self.job_key)
       self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
       self.status = self.job["status"]
-      self.progress += self.job["progress"]
+      self.progress = self.job["progress"]
 
   def _is_running(self):
       return self.status == "RUNNING" or self.status == "CREATED"

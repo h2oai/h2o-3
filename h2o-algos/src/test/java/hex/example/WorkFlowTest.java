@@ -76,7 +76,7 @@ public class WorkFlowTest extends TestUtil {
       Vec startime = data.vec("starttime");
       data.add(new TimeSplit().doIt(startime));
 
-      // Now do a monster Group-By.  Count bike starts per-station per-hour per-day
+      // Now do a monster Group-By.  Count bike starts per-station per-day
       Vec days = data.vec("Days");
       long start = System.currentTimeMillis();
       Frame bph = new CountBikes(days).doAll(days,data.vec("start station name")).makeFrame(Key.make("bph.hex"));
