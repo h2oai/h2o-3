@@ -828,10 +828,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
-    colHeaders.add("Time"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
-    colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%,d");
+    colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
     colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%g");
     if (_output.getModelCategory() == ModelCategory.Binomial) {
