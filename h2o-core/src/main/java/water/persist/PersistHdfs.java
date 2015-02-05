@@ -11,7 +11,6 @@ import java.util.concurrent.Callable;
 import com.google.common.io.ByteStreams;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.s3.S3Exception;
 //import org.jets3t.service.S3ServiceException;
 
 import water.*;
@@ -178,15 +177,20 @@ public final class PersistHdfs extends Persist {
         ignoreAndWait(e, false);
       } catch( SocketTimeoutException e ) {
         ignoreAndWait(e, false);
-      } catch( S3Exception e ) {
-        // Preserve S3Exception before IOException
-        // Since this is tricky code - we are supporting different HDFS version
-        // New version declares S3Exception as IOException
-        // But old versions (0.20.xxx) declares it as RuntimeException
-        // So we have to catch it before IOException !!!
-        ignoreAndWait(e, false);
       } catch( IOException e ) {
-        ignoreAndWait(e, true);
+        // Newer versions of Hadoop derive S3Exception from IOException
+        if (e.getClass().getName().contains("S3Exception")) {
+          ignoreAndWait(e, false);
+        } else {
+          ignoreAndWait(e, true);
+        }
+      } catch( RuntimeException e ) {
+        // Older versions of Hadoop derive S3Exception from RuntimeException
+        if (e.getClass().getName().contains("S3Exception")) {
+          ignoreAndWait(e, false);
+        } else {
+          throw Log.throwErr(e);
+        }
       } catch( Exception e ) {
         throw Log.throwErr(e);
       }
