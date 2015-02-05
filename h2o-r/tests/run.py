@@ -730,6 +730,7 @@ class TestRunner:
         self.regression_passed = False
         self._create_output_dir()
         self._create_failed_output_dir()
+        self.nopass_counter = 0
 
         if (use_cloud):
             node_num = 0
@@ -857,6 +858,7 @@ class TestRunner:
                 if (is_large and not run_large):
                     continue
                 if (is_nopass and not nopass):  # skip all NOPASS tests for regular runs
+                    self.nopass_counter += 1    # but still count the number of NOPASS tests
                     continue
                 if (nopass and not is_nopass):  # if g_nopass flag is set, then ONLY run the NOPASS tests (skip all other tests)
                     continue
@@ -1088,6 +1090,7 @@ class TestRunner:
         self._log("Did not pass:         " + str(failed))
         self._log("Did not complete:     " + str(notrun))
         self._log("Tolerated NOPASS:     " + str(nopass_but_tolerate))
+        self._log("NOPASS tests skipped  " + str(self.nopass_counter))
         self._log("")
         self._log("Total time:           %.2f sec" % delta_seconds)
         if (run > 0):
