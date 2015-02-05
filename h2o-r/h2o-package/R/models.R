@@ -338,56 +338,46 @@ h2o.mse <- function(object) {
 }
 
 h2o.F0point5 <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "F0point5", thresholds)
 }
 
 h2o.F1 <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "F1", thresholds)
 }
 
 h2o.F2 <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "F2", thresholds)
 }
 
 h2o.accuracy <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "accuracy", thresholds)
 }
 
 h2o.error <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "error", thresholds)
 }
 
-h2o.maxPerClassErr <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+h2o.maxPerClassError <- function(object, thresholds){
+  h2o.metric(object, "max_per_class_error", thresholds)
 }
 
 h2o.mcc <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "mcc", thresholds)
 }
 
 h2o.precision <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "precision", thresholds)
 }
 
 h2o.recall <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "recall", thresholds)
 }
 
 h2o.specificity <- function(object, thresholds){
-  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
-  h2o.metric(object, thresholds, metric)
+  h2o.metric(object, "specificity", thresholds)
 }
 
-h2o.metric <- function(object, thresholds, metric) {
+h2o.metric <- function(object, metric, thresholds) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
       t <- as.character(thresholds)
