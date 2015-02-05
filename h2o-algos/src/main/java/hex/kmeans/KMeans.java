@@ -290,9 +290,14 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         done();                 // Job done!
 
       } catch( Throwable t ) {
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);

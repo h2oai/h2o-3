@@ -11,6 +11,8 @@ import hex.schemas.PCAV2;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
+
 import java.util.ArrayList;
 
 
@@ -126,9 +128,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         model._output._cumVar = cumVar;
         done();                 // Job done!
       } catch( Throwable t ) {
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         DKV.remove(dinfo._key);

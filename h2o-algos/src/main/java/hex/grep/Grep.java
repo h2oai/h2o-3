@@ -4,10 +4,8 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.GrepV2;
 import hex.schemas.ModelBuilderSchema;
+import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.H2O;
-import water.MRTask;
-import water.Scope;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -88,9 +86,14 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         Log.info(sb);
         done();                 // Job done!
       } catch( Throwable t ) {
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Grep.this);

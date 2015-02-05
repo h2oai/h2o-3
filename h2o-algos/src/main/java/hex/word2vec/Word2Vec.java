@@ -1,6 +1,7 @@
 package hex.word2vec;
 
 import hex.Model;
+import water.DKV;
 import water.Job;
 import water.H2O;
 import water.fvec.Vec;
@@ -87,12 +88,14 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         model.buildModelOutput();
         done();                 // Job done!
       } catch (Throwable t) {
-        //model = DKV.get(dest()).get();
-        //_state = JobState.CANCELLED; //for JSON REST response
-        Log.info("Word2Vec model building was cancelled.");
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Word2Vec.this);
