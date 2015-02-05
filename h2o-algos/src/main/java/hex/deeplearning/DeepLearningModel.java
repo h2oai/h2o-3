@@ -1699,7 +1699,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //        }
 
           // print the freshly scored model to ASCII
-          for (String s : toString().split("\n")) Log.info(s);
+          if (keep_running)
+            for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
       }
