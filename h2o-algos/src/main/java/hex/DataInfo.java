@@ -427,18 +427,18 @@ public class DataInfo extends Keyed {
 
     public int       nBins;
     public int       nNums;
-    public int       numStart;
     public final double etaOffset;
 
     public final boolean isSparse(){return numIds != null;}
 
-    public Row(boolean sparse, int eNums, int eBins, int nresponses, double etaOffset) {
-      binIds = MemoryManager.malloc4(eBins);
-      numVals = MemoryManager.malloc8d(eNums);
+    public Row(boolean sparse, int nNums, int nBins, int nresponses, double etaOffset) {
+      binIds = MemoryManager.malloc4(nBins);
+      numVals = MemoryManager.malloc8d(nNums);
       response = MemoryManager.malloc8d(nresponses);
       if(sparse)
-        numIds = MemoryManager.malloc4(eNums);
+        numIds = MemoryManager.malloc4(nNums);
       this.etaOffset = etaOffset;
+      this.nNums = nNums;
     }
 
     public double response(int i) {return response[i];}
@@ -465,6 +465,7 @@ public class DataInfo extends Keyed {
 
     public double innerProduct(double [] vec) {
       double res = 0;
+      int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
       if(numIds == null) {
@@ -486,9 +487,9 @@ public class DataInfo extends Keyed {
       int c = Arrays.binarySearch(_catLvls[cid], val);
       if (c >= 0)
         return c + _catOffsets[cid];
-    } else if (val != 0 || _useAllFactorLevels)
+    } else if (_useAllFactorLevels)
       return val + _catOffsets[cid];
-    return -1;
+    return val + _catOffsets[cid] - 1;
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
@@ -497,7 +498,7 @@ public class DataInfo extends Keyed {
         row.good = false;
         return row;
       }
-    int numStart = numStart();
+    int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       int c;
       if (chunks[i].isNA(rid)) {
@@ -505,15 +506,16 @@ public class DataInfo extends Keyed {
       } else {
         c = getCategoricalId(i,(int)chunks[i].at8(rid));
         if(c >=0)
-          row.binIds[row.nBins++] = c;
+          row.binIds[nbins++] = c;
       }
     }
-    final int n = chunks.length - _responses;
+    row.nBins = nbins;
+    final int n = _nums;
     for (int i = 0; i < n; ++i) {
-      double d = chunks[i].atd(rid); // can be NA if skipMissing() == false
+      double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
       if (_normMul != null)
-        d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
-      row.numVals[i + numStart] = d;
+        d = (d - _normSub[i]) * _normMul[i];
+      row.numVals[i] = d;
     }
     for (int i = 0; i < _responses; ++i) {
       row.response[i] = chunks[chunks.length - _responses + i].atd(rid);
@@ -528,7 +530,7 @@ public class DataInfo extends Keyed {
     return row;
   }
   public Row newDenseRow(){
-    return new Row(false,_cats,_nums,_responses,0);
+    return new Row(false,_nums,_cats,_responses,0);
   }
   /**
    * Extract (sparse) rows from given chunks.

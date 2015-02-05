@@ -322,6 +322,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public final double linkDeriv(double x) {
       switch(_link) {
         case logit:
+          double div = (x * (1 - x));
+          if(div == 0) return 1e9; // avoid numerical instability
           return 1 / (x * (1 - x));
         case identity:
           return 1;

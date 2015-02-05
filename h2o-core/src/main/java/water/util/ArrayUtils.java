@@ -285,6 +285,12 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+  public static double minValue(double[] from) {
+    double result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
+  }
   public static long maxValue(long[] from) {
     long result = from[0];
     for (int i = 1; i<from.length; ++i)

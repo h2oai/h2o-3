@@ -751,7 +751,7 @@ public final class Gram extends Iced<Gram> {
         mrow[row.binIds[j]] += w;
     }
     // DIAG
-    if(hasDiag && row.nBins > 0)
+    if(hasDiag)
       _diag[row.binIds[0]] += w;
   }
   public void mul(double x){
