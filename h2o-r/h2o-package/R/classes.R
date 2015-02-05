@@ -313,6 +313,11 @@ setMethod("show", "H2OModelMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
 })
 
+#' @rdname H2OModelMetrics-class
+setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
+
+#' @rdname H2OModelMetrics-class
+setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     cat("Metric Details:\n\n")
@@ -322,10 +327,6 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     print(object@metrics$maxCriteriaAndMetricScores)
 })
 
-#' @rdname H2OModelMetrics-class
-setClass("H2OUnknownMetrics",     contains="H2OModelMetrics")
-#' @rdname H2OModelMetrics-class
-setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
