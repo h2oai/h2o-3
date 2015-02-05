@@ -55,6 +55,7 @@ class ModelBase(object):
       raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
     fr_key = H2OFrame.send_frame(test_data)
     res = H2OConnection.post_json("ModelMetrics/models/" + self._key + "/frames/" + fr_key)
+    h2o.remove(fr_key)
     raw_metrics = res["model_metrics"][0]
     return self._metrics_class(raw_metrics)
 
