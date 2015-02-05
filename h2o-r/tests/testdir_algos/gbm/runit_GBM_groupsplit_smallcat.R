@@ -34,7 +34,7 @@ test.GBM.smallcat <- function(conn) {
   #Log.info("Expect GBM with Group Split to give Perfect Prediction in Single Iteration")
   #expect_true(drfmodel.grpsplit@model$auc == 1)
   #expect_true(drfmodel.grpsplit@model$confusion[3,3] == 0)
-  expect_true(h2o.AUC(drfmodel.grpsplit.perf) >= h2o.AUC(drfmodel.nogrp.perf))
+  expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
   expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
   
   # Train R GBM Model:

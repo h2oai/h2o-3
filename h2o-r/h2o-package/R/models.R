@@ -310,7 +310,7 @@ h2o.performance <- function(model, data=NULL) {
       metrics   = metrics)
 }
 
-h2o.AUC <- function(object) {
+h2o.auc <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
   }
@@ -319,7 +319,7 @@ h2o.AUC <- function(object) {
   }
 }
 
-h2o.Gini <- function(object) {
+h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$Gini
   }
@@ -353,7 +353,7 @@ h2o.error <- function(object, thresholds){
   h2o.metric(object, thresholds, metric)
 }
 
-h2o.max_per_class_error <- function(object, thresholds){
+h2o.maxPerClassErr <- function(object, thresholds){
   metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
   h2o.metric(object, thresholds, metric)
 }
