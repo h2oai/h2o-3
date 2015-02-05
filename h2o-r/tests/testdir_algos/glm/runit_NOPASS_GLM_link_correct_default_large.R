@@ -13,27 +13,27 @@ test <- function(conn) {
     	print("GAUSSIAN: ") 
         model.gaussian.unspecified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="gaussian")
 		model.gaussian.specified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="gaussian", link="identity")
-		stopifnot(model.gaussian.unspecified@model$coefficients==model.gaussian.specified@model$coefficients)
+		stopifnot(model.gaussian.unspecified@model$coefficients_table[1,]==model.gaussian.specified@model$coefficients_table[1,])
 
 		print("BINOMIAL: ") 
         model.binomial.unspecified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="binomial")
 		model.binomial.specified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="binomial", link="logit")
-		stopifnot(model.binomial.unspecified@model$coefficients==model.binomial.specified@model$coefficients)
+		stopifnot(model.binomial.unspecified@model$coefficients_table[1,]==model.binomial.specified@model$coefficients_table[1,])
 
 		print("POISSON: ") 
         model.poisson.unspecified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="poisson")
 		model.poisson.specified <- h2o.glm(x=c(3:9), y=2, training_frame=prostate.data, family="poisson", link="log")
-		stopifnot(model.poisson.unspecified@model$coefficients==model.poisson.specified@model$coefficients)
+		stopifnot(model.poisson.unspecified@model$coefficients_table[1,]==model.poisson.specified@model$coefficients_table[1,])
 
 		print("GAMMA: ") 
         model.gamma.unspecified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma")
 		model.gamma.specified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma", link="inverse")
-		stopifnot(model.gamma.unspecified@model$coefficients==model.gamma.specified@model$coefficients)
+		stopifnot(model.gamma.unspecified@model$coefficients_table[1,]==model.gamma.specified@model$coefficients_table[1,])
 
 		print("TWEEDIE: ") 
         model.tweedie.unspecified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="tweedie")
 		model.tweedie.specified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="tweedie", link="tweedie")
-		stopifnot(model.tweedie.unspecified@model$coefficients==model.tweedie.specified@model$coefficients)
+		stopifnot(model.tweedie.unspecified@model$coefficients_table[1,]==model.tweedie.specified@model$coefficients_table[1,])
 
     testEnd()
 }

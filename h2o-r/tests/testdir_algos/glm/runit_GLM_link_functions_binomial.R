@@ -26,8 +26,8 @@ test.linkFunctions <- function(conn) {
 	model.R.binomial.logit <- glm(formula=R.formula, data=R.data[,4:10], family=binomial(link=logit), na.action=na.omit)
 
 	print("Compare model deviances for link function logit")
-	deviance.h2o.logit <- model.h2o.binomial.logit@model$deviance / model.h2o.binomial.logit@model$null
-	deviance.R.logit <- deviance(model.R.binomial.logit)  / model.h2o.binomial.logit@model$null
+	deviance.h2o.logit <- model.h2o.binomial.logit@model$residual_deviance / model.h2o.binomial.logit@model$null_deviance
+	deviance.R.logit <- deviance(model.R.binomial.logit)  / model.h2o.binomial.logit@model$null_deviance
 	difference <- deviance.R.logit - deviance.h2o.logit
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.logit))
