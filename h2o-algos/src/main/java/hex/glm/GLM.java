@@ -849,12 +849,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
 
   public final static class GLMGradientSolver extends GradientSolver {
-    final Key _jobKey = null;
     final GLMParameters _glmp;
     final DataInfo _dinfo;
     final double _ymu;
     final double _lambda;
     final long _nobs;
+    // line search params, do 48 steps by .75 decrement, min step = .8^31 = 0.0001339366
+    double _step = .75;
+    int _nsteps = 32;
 
     public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
       _glmp = glmp;
@@ -865,12 +867,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     @Override
-    public GradientInfo[] getGradient(double[][] betas) {
-      GLMGradientTask gt = new GLMGradientTask(_dinfo,_glmp, _lambda, betas,1.0/_nobs).doAll(_dinfo._adaptedFrame);
-      GradientInfo [] ginfos = new GradientInfo[betas.length];
-      for(int i = 0; i < ginfos.length; ++i)
-        ginfos[i] = new GradientInfo(gt._objVals[i], gt._gradient[i]);
-      return ginfos;
+    public GradientInfo getGradient(double[] beta) {
+      GLMGradientTask gt = new GLMGradientTask(_dinfo,_glmp, _lambda, beta,1.0/_nobs).doAll(_dinfo._adaptedFrame);
+      return new GradientInfo(gt._objVal, gt._gradient);
+    }
+
+    @Override
+    public double[] lineSearch(double[] beta, double[] direction) {
+      return new GLMLineSearchTask(_dinfo, beta, direction, _step, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
     }
   }
 
