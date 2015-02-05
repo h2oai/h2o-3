@@ -387,11 +387,15 @@ h2o.metric <- function(object, metric, thresholds) {
         stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
       }
       else {
-        object@metrics$thresholdsAndMetricScores[t, metric]
+        output <- object@metrics$thresholdsAndMetricScores[t, metric]
+        names(output) <- t
+        output
       }
     }
     else {
-        object@metrics$thresholdsAndMetricScores[,metric]
+      output <- object@metrics$thresholdsAndMetricScores[, metric]
+      names(output) <- rownames(object@metrics$thresholdsAndMetricScores)
+      output
     }
   }
   else{
