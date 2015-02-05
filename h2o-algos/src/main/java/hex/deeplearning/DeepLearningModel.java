@@ -9,6 +9,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.ModelSchema;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -819,6 +820,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
+    return createScoringHistoryTable(errors, 20);
+  }
+
+  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors, final int size_limit) {
+    assert (size_limit >= 10);
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -866,18 +872,43 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
     }
 
+    List<Integer> which = new ArrayList<>();
+    if (errors.length > size_limit) {
+      // always show first few
+      which.add(0);
+//      which.add(1);
+//      which.add(2);
+//      which.add(3);
+//      which.add(4);
+
+      // always show last few
+//      which.add(errors.length-5);
+//      which.add(errors.length-4);
+//      which.add(errors.length-3);
+//      which.add(errors.length-2);
+      which.add(errors.length-1);
+
+      // pick the remaining scoring points from the middle section
+      final float step = (float)(errors.length-which.size())/(size_limit-which.size());
+      for (float i=5; i<errors.length-5; i+=step) {
+        if (which.size() < size_limit) which.add((int)i);
+      }
+    }
+    final int rows = Math.min(size_limit, errors.length);
     TwoDimTable table = new TwoDimTable(
             "Scoring History",
-            new String[errors.length],
+            new String[rows],
             colHeaders.toArray(new String[0]),
             colTypes.toArray(new String[0]),
             colFormat.toArray(new String[0])
     );
-
-    for( int i = errors.length - 1; i >= 0; i-- ) {
+    int row = 0;
+    for( int i = 0; i<errors.length ; i++ ) {
+      if (errors.length > size_limit && !which.contains(new Integer(i))) continue;
       final DeepLearningScoring e = errors[i];
-      int row = i;
       int col = 0;
+      assert(row < table.getRowDim());
+      assert(col < table.getColDim());
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
@@ -900,6 +931,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       else if(get_params()._n_folds > 0) {
         throw H2O.unimpl();
       }
+      row++;
     }
     return table;
   }
@@ -1683,8 +1715,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     catch (Exception ex) {
       //ex.printStackTrace();
-      //throw new RuntimeException(ex);
-      return false;
+      throw new RuntimeException(ex);
+//      return false;
     }
     return keep_running;
  }
