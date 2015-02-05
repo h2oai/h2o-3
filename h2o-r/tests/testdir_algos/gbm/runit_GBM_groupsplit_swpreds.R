@@ -26,9 +26,9 @@ test.GBM.SWpreds <- function(conn) {
   
   # Check AUC and overall prediction error at least as good with group split than without
   tol <- 1e-4     #  Note: Allow for certain tolerance
-  expect_true(drfmodel.grpsplit.perf@metrics$auc$AUC >= drfmodel.nogrp.perf@metrics$auc$AUC - tol)
-  expect_true(drfmodel.grpsplit.perf@metrics$cm$table[3,3] <= drfmodel.nogrp.perf@metrics$cm$table[3,3] + tol)
-  
+  expect_true(h2o.AUC(drfmodel.grpsplit.perf) >= h2o.AUC(drfmodel.nogrp.perf) - tol)
+  expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5) + tol)
+
   # Train H2O GBM Model including Noise Column:
   Log.info("Distributed Random Forest including Noise Column")
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
@@ -43,8 +43,8 @@ test.GBM.SWpreds <- function(conn) {
   
   # BUG? With noise, seems like AUC and/or prediction error can be slightly better with naive rather than group split
   #      This behavior is inconsistent over repeated runs when the seed is different
-  expect_true(drfmodel.grpsplit2.perf@metrics$auc$AUC >= drfmodel.nogrp2.perf@metrics$auc$AUC - tol)
-  expect_true(drfmodel.grpsplit2.perf@metrics$cm$table[3,3] <= drfmodel.nogrp2.perf@metrics$cm$table[3,3] + tol)
+  expect_true(h2o.AUC(drfmodel.grpsplit2.perf) >= h2o.AUC(drfmodel.nogrp2.perf) - tol)
+  expect_true(h2o.accuracy(drfmodel.grpsplit2.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp2.perf, 0.5) + tol)
   
   testEnd()
 }

@@ -309,3 +309,116 @@ h2o.performance <- function(model, data=NULL) {
       algorithm = algo,
       metrics   = metrics)
 }
+
+h2o.AUC <- function(object) {
+  if(is(object, "H2OBinomialMetrics")){
+    object@metrics$AUC
+  }
+  else{
+    stop(paste0("No AUC for ",class(object)))
+  }
+}
+
+h2o.Gini <- function(object) {
+  if(is(object, "H2OBinomialMetrics")){
+    object@metrics$Gini
+  }
+  else{
+    stop(paste0("No Gini for ",class(object)))
+  }
+}
+
+h2o.F0point5 <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.F1 <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.F2 <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.accuracy <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.error <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.max_per_class_error <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.mcc <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.precision <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.recall <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.specificity <- function(object, thresholds){
+  metric <- strsplit(as.character(match.call()[[1]]), "h2o.")[[1]][2]
+  h2o.metric(object, thresholds, metric)
+}
+
+h2o.metric <- function(object, thresholds, metric) {
+  if(is(object, "H2OBinomialMetrics")){
+    if(!missing(thresholds)) {
+      t <- as.character(thresholds)
+      t[t=="0"] <- "0.0"
+      t[t=="1"] <- "1.0"
+      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      }
+      else {
+        object@metrics$thresholdsAndMetricScores[t, metric]
+      }
+    }
+    else {
+        object@metrics$thresholdsAndMetricScores[,metric]
+    }
+  }
+  else{
+    stop(paste0("No ", metric, " for ",class(object)))
+  }
+}
+
+h2o.confusionMatrices <- function(object, thresholds) {
+  if(is(object, "H2OBinomialMetrics")){
+    names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholdsAndMetricScores)
+    if(!missing(thresholds)) {
+      t <- as.character(thresholds)
+      t[t=="0"] <- "0.0"
+      t[t=="1"] <- "1.0"
+      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      }
+      else {
+        object@metrics$confusion_matrices[t]
+      }
+    }
+    else {
+        object@metrics$confusion_matrices
+    }
+  }
+  else{
+    stop(paste0("No Confusion Matrices for ",class(object)))
+  }
+}

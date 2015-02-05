@@ -25,8 +25,8 @@ test.GBM.bigcat <- function(conn) {
   drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, bigcat.hex)
   
   # Check AUC and overall prediction error at least as good with group split than without
-  expect_true(drfmodel.grpsplit.perf@metrics$auc$AUC >= drfmodel.nogrp.perf@metrics$auc$AUC)
-  expect_true(drfmodel.grpsplit.perf@metrics$cm$table[3,3] <= drfmodel.nogrp.perf@metrics$cm$table[3,3])
+  expect_true(h2o.AUC(drfmodel.grpsplit.perf) >= h2o.AUC(drfmodel.nogrp.perf))
+  expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
   testEnd()
 }
 
