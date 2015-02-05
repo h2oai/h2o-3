@@ -8,11 +8,10 @@ import sys
 import time
 from two_dim_table import H2OTwoDimTable
 
-__H2OCONN__ = None                   # the single active connection to H2O cloud
-__H2O_REST_API_VERSION__ = "LATEST"  # const for the version of the rest api
+__H2OCONN__ = None            # the single active connection to H2O cloud
+__H2O_REST_API_VERSION__ = 3  # const for the version of the rest api
 
 
-# Python has no private classes; abuse the abc package to fake it.
 class H2OConnection(object):
   """
   H2OConnection is a class that represents a connection to the H2O cluster.

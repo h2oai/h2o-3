@@ -192,6 +192,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTYear  ());
     putPrefix(new ASTMonth ());
     putPrefix(new ASTDay   ());
+    putPrefix(new ASTDayOfWeek());
     putPrefix(new ASTHour  ());
     putPrefix(new ASTMinute());
     putPrefix(new ASTSecond());
@@ -776,9 +777,10 @@ class ASTScale extends ASTUniPrefixOp {
   }
 }
 
-abstract class ASTTimeOp extends ASTOp {
+abstract class ASTTimeOp extends ASTUniPrefixOp {
   ASTTimeOp() { super(VARS1); }
-
+  // Override for e.g. month and day-of-week
+  protected String[][] factors() { return null; }
   @Override ASTTimeOp parse_impl(Exec E) {
     AST arg = E.parse();
     if (arg instanceof ASTId) arg = Env.staticLookup((ASTId)arg);
@@ -817,18 +819,32 @@ abstract class ASTTimeOp extends ASTOp {
           }
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
-   env.poppush(1, new ValFrame(fr2));
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, factors());
+    env.poppush(1, new ValFrame(fr2));
   }
 }
 //
 class ASTYear  extends ASTTimeOp { @Override String opStr(){ return "year" ; } @Override ASTOp make() {return new ASTYear  ();} @Override long op(MutableDateTime dt) { return dt.getYear();}}
-class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
 class ASTDay   extends ASTTimeOp { @Override String opStr(){ return "day"  ; } @Override ASTOp make() {return new ASTDay   ();} @Override long op(MutableDateTime dt) { return dt.getDayOfMonth();}}
 class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @Override ASTOp make() {return new ASTHour  ();} @Override long op(MutableDateTime dt) { return dt.getHourOfDay();}}
 class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
 class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
 class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
+class ASTMonth extends ASTTimeOp { 
+  static private final String[][] FACTORS = new String[][]{{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}};
+  @Override protected String[][] factors() { return FACTORS; }
+  @Override String opStr(){ return "month"; } 
+  @Override ASTOp make() {return new ASTMonth ();} 
+  @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}
+}
+class ASTDayOfWeek extends ASTTimeOp { 
+  static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
+  @Override protected String[][] factors() { return FACTORS; }
+  @Override String opStr(){ return "dayOfWeek"; } 
+  @Override ASTOp make() {return new ASTDayOfWeek();} 
+  @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
+}
+
 //
 //// Finite backward difference for user-specified lag
 //// http://en.wikipedia.org/wiki/Finite_difference
@@ -1848,7 +1864,6 @@ class ASTRepLen extends ASTUniPrefixOp {
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
   protected static boolean _narm = false;
-  protected static boolean _names= true;  // _names = true, create a  vec of names as %1, %2, ...; _names = false -> no vec.
   protected static int     _type = 7;
   protected static double[] _probs = null;  // if probs is null, pop the _probs frame etc.
 
@@ -1879,9 +1894,6 @@ class ASTQtile extends ASTUniPrefixOp {
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.skipWS().parse());
     _narm = ((ASTNum)a).dbl() == 1;
-    // Get the names
-    AST b = E._env.lookup((ASTId)E.skipWS().parse());
-    _names = ((ASTNum)b).dbl() == 1;
     //Get the type
     try {
       _type = (int) ((ASTNum) E.skipWS().parse()).dbl();
@@ -1923,9 +1935,6 @@ class ASTQtile extends ASTUniPrefixOp {
 
     // create output vec
     Vec res = Vec.makeZero(p.length);
-    Vec p_names = Vec.makeSeq(res.length());
-    p_names.setDomain(names);
-
 
     final int MAX_ITERATIONS = 16;
     final int MAX_QBINS = 1000; // less uses less memory, can take more passes
@@ -1958,12 +1967,8 @@ class ASTQtile extends ASTUniPrefixOp {
       }
     }
     res.chunkForChunkIdx(0).close(0,null);
-    p_names.chunkForChunkIdx(0).close(0, null);
-    Futures pf = p_names.postWrite(new Futures());
-    pf.blockForPending();
-    Futures f = res.postWrite(new Futures());
-    f.blockForPending();
-    Frame fr = new Frame(new String[]{"P", "Q"}, new Vec[]{p_names, res});
+    res.postWrite(new Futures()).blockForPending();
+    Frame fr = new Frame(new String[]{"Quantiles"}, new Vec[]{res});
     env.pushAry(fr);
   }
 }

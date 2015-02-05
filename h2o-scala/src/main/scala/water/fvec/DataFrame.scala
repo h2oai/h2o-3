@@ -6,12 +6,12 @@ import java.net.URI
 import water._
 import water.parser.ParseSetup
 
-/** Wrapper around H2O Frame to provide more Scala-like API
-  *
-  */
+/**
+ * Wrapper around H2O Frame to provide more Scala-like API.
+ */
 class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[Vec] )
-  extends Frame(key,names,vecs) 
-  with Map[Long,Array[Option[Any]]] {
+  extends Frame(key,names,vecs) {
+  // Row type
   type T = Array[Option[Any]]
 
   // Scala DataFrame from a Frame.  Simple field copy, so the Frames share
@@ -40,39 +40,6 @@ class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[
   def apply( cols: Array[String] ) : DataFrame = new DataFrame(subframe(cols))
 
   def apply( cols: Symbol* ) : DataFrame = apply(cols.map(_.name).toArray)
-
-  // Operators for the Map and MapLike
-  override def iterator: Iterator[(Long, T)] = ???
-  override def + [B1 >: T](kv: (Long, B1)): Map[Long,T] = ???
-  override def - (key: Long): Map[Long,T] = ???
-
-  override def empty : Map[Long,T] = ???
-  override def size: Int = numRows.asInstanceOf[Int]
-  override def keys = ???
-
-  // If the row is outside the range, return None.
-  // Else return an Array of Option; None for any NA values.
-  // Else return Option[Double] or Option[Long] or Option[String].
-  override def get( row : Long ) : Option[T] = {
-    if( 0 <= row && row < numRows ) 
-      Some(for( vec <- vecs ) yield if( vec.isNA(row) ) None else Some(vec.at(row)))
-    else None
-  }
-
-  // Map a function over each Row.  Reuse the Row array, but still allocates Options & Doubles
-  override def foreach[U](f: ((Long, T)) => U): Unit = {
-    new MRTask {
-      override def map( chks : Array[Chunk] ) = {
-        val start = chks(0)._start
-        val row = new T(chks.length)
-        val len = chks(0)._len
-        (0 until len).foreach{ i =>
-          (0 until chks.length).foreach{ col => row(col) = if( chks(col).isNA(i) ) None else Some(chks(col).atd(i)) }
-          f(start+i,row)
-        }
-      }
-    }.doAll(this)
-  }
 
   override def toString(): String = super[Frame].toString()
 

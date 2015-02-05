@@ -4,7 +4,9 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import hex.schemas.QuantileV2;
+import water.DKV;
 import water.H2O.H2OCountedCompleter;
+import water.Job;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
@@ -91,9 +93,14 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         }
         done();                 // Job done!
       } catch( Throwable t ) {
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Quantile.this);

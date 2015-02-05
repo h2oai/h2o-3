@@ -26,18 +26,18 @@ public class AUCData extends Iced {
   public float[] max_per_class_error;
 
   String[] threshold_criteria;
-  private float[] threshold_for_criteria;
-  private float[] F1_for_criteria;
-  private float[] F2_for_criteria;
-  private float[] F0point5_for_criteria;
-  private float[] accuracy_for_criteria;
-  private float[] error_for_criteria;
-  private float[] precision_for_criteria;
-  private float[] recall_for_criteria;
-  private float[] specificity_for_criteria;
-  private float[] mcc_for_criteria;
-  private float[] max_per_class_error_for_criteria;
-  private long[][][] confusion_matrix_for_criteria;
+  public float[] threshold_for_criteria;
+  public float[] F1_for_criteria;
+  public float[] F2_for_criteria;
+  public float[] F0point5_for_criteria;
+  public float[] accuracy_for_criteria;
+  public float[] error_for_criteria;
+  public float[] precision_for_criteria;
+  public float[] recall_for_criteria;
+  public float[] specificity_for_criteria;
+  public float[] mcc_for_criteria;
+  public float[] max_per_class_error_for_criteria;
+  public long[][][] confusion_matrix_for_criteria;
 
   /* Independent on thresholds */
   public double AUC() { return AUC; }

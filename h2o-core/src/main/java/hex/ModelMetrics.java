@@ -47,7 +47,7 @@ public class ModelMetrics extends Keyed {
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public ConfusionMatrix cm() { return null; }
-  public HitRatio hr() { return null; }
+  public float[] hr() { return null; }
   public AUCData auc() { return null; }
 
   private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {

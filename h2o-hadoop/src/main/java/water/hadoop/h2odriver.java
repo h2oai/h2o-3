@@ -72,6 +72,15 @@ public class h2odriver extends Configured implements Tool {
   volatile boolean clusterIsUp = false;
   volatile boolean clusterFailedToComeUp = false;
   volatile boolean clusterHasNodeWithLocalhostIp = false;
+  volatile boolean shutdownRequested = false;
+
+  public void setShutdownRequested() {
+    shutdownRequested = true;
+  }
+
+  public boolean getShutdownRequested() {
+    return shutdownRequested;
+  }
 
   public static class H2ORecordReader extends RecordReader<Text, Text> {
     H2ORecordReader() {
@@ -137,6 +146,7 @@ public class h2odriver extends Configured implements Tool {
       if (_complete) {
         return;
       }
+      _complete = true;
 
       boolean killed = false;
 
@@ -153,7 +163,7 @@ public class h2odriver extends Configured implements Tool {
           Thread.sleep(1000);
         }
       }
-      catch (Exception e) {
+      catch (Exception ignore) {
       }
       finally {
         if (! killed) {
@@ -273,8 +283,6 @@ public class h2odriver extends Configured implements Tool {
    * Start a long-running thread ready to handle Mapper->Driver messages.
    */
   class CallbackManager extends Thread {
-    private boolean _registered = false;
-
     private ServerSocket _ss;
 
     // Nodes and socks
@@ -301,8 +309,6 @@ public class h2odriver extends Configured implements Tool {
         if (_nodes.size() != numNodes) {
           return;
         }
-
-        _registered = true;   // Definitely don't want to do this more than once.
 
         System.out.println("Sending flatfiles to nodes...");
 
@@ -353,12 +359,20 @@ public class h2odriver extends Configured implements Tool {
           t.setCallbackManager(this);
           t.start();
         }
+        catch (SocketException e) {
+          if (getShutdownRequested()) {
+            _ss = null;
+            return;
+          }
+          else {
+            System.out.println("Exception occurred in CallbackManager");
+            System.out.println("ERROR: " + (e.getMessage() != null ? e.getMessage() : "(null)"));
+            e.printStackTrace();
+          }
+        }
         catch (Exception e) {
           System.out.println("Exception occurred in CallbackManager");
-          System.out.println(e.toString());
-          if (e.getMessage() != null) {
-            System.out.println(e.getMessage());
-          }
+          System.out.println("ERROR: " + (e.getMessage() != null ? e.getMessage() : "(null)"));
           e.printStackTrace();
         }
       }
@@ -768,6 +782,37 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
+  /*
+   * Clean up driver-side resources after the hadoop job has finished.
+   *
+   * This method was added so that it can be called from inside
+   * Spring Hadoop and the driver can be created and then deleted from inside
+   * a single process.
+   */
+  private void cleanUpDriverResources() {
+    ctrlc.setComplete();
+    Runtime.getRuntime().removeShutdownHook(ctrlc);
+    ctrlc = null;
+
+    try {
+      setShutdownRequested();
+      driverCallbackSocket.close();
+      driverCallbackSocket = null;
+    }
+    catch (Exception e) {
+      System.out.println("ERROR: " + (e.getMessage() != null ? e.getMessage() : "(null)"));
+      e.printStackTrace();
+    }
+
+    // At this point, resources are released.
+    // The hadoop job has completed (job.isComplete() is true),
+    // so the cluster memory and cpus are freed.
+    // The driverCallbackSocket has been closed so a new one can be made.
+
+    // The callbackManager itself may or may not have finished, but it doesn't
+    // matter since the server socket has been closed.
+  }
+
   private int run2(String[] args) throws Exception {
     // Parse arguments.
     // ----------------
@@ -798,7 +843,7 @@ public class h2odriver extends Configured implements Tool {
       Pattern p = Pattern.compile("([1-9][0-9]*)([mgMG])");
       Matcher m = p.matcher(mapperXmx);
       boolean b = m.matches();
-      if (b == false) {
+      if (!b) {
         System.out.println("(Could not parse mapperXmx.");
         System.out.println("INTERNAL FAILURE.  PLEASE CONTACT TECHNICAL SUPPORT.");
         System.exit(1);
@@ -916,7 +961,7 @@ public class h2odriver extends Configured implements Tool {
     ctrlc = new CtrlCHandler();
     Runtime.getRuntime().addShutdownHook(ctrlc);
 
-    System.out.printf("Waiting for H2O cluster to come up...\n", numNodes);
+    System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
     if (rv != 0) {
       System.out.println("ERROR: H2O cluster failed to come up");
@@ -944,7 +989,8 @@ public class h2odriver extends Configured implements Tool {
     System.out.println("(Press Ctrl-C to kill the cluster)");
     System.out.println("Blocking until the H2O cluster shuts down...");
     waitForClusterToShutdown();
-    ctrlc.setComplete();
+    cleanUpDriverResources();
+
     boolean success = job.isSuccessful();
     int exitStatus;
     exitStatus = success ? 0 : 1;
@@ -962,7 +1008,6 @@ public class h2odriver extends Configured implements Tool {
    * The run method called by ToolRunner.
    * @param args Arguments after ToolRunner arguments have been removed.
    * @return Exit value of program.
-   * @throws Exception
    */
   @Override
   public int run(String[] args) {

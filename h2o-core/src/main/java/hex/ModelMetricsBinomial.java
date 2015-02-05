@@ -76,6 +76,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _count++;
       return ds;                // Flow coding
     }
+
     @Override public void reduce( MetricBuilder mb ) {
       super.reduce(mb);
       ArrayUtils.add(_cms, ((MetricBuilderBinomial)mb)._cms);

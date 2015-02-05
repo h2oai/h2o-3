@@ -61,13 +61,19 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Scope.enter();
         _parms.read_lock_frames(DeepLearning.this);
         init(true);
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
+        if (error_count() > 0)
+          throw new IllegalArgumentException("Found validation errors: " + validationErrors());
         buildModel();
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          failed(t);
+          throw t;
+        }
       } finally {
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();

@@ -35,4 +35,13 @@ public class JobsHandler extends Handler {
     s.jobs = new JobV2[0]; // Give PojoUtils.copyProperties the destination type.
     return s.fillFromImpl(jobs);
   }
+
+  public Schema cancel(int version, JobsV2 c) {
+    Job j = DKV.getGet(c.key.key.key());
+    if (j == null) {
+      throw new IllegalArgumentException("No job with key " + c.key.key.key());
+    }
+    j.cancel();
+    return c;
+  }
 }

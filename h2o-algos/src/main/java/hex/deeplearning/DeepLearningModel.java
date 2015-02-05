@@ -5,14 +5,19 @@ import hex.FrameTask.DataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.ModelSchema;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static java.lang.Double.isNaN;
@@ -723,8 +728,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public double valid_err = 1;
     public AUCData trainAUC;
     public AUCData validAUC;
-    public HitRatio train_hitratio; // "Hit ratio on training data"
-    public HitRatio valid_hitratio; // "Hit ratio on validation data"
+    public float[] train_hitratio; // "Hit ratio on training data"
+    public float[] valid_hitratio; // "Hit ratio on validation data"
 
     // regression
     public double train_mse = Double.POSITIVE_INFINITY;
@@ -815,7 +820,120 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
-    return null;
+    return createScoringHistoryTable(errors, 20);
+  }
+
+  private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors, final int size_limit) {
+    assert (size_limit >= 10);
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%g");
+    if (_output.getModelCategory() == ModelCategory.Binomial) {
+      colHeaders.add("Training AUC");
+      colTypes.add("double");
+      colFormat.add("%g");
+    }
+    if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
+      colHeaders.add("Training Classification Error");
+      colTypes.add("double");
+      colFormat.add("%g");
+    }
+    if (get_params()._valid != null) {
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Validation AUC");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+      if (_output.isClassifier()) {
+        colHeaders.add("Validation Classification Error");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+    } else if (get_params()._n_folds > 0) {
+      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+//      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
+        colHeaders.add("Cross-Validation AUC");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+      if (_output.isClassifier()) {
+        colHeaders.add("Cross-Validation Classification Error");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
+    }
+
+    List<Integer> which = new ArrayList<>();
+    if (errors.length > size_limit) {
+      // always show first few
+      which.add(0);
+//      which.add(1);
+//      which.add(2);
+//      which.add(3);
+//      which.add(4);
+
+      // always show last few
+//      which.add(errors.length-5);
+//      which.add(errors.length-4);
+//      which.add(errors.length-3);
+//      which.add(errors.length-2);
+      which.add(errors.length-1);
+
+      // pick the remaining scoring points from the middle section
+      final float step = (float)(errors.length-which.size())/(size_limit-which.size());
+      for (float i=5; i<errors.length-5; i+=step) {
+        if (which.size() < size_limit) which.add((int)i);
+      }
+    }
+    final int rows = Math.min(size_limit, errors.length);
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History",
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0])
+    );
+    int row = 0;
+    for( int i = 0; i<errors.length ; i++ ) {
+      if (errors.length > size_limit && !which.contains(new Integer(i))) continue;
+      final DeepLearningScoring e = errors[i];
+      int col = 0;
+      assert(row < table.getRowDim());
+      assert(col < table.getColDim());
+      DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+      table.set(row, col++, fmt.print(start_time + e.training_time_ms));
+      table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
+      table.set(row, col++, e.epoch_counter);
+      table.set(row, col++, e.training_samples);
+      table.set(row, col++, e.train_mse);
+      table.set(row, col++, e.train_r2);
+      if (_output.getModelCategory() == ModelCategory.Binomial)
+        table.set(row, col++, e.trainAUC != null ? e.trainAUC.AUC() : Double.NaN);
+      if (_output.isClassifier())
+        table.set(row, col++, e.train_err);
+      if (get_params()._valid != null) {
+        table.set(row, col++, e.valid_mse);
+        table.set(row, col++, e.valid_r2);
+        if (_output.getModelCategory() == ModelCategory.Binomial)
+          table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
+        if (_output.isClassifier())
+          table.set(row, col++, e.valid_err);
+      }
+      else if(get_params()._n_folds > 0) {
+        throw H2O.unimpl();
+      }
+      row++;
+    }
+    return table;
   }
 
 
@@ -1491,7 +1609,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
             err.train_confusion_matrix = mm._cm;
             err.train_err = mm._cm.err();
-            err.train_hitratio = mm._hr;
+            err.train_hitratio = mm._hit_ratios;
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
@@ -1511,7 +1629,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial) (mm2);
                 err.valid_confusion_matrix = mm._cm;
                 err.valid_err = mm._cm.err();
-                err.valid_hitratio = mm._hr;
+                err.valid_hitratio = mm._hit_ratios;
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
@@ -1581,7 +1699,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //        }
 
           // print the freshly scored model to ASCII
-          for (String s : toString().split("\n")) Log.info(s);
+          if (keep_running)
+            for (String s : toString().split("\n")) Log.info(s);
           if (printme) Log.info("Time taken for scoring and diagnostics: " + PrettyPrint.msecs(err.scoring_time, true));
         }
       }
@@ -1597,8 +1716,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     catch (Exception ex) {
       //ex.printStackTrace();
-      //throw new RuntimeException(ex);
-      return false;
+      throw new RuntimeException(ex);
+//      return false;
     }
     return keep_running;
  }
@@ -1623,7 +1742,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
             + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
-    sb.append(last_scored().toString());
+    //sb.append(last_scored().toString());
+    sb.append(_output.scoringHistory.toString());
     return sb.toString();
   }
 

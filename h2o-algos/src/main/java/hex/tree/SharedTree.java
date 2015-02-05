@@ -185,8 +185,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildModel();
         done();                 // Job done!
       } catch( Throwable t ) {
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( _model != null ) _model.unlock(_key);
         _parms.read_unlock_frames(SharedTree.this);

@@ -57,9 +57,9 @@ class ConfusionMatrix(object):
   def show(self):
     self.table.show()
 
-#  def __repr__(self):
-#    self.show()
-#    return ""
+  def __repr__(self):
+    self.show()
+    return ""
 
   @staticmethod
   def read_cms(cms=None, domains=None):

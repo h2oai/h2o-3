@@ -489,9 +489,14 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         model.update(_key);
       } catch( Throwable t ) {
-        t.printStackTrace();
-        failed(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         _parms.read_unlock_frames(CoxPH.this);
         Scope.exit();

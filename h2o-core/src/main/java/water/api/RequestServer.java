@@ -138,6 +138,8 @@ public class RequestServer extends NanoHTTPD {
     register("/2/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
       "Get the status of the given H2O Job (long-running action).");
 
+    register("/2/Jobs/(?<key>.*)/cancel"                           ,"POST",JobsHandler     .class, "cancel", new String[] {"key"}, "Cancel a running job.");
+
     register("/2/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
 

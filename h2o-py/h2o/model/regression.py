@@ -2,30 +2,34 @@
 Regression Models should be comparable.
 """
 
-from model_base import *
-
+import math
+from model_base import ModelBase
 
 class H2ORegressionModel(ModelBase):
+  """
+  Class for Regression models.  
+  """
+  def __init__(self, dest_key, model_json):
+    super(H2ORegressionModel, self).__init__(dest_key, model_json,H2ORegressionModelMetrics)
 
-    def __init__(self, raw_model_output=None, algo=None):
-        if raw_model_output is None:
-            raise H2OModelInstantiationException(
-                "Failed to instantiate a Regression model: no model output found!")
-        super(H2ORegressionModel, self).__init__()
-        self.model_type = self.REGRESSION
-        self.algo = algo
-        self.raw_model_output = raw_model_output
 
-    def summary(self):
-        """
-        This method prints out various relevant pieces of information for a regression
-        model.
-        :return:
-        """
-        pass
+class H2ORegressionModelMetrics(object):
+  """
+  This class is essentially an API for the AUCData object.
+  This class contains methods for inspecting the AUC for different criteria.
+  To input the different criteria, use the static variable `criteria`
+  """
+  def __init__(self, metric_json):
+    self._metric_json = metric_json
 
-    def model_performance(self, test_data=None):
-        pass
+  def r2(self):
+    mse  =self._metric_json['mse'  ]
+    sigma=self._metric_json['sigma']
+    var  =sigma*sigma
+    return 1-(mse/var)
 
-    def predict(self, test_data=None):
-        pass
+  def show(self):
+    mse = self._metric_json['mse']
+    print "Regression model"
+    print "MSE=",mse,"RMSE=",math.sqrt(mse),"sigma=",self._metric_json['sigma']
+    print
