@@ -361,6 +361,7 @@ public final class ParseDataset extends Job<Frame> {
     private final Frame _f;
     private SVFTask( Frame f ) { _f = f; }
     @Override public void setupLocal() {
+      if( _f.numCols() == 0 ) return;
       Vec v0 = _f.anyVec();
       ArrayList<RecursiveAction> rs = new ArrayList<RecursiveAction>();
       for( int i = 0; i < v0.nChunks(); ++i ) {

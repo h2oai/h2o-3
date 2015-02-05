@@ -326,7 +326,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       _profile._rpcRdone  = System.currentTimeMillis();
     }
     if( _fr != null ) {                       // Doing a Frame
-      _lo = 0;  _hi = _fr.anyVec().nChunks(); // Do All Chunks
+      _lo = 0;  _hi = _fr.numCols()==0 ? 0 : _fr.anyVec().nChunks(); // Do All Chunks
       // If we have any output vectors, make a blockable Futures for them to
       // block on.
       // get the Vecs from the K/V store, to avoid racing fetches from the map calls

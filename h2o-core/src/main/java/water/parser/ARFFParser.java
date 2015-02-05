@@ -45,7 +45,7 @@ class ARFFParser extends CsvParser {
             break;
           }
           String[] tok = determineTokens(str, CHAR_SPACE, single_quote);
-          if (tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
+          if (tok.length > 0 && tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
           if (!str.isEmpty()) header.add(str);
         }
       }

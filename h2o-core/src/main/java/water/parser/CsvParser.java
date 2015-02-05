@@ -498,7 +498,7 @@ MAIN_LOOP:
     // If we have trailing empty columns (split by separators) such as ",,\n"
     // then we did not add the final (empty) column, so the column count will
     // be down by 1.  Add an extra empty column here
-    if( bits[bits.length-1] == separator  && bits[bits.length-1] != CsvParser.CHAR_SPACE)
+    if( bits.length > 0 && bits[bits.length-1] == separator  && bits[bits.length-1] != CsvParser.CHAR_SPACE)
       tokens.add("");
     return tokens.toArray(new String[tokens.size()]);
   }
