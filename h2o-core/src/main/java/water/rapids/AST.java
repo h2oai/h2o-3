@@ -700,7 +700,8 @@ class ASTAssign extends AST {
       double d = Double.NaN;
       if (e.isStr()) s = e.popStr();
       else if (e.isNum()) d = e.popDbl();
-      else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
+      else if (e.isNul()) d = Double.NaN;
+      else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment. Got type #:" + Env.typeToString(e.peekType()));
       final double d0 = d;
       final String s0 = s;
 

@@ -80,6 +80,24 @@ public class Env extends Iced {
 
   public boolean isGlobal() { return _isGlobal && _parent == null && _local == null; }
 
+  public static String typeToString(int type) {
+    switch(type) {
+      case ID: return "ID";
+      case ARY: return "ARY";
+      case STR: return "STR";
+      case NUM: return "NUM";
+      case FUN: return "FUN";
+      case SPAN: return "SPAN";
+      case SERIES: return "SERIES";
+      case LARY: return "LARY";
+      case AST: return "AST";
+      case VEC: return "VEC";
+      case NULL: return "NULL";
+      default: return  "No type for number: " + type;
+    }
+  }
+
+
   /**
    * The stack API
    */
