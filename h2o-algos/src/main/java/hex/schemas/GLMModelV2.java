@@ -20,17 +20,44 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     @API(help="fill me in GLMModelOutputV2")
     float       threshold;
 
-    @API(help="fill me in GLMModelOutputV2")
-    double   [] global_beta;
-
-    @API(help="fill me in GLMModelOutputV2")
-    String   [] coefficient_names;
+//    @API(help="fill me in GLMModelOutputV2")
+//    double   [] global_beta;
+//
+//    @API(help="fill me in GLMModelOutputV2")
+//    String   [] coefficient_names;
 
     @API(help="fill me in GLMModelOutputV2")
     TwoDimTableV1 coefficients_table;
 
-    @API(help="fill me in GLMModelOutputV2")
-    TwoDimTableV1 variable_importance;
+    @API(help="Residual Deviance - Training")
+    double      residual_deviance;
+      
+    @API(help="Null Deviance - Training")
+    double      null_deviance;
+      
+    @API(help="Residual Degrees of Freedom - Training")
+    double      residual_degrees_of_freedom;
+      
+    @API(help="Null Degrees of Freedom - Training")
+    double      null_degrees_of_freedom;
+
+    @API(help="AIC - Training")
+    double      aic;
+
+    @API(help="AUC - Training")
+    double      auc;
+
+//    @API(help="Residual Deviance - Validation")
+//    double      validation_residual_deviance;
+//
+//    @API(help="Null Deviance - Validation")
+//    double      validation_null_deviance;
+//
+//    @API(help="Residual Degrees of Freedom - Validation")
+//    double      validation_residual_degrees_of_freedom;
+//
+//    @API(help="Null Degrees of Freedom - Validation")
+//    double      validation_null_degrees_of_freedom;
 
     @API(help="fill me in GLMModelOutputV2; I think I'm redundant")
     boolean binomial; // TODO: isn't this redundant, given model_category?

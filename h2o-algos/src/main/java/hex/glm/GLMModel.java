@@ -9,6 +9,7 @@ import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
+import water.util.AtomicUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
@@ -396,6 +397,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double lambda_value;
     final int        iteration;
     final long       run_time;
+//    GLMValidation training;    TODO this needs be taken care of for training set AND validation set
+//    GLMValidation xtraining;
     GLMValidation validation;
     GLMValidation xvalidation;
     final int rank;
@@ -473,9 +476,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     int         _best_lambda_idx;
     float       _threshold;
     double   [] _global_beta;
-    String   [] _coefficient_names;
+//    String   [] _coefficient_names;
     TwoDimTable _coefficients_table;
-    TwoDimTable _variable_importance;
+    double 		  _residual_deviance;
+    double 		  _null_deviance;
+    double 		  _residual_degrees_of_freedom;
+    double		  _null_degrees_of_freedom;
+    double      _aic;
+    double      _auc;
+	  TwoDimTable	  _variable_importance;
     boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
@@ -488,12 +497,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       String [] colFormat = new String[cnames.length+1];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormat, "%5f");
-      _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
-      _coefficient_names[cnames.length] = "Intercept";
+      String [] coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
+      coefficient_names[cnames.length] = "Intercept";
       _coefficients_table = new TwoDimTable(
               "Best Lambda",
               new String []{"Coefficients", "Norm Coefficients"},
-              _coefficient_names,
+              coefficient_names,
               colTypes,
               colFormat
       );
@@ -510,9 +519,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     void addNullSubmodel(double lmax,double icept, GLMValidation val){
       assert _submodels == null;
-      double [] beta = MemoryManager.malloc8d(_coefficient_names.length);
+      double [] beta = MemoryManager.malloc8d(_coefficients_table.getColDim());
       beta[beta.length-1] = icept;
-      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_coefficient_names.length > 750)};
+      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_coefficients_table.getColDim() > 750)};
       _submodels[0].validation = val;
     }
     public int  submodelIdForLambda(double lambda){
@@ -559,15 +568,34 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;
-      _threshold = _submodels[l].validation == null?0.5f:_submodels[l].validation.best_threshold;
-      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficient_names.length);
+      if (_submodels[l].validation == null) {
+        _threshold = 0.5f;
+        _residual_deviance = Double.NaN;
+        _null_deviance = Double.NaN;
+        _residual_degrees_of_freedom = Double.NaN;
+        _null_degrees_of_freedom = Double.NaN;
+        _aic = Double.NaN;
+        _auc = Double.NaN;
+      } else {
+        _threshold = _submodels[l].validation.best_threshold;
+        _residual_deviance = _submodels[l].validation.residualDeviance();
+        _null_deviance = _submodels[l].validation.nullDeviance();
+        _residual_degrees_of_freedom = _submodels[l].validation.resDOF();
+        _null_degrees_of_freedom = _submodels[l].validation.nullDOF();
+        _aic = _submodels[l].validation.aic();
+        _auc = _submodels[l].validation.auc();
+      }
+      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficients_table.getColDim());
       else Arrays.fill(_global_beta,0);
 
       int j = 0;
       for(int i:_submodels[l].idxs) {
         _global_beta[i] = _submodels[l].beta[j];
         _coefficients_table.set(0, i, _submodels[l].beta[j]);
-        _coefficients_table.set(1, i, _submodels[l].beta[j++]);
+        if(_submodels[l].norm_beta != null)
+          _coefficients_table.set(1, i, _submodels[l].norm_beta[j++]);
+        else
+          j++;
       }
 
       // TODO: Should always calculate normalized coefficients
@@ -575,10 +603,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _variable_importance = null;
       else {
         j = 0;
-        String[] coef_names = new String[_coefficient_names.length-1];
-        double[] rel_imp = new double[_coefficient_names.length-1];
+        String[] coef_names = new String[_coefficients_table.getColDim()-1];
+        double[] rel_imp = new double[_coefficients_table.getColDim()-1];
         for(int i = 0; i < _submodels[l].idxs.length-1; i++) {
-          coef_names[j] = _coefficient_names[j];
+          coef_names[j] = _coefficients_table.getColHeaders()[j];
           rel_imp[_submodels[l].idxs[i]] = Math.abs(_submodels[l].norm_beta[j++]);
         }
         _variable_importance = calcVarImp(rel_imp, coef_names);
@@ -629,6 +657,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
               sorted_names, col_types, col_formats, new String[3][], sorted_imp);
     }
   }
+
   public static void setXvalidation(H2OCountedCompleter cmp, Key modelKey, final double lambda, final GLMValidation val){
     // expected cmp has already set correct pending count
     new TAtomic<GLMModel>(cmp){
@@ -651,7 +680,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<String, Double>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
+    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficients_table.getColHeaders()[i],b[i]);
     return res;
   }
 
