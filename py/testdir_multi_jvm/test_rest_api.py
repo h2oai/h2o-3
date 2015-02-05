@@ -91,8 +91,11 @@ def validate_model_builder_result(result, original_params, model_name):
     and that it has a Job with a Key.  Note that model build will return a
     Job if successful, and a ModelBuilder with errors if it's not.
     '''
-
     error = False
+    if result is None:
+        print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
+        error = True
+
     if 'validation_error_count' in result and result['validation_error_count'] > 0:
         # error case
         print 'FAIL: Parameters validation error for model: ', model_name
