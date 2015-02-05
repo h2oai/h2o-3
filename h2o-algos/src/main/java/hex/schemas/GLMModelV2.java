@@ -29,6 +29,9 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     @API(help="fill me in GLMModelOutputV2")
     TwoDimTableV1 coefficients_table;
 
+    @API(help="fill me in GLMModelOutputV2")
+    TwoDimTableV1 coefficients_magnitude;
+
     @API(help="Residual Deviance - Training")
     double      residual_deviance;
       

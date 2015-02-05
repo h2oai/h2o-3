@@ -9,12 +9,10 @@ import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
 import water.api.ModelSchema;
 import water.fvec.Chunk;
-import water.util.AtomicUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 
 /**
@@ -478,13 +476,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double   [] _global_beta;
 //    String   [] _coefficient_names;
     TwoDimTable _coefficients_table;
+    TwoDimTable _coefficients_magnitude;
     double 		  _residual_deviance;
     double 		  _null_deviance;
     double 		  _residual_degrees_of_freedom;
     double		  _null_degrees_of_freedom;
     double      _aic;
     double      _auc;
-	  TwoDimTable	  _variable_importance;
     boolean _binomial;
     public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
 
@@ -598,63 +596,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           j++;
       }
 
-      // TODO: Should always calculate normalized coefficients
       if(_submodels[l].norm_beta == null)
-        _variable_importance = null;
+        _coefficients_magnitude = null;
       else {
         j = 0;
         String[] coef_names = new String[_coefficients_table.getColDim()-1];
-        double[] rel_imp = new double[_coefficients_table.getColDim()-1];
+        double[] coef_scaled = new double[_coefficients_table.getColDim()-1];
         for(int i = 0; i < _submodels[l].idxs.length-1; i++) {
           coef_names[j] = _coefficients_table.getColHeaders()[j];
-          rel_imp[_submodels[l].idxs[i]] = Math.abs(_submodels[l].norm_beta[j++]);
+          coef_scaled[_submodels[l].idxs[i]] = Math.abs(_submodels[l].norm_beta[j++]);
         }
-        _variable_importance = calcVarImp(rel_imp, coef_names);
+        _coefficients_magnitude = ModelMetrics.calcVarImp(coef_scaled, coef_names,
+                "Normalized Coefficient Magnitudes", new String[] { "Magnitude", "Scaled", "Percentage" });
       }
-    }
-
-    public TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
-      if(rel_imp == null) return null;
-      if(coef_names == null) {
-        coef_names = new String[rel_imp.length];
-        for(int i = 0; i < coef_names.length; i++)
-          coef_names[i] = "C" + String.valueOf(i+1);
-      }
-      assert rel_imp.length == coef_names.length;
-
-      // Sort in descending order by relative importance
-      Integer[] sorted_idx = new Integer[rel_imp.length];
-      for(int i = 0; i < sorted_idx.length; i++) sorted_idx[i] = i;
-      Arrays.sort(sorted_idx, new Comparator<Integer>() {
-        public int compare(Integer idx1, Integer idx2) {
-        return Double.compare(-rel_imp[idx1], -rel_imp[idx2]);
-      }} );
-
-      double total = 0;
-      double max = rel_imp[sorted_idx[0]];
-      String[] sorted_names = new String[coef_names.length];
-      double[][] sorted_imp = new double[3][rel_imp.length];
-
-      // First pass to sum up relative importance measures
-      int j = 0;
-      for(int i : sorted_idx) {
-        total += rel_imp[i];
-        sorted_names[j] = coef_names[i];
-        sorted_imp[0][j] = rel_imp[i];         // Relative importance
-        sorted_imp[1][j++] = rel_imp[i] / max;   // Scaled importance
-      }
-      // Second pass to calculate percentages
-      j = 0;
-      for(int i : sorted_idx)
-        sorted_imp[2][j++] = rel_imp[i] / total; // Percentage
-
-      String [] col_types = new String[rel_imp.length];
-      String [] col_formats = new String[rel_imp.length];
-      Arrays.fill(col_types, "double");
-      Arrays.fill(col_formats, "%5f");
-      return new TwoDimTable("Variable Importance",
-              new String[] {"Relative Importance", "Scaled Importance", "Percentage"},
-              sorted_names, col_types, col_formats, new String[3][], sorted_imp);
     }
   }
 
