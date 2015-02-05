@@ -1,6 +1,7 @@
 package hex.splitframe;
 
 import hex.Model;
+import hex.ModelMetrics;
 import hex.schemas.SplitFrameModelV2;
 import water.H2O;
 import water.Key;
@@ -24,6 +25,11 @@ public class SplitFrameModel extends Model<SplitFrameModel,SplitFrameModel.Split
   }
 
   SplitFrameModel( Key selfKey, SplitFrameParameters parms, SplitFrameOutput output) { super(selfKey,parms,output); }
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    throw H2O.unimpl("No Model Metrics for SplitFrame");
+  }
 
   // Default publically visible Schema is V2
   @Override public ModelSchema schema() { return new SplitFrameModelV2(); }

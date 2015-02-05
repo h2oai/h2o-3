@@ -881,7 +881,7 @@ public class Frame extends Lockable<Frame> {
       }
       case Vec.T_NUM: {
         coltypes[i] = vec.isInt() ? "long" : "double"; 
-        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.at(off + j); strCells[j+4][i] = null; }
+        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+4][i] = null; }
         break;
       }
       case Vec.T_UUID:
@@ -889,7 +889,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
 
-    return new TwoDimTable("Frame "+_key,rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
   }
 
 

@@ -490,7 +490,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
         model.update(_key);
       } catch( Throwable t ) {
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         _parms.read_unlock_frames(CoxPH.this);

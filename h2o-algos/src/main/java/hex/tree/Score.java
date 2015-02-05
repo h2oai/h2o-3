@@ -1,8 +1,8 @@
 package hex.tree;
 
-import hex.*;
 import hex.Model.ModelCategory;
-import water.H2O;
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -32,20 +32,14 @@ public class Score extends MRTask<Score> {
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    switch (_mcat) {
-      case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS); break;
-      case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(domain, new float[]{0.5f}); break;
-      case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(domain); break;
-      case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(domain); break;
-      case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(domain); break;
-      default: throw H2O.unimpl();
-    }
+    _mb = _bldr._model.makeMetricBuilder(domain);
     final float[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
     final double[] tmp = _bldr._parms._valid!=null ? new double[_bldr._ncols] : null;
 
     // Score all Rows
+    float [] val= new float[1];
     for( int row=0; row<ys._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
@@ -55,12 +49,13 @@ public class Score extends MRTask<Score> {
       else                      // Passed in the model-specific columns
         _bldr.score2(chks,cdists,row); // Use the training data directly (per-row predictions already made)
       if( nclass > 1 ) cdists[0] = ModelUtils.getPrediction(cdists,row); // Fill in prediction
-      _mb.perRow(cdists,(float)ys.atd(row));
+      val[0] = (float)ys.atd(row);
+      _mb.perRow(cdists,val, _bldr._model);
     }
   }
 
   @Override public void reduce( Score t ) { _mb.reduce(t._mb); }
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
-  ModelMetrics makeModelMetrics(SharedTreeModel model, Frame fr, String resp) { return _mb.makeModelMetrics(model,fr, fr.vec(resp).sigma()); }
+  ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr, String resp) { return (ModelMetricsSupervised)_mb.makeModelMetrics(model,fr, fr.vec(resp).sigma()); }
 }

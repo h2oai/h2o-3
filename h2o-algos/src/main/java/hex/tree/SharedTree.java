@@ -183,14 +183,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Sub-class tree-model-builder specific build code
         buildModel();
-
+        done();                 // Job done!
       } catch( Throwable t ) {
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( _model != null ) _model.unlock(_key);
         _parms.read_unlock_frames(SharedTree.this);
-        done();                 // Job done!
         if( _model==null ) Scope.exit();
         else {
           Key[] mms = _model._output._model_metrics;
@@ -373,17 +372,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       _timeLastScoreStart = now;
       Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
-      ModelMetrics mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
+      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       Log.info("============================================================== ");
-      if (mm instanceof ModelMetricsRegression) { // TODO: also show r2 for classification
-        // Store score results in the model output
-        SharedTreeModel.SharedTreeOutput out = _model._output;
-        out._mse_train[out._ntrees] = _parms._valid == null ? ((ModelMetricsRegression)mm)._mse : Double.NaN;
-        out._mse_valid[out._ntrees] = _parms._valid == null ? Double.NaN : ((ModelMetricsRegression)mm)._mse;
-        Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
-      }
-      if (mm instanceof ModelMetricsBinomial) { // TODO: multinomial
+      // Store score results in the model output
+      SharedTreeModel.SharedTreeOutput out = _model._output;
+      out._mse_train[out._ntrees] = _parms._valid == null ? mm._mse : Double.NaN;
+      out._mse_valid[out._ntrees] = _parms._valid == null ? Double.NaN : mm._mse;
+      Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
+      if (mm instanceof ModelMetricsBinomial) {
         ConfusionMatrix cm = ((ModelMetricsBinomial)mm)._cm;
+        Log.info(cm.toASCII());
+        Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
+      } else if (mm instanceof ModelMetricsMultinomial) {
+        ConfusionMatrix cm = ((ModelMetricsMultinomial) mm)._cm;
         Log.info(cm.toASCII());
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }

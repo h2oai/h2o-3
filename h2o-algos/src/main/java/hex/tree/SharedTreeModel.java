@@ -1,10 +1,11 @@
 package hex.tree;
 
-import hex.SupervisedModel;
-import hex.VarImp;
+import hex.*;
 import water.DKV;
 import water.Futures;
+import water.H2O;
 import water.Key;
+import water.util.ModelUtils;
 
 import java.util.Arrays;
 
@@ -22,13 +23,24 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
 
-    public boolean _variable_importance = false; // compute variable importance
+    public boolean _score_each_iteration;
+
+    public boolean _variable_importance; // compute variable importance
 
     public long _seed;          // Seed for psuedo-random redistribution
 
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
     public boolean _checkpoint;
+  }
+
+  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    switch(_output.getModelCategory()) {
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
+      default: throw H2O.unimpl();
+    }
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {

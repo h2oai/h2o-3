@@ -257,7 +257,29 @@
   if (rv$curlError) {
     stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
   } else if (rv$httpStatusCode != 200) {
-    stop(sprintf("Unexpected HTTP Status code: %d %s (url = %s)", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+    cat("\n")
+    cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+    cat("\n")
+
+    jsonObject = fromJSON(rv$payload)
+
+    exceptionType = jsonObject$exception_type
+    if (! is.null(exceptionType)) {
+      cat(sprintf("%s\n", exceptionType))
+    }
+
+    stacktrace = jsonObject$stacktrace
+    if (! is.null(stacktrace)) {
+      print(jsonObject$stacktrace)
+      cat("\n")
+    }
+
+    msg = jsonObject$msg
+    if (! is.null(msg)) {
+      stop(msg)
+    } else {
+      stop("Unexpected HTTP Status code")
+    }
   }
 
   rv$payload
@@ -503,7 +525,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   checker <- function(node, conn = h2o.getConnection()) {
     status <- as.logical(node$healthy)
     elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
-    nport <- unlist(strsplit(node$h2o$node, ":"))[2L]
+    # nport <- unlist(strsplit(node$h2o, ":"))[2L]
     if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 60*1000) .h2o.__cloudSick(node_name = NULL, conn = conn)
     if(elapsed > 10*1000 && retries < max_retries) {

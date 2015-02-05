@@ -5,7 +5,6 @@ import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
-import water.util.ModelUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -265,6 +264,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public O _output; // TODO: move things around so that this can be protected
 
+  public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
+
+  public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 
   /**
    * Externally visible default schema
@@ -378,6 +380,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return msgs.toArray(new String[msgs.size()]);
   }
 
+  /**
+   * Bulk score the frame, and auto-name the resulting predictions frame.
+   * @see #score(Frame, String)
+   * @param fr frame which should be scored
+   * @return A new frame containing a predicted values. For classification it
+   *         contains a column with prediction and distribution for all
+   *         response classes. For regression it contains only one column with
+   *         predicted values.
+   * @throws IllegalArgumentException
+   */
+  public Frame score(Frame fr) throws IllegalArgumentException {
+    return score(fr, null);
+  }
+
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
    *  distributions.  For Regression (single-class) models, the 1st and only
@@ -389,12 +405,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *         contains a column with prediction and distribution for all
    *         response classes. For regression it contains only one column with
    *         predicted values.
+   * @throws IllegalArgumentException
    */
-  public Frame score(Frame fr) throws IllegalArgumentException {
+  public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     Vec actual = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
     adaptTestForTrain(adaptFr,true);   // Adapt
-    Frame output = scoreImpl(fr,adaptFr); // Score
+    Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
 
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
@@ -443,7 +460,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame scoreImpl(Frame fr, Frame adaptFrm) {
+  protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
     assert Arrays.equals(_output._names,adaptFrm._names); // Already adapted
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -457,36 +474,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols).doAll(ncols,adaptFrm);
     bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
-    Frame res = bs.outputFrame(Key.make(),names,domains);
+    Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
     return res;
   }
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
-    final int _ncols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _ncols = ncols; }
+    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      Chunk ys = chks[chks.length-1]; // Adapted actuals are last column
       double[] tmp = new double[_output.nfeatures()];
-      switch (_output.getModelCategory()) {
-        case Binomial:    _mb = new ModelMetricsBinomial.MetricBuilderBinomial(_domain, ModelUtils.DEFAULT_THRESHOLDS); break;
-        case Multinomial: _mb = new ModelMetricsMultinomial.MetricBuilderMultinomial(_domain, new float[]{0.5f}); break;
-        case Regression:  _mb = new ModelMetricsRegression.MetricBuilderRegression(_domain); break;
-        case Clustering:  _mb = new ModelMetricsClustering.MetricBuilderClustering(_domain); break;
-        case AutoEncoder: _mb = new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_domain); break;
-        default: throw H2O.unimpl();
-      }
+      _mb = Model.this.makeMetricBuilder(_domain);
+      int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
       float[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
-      for( int row=0; row<len; row++ ) {
-        float[] p = score0(chks,row,tmp,preds);
-        _mb.perRow(preds,(float)ys.atd(row));
-        for( int c=0; c<_ncols; c++ )  // Output predictions; sized for train only (excludes extra test classes)
+      for (int row = 0; row < len; row++) {
+        float[] p = score0(chks, row, tmp, preds);
+        float[] actual = new float[chks.length-startcol];
+        for (int c = startcol; c < chks.length; c++) {
+          actual[c-startcol] = (float)chks[c].atd(row);
+        }
+        _mb.perRow(preds, actual, Model.this);
+        for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
     }
     @Override public void reduce( BigScore bs ) { _mb.reduce(bs._mb); }
+
+    @Override protected void postGlobal() { _mb.postGlobal(); }
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,

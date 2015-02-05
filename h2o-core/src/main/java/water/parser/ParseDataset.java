@@ -63,6 +63,7 @@ public final class ParseDataset extends Job<Frame> {
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
   static ByteVec getByteVec(Key key) {
+    DKV.get(key).freePOJO();  // ensure we don't grab an old cached version
     Iced ice = DKV.getGet(key);
     if(ice == null)
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
@@ -96,15 +97,17 @@ public final class ParseDataset extends Job<Frame> {
 
     Vec update;
     Iced ice;
+    Futures fs = new Futures();
     Log.info("Parse chunk size " + setup._chunkSize);
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
       update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
         ((FileVec) update).setChunkSize(setup._chunkSize);
-        DKV.put(update._key, update);
+        DKV.put(update._key, update, fs);
       }
     }
+    fs.blockForPending();
 
     long memsz = H2O.CLOUD.memsz();
     if( totalParseSize > memsz*4 )
@@ -145,7 +148,7 @@ public final class ParseDataset extends Job<Frame> {
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      if( _job != null ) _job.cancel2(ex);
+      if( _job != null ) _job.failed(ex);
       return true;
     }
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }

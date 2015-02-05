@@ -13,13 +13,7 @@ import water.util.TwoDimTable;
  *
  */
 public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
-  static class ColumnSpecs extends Iced {
-    String name;
-    String type;
-    String format;
-    String description;
-  }
-  public static class ColumnSpecsV1 extends Schema<ColumnSpecs, ColumnSpecsV1> {
+  public static class ColumnSpecsV1 extends Schema<Iced, ColumnSpecsV1> {
     @API(help="Column Name", direction=API.Direction.OUTPUT)
     String name;
     @API(help="Column Type", direction=API.Direction.OUTPUT)
@@ -34,7 +28,10 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
   public String name;
 
   @API(help="Column Specification", direction=API.Direction.OUTPUT)
-  public ColumnSpecs[] columns;
+  public ColumnSpecsV1[] columns;
+
+  @API(help="Number of Rows", direction=API.Direction.OUTPUT)
+  public int rowcount;
 
   @API(help="Table Data (col-major)", direction=API.Direction.OUTPUT)
   public String[][] data;
@@ -48,14 +45,15 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     name = t.getTableHeader();
     final int cols = t.getColDim()+1;
     final int rows = t.getRowDim();
-    columns = new ColumnSpecs[cols];
-    columns[0] = new ColumnSpecs();
+    rowcount = rows;
+    columns = new ColumnSpecsV1[cols];
+    columns[0] = new ColumnSpecsV1();
     columns[0].name = "";
     columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
     columns[0].format = "%s";
     columns[0].description = null;
     for (int c=1; c<cols; ++c) {
-      columns[c] = new ColumnSpecs();
+      columns[c] = new ColumnSpecsV1();
       columns[c].name = t.getColHeaders()[c-1];
       columns[c].type = t.getColTypes()[c-1];
       columns[c].format = t.getColFormats()[c-1];
@@ -82,6 +80,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
    */
   public TwoDimTable fillImpl(TwoDimTable impl) {
     final int rows = data[0].length;
+    assert(rows == rowcount);
     final int cols = data.length+1;
     String tableHeader = name;
     String[] rowHeaders = new String[rows];

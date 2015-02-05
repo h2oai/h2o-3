@@ -133,7 +133,8 @@ public abstract class FileVec extends ByteVec {
 
     // Small data check
     chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
-    if (chunkSize < DFLT_CHUNK_SIZE) {
+    if (chunkSize < DFLT_CHUNK_SIZE
+            && (localParseSize/chunkSize)*numCols < (1 << 21)) { // ignore if col cnt is high
       return chunkSize;
     }
 

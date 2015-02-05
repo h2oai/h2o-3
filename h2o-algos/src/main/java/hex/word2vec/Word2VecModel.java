@@ -1,5 +1,6 @@
 package hex.word2vec;
 
+import hex.ModelMetrics;
 import water.Key;
 import water.H2O;
 import water.Futures;
@@ -34,6 +35,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     super(selfKey, params, output);
     _modelInfo = new Word2VecModelInfo(params);
     assert(Arrays.equals(_key._kb, selfKey._kb));
+  }
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 
   // Default publicly visible Schema is V2

@@ -338,7 +338,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     if (missingI)
       return(x)
 
-    if ((nargs() - !missing(drop)) < 3L) {
+    if (((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L)) {
       j <- i
       missingI <- TRUE
       missingJ <- FALSE
@@ -1070,7 +1070,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' as.data.frame.H2OFrame(prostate.hex)
 as.data.frame.H2OFrame <- function(x, ...) {
-  .byref.update.frame(x)
+  .byref.update.frame(x, scalarAsFrame = FALSE)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.

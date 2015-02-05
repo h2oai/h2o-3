@@ -287,15 +287,15 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
         }
+        done();                 // Job done!
 
       } catch( Throwable t ) {
         t.printStackTrace();
-        cancel2(t);
+        failed(t);
         throw t;
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);
-        done();                 // Job done!
       }
       tryComplete();
     }

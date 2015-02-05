@@ -3,6 +3,9 @@ package water.api;
 import hex.ModelMetricsClustering;
 
 public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClustering, ModelMetricsClusteringV3> {
+  @API(help="The Total MSE.", direction=API.Direction.OUTPUT)
+  public double mse;
+
   @API(help="The Within-Cluster MSE.", direction=API.Direction.OUTPUT)
   public double[] within_mse;
 
