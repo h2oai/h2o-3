@@ -32,7 +32,7 @@ public final class L_BFGS extends Iced {
   public int k() {return _hist._k;}
   public int maxIter(){ return _maxIter;}
 
-  public static class GradientInfo {
+  public static class GradientInfo extends Iced {
     public double _objVal;
     public final double [] _gradient;
 
@@ -134,8 +134,8 @@ public final class L_BFGS extends Iced {
     }
 
     // the actual core of L-BFGS algo
+    // compute new search direction using the gradient at current beta and history
     private  final double [] getSearchDirection(final double [] gradient) {
-      // get search direction
       double [] alpha = MemoryManager.malloc8d(_m);
       double [] q = gradient.clone();
       for (int i = 1; i <= Math.min(_k,_m); ++i) {
@@ -152,9 +152,7 @@ public final class L_BFGS extends Iced {
         double beta = rho(-i)*ArrayUtils.innerProduct(getY(-i),q);
         MathUtils.wadd(q,getS(-i),alpha[i-1]-beta);
       }
-      ArrayUtils.mult(q,-1);
-      // q now has the search direction
-      return q;
+      return ArrayUtils.mult(q,-1);
     }
 
   }
@@ -196,27 +194,24 @@ public final class L_BFGS extends Iced {
 _MAIN:
     while(pm.progress(ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter++ < _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
-      double [] objs = gslvr.lineSearch(beta,pk);
+      double [] objs = gslvr.lineSearch(beta,pk); // expensive / distributed
       double step = gslvr.step();
-      double t = 1;
       // check the line search, we do all the steps (up to min step) at once each time to limit number of passes over all data
-      for (int i = 0; i < objs.length; ++i) {
-        if (!needLineSearch(t, ginfo._objVal, objs[i], pk, ginfo._gradient)) {
-          // we got admissible solution
-          ArrayUtils.mult(pk, t);
-          ArrayUtils.add(beta,pk);
-          ginfo = gslvr.getGradient(beta);
-          _hist.update(pk, ginfo._gradient, ginfo._gradient);
-          ArrayUtils.add(beta, pk);
-          continue _MAIN;
-        }
-        t *= step;
+      LineSearchSol ls =  doLineSearch(objs, ginfo, pk, 1, step);
+      if (ls != null) {
+        // we got admissible solution
+        ArrayUtils.mult(pk, ls.step);
+        ArrayUtils.add(beta,pk);
+        ginfo = gslvr.getGradient(beta); // expensive / distributed
+        _hist.update(pk, ginfo._gradient, ginfo._gradient);
+        ArrayUtils.add(beta, pk);
+        continue _MAIN;
       }
       // line search did not progress -> converged
       --iter; // decrement iteration since we did not reallyupdate the result in the last one
       break;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) + ",  converged = " + (MathUtils.l2norm2(ginfo._gradient) <= _gradEps) );
+    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);
   }
 
@@ -228,8 +223,30 @@ _MAIN:
     return res;
   }
 
+  public static class LineSearchSol {
+    public final double objVal;
+    public final double step;
+    public final int stepIdx;
+
+    public LineSearchSol(double obj, double step, int sid) {
+      objVal = obj;
+      this.step = step;
+      stepIdx = sid;
+    }
+  }
+  public static LineSearchSol doLineSearch(double [] objVals, GradientInfo ginfo, double [] pk, double step, double stepDec) {
+    for (int i = 0; i < objVals.length; ++i) {
+      if (!needLineSearch(step, ginfo._objVal, objVals[i], pk, ginfo._gradient))
+        return new LineSearchSol(objVals[i], step, i);
+      step *= stepDec;
+    }
+    return null;
+  }
+
   // Armijo line-search rule
   public static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] pk, final double [] gradOld){
+    if(Double.isNaN(objNew))
+      return true;
     // line search
     double f_hat = 0;
     for(int i = 0; i < pk.length; ++i)
@@ -240,6 +257,8 @@ _MAIN:
 
   // Armijo line-search rule - to be used with glm (to avoid making explicit pk [] array)
   public static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] betaOld,final double [] betaNew, final double [] gradOld){
+    if(Double.isNaN(objNew))
+      return true;
     // line search
     double f_hat = 0;
     for(int i = 0; i < betaNew.length; ++i)

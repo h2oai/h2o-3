@@ -11,6 +11,7 @@ import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMValidation.GLMXValidation;
 import hex.optimization.L_BFGS.GradientInfo;
+import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.Chunk;
@@ -86,13 +87,17 @@ public abstract class GLMTask  {
     final double [] _direction;
     final double _step;
     final int _nSteps;
+    final GLMParameters _params;
 
-    public GLMLineSearchTask(DataInfo dinfo, double [] beta, double [] direction, double step, int nsteps) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, beta, direction, step, nsteps, null);}
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
+      super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
       _beta = beta;
       _direction = direction;
       _step = step;
       _nSteps = nsteps;
+      _params = params;
     }
 
     double [] _objVals; // result
@@ -104,6 +109,7 @@ public abstract class GLMTask  {
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
+      Chunk responseChunk = chks[chks.length-1];
       boolean [] skip = MemoryManager.mallocZ(chks[0]._len);
       double [][] eta = new double[_nSteps][];
       for(int i = 0; i < eta.length; ++i)
@@ -152,7 +158,17 @@ public abstract class GLMTask  {
       }
       // TODO compute objvals
       _objVals = MemoryManager.malloc8d(_nSteps);
-
+      for(int r = 0; r < chks[0]._len; ++r){
+        if(skip[r] || responseChunk.isNA(r))
+          continue;
+        double off = 0; //(_dinfo._offset?offsetChunk.atd(r):0);
+        double y = responseChunk.atd(r);
+        for(int i = 0; i < eta.length; ++i) {
+          double offset = off + (_dinfo._intercept ? beta(i,_beta.length-1): 0);
+          double mu = _params.linkInv(eta[i][r] + offset);
+          _objVals[i] += _params.deviance(y, mu);
+        }
+      }
     }
   }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
@@ -163,9 +179,7 @@ public abstract class GLMTask  {
     final double _reg;
     public double [] _gradient;
     public double    _objVal;
-    protected boolean [] _skip;
-
-
+    protected transient boolean [] _skip;
 
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg){this(dinfo,params, lambda, beta,reg,null);}
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
@@ -180,12 +194,11 @@ public abstract class GLMTask  {
 
     private final void goByRows(Chunk [] chks){
       Row row = _dinfo.newDenseRow();
-      _skip = MemoryManager.mallocZ(chks[0]._len);
       double [] g = _gradient;
       double [] b = _beta;
       for(int rid = 0; rid < chks[0]._len; ++rid) {
         row = _dinfo.extractDenseRow(chks, rid, row);
-        if(_skip[rid] = !row.good) continue;
+        if(!row.good) continue;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
         _objVal += _params.deviance(row.response(0),mu);
@@ -193,8 +206,8 @@ public abstract class GLMTask  {
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
         // categoricals
-        for(int c: row.binIds)
-          g[c] += gval;
+        for(int i = 0; i < row.nBins; ++i)
+          g[row.binIds[i]] += gval;
         int off = _dinfo.numStart();
         // numbers
         for(int j = 0; j < _dinfo._nums; ++j)
@@ -324,10 +337,23 @@ public abstract class GLMTask  {
       return cnt >= chks.length >> 1;
     }
 
+    private boolean _forceRows;
+    private boolean _forceCols;
+
+    public GLMGradientTask forceColAccess() {
+      _forceCols = true;
+      _forceRows = false;
+      return this;
+    }
+    public GLMGradientTask forceRowAccess() {
+      _forceCols = false;
+      _forceRows = true;
+      return this;
+    }
     public void map(Chunk [] chks){
       _gradient = MemoryManager.malloc8d(_beta.length);
 
-      if(chks.length >= 100 || mostlySparse(chks))
+      if(_forceCols || (!_forceRows && (chks.length >= 100 || mostlySparse(chks))))
         goByCols(chks);
       else
         goByRows(chks);

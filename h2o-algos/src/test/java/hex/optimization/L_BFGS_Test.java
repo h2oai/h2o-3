@@ -36,28 +36,35 @@ public class L_BFGS_Test  extends TestUtil {
     final double a = 1, b = 100;
     GradientSolver gs = new GradientSolver() {
       @Override
-      public GradientInfo[] getGradient(double[][] betas) {
-        double[][] grads = new double[betas.length][betas[0].length];
-        double[] objs = new double[grads.length];
-        for (int i = 0; i < grads.length; ++i) {
-          final double[] g = grads[i] = grads[i].clone();
-          final double x = betas[i][0];
-          final double y = betas[i][1];
-          final double xx = x * x;
-          g[0] = -2 * a + 2 * x - 4 * b * (y * x - x * xx);
-          g[1] = 2 * b * (y - xx);
-          objs[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
+      public GradientInfo getGradient(double[] beta) {
+        final double[] g = new double[2];
+        final double x = beta[0];
+        final double y = beta[1];
+        final double xx = x * x;
+        g[0] = -2 * a + 2 * x - 4 * b * (y * x - x * xx);
+        g[1] = 2 * b * (y - xx);
+        double objVal = (a - x) * (a - x) + b * (y - xx) * (y - xx);
+        return new GradientInfo(objVal, g);
+      }
+
+      @Override
+      public double[] lineSearch(double[] beta, double[] pk) {
+        double [] res = new double[128];
+        double step = 1;
+        for(int i = 0; i < res.length; ++i) {
+          double x = beta[0] + pk[0]*step;
+          double y = beta[0] + pk[0]*step;
+          double xx = x * x;
+          res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
+          step *= .75;
         }
-        GradientInfo[] ginfos = new GradientInfo[betas.length];
-        for (int i = 0; i < betas.length; ++i)
-          ginfos[i] = new GradientInfo(objs[i], grads[i]);
-        return ginfos;
+        return res;
       }
     };
     int fails = 0;
     int N = 1000;
     for (int i = 0; i < N; ++i) {
-      L_BFGS lbfgs = new L_BFGS().setMinStep(1e-18).setGradEps(1e-12);
+      L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
       L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
       if (Math.abs(r.ginfo._objVal) > 1e-4)
         ++fails;
@@ -110,7 +117,7 @@ public class L_BFGS_Test  extends TestUtil {
 
       DKV.put(dinfo._key,dinfo);
       GradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
-      L_BFGS lbfgs = new L_BFGS().setMinStep(1e-8);
+      L_BFGS lbfgs = new L_BFGS();
 
       long t1 = System.currentTimeMillis();
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
@@ -121,10 +128,10 @@ public class L_BFGS_Test  extends TestUtil {
       GradientInfo ginfo = r.ginfo;
       assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r.coefs,true), ginfo._objVal, 1e-3);
       assertTrue("iter# expected < 100, got " + r.iter, r.iter < 100);
-      lbfgs = new L_BFGS().setMinStep(1e-8);
+      lbfgs = new L_BFGS();
       solver = new GLM.GLMGradientSolver(glmp,dinfo,1e-5,source.lastVec().mean(), source.numRows());
       lbfgs.solve(solver, beta.clone());
-      L_BFGS.Result r2 = new L_BFGS().setMinStep(1e-8).solve(solver, beta.clone());
+      L_BFGS.Result r2 = new L_BFGS().solve(solver, beta.clone());
       long t3 = System.currentTimeMillis();
       System.out.println("solver1 took " + (t2-t1) + "ms, objval = " + r.ginfo._objVal);
       System.out.println("solver2 took " + (t3-t2) + "ms, objval = " + r2.ginfo._objVal);
