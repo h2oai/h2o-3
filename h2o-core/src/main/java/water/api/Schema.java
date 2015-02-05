@@ -562,6 +562,17 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // normally not allowed because it has no version:
     new Schema();
 
+    // Ensure that water is pulled in:
+    for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(Schema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    // Ensure that hex is pulled in:
+    for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(Schema.class))
+      if (! Modifier.isAbstract(schema_class.getModifiers()))
+        Schema.register(schema_class);
+
+    // Get mixed-package schemas:
     for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(Schema.class))
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);

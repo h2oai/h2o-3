@@ -3,7 +3,7 @@ package water.api;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
-public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialBaseV3<I, S>> extends ModelMetricsBase<I, S> {
+abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialBaseV3<I, S>> extends ModelMetricsBase<I, S> {
     @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
     public double mse;
 
