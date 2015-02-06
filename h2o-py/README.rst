@@ -53,8 +53,8 @@ cooking with gas now!).
 For application developers and data scientists, the gritty details of thread-safety,
 algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST
 calls that are all documented here. In addition, H2O is an open-source project under the
-Apache v2 licence. All of the source code is on
-`github <https://github.com/h2oai/h2o-dev>`_, there is an active
+Apache v2 licence. All of the `source code is on github
+<https://github.com/h2oai/h2o-dev>`_, there is an active
 `google group mailing list <https://groups.google.com/forum/#!forum/h2ostream>`_, our
 `nightly tests <http://test.0xdata.com/>`_ are open for perusal, our `JIRA ticketing
 system <http://jira.0xdata.com>`_ is also open for public use. Last, but not least, we
