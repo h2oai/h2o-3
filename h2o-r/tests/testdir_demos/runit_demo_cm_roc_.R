@@ -13,9 +13,7 @@ heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort)
 
 #uploading data file to h2o
-filePath <- locate("smalldata/airlines/AirlinesTrain.csv.zip")
-air <- h2o.uploadFile(conn, filePath, "air")
-
+air <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -27,35 +25,26 @@ myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
 myY <- "IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "multinomial", training_frame = air.train, ntrees = 10, 
-                  max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid, variable_importance = T)
+air.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = air.train, ntrees = 10, max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
 print(air.gbm@model)
-air.gbm@model$auc
-
-#RF
-air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")
-print(air.rf@model)
 
 #uploading test file to h2o
-testFilePath <- locate("smalldata/airlines/AirlinesTest.csv.zip")
-air.test <- h2o.uploadFile(conn,testFilePath,key="air.test")
+air.test <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
-model_object <- air.rf #air.glm air.rf air.dl
-
-#predicting on test file 
-pred <- predict(model_object,air.test)
+#predicting & performance on test file
+pred <- predict(air.gbm, air.test)
 head(pred)
+perf <- h2o.performance(air.gbm, air.test)
+print(perf)
 
 #Building confusion matrix for test set
-CM <- h2o.table(pred$predict,air.test$IsDepDelayed)
+CM <- h2o.confusionMatrices(perf, 0.5)
 print(CM)
 
 #Plot ROC for test set
-perf <- h2o.performance(pred$YES,air.test$IsDepDelayed )
-print(perf)
-perf@model$precision
-perf@model$accuracy
-perf@model$auc
+h2o.precision(perf)
+h2o.accuracy(perf)
+h2o.auc(perf)
 plot(perf,type="roc")
 
 PASS_BANNER()
