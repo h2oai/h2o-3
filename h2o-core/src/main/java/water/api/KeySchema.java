@@ -1,6 +1,8 @@
 package water.api;
 
-import water.*;
+import water.H2O;
+import water.Key;
+import water.Keyed;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
@@ -44,20 +46,7 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
 
   /** TODO: figure out the right KeySchema class from the Key, so the type is set properly. */
   public static KeySchema make(Key key) {
-    if (null == key) return null;
-    Value v = DKV.get(key);
-    if (null == v) return new KeySchema();
-
-    if (v.isFrame())
-      return make(KeyV1.FrameKeyV1.class, key);
-    else if (v.isModel())
-      return make(KeyV1.ModelKeyV1.class, key);
-    else if (v.isVec())
-      return make(KeyV1.VecKeyV1.class, key);
-    else if (v.isJob())
-      return make(KeyV1.JobKeyV1.class, key);
-    else
-      return make(KeySchema.class, key);
+    return make(KeySchema.class, key);
   }
 
   @Override

@@ -1,7 +1,6 @@
 package water.api;
 
-import water.Job;
-import water.Key;
+import water.*;
 import water.api.KeyV1.JobKeyV1;
 import water.util.DocGen.HTML;
 import water.util.PojoUtils;
