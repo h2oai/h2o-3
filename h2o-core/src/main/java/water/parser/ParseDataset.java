@@ -1078,7 +1078,7 @@ public final class ParseDataset extends Job<Frame> {
         long numNAs = v.naCnt();
         String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
         String isConstantStr = isConstant ? "constant" : "";
-        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : (isString ? String.format("%d", v.nzCnt()) : "");
+        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
 
         boolean printLogSeparatorToStdout = false;
         boolean printColumnToStdout;
