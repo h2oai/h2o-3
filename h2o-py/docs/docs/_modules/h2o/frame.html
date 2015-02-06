@@ -1,0 +1,1023 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>h2o.frame &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for h2o.frame</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">This module contains the abstraction for H2OFrame and H2OVec objects.</span>
+
+<span class="sd">H2OFrame</span>
+<span class="sd">========</span>
+
+<span class="sd">A H2OFrame represents a 2D array of data where each column is uniformly typed.</span>
+
+<span class="sd">The data may be local, or it may be in an H2O cluster. The data are loaded from a CSV</span>
+<span class="sd">file or the data are loaded from a native python data structure, and is either a</span>
+<span class="sd">python-process-local file or a cluster-local file, or a list of H2OVec objects.</span>
+
+<span class="sd">Loading Data From A CSV File</span>
+<span class="sd">----------------------------</span>
+
+<span class="sd">  H2O&#39;s parser supports data of various formats coming from various sources.</span>
+<span class="sd">  Briefly, these formats are:</span>
+
+<span class="sd">     * SVMLight</span>
+<span class="sd">     * CSV (data may delimited by any of the 128 ASCII characters)</span>
+<span class="sd">     * XLS</span>
+
+<span class="sd">  Data sources may be:</span>
+<span class="sd">     * NFS / Local File / List of Files</span>
+<span class="sd">     * HDFS</span>
+<span class="sd">     * URL</span>
+<span class="sd">     * A Directory (with many data files inside at the *same* level -- no support for</span>
+<span class="sd">                   recursive import of data)</span>
+<span class="sd">     * S3/S3N</span>
+<span class="sd">     * Native Language Data Structure (c.f. the subsequent section)</span>
+
+<span class="sd">Loading Data From A Python Object</span>
+<span class="sd">---------------------------------</span>
+
+<span class="sd">  It is possible to transfer the data that are stored in python data structures to</span>
+<span class="sd">  H2O by using the H2OFrame constructor and the `python_obj` argument. (Note that if</span>
+<span class="sd">  the `python_obj` argument is not `None`, then additional arguments are ignored).</span>
+
+<span class="sd">  The following types are permissible for `python_obj`:</span>
+
+<span class="sd">    * :class:`tuple` ()</span>
+<span class="sd">    * :class:`list`  []</span>
+<span class="sd">    * :class:`dict`  {}</span>
+<span class="sd">    * :mod:`collections.OrderedDict`</span>
+
+<span class="sd">  The type of `python_obj` is inspected by performing an `isinstance` call. A</span>
+<span class="sd">  ValueError will be raised if the type of `python_obj` is not one of the above</span>
+<span class="sd">  types. Notably, sets, byte arrays, and un-contained types are not permissible.</span>
+
+<span class="sd">  In the subsequent sections, each data type will be discussed in detail. Each</span>
+<span class="sd">  discussion will be couched in terms of the &quot;source&quot; representation (the python</span>
+<span class="sd">  object) and the &quot;target&quot; representation (the H2O object). Concretely, the topics</span>
+<span class="sd">  of discussion will be on the following: Headers, Data Types, Number of Rows,</span>
+<span class="sd">  Number of Columns, and Missing Values.</span>
+
+<span class="sd">  Aside: Why is Pandas&#39; DataFrame not a permissible type?</span>
+
+<span class="sd">      There are two reason that Pandas&#39; DataFrame objects are not included.</span>
+<span class="sd">      First, it is desirable to keep the number of dependencies to a minimum, and it</span>
+<span class="sd">      is difficult to justify the inclusion of the Pandas module as a dependency if</span>
+<span class="sd">      its raison d&#39;être is tied to this small detail of transferring data from</span>
+<span class="sd">      python to H2O.</span>
+
+<span class="sd">      Second, Pandas objects are simple wrappers of numpy arrays together with some</span>
+<span class="sd">      meta data; therefore if one was adequately motivated, then the transfer of</span>
+<span class="sd">      data from a Pandas DataFrame to an H2O Frame could readily be achieved.</span>
+
+
+<span class="sd">  In what follows, H2OFrame and Frame will be used synonymously. Technically, an</span>
+<span class="sd">  H2OFrame is the object-pointer that resides in the python VM and points to a Frame</span>
+<span class="sd">  object inside of the H2O JVM. Similarly, H2OFrame, Frame, and H2O Frame will all</span>
+<span class="sd">  refer to the same kind of object. In general, though, the context is from the</span>
+<span class="sd">  python VM, unless otherwise specified.</span>
+
+<span class="sd">Loading A Python Tuple</span>
+<span class="sd">++++++++++++++++++++++</span>
+
+<span class="sd">      Essentially, the tuple is an immutable list. This immutability does not map to</span>
+<span class="sd">      the H2OFrame. So pythonistas be ware!</span>
+
+<span class="sd">      The restrictions on what goes inside the tuple are fairly relaxed, but if they</span>
+<span class="sd">      are too unusual, a ValueError will be raised.</span>
+
+<span class="sd">      A tuple looks as follows:</span>
+
+<span class="sd">          (i1, i2, i3, ..., iN)</span>
+
+<span class="sd">      Restrictions are really on the types of the individual `iJ` (1 &lt;= J &lt;= N).</span>
+
+<span class="sd">      If `iJ` is {} for some J, then a ValueError will be raised.</span>
+
+<span class="sd">      If `iJ` is a () (tuple) or [] (list), then `iJ` must be a () or [] for all J;</span>
+<span class="sd">      otherwise a ValueError will be raised.</span>
+
+<span class="sd">      If `iJ` is a () or [], and if it is in fact a nested () or nested [], then a</span>
+<span class="sd">      ValueError will be raised. In other words, only a single level of nesting is</span>
+<span class="sd">      valid, all internal arrays must be flat -- H2O will not flatten them for you.</span>
+
+<span class="sd">      If `iJ` is not a () or [], then it must be of type string or a non-complex</span>
+<span class="sd">      numeric type (float or int). In other words, if `iJ` is not a tuple, list,</span>
+<span class="sd">      string, float, or int, for some J, then a ValueError will be raised.</span>
+
+<span class="sd">      Some acceptable inputs are:</span>
+<span class="sd">          * Example A: (1,2,3)</span>
+<span class="sd">          * Example B: ((1,2,3), (4,5,6), (&quot;cat&quot;, &quot;dog&quot;))</span>
+<span class="sd">          * Example C: ((1,2,3), [4,5,6], [&quot;blue&quot;, &quot;yellow&quot;], (321.239, &quot;green&quot;,&quot;hi&quot;))</span>
+<span class="sd">          * Example D: (3284.123891, &quot;dog&quot;, 89)</span>
+
+<span class="sd">      Note that it is perfectly fine to mix () and [] within a tuple.</span>
+
+<span class="sd">      Onward.</span>
+
+<span class="sd">      Headers, Columns, Rows, Data Types, and Missing Values:</span>
+
+<span class="sd">      The form of the H2OFrame is as follows:</span>
+
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+<span class="sd">        | column1| column2| column3| ... | columnN |</span>
+<span class="sd">        +========+========+========+=====+=========+</span>
+<span class="sd">        |  a11,  |  a12,  | a13,   | ...,| a1N     |</span>
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+<span class="sd">        |  .,    |   .,   |   .,   | ...,| .       |</span>
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+<span class="sd">        |  .,    |   .,   |   .,   | ...,| .       |</span>
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+<span class="sd">        |  .,    |   .,   |   .,   | ...,| .       |</span>
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+<span class="sd">        |  aM1,  |  aM2,  |   aM3, | ...,| aMN     |</span>
+<span class="sd">        +--------+--------+--------+-----+---------+</span>
+
+<span class="sd">      It looks exactly like an MxN matrix with an additional header &quot;row&quot;. This</span>
+<span class="sd">      header cannot be specified when loading data from a () (or from a []</span>
+<span class="sd">      but it is possible to specify a header with a python dictionary, see below</span>
+<span class="sd">      for details).</span>
+
+<span class="sd">      Headers:</span>
+
+<span class="sd">          Since no header row can be specified for this case, H2O will generate a</span>
+<span class="sd">          column header on your behalf and the column header will look like this:</span>
+
+<span class="sd">              C1, C2, C3, ..., CN</span>
+
+<span class="sd">          Notably, these columns have a 1-based indexing (i.e. the 0th column is</span>
+<span class="sd">          &quot;C1&quot;).</span>
+
+<span class="sd">      Rows and Columns and Missing Data:</span>
+
+<span class="sd">          The shape of the H2OFrame is determined by the two factors:</span>
+<span class="sd">              the number of arrays nested in the ()</span>
+<span class="sd">              the number of items in each array</span>
+
+<span class="sd">          If there are no nested arrays (as in Example A and Example D above), then</span>
+<span class="sd">          the resulting H2OFrame will have shape (rows x cols):</span>
+
+<span class="sd">              1 x len(tuple)</span>
+
+<span class="sd">          (i.e. a Frame with a single row).</span>
+
+<span class="sd">          If there are nested arrays (as in Example B and Example C above), then</span>
+<span class="sd">          (given the rules stated above) the resulting H2OFrame will have ROWS equal</span>
+<span class="sd">          to the number of arrays nested within and COLUMNS equal to the maximum sub</span>
+<span class="sd">          array:</span>
+
+<span class="sd">              max( [len(l) for l in tuple] ) x len(tuple)</span>
+
+<span class="sd">          Note that this handles the issue with ragged sub arrays by assuming that</span>
+<span class="sd">          shorter sub arrays will pad themselves with NA (missing values) at the end</span>
+<span class="sd">          so that they become the correct length.</span>
+
+<span class="sd">          Because the Frame is uniformly typed, mixing and matching data types</span>
+<span class="sd">          within a column may produce unexpected results. Please read up on the H2O</span>
+<span class="sd">          parser for details on how a column type is determined for a column of</span>
+<span class="sd">          initially mixed type.</span>
+
+<span class="sd">Loading A Python List</span>
+<span class="sd">+++++++++++++++++++++</span>
+
+<span class="sd">      The same discussion applies for lists as it does for tuples. Lists are mutable</span>
+<span class="sd">      objects so there is no semantic difference regarding mutability between an</span>
+<span class="sd">      H2OFrame and a list (as there is for a tuple).</span>
+
+<span class="sd">      Additionally, a list [] is ordered (as is a tuple ()) and the data appearing</span>
+<span class="sd">      within</span>
+
+<span class="sd">Loading A Python Dictionary Or collections.OrderedDict</span>
+<span class="sd">++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+
+<span class="sd">      Each entry in the {} is expected to represent a single column. Keys in the {}</span>
+<span class="sd">      must be character strings following the pattern: ^[a-zA-Z_][a-zA-Z0-9_.]*$</span>
+<span class="sd">      without restriction on length. That is a valid column name may begin with any</span>
+<span class="sd">      letter (capital or not) or an &quot;_&quot;, it can then be followed by any number of</span>
+<span class="sd">      letters, digits, &quot;_&quot;s, or &quot;.&quot;s.</span>
+
+<span class="sd">      Values in the {} may be a flat [], a flat (), or a single int, float, or</span>
+<span class="sd">      string value. Nested [] and () will raise a ValueError. This is the only</span>
+<span class="sd">      additional restriction on [] and () that applies in this context.</span>
+
+<span class="sd">      Note that the built-in dict does not provide any guarantees on ordering. This</span>
+<span class="sd">      has implications on the order of columns in the eventual H2OFrame, since they</span>
+<span class="sd">      may be written out of order from which they were initially put into the dict.</span>
+
+<span class="sd">      collections.OrderedDict will preserve the order of the key-value pairs in</span>
+<span class="sd">      which they were entered.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="c"># import numpy    no numpy cuz windoz</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">tabulate</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">h2o</span>
+<span class="kn">from</span> <span class="nn">connection</span> <span class="kn">import</span> <span class="n">H2OConnection</span>
+<span class="kn">from</span> <span class="nn">expr</span> <span class="kn">import</span> <span class="n">Expr</span>
+
+
+<div class="viewcode-block" id="H2OFrame"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame">[docs]</a><span class="k">class</span> <span class="nc">H2OFrame</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">python_obj</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">local_fname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">remote_fname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vecs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">raw_fname</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new H2OFrame object by passing a file path or a list of H2OVecs.</span>
+
+<span class="sd">    If `remote_fname` is not None, then a REST call will be made to import the</span>
+<span class="sd">    data specified at the location `remote_fname`.  This path is relative to the</span>
+<span class="sd">    H2O cluster, NOT the local Python process</span>
+
+<span class="sd">    If `local_fname` is not None, then the data is not imported into the H2O cluster</span>
+<span class="sd">    at the time of object creation.</span>
+
+<span class="sd">    If `python_obj` is not None, then an attempt to upload the python object to H2O</span>
+<span class="sd">    will be made. A valid python object has type `list`, or `dict`.</span>
+
+<span class="sd">    For more information on the structure of the input for the various native python</span>
+<span class="sd">    data types (&quot;native&quot; meaning non-H2O), please see the general documentation for</span>
+<span class="sd">    this object.</span>
+
+<span class="sd">    :param python_obj: A &quot;native&quot; python object - list, dict, tuple.</span>
+<span class="sd">    :param local_fname: A local path to a data source. Data is python-process-local.</span>
+<span class="sd">    :param remote_fname: A remote path to a data source. Data is cluster-local.</span>
+<span class="sd">    :param vecs: A list of H2OVec objects.</span>
+<span class="sd">    :param raw_fname: A raw key resulting from an upload_file.</span>
+<span class="sd">    :return: An instance of an H2OFrame object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">local_fname</span> <span class="o">=</span> <span class="n">local_fname</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">remote_fname</span> <span class="o">=</span> <span class="n">remote_fname</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="n">python_obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>  <span class="c"># avoids the truth value of an array is ambiguous err</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_upload_python_object</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>
+      <span class="k">return</span>
+
+    <span class="c"># Import the data into H2O cluster</span>
+    <span class="k">if</span> <span class="n">remote_fname</span><span class="p">:</span>
+      <span class="n">rawkey</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">import_file</span><span class="p">(</span><span class="n">remote_fname</span><span class="p">)</span>
+      <span class="n">setup</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">parse_setup</span><span class="p">(</span><span class="n">rawkey</span><span class="p">)</span>
+      <span class="n">parse</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">())</span>  <span class="c"># create a new key</span>
+      <span class="n">cols</span> <span class="o">=</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;columnNames&#39;</span><span class="p">]</span>
+      <span class="n">rows</span> <span class="o">=</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;rows&#39;</span><span class="p">]</span>
+      <span class="n">veckeys</span> <span class="o">=</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;vecKeys&#39;</span><span class="p">]</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="o">=</span> <span class="n">H2OVec</span><span class="o">.</span><span class="n">new_vecs</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">veckeys</span><span class="p">),</span> <span class="n">rows</span><span class="p">)</span>
+      <span class="k">print</span> <span class="s">&quot;Imported&quot;</span><span class="p">,</span> <span class="n">remote_fname</span><span class="p">,</span> <span class="s">&quot;into cluster with&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="s">&quot;rows and&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="s">&quot;cols&quot;</span>
+
+    <span class="c"># Read data locally into python process</span>
+    <span class="k">elif</span> <span class="n">local_fname</span><span class="p">:</span>
+      <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_fname</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">csvfile</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">H2OVec</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="n">Expr</span><span class="p">([])))</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfile</span><span class="p">):</span>
+          <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+      <span class="k">print</span> <span class="s">&quot;Imported&quot;</span><span class="p">,</span> <span class="n">local_fname</span><span class="p">,</span> <span class="s">&quot;into local python process&quot;</span>
+
+    <span class="c"># Construct from an array of Vecs already passed in</span>
+    <span class="k">elif</span> <span class="n">vecs</span><span class="p">:</span>
+      <span class="n">vlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+      <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vecs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Not a list of Vecs&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="n">vlen</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Vecs not the same size: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">vlen</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; != &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="o">=</span> <span class="n">vecs</span>
+
+    <span class="k">elif</span> <span class="n">raw_fname</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_handle_raw_fname</span><span class="p">(</span><span class="n">raw_fname</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Frame made from CSV file or an array of Vecs only&quot;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">_upload_python_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">python_obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Properly handle native python data types. For a discussion of the rules and</span>
+<span class="sd">    permissible data types please refer to the main documentation for H2OFrame.</span>
+
+<span class="sd">    :param python_obj: A tuple, list, dict, collections.OrderedDict</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># [] and () cases -- folded together since H2OFrame is mutable</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">python_obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+      <span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_handle_python_lists</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>
+
+    <span class="c"># {} and collections.OrderedDict cases</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">python_obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">)):</span>
+      <span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_handle_python_dicts</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>
+
+    <span class="c"># handle a numpy.ndarray</span>
+    <span class="c"># elif isinstance(python_obj, numpy.ndarray):</span>
+    <span class="c">#</span>
+    <span class="c">#     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: &quot;</span> <span class="o">+</span> <span class="nb">type</span><span class="p">(</span><span class="n">python_obj</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">data_to_write</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No data to write&quot;</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_write_python_data_to_file_and_upload</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">_write_python_data_to_file_and_upload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span><span class="p">):</span>
+    <span class="c"># create a temporary file that will be written to</span>
+    <span class="n">tmp_file_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s">&quot;.csv&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file_path</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span>
+    <span class="c"># create a new csv writer object thingy</span>
+    <span class="n">csv_writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictWriter</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">fieldnames</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">restval</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="s">&quot;excel&quot;</span><span class="p">,</span> <span class="n">extrasaction</span><span class="o">=</span><span class="s">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&quot;,&quot;</span><span class="p">)</span>
+    <span class="c"># write the header</span>
+    <span class="n">csv_writer</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
+    <span class="c"># write the data</span>
+    <span class="n">csv_writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">data_to_write</span><span class="p">)</span>
+    <span class="c"># close the streams</span>
+    <span class="n">tmp_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="c"># actually upload the data to H2O</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_upload_raw_data</span><span class="p">(</span><span class="n">tmp_file_path</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+    <span class="c"># delete the tmp file</span>
+    <span class="c">#os.remove(tmp_file_path)  # not at all secure!</span>
+
+  <span class="k">def</span> <span class="nf">_handle_raw_fname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_fname</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle result of upload_file</span>
+<span class="sd">    :param raw_fname: A raw key</span>
+<span class="sd">    :return: Part of the H2OFrame constructor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># perform the parse setup</span>
+    <span class="n">setup</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">parse_setup</span><span class="p">(</span><span class="n">raw_fname</span><span class="p">)</span>
+    <span class="c"># blocking parse, first line is always a header (since &quot;we&quot; wrote the data out)</span>
+    <span class="n">parse</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">(),</span> <span class="n">first_line_is_header</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c"># a hack to get the column names correct since &quot;parse&quot; does not provide them</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">column_names</span> <span class="k">if</span> <span class="n">column_names</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">parse</span><span class="p">[</span><span class="s">&quot;columnNames&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;columnNames&#39;</span><span class="p">]</span>
+    <span class="c"># set the rows</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;rows&#39;</span><span class="p">]</span>
+    <span class="c"># set the vector keys</span>
+    <span class="n">veckeys</span> <span class="o">=</span> <span class="n">parse</span><span class="p">[</span><span class="s">&#39;vecKeys&#39;</span><span class="p">]</span>
+    <span class="c"># create a new vec[] array</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="o">=</span> <span class="n">H2OVec</span><span class="o">.</span><span class="n">new_vecs</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">veckeys</span><span class="p">),</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="c"># print some information on the *uploaded* data</span>
+    <span class="k">print</span> <span class="s">&quot;Uploaded&quot;</span><span class="p">,</span> <span class="n">raw_fname</span><span class="p">,</span> <span class="s">&quot;into cluster with&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="s">&quot;rows and&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">),</span> <span class="s">&quot;cols&quot;</span>
+    <span class="k">print</span>
+
+  <span class="k">def</span> <span class="nf">_upload_raw_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tmp_file_path</span><span class="p">,</span> <span class="n">column_names</span><span class="p">):</span>
+    <span class="c"># file upload info is the normalized path to a local file</span>
+    <span class="n">fui</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;file&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">tmp_file_path</span><span class="p">)}</span>
+    <span class="c"># create a random name for the data</span>
+    <span class="n">dest_key</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span>
+    <span class="c"># do the POST -- blocking, and &quot;fast&quot; (does not real data upload)</span>
+    <span class="n">H2OConnection</span><span class="o">.</span><span class="n">post_json</span><span class="p">(</span><span class="s">&quot;PostFile&quot;</span><span class="p">,</span> <span class="n">fui</span><span class="p">,</span> <span class="n">destination_key</span><span class="o">=</span><span class="n">dest_key</span><span class="p">)</span>
+    <span class="c"># actually parse the data and setup self._vecs</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_handle_raw_fname</span><span class="p">(</span><span class="n">dest_key</span><span class="p">,</span> <span class="n">column_names</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">vec</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()</span> <span class="k">if</span> <span class="n">vec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="H2OFrame.vecs"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.vecs">[docs]</a>  <span class="k">def</span> <span class="nf">vecs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the array of H2OVec objects comprising this H2OFrame.</span>
+<span class="sd">    :return: The array of H2OVec objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.col_names"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.col_names">[docs]</a>  <span class="k">def</span> <span class="nf">col_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the column names (one name per H2OVec) for this H2OFrame.</span>
+<span class="sd">    :return: A character list[] of column names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">_name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.names"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.names">[docs]</a>  <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve the column names (one name per H2OVec) for this H2OFrame.</span>
+<span class="sd">    :return: A character list[] of column names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_names</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.nrow"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.nrow">[docs]</a>  <span class="k">def</span> <span class="nf">nrow</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of rows in this H2OFrame.</span>
+<span class="sd">    :return: The number of rows in this dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.ncol"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.ncol">[docs]</a>  <span class="k">def</span> <span class="nf">ncol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of columns in this H2OFrame.</span>
+<span class="sd">    :return: The number of columns in this H2OFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+  <span class="c"># Print [col, cols...]</span></div>
+<div class="viewcode-block" id="H2OFrame.show"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.show">[docs]</a>  <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="n">to_show</span> <span class="o">=</span> <span class="p">[[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">noprint</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+      <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="n">to_show</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">vecs</span> <span class="o">=</span> <span class="p">[</span><span class="n">vec</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">noprint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">]</span>
+      <span class="n">vecs</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+      <span class="k">print</span> <span class="s">&quot;Displaying &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">+</span> <span class="s">&quot; row(s):&quot;</span>
+      <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">vecs</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;Row ID&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">())</span>
+      <span class="k">print</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.head"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.head">[docs]</a>  <span class="k">def</span> <span class="nf">head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">nrows</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nrow</span><span class="p">(),</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="n">ncols</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncol</span><span class="p">(),</span> <span class="n">cols</span><span class="p">)</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="n">ncols</span><span class="p">]</span>
+
+    <span class="n">fr</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span>
+    <span class="n">cbind</span> <span class="o">=</span> <span class="s">&quot;(= !&quot;</span> <span class="o">+</span> <span class="n">fr</span> <span class="o">+</span> <span class="s">&quot; (cbind %&quot;</span>
+    <span class="n">cbind</span> <span class="o">+=</span> <span class="s">&quot; %&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">vec</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span> <span class="o">+</span> <span class="s">&quot;))&quot;</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">rapids</span><span class="p">(</span><span class="n">cbind</span><span class="p">)</span>
+    <span class="n">h2o</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fr</span><span class="p">)</span>
+    <span class="n">head_rows</span> <span class="o">=</span> <span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">head_rows</span> <span class="o">+=</span> <span class="p">[</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">nrows</span><span class="p">]</span> <span class="k">for</span> <span class="n">rows</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s">&quot;head&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">ncols</span><span class="p">]]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">head_rows</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;First&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">nrows</span><span class="p">),</span> <span class="s">&quot;rows and first&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ncols</span><span class="p">),</span> <span class="s">&quot;columns: &quot;</span>
+    <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;Row ID&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">colnames</span><span class="p">)</span>
+    <span class="k">print</span>
+</div>
+<div class="viewcode-block" id="H2OFrame.describe"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.describe">[docs]</a>  <span class="k">def</span> <span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate an in-depth description of this H2OFrame.</span>
+
+<span class="sd">    The description is a tabular print of the type, min, max, sigma, number of zeros,</span>
+<span class="sd">    and number of missing elements for each H2OVec in this H2OFrame.</span>
+
+<span class="sd">    :return: None (print to stdout)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;Rows:&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s">&quot;Cols:&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="n">vec</span><span class="o">.</span><span class="n">_name</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">]</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="p">[</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;type&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;mins&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;maxs&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;sigma&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;zeros&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_row</span><span class="p">(</span><span class="s">&#39;missing&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="k">print</span>
+
+  <span class="c">#def __repr__(self):</span>
+  <span class="c">#  self.show()</span>
+  <span class="c">#  return &quot;&quot;</span>
+
+  <span class="c"># Find a named H2OVec and return it.  Error is name is missing</span></div>
+  <span class="k">def</span> <span class="nf">_find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_idx</span><span class="p">(</span><span class="n">name</span><span class="p">)];</span>
+
+  <span class="c"># Find a named H2OVec and return the zero-based index for it.  Error is name is missing</span>
+  <span class="k">def</span> <span class="nf">_find_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">_name</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">i</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Name &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot; not in Frame&quot;</span><span class="p">)</span>
+
+  <span class="c"># Column selection via integer, string (name) returns a Vec</span>
+  <span class="c"># Column selection via slice returns a subset Frame</span>
+  <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>   <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>   <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="c"># Slice; return a Frame not a Vec</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span> <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="c"># Row selection from a boolean Vec</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">row_select</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+
+    <span class="c"># have a list of numbers or strings</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+      <span class="n">vecs</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>    <span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">it</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  <span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_find</span><span class="p">(</span><span class="n">it</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>                      <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="n">vecs</span><span class="p">)</span>
+
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Replace a column in an H2OFrame.</span>
+<span class="sd">    :param b: A 0-based index or a column name.</span>
+<span class="sd">    :param c: The vector that &#39;b&#39; is replaced with.</span>
+<span class="sd">    :return: Returns this H2OFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#  b is a named column, fish out the H2OVec and its index</span>
+    <span class="n">ncols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">ncols</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">_name</span><span class="p">:</span>
+          <span class="k">break</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">ncols</span>               <span class="c"># Not found, so append at end</span>
+    <span class="c"># b is a 0-based column index</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Index out of range: 0 &lt;= &quot;</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="s">&quot; &lt; &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">())</span>
+      <span class="n">i</span> <span class="o">=</span> <span class="n">b</span>
+      <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">_name</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="c"># R-like behavior: the column name remains the same, even if replacing via index</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">b</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">ncols</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>          <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
+
+  <span class="c"># Modifies the collection in-place to remove a named item</span>
+  <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_idx</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="c"># Makes a new collection</span>
+<div class="viewcode-block" id="H2OFrame.drop"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.drop">[docs]</a>  <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Column selection via integer, string(name) returns a Vec</span>
+<span class="sd">    Column selection via slice returns a subset Frame</span>
+<span class="sd">    :param i: Column to select</span>
+<span class="sd">    :return: Returns an H2OVec or H2OFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+      <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">_name</span><span class="p">:</span>
+          <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">v</span><span class="o">.</span><span class="n">_name</span><span class="p">])</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Name &quot;</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="s">&quot; not in Frame&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</div>
+  <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: Number of columns in this H2OFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">)</span>
+
+  <span class="c"># Addition</span>
+  <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OFrame</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">_vecs</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="k">def</span> <span class="nf">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add is commutative, so call __add__</span>
+<span class="sd">    :param i: The value to add</span>
+<span class="sd">    :return: Return a new H2OFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__add__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">&quot;FRAME AND&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OFrame</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="ow">and</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">_vecs</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="ow">and</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span><span class="nb">bool</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="ow">and</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="c"># Division</span>
+  <span class="k">def</span> <span class="nf">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OFrame</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">_vecs</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="n">i</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OFrame.py_tmp_key"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.py_tmp_key">[docs]</a>  <span class="k">def</span> <span class="nf">py_tmp_key</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: a unique h2o key obvious from python</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="s">&quot;py&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()))</span>
+
+  <span class="c"># Send over a frame description to H2O</span></div>
+<div class="viewcode-block" id="H2OFrame.send_frame"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.send_frame">[docs]</a>  <span class="k">def</span> <span class="nf">send_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Send a frame description to H2O, returns a key.</span>
+<span class="sd">    :return: A key</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Send over the frame</span>
+    <span class="n">fr</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span>
+    <span class="n">cbind</span> <span class="o">=</span> <span class="s">&quot;(= !&quot;</span> <span class="o">+</span> <span class="n">fr</span> <span class="o">+</span> <span class="s">&quot; (cbind %&quot;</span>
+    <span class="n">cbind</span> <span class="o">+=</span> <span class="s">&quot; %&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">vec</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span> <span class="o">+</span> <span class="s">&quot;))&quot;</span>
+    <span class="n">h2o</span><span class="o">.</span><span class="n">rapids</span><span class="p">(</span><span class="n">cbind</span><span class="p">)</span>
+    <span class="c"># And frame columns</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="s">&quot;(colnames= %&quot;</span> <span class="o">+</span> <span class="n">fr</span> <span class="o">+</span> <span class="s">&quot; {(: #0 #&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;)} {&quot;</span>
+    <span class="n">cnames</span> <span class="o">=</span> <span class="s">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">vec</span><span class="o">.</span><span class="n">_name</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">])</span>
+    <span class="n">colnames</span> <span class="o">+=</span> <span class="n">cnames</span> <span class="o">+</span> <span class="s">&quot;})&quot;</span>
+    <span class="n">h2o</span><span class="o">.</span><span class="n">rapids</span><span class="p">(</span><span class="n">colnames</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fr</span>
+</div>
+  <span class="k">def</span> <span class="nf">_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">:</span>
+      <span class="n">tmp</span> <span class="o">=</span> <span class="n">vec</span><span class="o">.</span><span class="n">summary</span><span class="p">()[</span><span class="n">field</span><span class="p">]</span>
+      <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">tmp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">l</span>
+
+  <span class="c"># private static methods</span>
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_gen_header</span><span class="p">(</span><span class="n">cols</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s">&quot;C&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cols</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_check_lists_of_lists</span><span class="p">(</span><span class="n">python_obj</span><span class="p">):</span>
+    <span class="c"># all items in the list must be a list too</span>
+    <span class="n">lol_all</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">python_obj</span><span class="p">)</span>
+    <span class="c"># All items in the list must be a list!</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lol_all</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;`python_obj` is a mixture of nested lists and other types.&quot;</span><span class="p">)</span>
+
+    <span class="c"># in fact, we must have a list of flat lists!</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">python_obj</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ll</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="k">for</span> <span class="n">ll</span> <span class="ow">in</span> <span class="n">l</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;`python_obj` is not a list of flat lists!&quot;</span><span class="p">)</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_handle_python_lists</span><span class="p">(</span><span class="n">python_obj</span><span class="p">):</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>  <span class="c"># cols will be len(python_obj) if not a list of lists</span>
+    <span class="c"># do we have a list of lists: [[...], ..., [...]] ?</span>
+    <span class="n">lol</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_is_list_of_lists</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lol</span><span class="p">:</span>
+      <span class="c"># must be a list of flat lists, raise ValueError if not</span>
+      <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_check_lists_of_lists</span><span class="p">(</span><span class="n">python_obj</span><span class="p">)</span>
+      <span class="c"># have list of lists, each list is a row</span>
+      <span class="c"># length of the longest list is the number of columns</span>
+      <span class="n">cols</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">python_obj</span><span class="p">])</span>
+
+    <span class="c"># create the header</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_gen_header</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="c"># shape up the data for csv.DictWriter</span>
+    <span class="n">data_to_write</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">python_obj</span><span class="p">]</span> <span class="k">if</span> <span class="n">lol</span> <span class="k">else</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">python_obj</span><span class="p">))]</span>
+    <span class="k">return</span> <span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_is_list_of_lists</span><span class="p">(</span><span class="n">o</span><span class="p">):</span> <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">o</span><span class="p">)</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_handle_python_dicts</span><span class="p">(</span><span class="n">python_obj</span><span class="p">):</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">python_obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="c"># is this a valid header?</span>
+    <span class="n">is_valid</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;^[a-zA-Z_][a-zA-Z0-9_.]*$&#39;</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">header</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ &quot;</span><span class="p">)</span>
+    <span class="c"># check that each value entry is a flat list/tuple</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">python_obj</span><span class="p">:</span>
+      <span class="n">v</span> <span class="o">=</span> <span class="n">python_obj</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+      <span class="c"># if value is a tuple/list, then it must be flat</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">_is_list_of_lists</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Values in the dictionary must be flattened!&quot;</span><span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">itertools</span><span class="o">.</span><span class="n">izip_longest</span><span class="p">(</span><span class="o">*</span><span class="n">python_obj</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="n">data_to_write</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">header</span><span class="p">,</span> <span class="n">data_to_write</span>
+
+<span class="c"># @staticmethod</span>
+  <span class="c"># def _handle_numpy_array(python_obj):</span>
+  <span class="c">#     header = H2OFrame._gen_header(python_obj.shape[1])</span>
+  <span class="c">#</span>
+  <span class="c">#     as_list = python_obj.tolist()</span>
+  <span class="c">#     lol = H2OFrame._is_list_of_lists(as_list)</span>
+  <span class="c">#     data_to_write = [dict(zip(header, row)) for row in as_list] \</span>
+  <span class="c">#         if lol else [dict(zip(header, as_list))]</span>
+  <span class="c">#</span>
+  <span class="c">#     return header, data_to_write</span>
+  <span class="k">def</span> <span class="nf">_len_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+  <span class="c"># Quantiles</span>
+<div class="viewcode-block" id="H2OFrame.quantile"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.quantile">[docs]</a>  <span class="k">def</span> <span class="nf">quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="p">[</span><span class="n">vec</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecs</span> <span class="p">])</span>
+
+  <span class="c"># ddply in h2o</span></div>
+<div class="viewcode-block" id="H2OFrame.ddply"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OFrame.ddply">[docs]</a>  <span class="k">def</span> <span class="nf">ddply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cols</span><span class="p">,</span><span class="n">fun</span><span class="p">):</span>
+    <span class="c"># Confirm all names present in dataset; collect column indices</span>
+    <span class="n">colnums</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_idx</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+    <span class="n">rapids_series</span> <span class="o">=</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="s">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">colnums</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;}&quot;</span>
+  
+    <span class="c"># Eagerly eval and send the cbind&#39;d frame over</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_frame</span><span class="p">()</span>
+    <span class="n">tmp_key</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span>
+    <span class="n">expr</span> <span class="o">=</span> <span class="s">&quot;(= !{} (h2o.ddply %{} {} {}))&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tmp_key</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">rapids_series</span><span class="p">,</span><span class="n">fun</span><span class="p">)</span>
+    <span class="n">h2o</span><span class="o">.</span><span class="n">rapids</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span> <span class="c"># ddply in h2o</span>
+    <span class="c"># Remove h2o temp frame after ddply</span>
+    <span class="n">h2o</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="c"># Make backing H2OVecs for the remote h2o vecs</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="n">tmp_key</span><span class="p">)</span> <span class="c"># Fetch the frame as JSON</span>
+    <span class="n">fr</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;frames&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>    <span class="c"># Just the first (only) frame</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">fr</span><span class="p">[</span><span class="s">&#39;rows&#39;</span><span class="p">]</span>      <span class="c"># Row count</span>
+    <span class="n">veckeys</span> <span class="o">=</span> <span class="n">fr</span><span class="p">[</span><span class="s">&#39;veckeys&#39;</span><span class="p">]</span><span class="c"># List of h2o vec keys</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">fr</span><span class="p">[</span><span class="s">&#39;columns&#39;</span><span class="p">]</span>   <span class="c"># List of columns</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">[</span><span class="s">&#39;label&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="n">H2OVec</span><span class="o">.</span><span class="n">new_vecs</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">colnames</span><span class="p">,</span> <span class="n">veckeys</span><span class="p">),</span> <span class="n">rows</span><span class="p">))</span>
+
+</div></div>
+<div class="viewcode-block" id="H2OVec"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec">[docs]</a><span class="k">class</span> <span class="nc">H2OVec</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A single column of data that is uniformly typed and possibly lazily computed.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new instance of an H2OVec object</span>
+<span class="sd">    :param name: The name of the column corresponding to this H2OVec.</span>
+<span class="sd">    :param expr: The lazy expression representing this H2OVec</span>
+<span class="sd">    :return: A new H2OVec</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>  <span class="c"># String</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span> <span class="o">=</span> <span class="n">expr</span>  <span class="c"># Always an expr</span>
+    <span class="n">expr</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>  <span class="c"># Pass name along to expr</span>
+
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OVec.new_vecs"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.new_vecs">[docs]</a>  <span class="k">def</span> <span class="nf">new_vecs</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">rows</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">vecs</span><span class="p">:</span>  <span class="k">return</span> <span class="n">vecs</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">H2OVec</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">),</span> <span class="n">Expr</span><span class="p">(</span><span class="n">op</span><span class="o">=</span><span class="n">veckey</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="n">length</span><span class="o">=</span><span class="n">rows</span><span class="p">))</span>  <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">veckey</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vecs</span><span class="p">)]</span>
+</div>
+<div class="viewcode-block" id="H2OVec.name"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.name">[docs]</a>  <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+</div>
+<div class="viewcode-block" id="H2OVec.get_expr"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.get_expr">[docs]</a>  <span class="k">def</span> <span class="nf">get_expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span>
+</div>
+<div class="viewcode-block" id="H2OVec.append"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.append">[docs]</a>  <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Append a value during CSV read, convert to float.</span>
+
+<span class="sd">    :param data: An element being appended to the end of this H2OVec</span>
+<span class="sd">    :return: void</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__x__</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">__x__</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+      <span class="k">pass</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">data</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">__x__</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">set_len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">get_len</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="H2OVec.show"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.show">[docs]</a>  <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noprint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame</span>
+<span class="sd">    :param noprint: A boolean stating whether to print or to return data.</span>
+<span class="sd">    :return: If noprint is False, then self._expr is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">noprint</span><span class="p">:</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">noprint</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">to_show</span> <span class="o">=</span> <span class="p">[[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">noprint</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+      <span class="n">nrows</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_show</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_show</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">to_show</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+      <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s">&quot; (first &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">nrows</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; row(s))&quot;</span>
+      <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="n">to_show</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;Row ID&quot;</span><span class="p">,</span> <span class="n">header</span><span class="p">])</span>
+      <span class="k">print</span>
+
+  <span class="c">#def __repr__(self):</span>
+  <span class="c">#  self.show()</span>
+  <span class="c">#  return &quot;&quot;</span>
+</div>
+<div class="viewcode-block" id="H2OVec.summary"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.summary">[docs]</a>  <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the rollup data summary (min, max, mean, etc.)</span>
+<span class="sd">    :return: the summary from this Expr object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</div>
+  <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic index/sliced lookup</span>
+<span class="sd">    :param i: An Expr or an H2OVec</span>
+<span class="sd">    :return: A new Expr object corresponding to the input query</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">row_select</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">Expr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+  <span class="c"># Boolean column select lookup.  Eager, to compute the result length</span>
+<div class="viewcode-block" id="H2OVec.row_select"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.row_select">[docs]</a>  <span class="k">def</span> <span class="nf">row_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Boolean column select lookup</span>
+<span class="sd">    :param vec: An H2OVec.</span>
+<span class="sd">    :return: A new H2OVec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">eager</span><span class="p">())</span>
+    <span class="n">e</span><span class="o">.</span><span class="n">set_len</span><span class="p">(</span><span class="n">j</span><span class="p">[</span><span class="s">&#39;frames&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;rows&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+</div>
+  <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update-in-place of a Vec.</span>
+<span class="sd">    This interface currently only supports whole vector replacement.</span>
+
+<span class="sd">    If `c` has length 1, then it&#39;s assumed that `c` represents a constant vector</span>
+<span class="sd">    of its current value.</span>
+
+<span class="sd">    :param b: An H2OVec for selecting rows to update in-place.</span>
+<span class="sd">    :param c: The &quot;new&quot; values that will write over the values stipulated by `b`.</span>
+<span class="sd">    :return: void</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="c"># row-wise assignment</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">H2OVec</span><span class="p">):</span>
+      <span class="c"># whole vec replacement</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+      <span class="c"># lazy update in-place of the whole vec</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span> <span class="o">=</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;=&quot;</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">c</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&quot;Only vector replacement is currently supported.&quot;</span><span class="p">)</span>
+
+  <span class="c"># Simple boolean operators, which auto-expand a right scalar argument</span>
+  <span class="k">def</span> <span class="nf">_simple_bin_op</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span>  <span class="n">H2OVec</span>     <span class="p">):</span>  <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len_check</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">i</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>  <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="n">i</span><span class="p">)))</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;+&quot;</span> <span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;&amp;&quot;</span> <span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;/&quot;</span> <span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;*&quot;</span> <span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__eq__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;==&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__ge__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;&gt;=&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__gt__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;&gt;&quot;</span> <span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__le__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;&lt;=&quot;</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">__lt__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simple_bin_op</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;&lt;&quot;</span> <span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>   <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__add__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+
+  <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: The length of this H2OVec</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">)</span>
+
+<div class="viewcode-block" id="H2OVec.floor"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.floor">[docs]</a>  <span class="k">def</span> <span class="nf">floor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: A lazy Expr representing the Math.floor() of this H2OVec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span><span class="n">Expr</span><span class="p">(</span><span class="s">&quot;floor&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="H2OVec.mean"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.mean">[docs]</a>  <span class="k">def</span> <span class="nf">mean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: A lazy Expr representing the mean of this H2OVec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;mean&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="H2OVec.quantile"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.quantile">[docs]</a>  <span class="k">def</span> <span class="nf">quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prob</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: A lazy Expr representing the quantiles of this H2OVec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prob</span><span class="p">:</span> <span class="n">prob</span><span class="o">=</span><span class="p">[</span><span class="mf">0.01</span><span class="p">,</span><span class="mf">0.1</span><span class="p">,</span><span class="mf">0.25</span><span class="p">,</span><span class="mf">0.333</span><span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.667</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">0.9</span><span class="p">,</span><span class="mf">0.99</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span><span class="n">Expr</span><span class="p">(</span><span class="s">&quot;quantile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="n">prob</span><span class="p">),</span> <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">prob</span><span class="p">)))</span>
+</div>
+<div class="viewcode-block" id="H2OVec.asfactor"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.asfactor">[docs]</a>  <span class="k">def</span> <span class="nf">asfactor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: A transformed H2OVec from numeric to categorical.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;as.factor&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="H2OVec.month"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.month">[docs]</a>  <span class="k">def</span> <span class="nf">month</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: Returns a new month column from a msec-since-Epoch column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;month&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="H2OVec.dayOfWeek"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.dayOfWeek">[docs]</a>  <span class="k">def</span> <span class="nf">dayOfWeek</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: Returns a new Day-of-Week column from a msec-since-Epoch column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;dayOfWeek&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="H2OVec.runif"><a class="viewcode-back" href="../../frame.html#h2o.frame.H2OVec.runif">[docs]</a>  <span class="k">def</span> <span class="nf">runif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param seed: A random seed. If None, then one will be generated.</span>
+<span class="sd">    :return: A new H2OVec filled with doubles sampled uniformly from [0,1).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">seed</span><span class="p">:</span>
+      <span class="kn">import</span> <span class="nn">random</span>
+      <span class="n">seed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="mi">999999999</span><span class="p">)</span>  <span class="c"># generate a seed</span>
+    <span class="k">return</span> <span class="n">H2OVec</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="s">&quot;h2o.runif&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="p">,</span> <span class="n">Expr</span><span class="p">(</span><span class="n">seed</span><span class="p">)))</span>
+
+  <span class="c"># Error if lengths are not compatible.  Return self for flow-coding</span></div>
+  <span class="k">def</span> <span class="nf">_len_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">x</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">H2OFrame</span><span class="p">):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">_vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">Expr</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Mixing Vec and Expr&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">H2OVec</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;H2OVec length mismatch: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span><span class="o">+</span><span class="s">&quot; vs &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="bp">self</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

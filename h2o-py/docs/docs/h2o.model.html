@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>model Package &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="index.html" />
+    <link rel="prev" title="H2OFrame" href="frame.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="model-package">
+<h1>model Package<a class="headerlink" href="#model-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><tt class="xref py py-mod docutils literal"><span class="pre">model</span></tt> Package<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-h2o.model"></span></div>
+<div class="section" id="module-h2o.model.auc_data">
+<span id="auc-data-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">auc_data</span></tt> Module<a class="headerlink" href="#module-h2o.model.auc_data" title="Permalink to this headline">¶</a></h2>
+<p>An object containing information about a binomial classifier.</p>
+<dl class="class">
+<dt id="h2o.model.auc_data.AUCData">
+<em class="property">class </em><tt class="descclassname">h2o.model.auc_data.</tt><tt class="descname">AUCData</tt><big>(</big><em>raw_auc</em><big>)</big><a class="reference internal" href="_modules/h2o/model/auc_data.html#AUCData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.auc_data.AUCData" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="h2o.model.auc_data.ThresholdCriterion">
+<em class="property">class </em><tt class="descclassname">h2o.model.auc_data.</tt><tt class="descname">ThresholdCriterion</tt><a class="reference internal" href="_modules/h2o/model/auc_data.html#ThresholdCriterion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>An Enum for the Threshold Criteria</p>
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.ACCURACY">
+<tt class="descname">ACCURACY</tt><em class="property"> = 'maximum Accuracy'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.ACCURACY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.F0POINT5">
+<tt class="descname">F0POINT5</tt><em class="property"> = 'maximum F0point5'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.F0POINT5" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.MAXF1">
+<tt class="descname">MAXF1</tt><em class="property"> = 'maximum F1'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.MAXF1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.MAXF2">
+<tt class="descname">MAXF2</tt><em class="property"> = 'maximum F2'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.MAXF2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.MCC">
+<tt class="descname">MCC</tt><em class="property"> = 'maximum absolute MCC'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.MCC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.MINMAXPERCLASSERR">
+<tt class="descname">MINMAXPERCLASSERR</tt><em class="property"> = 'minimizing max per class Error'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.MINMAXPERCLASSERR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.PRECISION">
+<tt class="descname">PRECISION</tt><em class="property"> = 'maximum Precision'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.PRECISION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.RECALL">
+<tt class="descname">RECALL</tt><em class="property"> = 'maximum Recall'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.RECALL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.auc_data.ThresholdCriterion.SPECIFICITY">
+<tt class="descname">SPECIFICITY</tt><em class="property"> = 'maximum Specificity'</em><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.SPECIFICITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.auc_data.ThresholdCriterion.crits">
+<tt class="descname">crits</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/auc_data.html#ThresholdCriterion.crits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.auc_data.ThresholdCriterion.crits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.binomial">
+<span id="binomial-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">binomial</span></tt> Module<a class="headerlink" href="#module-h2o.model.binomial" title="Permalink to this headline">¶</a></h2>
+<p>Binomial Models should be comparable.</p>
+<dl class="class">
+<dt id="h2o.model.binomial.H2OBinomialModel">
+<em class="property">class </em><tt class="descclassname">h2o.model.binomial.</tt><tt class="descname">H2OBinomialModel</tt><big>(</big><em>dest_key</em>, <em>model_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/binomial.html#H2OBinomialModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.binomial.H2OBinomialModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#h2o.model.model_base.ModelBase" title="h2o.model.model_base.ModelBase"><tt class="xref py py-class docutils literal"><span class="pre">h2o.model.model_base.ModelBase</span></tt></a></p>
+<p>Class for Binomial models.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="h2o.model.binomial.H2OBinomialModelMetrics">
+<em class="property">class </em><tt class="descclassname">h2o.model.binomial.</tt><tt class="descname">H2OBinomialModelMetrics</tt><big>(</big><em>metric_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/binomial.html#H2OBinomialModelMetrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.binomial.H2OBinomialModelMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>This class is essentially an API for the AUCData object.
+This class contains methods for inspecting the AUC for different criteria.
+To input the different criteria, use the static variable <cite>criteria</cite></p>
+<dl class="method">
+<dt id="h2o.model.binomial.H2OBinomialModelMetrics.show">
+<tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/binomial.html#H2OBinomialModelMetrics.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.binomial.H2OBinomialModelMetrics.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="h2o.model.binomial.H2OBinomialModelMetrics.theCriteria">
+<tt class="descname">theCriteria</tt><em class="property"> = &lt;h2o.model.auc_data.ThresholdCriterion object at 0x102dbd650&gt;</em><a class="headerlink" href="#h2o.model.binomial.H2OBinomialModelMetrics.theCriteria" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.clustering">
+<span id="clustering-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">clustering</span></tt> Module<a class="headerlink" href="#module-h2o.model.clustering" title="Permalink to this headline">¶</a></h2>
+<p>Clustering Models should be comparable.</p>
+<dl class="class">
+<dt id="h2o.model.clustering.H2OClusteringModel">
+<em class="property">class </em><tt class="descclassname">h2o.model.clustering.</tt><tt class="descname">H2OClusteringModel</tt><big>(</big><em>dest_key</em>, <em>model_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/clustering.html#H2OClusteringModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.clustering.H2OClusteringModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#h2o.model.model_base.ModelBase" title="h2o.model.model_base.ModelBase"><tt class="xref py py-class docutils literal"><span class="pre">h2o.model.model_base.ModelBase</span></tt></a></p>
+<dl class="method">
+<dt id="h2o.model.clustering.H2OClusteringModel.summary">
+<tt class="descname">summary</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/clustering.html#H2OClusteringModel.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.clustering.H2OClusteringModel.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method prints out various relevant pieces of information for a clustering
+model.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="h2o.model.clustering.H2OClusteringModelMetrics">
+<em class="property">class </em><tt class="descclassname">h2o.model.clustering.</tt><tt class="descname">H2OClusteringModelMetrics</tt><big>(</big><em>metric_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/clustering.html#H2OClusteringModelMetrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.clustering.H2OClusteringModelMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.confusion_matrix">
+<span id="confusion-matrix-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">confusion_matrix</span></tt> Module<a class="headerlink" href="#module-h2o.model.confusion_matrix" title="Permalink to this headline">¶</a></h2>
+<p>A confusion matrix from H2O.</p>
+<dl class="class">
+<dt id="h2o.model.confusion_matrix.ConfusionMatrix">
+<em class="property">class </em><tt class="descclassname">h2o.model.confusion_matrix.</tt><tt class="descname">ConfusionMatrix</tt><big>(</big><em>cm</em>, <em>domains=None</em><big>)</big><a class="reference internal" href="_modules/h2o/model/confusion_matrix.html#ConfusionMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.confusion_matrix.ConfusionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="h2o.model.confusion_matrix.ConfusionMatrix.ROUND">
+<tt class="descname">ROUND</tt><em class="property"> = 4</em><a class="headerlink" href="#h2o.model.confusion_matrix.ConfusionMatrix.ROUND" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="h2o.model.confusion_matrix.ConfusionMatrix.read_cms">
+<em class="property">static </em><tt class="descname">read_cms</tt><big>(</big><em>cms=None</em>, <em>domains=None</em><big>)</big><a class="reference internal" href="_modules/h2o/model/confusion_matrix.html#ConfusionMatrix.read_cms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.confusion_matrix.ConfusionMatrix.read_cms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.confusion_matrix.ConfusionMatrix.show">
+<tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/confusion_matrix.html#ConfusionMatrix.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.confusion_matrix.ConfusionMatrix.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.model_base">
+<span id="model-base-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">model_base</span></tt> Module<a class="headerlink" href="#module-h2o.model.model_base" title="Permalink to this headline">¶</a></h2>
+<p>This module implements the base model class.  All model things inherit from this class.</p>
+<dl class="class">
+<dt id="h2o.model.model_base.ModelBase">
+<em class="property">class </em><tt class="descclassname">h2o.model.model_base.</tt><tt class="descname">ModelBase</tt><big>(</big><em>dest_key</em>, <em>model_json</em>, <em>metrics_class</em><big>)</big><a class="reference internal" href="_modules/h2o/model/model_base.html#ModelBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.model_base.ModelBase" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="h2o.model.model_base.ModelBase.model_performance">
+<tt class="descname">model_performance</tt><big>(</big><em>test_data</em><big>)</big><a class="reference internal" href="_modules/h2o/model/model_base.html#ModelBase.model_performance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.model_base.ModelBase.model_performance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate model metrics for this model on test_data.
+:param test_data: Data set for which model metrics shall be computed against.
+:return: An object of class H2OModelMetrics.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.model_base.ModelBase.predict">
+<tt class="descname">predict</tt><big>(</big><em>test_data</em><big>)</big><a class="reference internal" href="_modules/h2o/model/model_base.html#ModelBase.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.model_base.ModelBase.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict on a dataset.
+:param test_data: Data to be predicted on.
+:return: A new H2OFrame filled with predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.model_base.ModelBase.show">
+<tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/model_base.html#ModelBase.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.model_base.ModelBase.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print innards of model, without regards to type
+:return: None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.model_base.ModelBase.summary">
+<tt class="descname">summary</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/model_base.html#ModelBase.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.model_base.ModelBase.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a detailed summary of the model.
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.multinomial">
+<span id="multinomial-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">multinomial</span></tt> Module<a class="headerlink" href="#module-h2o.model.multinomial" title="Permalink to this headline">¶</a></h2>
+<p>Multinomial Models should be comparable.</p>
+<dl class="class">
+<dt id="h2o.model.multinomial.H2OMultinomialModel">
+<em class="property">class </em><tt class="descclassname">h2o.model.multinomial.</tt><tt class="descname">H2OMultinomialModel</tt><big>(</big><em>raw_model_output=None</em>, <em>algo=None</em><big>)</big><a class="reference internal" href="_modules/h2o/model/multinomial.html#H2OMultinomialModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.multinomial.H2OMultinomialModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#h2o.model.model_base.ModelBase" title="h2o.model.model_base.ModelBase"><tt class="xref py py-class docutils literal"><span class="pre">h2o.model.model_base.ModelBase</span></tt></a></p>
+<dl class="method">
+<dt id="h2o.model.multinomial.H2OMultinomialModel.model_performance">
+<tt class="descname">model_performance</tt><big>(</big><em>test_data=None</em><big>)</big><a class="reference internal" href="_modules/h2o/model/multinomial.html#H2OMultinomialModel.model_performance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.multinomial.H2OMultinomialModel.model_performance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.multinomial.H2OMultinomialModel.predict">
+<tt class="descname">predict</tt><big>(</big><em>test_data=None</em><big>)</big><a class="reference internal" href="_modules/h2o/model/multinomial.html#H2OMultinomialModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.multinomial.H2OMultinomialModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.multinomial.H2OMultinomialModel.summary">
+<tt class="descname">summary</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/multinomial.html#H2OMultinomialModel.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.multinomial.H2OMultinomialModel.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method prints out various relevant pieces of information for a multinomial
+model.
+:return:</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-h2o.model.regression">
+<span id="regression-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">regression</span></tt> Module<a class="headerlink" href="#module-h2o.model.regression" title="Permalink to this headline">¶</a></h2>
+<p>Regression Models should be comparable.</p>
+<dl class="class">
+<dt id="h2o.model.regression.H2ORegressionModel">
+<em class="property">class </em><tt class="descclassname">h2o.model.regression.</tt><tt class="descname">H2ORegressionModel</tt><big>(</big><em>dest_key</em>, <em>model_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/regression.html#H2ORegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.regression.H2ORegressionModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#h2o.model.model_base.ModelBase" title="h2o.model.model_base.ModelBase"><tt class="xref py py-class docutils literal"><span class="pre">h2o.model.model_base.ModelBase</span></tt></a></p>
+<p>Class for Regression models.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="h2o.model.regression.H2ORegressionModelMetrics">
+<em class="property">class </em><tt class="descclassname">h2o.model.regression.</tt><tt class="descname">H2ORegressionModelMetrics</tt><big>(</big><em>metric_json</em><big>)</big><a class="reference internal" href="_modules/h2o/model/regression.html#H2ORegressionModelMetrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.regression.H2ORegressionModelMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>This class is essentially an API for the AUCData object.
+This class contains methods for inspecting the AUC for different criteria.
+To input the different criteria, use the static variable <cite>criteria</cite></p>
+<dl class="method">
+<dt id="h2o.model.regression.H2ORegressionModelMetrics.r2">
+<tt class="descname">r2</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/regression.html#H2ORegressionModelMetrics.r2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.regression.H2ORegressionModelMetrics.r2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.model.regression.H2ORegressionModelMetrics.show">
+<tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/model/regression.html#H2ORegressionModelMetrics.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.model.regression.H2ORegressionModelMetrics.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">model Package</a><ul>
+<li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">model</span></tt> Package</a></li>
+<li><a class="reference internal" href="#module-h2o.model.auc_data"><tt class="docutils literal"><span class="pre">auc_data</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.binomial"><tt class="docutils literal"><span class="pre">binomial</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.clustering"><tt class="docutils literal"><span class="pre">clustering</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.confusion_matrix"><tt class="docutils literal"><span class="pre">confusion_matrix</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.model_base"><tt class="docutils literal"><span class="pre">model_base</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.multinomial"><tt class="docutils literal"><span class="pre">multinomial</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-h2o.model.regression"><tt class="docutils literal"><span class="pre">regression</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="frame.html"
+                        title="previous chapter">H2OFrame</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/h2o.model.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             >previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -57,15 +57,20 @@ done
 
 cp h2o-py/dist/*whl target/Python
 
+cd h2o-py && sphinx-build -b html docs/ docs/docs/
+cd ..
+
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-r
+mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 cp -rp build/docs/REST target/docs-website
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
+cp -rp h2o-py/docs/docs/ target/docs-website/h2o-py
 
 
 

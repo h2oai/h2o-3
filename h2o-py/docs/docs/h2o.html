@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>H2O Package &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="index.html" />
+    <link rel="next" title="H2OFrame" href="frame.html" />
+    <link rel="prev" title="Welcome to H2O’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to H2O’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-h2o.__init__">
+<span id="h2o-package"></span><h1>H2O Package<a class="headerlink" href="#module-h2o.__init__" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-h2o-python-module">
+<h2>The H2O Python Module<a class="headerlink" href="#the-h2o-python-module" title="Permalink to this headline">¶</a></h2>
+<p>This module provides access to the H2O JVM (and extensions thereof), its objects, its
+machine-learning algorithms, and modeling support (basic munging and feature generation)
+capabilities.</p>
+<p>The H2O JVM sports a web server such that all communication occurs on a socket (specified
+by an IP address and a port) via a series of REST calls (see connection.py for the REST
+layer implementation and details). There is a single active connection to the H2O JVM at
+any one time, and this handle is stashed in the __H2OCONN__ global object. The __H2OCONN__
+is not currently a singleton object (but it may become one in the future).</p>
+<div class="section" id="what-is-h2o">
+<h3>What is H2O?<a class="headerlink" href="#what-is-h2o" title="Permalink to this headline">¶</a></h3>
+<p>H2O is a piece of java software for data modeling and general computing. There are many
+different views of the H2O software, but the primary view of H2O is that of a distributed
+(many machines), parallel (many CPUs), in memory (several hundred GBs Xmx) processing
+&#8220;engine&#8221;. How H2O achieves within node parallelism and efficient horizontal scaling is
+discussed in detail elsewhere, but it suffices to state that Doug Lea&#8217;s Fork Join
+framework (which can be thought of as a classical recursive descent divide and conquer
+approach to doing &#8220;work&#8221;) enables parallelism per JVM, and a distributed version of Cliff
+Click&#8217;s non-blocking hash map enables coherency across nodes in a cluster allowing for
+lateral scaling.</p>
+<p>H2O sports a distributed key-value store (the &#8220;DKV&#8221;), which contains pointers to the
+various objects that make up the H2O ecosystem. Briefly, these objects are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Key</span></tt>:    A key is an entry in the DKV that maps to an object in H2O.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Frame</span></tt>:  A Frame is a collection of Vec objects. It is a 2D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Vec</span></tt>:    A Vec is a collection of Chunk objects. It is a 1D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Chunk</span></tt>:  A Chunk holds a fraction of the BigData. It is a 1D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">ModelMetrics</span></tt>:   A collection of metrics for a given category of model.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Model</span></tt>:  A model is an immutable object having <cite>predict</cite> and <cite>metrics</cite> methods.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Job</span></tt>:    A Job is a non-blocking task that performs a finite amount of work.</li>
+</ul>
+</div></blockquote>
+<p>Many of these objects have no meaning to an end python user, but in order to make sense of
+the objects available in this module it is helpful to understand how these objects map to
+objects in the JVM (because after all, this module is merely a facade that allows the
+manipulation of a distributed system).</p>
+</div>
+<div class="section" id="h2o-objects">
+<h3>H2O Objects<a class="headerlink" href="#h2o-objects" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="h2oframe">
+<h4>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="h2ovec">
+<h4>H2OVec<a class="headerlink" href="#h2ovec" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="expr">
+<h4>Expr<a class="headerlink" href="#expr" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="metrics">
+<h4>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h4>
+</div>
+<div class="section" id="models">
+<h4>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>How to create new models</li>
+<li>train and validation data</li>
+<li>parameter specification</li>
+</ul>
+</div>
+<div class="section" id="model-results-and-metrics">
+<h4>Model Results and Metrics<a class="headerlink" href="#model-results-and-metrics" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>After models are built: (show, summary, predict, performance)</li>
+<li>Model categories: binomial, regression, multinomial, clustering</li>
+</ul>
+</div>
+</div>
+<div class="section" id="feature-generation-and-extended-data-flows">
+<h3>Feature Generation and Extended Data Flows<a class="headerlink" href="#feature-generation-and-extended-data-flows" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Discuss Rapids</li>
+<li>Data manipulation in python</li>
+<li>Executing python functions in H2O via Rapids</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">H2O Package</a><ul>
+<li><a class="reference internal" href="#the-h2o-python-module">The H2O Python Module</a><ul>
+<li><a class="reference internal" href="#what-is-h2o">What is H2O?</a></li>
+<li><a class="reference internal" href="#h2o-objects">H2O Objects</a><ul>
+<li><a class="reference internal" href="#h2oframe">H2OFrame</a></li>
+<li><a class="reference internal" href="#h2ovec">H2OVec</a></li>
+<li><a class="reference internal" href="#expr">Expr</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a></li>
+<li><a class="reference internal" href="#models">Models</a></li>
+<li><a class="reference internal" href="#model-results-and-metrics">Model Results and Metrics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#feature-generation-and-extended-data-flows">Feature Generation and Extended Data Flows</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to H2O&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="frame.html"
+                        title="next chapter">H2OFrame</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/h2o.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to H2O’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

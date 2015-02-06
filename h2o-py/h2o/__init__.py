@@ -17,7 +17,7 @@ any one time, and this handle is stashed in the __H2OCONN__ global object. The _
 is not currently a singleton object (but it may become one in the future).
 
 What is H2O?
-============
+------------
 
 H2O is a piece of java software for data modeling and general computing. There are many
 different views of the H2O software, but the primary view of H2O is that of a distributed
@@ -32,60 +32,71 @@ lateral scaling.
 H2O sports a distributed key-value store (the "DKV"), which contains pointers to the
 various objects that make up the H2O ecosystem. Briefly, these objects are:
 
-    Key:    A key is an entry in the DKV that maps to an object in H2O.
-    Frame:  A Frame is a collection of Vec objects. It is a 2D array of elements.
-    Vec:    A Vec is a collection of Chunk objects. It is a 1D array of elements.
-    Chunk:  A Chunk holds a fraction of the BigData. It is a 1D array of elements.
-    ModelMetrics:   A collection of metrics for a given category of model.
-    Model:  A model is an immutable object having `predict` and `metrics` methods.
-    Job:    A Job is a non-blocking task that performs a finite amount of work.
+     * :mod:`Key`:    A key is an entry in the DKV that maps to an object in H2O.
+
+     * :mod:`Frame`:  A Frame is a collection of Vec objects. It is a 2D array of elements.
+
+     * :mod:`Vec`:    A Vec is a collection of Chunk objects. It is a 1D array of elements.
+
+     * :mod:`Chunk`:  A Chunk holds a fraction of the BigData. It is a 1D array of elements.
+
+     * :mod:`ModelMetrics`:   A collection of metrics for a given category of model.
+
+     * :mod:`Model`:  A model is an immutable object having `predict` and `metrics` methods.
+
+     * :mod:`Job`:    A Job is a non-blocking task that performs a finite amount of work.
 
 Many of these objects have no meaning to an end python user, but in order to make sense of
 the objects available in this module it is helpful to understand how these objects map to
 objects in the JVM (because after all, this module is merely a facade that allows the
 manipulation of a distributed system).
 
-Objects In This Module
-======================
+H2O Objects
+-----------
 
 
 
 
 H2OFrame
-========
+++++++++
 
 
 
 
 
 H2OVec
-======
+++++++
 
 
+Expr
+++++
 
-Model Builders
-============
+Metrics
++++++++
+
+
+Models
+++++++
+
 
 * How to create new models
-* The fit() method
 * train and validation data
 * parameter specification
 
 
 Model Results and Metrics
-=========================
++++++++++++++++++++++++++
 
 * After models are built: (show, summary, predict, performance)
 * Model categories: binomial, regression, multinomial, clustering
 
 
 Feature Generation and Extended Data Flows
-==========================================
+------------------------------------------
 
 * Discuss Rapids
-# Data manipulation in python
+* Data manipulation in python
 * Executing python functions in H2O via Rapids
-
 """
 __version__ = "0.0.0a5"
 from h2o import *

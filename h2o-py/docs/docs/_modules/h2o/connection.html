@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>h2o.connection &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for h2o.connection</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">An H2OConnection represents the latest active handle to a cloud. No more than a single</span>
+<span class="sd">H2OConnection object will be active at any one time.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">two_dim_table</span> <span class="kn">import</span> <span class="n">H2OTwoDimTable</span>
+
+<span class="n">__H2OCONN__</span> <span class="o">=</span> <span class="bp">None</span>            <span class="c"># the single active connection to H2O cloud</span>
+<span class="n">__H2O_REST_API_VERSION__</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c"># const for the version of the rest api</span>
+
+
+<div class="viewcode-block" id="H2OConnection"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection">[docs]</a><span class="k">class</span> <span class="nc">H2OConnection</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  H2OConnection is a class that represents a connection to the H2O cluster.</span>
+<span class="sd">  It is specified by an IP address and a port number.</span>
+
+<span class="sd">  Objects of type H2OConnection are not instantiated directly!</span>
+
+<span class="sd">  This class contains static methods for performing the common REST methods</span>
+<span class="sd">  GET, POST, and DELETE.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="o">=</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">54321</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Instantiate the package handle to the H2O cluster.</span>
+<span class="sd">    :param ip: An IP address, default is &quot;localhost&quot;</span>
+<span class="sd">    :param port: A port, default is 54321</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">port</span> <span class="o">&lt;=</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span><span class="p">):</span>
+       <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Port out of range, &quot;</span><span class="o">+</span><span class="n">port</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">__H2OCONN__</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_ip</span> <span class="o">=</span> <span class="n">ip</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_port</span> <span class="o">=</span> <span class="n">port</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_rest_version</span> <span class="o">=</span> <span class="n">__H2O_REST_API_VERSION__</span>
+    <span class="n">__H2OCONN__</span> <span class="o">=</span> <span class="bp">self</span>
+    <span class="n">cld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_id</span><span class="p">()</span>
+    <span class="n">ncpus</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">n</span><span class="p">[</span><span class="s">&#39;num_cpus&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;nodes&#39;</span><span class="p">]])</span>
+    <span class="n">mmax</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">n</span><span class="p">[</span><span class="s">&#39;max_mem&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;nodes&#39;</span><span class="p">]])</span>
+    <span class="k">print</span> <span class="s">&quot;Connected to cloud &#39;&quot;</span> <span class="o">+</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;cloud_name&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s">&quot;&#39; size&quot;</span><span class="p">,</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;cloud_size&#39;</span><span class="p">],</span> <span class="s">&quot;ncpus&quot;</span><span class="p">,</span> <span class="n">ncpus</span><span class="p">,</span> <span class="s">&quot;maxmem&quot;</span><span class="p">,</span> <span class="n">get_human_readable_size</span><span class="p">(</span><span class="n">mmax</span><span class="p">),</span> <span class="s">&quot;session_id&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span>
+
+  <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">size</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Does not actually &quot;connect&quot;, instead simply tests that the cluster can be reached,</span>
+<span class="sd">    is of a certain size, and is taking basic status commands.</span>
+<span class="sd">    :param size: The number of H2O instances in the cloud.</span>
+<span class="sd">    :return: The JSON response from a &quot;stable&quot; cluster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">max_retries</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">retries</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+      <span class="n">retries</span> <span class="o">+=</span> <span class="mi">1</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">cld</span> <span class="o">=</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;Cloud&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;cloud_healthy&#39;</span><span class="p">]:</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Cluster reports unhealthy status&quot;</span><span class="p">,</span> <span class="n">cld</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;cloud_size&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">size</span> <span class="ow">and</span> <span class="n">cld</span><span class="p">[</span><span class="s">&#39;consensus&#39;</span><span class="p">]:</span>
+          <span class="k">return</span> <span class="n">cld</span>
+      <span class="k">except</span> <span class="ne">EnvironmentError</span><span class="p">:</span>
+        <span class="k">pass</span>
+      <span class="c"># Cloud too small or voting in progress; sleep; try again</span>
+      <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">retries</span> <span class="o">&gt;</span> <span class="n">max_retries</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span><span class="s">&quot;Max retries exceeded. Could not establish link to the H2O cloud @ &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ip</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="p">))</span>
+
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.get_session_id"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.get_session_id">[docs]</a>  <span class="k">def</span> <span class="nf">get_session_id</span><span class="p">():</span>
+      <span class="k">return</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;InitID&quot;</span><span class="p">)[</span><span class="s">&quot;session_key&quot;</span><span class="p">]</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.rest_version"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.rest_version">[docs]</a>  <span class="k">def</span> <span class="nf">rest_version</span><span class="p">():</span> <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_rest_version</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.session_id"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.session_id">[docs]</a>  <span class="k">def</span> <span class="nf">session_id</span><span class="p">():</span> <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_session_id</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.port"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.port">[docs]</a>  <span class="k">def</span> <span class="nf">port</span><span class="p">():</span> <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_port</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.ip"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.ip">[docs]</a>  <span class="k">def</span> <span class="nf">ip</span><span class="p">():</span> <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_ip</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.current_connection"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.current_connection">[docs]</a>  <span class="k">def</span> <span class="nf">current_connection</span><span class="p">():</span> <span class="k">return</span> <span class="n">__H2OCONN__</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.check_conn"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.check_conn">[docs]</a>  <span class="k">def</span> <span class="nf">check_conn</span><span class="p">():</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">__H2OCONN__</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span><span class="s">&quot;No active connection to an H2O cluster.  Try calling `h2o.init()`&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span>
+</div>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Below is the REST implementation layer:</span>
+<span class="sd">      _attempt_rest -- GET, POST, DELETE</span>
+
+<span class="sd">      _do_raw_rest</span>
+
+<span class="sd">      get</span>
+<span class="sd">      post</span>
+<span class="sd">      get_json</span>
+<span class="sd">      post_json</span>
+
+<span class="sd">  All methods are static and rely on an active __H2OCONN__ object.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.get"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.get">[docs]</a>  <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_do_raw_rest</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="s">&quot;GET&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.post"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.post">[docs]</a>  <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_do_raw_rest</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="s">&quot;POST&quot;</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.delete"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.delete">[docs]</a>  <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_do_raw_rest</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="s">&quot;DELETE&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.get_json"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.get_json">[docs]</a>  <span class="k">def</span> <span class="nf">get_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_rest_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="s">&quot;GET&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+  <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="H2OConnection.post_json"><a class="viewcode-back" href="../../meow.html#h2o.connection.H2OConnection.post_json">[docs]</a>  <span class="k">def</span> <span class="nf">post_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">__H2OCONN__</span><span class="o">.</span><span class="n">_rest_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="s">&quot;POST&quot;</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+  <span class="k">def</span> <span class="nf">_rest_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url_suffix</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">raw_txt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_raw_rest</span><span class="p">(</span><span class="n">url_suffix</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_tables</span><span class="p">(</span><span class="n">raw_txt</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+
+  <span class="c"># Massage arguments into place, call _attempt_rest</span>
+  <span class="k">def</span> <span class="nf">_do_raw_rest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url_suffix</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">url_suffix</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;No url suffix supplied.&quot;</span><span class="p">)</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://{}:{}/{}/{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ip</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">_rest_version</span><span class="p">,</span><span class="n">url_suffix</span> <span class="o">+</span> <span class="s">&quot;.json&quot;</span><span class="p">)</span>
+
+    <span class="n">query_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="s">&#39;[&#39;</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">v</span><span class="p">])</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39;]&#39;</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&quot;utf-8&quot;</span><span class="p">)</span>
+      <span class="n">query_string</span> <span class="o">+=</span> <span class="n">k</span><span class="o">+</span><span class="s">&quot;=&quot;</span><span class="o">+</span><span class="n">x</span><span class="o">+</span><span class="s">&quot;&amp;&quot;</span>
+    <span class="n">query_string</span> <span class="o">=</span> <span class="n">query_string</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c"># Remove trailing extra &amp;</span>
+
+    <span class="n">post_body</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">file_upload_info</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;POST&quot;</span><span class="p">:</span>
+        <span class="n">post_body</span> <span class="o">=</span> <span class="n">query_string</span>
+      <span class="k">elif</span> <span class="n">query_string</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;{}?{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">query_string</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;POST&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Received file upload info and expected method to be POST. Got: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+      <span class="k">if</span> <span class="n">query_string</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;{}?{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">query_string</span><span class="p">)</span>
+
+    <span class="n">begin_time_seconds</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">http_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attempt_rest</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">post_body</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">)</span>
+    <span class="n">end_time_seconds</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">elapsed_time_seconds</span> <span class="o">=</span> <span class="n">end_time_seconds</span> <span class="o">-</span> <span class="n">begin_time_seconds</span>
+    <span class="n">elapsed_time_millis</span> <span class="o">=</span> <span class="n">elapsed_time_seconds</span> <span class="o">*</span> <span class="mi">1000</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">http_result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span><span class="s">&quot;h2o-py got an unexpected HTTP status code:</span><span class="se">\n</span><span class="s"> {} {} (method = {}; url = {})&quot;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">http_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span><span class="n">http_result</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">url</span><span class="p">))</span>
+
+    <span class="c"># TODO: is.logging? -&gt; write to logs</span>
+    <span class="c"># print &quot;Time to perform REST call (millis): &quot; + str(elapsed_time_millis)</span>
+    <span class="k">return</span> <span class="n">http_result</span>
+
+  <span class="c"># Low level request call</span>
+  <span class="k">def</span> <span class="nf">_attempt_rest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">post_body</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;GET&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="n">file_upload_info</span><span class="p">:</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">{</span><span class="n">file_upload_info</span><span class="p">[</span><span class="s">&quot;file&quot;</span><span class="p">]</span> <span class="p">:</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_upload_info</span><span class="p">[</span><span class="s">&quot;file&quot;</span><span class="p">],</span> <span class="s">&quot;rb&quot;</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;POST&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">post_body</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;DELETE&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Unknown HTTP method &quot;</span> <span class="o">+</span> <span class="n">method</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span><span class="s">&quot;h2o-py encountered an unexpected HTTP error:</span><span class="se">\n</span><span class="s"> {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">http_result</span>
+
+  <span class="c"># TODO:</span>
+  <span class="c"># @staticmethod</span>
+  <span class="c"># def _process_matrices(x=None):</span>
+  <span class="c">#     if x:</span>
+  <span class="c">#         if isinstance(x, &quot;dict&quot;):</span>
+  <span class="c">#</span>
+  <span class="c">#     return x</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_process_tables</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">elts</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;tableHeader&quot;</span><span class="p">,</span> <span class="s">&quot;rowHeaders&quot;</span><span class="p">,</span> <span class="s">&quot;colHeaders&quot;</span><span class="p">,</span> <span class="s">&quot;colTypes&quot;</span><span class="p">,</span> <span class="s">&quot;colFormats&quot;</span><span class="p">,</span> <span class="s">&quot;cellValues&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">x</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">have_table</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="bp">True</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">elts</span> <span class="k">else</span> <span class="bp">False</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="n">have_table</span> <span class="o">&amp;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">elts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">have_table</span><span class="p">:</span>
+          <span class="n">tbl</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;cellValues&quot;</span><span class="p">]</span>
+          <span class="n">tbl</span> <span class="o">=</span> <span class="n">H2OTwoDimTable</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s">&quot;rowHeaders&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;colHeaders&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;colTypes&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;tableHeader&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;cellValues&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">&quot;colFormats&quot;</span><span class="p">])</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">tbl</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">_process_tables</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+          <span class="n">x</span><span class="p">[</span><span class="n">it</span><span class="p">]</span> <span class="o">=</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">_process_tables</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">it</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">x</span>
+</div>
+<div class="viewcode-block" id="get_human_readable_size"><a class="viewcode-back" href="../../meow.html#h2o.connection.get_human_readable_size">[docs]</a><span class="k">def</span> <span class="nf">get_human_readable_size</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+  <span class="n">exp_str</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;B&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s">&#39;KB&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="s">&#39;MB&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="s">&#39;GB&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="s">&#39;TB&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="s">&#39;PB&#39;</span><span class="p">),</span> <span class="p">]</span>
+  <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">rounded_val</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">while</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">exp_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">num</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">exp_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]):</span>
+    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">rounded_val</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">exp_str</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+  <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">rounded_val</span><span class="p">,</span> <span class="n">exp_str</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
