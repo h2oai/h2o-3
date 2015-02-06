@@ -349,20 +349,20 @@ public class NetworkInit {
     Log.info("Internal communication uses port: ",H2O.H2O_PORT,"\nListening for HTTP and REST traffic on  http://", H2O.getIpPortString() + "/");
 
     String embeddedConfigFlatfile = null;
-    //AbstractEmbeddedH2OConfig ec = getEmbeddedH2OConfig();
-    //if (ec != null) {
-    //  ec.notifyAboutEmbeddedWebServerIpPort (H2O.SELF_ADDRESS, H2O.API_PORT);
-    //  if (ec.providesFlatfile()) {
-    //    try {
-    //      embeddedConfigFlatfile = ec.fetchFlatfile();
-    //    }
-    //    catch (Exception e) {
-    //      Log.err("Failed to get embedded config flatfile");
-    //      Log.err(e);
-    //      H2O.exit(1);
-    //    }
-    //  }
-    //}
+    AbstractEmbeddedH2OConfig ec = H2O.getEmbeddedH2OConfig();
+    if (ec != null) {
+      ec.notifyAboutEmbeddedWebServerIpPort (H2O.SELF_ADDRESS, H2O.API_PORT);
+      if (ec.providesFlatfile()) {
+        try {
+          embeddedConfigFlatfile = ec.fetchFlatfile();
+        }
+        catch (Exception e) {
+          Log.err("Failed to get embedded config flatfile");
+          Log.err(e);
+          H2O.exit(1);
+        }
+      }
+    }
 
     // Read a flatfile of allowed nodes
     if (embeddedConfigFlatfile != null)
