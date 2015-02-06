@@ -194,7 +194,7 @@ public class DTree extends Iced {
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
         assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
-        nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h._doGrpSplit,h.isBinom());
+        nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,min_rows,h._doGrpSplit,h.isBinom());
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;

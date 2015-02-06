@@ -16,8 +16,8 @@ import water.util.IcedBitSet;
 public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   private int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
 
-  public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit ) {
-    super(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
+  public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, int min_rows, boolean doGrpSplit ) {
+    super(name,nbins,isInt,min,maxEx,nelems,min_rows,doGrpSplit);
   }
   @Override boolean isBinom() { return true; }
 
@@ -108,7 +108,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     double best_se1=Double.MAX_VALUE;   // Best squared error
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( _bins[idx[b]] == 0 ) continue; // Ignore empty splits
+      if( (_bins[idx[b]] == 0) || (ns0[b] < _min_rows) || (ns1[b] < _min_rows) ) continue; // Ignore small splits
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (ssqs/N - mean^2)*N
@@ -132,9 +132,9 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[idx[b]] == 0 ) continue; // Ignore empty splits
+        if( _bins[idx[b]] < _min_rows ) continue; // Ignore small bin
         long N =        ns0[b+0] + ns1[b+1];
-        if( N == 0 ) continue;
+        if( N < _min_rows ) continue;
         double sums = sums0[b+0]+sums1[b+1];
         double sumb = _sums[idx[b+0]];
         double si = sums - sums*sums/   N    ;      // Left+right, excluding 'b'
