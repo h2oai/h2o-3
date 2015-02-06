@@ -5,6 +5,7 @@ import water.api.KeyV1.JobKeyV1;
 import water.util.DocGen.HTML;
 import water.util.PojoUtils;
 import water.util.PrettyPrint;
+import water.util.ReflectionUtils;
 
 /** Schema for a single Job. */
 public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
@@ -61,7 +62,9 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
     progress = job.progress();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
-    dest = KeySchema.make(job.dest());
+    Key dest_key = job.dest();
+    Class<? extends Keyed> dest_class = ReflectionUtils.findActualClassParameter(job.getClass(), 0); // What type do we expect for this Job?
+    dest = KeyV1.forKeyedClass(dest_class, dest_key);
     exception = job._exception;
     return (S) this;
   }
