@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>H2O Package &mdash; H2O  documentation</title>
+    <title>The H2O Python Module &mdash; H2O  documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -54,31 +54,71 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-h2o.__init__">
-<span id="h2o-package"></span><h1>H2O Package<a class="headerlink" href="#module-h2o.__init__" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="the-h2o-python-module">
-<h2>The H2O Python Module<a class="headerlink" href="#the-h2o-python-module" title="Permalink to this headline">¶</a></h2>
+  <span class="target" id="module-h2o.__init__"></span><div class="section" id="the-h2o-python-module">
+<h1>The H2O Python Module<a class="headerlink" href="#the-h2o-python-module" title="Permalink to this headline">¶</a></h1>
 <p>This module provides access to the H2O JVM (and extensions thereof), its objects, its
 machine-learning algorithms, and modeling support (basic munging and feature generation)
 capabilities.</p>
 <p>The H2O JVM sports a web server such that all communication occurs on a socket (specified
 by an IP address and a port) via a series of REST calls (see connection.py for the REST
 layer implementation and details). There is a single active connection to the H2O JVM at
-any one time, and this handle is stashed in the __H2OCONN__ global object. The __H2OCONN__
-is not currently a singleton object (but it may become one in the future).</p>
+any one time, and this handle is stashed away out of sight in a singleton instance of
+<tt class="xref py py-class docutils literal"><span class="pre">H2OConnection</span></tt> (this is the global  <span class="target" id="index-0"></span><tt class="xref std std-envvar docutils literal"><span class="pre">__H2OConn__</span></tt>).</p>
+<p>The H2O python module is not intended as a replacement for other popular machine learning
+modules such as scikit-learn, pylearn2, and their ilk. This module is a complementary
+interface to a modeling engine intended to make the transition of models from development
+to production as seamless as possible. Additionally, it is designed to bring H2O to a
+wider audience of data and machine learning devotees that work exclusively with Python
+(rather than R or scala or Java &#8211; which are other popular interfaces that H2O supports),
+and are wanting another tool for building applications or doing data munging in a fast,
+scalable environment without any extra mental anguish about threads and parallelism.</p>
 <div class="section" id="what-is-h2o">
-<h3>What is H2O?<a class="headerlink" href="#what-is-h2o" title="Permalink to this headline">¶</a></h3>
+<h2>What is H2O?<a class="headerlink" href="#what-is-h2o" title="Permalink to this headline">¶</a></h2>
 <p>H2O is a piece of java software for data modeling and general computing. There are many
 different views of the H2O software, but the primary view of H2O is that of a distributed
 (many machines), parallel (many CPUs), in memory (several hundred GBs Xmx) processing
-&#8220;engine&#8221;. How H2O achieves within node parallelism and efficient horizontal scaling is
-discussed in detail elsewhere, but it suffices to state that Doug Lea&#8217;s Fork Join
-framework (which can be thought of as a classical recursive descent divide and conquer
-approach to doing &#8220;work&#8221;) enables parallelism per JVM, and a distributed version of Cliff
-Click&#8217;s non-blocking hash map enables coherency across nodes in a cluster allowing for
-lateral scaling.</p>
+engine.</p>
+<p>There are two levels of parallelism:</p>
+<blockquote>
+<div><ul class="simple">
+<li>within node</li>
+<li>across (or between) node.</li>
+</ul>
+</div></blockquote>
+<p>The goal, remember, is to &#8220;simply&#8221; add more processors to a given problem in order to
+produce a solution faster. The conceptual paradigm MapReduce (also known as
+&#8220;divide and conquer and combine&#8221;) along with a good concurrent application structure
+(c.f. JSR166y and NonBlockingHashMap) enable this type of scaling in H2O (we&#8217;re really
+cooking with gas now!).</p>
+<p>For application developers and data scientists, the gritty details of thread-safety,
+algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST
+calls that are all documented here. In addition, H2O is an open-source project under the
+Apache v2 licence. All of the source code is on
+<a class="reference external" href="https://github.com/h2oai/h2o-dev">github</a>, there is an active
+<a class="reference external" href="https://groups.google.com/forum/#!forum/h2ostream">google group mailing list</a>, our
+<a class="reference external" href="http://test.0xdata.com/">nightly tests</a> are open for perusal, our <a class="reference external" href="http://jira.0xdata.com">JIRA ticketing
+system</a> is also open for public use. Last, but not least, we
+regularly engage the machine learning community all over the nation with a very busy
+<a class="reference external" href="http://h2o.ai/events/">meetup schedule</a> (so if you&#8217;re not in The Valley, no sweat,
+we&#8217;re probably coming to you soon!), and finally, we host our very own <a class="reference external" href="http://h2o.ai/h2o-world/">H2O World
+conference</a>. We also sometimes host hack-a-thons at our
+campus in Mountain View, CA. Needless to say, there is a lot of support for the
+application developer.</p>
+<p>In order to make the most out of H2O, there are some key conceptual pieces that are helpful
+to know before getting started. Mainly, it&#8217;s helpful to know about the different types of
+objects that live in H2O and what the rules of engagement are in the context of the REST
+API (which is what any non-JVM interface is all about).</p>
+<p>Let&#8217;s get started!</p>
+<div class="section" id="the-h2o-object-system">
+<h3>The H2O Object System<a class="headerlink" href="#the-h2o-object-system" title="Permalink to this headline">¶</a></h3>
 <p>H2O sports a distributed key-value store (the &#8220;DKV&#8221;), which contains pointers to the
-various objects that make up the H2O ecosystem. Briefly, these objects are:</p>
+various objects that make up the H2O ecosystem. The DKV is a kind of biosphere in that it
+encapsulates all shared objects (though, it may not encapsulate all objects). Some shared
+objects are mutable by the client; some shared objects are read-only by the client, but
+mutable by H2O (e.g. a model being constructed will change over time); and actions by the
+client may have side-effects on other clients (multi-tenancy is not a supported model of
+use, but it is possible for multiple clients to attach to a single H2O cloud).</p>
+<p>Briefly, these objects are:</p>
 <blockquote>
 <div><ul class="simple">
 <li><tt class="xref py py-mod docutils literal"><span class="pre">Key</span></tt>:    A key is an entry in the DKV that maps to an object in H2O.</li>
@@ -92,45 +132,66 @@ various objects that make up the H2O ecosystem. Briefly, these objects are:</p>
 </div></blockquote>
 <p>Many of these objects have no meaning to an end python user, but in order to make sense of
 the objects available in this module it is helpful to understand how these objects map to
-objects in the JVM (because after all, this module is merely a facade that allows the
+objects in the JVM (because after all, this module is an interface that allows the
 manipulation of a distributed system).</p>
 </div>
-<div class="section" id="h2o-objects">
-<h3>H2O Objects<a class="headerlink" href="#h2o-objects" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="objects-in-this-module">
+<h2>Objects In This Module<a class="headerlink" href="#objects-in-this-module" title="Permalink to this headline">¶</a></h2>
+<p>The objects that are of primary concern to the python user are (in order) Keys, Frames,
+Vecs, Models, ModelMetrics, and to a lesser extent Jobs. Each of these objects are
+described in greater detail throughout this documentation, but a few brief notes are
+warranted here.</p>
 <div class="section" id="h2oframe">
-<h4>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h4>
+<h3>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h3>
+<p>An H2OFrame is 2D array of uniformly-typed columns. Data in H2O is compressed (often
+achieving 2-4x better compression the gzip on disk) and is held in the JVM heap (i.e.
+data is &#8220;in memory&#8221;). The H2OFrame is an iterable (supporting list comprehensions) wrapper
+around an array of H2OVec objects.</p>
+<p>The set of operations on an H2OFrame is described in a chapter devoted to this object, but
+suffice it to say that this set of operations closely resembles those that may be
+performed on an R data.frame. This includes all manner of slicing (with complex
+conditionals), broadcasting operations, and a slew of math operations for transforming and
+mutating a Frame (the actual Big Data sitting in the H2O cloud). The semantics for
+modifying a Frame closely resembles R&#8217;s copy-on-modify semantics, except when it comes
+to mutating a Frame in place. For example, it&#8217;s possible to assign all occurrences of the
+number <cite>0</cite> in a column to missing (or <cite>NA</cite> in R parlance) as demonstrated in the following
+snippet:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">import_frame</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;smalldata/logreg/prostate.csv&quot;</span><span class="p">)</span>  <span class="c"># import prostate data</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vol</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">&#39;VOL&#39;</span><span class="p">]</span>                                              <span class="c"># select the VOL column</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vol</span><span class="p">[</span><span class="n">vol</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>                                         <span class="c"># 0 VOL means &#39;missing&#39;</span>
+</pre></div>
+</div>
+<p>After this operation, <cite>vol</cite> has been permanently mutated (and is not a copy!) in place.</p>
 </div>
 <div class="section" id="h2ovec">
-<h4>H2OVec<a class="headerlink" href="#h2ovec" title="Permalink to this headline">¶</a></h4>
+<h3>H2OVec<a class="headerlink" href="#h2ovec" title="Permalink to this headline">¶</a></h3>
+<p>An H2OVec is...</p>
 </div>
 <div class="section" id="expr">
-<h4>Expr<a class="headerlink" href="#expr" title="Permalink to this headline">¶</a></h4>
-</div>
-<div class="section" id="metrics">
-<h4>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h4>
+<h3>Expr<a class="headerlink" href="#expr" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Expressions are lazy...</li>
+<li>DAGs of Exprs ... oh joy!</li>
+</ul>
 </div>
 <div class="section" id="models">
-<h4>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h4>
+<h3>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li>No explicit model objects &#8211; have model categories</li>
 <li>How to create new models</li>
 <li>train and validation data</li>
 <li>parameter specification</li>
+<li>See more on the chapter on Models</li>
 </ul>
 </div>
-<div class="section" id="model-results-and-metrics">
-<h4>Model Results and Metrics<a class="headerlink" href="#model-results-and-metrics" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="metrics">
+<h3>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>After models are built: (show, summary, predict, performance)</li>
-<li>Model categories: binomial, regression, multinomial, clustering</li>
-</ul>
-</div>
-</div>
-<div class="section" id="feature-generation-and-extended-data-flows">
-<h3>Feature Generation and Extended Data Flows<a class="headerlink" href="#feature-generation-and-extended-data-flows" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li>Discuss Rapids</li>
-<li>Data manipulation in python</li>
-<li>Executing python functions in H2O via Rapids</li>
+<li>Metrics for different types of model categories</li>
+<li>See more in the chapter on Metrics</li>
 </ul>
 </div>
 </div>
@@ -144,19 +205,17 @@ manipulation of a distributed system).</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">H2O Package</a><ul>
-<li><a class="reference internal" href="#the-h2o-python-module">The H2O Python Module</a><ul>
-<li><a class="reference internal" href="#what-is-h2o">What is H2O?</a></li>
-<li><a class="reference internal" href="#h2o-objects">H2O Objects</a><ul>
+<li><a class="reference internal" href="#">The H2O Python Module</a><ul>
+<li><a class="reference internal" href="#what-is-h2o">What is H2O?</a><ul>
+<li><a class="reference internal" href="#the-h2o-object-system">The H2O Object System</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#objects-in-this-module">Objects In This Module</a><ul>
 <li><a class="reference internal" href="#h2oframe">H2OFrame</a></li>
 <li><a class="reference internal" href="#h2ovec">H2OVec</a></li>
 <li><a class="reference internal" href="#expr">Expr</a></li>
-<li><a class="reference internal" href="#metrics">Metrics</a></li>
 <li><a class="reference internal" href="#models">Models</a></li>
-<li><a class="reference internal" href="#model-results-and-metrics">Model Results and Metrics</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#feature-generation-and-extended-data-flows">Feature Generation and Extended Data Flows</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a></li>
 </ul>
 </li>
 </ul>
