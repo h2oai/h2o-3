@@ -13,8 +13,8 @@ import water.util.AtomicUtils;
 public class DRealHistogram extends DHistogram<DRealHistogram> {
   private float _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
-  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit ) {
-    super(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
+  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, int min_rows, boolean doGrpSplit ) {
+    super(name,nbins,isInt,min,maxEx,nelems,min_rows,doGrpSplit);
   }
   @Override boolean isBinom() { return false; }
 
@@ -108,7 +108,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     double best_se1=Double.MAX_VALUE;   // Best squared error
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( _bins[b] == 0 ) continue; // Ignore empty splits
+      if( (_bins[b] == 0) || (ns0[b] < _min_rows) || (ns1[b] < _min_rows) ) continue; // Ignore small splits
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (ssqs/N - mean^2)*N
@@ -130,11 +130,11 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[b] == 0 ) continue; // Ignore empty splits
+        if( _bins[b] < _min_rows ) continue; // Ignore small bin
         long N =        ns0[b+0] + ns1[b+1];
         double sums = sums0[b+0]+sums1[b+1];
         double ssqs = ssqs0[b+0]+ssqs1[b+1];
-        if( N == 0 ) continue;
+        if( N < _min_rows ) continue;
         double si =  ssqs    -  sums   * sums   /   N    ; // Left+right, excluding 'b'
         double sx = _ssqs[b] - _sums[b]*_sums[b]/_bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
