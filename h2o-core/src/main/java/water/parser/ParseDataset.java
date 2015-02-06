@@ -63,7 +63,6 @@ public final class ParseDataset extends Job<Frame> {
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
   static ByteVec getByteVec(Key key) {
-    DKV.get(key).freePOJO();  // ensure we don't grab an old cached version
     Iced ice = DKV.getGet(key);
     if(ice == null)
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
@@ -105,6 +104,12 @@ public final class ParseDataset extends Job<Frame> {
       if(update instanceof FileVec) { // does not work for byte vec
         ((FileVec) update).setChunkSize(setup._chunkSize);
         DKV.put(update._key, update, fs);
+        fs.blockForPending();
+        // also update Frame to invalidate local caches
+        if (ice instanceof Frame) {
+          ((Frame) ice).reloadVecs();
+          DKV.put(((Frame)ice)._key, ice, fs);
+        }
       }
     }
     fs.blockForPending();
