@@ -101,9 +101,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
     chunkInit();
-    double [] nums = MemoryManager.malloc8d(_dinfo._nums);
-    int    [] cats = MemoryManager.malloc4(_dinfo._cats);
-    double [] response = _dinfo._responses == 0 ? null : MemoryManager.malloc8d(_dinfo._responses);
     int start = 0;
     int end = nrows;
 

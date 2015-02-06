@@ -479,6 +479,10 @@ public class DataInfo extends Keyed {
         res += vec[vec.length-1];
       return res;
     }
+
+    public String toString() {
+      return Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
+    }
   }
 
   public final int getCategoricalId(int cid, int val) {
@@ -492,24 +496,19 @@ public class DataInfo extends Keyed {
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
-    for (Chunk c : chunks)
-      if (_skipMissing && c.isNA(rid)) {
-        row.good = false;
-        return row;
-      }
+    if (_skipMissing)
+      for (Chunk c : chunks)
+        if(c.isNA(rid)) {
+          row.good = false;
+          return row;
+        }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
-      int c;
       if (chunks[i].isNA(rid)) {
-        try {
           row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
-        } catch(Throwable t) {
-          t.printStackTrace();
-          throw new RuntimeException(t);
-        }
       } else {
-        c = getCategoricalId(i,(int)chunks[i].at8(rid));
-        if(c >=0)
+        int c = getCategoricalId(i,(int)chunks[i].at8(rid));
+        if(c >= 0)
           row.binIds[nbins++] = c;
       }
     }
