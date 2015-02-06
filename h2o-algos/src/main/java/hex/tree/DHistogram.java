@@ -176,7 +176,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  abstract public DTree.Split scoreMSE( int col );
+  abstract public DTree.Split scoreMSE( int col, int min_rows );
 
   // The initial histogram bins are setup from the Vec rollups.
   static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], boolean isBinom) {

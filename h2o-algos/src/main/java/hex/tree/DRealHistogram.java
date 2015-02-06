@@ -59,7 +59,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  @Override public DTree.Split scoreMSE( int col ) {
+  @Override public DTree.Split scoreMSE( int col, int min_rows ) {
     final int nbins = nbins();
     assert nbins > 1;
 
@@ -111,6 +111,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       ns0  [b] = k0+k1;
     }
     long tot = ns0[nbins];
+    // Is any split possible with at least min_obs?
+    if( tot < 2*min_rows ) return null;
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
@@ -142,6 +144,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( bins[b] == 0 ) continue; // Ignore empty splits
+      if( ns0[b] < min_rows ) continue;
+      if( ns1[b] < min_rows ) break; // ns1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (ssqs/N - mean^2)*N
@@ -163,9 +167,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( bins[b] == 0 ) continue; // Ignore empty splits
+        if( bins[b] < min_rows ) continue; // Ignore too small splits
         long N =         ns0[b  ] + ns1[b+1];
-        if( N == 0 ) continue;
+        if( N < min_rows ) continue; // Ignore too small splits
         double sums2 = sums0[b  ]+sums1[b+1];
         double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
         double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'

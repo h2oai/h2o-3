@@ -27,7 +27,7 @@ public class DTree extends Iced {
   final int _ncols;      // Active training columns
   final char _nbins;     // Max number of bins to split over
   final char _nclass;    // #classes, or 1 for regression trees
-  final int _min_rows;   // Fewest allowed rows in any split
+  public final int _min_rows;   // Fewest allowed rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array

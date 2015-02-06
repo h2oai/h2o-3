@@ -53,7 +53,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  @Override public DTree.Split scoreMSE( int col ) {
+  @Override public DTree.Split scoreMSE( int col, int min_rows ) {
     final int nbins = nbins();
     assert nbins > 1;
 
