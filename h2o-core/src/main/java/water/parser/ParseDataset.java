@@ -176,11 +176,11 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
-    if (mfpt._errors != null) {
+/*    if (mfpt._errors != null) {
       job.cancel();
       //TODO replace with H2OParseException
       throw new RuntimeException(mfpt._errors[0]);
-    }
+    }*/
     AppendableVec [] avs = mfpt.vecs();
 
     Frame fr = null;
@@ -353,6 +353,7 @@ public final class ParseDataset extends Job<Frame> {
     private final Frame _f;
     private SVFTask( Frame f ) { _f = f; }
     @Override public void setupLocal() {
+      if( _f.numCols() == 0 ) return;
       Vec v0 = _f.anyVec();
       ArrayList<RecursiveAction> rs = new ArrayList<RecursiveAction>();
       for( int i = 0; i < v0.nChunks(); ++i ) {

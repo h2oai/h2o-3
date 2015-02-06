@@ -14,16 +14,17 @@ function(conn) {
     str(mfrmr)
     myX = 2:13
     myY = 1 
-    alpha = 1 
+    alpha = 1
+    lambda = 1e-5
     
     #H2O GLM model  
-    hh=h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",n_folds=0, alpha = alpha)
+    hh=h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",n_folds=0, alpha = alpha, lambda = lambda)
 
-    res_dev = hh@model$deviance
+    res_dev = hh@model$residual_deviance
     obs = nrow(mfrmr)
-    lambda = hh@model$params$lambda
-    alpha = hh@model$params$alpha
-    cof = hh@model$normalized_coefficients
+    # lambda = hh@model$params$lambda
+    alpha = hh@parameters$alpha
+    cof = hh@model$coefficients_table[2, ]
     cof = cof[1:length(cof)-1] # drop the intercept!
     L1 = sum(abs(cof))
     L2 = sqrt(sum(cof^2)) 
@@ -35,7 +36,7 @@ function(conn) {
 
 	# Sanity Check whether comparing models built on the same dataset
 	expect_equal( nrow(mfrmr), nrow(rr))
-	expect_equal(gg$nulldev,hh@model$null.deviance)
+	expect_equal(gg$nulldev,hh@model$null_deviance)
 
 	res_dev_R = deviance(gg)
 	obs = nrow(mfrmr)

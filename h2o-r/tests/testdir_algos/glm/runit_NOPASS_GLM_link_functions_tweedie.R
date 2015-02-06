@@ -25,8 +25,8 @@ test.linkFunctions <- function(conn) {
 	model.R.tweedie.tweedie <- glm(formula=R.formula, data=R.data[,4:10], family=tweedie, na.action=na.omit)
 
 	print("Compare model deviances for link function tweedie")
-	deviance.h2o.tweedie = model.h2o.tweedie.tweedie@model$deviance / model.h2o.tweedie.tweedie@model$null
-	deviance.R.tweedie = deviance(model.R.tweedie.tweedie)  / model.h2o.tweedie.tweedie@model$null
+	deviance.h2o.tweedie = model.h2o.tweedie.tweedie@model$residual_deviance / model.h2o.tweedie.tweedie@model$null_deviance
+	deviance.R.tweedie = deviance(model.R.tweedie.tweedie)  / model.h2o.tweedie.tweedie@model$null_deviance
 	difference = deviance.R.tweedie - deviance.h2o.tweedie
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.tweedie))

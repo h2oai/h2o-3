@@ -28,8 +28,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gaussian.identity <- glm(formula=R.formula, data=R.data[,2:9], family=gaussian(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
-	deviance.h2o.identity = model.h2o.gaussian.identity@model$deviance / model.h2o.gaussian.identity@model$null
-	deviance.R.identity = deviance(model.R.gaussian.identity)  / model.h2o.gaussian.identity@model$null
+	deviance.h2o.identity = model.h2o.gaussian.identity@model$residual_deviance / model.h2o.gaussian.identity@model$null_deviance
+	deviance.R.identity = deviance(model.R.gaussian.identity)  / model.h2o.gaussian.identity@model$null_deviance
 	difference = deviance.R.identity - deviance.h2o.identity
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.identity))

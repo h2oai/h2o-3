@@ -27,8 +27,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gamma.inverse <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=inverse), na.action=na.omit)
 	
 	print("Compare model deviances for link function inverse")
-	deviance.h2o.inverse = model.h2o.gamma.inverse@model$deviance / model.h2o.gamma.inverse@model$null
-	deviance.R.inverse = deviance(model.R.gamma.inverse)  / model.h2o.gamma.inverse@model$null
+	deviance.h2o.inverse = model.h2o.gamma.inverse@model$residual_deviance / model.h2o.gamma.inverse@model$null_deviance
+	deviance.R.inverse = deviance(model.R.gamma.inverse)  / model.h2o.gamma.inverse@model$null_deviance
 	difference = deviance.R.inverse - deviance.h2o.inverse
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.inverse))
@@ -41,8 +41,8 @@ test.linkFunctions <- function(conn) {
 	model.R.gamma.log <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=log), na.action=na.omit)
 	
 	print("Compare model deviances for link function log")
-	deviance.h2o.log = model.h2o.gamma.log@model$deviance / model.h2o.gamma.log@model$null
-	deviance.R.log = deviance(model.R.gamma.log)  / model.h2o.gamma.log@model$null
+	deviance.h2o.log = model.h2o.gamma.log@model$residual_deviance / model.h2o.gamma.log@model$null_deviance
+	deviance.R.log = deviance(model.R.gamma.log)  / model.h2o.gamma.log@model$null_deviance
 	difference = deviance.R.log - deviance.h2o.log
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.log))
@@ -51,12 +51,12 @@ test.linkFunctions <- function(conn) {
 	}
 
 	print("Create models with link: IDENTITY")
-	model.h2o.gamma.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gamma", link="identity",alpha=0.5, lambda=0, nfolds=0)
+	model.h2o.gamma.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gamma", link="identity",alpha=0.5, lambda=0, n_folds=0)
 	model.R.gamma.identity <- glm(formula=R.formula, data=R.data[,c(1:5,7:9)], family=Gamma(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")
-	deviance.h2o.identity = model.h2o.gamma.identity@model$deviance / model.h2o.gamma.identity@model$null
-	deviance.R.identity = deviance(model.R.gamma.identity)  / model.h2o.gamma.identity@model$null
+	deviance.h2o.identity = model.h2o.gamma.identity@model$residual_deviance / model.h2o.gamma.identity@model$null_deviance
+	deviance.R.identity = deviance(model.R.gamma.identity)  / model.h2o.gamma.identity@model$null_deviance
 	difference = deviance.R.identity - deviance.h2o.identity
 	if (difference > 0.01) {
 		print(cat("Deviance in H2O: ", deviance.h2o.identity))

@@ -309,3 +309,129 @@ h2o.performance <- function(model, data=NULL) {
       algorithm = algo,
       metrics   = metrics)
 }
+
+h2o.auc <- function(object) {
+  if(is(object, "H2OBinomialMetrics")){
+    object@metrics$AUC
+  }
+  else{
+    stop(paste0("No AUC for ",class(object)))
+  }
+}
+
+h2o.giniCoef <- function(object) {
+  if(is(object, "H2OBinomialMetrics")){
+    object@metrics$Gini
+  }
+  else{
+    stop(paste0("No Gini for ",class(object)))
+  }
+}
+
+h2o.mse <- function(object) {
+  if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
+    object@metrics$mse
+  }
+  else{
+    stop(paste0("No MSE for ",class(object)))
+  }
+}
+
+h2o.F0point5 <- function(object, thresholds){
+  h2o.metric(object, "F0point5", thresholds)
+}
+
+h2o.F1 <- function(object, thresholds){
+  h2o.metric(object, "F1", thresholds)
+}
+
+h2o.F2 <- function(object, thresholds){
+  h2o.metric(object, "F2", thresholds)
+}
+
+h2o.accuracy <- function(object, thresholds){
+  h2o.metric(object, "accuracy", thresholds)
+}
+
+h2o.error <- function(object, thresholds){
+  h2o.metric(object, "error", thresholds)
+}
+
+h2o.maxPerClassError <- function(object, thresholds){
+  h2o.metric(object, "max_per_class_error", thresholds)
+}
+
+h2o.mcc <- function(object, thresholds){
+  h2o.metric(object, "mcc", thresholds)
+}
+
+h2o.precision <- function(object, thresholds){
+  h2o.metric(object, "precision", thresholds)
+}
+
+h2o.recall <- function(object, thresholds){
+  h2o.metric(object, "recall", thresholds)
+}
+
+h2o.specificity <- function(object, thresholds){
+  h2o.metric(object, "specificity", thresholds)
+}
+
+h2o.metric <- function(object, metric, thresholds) {
+  if(is(object, "H2OBinomialMetrics")){
+    if(!missing(thresholds)) {
+      t <- as.character(thresholds)
+      t[t=="0"] <- "0.0"
+      t[t=="1"] <- "1.0"
+      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      }
+      else {
+        output <- object@metrics$thresholdsAndMetricScores[t, metric]
+        names(output) <- t
+        output
+      }
+    }
+    else {
+      output <- object@metrics$thresholdsAndMetricScores[, metric]
+      names(output) <- rownames(object@metrics$thresholdsAndMetricScores)
+      output
+    }
+  }
+  else{
+    stop(paste0("No ", metric, " for ",class(object)))
+  }
+}
+
+h2o.confusionMatrices <- function(object, thresholds) {
+  if(is(object, "H2OBinomialMetrics")){
+    names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholdsAndMetricScores)
+    if(!missing(thresholds)) {
+      t <- as.character(thresholds)
+      t[t=="0"] <- "0.0"
+      t[t=="1"] <- "1.0"
+      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      }
+      else {
+        object@metrics$confusion_matrices[t]
+      }
+    }
+    else {
+        object@metrics$confusion_matrices
+    }
+  }
+  else{
+    stop(paste0("No Confusion Matrices for ",class(object)))
+  }
+}
+
+plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
+  # TODO: add more types (i.e. cutoffs)
+  if(!type %in% c("roc")) stop("type must be 'roc'")
+  if(type == "roc") {
+    xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
+    plot(1 - perf_class@metrics$thresholdsAndMetricScores$specificity, object@metrics$thresholdsAndMetricScores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    abline(0, 1, lty = 2)
+  }
+}

@@ -399,7 +399,8 @@ class H2O(object):
                 return result
 
             if time.time() - start_time > timeoutSecs:
-                H2O.verboseprint('Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.')
+                print 'Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.'
+                # downstream checkers should tolerate None. Print msg in case it's overlooked.
                 return None
 
             time.sleep(retryDelaySecs)
