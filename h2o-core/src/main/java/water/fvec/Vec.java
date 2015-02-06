@@ -8,11 +8,10 @@ import water.parser.ValueString;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
-import water.util.Log;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
@@ -906,7 +905,7 @@ public class Vec extends Keyed {
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
     // Right now, limited to small dense integers.
     if( min() < 0 || max() > 1000000 )
-      throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
+      throw new IllegalArgumentException("Enum conversion only works on small non-negative integers, but min="+min()+" and max = "+max());
     long[] domain= new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
