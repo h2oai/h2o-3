@@ -14,6 +14,20 @@ public class KeyV1<I extends Keyed, S extends KeyV1<I, S>> extends KeySchema<I, 
     super(key);
   }
 
+  /** Factory method which returns the correct KeySchema for the given Keyed class (e.g., for Frame.class). */
+  public static KeySchema forKeyedClass(Class<? extends Keyed> keyed_class, Key key) {
+    if (Job.class.isAssignableFrom(keyed_class))
+      return KeySchema.make(JobKeyV1.class, key);
+    else if (Frame.class.isAssignableFrom(keyed_class))
+      return KeySchema.make(FrameKeyV1.class, key);
+    else if (Model.class.isAssignableFrom(keyed_class))
+      return KeySchema.make(ModelKeyV1.class, key);
+    else if (Vec.class.isAssignableFrom(keyed_class))
+      return KeySchema.make(VecKeyV1.class, key);
+    else
+      return KeySchema.make(KeyV1.class, key);
+  }
+
   public static class JobKeyV1 extends KeySchema<Job, JobKeyV1> {
     public JobKeyV1() {}
     public JobKeyV1(Key<Job> key) {

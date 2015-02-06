@@ -49,6 +49,7 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
     return make(KeySchema.class, key);
   }
 
+
   @Override
   public S fillFromImpl(Key key) {
     if (null == key) return (S)this;
