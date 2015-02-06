@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.ConfusionMatrix;
-import hex.ModelMetricsBinomial;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -215,11 +214,7 @@ public class GBMTest extends TestUtil {
       DKV.put(fr);             // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      if( idx < 0 ) {
-        parms._convert_to_enum = false; idx = ~idx;
-      } else {
-        parms._convert_to_enum = true;
-      }
+      if( idx < 0 ) { parms._convert_to_enum = false; idx = ~idx; } else { parms._convert_to_enum = true; }
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
       parms._ntrees = 4;
@@ -451,7 +446,7 @@ public class GBMTest extends TestUtil {
 
   @Test public void testBigCat() {
     final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
-    double[] mse = basicGBM("./smalldata/gbm_test/50_cattest_test.csv", prep, false, Family.AUTO)._mse_train;
+    basicGBM("./smalldata/gbm_test/50_cattest_test.csv", prep, false, Family.AUTO);
   }
 
 }

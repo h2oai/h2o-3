@@ -1,12 +1,9 @@
 package hex.tree;
 
-import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.IcedBitSet;
-import java.util.Comparator;
-import java.util.Arrays;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -66,14 +63,48 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     final int nbins = nbins();
     assert nbins > 1;
 
+    // Histogram arrays used for splitting, these are either the original bins
+    // (for an ordered predictor), or sorted by the mean response (for an
+    // unordered predictor, i.e. categorical predictor).
+    float[] sums = _sums;
+    float[] ssqs = _ssqs;
+    int  [] bins = _bins;
+    int idxs[] = null;          // and a reverse index mapping
+
+    // For categorical (unordered) predictors, sort the bins by average
+    // prediction then look for an optimal split.  Currently limited to enums
+    // where we're one-per-bin.  No point for 3 or fewer bins as all possible
+    // combinations (just 3) are tested without needing to sort.
+    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
+      // Sort the index by average response
+      idxs = MemoryManager.malloc4(nbins+1); // Reverse index
+      for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
+      final double[] avgs = MemoryManager.malloc8d(nbins+1);
+      for( int i=0; i<nbins; i++ ) avgs[i] = _sums[i]/_bins[i]; // Average response
+      avgs[nbins] = Double.MAX_VALUE;
+      ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() { 
+          @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
+        });
+      // Fill with sorted data.  Makes a copy, so the original data remains in
+      // its original order.
+      sums = MemoryManager.malloc4f(nbins);
+      ssqs = MemoryManager.malloc4f(nbins);
+      bins = MemoryManager.malloc4 (nbins);
+      for( int i=0; i<nbins; i++ ) {
+        sums[i] = _sums[idxs[i]];
+        ssqs[i] = _ssqs[idxs[i]];
+        bins[i] = _bins[idxs[i]];
+      }
+    }
+
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
     double sums0[] = MemoryManager.malloc8d(nbins+1);
     double ssqs0[] = MemoryManager.malloc8d(nbins+1);
     long     ns0[] = MemoryManager.malloc8 (nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      double m0 = sums0[b-1],  m1 = _sums[b-1];
-      double s0 = ssqs0[b-1],  s1 = _ssqs[b-1];
-      long   k0 = ns0  [b-1],  k1 = _bins[b-1];
+      double m0 = sums0[b-1],  m1 = sums[b-1];
+      double s0 = ssqs0[b-1],  s1 = ssqs[b-1];
+      long   k0 = ns0  [b-1],  k1 = bins[b-1];
       if( k0==0 && k1==0 ) continue;
       sums0[b] = m0+m1;
       ssqs0[b] = s0+s1;
@@ -90,9 +121,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     double ssqs1[] = MemoryManager.malloc8d(nbins+1);
     long     ns1[] = MemoryManager.malloc8 (nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      double m0 = sums1[b+1],  m1 = _sums[b];
-      double s0 = ssqs1[b+1],  s1 = _ssqs[b];
-      long   k0 = ns1  [b+1],  k1 = _bins[b];
+      double m0 = sums1[b+1],  m1 = sums[b];
+      double s0 = ssqs1[b+1],  s1 = ssqs[b];
+      long   k0 = ns1  [b+1],  k1 = bins[b];
       if( k0==0 && k1==0 ) continue;
       sums1[b] = m0+m1;
       ssqs1[b] = s0+s1;
@@ -110,7 +141,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     double best_se1=Double.MAX_VALUE;   // Best squared error
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( _bins[b] == 0 ) continue; // Ignore empty splits
+      if( bins[b] == 0 ) continue; // Ignore empty splits
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (ssqs/N - mean^2)*N
@@ -132,13 +163,13 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[b] == 0 ) continue; // Ignore empty splits
-        long N =        ns0[b+0] + ns1[b+1];
+        if( bins[b] == 0 ) continue; // Ignore empty splits
+        long N =         ns0[b  ] + ns1[b+1];
         if( N == 0 ) continue;
-        double sums = sums0[b+0]+sums1[b+1];
-        double ssqs = ssqs0[b+0]+ssqs1[b+1];
-        double si =  ssqs    -  sums   * sums   /   N    ; // Left+right, excluding 'b'
-        double sx = _ssqs[b] - _sums[b]*_sums[b]/_bins[b]; // Just 'b'
+        double sums2 = sums0[b  ]+sums1[b+1];
+        double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
+        double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'
+        double sx =    ssqs [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -146,32 +177,26 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
     }
 
-    // For categorical (unordered) predictors, sort the bins by average
-    // prediction then look for an optimal split.
-    IcedBitSet bs = null;
-    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
-      for( int i=0; i<nbins; i++ )
-        System.out.println("bin["+i+"] avg="+_sums[i]+"/"+_bins[i]+" = "+(_sums[i]/_bins[i]));
-
-      int idxs[] = MemoryManager.malloc4(nbins);
-      for( int i=0; i<nbins; i++ ) idxs[i] = i;
-      final double[] avgs = sums0;    // Reuse sums0
-      for( int i=0; i<nbins; i++ ) avgs[i] = _sums[i]/_bins[i];
-      Arrays.sort(idxs, new Comparator() { 
-          @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
-        });
-      for( int i=0; i<nbins; i++ )
-        System.out.println("bin["+idxs[i]+"] avg= "+(_sums[idxs[i]]/_bins[idxs[i]]));
-
-      throw H2O.unimpl();
+    // For categorical (unordered) predictors, we sorted the bins by average
+    // prediction then found the optimal split on sorted bins
+    IcedBitSet bs = null;       // In case we need an arbitrary bitset
+    if( idxs != null ) {        // We sorted bins; need to build a bitset
+      int min=Integer.MAX_VALUE;// Compute lower bound and span for bitset
+      int max=Integer.MIN_VALUE;
+      for( int i=0; i<best; i++ ) { 
+        min=Math.min(min,idxs[i]);
+        max=Math.max(max,idxs[i]);
+      }
+      bs = new IcedBitSet(max-min+1,min);
+      for( int i=0; i<best; i++ ) bs.set(idxs[i]);
+      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
     if( best==0 ) return null;  // No place to split
-    assert best > 0 : "Must actually pick a split "+best;
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] : _bins[best]              ;
+    long   n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
-    double p1 = equal == 0 ? sums1[best] : _sums[best]              ;
+    double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
     return new DTree.Split(col,best,bs,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 

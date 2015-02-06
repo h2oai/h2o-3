@@ -119,6 +119,7 @@ public class DTree extends Iced {
     float splat(DHistogram hs[]) {
       DHistogram h = hs[_col];
       assert _bin > 0 && _bin < h.nbins();
+      assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
       if( _equal == 1 ) { assert h.bins(_bin)!=0; return h.binAt(_bin); }
       // Find highest non-empty bin below the split
       int x=_bin-1;
@@ -179,15 +180,23 @@ public class DTree extends Iced {
         // Tighter bounds on the column getting split: exactly each new
         // DHistogram's bound are the bins' min & max.
         if( _col==j ) {
-          if( _equal != 0 ) {        // Equality split; no change on unequals-side
-            if( way == 1 ) continue; // but know exact bounds on equals-side - and this col will not split again
-          } else {              // Less-than split
+          switch( _equal ) {
+          case 0:  // Ranged split; know something about the left & right sides
             if( h._bins[_bin]==0 )
               throw H2O.unimpl(); // Here I should walk up & down same as split() above.
+            assert _bs==null : "splat not defined for BitSet splits";
             float split = splat;
             if( h._isInt > 0 ) split = (float)Math.ceil(split);
             if( way == 0 ) maxEx= split;
             else           min  = split;
+            break;
+          case 1:               // Equality split; no change on unequals-side
+            if( way == 1 ) continue; // but know exact bounds on equals-side - and this col will not split again
+            break;
+          case 2:               // BitSet (small) split
+          case 3:               // BitSet (big)   split
+            break;
+          default: throw H2O.fail();
           }
         }
         if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
@@ -200,21 +209,6 @@ public class DTree extends Iced {
       return cnt == 0 ? null : nhists;
     }
 
-    public static StringBuilder ary2str( StringBuilder sb, int w, long xs[] ) {
-      sb.append('[');
-      for( long x : xs ) UndecidedNode.p(sb,x,w).append(",");
-      return sb.append(']');
-    }
-    public static StringBuilder ary2str( StringBuilder sb, int w, float xs[] ) {
-      sb.append('[');
-      for( float x : xs ) UndecidedNode.p(sb,x,w).append(",");
-      return sb.append(']');
-    }
-    public static StringBuilder ary2str( StringBuilder sb, int w, double xs[] ) {
-      sb.append('[');
-      for( double x : xs ) UndecidedNode.p(sb,(float)x,w).append(",");
-      return sb.append(']');
-    }
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("{").append(_col).append("/");
@@ -264,7 +258,6 @@ public class DTree extends Iced {
       sb.append("Nid# ").append(_nid).append(", ");
       printLine(sb).append("\n");
       if( _hs == null ) return sb.append("_hs==null").toString();
-      final int ncols = _hs.length;
       for( DHistogram hs : _hs )
         if( hs != null )
           p(sb,hs._name+String.format(", %4.1f-%4.1f",hs._min,hs._maxEx),colW).append(colPad);
@@ -281,12 +274,11 @@ public class DTree extends Iced {
 
       // Max bins
       int nbins=0;
-      for( int j=0; j<ncols; j++ )
-        if( _hs[j] != null && _hs[j].nbins() > nbins ) nbins = _hs[j].nbins();
+      for( DHistogram hs : _hs )
+        if( hs != null && hs.nbins() > nbins ) nbins = hs.nbins();
 
       for( int i=0; i<nbins; i++ ) {
-        for( int j=0; j<ncols; j++ ) {
-          DHistogram h = _hs[j];
+        for( DHistogram h : _hs ) {
           if( h == null ) continue;
           if( i < h.nbins() && h._bins != null ) {
             p(sb, h.bins(i),cntW).append('/');
@@ -389,7 +381,6 @@ public class DTree extends Iced {
         return d != _splat ? 0 : 1;
       else
         return _split._bs.contains((int)d) ? 1 : 0;
-      // return _split._equal ? (d != _splat ? 0 : 1) : (d < _splat ? 0 : 1);
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
@@ -489,10 +480,7 @@ public class DTree extends Iced {
         throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
       } else {
         assert _split._equal == 3;
-        //ab.put2((char)_split._bs._offset);
-        //ab.put2((char)_split._bs.numBytes());
-        //ab.putA1(_split._bs._val, _split._bs.numBytes());
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
+        _split._bs.compress3(ab);
       }
 
       Node left = _tree.node(_nids[0]);

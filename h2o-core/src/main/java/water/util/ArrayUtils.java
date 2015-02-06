@@ -614,4 +614,15 @@ public class ArrayUtils {
     }
     assert i == aIds.length && j == bIds.length;
   }
+
+  // Sort an indirection array (ints) without making zillions of Integers.
+  // Painful simple O(n^2) insertion sort, suitable for small arrays only.
+  public interface IntComparator { public int compare(int a, int b); }
+  public static void sort(final int[] data, final IntComparator comparator) {
+    for( int i = 0; i < data.length + 0; i++ ) {
+      for( int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j-- ) {
+        int tmp = data[j];   data[j] = data[j-1];   data[j-1] = tmp;
+      }
+    }
+  }
 }
