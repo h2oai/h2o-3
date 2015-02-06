@@ -57,7 +57,7 @@ public class ModelMetrics extends Keyed {
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
     return calcVarImp(rel_imp, coef_names, "Variable Importance", new String[] {"Relative Importance", "Scaled Importance", "Percentage"});
   }
-  public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names, String table_header, String[] row_headers) {
+  public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names, String table_header, String[] col_headers) {
     if(rel_imp == null) return null;
     if(coef_names == null) {
       coef_names = new String[rel_imp.length];
@@ -78,26 +78,27 @@ public class ModelMetrics extends Keyed {
     double total = 0;
     double max = rel_imp[sorted_idx[0]];
     String[] sorted_names = new String[coef_names.length];
-    double[][] sorted_imp = new double[3][rel_imp.length];
+    double[][] sorted_imp = new double[rel_imp.length][3];
 
     // First pass to sum up relative importance measures
     int j = 0;
     for(int i : sorted_idx) {
       total += rel_imp[i];
       sorted_names[j] = coef_names[i];
-      sorted_imp[0][j] = rel_imp[i];         // Relative importance
-      sorted_imp[1][j++] = rel_imp[i] / max;   // Scaled importance
+      sorted_imp[j][0] = rel_imp[i];         // Relative importance
+      sorted_imp[j++][1] = rel_imp[i] / max;   // Scaled importance
     }
     // Second pass to calculate percentages
     j = 0;
     for(int i : sorted_idx)
-      sorted_imp[2][j++] = rel_imp[i] / total; // Percentage
+      sorted_imp[j++][2] = rel_imp[i] / total; // Percentage
 
-    String [] col_types = new String[rel_imp.length];
-    String [] col_formats = new String[rel_imp.length];
+    String [] col_types = new String[3];
+    String [] col_formats = new String[3];
     Arrays.fill(col_types, "double");
     Arrays.fill(col_formats, "%5f");
-    return new TwoDimTable(table_header, row_headers, sorted_names, col_types, col_formats, new String[3][], sorted_imp);
+    return new TwoDimTable(table_header, sorted_names, col_headers, col_types, col_formats,
+            new String[rel_imp.length][], sorted_imp);
   }
 
   private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
