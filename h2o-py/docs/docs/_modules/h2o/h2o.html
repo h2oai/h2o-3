@@ -1,0 +1,269 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>h2o.h2o &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for h2o.h2o</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module implements the communication REST layer for the python &lt;-&gt; H2O connection.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">from</span> <span class="nn">connection</span> <span class="kn">import</span> <span class="n">H2OConnection</span>
+<span class="kn">from</span> <span class="nn">job</span> <span class="kn">import</span> <span class="n">H2OJob</span>
+<span class="kn">from</span> <span class="nn">frame</span> <span class="kn">import</span> <span class="n">H2OFrame</span>
+<span class="kn">import</span> <span class="nn">h2o_model_builder</span>
+
+
+<div class="viewcode-block" id="import_file"><a class="viewcode-back" href="../../meow.html#h2o.h2o.import_file">[docs]</a><span class="k">def</span> <span class="nf">import_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Import a single file or collection of files</span>
+<span class="sd">  :param path: A path to a data file (remote or local)</span>
+<span class="sd">  :return: Return an H2OFrame.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">path</span>
+  <span class="k">return</span> <span class="p">[</span> <span class="n">_import1</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">paths</span> <span class="p">]</span>
+</div>
+<span class="k">def</span> <span class="nf">_import1</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+  <span class="n">j</span> <span class="o">=</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;ImportFiles&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;fails&#39;</span><span class="p">]:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;ImportFiles of &quot;</span> <span class="o">+</span> <span class="n">path</span> <span class="o">+</span> <span class="s">&quot; failed on &quot;</span> <span class="o">+</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;fails&#39;</span><span class="p">])</span>
+  <span class="k">return</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;keys&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="upload_file"><a class="viewcode-back" href="../../meow.html#h2o.h2o.upload_file">[docs]</a><span class="k">def</span> <span class="nf">upload_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">destination_key</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Upload a dataset at the path given from the local machine to the H2O cluster.</span>
+<span class="sd">  :param path:    A path specifying the location of the data to upload.</span>
+<span class="sd">  :param destination_key: The name of the H2O Frame in the H2O Cluster.</span>
+<span class="sd">  :return:    A new H2OFrame</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">fui</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;file&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)}</span>
+  <span class="n">dest_key</span> <span class="o">=</span> <span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span> <span class="k">if</span> <span class="n">destination_key</span> <span class="o">==</span> <span class="s">&quot;&quot;</span> <span class="k">else</span> <span class="n">destination_key</span>
+  <span class="n">H2OConnection</span><span class="o">.</span><span class="n">post_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;PostFile&quot;</span><span class="p">,</span> <span class="n">file_upload_info</span><span class="o">=</span><span class="n">fui</span><span class="p">,</span><span class="n">destination_key</span><span class="o">=</span><span class="n">dest_key</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">raw_fname</span><span class="o">=</span><span class="n">dest_key</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="import_frame"><a class="viewcode-back" href="../../meow.html#h2o.h2o.import_frame">[docs]</a><span class="k">def</span> <span class="nf">import_frame</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">vecs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Import a frame.</span>
+<span class="sd">  :param path:</span>
+<span class="sd">  :return:</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">vecs</span><span class="o">=</span><span class="n">vecs</span><span class="p">)</span> <span class="k">if</span> <span class="n">vecs</span> <span class="k">else</span> <span class="n">H2OFrame</span><span class="p">(</span><span class="n">remote_fname</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="parse_setup"><a class="viewcode-back" href="../../meow.html#h2o.h2o.parse_setup">[docs]</a><span class="k">def</span> <span class="nf">parse_setup</span><span class="p">(</span><span class="n">rawkey</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  :param A collection of imported file keys</span>
+<span class="sd">  :return: A ParseSetup &quot;object&quot;</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c"># So the st00pid H2O backend only accepts things that are quoted (nasty Java)</span>
+  <span class="n">j</span> <span class="o">=</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">post_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;ParseSetup&quot;</span><span class="p">,</span> <span class="n">srcs</span><span class="o">=</span><span class="p">[</span><span class="n">_quoted</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">rawkey</span><span class="p">])</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;isValid&#39;</span><span class="p">]:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;ParseSetup not Valid&quot;</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">j</span>
+
+</div>
+<div class="viewcode-block" id="parse"><a class="viewcode-back" href="../../meow.html#h2o.h2o.parse">[docs]</a><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="n">setup</span><span class="p">,</span> <span class="n">h2o_name</span><span class="p">,</span> <span class="n">first_line_is_header</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Trigger a parse; blocking; removeFrame just keep the Vec keys.</span>
+<span class="sd">  :param setup: The result of calling parse_setup</span>
+<span class="sd">  :param h2o_name: The name of the H2O Frame on the back end.</span>
+<span class="sd">  :param first_line_is_header: -1 means data, 0 means guess, 1 means header</span>
+<span class="sd">  :return: Return a new parsed object</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c"># Parse parameters (None values provided by setup)</span>
+  <span class="n">p</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;delete_on_done&#39;</span> <span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="s">&#39;blocking&#39;</span> <span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="s">&#39;removeFrame&#39;</span> <span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+        <span class="s">&#39;hex&#39;</span> <span class="p">:</span> <span class="n">h2o_name</span><span class="p">,</span>
+        <span class="s">&#39;ncols&#39;</span> <span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="s">&#39;sep&#39;</span> <span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="s">&#39;pType&#39;</span> <span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="s">&#39;singleQuotes&#39;</span> <span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+        <span class="s">&#39;checkHeader&#39;</span>  <span class="p">:</span> <span class="bp">None</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">first_line_is_header</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+    <span class="n">first_line_is_header</span> <span class="o">=</span> <span class="mi">0</span>
+
+  <span class="k">if</span> <span class="n">setup</span><span class="p">[</span><span class="s">&quot;columnNames&quot;</span><span class="p">]:</span>
+    <span class="n">setup</span><span class="p">[</span><span class="s">&quot;columnNames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_quoted</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">setup</span><span class="p">[</span><span class="s">&quot;columnNames&quot;</span><span class="p">]]</span>
+    <span class="n">p</span><span class="p">[</span><span class="s">&quot;columnNames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+  <span class="c"># update the parse parameters with the parse_setup values</span>
+  <span class="n">p</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">setup</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">p</span><span class="p">})</span>
+
+  <span class="n">p</span><span class="p">[</span><span class="s">&quot;checkHeader&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">first_line_is_header</span>
+
+  <span class="c"># Extract only &#39;name&#39; from each src in the array of srcs</span>
+  <span class="n">p</span><span class="p">[</span><span class="s">&#39;srcs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_quoted</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">setup</span><span class="p">[</span><span class="s">&#39;srcs&#39;</span><span class="p">]]</span>
+
+  <span class="c"># Request blocking parse</span>
+  <span class="n">j</span> <span class="o">=</span> <span class="n">H2OJob</span><span class="p">(</span><span class="n">H2OConnection</span><span class="o">.</span><span class="n">post_json</span><span class="p">(</span><span class="n">url_suffix</span><span class="o">=</span><span class="s">&quot;Parse&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">p</span><span class="p">),</span> <span class="s">&quot;Parse&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+  <span class="k">return</span> <span class="n">j</span><span class="o">.</span><span class="n">jobs</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_quoted</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+  <span class="n">is_quoted</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;\&quot;(.+?)\&quot;&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span>
+  <span class="n">key</span> <span class="o">=</span> <span class="n">key</span> <span class="k">if</span> <span class="n">is_quoted</span>  <span class="k">else</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span>
+  <span class="k">return</span> <span class="n">key</span>
+
+
+<div class="viewcode-block" id="remove"><a class="viewcode-back" href="../../meow.html#h2o.h2o.remove">[docs]</a><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Remove a key from H2O.</span>
+<span class="sd">  :param key: The key pointing to the object to be removed.</span>
+<span class="sd">  :return: void</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">H2OConnection</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s">&quot;Remove&quot;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="rapids"><a class="viewcode-back" href="../../meow.html#h2o.h2o.rapids">[docs]</a><span class="k">def</span> <span class="nf">rapids</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Fire off a Rapids expression</span>
+<span class="sd">  :param expr: The rapids expression (ascii string)</span>
+<span class="sd">  :return: The JSON response of the Rapids execution.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">post_json</span><span class="p">(</span><span class="s">&quot;Rapids&quot;</span><span class="p">,</span> <span class="n">ast</span><span class="o">=</span><span class="n">urllib</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">expr</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="frame"><a class="viewcode-back" href="../../meow.html#h2o.h2o.frame">[docs]</a><span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Retrieve metadata for a key that points to a Frame.</span>
+<span class="sd">  :param key: A pointer to a Frame in H2O.</span>
+<span class="sd">  :return: Meta information on the Frame.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">H2OConnection</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="s">&quot;Frames/&quot;</span> <span class="o">+</span> <span class="n">key</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="init"><a class="viewcode-back" href="../../meow.html#h2o.h2o.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">ip</span><span class="o">=</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">54321</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Initiate an H2O connection to the specified ip and port</span>
+<span class="sd">  :param ip: An IP address, default is &quot;localhost&quot;</span>
+<span class="sd">  :param port: A port, default is 54321</span>
+<span class="sd">  :return: None</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">H2OConnection</span><span class="p">(</span><span class="n">ip</span><span class="o">=</span><span class="n">ip</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+  <span class="k">return</span> <span class="bp">None</span>
+
+
+</div>
+<div class="viewcode-block" id="deeplearning"><a class="viewcode-back" href="../../meow.html#h2o.h2o.deeplearning">[docs]</a><span class="k">def</span> <span class="nf">deeplearning</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">validation_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Build a supervised Deep Learning model</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">h2o_model_builder</span><span class="o">.</span><span class="n">supervised_model_build</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="p">,</span><span class="n">validation_y</span><span class="p">,</span><span class="s">&quot;deeplearning&quot;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="gbm"><a class="viewcode-back" href="../../meow.html#h2o.h2o.gbm">[docs]</a><span class="k">def</span> <span class="nf">gbm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">validation_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Build a Gradient Boosted Method model</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">h2o_model_builder</span><span class="o">.</span><span class="n">supervised_model_build</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="p">,</span><span class="n">validation_y</span><span class="p">,</span><span class="s">&quot;gbm&quot;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="glm"><a class="viewcode-back" href="../../meow.html#h2o.h2o.glm">[docs]</a><span class="k">def</span> <span class="nf">glm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">validation_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Build a Generalized Linear Model</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">h2o_model_builder</span><span class="o">.</span><span class="n">supervised_model_build</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">validation_x</span><span class="p">,</span><span class="n">validation_y</span><span class="p">,</span><span class="s">&quot;glm&quot;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="kmeans"><a class="viewcode-back" href="../../meow.html#h2o.h2o.kmeans">[docs]</a><span class="k">def</span> <span class="nf">kmeans</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">validation_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Build a KMeans model</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">h2o_model_builder</span><span class="o">.</span><span class="n">unsupervised_model_build</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">validation_x</span><span class="p">,</span><span class="s">&quot;kmeans&quot;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ddply"><a class="viewcode-back" href="../../meow.html#h2o.h2o.ddply">[docs]</a><span class="k">def</span> <span class="nf">ddply</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span><span class="n">cols</span><span class="p">,</span><span class="n">fun</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">ddply</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span><span class="n">fun</span><span class="p">)</span>
+  
+  </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

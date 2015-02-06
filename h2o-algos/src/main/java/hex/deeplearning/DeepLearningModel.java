@@ -681,7 +681,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public final DeepLearningParameters get_params() { return _parms; }
 //  @Override public final Request2 job() { return get_params(); }
 
-  protected double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
+  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -1984,7 +1984,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param quantile Quantile for cut-off
    * @return Threshold in MSE value for a point to be above the quantile
    */
-  public double calcOutlierThreshold(Vec mse, double quantile) {
+  double calcOutlierThreshold(Vec mse, double quantile) {
     Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
     DKV.put(mse_frame._key, mse_frame);
 
@@ -2009,11 +2009,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);
   }
 
-  public void delete_best_model( ) {
+  void delete_best_model( ) {
     if (actual_best_model_key != null && actual_best_model_key != _key) DKV.remove(actual_best_model_key);
   }
 
-  public void delete_xval_models( ) {
+  void delete_xval_models( ) {
 //    if (get_params().xval_models != null) {
 //      for (Key k : get_params().xval_models) {
 //        DKV.get(k).<DeepLearningModel>get().delete_best_model();

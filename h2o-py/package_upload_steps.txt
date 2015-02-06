@@ -26,9 +26,11 @@ pip install --pre h2o --upgrade
 
 If it's your first time:
 
-ppip install --pre h2o
+pip install --pre h2o
 
 
 
 
+To build the sphinx documentation:
 
+sphinx-build -b html docs/ docs/docs/

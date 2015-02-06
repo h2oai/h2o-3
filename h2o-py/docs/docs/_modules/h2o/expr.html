@@ -1,0 +1,565 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>h2o.expr &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for h2o.expr</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains code for the lazy expression DAG.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">isnan</span>
+<span class="kn">import</span> <span class="nn">h2o</span>
+<span class="kn">import</span> <span class="nn">frame</span>
+<span class="kn">import</span> <span class="nn">tabulate</span>
+
+<span class="n">__CMD__</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">__TMPS__</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="Expr"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr">[docs]</a><span class="k">class</span> <span class="nc">Expr</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Expr objects have a few different flavors:</span>
+<span class="sd">      1. A pending to-be-computed BigData expression. Does _NOT_ have a Key</span>
+<span class="sd">      2. An already computed BigData expression. Does have a key</span>
+<span class="sd">      3. A small-data computation, pending or not.</span>
+
+<span class="sd">  Pending computations point to other Expr objects in a DAG of pending computations.</span>
+<span class="sd">  Pointed at by at most one H2OVec (during construction) and no others. If that H2OVec</span>
+<span class="sd">  goes dead, this computation is known to be an internal temp, used only in building</span>
+<span class="sd">  other Expr objects.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">rite</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new Expr object.</span>
+
+<span class="sd">    Constructor choices:</span>
+<span class="sd">        (&quot;op&quot;   left rite): pending calc, awaits left &amp; rite being computed</span>
+<span class="sd">        (&quot;op&quot;   None None): precomputed local small data</span>
+<span class="sd">        (fr_key #num name): precomputed remote Big Data</span>
+
+<span class="sd">    :param op: An operation to perform</span>
+<span class="sd">    :param left: An Expr to the &quot;left&quot;</span>
+<span class="sd">    :param rite: An Expr to the &quot;right&quot;</span>
+<span class="sd">    :param length: The length of the H2OVec/H2OFrame object.</span>
+<span class="sd">    :return: A new Expr object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># instance variables</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_op</span>      <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>    <span class="o">=</span> <span class="bp">None</span>   <span class="c"># the &quot;head&quot; of a frame, or a float, or int</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_left</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span> <span class="o">=</span> <span class="bp">None</span>   <span class="c"># computed lazily</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_len</span>     <span class="o">=</span> <span class="bp">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_vecname</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>     <span class="c"># the name of the Vec, if any</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_isslice</span> <span class="o">=</span> <span class="bp">False</span>  <span class="c"># if a slice, then return a new H2OVec from show</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="s">&quot;rawdata&quot;</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span>  <span class="c"># Set an initial name, generally overwritten</span>
+
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid</span><span class="p">(),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_left</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">get_expr</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">H2OVec</span><span class="p">)</span> <span class="k">else</span> <span class="n">left</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span> <span class="o">=</span> <span class="n">rite</span><span class="o">.</span><span class="n">get_expr</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">H2OVec</span><span class="p">)</span> <span class="k">else</span> <span class="n">rite</span>
+
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rite</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+
+    <span class="c"># Compute length eagerly</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_remote</span><span class="p">():</span>   <span class="c"># Length must be provided for remote data</span>
+      <span class="k">assert</span> <span class="n">length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="n">length</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>  <span class="c"># Local data, grab length by inspection</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_slice</span><span class="p">():</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">stop</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">start</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="n">length</span> <span class="k">if</span> <span class="n">length</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="n">left</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">H2OVec</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_vecname</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">_name</span>
+
+<div class="viewcode-block" id="Expr.name"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.name">[docs]</a>  <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+</div>
+<div class="viewcode-block" id="Expr.op"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.op">[docs]</a>  <span class="k">def</span> <span class="nf">op</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span>
+</div>
+<div class="viewcode-block" id="Expr.set_len"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.set_len">[docs]</a>  <span class="k">def</span> <span class="nf">set_len</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="n">i</span>
+</div>
+<div class="viewcode-block" id="Expr.get_len"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.get_len">[docs]</a>  <span class="k">def</span> <span class="nf">get_len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span>
+</div>
+<div class="viewcode-block" id="Expr.data"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.data">[docs]</a>  <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+</div>
+<div class="viewcode-block" id="Expr.left"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.left">[docs]</a>  <span class="k">def</span> <span class="nf">left</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span>
+</div>
+<div class="viewcode-block" id="Expr.rite"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.rite">[docs]</a>  <span class="k">def</span> <span class="nf">rite</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span>
+</div>
+<div class="viewcode-block" id="Expr.vecname"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.vecname">[docs]</a>  <span class="k">def</span> <span class="nf">vecname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecname</span>
+</div>
+<div class="viewcode-block" id="Expr.is_local"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.is_local">[docs]</a>  <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Expr.is_remote"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.is_remote">[docs]</a>  <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Expr.is_pending"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.is_pending">[docs]</a>  <span class="k">def</span> <span class="nf">is_pending</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="Expr.is_computed"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.is_computed">[docs]</a>  <span class="k">def</span> <span class="nf">is_computed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_pending</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Expr.is_slice"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.is_slice">[docs]</a>  <span class="k">def</span> <span class="nf">is_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span>
+</div>
+  <span class="k">def</span> <span class="nf">_is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">obj</span><span class="p">:</span>  <span class="c"># not None&#39;ness depends on short-circuiting `or`; see python docs</span>
+      <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_pending</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_slice</span><span class="p">()</span>
+
+  <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)</span>
+<span class="sd">    :return: The number of columns/rows of the H2OFrame/H2OVec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span>
+
+<div class="viewcode-block" id="Expr.debug"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.debug">[docs]</a>  <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: The structure of this object without evaluating.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s">&quot;([&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s">&quot;] = &quot;</span> <span class="o">+</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="o">.</span><span class="n">_name</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="p">)</span> <span class="o">+</span>
+            <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rite</span><span class="o">.</span><span class="n">_name</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rite</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span><span class="p">)</span> <span class="o">+</span>
+            <span class="s">&quot; = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Expr.show"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.show">[docs]</a>  <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noprint</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate and print.</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">noprint</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;frames&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;columns&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;frames&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;columns&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+      <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vecname</span> <span class="o">+</span> <span class="s">&quot; (first &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot; row(s))&quot;</span>
+      <span class="n">rows</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">print</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;Row ID&quot;</span><span class="p">,</span> <span class="n">header</span><span class="p">])</span>
+      <span class="k">print</span>
+
+<span class="c">#  def __repr__(self):</span>
+<span class="c">#    self.show()</span>
+<span class="c">#    return &quot;&quot;</span>
+
+  <span class="c"># Compute summary data</span></div>
+<div class="viewcode-block" id="Expr.summary"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.summary">[docs]</a>  <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>
+      <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="n">t</span> <span class="o">=</span> <span class="s">&#39;int&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span>
+          <span class="s">&#39;enum&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s">&#39;real&#39;</span><span class="p">)</span>
+      <span class="n">mins</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+      <span class="n">maxs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+      <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="n">mean</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span> <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="s">&#39;enum&#39;</span> <span class="k">else</span> <span class="bp">None</span>
+      <span class="n">ssq</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="n">zeros</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="n">missing</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">mean</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="s">&#39;enum&#39;</span><span class="p">:</span> <span class="n">ssq</span> <span class="o">+=</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">delta</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="n">zeros</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="s">&#39;enum&#39;</span> <span class="ow">and</span> <span class="n">isnan</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span> <span class="n">missing</span> <span class="o">+=</span> <span class="mi">1</span>
+      <span class="n">stddev</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">ssq</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="s">&#39;enum&#39;</span> <span class="k">else</span> <span class="bp">None</span>
+      <span class="k">return</span> <span class="p">{</span><span class="s">&#39;type&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="s">&#39;mins&#39;</span><span class="p">:</span> <span class="n">mins</span><span class="p">,</span> <span class="s">&#39;maxs&#39;</span><span class="p">:</span> <span class="n">maxs</span><span class="p">,</span> <span class="s">&#39;mean&#39;</span><span class="p">:</span> <span class="n">mean</span><span class="p">,</span> <span class="s">&#39;sigma&#39;</span><span class="p">:</span> <span class="n">stddev</span><span class="p">,</span> <span class="s">&#39;zeros&#39;</span><span class="p">:</span> <span class="n">zeros</span><span class="p">,</span> <span class="s">&#39;missing&#39;</span><span class="p">:</span> <span class="n">missing</span><span class="p">}</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;frames&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;columns&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span>
+
+  <span class="c"># Basic indexed or sliced lookup</span></div>
+  <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span> <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span>  <span class="c"># need a bigdata slice here</span>
+    <span class="c"># ([ %vec #row #0)</span>
+    <span class="c">#j = H2OCONN.Rapids(&quot;([ %&quot;+str(self._data)+&quot; #&quot;+str(i)+&quot; #0)&quot;)</span>
+    <span class="c">#return j[&#39;scalar&#39;]</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+  <span class="c"># Small-data add; result of a (lazy but small) Expr vs a plain int/float</span>
+  <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span> <span class="o">+</span> <span class="n">i</span>
+
+  <span class="k">def</span> <span class="nf">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span> <span class="o">+</span> <span class="n">i</span>  <span class="c"># Add is commutative</span>
+
+  <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c"># Dead pending op or local data; nothing to delete</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_pending</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span> <span class="k">return</span>
+    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_remote</span><span class="p">(),</span> <span class="s">&quot;Data wasn&#39;t remote. Hrm...&quot;</span>
+    <span class="k">global</span> <span class="n">__CMD__</span>
+    <span class="k">if</span> <span class="n">__CMD__</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">h2o</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">s</span> <span class="o">=</span> <span class="s">&quot; (del %&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">+</span> <span class="s">&quot; #0)&quot;</span>
+      <span class="k">global</span> <span class="n">__TMPS__</span>
+      <span class="k">if</span> <span class="n">__TMPS__</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Lost deletes: &quot;</span><span class="p">,</span> <span class="n">s</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">__TMPS__</span> <span class="o">+=</span> <span class="n">s</span>
+
+<div class="viewcode-block" id="Expr.eager"><a class="viewcode-back" href="../../meow.html#h2o.expr.Expr.eager">[docs]</a>  <span class="k">def</span> <span class="nf">eager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This forces a top-level execution, as needed, and produces a top-level result</span>
+<span class="sd">    locally. Frames are returned and truncated to the standard preview response</span>
+<span class="sd">    provided by rapids - 100 rows X 200 cols.</span>
+<span class="sd">    :return: A key pointing to the big data object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_computed</span><span class="p">():</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+    <span class="c"># Gather the computation path for remote work, or doit locally for local work</span>
+    <span class="k">global</span> <span class="n">__CMD__</span><span class="p">,</span> <span class="n">__TMPS__</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">__CMD__</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">__TMPS__</span>
+    <span class="n">__CMD__</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="n">__TMPS__</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>  <span class="c"># Begin gathering rapids commands</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_do_it</span><span class="p">()</span>   <span class="c"># Symbolically execute the command</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="n">__CMD__</span>
+    <span class="n">tmps</span> <span class="o">=</span> <span class="n">__TMPS__</span>  <span class="c"># Stop  gathering rapids commands</span>
+    <span class="n">__CMD__</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">__TMPS__</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>  <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>  <span class="c"># Local computation, all done</span>
+
+    <span class="c"># Remote computation - ship Rapids over wire, assigning key to result</span>
+    <span class="k">if</span> <span class="n">tmps</span><span class="p">:</span>
+      <span class="n">cmd</span> <span class="o">=</span> <span class="s">&quot;(, &quot;</span> <span class="o">+</span> <span class="n">cmd</span> <span class="o">+</span> <span class="n">tmps</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">rapids</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+      <span class="k">pass</span>  <span class="c"># Big Data Key is the result</span>
+    <span class="c"># Small data result pulled locally</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;head&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;num_rows&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;scalar&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+</div>
+  <span class="k">def</span> <span class="nf">_do_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span> <span class="k">if</span> <span class="n">left</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span>
+    <span class="k">assert</span> <span class="n">child</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">Expr</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">__CMD__</span>
+    <span class="k">if</span> <span class="n">child</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">is_pending</span><span class="p">():</span>
+        <span class="n">child</span><span class="o">.</span><span class="n">_do_it</span><span class="p">()</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;#&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;%&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+        <span class="n">__CMD__</span> <span class="o">+=</span> \
+            <span class="s">&quot;(: #&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; #&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">stop</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> \
+            <span class="o">+</span> <span class="s">&quot;)&quot;</span>
+        <span class="n">child</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># trigger GC now</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="k">pass</span>
+    <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot; &quot;</span>
+    <span class="k">return</span> <span class="n">child</span>
+
+  <span class="k">def</span> <span class="nf">_do_it</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    External API for eager; called by all top-level demanders (e.g. print)</span>
+<span class="sd">    This may trigger (recursive) big-data evaluation.</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_computed</span><span class="p">():</span> <span class="k">return</span>
+
+    <span class="c"># Slice assignments are a 2-nested deep structure, returning the left-left</span>
+    <span class="c"># vector.  Must fetch it now, before it goes dead after eval&#39;ing the slice.</span>
+    <span class="c"># Shape: (= ([ %vec bool_slice_expr) vals_to_assign)</span>
+    <span class="c"># Need to fetch %vec out</span>
+    <span class="n">assign_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="o">.</span><span class="n">_left</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;=&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;[&quot;</span> <span class="k">else</span> <span class="bp">None</span>
+
+    <span class="c"># See if this is not a temp and not a scalar; if so it needs a name</span>
+    <span class="c"># Remove one count for the call to getrefcount itself</span>
+    <span class="n">cnt</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getrefcount</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="c"># Magical count-of-4 is the depth of 4 interpreter stack</span>
+    <span class="n">py_tmp</span> <span class="o">=</span> <span class="n">cnt</span> <span class="o">!=</span> <span class="mi">4</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">assign_vec</span>
+
+    <span class="k">global</span> <span class="n">__CMD__</span>
+    <span class="k">if</span> <span class="n">py_tmp</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">H2OFrame</span><span class="o">.</span><span class="n">py_tmp_key</span><span class="p">()</span>  <span class="c"># Top-level key/name assignment</span>
+        <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;(= !&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">+</span> <span class="s">&quot; &quot;</span>
+    <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;(&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">+</span> <span class="s">&quot; &quot;</span>
+
+    <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_child</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>   <span class="c"># down the left</span>
+    <span class="n">rite</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_child</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>  <span class="c"># down the right</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;+&quot;</span><span class="p">:</span>
+
+      <span class="c">#   num + num</span>
+      <span class="c">#   num + []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">left</span> <span class="o">+</span> <span class="n">rite</span>
+        <span class="k">elif</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>                      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">left</span> <span class="o">+</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                                      <span class="k">pass</span>
+
+      <span class="c">#   [] + num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">rite</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+      <span class="c">#   [] + []</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">()</span> <span class="ow">and</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>             <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+             <span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>      <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>                                               <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;&amp;&quot;</span><span class="p">:</span>
+
+      <span class="c">#   num &amp; num</span>
+      <span class="c">#   num &amp; []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">left</span> <span class="o">&amp;</span> <span class="n">rite</span>
+        <span class="k">elif</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>                      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">left</span> <span class="o">&amp;</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                                      <span class="k">pass</span>
+
+      <span class="c">#   [] &amp; num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">&amp;</span> <span class="n">rite</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+      <span class="c">#   [] &amp; []</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">()</span> <span class="ow">and</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>             <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+             <span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>      <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>                                               <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;*&quot;</span><span class="p">:</span>
+      <span class="c">#   num * num</span>
+      <span class="c">#   num * []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">left</span> <span class="o">*</span> <span class="n">rite</span>
+        <span class="k">elif</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>                      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">left</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                                      <span class="k">pass</span>
+
+      <span class="c">#   [] * num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">rite</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+      <span class="c">#   [] * []</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">()</span> <span class="ow">and</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>             <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+             <span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>      <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>                                               <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;/&quot;</span><span class="p">:</span>
+      <span class="c">#   num / num</span>
+      <span class="c">#   num / []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">left</span> <span class="o">/</span> <span class="n">rite</span>
+        <span class="k">elif</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>                      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">left</span> <span class="o">/</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                                      <span class="k">pass</span>
+
+      <span class="c">#   [] / num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="n">rite</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+      <span class="c">#   [] / []</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">()</span> <span class="ow">and</span> <span class="n">rite</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>             <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">/</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+             <span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">is_remote</span><span class="p">()</span> <span class="ow">or</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>      <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>                                               <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;==&quot;</span><span class="p">:</span>
+
+      <span class="c">#   num ==</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+ 
+      <span class="c">#   [] == num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>  <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">==</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                <span class="k">pass</span>
+
+      <span class="k">else</span><span class="p">:</span>                  <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;&lt;&quot;</span><span class="p">:</span>
+
+      <span class="c"># num &lt; []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+      <span class="c"># [] &lt; num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+      <span class="k">else</span><span class="p">:</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;&gt;=&quot;</span><span class="p">:</span>
+
+      <span class="c"># num &lt; []</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+      <span class="c"># [] &lt; num</span>
+      <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>  <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                <span class="k">pass</span>
+      <span class="k">else</span><span class="p">:</span>                  <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;[&quot;</span><span class="p">:</span>
+
+      <span class="c">#   [] = []</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+      <span class="c">#   all rows / columns ([ %fr_key &quot;null&quot; ()) / ([ %fr_key () &quot;null&quot;)</span>
+      <span class="k">else</span><span class="p">:</span>                  <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&#39; &quot;null&quot;&#39;</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;=&quot;</span><span class="p">:</span>
+
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rite</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;#NaN&quot;</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;floor&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+      <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;month&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;dayOfWeek&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;mean&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>                  <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot; #0 %TRUE&quot;</span>  <span class="c"># Rapids mean extra args (trim=0, rmNA=TRUE)</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;as.factor&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;h2o.runif&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">left</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>                 <span class="k">pass</span>
+
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op</span> <span class="o">==</span> <span class="s">&quot;quantile&quot;</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">left</span><span class="o">.</span><span class="n">is_local</span><span class="p">():</span>   <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">rapids_series</span> <span class="o">=</span> <span class="s">&quot;{&quot;</span><span class="o">+</span><span class="s">&quot;;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rite</span><span class="o">.</span><span class="n">_data</span><span class="p">])</span><span class="o">+</span><span class="s">&quot;}&quot;</span>
+        <span class="n">__CMD__</span> <span class="o">+=</span> <span class="n">rapids_series</span> <span class="o">+</span> <span class="s">&quot; </span><span class="si">%F</span><span class="s">ALSE #7&quot;</span>
+
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_op</span><span class="p">)</span>
+
+    <span class="c"># End of expression... wrap up parens</span>
+    <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;)&quot;</span>
+    <span class="k">if</span> <span class="n">py_tmp</span><span class="p">:</span>
+      <span class="n">__CMD__</span> <span class="o">+=</span> <span class="s">&quot;)&quot;</span>
+
+    <span class="c"># Free children expressions; might flag some subexpresions as dead</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_left</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c"># Trigger GC/ref-cnt of temps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_rite</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c"># Keep LHS alive</span>
+    <span class="k">if</span> <span class="n">assign_vec</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">assign_vec</span><span class="o">.</span><span class="n">_op</span> <span class="o">!=</span> <span class="s">&quot;rawdata&quot;</span><span class="p">:</span>  <span class="c"># Need to roll-up nested exprs</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_left</span> <span class="o">=</span> <span class="n">assign_vec</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">assign_vec</span><span class="o">.</span><span class="n">_data</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">H2O  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -491,16 +491,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       super(b);
       String [] cnames = dinfo.coefNames();
       String [] pnames = dinfo._adaptedFrame.names();
-      String [] colTypes = new String[cnames.length+1];
-      String [] colFormat = new String[cnames.length+1];
+      String [] colTypes = new String[2];
+      String [] colFormat = new String[2];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormat, "%5f");
       String [] coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       coefficient_names[cnames.length] = "Intercept";
       _coefficients_table = new TwoDimTable(
               "Best Lambda",
-              new String []{"Coefficients", "Norm Coefficients"},
               coefficient_names,
+              new String []{"Coefficients", "Norm Coefficients"},
               colTypes,
               colFormat
       );
@@ -517,9 +517,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     void addNullSubmodel(double lmax,double icept, GLMValidation val){
       assert _submodels == null;
-      double [] beta = MemoryManager.malloc8d(_coefficients_table.getColDim());
+      double [] beta = MemoryManager.malloc8d(_coefficients_table.getRowDim());
       beta[beta.length-1] = icept;
-      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_coefficients_table.getColDim() > 750)};
+      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_coefficients_table.getRowDim() > 750)};
       _submodels[0].validation = val;
     }
     public int  submodelIdForLambda(double lambda){
@@ -583,15 +583,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = _submodels[l].validation.aic();
         _auc = _submodels[l].validation.auc();
       }
-      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficients_table.getColDim());
+      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficients_table.getRowDim());
       else Arrays.fill(_global_beta,0);
 
       int j = 0;
       for(int i:_submodels[l].idxs) {
         _global_beta[i] = _submodels[l].beta[j];
-        _coefficients_table.set(0, i, _submodels[l].beta[j]);
+        _coefficients_table.set(i, 0, _submodels[l].beta[j]);
         if(_submodels[l].norm_beta != null)
-          _coefficients_table.set(1, i, _submodels[l].norm_beta[j++]);
+          _coefficients_table.set(i, 1, _submodels[l].norm_beta[j++]);
         else
           j++;
       }
@@ -600,10 +600,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _coefficients_magnitude = null;
       else {
         j = 0;
-        String[] coef_names = new String[_coefficients_table.getColDim()-1];
-        double[] coef_scaled = new double[_coefficients_table.getColDim()-1];
+        String[] coef_names = new String[_coefficients_table.getRowDim()-1];
+        double[] coef_scaled = new double[_coefficients_table.getRowDim()-1];
         for(int i = 0; i < _submodels[l].idxs.length-1; i++) {
-          coef_names[j] = _coefficients_table.getColHeaders()[j];
+          coef_names[j] = _coefficients_table.getRowHeaders()[j];
           coef_scaled[_submodels[l].idxs[i]] = Math.abs(_submodels[l].norm_beta[j++]);
         }
         _coefficients_magnitude = ModelMetrics.calcVarImp(coef_scaled, coef_names,
@@ -634,7 +634,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<String, Double>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficients_table.getColHeaders()[i],b[i]);
+    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficients_table.getRowHeaders()[i],b[i]);
     return res;
   }
 

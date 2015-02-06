@@ -292,167 +292,175 @@ class Expr(object):
     left = self._do_child(True)   # down the left
     rite = self._do_child(False)  # down the right
 
-    if self._op == "+":
+    try:
+      if self._op == "+":
 
-      #   num + num
-      #   num + []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = left + rite
-        elif rite.is_local():                      self._data = [left + x for x in rite._data]
-        else:                                      pass
+        #   num + num
+        #   num + []
+        if isinstance(left._data, (int, float)):
+          if isinstance(rite._data, (int, float)):   self._data = left + rite
+          elif rite.is_local():                      self._data = [left + x for x in rite._data]
+          else:                                      pass
 
-      #   [] + num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():   self._data = [x + rite for x in left._data]
+        #   [] + num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():   self._data = [x + rite for x in left._data]
+          else:                 pass
+
+        #   [] + []
+        else:
+          if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
+          elif (left.is_remote() or left._data is None) and \
+               (rite.is_remote() or rite._data is None):      pass
+          else:                                               raise NotImplementedError
+
+      elif self._op == "&":
+
+        #   num & num
+        #   num & []
+        if isinstance(left._data, (int, float)):
+          if isinstance(rite._data, (int, float)):   self._data = left & rite
+          elif rite.is_local():                      self._data = [left & x for x in rite._data]
+          else:                                      pass
+
+        #   [] & num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():   self._data = [x & rite for x in left._data]
+          else:                 pass
+
+        #   [] & []
+        else:
+          if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
+          elif (left.is_remote() or left._data is None) and \
+               (rite.is_remote() or rite._data is None):      pass
+          else:                                               raise NotImplementedError
+
+      elif self._op == "*":
+        #   num * num
+        #   num * []
+        if isinstance(left._data, (int, float)):
+          if isinstance(rite._data, (int, float)):   self._data = left * rite
+          elif rite.is_local():                      self._data = [left * x for x in rite._data]
+          else:                                      pass
+
+        #   [] * num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():   self._data = [x * rite for x in left._data]
+          else:                 pass
+
+        #   [] * []
+        else:
+          if left.is_local() and rite.is_local():             self._data = [x * y for x, y in zip(left._data, rite._data)]
+          elif (left.is_remote() or left._data is None) and \
+               (rite.is_remote() or rite._data is None):      pass
+          else:                                               raise NotImplementedError
+
+      elif self._op == "/" or self._op == "-":
+        #   num / num
+        #   num / []
+        if isinstance(left._data, (int, float)):
+          if isinstance(rite._data, (int, float)):   self._data = left / rite
+          elif rite.is_local():                      self._data = [left / x for x in rite._data]
+          else:                                      pass
+
+        #   [] / num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():   self._data = [x / rite for x in left._data]
+          else:                 pass
+
+        #   [] / []
+        else:
+          if left.is_local() and rite.is_local():             self._data = [x / y for x, y in zip(left._data, rite._data)]
+          elif (left.is_remote() or left._data is None) and \
+               (rite.is_remote() or rite._data is None):      pass
+          else:                                               raise NotImplementedError
+
+      elif self._op == "==":
+
+        #   num ==
+        if isinstance(left._data, (int, float)):   raise NotImplementedError
+
+        #   [] == num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():  self._data = [x == rite._data for x in left._data]
+          else:                pass
+
+        else:                  raise NotImplementedError
+
+      elif self._op == "<":
+
+        # num < []
+        if isinstance(left._data, (int, float)):   raise NotImplementedError
+
+        # [] < num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():   self._data = [x < rite._data for x in left._data]
+          else:                 pass
+        else:   raise NotImplementedError
+
+      elif self._op == ">=":
+
+        # num < []
+        if isinstance(left._data, (int, float)):   raise NotImplementedError
+
+        # [] < num
+        elif isinstance(rite._data, (int, float)):
+          if left.is_local():  self._data = [x >= rite._data for x in left._data]
+          else:                pass
+        else:                  raise NotImplementedError
+
+      elif self._op == "[":
+
+        #   [] = []
+        if left.is_local():    self._data = left._data[rite._data]
+        #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
+        else:                  __CMD__ += ' "null"'
+
+      elif self._op == "=":
+
+        if left.is_local():   raise NotImplementedError
+        else:
+          if rite is None: __CMD__ += "#NaN"
+
+      elif self._op == "floor":
+        if left.is_local():   self._data = [math.floor(x) for x in left._data]
         else:                 pass
 
-      #   [] + []
-      else:
-        if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
-        elif (left.is_remote() or left._data is None) and \
-             (rite.is_remote() or rite._data is None):      pass
-        else:                                               raise NotImplementedError
-
-    elif self._op == "&":
-
-      #   num & num
-      #   num & []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = left & rite
-        elif rite.is_local():                      self._data = [left & x for x in rite._data]
-        else:                                      pass
-
-      #   [] & num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():   self._data = [x & rite for x in left._data]
+      elif self._op == "month":
+        if left.is_local():   raise NotImplementedError
         else:                 pass
 
-      #   [] & []
-      else:
-        if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
-        elif (left.is_remote() or left._data is None) and \
-             (rite.is_remote() or rite._data is None):      pass
-        else:                                               raise NotImplementedError
-
-    elif self._op == "*":
-      #   num * num
-      #   num * []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = left * rite
-        elif rite.is_local():                      self._data = [left * x for x in rite._data]
-        else:                                      pass
-
-      #   [] * num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():   self._data = [x * rite for x in left._data]
+      elif self._op == "dayOfWeek":
+        if left.is_local():   raise NotImplementedError
         else:                 pass
 
-      #   [] * []
-      else:
-        if left.is_local() and rite.is_local():             self._data = [x * y for x, y in zip(left._data, rite._data)]
-        elif (left.is_remote() or left._data is None) and \
-             (rite.is_remote() or rite._data is None):      pass
-        else:                                               raise NotImplementedError
+      elif self._op == "mean":
+        if left.is_local():   self._data = sum(left._data) / len(left._data)
+        else:                  __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
 
-    elif self._op == "/":
-      #   num / num
-      #   num / []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = left / rite
-        elif rite.is_local():                      self._data = [left / x for x in rite._data]
-        else:                                      pass
-
-      #   [] / num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():   self._data = [x / rite for x in left._data]
+      elif self._op == "as.factor":
+        if left.is_local():   self._data = map(str, left._data)
         else:                 pass
 
-      #   [] / []
-      else:
-        if left.is_local() and rite.is_local():             self._data = [x / y for x, y in zip(left._data, rite._data)]
-        elif (left.is_remote() or left._data is None) and \
-             (rite.is_remote() or rite._data is None):      pass
-        else:                                               raise NotImplementedError
-
-    elif self._op == "==":
-
-      #   num ==
-      if isinstance(left._data, (int, float)):   raise NotImplementedError
- 
-      #   [] == num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():  self._data = [x == rite._data for x in left._data]
-        else:                pass
-
-      else:                  raise NotImplementedError
-
-    elif self._op == "<":
-
-      # num < []
-      if isinstance(left._data, (int, float)):   raise NotImplementedError
-
-      # [] < num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():   self._data = [x < rite._data for x in left._data]
+      elif self._op == "h2o.runif":
+        if left.is_local():   self._data = map(str, left._data)
         else:                 pass
-      else:   raise NotImplementedError
 
-    elif self._op == ">=":
+      elif self._op == "quantile":
+        if left.is_local():   raise NotImplementedError
+        else:
+          rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
+          __CMD__ += rapids_series + " %FALSE #7"
 
-      # num < []
-      if isinstance(left._data, (int, float)):   raise NotImplementedError
-
-      # [] < num
-      elif isinstance(rite._data, (int, float)):
-        if left.is_local():  self._data = [x >= rite._data for x in left._data]
-        else:                pass
-      else:                  raise NotImplementedError
-
-    elif self._op == "[":
-
-      #   [] = []
-      if left.is_local():    self._data = left._data[rite._data]
-      #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
-      else:                  __CMD__ += ' "null"'
-
-    elif self._op == "=":
-
-      if left.is_local():   raise NotImplementedError
       else:
-        if rite is None: __CMD__ += "#NaN"
+        raise NotImplementedError(self._op)
 
-    elif self._op == "floor":
-      if left.is_local():   self._data = [math.floor(x) for x in left._data]
-      else:                 pass
-
-    elif self._op == "month":
-      if left.is_local():   raise NotImplementedError
-      else:                 pass
-
-    elif self._op == "dayOfWeek":
-      if left.is_local():   raise NotImplementedError
-      else:                 pass
-
-    elif self._op == "mean":
-      if left.is_local():   self._data = sum(left._data) / len(left._data)
-      else:                  __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
-
-    elif self._op == "as.factor":
-      if left.is_local():   self._data = map(str, left._data)
-      else:                 pass
-
-    elif self._op == "h2o.runif":
-      if left.is_local():   self._data = map(str, left._data)
-      else:                 pass
-
-    elif self._op == "quantile":
-      if left.is_local():   raise NotImplementedError
-      else:
-        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
-        __CMD__ += rapids_series + " %FALSE #7"
-
-    else:
-      raise NotImplementedError(self._op)
+    # need to wipe the shared state!
+    except NotImplementedError :
+      global __TMPS__
+      __CMD__ = None
+      __TMPS__ = None
+      raise NotImplementedError  # raise the exception anyhow
 
     # End of expression... wrap up parens
     __CMD__ += ")"

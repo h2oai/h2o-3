@@ -96,6 +96,8 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( _bins[b] == 0 ) continue; // Ignore empty splits
+      if( ns0[b] < min_rows ) continue;
+      if( ns1[b] < min_rows ) break; // ns1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
       //                    = (ssqs/N - mean^2)*N
@@ -119,11 +121,11 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[b] == 0 ) continue; // Ignore empty splits
-        long N =        ns0[b+0] + ns1[b+1];
-        if( N == 0 ) continue;
-        double sums = sums0[b+0]+sums1[b+1];
-        double sumb = _sums[b+0];
+        if( _bins[b] < min_rows ) continue; // Ignore too small splits
+        long N =        ns0[b  ] + ns1[b+1];
+        if( N < min_rows ) continue; // Ignore too small splits
+        double sums = sums0[b  ]+sums1[b+1];
+        double sumb = _sums[b  ];
         double si = sums - sums*sums/   N    ; // Left+right, excluding 'b'
         double sx = sumb - sumb*sumb/_bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?

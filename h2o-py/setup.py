@@ -62,7 +62,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'numpy'],
+    install_requires=['requests', 'tabulate'],
 
 
     data_files=[('h2o_jar', ['../build/h2o.jar'])],

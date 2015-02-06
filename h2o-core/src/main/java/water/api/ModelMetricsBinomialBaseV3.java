@@ -115,32 +115,35 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
                         criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.threshold_for_criteria[row]);
                     }
                     else {
-                        switch(criterion) {
-                            case "maximum F1":
+                        switch(col) {
+                            case 1:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F1_for_criteria[row]);
                                 break;
-                            case "maximum F2":
+                            case 2:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F2_for_criteria[row]);
                                 break;
-                            case "maximum F0point5":
+                            case 3:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F0point5_for_criteria[row]);
                                 break;
-                            case "maximum Accuracy":
+                            case 4:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.accuracy_for_criteria[row]);
                                 break;
-                            case "maximum Precision":
+                            case 5:
+                                criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.accuracy_for_criteria[row]);
+                                break;
+                            case 6:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.precision_for_criteria[row]);
                                 break;
-                            case "maximum Recall":
+                            case 7:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.recall_for_criteria[row]);
                                 break;
-                            case "maximum Specificity":
+                            case 8:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.specificity_for_criteria[row]);
                                 break;
-                            case "maximum absolute MCC":
+                            case 9:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.mcc_for_criteria[row]);
                                 break;
-                            case "minimizing max per class Error":
+                            case 10:
                                 criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.max_per_class_error_for_criteria[row]);
                                 break;
                         }

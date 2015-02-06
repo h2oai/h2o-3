@@ -431,7 +431,7 @@ plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
     xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
-    plot(1 - perf_class@metrics$thresholdsAndMetricScores$specificity, object@metrics$thresholdsAndMetricScores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    plot(1 - object@metrics$thresholdsAndMetricScores$specificity, object@metrics$thresholdsAndMetricScores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }
