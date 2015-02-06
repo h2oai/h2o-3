@@ -52,20 +52,20 @@ def user(ip, port):
 
     print 1 + (a[0] + b[1]).mean()
 
-    import collections
+    #import collections
 
-    c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
-    c.show()
+    #c = h2o.H2OFrame(python_obj=collections.OrderedDict({"A": [1, 2, 3], "B": [4, 5, 6]}))
+    #c.show()
 
-    c.describe()
-    c.head()
+    #c.describe()
+    #c.head()
 
-    c[0].show()
-    c[0][1].show()
-    c[0][0:2].show()
+    #c[0].show()
+    #c[0][1].show()
+    #c[0][0:2].show()
 
-    sliced = a[0][0:51]
-    sliced.show()
+    #sliced = a[0][0:51]
+    #sliced.show()
 
 if __name__ == "__main__":
     args = sys.argv
