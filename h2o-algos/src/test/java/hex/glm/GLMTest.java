@@ -266,26 +266,27 @@ public class GLMTest  extends TestUtil {
       }
 
       dinfo.remove();
-      fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
-      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
-      // params._response = fr.find(params._response_column);
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-      DKV.put(dinfo._key,dinfo);
-      ymu = 0;
-      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-      rnd = new Random(987654321);
-      for(int i = 0; i < beta.length; ++i)
-        beta[i] = 1 - 2*rnd.nextDouble();
-      glmt = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta,ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
-      for(int i = 0; i < beta.length; ++i) {
-        assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
-        assertEquals("gradients differ", glmt._ginfo._gradient[i], grtRow._gradient[i], 1e-4);
-      }
+      // arcene takes too long
+//      fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
+//      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
+//      // params._response = fr.find(params._response_column);
+//      params._train = parsed;
+//      params._lambda = new double[]{0};
+//      params._use_all_factor_levels = true;
+//      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+//      DKV.put(dinfo._key,dinfo);
+//      ymu = 0;
+//      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
+//      rnd = new Random(987654321);
+//      for(int i = 0; i < beta.length; ++i)
+//        beta[i] = 1 - 2*rnd.nextDouble();
+//      glmt = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta,ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
+//      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
+//      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
+//      for(int i = 0; i < beta.length; ++i) {
+//        assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
+//        assertEquals("gradients differ", glmt._ginfo._gradient[i], grtRow._gradient[i], 1e-4);
+//      }
     } finally {
       if( fr != null ) fr.delete();
       if(score != null)score.delete();
