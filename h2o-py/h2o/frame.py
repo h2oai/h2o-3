@@ -644,9 +644,11 @@ class H2OVec:
   def _simple_bin_op( self, i, op):
     if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     raise NotImplementedError
 
   def __add__(self, i):  return self._simple_bin_op(i,"+" )
+  def __sub__(self, i):  return self._simple_bin_op(i, "-")
   def __and__(self, i):  return self._simple_bin_op(i,"&" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
   def __mul__(self, i):  return self._simple_bin_op(i,"*" )

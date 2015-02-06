@@ -42,7 +42,7 @@ There are two levels of parallelism:
 The goal, remember, is to "simply" add more processors to a given problem in order to
 produce a solution faster. The conceptual paradigm MapReduce (also known as
 "divide and conquer and combine") along with a good concurrent application structure
-(c.f. JSR166y and NonBlockingHashMap) enable this type of scaling in H2O (we're really
+(c.f. jsr166y and NonBlockingHashMap) enable this type of scaling in H2O (we're really
 cooking with gas now!).
 
 For application developers and data scientists, the gritty details of thread-safety,
@@ -114,8 +114,20 @@ H2OFrame
 
 An H2OFrame is 2D array of uniformly-typed columns. Data in H2O is compressed (often
 achieving 2-4x better compression the gzip on disk) and is held in the JVM heap (i.e.
-data is "in memory"). The H2OFrame is an iterable (supporting list comprehensions) wrapper
-around an array of H2OVec objects.
+data is "in memory"), and *not* in the python process local memory.. The H2OFrame is an
+iterable (supporting list comprehensions) wrapper around a list of H2OVec objects. All an
+H2OFrame object is, therefore, is a wrapper on a list that supports various types of operations
+that may or may not be lazy. Here's an example showing how a list comprehension is combined
+with lazy expressions to compute the column means for all columns in the H2OFrame::
+
+  >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> colmeans = [v.mean().eager() for v in a]                     # compute column means eagerly
+  >>>
+  >>> colmeans                                                     # print the results
+  [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
+
+Lazy expressions will be discussed in detail in the coming sections.
 
 The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
@@ -128,13 +140,13 @@ number `0` in a column to missing (or `NA` in R parlance) as demonstrated in the
 snippet::
 
 
->>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
->>>
->>> vol = df['VOL']                                              # select the VOL column
->>>
->>> vol[vol == 0] = None                                         # 0 VOL means 'missing'
+  >>> df = h2o.import_frame(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> vol = df['VOL']                                              # select the VOL column
+  >>>
+  >>> vol[vol == 0] = None                                         # 0 VOL means 'missing'
 
-After this operation, `vol` has been permanently mutated (and is not a copy!) in place.
+After this operation, `vol` has been permanently mutated in place (it is not a copy!).
 
 
 H2OVec
@@ -144,9 +156,7 @@ An H2OVec is...
 Expr
 ++++
 
-* Expressions are lazy...
-* DAGs of Exprs ... oh joy!
-
+* Lazy expressions...
 
 Models
 ++++++

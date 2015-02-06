@@ -109,22 +109,32 @@ class H2OConnection(object):
 
   @staticmethod
   def get(url_suffix, **kwargs):
+    if __H2OCONN__ is None:
+      raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._do_raw_rest(url_suffix, "GET", None, **kwargs)
 
   @staticmethod
   def post(url_suffix, file_upload_info=None, **kwargs):
+    if __H2OCONN__ is None:
+      raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._do_raw_rest(url_suffix, "POST", file_upload_info, **kwargs)
 
   @staticmethod
   def delete(url_suffix, **kwargs):
+    if __H2OCONN__ is None:
+      raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._do_raw_rest(url_suffix, "DELETE", None, **kwargs)
 
   @staticmethod
   def get_json(url_suffix, **kwargs):
+    if __H2OCONN__ is None:
+      raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._rest_json(url_suffix, "GET", None, **kwargs)
 
   @staticmethod
   def post_json(url_suffix, file_upload_info=None, **kwargs):
+    if __H2OCONN__ is None:
+      raise ValueError("No h2o connection. Did you run `h2o.init()` ?")
     return __H2OCONN__._rest_json(url_suffix, "POST", file_upload_info, **kwargs)
 
   def _rest_json(self, url_suffix, method, file_upload_info, **kwargs):

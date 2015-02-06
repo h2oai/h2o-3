@@ -88,7 +88,7 @@ engine.</p>
 <p>The goal, remember, is to &#8220;simply&#8221; add more processors to a given problem in order to
 produce a solution faster. The conceptual paradigm MapReduce (also known as
 &#8220;divide and conquer and combine&#8221;) along with a good concurrent application structure
-(c.f. JSR166y and NonBlockingHashMap) enable this type of scaling in H2O (we&#8217;re really
+(c.f. jsr166y and NonBlockingHashMap) enable this type of scaling in H2O (we&#8217;re really
 cooking with gas now!).</p>
 <p>For application developers and data scientists, the gritty details of thread-safety,
 algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST
@@ -146,8 +146,20 @@ warranted here.</p>
 <h3>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h3>
 <p>An H2OFrame is 2D array of uniformly-typed columns. Data in H2O is compressed (often
 achieving 2-4x better compression the gzip on disk) and is held in the JVM heap (i.e.
-data is &#8220;in memory&#8221;). The H2OFrame is an iterable (supporting list comprehensions) wrapper
-around an array of H2OVec objects.</p>
+data is &#8220;in memory&#8221;), and <em>not</em> in the python process local memory.. The H2OFrame is an
+iterable (supporting list comprehensions) wrapper around a list of H2OVec objects. All an
+H2OFrame object is, therefore, is a wrapper on a list that supports various types of operations
+that may or may not be lazy. Here&#8217;s an example showing how a list comprehension is combined
+with lazy expressions to compute the column means for all columns in the H2OFrame:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">import_frame</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;smalldata/logreg/prostate.csv&quot;</span><span class="p">)</span>  <span class="c"># import prostate data</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">colmeans</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="p">]</span>                     <span class="c"># compute column means eagerly</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">colmeans</span>                                                     <span class="c"># print the results</span>
+<span class="go">[5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]</span>
+</pre></div>
+</div>
+<p>Lazy expressions will be discussed in detail in the coming sections.</p>
 <p>The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all manner of slicing (with complex
@@ -164,7 +176,7 @@ snippet:</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">vol</span><span class="p">[</span><span class="n">vol</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>                                         <span class="c"># 0 VOL means &#39;missing&#39;</span>
 </pre></div>
 </div>
-<p>After this operation, <cite>vol</cite> has been permanently mutated (and is not a copy!) in place.</p>
+<p>After this operation, <cite>vol</cite> has been permanently mutated in place (it is not a copy!).</p>
 </div>
 <div class="section" id="h2ovec">
 <h3>H2OVec<a class="headerlink" href="#h2ovec" title="Permalink to this headline">¶</a></h3>
@@ -173,8 +185,7 @@ snippet:</p>
 <div class="section" id="expr">
 <h3>Expr<a class="headerlink" href="#expr" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Expressions are lazy...</li>
-<li>DAGs of Exprs ... oh joy!</li>
+<li>Lazy expressions...</li>
 </ul>
 </div>
 <div class="section" id="models">
