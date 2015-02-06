@@ -224,7 +224,7 @@ public class DataInfo extends Keyed {
     super(selfKey);
     assert predictor_transform != null;
     assert  response_transform != null;
-  _skipMissing = skipMissing;
+    _skipMissing = skipMissing;
     _nfolds = _foldId = 0;
     _predictor_transform = predictor_transform;
     _response_transform = response_transform;
@@ -264,7 +264,6 @@ public class DataInfo extends Keyed {
     String[] names = new String[train.numCols()];
     Vec[] tvecs2 = new Vec[train.numCols()];
     Vec[] vvecs2 = (valid == null) ? null : new Vec[train.numCols()];
-
     // Compute the cardinality of each cat
     _catOffsets = MemoryManager.malloc4(ncats+1);
     _catMissing = new int[ncats];
@@ -502,7 +501,12 @@ public class DataInfo extends Keyed {
     for (int i = 0; i < _cats; ++i) {
       int c;
       if (chunks[i].isNA(rid)) {
-        row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+        try {
+          row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+        } catch(Throwable t) {
+          t.printStackTrace();
+          throw new RuntimeException(t);
+        }
       } else {
         c = getCategoricalId(i,(int)chunks[i].at8(rid));
         if(c >=0)
