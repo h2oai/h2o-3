@@ -155,6 +155,8 @@ class RollupStats extends Iced {
 
     // UUID and String columns do not compute min/max/mean/sigma
     if( isUUID || isString) {
+      Arrays.fill(_mins,Double.NaN);
+      Arrays.fill(_maxs,Double.NaN);
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
