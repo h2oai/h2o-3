@@ -95,6 +95,6 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
 
   @Override
   public String toString() {
-    return "Key<" + type + ">" + name;
+    return type + " " + name;
   }
 }
