@@ -1,8 +1,12 @@
 package hex.tree;
 
+import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
+import water.util.IcedBitSet;
+import java.util.Comparator;
+import java.util.Arrays;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -13,8 +17,8 @@ import water.util.AtomicUtils;
 public class DRealHistogram extends DHistogram<DRealHistogram> {
   private float _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
-  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit ) {
-    super(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
+  public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
+    super(name,nbins,isInt,min,maxEx,nelems);
   }
   @Override boolean isBinom() { return false; }
 
@@ -77,11 +81,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     }
     long tot = ns0[nbins];
     // If we see zero variance, we must have a constant response in this
-    // column.  Normally this situation is cut out before we even try to split, but we might
-    // have NA's in THIS column...
-    if( ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins] == 0 ) {
-      assert isConstantResponse(); return null;
-    }
+    // column.  Normally this situation is cut out before we even try to split,
+    // but we might have NA's in THIS column...
+    if( ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins] == 0 ) { assert isConstantResponse(); return null; }
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double sums1[] = MemoryManager.malloc8d(nbins+1);
@@ -100,7 +102,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
     // split left/right based on being less than some value, or being equal/
-    // not-equal to some value.  Equal/not-equal makes sense for catagoricals
+    // not-equal to some value.  Equal/not-equal makes sense for categoricals
     // but both splits could work for any integral datatype.  Do the less-than
     // splits first.
     int best=0;                         // The no-split
@@ -132,9 +134,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       for( int b=1; b<=nbins-1; b++ ) {
         if( _bins[b] == 0 ) continue; // Ignore empty splits
         long N =        ns0[b+0] + ns1[b+1];
+        if( N == 0 ) continue;
         double sums = sums0[b+0]+sums1[b+1];
         double ssqs = ssqs0[b+0]+ssqs1[b+1];
-        if( N == 0 ) continue;
         double si =  ssqs    -  sums   * sums   /   N    ; // Left+right, excluding 'b'
         double sx = _ssqs[b] - _sums[b]*_sums[b]/_bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
@@ -144,13 +146,33 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
     }
 
+    // For categorical (unordered) predictors, sort the bins by average
+    // prediction then look for an optimal split.
+    IcedBitSet bs = null;
+    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
+      for( int i=0; i<nbins; i++ )
+        System.out.println("bin["+i+"] avg="+_sums[i]+"/"+_bins[i]+" = "+(_sums[i]/_bins[i]));
+
+      int idxs[] = MemoryManager.malloc4(nbins);
+      for( int i=0; i<nbins; i++ ) idxs[i] = i;
+      final double[] avgs = sums0;    // Reuse sums0
+      for( int i=0; i<nbins; i++ ) avgs[i] = _sums[i]/_bins[i];
+      Arrays.sort(idxs, new Comparator() { 
+          @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
+        });
+      for( int i=0; i<nbins; i++ )
+        System.out.println("bin["+idxs[i]+"] avg= "+(_sums[idxs[i]]/_bins[idxs[i]]));
+
+      throw H2O.unimpl();
+    }
+
     if( best==0 ) return null;  // No place to split
     assert best > 0 : "Must actually pick a split "+best;
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
     long   n1 = equal == 0 ?   ns1[best] : _bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal == 0 ? sums1[best] : _sums[best]              ;
-    return new DTree.Split(col,best,null,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
+    return new DTree.Split(col,best,bs,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
   @Override public long byteSize0() {
