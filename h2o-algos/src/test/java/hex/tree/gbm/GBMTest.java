@@ -286,7 +286,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._aucdata.AUC();
       Assert.assertTrue(0.83 <= auc && auc < 0.85); // Sanely good model
       ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(324, 69), ar(35, 72)), cmf1.confusion_matrix);
+      Assert.assertArrayEquals(ar(ar(333, 60), ar(33, 74)), cmf1.confusion_matrix);
     } finally {
       parms._train.remove();
       parms._valid.remove();
