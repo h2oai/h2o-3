@@ -91,7 +91,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
           Job thisJob = DKV.getGet(_key);
-          if (thisJob._state == JobState.CANCELLED) {
+          if (thisJob._state != JobState.CANCELLED) {
              failed(ex);
           }
           _parms.read_unlock_frames(GLM.this);
