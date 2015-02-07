@@ -485,14 +485,13 @@ public class DataInfo extends Keyed {
     }
   }
 
+
   public final int getCategoricalId(int cid, int val) {
-    if (_catLvls != null) { // some levels are ignored?
-      int c = Arrays.binarySearch(_catLvls[cid], val);
-      if (c >= 0)
-        return c + _catOffsets[cid];
-    } else if (_useAllFactorLevels)
-      return val + _catOffsets[cid];
-    return val + _catOffsets[cid] - 1;
+    final int c;
+    if (_catLvls != null)  // some levels are ignored?
+      c = Arrays.binarySearch(_catLvls[cid], val);
+    else c = val - (_useAllFactorLevels?0:1);
+    return c >= 0?(c + _catOffsets[cid]):-1;
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
