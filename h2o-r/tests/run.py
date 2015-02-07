@@ -1090,7 +1090,7 @@ class TestRunner:
         self._log("Did not pass:         " + str(failed))
         self._log("Did not complete:     " + str(notrun))
         self._log("Tolerated NOPASS:     " + str(nopass_but_tolerate))
-        self._log("NOPASS tests skipped  " + str(self.nopass_counter))
+        self._log("NOPASS tests skipped: " + str(self.nopass_counter))
         self._log("")
         self._log("Total time:           %.2f sec" % delta_seconds)
         if (run > 0):
