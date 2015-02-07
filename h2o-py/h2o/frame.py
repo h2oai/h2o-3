@@ -113,9 +113,10 @@ class H2OFrame:
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
 
-    self._write_python_data_to_file_and_upload(header, data_to_write)
+    #
+    ## write python data to file and upload
+    #
 
-  def _write_python_data_to_file_and_upload(self, header, data_to_write):
     # create a temporary file that will be written to
     tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
     tmp_file = open(tmp_file_path, 'wb')
@@ -130,7 +131,7 @@ class H2OFrame:
     # actually upload the data to H2O
     self._upload_raw_data(tmp_file_path, header)
     # delete the tmp file
-    #os.remove(tmp_file_path)  # not at all secure!
+    os.remove(tmp_file_path)  # insecure
 
   def _handle_raw_fname(self, raw_fname, column_names=None):
     """

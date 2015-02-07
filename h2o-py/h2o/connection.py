@@ -213,15 +213,22 @@ class H2OConnection(object):
 
   @staticmethod
   def _process_tables(x=None):
-    elts = ["tableHeader", "rowHeaders", "colHeaders", "colTypes", "colFormats", "cellValues"]
-
     if x:
       if isinstance(x, dict):
-        have_table = all([True if i in elts else False for i in x.keys()])
-        have_table &= len(x) == len(elts)
-        if have_table:
-          tbl = x["cellValues"]
-          tbl = H2OTwoDimTable(x["rowHeaders"], x["colHeaders"], x["colTypes"], x["tableHeader"], x["cellValues"], x["colFormats"])
+
+        has_meta = "__meta" in x
+        has_schema_type = has_meta and "schema_type" in x["__meta"]
+
+        have_table = has_schema_type and x["__meta"]["schema_type"] == "TwoDimTable"
+        have_tableV1 = have_table and x["__meta"]["schema_name"] == "TwoDimTableV1"
+        if have_tableV1:
+          col_formats = [c["format"] for c in x["columns"]]
+          table_header = x["name"]
+          col_types = [c["type"] for c in x["columns"]]
+          col_headers = [c["name"] for c in x["columns"]]
+          row_headers = ["" for i in range(len(col_headers))]
+          cell_values = x["data"]
+          tbl = H2OTwoDimTable(row_headers, col_headers, col_types, table_header, cell_values, col_formats)
           x = tbl
         else:
           for k in x:
