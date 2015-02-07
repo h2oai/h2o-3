@@ -469,19 +469,9 @@ public class DTree extends Iced {
       ab.put2((short)_split._col);
 
       // Save split-at-value or group
-      if(_split._equal == 0 || _split._equal == 1)
-        ab.put4f(_splat);
-      else if(_split._equal == 2) {
-        /* byte[] ary = MemoryManager.malloc1(4);
-        for(int i = 0; i < 4; i++)
-          ary[i] = _split._bs._val[i];
-        ab.putA1(ary, 4); */
-        //ab.putA1(_split._bs._val, 4);
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      } else {
-        assert _split._equal == 3;
-        _split._bs.compress3(ab);
-      }
+      if(_split._equal == 0 || _split._equal == 1) ab.put4f(_splat);
+      else if(_split._equal == 2) _split._bs.compress2(ab);
+      else _split._bs.compress3(ab);
 
       Node left = _tree.node(_nids[0]);
       if( (_nodeType&48) == 0 ) { // Size bits are optional for left leaves !

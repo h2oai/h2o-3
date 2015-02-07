@@ -446,7 +446,9 @@ public class GBMTest extends TestUtil {
 
   @Test public void testBigCat() {
     final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
-    basicGBM("./smalldata/gbm_test/50_cattest_test.csv", prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv" , prep, false, Family.AUTO);
   }
 
 }
