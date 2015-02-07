@@ -118,10 +118,12 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     // Version&Schema-specific filling from the implementation object
     public S fillFromImpl(ValidationMessage vm) {
       PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
-      if (this.field_name.startsWith("_"))
-        this.field_name = this.field_name.substring(1);
-      else
-        Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      if (this.field_name != null) {
+        if (this.field_name.startsWith("_"))
+          this.field_name = this.field_name.substring(1);
+        else
+          Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      }
       return (S)this;
     }
   }

@@ -75,7 +75,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
       _domains= b._train.domains();
 
       // Compute class distribution, handy for most builders
-      if( b.isClassifier() ) {
+      if( b.isClassifier() && b.isSupervised()) {
         MRUtils.ClassDist cdmt = new MRUtils.ClassDist(b._nclass).doAll(b._response);
         _distribution   = cdmt.dist();
         _priorClassDist = cdmt.rel_dist();

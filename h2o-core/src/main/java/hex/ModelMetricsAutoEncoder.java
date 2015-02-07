@@ -23,8 +23,8 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      return null; //FIXME
+    public ModelMetrics makeModelMetrics( Model m, Frame f, double ignored) {
+      return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f, Double.NaN));
     }
   }
 }

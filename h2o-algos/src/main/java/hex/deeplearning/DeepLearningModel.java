@@ -28,7 +28,7 @@ import static java.lang.Double.isNaN;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
+public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
     public int _n_folds;
@@ -582,6 +582,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
         }
       }
+      else {
+        if (_autoencoder && _loss != Loss.MeanSquare)
+          dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
+        else if (!classification && _loss == Loss.CrossEntropy)
+          dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
+      }
+
       if (_score_training_samples < 0) {
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
       }
@@ -599,9 +606,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             dl.error("_average_activation", "Rectifier average activation must be positive.");
         }
       }
-
-      if (_autoencoder && _loss != Loss.MeanSquare) dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-      else if (!classification && _loss == Loss.CrossEntropy) dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
@@ -833,7 +837,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
-    colHeaders.add("Training R^2"); colTypes.add("double"); colFormat.add("%g");
+    if (!_output.autoencoder) {
+      colHeaders.add("Training R^2");
+      colTypes.add("double");
+      colFormat.add("%g");
+    }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC");
       colTypes.add("double");
@@ -846,7 +854,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     if (get_params()._valid != null) {
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%g");
-      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
+      if (!_output.autoencoder) {
+        colHeaders.add("Validation R^2");
+        colTypes.add("double");
+        colFormat.add("%g");
+      }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC");
         colTypes.add("double");
@@ -915,14 +927,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.train_mse);
-      table.set(row, col++, e.train_r2);
+      if (!_output.autoencoder)
+        table.set(row, col++, e.train_r2);
       if (_output.getModelCategory() == ModelCategory.Binomial)
         table.set(row, col++, e.trainAUC != null ? e.trainAUC.AUC() : Double.NaN);
       if (_output.isClassifier())
         table.set(row, col++, e.train_err);
       if (get_params()._valid != null) {
         table.set(row, col++, e.valid_mse);
-        table.set(row, col++, e.valid_r2);
+        if (!_output.autoencoder)
+          table.set(row, col++, e.valid_r2);
         if (_output.getModelCategory() == ModelCategory.Binomial)
           table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
         if (_output.isClassifier())
@@ -1792,6 +1806,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       // Return the predicted columns
       int x=_output._names.length, y=adaptFrm.numCols();
       Frame f = adaptFrm.extractFrame(x, y); //this will call vec_impl() and we cannot call the delete() below just yet
+
+      if (destination_key != null) {
+        Key k = Key.make(destination_key);
+        f = new Frame(k, f.names(), f.vecs());
+        DKV.put(k, f);
+      }
+//      makeMetricBuilder(null).makeModelMetrics(this,f,Double.NaN);
+
       return f;
     }
   }
@@ -1834,6 +1856,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
    */
   public Frame scoreAutoEncoder(Frame frame) {
+    if (!get_params()._autoencoder)
+      throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
     final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
     Vec v0 = adaptFrm.anyVec().makeZero();
@@ -1854,8 +1878,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }.doAll(adaptFrm);
     Scope.exit();
 
-    // Return just the output columns
-    return adaptFrm.extractFrame(len, adaptFrm.numCols());
+    Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
+    makeMetricBuilder(null).makeModelMetrics(this, res, Double.NaN);
+    return res;
   }
 
   @Override public Frame score(Frame fr, String destination_key) {
@@ -1875,61 +1900,58 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
-  //  /**
-//   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
-//   * @param frame Original data (can contain response, will be ignored)
-//   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
-//   */
-//  public Frame scoreDeepFeatures(Frame frame, final int layer) {
-//    assert(layer >= 0 && layer < model_info().get_params().hidden.length);
-//    final int len = nfeatures();
-//    Vec resp = null;
-//    if (isSupervised()) {
-//      int ridx = frame.find(responseName());
-//      if (ridx != -1) { // drop the response for scoring!
-//        frame = new Frame(frame);
-//        resp = frame.vecs()[ridx];
-//        frame.remove(ridx);
-//      }
-//    }
-//    // Adapt the Frame layout - returns adapted frame and frame containing only
-//    // newly created vectors
-//    Frame[] adaptFrms = adapt(frame,false,false/*no response*/);
-//    // Adapted frame containing all columns - mix of original vectors from fr
-//    // and newly created vectors serving as adaptors
-//    Frame adaptFrm = adaptFrms[0];
-//    // Contains only newly created vectors. The frame eases deletion of these vectors.
-//    Frame onlyAdaptFrm = adaptFrms[1];
-//    //create new features, will be dense
-//    final int features = model_info().get_params().hidden[layer];
-//    Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
-//    for (int j=0; j<features; ++j) {
-//      adaptFrm.add("DF.C" + (j+1), vecs[j]);
-//    }
-//    new MRTask() {
-//      @Override public void map( Chunk chks[] ) {
-//        double tmp [] = new double[len];
-//        float df[] = new float [features];
-//        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-//        for( int row=0; row<chks[0]._len; row++ ) {
-//          for( int i=0; i<len; i++ )
-//            tmp[i] = chks[i].atd(row);
-//          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
-//          DeepLearningTask.step(-1, neurons, model_info, false, null);
-//          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
-//          for( int c=0; c<df.length; c++ )
-//            chks[_names.length+c].set(row,out[c]);
-//        }
-//      }
-//    }.doAll(adaptFrm);
-//
-//    // Return just the output columns
-//    int x=_names.length, y=adaptFrm.numCols();
-//    Frame ret = adaptFrm.extractFrame(x, y);
-//    onlyAdaptFrm.delete();
-//    if (resp != null) ret.prepend(responseName(), resp);
-//    return ret;
-//  }
+   /**
+   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
+   * @param frame Original data (can contain response, will be ignored)
+   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
+   */
+  public Frame scoreDeepFeatures(Frame frame, final int layer) {
+    if (layer < 0 || layer >= model_info().get_params()._hidden.length)
+      throw new H2OIllegalArgumentException("hidden layer (index) to extract must be between " + 0 + " and " + (model_info().get_params()._hidden.length-1),"");
+    final int len = _output.nfeatures();
+    Vec resp = null;
+    if (isSupervised()) {
+      int ridx = frame.find(_output.responseName());
+      if (ridx != -1) { // drop the response for scoring!
+        frame = new Frame(frame);
+        resp = frame.vecs()[ridx];
+        frame.remove(ridx);
+      }
+    }
+    Frame adaptFrm = new Frame(frame);
+    //create new features, will be dense
+    final int features = model_info().get_params()._hidden[layer];
+    Vec[] vecs = adaptFrm.anyVec().makeZeros(features);
+
+    Scope.enter();
+    adaptTestForTrain(adaptFrm,true);
+    for (int j=0; j<features; ++j) {
+      adaptFrm.add("DF.C" + (j+1), vecs[j]);
+    }
+    new MRTask() {
+      @Override public void map( Chunk chks[] ) {
+        double tmp [] = new double[len];
+        float df[] = new float [features];
+        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+        for( int row=0; row<chks[0]._len; row++ ) {
+          for( int i=0; i<len; i++ )
+            tmp[i] = chks[i].atd(row);
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp);
+          DeepLearningTask.step(-1, neurons, model_info, false, null);
+          float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+          for( int c=0; c<df.length; c++ )
+            chks[_output._names.length+c].set(row,out[c]);
+        }
+      }
+    }.doAll(adaptFrm);
+
+    // Return just the output columns
+    int x=_output._names.length, y=adaptFrm.numCols();
+    Frame ret = adaptFrm.extractFrame(x, y);
+    if (resp != null) ret.prepend(_output.responseName(), resp);
+    Scope.exit();
+    return ret;
+  }
 
 
   // Make (potentially expanded) reconstruction

@@ -32,6 +32,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     };
   }
 
+  @Override
+  public boolean isSupervised() {
+    return !_parms._autoencoder;
+  }
+
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
     super("DeepLearning",parms); init(false);
   }

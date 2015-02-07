@@ -20,6 +20,11 @@ import java.util.Comparator;
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
+  public abstract interface DeepFeatures {
+    public Frame scoreAutoEncoder(Frame frame);
+    public Frame scoreDeepFeatures(Frame frame, final int layer);
+  }
+
   /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
   public static enum ModelCategory {
     Unknown,
@@ -229,7 +234,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The names of all the columns, including the response column (which comes last). */
     public String[] allNames() { return _names; }
     /** The name of the response column (which is always the last column). */
-    public String responseName() { return   _names[  _names.length-1]; }
+    public String responseName() { return (getModelCategory() == ModelCategory.Regression || isClassifier()) ?  _names[  _names.length-1] : null; }
     /** The names of the levels for an enum (categorical) response column. */
     public String[] classNames() { return _domains[_domains.length-1]; }
     /** Is this model a classification model? (v. a regression or clustering model) */
