@@ -15,7 +15,7 @@ class ModelMetricsHandler extends Handler {
     public ModelMetrics[] _model_metrics;
     public String _destination_key;
     public boolean _reconstruction_error;
-    public int _deep_features_hidden_layer;
+    public int _deep_features_hidden_layer = -1;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -70,11 +70,11 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Key of predictions frame, if predictions are requested (optional)", json = false, required = false)
     public String destination_key;
 
-    @API(help = "Compute Deep Learning AutoEncoder reconstruction error", json = false, required = false)
+    @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
     public boolean reconstruction_error;
 
-    @API(help = "Extract Deep Features for given hidden layer (0-indexed) of Deep Learning AutoEncoder model", json = false, required = false)
-    public int deep_features_hidden_layer = -1;
+    @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false, required = false)
+    public int deep_features_hidden_layer;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
