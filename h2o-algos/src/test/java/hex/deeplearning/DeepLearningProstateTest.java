@@ -9,6 +9,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Env;
 import water.rapids.Exec;
@@ -62,7 +63,13 @@ public class DeepLearningProstateTest extends TestUtil {
                       false,
               }) {
                 for (int resp : responses[i]) {
-                  boolean classification = !(i == 0 && resp == 2);
+                  /* boolean classification = !(i == 0 && resp == 2);
+                     if (classification && !frame.vec(resp).isEnum()) {
+                        frame.replace(resp, frame.vec(resp).toEnum());
+                        DKV.put(frame._key, frame);
+                  } */
+                  boolean classification = false;   // TODO: Test currently limited to regression only
+
                   for (ClassSamplingMethod csm : new ClassSamplingMethod[]{
                           ClassSamplingMethod.Stratified,
                           ClassSamplingMethod.Uniform
@@ -123,7 +130,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._train = frame._key;
                                       p._response_column = frame._names[resp];
                                       p._valid = valid==null ? null : valid._key;
-                                      p._convert_to_enum = classification;
 
                                       p._hidden = hidden;
 //                                      p.best_model_key = best_model_key;
@@ -185,7 +191,6 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     p._valid = valid == null ? null : valid._key;
                                     p._response_column = frame._names[resp];
-                                    p._convert_to_enum = classification;
                                     p._override_with_best_model = override_with_best_model;
                                     p._epochs = epochs;
                                     p._seed = seed;

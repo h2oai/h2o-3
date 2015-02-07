@@ -1,8 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.ecology <- function(conn) {
-  
+test.GBM.ecology <- function(conn) {  
   Log.info("==============================")
   Log.info("AUTO Behavior")
   Log.info("==============================")

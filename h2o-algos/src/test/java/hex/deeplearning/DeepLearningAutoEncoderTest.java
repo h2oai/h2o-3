@@ -43,7 +43,6 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._train = train._key;
         p._autoencoder = true;
         p._response_column = train.names()[train.names().length-1];
-        p._convert_to_enum = false;
         p._seed = seed;
         p._hidden = new int[]{100, 100};
         p._adaptive_rate = true;

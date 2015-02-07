@@ -47,9 +47,9 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._convert_to_enum = true;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
+          // TODO: Need to convert response to enum
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
           p._hidden = new int[]{32, 58};

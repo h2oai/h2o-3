@@ -118,7 +118,6 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._score_each_iteration = false; // default is false
       // SupervisedModel.Parameters
       gbm_parms._response_column = "bikes";
-      gbm_parms._convert_to_enum = false; // regression
       
       // SharedTreeModel.Parameters
       gbm_parms._ntrees = 500;        // default is 50, 1000 is 0.90, 10000 is 0.91
@@ -144,7 +143,6 @@ public class WorkFlowTest extends TestUtil {
       glm_parms._score_each_iteration = false; // default is false
       // SupervisedModel.Parameters
       glm_parms._response_column = "bikes";
-      glm_parms._convert_to_enum = false; // regression
   
       // GLMModel.Parameters
       glm_parms._use_all_factor_levels = true;
