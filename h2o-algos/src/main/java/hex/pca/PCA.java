@@ -2,7 +2,7 @@ package hex.pca;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
-import hex.FrameTask.DataInfo;
+import hex.DataInfo;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.GramTask;
@@ -86,12 +86,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if( fr.numCols() < 2 )
           throw new IllegalArgumentException("Need more than one column to run PCA");
 
-        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._standardized ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._standardized ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key,dinfo);
         model._output._catOffsets = dinfo._catOffsets;
         model._output._normSub = dinfo._normSub;
         model._output._normMul = dinfo._normMul;
-        GramTask tsk = new GramTask(_key, dinfo, false,false).doAll(dinfo._adaptedFrame);
+        GramTask tsk = new GramTask(_key, dinfo).doAll(dinfo._adaptedFrame);
         // TODO: Need to ensure this maps correctly to scored data cols
         Matrix myGram = new Matrix(tsk._gram.getXX());   // X'X/n where n = num rows
         SingularValueDecomposition mySVD = myGram.svd();

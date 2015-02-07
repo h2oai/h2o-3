@@ -45,11 +45,9 @@ class CompressedTree extends Keyed {
       if(equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
         splitVal = ab.get4f();       // Get the float to compare
       } else {                       // Bitset test
-        int off = (equal == 3) ? ab.get2() : 0; // number of zero-bits skipped during serialization
-        int sz  = (equal == 3) ? ab.get2() : 4; // size of serialized bitset (part containing some non-zeros) in bytes
         if( ibs == null ) ibs = new IcedBitSet(0);
-        ibs.fill(_bits,ab.position(),sz,off);
-        ab.skip(sz);            // Skip inline bitset
+        if( equal == 2 ) ibs.fill2(_bits,ab);
+        else             ibs.fill3(_bits,ab);
       }
 
       // Compute the amount to skip.

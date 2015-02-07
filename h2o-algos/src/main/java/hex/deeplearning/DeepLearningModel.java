@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import hex.FrameTask.DataInfo;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
@@ -1512,9 +1511,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
     boolean classification = train.lastVec().isEnum();
-    final DataInfo dinfo = new FrameTask.DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+    final DataInfo dinfo = new DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            classification    ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
+            classification    ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip);
     output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     output._domains= train.domains();
     DKV.put(dinfo._key,dinfo);

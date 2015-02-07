@@ -159,7 +159,11 @@ with lazy expressions to compute the column means for all columns in the H2OFram
 <span class="go">[5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]</span>
 </pre></div>
 </div>
-<p>Lazy expressions will be discussed in detail in the coming sections.</p>
+<p>Lazy expressions will be discussed in detail in the coming sections, but their primary
+purpose is to cut down on the chatter between the client (a.k.a this python interface) and
+H2O. Lazy expressions are
+<a class="reference external" href="http://www.urbandictionary.com/define.php?term=Katamari">Katamari&#8217;d</a> together and only
+ever evaluated when some piece of output is requested (e.g. print-to-screen).</p>
 <p>The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
 performed on an R data.frame. This includes all manner of slicing (with complex

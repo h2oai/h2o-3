@@ -1,8 +1,12 @@
 package water.api;
 
+import hex.Model;
 import water.H2O;
+import water.Job;
 import water.Key;
 import water.Keyed;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
@@ -49,6 +53,7 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
     return make(KeySchema.class, key);
   }
 
+
   @Override
   public S fillFromImpl(Key key) {
     if (null == key) return (S)this;
@@ -66,7 +71,18 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
       }
     }
 
-    // TODO: URL
+    // TODO: this is kinda hackey; the handlers should register the types they can fetch.
+    if (Job.class.isAssignableFrom(this._impl_class))
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Jobs.json/" + key.toString();
+    else if (Frame.class.isAssignableFrom(this._impl_class))
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Frames.json/" + key.toString();
+    else if (Model.class.isAssignableFrom(this._impl_class))
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Models.json/" + key.toString();
+    else if (Vec.class.isAssignableFrom(this._impl_class))
+      this.URL = null;
+    else
+      this.URL = null;
+
     return (S)this;
   }
 
@@ -95,6 +111,6 @@ public class KeySchema<I extends Keyed, S extends KeySchema<I, S>> extends Schem
 
   @Override
   public String toString() {
-    return "Key<" + type + ">" + name;
+    return type + " " + name;
   }
 }

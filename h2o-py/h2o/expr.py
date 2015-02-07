@@ -3,7 +3,7 @@ This module contains code for the lazy expression DAG.
 """
 
 import sys
-from math import sqrt, isnan
+from math import sqrt, isnan, floor
 import h2o
 import frame
 import tabulate
@@ -293,121 +293,29 @@ class Expr(object):
     rite = self._do_child(False)  # down the right
 
     try:
-      if self._op == "+":
 
-        #   num + num
-        #   num + []
+      # eventually will need to create dedicated objects each overriding a "set_data" method
+      # live with this "switch" for now
+
+      if self._op in ["+", "&", "-", "*", "/", "==", "<", ">="]:   # in self.BINARY_INFIX_OPS:
+        #   num op num
+        #   num op []
         if isinstance(left._data, (int, float)):
-          if isinstance(rite._data, (int, float)):   self._data = left + rite
-          elif rite.is_local():                      self._data = [left + x for x in rite._data]
+          if isinstance(rite._data, (int, float)):   self._data = eval("left " + self._op + " rite")
+          elif rite.is_local():                      self._data = eval("[left "+ self._op + " x for x in rite._data]")
           else:                                      pass
 
-        #   [] + num
+        #   [] op num
         elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = [x + rite for x in left._data]
+          if left.is_local():   self._data = eval("[x" + self._op + " rite for x in left._data]")
           else:                 pass
 
-        #   [] + []
+        #   [] op []
         else:
-          if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
+          if left.is_local() and rite.is_local():             self._data = eval("[x " + self._op + " y for x, y in zip(left._data, rite._data)]")
           elif (left.is_remote() or left._data is None) and \
-               (rite.is_remote() or rite._data is None):      pass
+                  (rite.is_remote() or rite._data is None):      pass
           else:                                               raise NotImplementedError
-
-      elif self._op == "&":
-
-        #   num & num
-        #   num & []
-        if isinstance(left._data, (int, float)):
-          if isinstance(rite._data, (int, float)):   self._data = left & rite
-          elif rite.is_local():                      self._data = [left & x for x in rite._data]
-          else:                                      pass
-
-        #   [] & num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = [x & rite for x in left._data]
-          else:                 pass
-
-        #   [] & []
-        else:
-          if left.is_local() and rite.is_local():             self._data = [x + y for x, y in zip(left._data, rite._data)]
-          elif (left.is_remote() or left._data is None) and \
-               (rite.is_remote() or rite._data is None):      pass
-          else:                                               raise NotImplementedError
-
-      elif self._op == "*":
-        #   num * num
-        #   num * []
-        if isinstance(left._data, (int, float)):
-          if isinstance(rite._data, (int, float)):   self._data = left * rite
-          elif rite.is_local():                      self._data = [left * x for x in rite._data]
-          else:                                      pass
-
-        #   [] * num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = [x * rite for x in left._data]
-          else:                 pass
-
-        #   [] * []
-        else:
-          if left.is_local() and rite.is_local():             self._data = [x * y for x, y in zip(left._data, rite._data)]
-          elif (left.is_remote() or left._data is None) and \
-               (rite.is_remote() or rite._data is None):      pass
-          else:                                               raise NotImplementedError
-
-      elif self._op == "/" or self._op == "-":
-        #   num / num
-        #   num / []
-        if isinstance(left._data, (int, float)):
-          if isinstance(rite._data, (int, float)):   self._data = left / rite
-          elif rite.is_local():                      self._data = [left / x for x in rite._data]
-          else:                                      pass
-
-        #   [] / num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = [x / rite for x in left._data]
-          else:                 pass
-
-        #   [] / []
-        else:
-          if left.is_local() and rite.is_local():             self._data = [x / y for x, y in zip(left._data, rite._data)]
-          elif (left.is_remote() or left._data is None) and \
-               (rite.is_remote() or rite._data is None):      pass
-          else:                                               raise NotImplementedError
-
-      elif self._op == "==":
-
-        #   num ==
-        if isinstance(left._data, (int, float)):   raise NotImplementedError
-
-        #   [] == num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():  self._data = [x == rite._data for x in left._data]
-          else:                pass
-
-        else:                  raise NotImplementedError
-
-      elif self._op == "<":
-
-        # num < []
-        if isinstance(left._data, (int, float)):   raise NotImplementedError
-
-        # [] < num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = [x < rite._data for x in left._data]
-          else:                 pass
-        else:   raise NotImplementedError
-
-      elif self._op == ">=":
-
-        # num < []
-        if isinstance(left._data, (int, float)):   raise NotImplementedError
-
-        # [] < num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():  self._data = [x >= rite._data for x in left._data]
-          else:                pass
-        else:                  raise NotImplementedError
 
       elif self._op == "[":
 
@@ -423,7 +331,7 @@ class Expr(object):
           if rite is None: __CMD__ += "#NaN"
 
       elif self._op == "floor":
-        if left.is_local():   self._data = [math.floor(x) for x in left._data]
+        if left.is_local():   self._data = [floor(x) for x in left._data]
         else:                 pass
 
       elif self._op == "month":
@@ -438,11 +346,7 @@ class Expr(object):
         if left.is_local():   self._data = sum(left._data) / len(left._data)
         else:                  __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
 
-      elif self._op == "as.factor":
-        if left.is_local():   self._data = map(str, left._data)
-        else:                 pass
-
-      elif self._op == "h2o.runif":
+      elif self._op in ["as.factor", "h2o.runif"]:
         if left.is_local():   self._data = map(str, left._data)
         else:                 pass
 
@@ -460,7 +364,7 @@ class Expr(object):
       global __TMPS__
       __CMD__ = None
       __TMPS__ = None
-      raise NotImplementedError  # raise the exception anyhow
+      raise NotImplementedError  # re raise
 
     # End of expression... wrap up parens
     __CMD__ += ")"

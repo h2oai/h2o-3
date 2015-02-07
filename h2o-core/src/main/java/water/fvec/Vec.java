@@ -275,6 +275,11 @@ public class Vec extends Keyed {
   public long[] get_espc() { return _espc; }
   /** Get the column type. */
   public byte get_type() { return _type; }
+
+  public boolean isBinary(){
+    RollupStats rs = rollupStats();
+    return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
+  }
   
   // ======= Create zero/constant Vecs ======
 

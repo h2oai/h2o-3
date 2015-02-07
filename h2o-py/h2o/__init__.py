@@ -1,4 +1,3 @@
-# __version__ = "0.0.4a1"
 # encoding: utf-8
 # module h2o
 # from (h2o)
@@ -127,7 +126,11 @@ with lazy expressions to compute the column means for all columns in the H2OFram
   >>> colmeans                                                     # print the results
   [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
 
-Lazy expressions will be discussed in detail in the coming sections.
+Lazy expressions will be discussed in detail in the coming sections, but their primary
+purpose is to cut down on the chatter between the client (a.k.a this python interface) and
+H2O. Lazy expressions are
+`Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
+ever evaluated when some piece of output is requested (e.g. print-to-screen).
 
 The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
