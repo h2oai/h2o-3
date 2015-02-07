@@ -449,23 +449,25 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       public GLMModel atomic(GLMModel old) {
         if(old == null)return old; // job could've been cancelled!
         if(old._output._submodels == null){
+          old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};
         } else {
-          old._output._submodels = old._output._submodels.clone();
           int id = old._output.submodelIdForLambda(lambda);
           if (id < 0) {
             id = -id - 1;
-            old._output._submodels = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
-            for (int i = old._output._submodels.length - 1; i > id; --i)
-              old._output._submodels[i] = old._output._submodels[i - 1];
-          } else if (old._output._submodels[id].iteration > sm.iteration)
-            return old;
-          else
-            old._output._submodels = old._output._submodels.clone();
-          old._output._submodels[id] = sm;
-          old._run_time = Math.max(old._run_time,sm.run_time);
+            Submodel [] sms = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
+            for (int i = sms.length-1; i > id; --i)
+              sms[i] = sms[i - 1];
+            sms[id] = sm;
+            old._output = (GLMOutput)old._output.clone();
+            old._output._submodels = sms;
+          } else {
+            if (old._output._submodels[id].iteration < sm.iteration)
+              old._output._submodels[id] = sm;
+          }
         }
         old._output.pickBestModel(false);
+        old._run_time = Math.max(old._run_time,sm.run_time);
         return old;
       }
     }.fork(modelKey);

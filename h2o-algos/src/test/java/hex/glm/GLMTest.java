@@ -237,12 +237,12 @@ public class GLMTest  extends TestUtil {
         step *= stepDec;
       }
     } finally {
-    if( fr != null ) fr.delete();
-    if(score != null)score.delete();
-    if(model != null)model.delete();
-    if( job != null ) job.remove();
-    if(dinfo != null) dinfo.remove();
-  }
+      if (fr != null) fr.delete();
+      if (score != null) score.delete();
+      if (model != null) model.delete();
+      if (job != null) job.remove();
+      if (dinfo != null) dinfo.remove();
+    }
   }
   // Make sure all three implementations of gradient computation in GLM get the same results
   @Test public void testGradientTask(){
