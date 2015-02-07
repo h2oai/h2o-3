@@ -585,7 +585,7 @@ public class DataInfo extends Keyed {
     }
     // generic numbers
     for (int cid = 0; cid < _nums; ++cid) {
-      Chunk c = chunks[_cats + _nums + cid];
+      Chunk c = chunks[_cats + cid];
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
         Row row = rows[r];
         if (c.isNA(r)) row.good = _skipMissing;
