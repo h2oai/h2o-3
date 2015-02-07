@@ -308,7 +308,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               LogInfo("Check KKT got NaNs. Invoking line search");
               _taskInfo._params._higher_accuracy = true;
               getCompleter().addToPendingCount(1);
-              new GLMTask.GLMLineSearchTask(_activeData,_taskInfo._params,_lastResult._beta,ArrayUtils.subtract( contractVec(fullBeta, _activeCols),_lastResult._beta),LINE_SEARCH_STEP,NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);;
+              new GLMTask.GLMLineSearchTask(_activeData,_taskInfo._params,1.0/_taskInfo._nobs,_lastResult._beta,ArrayUtils.subtract( contractVec(fullBeta, _activeCols),_lastResult._beta),LINE_SEARCH_STEP,NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);;
 //              new GLMGradientTask(_activeData, _taskInfo._params, _currentLambda * (1-_taskInfo._params._alpha[0]),, NUM_LINE_SEARCH_STEPS, LINE_SEARCH_STEP), 1.0/_taskInfo._nobs, new LineSearchIteration(getCompleter(), ArrayUtils.subtract(newBeta, _lastResult._beta) )).asyncExec(_activeData._adaptedFrame);
               return;
             } else {
@@ -461,7 +461,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(glmt.hasNaNsOrInf() || (glmt._computeGradient && L_BFGS.needLineSearch(_lineSearchStep, _lastResult._objval, glmt._ginfo._objVal, _lastResult._beta, glmt._beta, _lastResult._grad))){
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
-          new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params, _lastResult._beta, ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params, 1.0/_taskInfo._nobs, _lastResult._beta, ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         }
         if(glmt._newThresholds != null) {
@@ -852,7 +852,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final double _lambda;
     final long _nobs;
     // line search params, do 48 steps by .75 decrement, min step = .8^31 = 0.0001339366
-    double _step = .75;
     int _nsteps = 32;
 
     public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
@@ -861,6 +860,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _ymu = ymu;
       _nobs = nobs;
       _lambda = lambda;
+      _step = .75;
     }
 
     @Override
@@ -871,7 +871,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     @Override
     public double[] lineSearch(double[] beta, double[] direction) {
-      return new GLMLineSearchTask(_dinfo, _glmp, beta, direction, _step, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
+      return new GLMLineSearchTask(_dinfo, _glmp, 1.0/_nobs, beta, direction, _step, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
     }
   }
 

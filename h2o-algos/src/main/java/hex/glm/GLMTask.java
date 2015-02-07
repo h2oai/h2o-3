@@ -88,11 +88,14 @@ public abstract class GLMTask  {
     final double _step;
     final int _nSteps;
     final GLMParameters _params;
+    final double _reg;
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, beta, direction, step, nsteps, null);}
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, reg, beta, direction, step, nsteps, null);}
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
+      _reg = reg;
+
       _beta = beta;
       _direction = direction;
       _step = step;
@@ -102,15 +105,24 @@ public abstract class GLMTask  {
 
     double [] _objVals; // result
 
+    private transient double [] _steps;
+    @Override public void setupLocal() {
+      _steps = new double[_nSteps];
+      double t = 1;
+      for(int i = 0; i < _nSteps; ++i) {
+        _steps[i] = t;
+        t *= _step;
+      }
+    }
     private double beta(int i, int j) {
-      return _beta[j] + _direction[j] * Math.pow(_step,i);
+      return _beta[j] + _direction[j] * _steps[i];
     }
     // compute linear estimate by summing contributions for all columns
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
       Chunk responseChunk = chks[chks.length-1];
-      boolean [] skip = MemoryManager.mallocZ(chks[0]._len);
+      boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
       double [][] eta = new double[_nSteps][];
       for(int i = 0; i < eta.length; ++i)
         eta[i] = MemoryManager.malloc8d(chks[0]._len);
@@ -169,6 +181,8 @@ public abstract class GLMTask  {
           _objVals[i] += _params.deviance(y, mu);
         }
       }
+      for (int i = 0; i < _objVals.length; ++i)
+        _objVals[i] *= _reg;
     }
   }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
@@ -222,7 +236,6 @@ public abstract class GLMTask  {
       _objVal += .5 * _currentLambda * ArrayUtils.l2norm2(_beta,_dinfo._intercept);
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
         _gradient[j] += _currentLambda * _beta[j];
-
     }
 
     // compute linear estimate by summing contributions for all columns

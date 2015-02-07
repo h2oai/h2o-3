@@ -64,7 +64,7 @@ public final class L_BFGS extends Iced {
     public abstract double [] lineSearch(double [] beta, double [] pk);
     public double step() {return _step;}
 
-    protected double _step;
+    protected double _step = .75;
   }
 
   public static class ProgressMonitor {
@@ -192,23 +192,23 @@ public final class L_BFGS extends Iced {
     // just loop until good enough or line search can not progress
     int iter = 0;
 _MAIN:
-    while(pm.progress(ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter++ < _maxIter) {
+    while(pm.progress(ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && (iter != _maxIter)) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       double [] objs = gslvr.lineSearch(beta,pk); // expensive / distributed
       double step = gslvr.step();
       // check the line search, we do all the steps (up to min step) at once each time to limit number of passes over all data
       LineSearchSol ls =  doLineSearch(objs, ginfo, pk, 1, step);
       if (ls != null) {
+        ++iter;
         // we got admissible solution
-        ArrayUtils.mult(pk, ls.step);
-        ArrayUtils.add(beta,pk);
-        ginfo = gslvr.getGradient(beta); // expensive / distributed
-        _hist.update(pk, ginfo._gradient, ginfo._gradient);
+        ArrayUtils.mult(pk,ls.step);
         ArrayUtils.add(beta, pk);
+        GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+        _hist.update(pk, newGinfo._gradient, ginfo._gradient);
+        ginfo = newGinfo;
         continue _MAIN;
       }
       // line search did not progress -> converged
-      --iter; // decrement iteration since we did not reallyupdate the result in the last one
       break;
     }
     Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );

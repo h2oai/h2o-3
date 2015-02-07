@@ -105,6 +105,12 @@ public class ArrayUtils {
     return a;
   }
 
+  public static double[] wadd(double[] a, double[] b, double w) {
+    if( a==null ) return b;
+    for(int i = 0; i < a.length; i++ ) a[i] += w*b[i];
+    return a;
+  }
+
   // a <- b + c
   public static double[] add(double[] a, double[] b, double [] c) {
     for(int i = 0; i < a.length; i++ )

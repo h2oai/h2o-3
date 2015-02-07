@@ -53,23 +53,18 @@ public class L_BFGS_Test  extends TestUtil {
         double step = 1;
         for(int i = 0; i < res.length; ++i) {
           double x = beta[0] + pk[0]*step;
-          double y = beta[0] + pk[0]*step;
+          double y = beta[1] + pk[1]*step;
           double xx = x * x;
           res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= .75;
+          step *= _step;
         }
         return res;
       }
     };
     int fails = 0;
-    int N = 1000;
-    for (int i = 0; i < N; ++i) {
-      L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
-      L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
-      if (Math.abs(r.ginfo._objVal) > 1e-4)
-        ++fails;
-    }
-    assertTrue("too many fails " + fails, fails < 5);
+    L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
+    L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
+    assertTrue("LBFGS failed to solve Rosenbrock function optimization",r.ginfo._objVal <  1e-4);
   }
 
   @Test
@@ -104,6 +99,7 @@ public class L_BFGS_Test  extends TestUtil {
   }
 
   // Test LSM on arcene - wide dataset with ~10k columns
+  // test warm start and max #iteratoions
   @Test
   public void testArcene() {
     Key parsedKey = Key.make("arcene_parsed");
@@ -114,27 +110,21 @@ public class L_BFGS_Test  extends TestUtil {
       GLMParameters glmp = new GLMParameters(Family.gaussian);
       glmp._lambda = new double[]{1e-5};
       dinfo = new DataInfo(Key.make(),source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
-
       DKV.put(dinfo._key,dinfo);
       GradientSolver solver = new GLMGradientSolver(glmp, dinfo, 1e-5,source.lastVec().mean(), source.numRows());
-      L_BFGS lbfgs = new L_BFGS();
-
-      long t1 = System.currentTimeMillis();
+      L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.lastVec().mean());
-      lbfgs.solve(solver, beta.clone());
-      L_BFGS.Result r = lbfgs.solve(solver, beta.clone());
-      long t2 = System.currentTimeMillis();
-      GradientInfo ginfo = r.ginfo;
-      assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r.coefs,true), ginfo._objVal, 1e-3);
-      assertTrue("iter# expected < 100, got " + r.iter, r.iter < 100);
+      L_BFGS.Result r1 = lbfgs.solve(solver, beta.clone());
+      lbfgs.setMaxIter(1000);
+      L_BFGS.Result r2 = lbfgs.solve(solver, r1.coefs, r1.ginfo, new L_BFGS.ProgressMonitor());
       lbfgs = new L_BFGS();
-      solver = new GLM.GLMGradientSolver(glmp,dinfo,1e-5,source.lastVec().mean(), source.numRows());
-      lbfgs.solve(solver, beta.clone());
-      L_BFGS.Result r2 = new L_BFGS().solve(solver, beta.clone());
-      long t3 = System.currentTimeMillis();
-      System.out.println("solver1 took " + (t2-t1) + "ms, objval = " + r.ginfo._objVal);
-      System.out.println("solver2 took " + (t3-t2) + "ms, objval = " + r2.ginfo._objVal);
+      L_BFGS.Result r3 = lbfgs.solve(solver, beta.clone());
+      assertEquals(r1.iter,20);
+      assertEquals (r1.iter + r2.iter,r3.iter); // should be equal? got mismatch by 1
+      assertEquals(r2.ginfo._objVal,r3.ginfo._objVal,1e-8);
+      assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r3.coefs,true) + r3.ginfo._objVal, 1e-4, 5e-4);
+      assertTrue("iter# expected < 100, got " + r3.iter, r3.iter < 100);
     } finally {
       if(dinfo != null)
         DKV.remove(dinfo._key);

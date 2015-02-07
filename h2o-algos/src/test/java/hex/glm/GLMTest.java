@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
+import hex.glm.GLMTask.GLMLineSearchTask;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -17,6 +18,7 @@ import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.util.ArrayUtils;
 import water.util.ModelUtils;
 
 import java.util.Arrays;
@@ -28,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   //------------------- simple tests on synthetic data------------------------------------
   @Test
@@ -194,6 +196,54 @@ public class GLMTest  extends TestUtil {
 
   }
 
+  @Test public void testLineSearchTask () {
+    GLM job = null;
+    Key parsed = Key.make("cars_parsed");
+    Key modelKey = Key.make("cars_model");
+    Frame fr = null;
+    GLMModel model = null;
+    Frame score = null;
+    DataInfo dinfo = null;
+    double ymu = 0;
+    try {
+      fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
+      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0});
+      // params._response = fr.find(params._response_column);
+      params._train = parsed;
+      params._lambda = new double[]{0};
+      params._use_all_factor_levels = true;
+      fr.add("Useless", fr.remove("Useless"));
+
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      DKV.put(dinfo._key, dinfo);
+
+      double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
+      double [] pk   = MemoryManager.malloc8d(dinfo.fullN()+1);
+      Random rnd = new Random(987654321);
+      for(int i = 0; i < beta.length; ++i) {
+        beta[i] = 1 - 2 * rnd.nextDouble();
+        pk[i]   = 10* (1 - 2*rnd.nextDouble());
+      }
+      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo,params, 1, beta,pk,.7,16).doAll(dinfo._adaptedFrame);
+      double step = 1, stepDec = .7;
+      for(int i = 0; i < glst._nSteps; ++i) {
+        double [] b =  beta.clone();
+        for(int j = 0; j < b.length; ++j) {
+          b[j] += step * pk[j];
+        }
+        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, params, false, true, true, b, ymu, 1, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
+        assertEquals("objective values differ at step " + i + ": " + step, glmt._ginfo._objVal, glst._objVals[i], 1e-8);
+        System.out.println("step = " + step + ", obj = " + glmt._ginfo._objVal + ", " + glst._objVals[i]);
+        step *= stepDec;
+      }
+    } finally {
+    if( fr != null ) fr.delete();
+    if(score != null)score.delete();
+    if(model != null)model.delete();
+    if( job != null ) job.remove();
+    if(dinfo != null) dinfo.remove();
+  }
+  }
   // Make sure all three implementations of gradient computation in GLM get the same results
   @Test public void testGradientTask(){
     GLM job = null;
