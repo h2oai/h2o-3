@@ -172,27 +172,31 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // No caching for predict()
     ModelMetricsList parms = s.createAndFillImpl();
-    if (null == parms._destination_key)
-      parms._destination_key = "predictions_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
 
     Frame predictions;
     if (!s.reconstruction_error && s.deep_features_hidden_layer < 0 ) {
+      if (null == parms._destination_key)
+        parms._destination_key = "predictions_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       predictions = parms._model.score(parms._frame, parms._destination_key);
     } else {
       if (Model.DeepFeatures.class.isAssignableFrom(parms._model.getClass())) {
         if (s.reconstruction_error) {
           if (s.deep_features_hidden_layer >= 0)
             throw new H2OIllegalArgumentException("Can only compute either reconstruction error OR deep features.", "");
+          if (null == parms._destination_key)
+            parms._destination_key = "reconstruction_errors_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame);
         } else {
           if (s.deep_features_hidden_layer < 0)
             throw new H2OIllegalArgumentException("Deep features hidden layer index must be >= 0.", "");
+          if (null == parms._destination_key)
+            parms._destination_key = "deep_features_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer);
         }
         predictions = new Frame(Key.make(parms._destination_key), predictions.names(), predictions.vecs());
         DKV.put(predictions._key, predictions);
       }
-      else throw new H2OIllegalArgumentException("Require a Deep Learning AutoEncoder model.", "");
+      else throw new H2OIllegalArgumentException("Requires a Deep Learning model.", "Model must implement specific methods.");
     }
 
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
