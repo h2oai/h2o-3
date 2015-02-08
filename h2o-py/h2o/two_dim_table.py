@@ -35,23 +35,13 @@ class H2OTwoDimTable(object):
   @staticmethod
   def _parse_values(values, types):
     for col_index, column in enumerate(values):
-        for row_index, row_value in enumerate(column):
-            if types[col_index] == 'integer':
-                if isinstance(row_value, unicode) and row_value == "":
-                    values[col_index][row_index] = ""
-                elif row_value is None:
-                  values[col_index][row_index] = ""
-                else:
-                    values[col_index][row_index] = int(float.fromhex(row_value))
+      for row_index, row_value in enumerate(column):
+        if types[col_index] == 'integer':
+          values[col_index][row_index]  = "" if not row_value else int(float.fromhex(row_value))
 
-            elif types[col_index] == 'double' or types[col_index] == 'float' or types[col_index] == 'long':
-                if isinstance(row_value, unicode) and row_value == "":
-                    values[col_index][row_index] = ""
-                elif row_value is None:
-                  values[col_index][row_index] = ""
-                else:
-                    values[col_index][row_index] = float.fromhex(row_value)
+        elif types[col_index] == 'double' or types[col_index] == 'float' or types[col_index] == 'long':
+          values[col_index][row_index]  = "" if not row_value else float.fromhex(row_value)
 
-            else:
-                continue
+        else: # string?
+          continue
     return zip(*values)  # transpose the values! <3 splat ops
