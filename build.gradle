@@ -202,6 +202,20 @@ task buildH2oDevDist(type: Exec) {
 task dist(dependsOn: buildH2oDevDist) 
 
 //
+// Additional clean tasks to get squeaky clean.
+//
+task cleanH2oDistTmp(type: Delete) {
+    delete "$rootDir/h2o-dist/tmp"
+}
+
+task cleanTarget(type: Delete) {
+    delete "$rootDir/target"
+}
+
+clean.dependsOn cleanH2oDistTmp
+clean.dependsOn cleanTarget
+
+//
 // Import project development profiles
 //
 apply from: "gradle/profiles.gradle"
