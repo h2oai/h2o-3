@@ -197,6 +197,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMinute());
     putPrefix(new ASTSecond());
     putPrefix(new ASTMillis());
+    putPrefix(new ASTMktime());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -843,6 +844,79 @@ class ASTDayOfWeek extends ASTTimeOp {
   @Override String opStr(){ return "dayOfWeek"; } 
   @Override ASTOp make() {return new ASTDayOfWeek();} 
   @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
+}
+
+// Convert year, month, day, hour, minute, sec, msec to Unix epoch time
+class ASTMktime extends ASTUniPrefixOp {
+  ASTMktime() { super(new String[]{"","year","month","day","hour","minute","second","msec"}); }
+  @Override String opStr() { return "mktime"; }
+  @Override ASTMktime make() {return new ASTMktime();} 
+  @Override ASTMktime parse_impl(Exec E) {
+    AST yr = E.parse();  if( yr instanceof ASTId) yr = Env.staticLookup((ASTId)yr);
+    AST mo = E.parse();  if( mo instanceof ASTId) mo = Env.staticLookup((ASTId)mo);
+    AST dy = E.parse();  if( dy instanceof ASTId) dy = Env.staticLookup((ASTId)dy);
+    AST hr = E.parse();  if( hr instanceof ASTId) hr = Env.staticLookup((ASTId)hr);
+    AST mi = E.parse();  if( mi instanceof ASTId) mi = Env.staticLookup((ASTId)mi);
+    AST se = E.parse();  if( se instanceof ASTId) se = Env.staticLookup((ASTId)se);
+    AST ms = E.parse();  if( ms instanceof ASTId) ms = Env.staticLookup((ASTId)ms);
+    ASTMktime res = (ASTMktime) clone();
+    res._asts = new AST[]{yr,mo,dy,hr,mi,se,ms};
+    return res;
+  }
+
+  @Override void apply(Env env) {
+    // Seven args, all required.  See if any are arrays.
+    Frame fs[] = new Frame[7];
+    int   is[] = new int  [7];
+    Frame x = null;             // Sample frame (for auto-expanding constants)
+    for( int i=0; i<7; i++ )
+      if( env.peekType()==Env.ARY ) fs[i] = x = env.popAry();
+      else                          is[i] =(int)env.popDbl();
+
+    if( x==null ) {                            // Single point
+      long msec = new MutableDateTime(is[6],   // year   
+                                      is[5]+1, // month  
+                                      is[4]+1, // day    
+                                      is[3],   // hour   
+                                      is[2],   // minute 
+                                      is[1],   // second 
+                                      is[0])   // msec   
+        .getMillis();
+      env.poppush(1, new ValNum(msec));
+      return;
+    }
+
+    // Make constant Vecs for the constant args.  Commonly, they'll all be zero
+    Vec vecs[] = new Vec[7];
+    for( int i=0; i<7; i++ ) {
+      if( fs[i] == null ) {
+        vecs[i] = x.anyVec().makeCon(is[i]);
+      } else {
+        if( fs[i].numCols() != 1 ) throw new IllegalArgumentException("Expect single column");
+        vecs[i] = fs[i].anyVec();
+      }
+    }
+
+    // Convert whole column to epoch msec
+    Frame fr2 = new MRTask() {
+      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+        MutableDateTime dt = new MutableDateTime(0);
+        NewChunk n = nchks[0];
+        int rlen = chks[0]._len;
+        for( int r=0; r<rlen; r++ ) {
+          dt.setDateTime((int)chks[6].at8(r),  // year   
+                         (int)chks[5].at8(r)+1,// month  
+                         (int)chks[4].at8(r)+1,// day    
+                         (int)chks[3].at8(r),  // hour   
+                         (int)chks[2].at8(r),  // minute 
+                         (int)chks[1].at8(r),  // second 
+                         (int)chks[0].at8(r)); // msec   
+          n.addNum(dt.getMillis());
+        }
+      }
+      }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    env.poppush(1, new ValFrame(fr2));
+  }
 }
 
 //

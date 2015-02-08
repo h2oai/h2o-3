@@ -23,7 +23,7 @@ big_test =   ["bigdata/laptop/citibike-nyc/2013-07.csv",
 
 # ----------
 # 1- Load data
-data = h2o.import_frame(path=big_test)
+data = h2o.import_frame(path=small_test)
 
 
 # ----------
