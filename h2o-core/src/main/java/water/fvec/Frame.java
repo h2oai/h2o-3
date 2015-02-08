@@ -387,6 +387,31 @@ public class Frame extends Lockable<Frame> {
    *  @return the expanded Frame, for flow-coding */
   public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
 
+  /** Insert a named column as the first column */
+  public Frame prepend( String name, Vec vec ) {
+    if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
+    if( _vecs.length != 0 ) {
+      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec()._espc,vec._espc) )
+        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+      if( numRows() != vec.length() )
+        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+    }
+    final int len = _names != null ? _names.length : 0;
+    String[] _names2 = new String[len+1];
+    Vec[]    _vecs2  = new Vec   [len+1];
+    Key[]    _keys2  = new Key   [len+1];
+    _names2[0] = name;
+    _vecs2 [0] = vec ;
+    _keys2 [0] = vec._key;
+    System.arraycopy(_names, 0, _names2, 1, len);
+    System.arraycopy(_vecs,  0, _vecs2,  1, len);
+    System.arraycopy(_keys,  0, _keys2,  1, len);
+    _names = _names2;
+    _vecs  = _vecs2;
+    _keys  = _keys2;
+    return this;
+  }
+
   /** Swap two Vecs in-place; useful for sorting columns by some criteria */
   public void swap( int lo, int hi ) {
     assert 0 <= lo && lo < _keys.length;

@@ -241,7 +241,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // DRF picks a random different set of columns for the 2nd tree.
           if( k==1 && _nclass==2 ) continue;
           ktrees[k] = new DTree(_train._names,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows);
-          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,nbins,hcs[k][0],_parms._min_rows,_parms._group_split,false) ); // The "root" node
+          new GBMUndecidedNode(ktrees[k],-1,DHistogram.initialHist(_train,_ncols,nbins,hcs[k][0],false) ); // The "root" node
         }
       }
       int[] leafs = new int[_nclass]; // Define a "working set" of leaf splits, from here to tree._len
@@ -437,7 +437,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if( hs == null ) return best;
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
-        DTree.Split s = hs[i].scoreMSE(i);
+        DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
         if( s == null ) continue;
         if( best == null || s.se() < best.se() ) best = s;
         if( s.se() <= 0 ) break; // No point in looking further!

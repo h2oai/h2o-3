@@ -96,14 +96,14 @@ def validate_model_builder_result(result, original_params, model_name):
         print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
         error = True
 
-    if 'validation_error_count' in result and result['validation_error_count'] > 0:
+    elif result['__http_response']['status_code'] != requests.codes.ok:
+        error = True
+        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+
+    elif 'validation_error_count' in result and result['validation_error_count'] > 0:
         # error case
         print 'FAIL: Parameters validation error for model: ', model_name
         error = True
-
-    if result['__http_response']['status_code'] != requests.codes.ok:
-        error = True
-        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
 
     if error:
         print 'Input parameters: '

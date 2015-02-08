@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.FrameTask.DataInfo;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.schemas.GLMModelV2;
 import water.*;
@@ -14,7 +13,8 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
-
+import water.fvec.Vec;
+import water.fvec.Frame;
 /**
  * Created by tomasnykodym on 8/27/14.
  * TODO: should be a subclass of SupervisedModel.
@@ -71,10 +71,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
@@ -102,10 +102,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   protected float[] score0(double[] data, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)data[i]];
     }
@@ -150,6 +150,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public void validate(GLM glm) {
+      if(_family == Family.binomial) {
+        Vec response = DKV.<Frame>getGet(_train).vec(_response_column);
+        if(response.min() != 0 || response.max() != 1) {
+          glm.error("_response_column", "Illegal response for family binomial, must be binary, got  min = " + response.min() + ", max = " + response.max() + ")");
+        }
+      }
       if (_solver == Solver.L_BFGS) {
         glm.hide("_alpha", "L1 penalty is currently only available for ADMM solver.");
         glm.hide("_higher_accuracy","only available for ADMM");
@@ -232,7 +238,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public double [] nullModelBeta(FrameTask.DataInfo dinfo, double ymu){
+    public double [] nullModelBeta(DataInfo dinfo, double ymu){
       double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
       res[res.length-1] = link(ymu);
       return res;
@@ -316,6 +322,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public final double linkDeriv(double x) {
       switch(_link) {
         case logit:
+          double div = (x * (1 - x));
+          if(div == 0) return 1e9; // avoid numerical instability
           return 1 / (x * (1 - x));
         case identity:
           return 1;
@@ -441,22 +449,25 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       public GLMModel atomic(GLMModel old) {
         if(old == null)return old; // job could've been cancelled!
         if(old._output._submodels == null){
+          old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};
         } else {
           int id = old._output.submodelIdForLambda(lambda);
           if (id < 0) {
             id = -id - 1;
-            old._output._submodels = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
-            for (int i = old._output._submodels.length - 1; i > id; --i)
-              old._output._submodels[i] = old._output._submodels[i - 1];
-          } else if (old._output._submodels[id].iteration > sm.iteration)
-            return old;
-          else
-            old._output._submodels = old._output._submodels.clone();
-          old._output._submodels[id] = sm;
-          old._run_time = Math.max(old._run_time,sm.run_time);
+            Submodel [] sms = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
+            for (int i = sms.length-1; i > id; --i)
+              sms[i] = sms[i - 1];
+            sms[id] = sm;
+            old._output = (GLMOutput)old._output.clone();
+            old._output._submodels = sms;
+          } else {
+            if (old._output._submodels[id].iteration < sm.iteration)
+              old._output._submodels[id] = sm;
+          }
         }
         old._output.pickBestModel(false);
+        old._run_time = Math.max(old._run_time,sm.run_time);
         return old;
       }
     }.fork(modelKey);

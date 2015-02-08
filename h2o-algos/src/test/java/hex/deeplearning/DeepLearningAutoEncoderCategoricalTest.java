@@ -84,6 +84,21 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     Log.info("Creating full reconstruction.");
     final Frame recon_train = mymodel.score(train);
 
+    Frame df1 = mymodel.scoreDeepFeatures(train, 0);
+    Assert.assertTrue(df1.numCols() == 100);
+    Assert.assertTrue(df1.numRows() == train.numRows());
+    df1.delete();
+
+    Frame df2 = mymodel.scoreDeepFeatures(train, 1);
+    Assert.assertTrue(df2.numCols() == 50);
+    Assert.assertTrue(df2.numRows() == train.numRows());
+    df2.delete();
+
+    Frame df3 = mymodel.scoreDeepFeatures(train, 2);
+    Assert.assertTrue(df3.numCols() == 20);
+    Assert.assertTrue(df3.numRows() == train.numRows());
+    df3.delete();
+
     // cleanup
     recon_train.delete();
     train.delete();

@@ -30,6 +30,6 @@ class H2OBinomialModelMetrics(object):
     print "Overall AUC (independent of criterion): " + str(self._auc_data.AUC)
     print "Overall Gini (independent of criterion): " + str(self._auc_data.Gini)
     print
-    print self._auc_data. thresholdsAndMetricScores
+    # print self._auc_data. thresholdsAndMetricScores
     print self._auc_data.maxCriteriaAndMetricScores
-    print self._auc_data.confusion_matrices
+    # print self._auc_data.confusion_matrices
