@@ -43,7 +43,7 @@ task cleaner << {
 
 clean.dependsOn cleaner
 upgradeOrInstallWheel.dependsOn cleaner
-buildDist.dependsOn upgradeOrInstallTabulate
-buildDist.dependsOn upgradeOrInstallWheel
+// buildDist.dependsOn upgradeOrInstallTabulate
+// buildDist.dependsOn upgradeOrInstallWheel
 task build_python(dependsOn: buildDist)
 build.dependsOn build_python
