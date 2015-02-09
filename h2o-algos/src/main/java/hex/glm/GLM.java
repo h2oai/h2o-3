@@ -455,7 +455,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(_jobKey != null && !isRunning(_jobKey) )  throw new JobCancelledException();
         assert _activeCols == null || glmt._beta == null || glmt._beta.length == (_activeCols.length+1):LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _activeCols.length);
         assert _activeCols == null || _activeCols.length == _activeData.fullN();
-        assert getCompleter().getPendingCount() <= 1 : LogInfo("unexpected pending count, expected <=  1, got " + getCompleter().getPendingCount()); // will be decreased by 1 after we leave this callback
         if (_countIteration) ++_iter;
         long callbackStart = System.currentTimeMillis();
         if(glmt.hasNaNsOrInf() || (glmt._computeGradient && L_BFGS.needLineSearch(_lineSearchStep, _lastResult._objval, glmt._ginfo._objVal, _lastResult._beta, glmt._beta, _lastResult._grad))){
