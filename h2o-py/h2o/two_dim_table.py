@@ -39,9 +39,9 @@ class H2OTwoDimTable(object):
         if types[col_index] == 'integer':
           values[col_index][row_index]  = "" if not row_value else int(float.fromhex(row_value))
 
-        elif types[col_index] == 'double' or types[col_index] == 'float' or types[col_index] == 'long':
+        elif types[col_index] in ['double', 'float', 'long']:
           values[col_index][row_index]  = "" if not row_value else float.fromhex(row_value)
 
-        else: # string?
+        else:  # string?
           continue
     return zip(*values)  # transpose the values! <3 splat ops
