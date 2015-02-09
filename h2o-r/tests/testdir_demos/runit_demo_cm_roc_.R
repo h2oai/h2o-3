@@ -28,24 +28,40 @@ myY <- "IsDepDelayed"
 air.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = air.train, ntrees = 10, max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
 print(air.gbm@model)
 
+#glm
+air.glm <- h2o.glm(x = myX, y = myY, family = "binomial", training_frame = air.train, do_classification=TRUE, solver = "L_BFGS")
+print(air.glm@model)
+
 #uploading test file to h2o
 air.test <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
-pred <- predict(air.gbm, air.test)
-head(pred)
-perf <- h2o.performance(air.gbm, air.test)
-print(perf)
+pred.gbm <- predict(air.gbm, air.test)
+head(pred.gbm)
+perf.gbm <- h2o.performance(air.gbm, air.test)
+print(perf.gbm)
+
+pred.glm <- predict(air.glm, air.test)
+head(pred.glm)
+perf.glm <- h2o.performance(air.glm, air.test)
+print(perf.glm)
 
 #Building confusion matrix for test set
-CM <- h2o.confusionMatrices(perf, 0.5)
-print(CM)
+CM.gbm <- h2o.confusionMatrices(perf.gbm, 0.5)
+print(CM.gbm)
+CM.glm <- h2o.confusionMatrices(perf.glm, 0.5)
+print(CM.glm)
 
 #Plot ROC for test set
-h2o.precision(perf)
-h2o.accuracy(perf)
-h2o.auc(perf)
-plot(perf,type="roc")
+h2o.precision(perf.gbm)
+h2o.accuracy(perf.gbm)
+h2o.auc(perf.gbm)
+plot(perf.gbm,type="roc")
+
+h2o.precision(perf.glm)
+h2o.accuracy(perf.glm)
+h2o.auc(perf.glm)
+plot(perf.glm,type="roc")
 
 PASS_BANNER()
 

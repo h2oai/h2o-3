@@ -344,7 +344,12 @@ public class Job<T extends Keyed> extends Keyed {
       _progress_msg = progress_msg;
     }
 
-    /** Methodology 2 */
+    // Methodology 2
+    /**
+     * Update progress object.
+     * @param fraction_done A number between 0 and 1 (clamped if needed)
+     * @param progress_msg Short message to display to the user
+     */
     public ProgressUpdate(float fraction_done, String progress_msg) {
       if (fraction_done < 0.0f) {
         fraction_done = 0.0f;
@@ -358,6 +363,27 @@ public class Job<T extends Keyed> extends Keyed {
       _progress_msg = progress_msg;
     }
 
+    /**
+     * Update progress object.
+     * @param fraction_done A number between 0 and 1 (clamped if needed)
+     */
+    public ProgressUpdate(float fraction_done) {
+      if (fraction_done < 0.0f) {
+        fraction_done = 0.0f;
+      }
+      if (fraction_done > 1.0f) {
+        fraction_done = 1.0f;
+      }
+
+      _newwork = 0;
+      _fraction_done = fraction_done;
+      _progress_msg = null;
+    }
+
+    /**
+     * Update progress object.
+     * @param progress_msg Short message to display to the user
+     */
     public ProgressUpdate(String progress_msg) {
       _newwork = 0;
       _fraction_done = -1.0f;
