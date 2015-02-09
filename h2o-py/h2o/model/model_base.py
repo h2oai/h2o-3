@@ -84,7 +84,5 @@ class ModelBase(object):
     print
     print "Model Details:"
     print
-    print tabulate.tabulate(val, headers=["Description", "Value"])
-    print
     for v in two_dim_tables:
       v.show()

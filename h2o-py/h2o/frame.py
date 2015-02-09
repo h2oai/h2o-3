@@ -648,18 +648,33 @@ class H2OVec:
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     raise NotImplementedError
 
+  def _simple_bin_rop(self, i, op):
+    if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, i, self._len_check(i)))
+    if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self))
+    raise NotImplementedError
+
+
   def __add__(self, i):  return self._simple_bin_op(i,"+" )
-  def __sub__(self, i):  return self._simple_bin_op(i, "-")
+  def __sub__(self, i):  return self._simple_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_bin_op(i,"&" )
+  def __or__ (self, i):  return self._simple_bin_op(i,"|" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
   def __mul__(self, i):  return self._simple_bin_op(i,"*" )
   def __eq__ (self, i):  return self._simple_bin_op(i,"==")
+  def __neg__(self, i):  return self._simple_bin_op(i,"!=")
+  def __pow__(self, i):  return self._simple_bin_op(i,"^" )
   def __ge__ (self, i):  return self._simple_bin_op(i,">=")
   def __gt__ (self, i):  return self._simple_bin_op(i,">" )
   def __le__ (self, i):  return self._simple_bin_op(i,"<=")
   def __lt__ (self, i):  return self._simple_bin_op(i,"<" )
 
-  def __radd__(self, i):   return self.__add__(i)
+  def __radd__(self, i): return self.__add__(i)  # commutativity
+  def __rsub__(self, i): return self._simple_bin_rop(i,"-")  # not commutative
+  def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return self._simple_bin_rop(i,"/")  # not commutative
+  def __rmul__(self, i): return self.__mul__(i)
 
 
   def __len__(self):

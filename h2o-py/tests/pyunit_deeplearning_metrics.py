@@ -32,7 +32,7 @@ def deep_learning_metrics_test(ip, port):
   print "Binomial Model Metrics: "
   print
   dl.show()
-  print dl._model_json
+  # print dl._model_json
   dl.model_performance(test).show()
 
 

@@ -2084,6 +2084,7 @@ class ASTSetColNames extends ASTUniPrefixOp {
     Frame f = env.popAry();
     for (int i=0; i < _names.length; ++i)
       f._names[(int)_idxs[i]] = _names[i];
+    if (f._key != null && DKV.get(f._key) != null) DKV.put(f);
     env.pushAry(f);
   }
 }
