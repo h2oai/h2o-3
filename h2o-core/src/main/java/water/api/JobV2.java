@@ -24,6 +24,9 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
   @API(help="progress, from 0 to 1", direction=API.Direction.OUTPUT)
   public float progress;               // A number from 0 to 1
 
+  @API(help="current progress status description", direction=API.Direction.OUTPUT)
+  public String progress_msg;
+
   @API(help="runtime", direction=API.Direction.OUTPUT)
   public long msec;
 
