@@ -88,6 +88,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
     setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
     p["columnNames"] = None
 
+  if setup["columnTypes"]:
+    setup["columnTypes"] = [_quoted(name) for name in setup["columnTypes"]]
+    p["columnTypes"] = None
+
   # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
 

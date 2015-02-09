@@ -468,6 +468,7 @@ class H2O(object):
             'singleQuotes': setup_result['singleQuotes'],
             'columnNames': setup_result['columnNames'], # gets stringified inside __do_json_request()
             'chunkSize': setup_result['chunkSize'],
+            'columnTypes': setup_result['columnTypes'], # gets stringified inside __do_json_request()
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)

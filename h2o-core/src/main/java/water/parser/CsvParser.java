@@ -1,6 +1,8 @@
 package water.parser;
 
 import water.fvec.FileVec;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -568,7 +570,7 @@ MAIN_LOOP:
    *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
    *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
-  static ParseSetup CSVguessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames) {
 
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
@@ -664,7 +666,21 @@ MAIN_LOOP:
     if( !errors.isEmpty() )
       errors.toArray(err = new String[errors.size()]);
 
+    // Assemble the setup understood so far
+    ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
+
+    // now guess the types
+    InputStream is = new ByteArrayInputStream(bits);
+    CsvParser p = new CsvParser(resSetup);
+    TypeGuesserDataOut dout = new TypeGuesserDataOut(resSetup._ncols);
+    try{
+      p.streamParse(is, dout);
+      resSetup._ctypes = dout.guessTypes();
+    }catch(Throwable e){
+    // TODO need to say something if we are having parse troubles this early
+    }
+
     // Return the final setup
-    return new ParseSetup( true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
+    return resSetup;
   }
 }

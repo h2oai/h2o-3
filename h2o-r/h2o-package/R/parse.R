@@ -20,6 +20,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
   ncols <- parseSetup$ncols
   col.names <- parseSetup$columnNames
+  col.types <- parseSetup$columnTypes
   parsedSrcs <- sapply(parseSetup$srcs, function(asrc) asrc$name)
 
   if (!nzchar(key))
@@ -34,7 +35,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
         checkHeader = parseSetup$checkHeader,
         singleQuotes = parseSetup$singleQuotes,
         delete_on_done = TRUE,
-        chunkSize = parseSetup$chunkSize
+        chunkSize = parseSetup$chunkSize,
+        columnTypes = .collapse.char(col.types) 
         )
 
   # Perform the parse

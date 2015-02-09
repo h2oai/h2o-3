@@ -415,7 +415,7 @@ public final class ParseDataset extends Job<Frame> {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    private final ParseSetup _setup; // The expected column layout
+    private final ParseSetup _gblSetup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
@@ -439,8 +439,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int _reservedKeys;
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
-      _vg = vg; _setup = setup;
-      _vecIdStart = _vg.reserveKeys(_reservedKeys = _setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
+      _vg = vg; _gblSetup = setup;
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _gblSetup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
 
@@ -533,8 +533,8 @@ public final class ParseDataset extends Job<Frame> {
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._pType == ParserType.SVMLight
-        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _setup._chunkSize, avs)
-        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _setup._chunkSize, avs);
+        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _gblSetup._chunkSize, avs)
+        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _gblSetup._chunkSize, avs);
     }
 
     // Called once per file
@@ -545,14 +545,34 @@ public final class ParseDataset extends Job<Frame> {
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr,_setup._chunkSize);
-      ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
-      localSetup._chunkSize = _setup._chunkSize;
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr, _gblSetup._chunkSize);
+      ParseSetup localSetup = _gblSetup.guessSetup(bits, 0/*guess header in each file*/);
+
+      localSetup._chunkSize = _gblSetup._chunkSize;
+
+      //check local setup info
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
         return;
+      } else if (!localSetup.isCompatible(_gblSetup)) {
+        // Local setup should be nearly the same as the global all-files setup,
+        // with maybe the header-flag changed.
+        //TODO throw error "Conflicting file layouts, expecting: " + _setup + " but found " + localSetup;
+        return;
       }
+
+      // Allow dup headers, if they are equals-ignoring-case
+/*      boolean has_hdr = _setup._header && localSetup._header;
+      if( has_hdr ) {           // Both have headers?
+        for( int i = 0; has_hdr && i < localSetup._columnNames.length; ++i )
+          has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_setup._columnNames[i]);
+        if( !has_hdr )          // Headers not compatible?
+          // Then treat as no-headers, i.e., parse it as a normal row
+          localSetup = new CustomParser.ParserSetup(ParserType.CSV,localSetup._separator, false);
+      }
+*/
+
       // Parse the file
       try {
         switch( cpr ) {
@@ -617,7 +637,6 @@ public final class ParseDataset extends Job<Frame> {
     // ------------------------------------------------------------------------
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-//    private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, FVecDataOut dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser();
@@ -727,7 +746,7 @@ public final class ParseDataset extends Job<Frame> {
     // Find & remove all partially built output chunks & vecs
     private Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2Enum.length;
-      int ncols = _setup._ncols;
+      int ncols = _gblSetup._ncols;
       for( int i = 0; i < ncols; ++i ) {
         Key vkey = _vg.vecKey(_vecIdStart + i);
         Keyed.remove(vkey,fs);

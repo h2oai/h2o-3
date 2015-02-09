@@ -39,6 +39,9 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   @API(help="Domains for categorical columns")
   String[][] domains;
 
+  @API(help="Value types for columns")
+  String[] columnTypes;
+
   @API(help="Delete input key after parse")
   boolean delete_on_done;
 
