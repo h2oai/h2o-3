@@ -364,6 +364,10 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op == "merge":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
     elif self._op == ",":
       pass
 
