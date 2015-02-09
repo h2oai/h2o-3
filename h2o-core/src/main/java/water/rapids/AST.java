@@ -58,6 +58,10 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTddply) {
         _asts[0].treeWalk(e);
         ((ASTddply)this).apply(e);
+      } else if (this instanceof ASTMerge) {
+        _asts[1].treeWalk(e);
+        _asts[0].treeWalk(e);
+        ((ASTMerge)this).apply(e);
       } else {
         throw H2O.fail("Unknown AST in tree walk: " + this.getClass());
         // TODO: do the udf op thing: capture env...

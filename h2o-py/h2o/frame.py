@@ -514,12 +514,15 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
-  def merge(self, other, allLeft=False, allRight=False):
+  def merge(self, other, allLeft=False, allRite=False):
     """
     Merge two datasets based on common column names
-    :param other: Other dataset to merge.  Must have at least one column in common with self
-    :param allLeft:  If true, include all rows from the left/self frame
-    :param allRight: If true, include all rows from the right/other frame
+    :param other: Other dataset to merge.  Must have at least one column in
+    common with self, and all columns in common are used as the merge key.  If
+    you want to use only a subset of the columns in common, rename the other
+    columns so the columns are unique in the merged result.
+    :param allLeft: If true, include all rows from the left/self frame
+    :param allRite: If true, include all rows from the right/other frame
     :return: Original self frame enhanced with merged columns and rows
     """
     for v0 in self._vecs:
@@ -528,7 +531,25 @@ class H2OFrame:
       if v0._name==v1._name: break
     else:
       raise ValueError("frames must have some columns in common to merge on")
-    return H2OVec(self._name,Expr("merge",self._expr,other._expr))
+    # Eagerly eval and send the cbind'd frame over
+    lkey = self .send_frame()
+    rkey = other.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (merge %{} %{} %{} %{}))".format(tmp_key,lkey,rkey,
+                                                    "TRUE" if allLeft else "FALSE",
+                                                    "TRUE" if allRite else "FALSE")
+    h2o.rapids(expr) # merge in h2o
+    # Remove h2o temp frame after merge
+    h2o.remove(lkey)
+    h2o.remove(rkey)
+    # Make backing H2OVecs for the remote h2o vecs
+    j = h2o.frame(tmp_key) # Fetch the frame as JSON
+    fr = j['frames'][0]    # Just the first (only) frame
+    rows = fr['rows']      # Row count
+    veckeys = fr['veckeys']# List of h2o vec keys
+    cols = fr['columns']   # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
 class H2OVec:
   """
