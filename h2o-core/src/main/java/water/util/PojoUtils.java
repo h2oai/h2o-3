@@ -131,6 +131,7 @@ public class PojoUtils {
               int i = 0;
               for (Iced impl : ((Iced[])orig_field.get(origin))) {
                 translation[i++] = ((Schema)dest_field.getType().getComponentType().newInstance()).fillFromImpl(impl);
+                // ## TODO Add handling for subclasses ##
               }
               dest_field.set(dest, translation);
             } else if (Schema.class.isAssignableFrom(orig_field.getType().getComponentType()) && Iced.class.isAssignableFrom(dest_field.getType().getComponentType())) {

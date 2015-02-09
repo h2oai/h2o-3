@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1, "..")
 import h2o
 
 
@@ -30,6 +31,8 @@ def deep_learning_metrics_test(ip, port):
                         hidden = [10, 10, 10])
   print "Binomial Model Metrics: "
   print
+  dl.show()
+  # print dl._model_json
   dl.model_performance(test).show()
 
 

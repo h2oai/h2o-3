@@ -1,0 +1,629 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>H2OFrame &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="index.html" />
+    <link rel="next" title="model Package" href="h2o.model.html" />
+    <link rel="prev" title="The H2O Python Module" href="h2o.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="h2o.model.html" title="model Package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="h2o.html" title="The H2O Python Module"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="h2oframe">
+<h1>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h1>
+<p>A H2OFrame represents a 2D array of data where each column is uniformly typed.</p>
+<p>The data may be local, or it may be in an H2O cluster. The data are loaded from a CSV
+file or the data are loaded from a native python data structure, and is either a
+python-process-local file or a cluster-local file, or a list of H2OVec objects.</p>
+<div class="section" id="loading-data-from-a-csv-file">
+<h2>Loading Data From A CSV File<a class="headerlink" href="#loading-data-from-a-csv-file" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>H2O&#8217;s parser supports data of various formats coming from various sources.
+Briefly, these formats are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>SVMLight</li>
+<li>CSV (data may delimited by any of the 128 ASCII characters)</li>
+<li>XLS</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Data sources may be:</dt>
+<dd><ul class="first last">
+<li><p class="first">NFS / Local File / List of Files</p>
+</li>
+<li><p class="first">HDFS</p>
+</li>
+<li><p class="first">URL</p>
+</li>
+<li><dl class="first docutils">
+<dt>A Directory (with many data files inside at the <em>same</em> level &#8211; no support for</dt>
+<dd><p class="first last">recursive import of data)</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">S3/S3N</p>
+</li>
+<li><p class="first">Native Language Data Structure (c.f. the subsequent section)</p>
+</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="loading-data-from-a-python-object">
+<h2>Loading Data From A Python Object<a class="headerlink" href="#loading-data-from-a-python-object" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>It is possible to transfer the data that are stored in python data structures to
+H2O by using the H2OFrame constructor and the <cite>python_obj</cite> argument. (Note that if
+the <cite>python_obj</cite> argument is not <cite>None</cite>, then additional arguments are ignored).</p>
+<p>The following types are permissible for <cite>python_obj</cite>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="xref py py-class docutils literal"><span class="pre">tuple</span></tt> ()</li>
+<li><tt class="xref py py-class docutils literal"><span class="pre">list</span></tt>  []</li>
+<li><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt>  {}</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">collections.OrderedDict</span></tt></li>
+</ul>
+</div></blockquote>
+<p>The type of <cite>python_obj</cite> is inspected by performing an <cite>isinstance</cite> call. A
+ValueError will be raised if the type of <cite>python_obj</cite> is not one of the above
+types. Notably, sets, byte arrays, and un-contained types are not permissible.</p>
+<p>In the subsequent sections, each data type will be discussed in detail. Each
+discussion will be couched in terms of the &#8220;source&#8221; representation (the python
+object) and the &#8220;target&#8221; representation (the H2O object). Concretely, the topics
+of discussion will be on the following: Headers, Data Types, Number of Rows,
+Number of Columns, and Missing Values.</p>
+<p>Aside: Why is Pandas&#8217; DataFrame not a permissible type?</p>
+<blockquote>
+<div><p>There are two reason that Pandas&#8217; DataFrame objects are not included.
+First, it is desirable to keep the number of dependencies to a minimum, and it
+is difficult to justify the inclusion of the Pandas module as a dependency if
+its raison d&#8217;être is tied to this small detail of transferring data from
+python to H2O.</p>
+<p>Second, Pandas objects are simple wrappers of numpy arrays together with some
+meta data; therefore if one was adequately motivated, then the transfer of
+data from a Pandas DataFrame to an H2O Frame could readily be achieved.</p>
+</div></blockquote>
+<p>In what follows, H2OFrame and Frame will be used synonymously. Technically, an
+H2OFrame is the object-pointer that resides in the python VM and points to a Frame
+object inside of the H2O JVM. Similarly, H2OFrame, Frame, and H2O Frame will all
+refer to the same kind of object. In general, though, the context is from the
+python VM, unless otherwise specified.</p>
+</div></blockquote>
+<div class="section" id="loading-a-python-tuple">
+<h3>Loading A Python Tuple<a class="headerlink" href="#loading-a-python-tuple" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Essentially, the tuple is an immutable list. This immutability does not map to
+the H2OFrame. So pythonistas be ware!</p>
+<p>The restrictions on what goes inside the tuple are fairly relaxed, but if they
+are too unusual, a ValueError will be raised.</p>
+<p>A tuple looks as follows:</p>
+<blockquote>
+<div>(i1, i2, i3, ..., iN)</div></blockquote>
+<p>Restrictions are really on the types of the individual <cite>iJ</cite> (1 &lt;= J &lt;= N).</p>
+<p>If <cite>iJ</cite> is {} for some J, then a ValueError will be raised.</p>
+<p>If <cite>iJ</cite> is a () (tuple) or [] (list), then <cite>iJ</cite> must be a () or [] for all J;
+otherwise a ValueError will be raised.</p>
+<p>If <cite>iJ</cite> is a () or [], and if it is in fact a nested () or nested [], then a
+ValueError will be raised. In other words, only a single level of nesting is
+valid, all internal arrays must be flat &#8211; H2O will not flatten them for you.</p>
+<p>If <cite>iJ</cite> is not a () or [], then it must be of type string or a non-complex
+numeric type (float or int). In other words, if <cite>iJ</cite> is not a tuple, list,
+string, float, or int, for some J, then a ValueError will be raised.</p>
+<dl class="docutils">
+<dt>Some acceptable inputs are:</dt>
+<dd><ul class="first last simple">
+<li>Example A: (1,2,3)</li>
+<li>Example B: ((1,2,3), (4,5,6), (&#8220;cat&#8221;, &#8220;dog&#8221;))</li>
+<li>Example C: ((1,2,3), [4,5,6], [&#8220;blue&#8221;, &#8220;yellow&#8221;], (321.239, &#8220;green&#8221;,&#8221;hi&#8221;))</li>
+<li>Example D: (3284.123891, &#8220;dog&#8221;, 89)</li>
+</ul>
+</dd>
+</dl>
+<p>Note that it is perfectly fine to mix () and [] within a tuple.</p>
+<p>Onward.</p>
+<p>Headers, Columns, Rows, Data Types, and Missing Values:</p>
+<p>The form of the H2OFrame is as follows:</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="21%" />
+<col width="21%" />
+<col width="13%" />
+<col width="24%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">column1</th>
+<th class="head">column2</th>
+<th class="head">column3</th>
+<th class="head">...</th>
+<th class="head">columnN</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>a11,</td>
+<td>a12,</td>
+<td>a13,</td>
+<td>...,</td>
+<td>a1N</td>
+</tr>
+<tr class="row-odd"><td>.,</td>
+<td>.,</td>
+<td>.,</td>
+<td>...,</td>
+<td>.</td>
+</tr>
+<tr class="row-even"><td>.,</td>
+<td>.,</td>
+<td>.,</td>
+<td>...,</td>
+<td>.</td>
+</tr>
+<tr class="row-odd"><td>.,</td>
+<td>.,</td>
+<td>.,</td>
+<td>...,</td>
+<td>.</td>
+</tr>
+<tr class="row-even"><td>aM1,</td>
+<td>aM2,</td>
+<td>aM3,</td>
+<td>...,</td>
+<td>aMN</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>It looks exactly like an MxN matrix with an additional header &#8220;row&#8221;. This
+header cannot be specified when loading data from a () (or from a []
+but it is possible to specify a header with a python dictionary, see below
+for details).</p>
+<p>Headers:</p>
+<blockquote>
+<div><p>Since no header row can be specified for this case, H2O will generate a
+column header on your behalf and the column header will look like this:</p>
+<blockquote>
+<div>C1, C2, C3, ..., CN</div></blockquote>
+<p>Notably, these columns have a 1-based indexing (i.e. the 0th column is
+&#8220;C1&#8221;).</p>
+</div></blockquote>
+<p>Rows and Columns and Missing Data:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>The shape of the H2OFrame is determined by the two factors:</dt>
+<dd>the number of arrays nested in the ()
+the number of items in each array</dd>
+</dl>
+<p>If there are no nested arrays (as in Example A and Example D above), then
+the resulting H2OFrame will have shape (rows x cols):</p>
+<blockquote>
+<div>1 x len(tuple)</div></blockquote>
+<p>(i.e. a Frame with a single row).</p>
+<p>If there are nested arrays (as in Example B and Example C above), then
+(given the rules stated above) the resulting H2OFrame will have ROWS equal
+to the number of arrays nested within and COLUMNS equal to the maximum sub
+array:</p>
+<blockquote>
+<div>max( [len(l) for l in tuple] ) x len(tuple)</div></blockquote>
+<p>Note that this handles the issue with ragged sub arrays by assuming that
+shorter sub arrays will pad themselves with NA (missing values) at the end
+so that they become the correct length.</p>
+<p>Because the Frame is uniformly typed, mixing and matching data types
+within a column may produce unexpected results. Please read up on the H2O
+parser for details on how a column type is determined for a column of
+initially mixed type.</p>
+</div></blockquote>
+</div></blockquote>
+</div>
+<div class="section" id="loading-a-python-list">
+<h3>Loading A Python List<a class="headerlink" href="#loading-a-python-list" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>The same discussion applies for lists as it does for tuples. Lists are mutable
+objects so there is no semantic difference regarding mutability between an
+H2OFrame and a list (as there is for a tuple).</p>
+<p>Additionally, a list [] is ordered (as is a tuple ()) and the data appearing
+within</p>
+</div></blockquote>
+</div>
+<div class="section" id="loading-a-python-dictionary-or-collections-ordereddict">
+<h3>Loading A Python Dictionary Or collections.OrderedDict<a class="headerlink" href="#loading-a-python-dictionary-or-collections-ordereddict" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Each entry in the {} is expected to represent a single column. Keys in the {}
+must be character strings following the pattern: ^[a-zA-Z_][a-zA-Z0-9_.]*$
+without restriction on length. That is a valid column name may begin with any
+letter (capital or not) or an &#8220;_&#8221;, it can then be followed by any number of
+letters, digits, &#8220;_&#8221;s, or &#8221;.&#8221;s.</p>
+<p>Values in the {} may be a flat [], a flat (), or a single int, float, or
+string value. Nested [] and () will raise a ValueError. This is the only
+additional restriction on [] and () that applies in this context.</p>
+<p>Note that the built-in dict does not provide any guarantees on ordering. This
+has implications on the order of columns in the eventual H2OFrame, since they
+may be written out of order from which they were initially put into the dict.</p>
+<p>collections.OrderedDict will preserve the order of the key-value pairs in
+which they were entered.</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="module-h2o.frame">
+<span id="frame-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">frame</span></tt> Module<a class="headerlink" href="#module-h2o.frame" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="h2o.frame.H2OFrame">
+<em class="property">class </em><tt class="descclassname">h2o.frame.</tt><tt class="descname">H2OFrame</tt><big>(</big><em>python_obj=None</em>, <em>local_fname=None</em>, <em>remote_fname=None</em>, <em>vecs=None</em>, <em>raw_fname=None</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="h2o.frame.H2OFrame.col_names">
+<tt class="descname">col_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.col_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.col_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the column names (one name per H2OVec) for this H2OFrame.
+:return: A character list[] of column names.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.ddply">
+<tt class="descname">ddply</tt><big>(</big><em>cols</em>, <em>fun</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.ddply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.ddply" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.describe">
+<tt class="descname">describe</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.describe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.describe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate an in-depth description of this H2OFrame.</p>
+<p>The description is a tabular print of the type, min, max, sigma, number of zeros,
+and number of missing elements for each H2OVec in this H2OFrame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None (print to stdout)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.drop">
+<tt class="descname">drop</tt><big>(</big><em>i</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.drop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Column selection via integer, string(name) returns a Vec
+Column selection via slice returns a subset Frame
+:param i: Column to select
+:return: Returns an H2OVec or H2OFrame.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.head">
+<tt class="descname">head</tt><big>(</big><em>rows=10</em>, <em>cols=200</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.head"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.head" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.names">
+<tt class="descname">names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the column names (one name per H2OVec) for this H2OFrame.
+:return: A character list[] of column names.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.ncol">
+<tt class="descname">ncol</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.ncol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.ncol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of columns in this H2OFrame.
+:return: The number of columns in this H2OFrame.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.nrow">
+<tt class="descname">nrow</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.nrow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.nrow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of rows in this H2OFrame.
+:return: The number of rows in this dataset.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="h2o.frame.H2OFrame.py_tmp_key">
+<em class="property">static </em><tt class="descname">py_tmp_key</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.py_tmp_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.py_tmp_key" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a unique h2o key obvious from python</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.quantile">
+<tt class="descname">quantile</tt><big>(</big><em>prob=None</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.quantile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.quantile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.send_frame">
+<tt class="descname">send_frame</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.send_frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.send_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a frame description to H2O, returns a key.
+:return: A key</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.show">
+<tt class="descname">show</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OFrame.vecs">
+<tt class="descname">vecs</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OFrame.vecs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OFrame.vecs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the array of H2OVec objects comprising this H2OFrame.
+:return: The array of H2OVec objects.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="h2o.frame.H2OVec">
+<em class="property">class </em><tt class="descclassname">h2o.frame.</tt><tt class="descname">H2OVec</tt><big>(</big><em>name</em>, <em>expr</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single column of data that is uniformly typed and possibly lazily computed.</p>
+<dl class="method">
+<dt id="h2o.frame.H2OVec.append">
+<tt class="descname">append</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append a value during CSV read, convert to float.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> &#8211; An element being appended to the end of this H2OVec</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">void</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.asfactor">
+<tt class="descname">asfactor</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.asfactor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.asfactor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A transformed H2OVec from numeric to categorical.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.dayOfWeek">
+<tt class="descname">dayOfWeek</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.dayOfWeek"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.dayOfWeek" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Returns a new Day-of-Week column from a msec-since-Epoch column</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.floor">
+<tt class="descname">floor</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.floor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.floor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A lazy Expr representing the Math.floor() of this H2OVec.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.get_expr">
+<tt class="descname">get_expr</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.get_expr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.get_expr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.mean">
+<tt class="descname">mean</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.mean" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A lazy Expr representing the mean of this H2OVec.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.month">
+<tt class="descname">month</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.month"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.month" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Returns a new month column from a msec-since-Epoch column</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.name">
+<tt class="descname">name</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="h2o.frame.H2OVec.new_vecs">
+<em class="property">static </em><tt class="descname">new_vecs</tt><big>(</big><em>vecs=None</em>, <em>rows=-1</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.new_vecs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.new_vecs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.quantile">
+<tt class="descname">quantile</tt><big>(</big><em>prob=None</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.quantile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.quantile" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A lazy Expr representing the quantiles of this H2OVec.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.row_select">
+<tt class="descname">row_select</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.row_select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.row_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Boolean column select lookup
+:param vec: An H2OVec.
+:return: A new H2OVec.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.runif">
+<tt class="descname">runif</tt><big>(</big><em>seed=None</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.runif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.runif" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>seed</strong> &#8211; A random seed. If None, then one will be generated.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A new H2OVec filled with doubles sampled uniformly from [0,1).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.show">
+<tt class="descname">show</tt><big>(</big><em>noprint=False</em><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pretty print this H2OVec, or return values up to an iterator on an enclosing Frame
+:param noprint: A boolean stating whether to print or to return data.
+:return: If noprint is False, then self._expr is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="h2o.frame.H2OVec.summary">
+<tt class="descname">summary</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/h2o/frame.html#H2OVec.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#h2o.frame.H2OVec.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the rollup data summary (min, max, mean, etc.)
+:return: the summary from this Expr object</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">H2OFrame</a><ul>
+<li><a class="reference internal" href="#loading-data-from-a-csv-file">Loading Data From A CSV File</a></li>
+<li><a class="reference internal" href="#loading-data-from-a-python-object">Loading Data From A Python Object</a><ul>
+<li><a class="reference internal" href="#loading-a-python-tuple">Loading A Python Tuple</a></li>
+<li><a class="reference internal" href="#loading-a-python-list">Loading A Python List</a></li>
+<li><a class="reference internal" href="#loading-a-python-dictionary-or-collections-ordereddict">Loading A Python Dictionary Or collections.OrderedDict</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-h2o.frame"><tt class="docutils literal"><span class="pre">frame</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="h2o.html"
+                        title="previous chapter">The H2O Python Module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="h2o.model.html"
+                        title="next chapter">model Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/frame.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="h2o.model.html" title="model Package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="h2o.html" title="The H2O Python Module"
+             >previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.ConfusionMatrix;
-import hex.ModelMetricsBinomial;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -284,9 +283,9 @@ public class GBMTest extends TestUtil {
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
       double auc = mm._aucdata.AUC();
-      Assert.assertTrue(0.83 <= auc && auc < 0.85); // Sanely good model
+      Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
       ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(324, 69), ar(35, 72)), cmf1.confusion_matrix);
+      Assert.assertArrayEquals(ar(ar(296, 97), ar(22, 85)), cmf1.confusion_matrix);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -443,6 +442,13 @@ public class GBMTest extends TestUtil {
     double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.bernoulli)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.bernoulli)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
+  }
+
+  @Test public void testBigCat() {
+    final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
+    basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv" , prep, false, Family.AUTO);
   }
 
 }

@@ -52,7 +52,7 @@ class ConfusionMatrix(object):
     row_header += ["Totals"]
     col_header += ["Error"]
 
-    self.table = H2OTwoDimTable(row_header, col_header, None, table_header, None, cell_values, None)
+    self.table = H2OTwoDimTable(row_header, col_header, None, table_header, None, None, cell_values)
 
   def show(self):
     self.table.show()

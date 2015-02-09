@@ -41,7 +41,6 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   public final float _step;     // Linear interpolation step per bin
   public final float _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public       int   _bins[];   // Bins, shared, atomically incremented
-  public final boolean _doGrpSplit;
 
   // Atomically updated float min/max
   protected    float  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -71,13 +70,12 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       old = _maxIn;
   }
 
-  public DHistogram( String name, final int nbins, final byte isInt, final float min, final float maxEx, long nelems, boolean doGrpSplit ) {
+  public DHistogram( String name, final int nbins, final byte isInt, final float min, final float maxEx, long nelems ) {
     assert nelems > 0;
     assert nbins >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
     _isInt = isInt;
     _name = name;
-    _doGrpSplit = doGrpSplit;
     _min=min;
     _maxEx=maxEx;               // Set Exclusive max
     _min2 =  Float.MAX_VALUE;   // Set min/max to outer bounds
@@ -178,10 +176,10 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  abstract public DTree.Split scoreMSE( int col );
+  abstract public DTree.Split scoreMSE( int col, int min_rows );
 
   // The initial histogram bins are setup from the Vec rollups.
-  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], boolean doGrpSplit, boolean isBinom) {
+  static public DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], boolean isBinom) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -190,15 +188,15 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       final float maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins,(byte)(v.isEnum() ? 2 : (v.isInt()?1:0)),minIn,maxEx,vlen,doGrpSplit,isBinom);
+        make(fr._names[c],nbins,(byte)(v.isEnum() ? 2 : (v.isInt()?1:0)),minIn,maxEx,vlen,isBinom);
     }
     return hs;
   }
 
-  static public DHistogram make( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean doGrpSplit, boolean isBinom ) {
+  static public DHistogram make( String name, final int nbins, byte isInt, float min, float maxEx, long nelems, boolean isBinom ) {
     return isBinom
-      ? new DBinomHistogram(name,nbins,isInt,min,maxEx,nelems,doGrpSplit)
-      : new  DRealHistogram(name,nbins,isInt,min,maxEx,nelems,doGrpSplit);
+      ? new DBinomHistogram(name,nbins,isInt,min,maxEx,nelems)
+      : new  DRealHistogram(name,nbins,isInt,min,maxEx,nelems);
   }
 
   // Check for a constant response variable

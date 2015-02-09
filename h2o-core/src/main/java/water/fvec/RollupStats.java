@@ -155,6 +155,8 @@ class RollupStats extends Iced {
 
     // UUID and String columns do not compute min/max/mean/sigma
     if( isUUID || isString) {
+      Arrays.fill(_mins,Double.NaN);
+      Arrays.fill(_maxs,Double.NaN);
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
       _mean = _mean / _rows;
@@ -183,7 +185,10 @@ class RollupStats extends Iced {
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else {
-      _mean = (_mean*_rows + rs._mean*rs._rows)/(_rows + rs._rows);
+      // still converting long to double, most likely ok, can be avoided...
+      double a = (double)_rows/(_rows + rs._rows);
+      double b = (double)rs._rows/(_rows + rs._rows);
+      _mean = (_mean*a + rs._mean*b);
       _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
     _rows += rs._rows;

@@ -133,7 +133,7 @@ class ARFFParser extends CsvParser {
       datalines = datablock.toArray(datalines);
 
       // process data section
-      int nlines = datalines.length;
+      int nlines = Math.min(10, datalines.length);
       data = new String[nlines][];
 
       // First guess the field separator by counting occurrences in first few lines
@@ -159,7 +159,7 @@ class ARFFParser extends CsvParser {
           if (sep == AUTO_SEP) sep = (byte) ' '; // Bail out, go for space
         }
 
-        for (int i = 0; i < datalines.length; ++i) {
+        for (int i = 0; i < nlines; ++i) {
           data[i] = determineTokens(datalines[i], sep, single_quote);
         }
       }

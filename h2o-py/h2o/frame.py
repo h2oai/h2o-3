@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-This module contains the abstraction for H2OFrame and H2OVec objects.
-"""
 import itertools
 # import numpy    no numpy cuz windoz
 import csv
@@ -16,199 +13,7 @@ from connection import H2OConnection
 from expr import Expr
 
 
-class H2OFrame(object):
-  """A H2OFrame represents a 2D array of data where each column is uniformly typed.
-
-  The data may be local, or it may be in an H2O cluster. The data are loaded from a CSV
-  file or the data are loaded from a native python data structure, and is either a
-  python-process-local file or a cluster-local file, or a list of H2OVec objects.
-
-  Loading Data From A CSV File
-  ============================
-
-      H2O's parser supports data of various formats coming from various sources.
-      Briefly, these formats are:
-
-          SVMLight
-          CSV (data may delimited by any of the 128 ASCII characters)
-          XLS
-
-      Data sources may be:
-          NFS / Local File / List of Files
-          HDFS
-          URL
-          A Directory (with many data files inside at the *same* level -- no support for
-                       recursive import of data)
-          S3/S3N
-          Native Language Data Structure (c.f. the subsequent section)
-
-  Loading Data From A Python Object
-  =================================
-
-      It is possible to transfer the data that are stored in python data structures to
-      H2O by using the H2OFrame constructor and the `python_obj` argument. (Note that if
-      the `python_obj` argument is not `None`, then additional arguments are ignored).
-
-      The following types are permissible for `python_obj`:
-
-          tuple ()
-          list  []
-          dict  {}
-          collections.OrderedDict
-
-      The type of `python_obj` is inspected by performing an `isinstance` call. A
-      ValueError will be raised if the type of `python_obj` is not one of the above
-      types. Notably, sets, byte arrays, and un-contained types are not permissible.
-
-      In the subsequent sections, each data type will be discussed in detail. Each
-      discussion will be couched in terms of the "source" representation (the python
-      object) and the "target" representation (the H2O object). Concretely, the topics
-      of discussion will be on the following: Headers, Data Types, Number of Rows,
-      Number of Columns, and Missing Values.
-
-      Aside: Why is Pandas' DataFrame not a permissible type?
-
-          There are two reason that Pandas' DataFrame objects are not included.
-          First, it is desirable to keep the number of dependencies to a minimum, and it
-          is difficult to justify the inclusion of the Pandas module as a dependency if
-          its raison d'être is tied to this small detail of transferring data from
-          python to H2O.
-
-          Second, Pandas objects are simple wrappers of numpy arrays together with some
-          meta data; therefore if one was adequately motivated, then the transfer of
-          data from a Pandas DataFrame to an H2O Frame could readily be achieved.
-
-
-      In what follows, H2OFrame and Frame will be used synonymously. Technically, an
-      H2OFrame is the object-pointer that resides in the python VM and points to a Frame
-      object inside of the H2O JVM. Similarly, H2OFrame, Frame, and H2O Frame will all
-      refer to the same kind of object. In general, though, the context is from the
-      python VM, unless otherwise specified.
-
-      Loading: tuple ()
-      =================
-
-          Essentially, the tuple is an immutable list. This immutability does not map to
-          the H2OFrame. So pythonistas be ware!
-
-          The restrictions on what goes inside the tuple are fairly relaxed, but if they
-          are too unusual, a ValueError will be raised.
-
-          A tuple looks as follows:
-
-              (i1, i2, i3, ..., iN)
-
-          Restrictions are really on the types of the individual `iJ` (1 <= J <= N).
-
-          If `iJ` is {} for some J, then a ValueError will be raised.
-
-          If `iJ` is a () (tuple) or [] (list), then `iJ` must be a () or [] for all J;
-          otherwise a ValueError will be raised.
-
-          If `iJ` is a () or [], and if it is in fact a nested () or nested [], then a
-          ValueError will be raised. In other words, only a single level of nesting is
-          valid, all internal arrays must be flat -- H2O will not flatten them for you.
-
-          If `iJ` is not a () or [], then it must be of type string or a non-complex
-          numeric type (float or int). In other words, if `iJ` is not a tuple, list,
-          string, float, or int, for some J, then a ValueError will be raised.
-
-          Some acceptable inputs are:
-              Example A: (1,2,3)
-              Example B: ((1,2,3), (4,5,6), ("cat", "dog"))
-              Example C: ((1,2,3), [4,5,6], ["blue", "yellow"], (321.239, "green","hi"))
-              Example D: (3284.123891, "dog", 89)
-
-          Note that it is perfectly fine to mix () and [] within a tuple.
-
-          Onward.
-
-          Headers, Columns, Rows, Data Types, and Missing Values:
-
-          The form of the H2OFrame is as follows:
-
-              column1, column2, column3, ..., columnN
-              a11,     a12,     a13,     ..., a1N
-              .        .        .        ..., .
-              .        .        .        ..., .
-              .        .        .        ..., .
-              aM1,     aM2,     aM3,     ..., aMN
-
-          It looks exactly like an MxN matrix with an additional header "row". This
-          header cannot be specified when loading data from a () (or from a []
-          but it is possible to specify a header with a python dictionary, see below
-          for details).
-
-          Headers:
-
-              Since no header row can be specified for this case, H2O will generate a
-              column header on your behalf and the column header will look like this:
-
-                  C1, C2, C3, ..., CN
-
-              Notably, these columns have a 1-based indexing (i.e. the 0th column is
-              "C1").
-
-          Rows and Columns and Missing Data:
-
-              The shape of the H2OFrame is determined by the two factors:
-                  the number of arrays nested in the ()
-                  the number of items in each array
-
-              If there are no nested arrays (as in Example A and Example D above), then
-              the resulting H2OFrame will have shape (rows x cols):
-
-                  1 x len(tuple)
-
-              (i.e. a Frame with a single row).
-
-              If there are nested arrays (as in Example B and Example C above), then
-              (given the rules stated above) the resulting H2OFrame will have ROWS equal
-              to the number of arrays nested within and COLUMNS equal to the maximum sub
-              array:
-
-                  max( [len(l) for l in tuple] ) x len(tuple)
-
-              Note that this handles the issue with ragged sub arrays by assuming that
-              shorter sub arrays will pad themselves with NA (missing values) at the end
-              so that they become the correct length.
-
-              Because the Frame is uniformly typed, mixing and matching data types
-              within a column may produce unexpected results. Please read up on the H2O
-              parser for details on how a column type is determined for a column of
-              initially mixed type.
-
-      Loading: list []
-      ================
-
-          The same discussion applies for lists as it does for tuples. Lists are mutable
-          objects so there is no semantic difference regarding mutability between an
-          H2OFrame and a list (as there is for a tuple).
-
-          Additionally, a list [] is ordered (as is a tuple ()) and the data appearing
-          within
-
-      Loading: dict {} or collections.OrderedDict
-      ===========================================
-
-          Each entry in the {} is expected to represent a single column. Keys in the {}
-          must be character strings following the pattern: ^[a-zA-Z_][a-zA-Z0-9_.]*$
-          without restriction on length. That is a valid column name may begin with any
-          letter (capital or not) or an "_", it can then be followed by any number of
-          letters, digits, "_"s, or "."s.
-
-          Values in the {} may be a flat [], a flat (), or a single int, float, or
-          string value. Nested [] and () will raise a ValueError. This is the only
-          additional restriction on [] and () that applies in this context.
-
-          Note that the built-in dict does not provide any guarantees on ordering. This
-          has implications on the order of columns in the eventual H2OFrame, since they
-          may be written out of order from which they were initially put into the dict.
-
-          collections.OrderedDict will preserve the order of the key-value pairs in
-          which they were entered.
-
-  """
+class H2OFrame:
 
   def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, raw_fname=None):
     """
@@ -303,14 +108,15 @@ class H2OFrame(object):
     #
     #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
     else:
-      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + type(python_obj))
+      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
 
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
 
-    self._write_python_data_to_file_and_upload(header, data_to_write)
+    #
+    ## write python data to file and upload
+    #
 
-  def _write_python_data_to_file_and_upload(self, header, data_to_write):
     # create a temporary file that will be written to
     tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
     tmp_file = open(tmp_file_path, 'wb')
@@ -325,7 +131,7 @@ class H2OFrame(object):
     # actually upload the data to H2O
     self._upload_raw_data(tmp_file_path, header)
     # delete the tmp file
-    #os.remove(tmp_file_path)  # not at all secure!
+    os.remove(tmp_file_path)  # insecure
 
   def _handle_raw_fname(self, raw_fname, column_names=None):
     """
@@ -477,7 +283,7 @@ class H2OFrame(object):
       return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
 
     # have a list of numbers or strings
-    if isinstance(i, list):
+    if isinstance(i, (list,tuple)):
       vecs = []
       for it in i:
         if isinstance(it, int):    vecs.append(self._vecs[it])
@@ -485,7 +291,7 @@ class H2OFrame(object):
         else:                      raise NotImplementedError
       return H2OFrame(vecs=vecs)
 
-    raise NotImplementedError
+    raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
   def __setitem__(self, b, c):
     """
@@ -718,7 +524,7 @@ class H2OFrame(object):
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
 
-class H2OVec(object):
+class H2OVec:
   """
   A single column of data that is uniformly typed and possibly lazily computed.
   """
@@ -839,19 +645,36 @@ class H2OVec(object):
   def _simple_bin_op( self, i, op):
     if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     raise NotImplementedError
 
+  def _simple_bin_rop(self, i, op):
+    if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, i, self._len_check(i)))
+    if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self))
+    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self))
+    raise NotImplementedError
+
+
   def __add__(self, i):  return self._simple_bin_op(i,"+" )
+  def __sub__(self, i):  return self._simple_bin_op(i,"-" )
   def __and__(self, i):  return self._simple_bin_op(i,"&" )
+  def __or__ (self, i):  return self._simple_bin_op(i,"|" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
   def __mul__(self, i):  return self._simple_bin_op(i,"*" )
   def __eq__ (self, i):  return self._simple_bin_op(i,"==")
+  def __neg__(self, i):  return self._simple_bin_op(i,"!=")
+  def __pow__(self, i):  return self._simple_bin_op(i,"^" )
   def __ge__ (self, i):  return self._simple_bin_op(i,">=")
   def __gt__ (self, i):  return self._simple_bin_op(i,">" )
   def __le__ (self, i):  return self._simple_bin_op(i,"<=")
   def __lt__ (self, i):  return self._simple_bin_op(i,"<" )
 
-  def __radd__(self, i):   return self.__add__(i)
+  def __radd__(self, i): return self.__add__(i)  # commutativity
+  def __rsub__(self, i): return self._simple_bin_rop(i,"-")  # not commutative
+  def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return self._simple_bin_rop(i,"/")  # not commutative
+  def __rmul__(self, i): return self.__mul__(i)
 
 
   def __len__(self):
@@ -916,3 +739,21 @@ class H2OVec(object):
     if len(self) != len(x):
       raise ValueError("H2OVec length mismatch: "+str(len(self))+" vs "+str(len(x)))
     return self
+
+  @staticmethod
+  def mktime(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0):
+    """
+    All units are zero-based (including months and days).  Missing year is 1970.
+    :return: Returns msec since the Epoch.
+    """
+    # Some error checking on length
+    xlen = 1
+    e = None
+    for x in [msec,second,minute,hour,day,month,year]:
+      (l,x) = (1,Expr(x)) if isinstance(x,int) else (len(x),x)
+      if xlen != l:
+        if xlen == 1: xlen = l
+        else:  raise ValueError("length of "+str(x)+" not compatible with "+xlen)
+      e = Expr(",", x, e)
+    e2 = Expr("mktime",e,None,xlen)
+    return e2 if xlen==1 else H2OVec("mktime",e2)

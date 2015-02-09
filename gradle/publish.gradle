@@ -1,100 +1,36 @@
-// Nexus plugin for releasing https://github.com/bmuschko/gradle-nexus-plugin
-apply plugin: 'nexus'
 // java byte code converter
 apply from: "$rootDir/gradle/java6bytecode.gradle"
-// install Ivy publisher plugin
-apply plugin: 'ivy-publish'
 apply plugin: 'maven-publish'
 
-modifyPom {
-    project {
-      name project.name
-      // Basic info
-      url 'https://github.com/h2oai/h2o-dev'
-      inceptionYear '2013'
-      description project.description
-
-      organization {
-        name = 'H2O.ai'
-        url  = 'http://h2o.ai/'
-      }
-
-      // H2O licensing 
-      licenses {
-        license {
-          name 'The Apache Software License, Version 2.0'
-          url  'http://www.apache.org/licenses/LICENSE-2.0.txt'
-          distribution 'repo'
-        }
-      }
-
-      // Info for contributors
-      scm {
-        url        = 'https://github.com/h2oai/h2o'
-        connection = 'scm:git:https://github.com/h2oai/h2o.git'
-        developerConnection = 'scm:git:git@github.com:h2oai/h2o.git'
-      }
-
-      // Public H2O JIRA for issue management
-      issueManagement {
-        system = 'Jira'
-        url    = 'http://jira.h2o.ai'
-      }
-      // Developer information
-      developers {
-        developer {
-          id 'support'
-          name 'H2O Support'
-          email 'support@h2o.ai'
-        }
-      }
+def calcArtifactId() {
+    def rv
+    if ("${project.name}" == "h2o-scala") {
+        rv = "${project.name}_${scalaBinaryVersion}"
     }
+    else {
+        rv = "${project.name}"
+    }
+    return rv
 }
 
 // This is part of publish module responsible by putting jars into local Ivy cache
 // The code is here to support Spark assembly which expects modules in local Ivy cache
 publishing {
   publications {
-      ivyJava(IvyPublication) {
-        from components.java
-      }
-      h2oDev(MavenPublication) {
+      mavenJava(MavenPublication) {
+          artifactId calcArtifactId()
+
+          H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+          def projectVersion = bv.getProjectVersion()
+          version "$projectVersion"
+
           from components.java
       }
   }
 
   repositories {
-      ivy {
-          url "${System.properties['user.home']}/.ivy2/local"
-      }
       maven {
-          name 'nexusReleases'
-          //TODO: read directly from gradle.properties w/o loading properties explicitly
-          Properties p = new Properties()
-          def propsFileName = "${System.properties['user.home']}/.gradle/gradle.properties"
-          if ( new File(propsFileName).exists()){
-              p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
-          }
-
-          credentials {
-              username  p.nexusUser
-              password  p.nexusUserPasswd
-          }
-          url "http://nexus:8081/nexus/content/repositories/releases"
-      }
-      maven {
-          name 'nexusSnapshots'
-          Properties p = new Properties()
-          def propsFileName = "${System.properties['user.home']}/.gradle/gradle.properties"
-          if ( new File(propsFileName).exists()){
-              p.load(new FileInputStream("${System.properties['user.home']}/.gradle/gradle.properties"))
-          }
-
-          credentials {
-              username  p.nexusUser
-              password  p.nexusUserPasswd
-          }
-          url 'http://nexus:8081/nexus/content/repositories/snapshots'
+          url "$rootDir/build/repo"
       }
   }
 }

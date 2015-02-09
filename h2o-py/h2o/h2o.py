@@ -55,6 +55,7 @@ def parse_setup(rawkey):
   """
 
   # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
+  if isinstance(rawkey, unicode): rawkey = [rawkey]
   j = H2OConnection.post_json(url_suffix="ParseSetup", srcs=[_quoted(key) for key in rawkey])
   if not j['isValid']:
     raise ValueError("ParseSetup not Valid", j)

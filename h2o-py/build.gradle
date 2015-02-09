@@ -20,6 +20,10 @@ def getOS() {
 def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
 
 
+task upgradeOrInstallTabulate(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
+}
+
 task upgradeOrInstallWheel(type: Exec) {
     commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade"])
 }
@@ -39,6 +43,7 @@ task cleaner << {
 
 clean.dependsOn cleaner
 upgradeOrInstallWheel.dependsOn cleaner
-buildDist.dependsOn upgradeOrInstallWheel
+// buildDist.dependsOn upgradeOrInstallTabulate
+// buildDist.dependsOn upgradeOrInstallWheel
 task build_python(dependsOn: buildDist)
 build.dependsOn build_python

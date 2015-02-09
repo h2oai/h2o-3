@@ -30,18 +30,6 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
 
     @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
-
-    @Override public KMeansParametersV2 fillFromImpl(KMeansParameters parms) {
-      super.fillFromImpl(parms);
-      this.init = KMeans.Initialization.Furthest;
-      return this;
-    }
-
-    public KMeansParameters fillImpl(KMeansParameters impl) {
-      super.fillImpl(impl);
-      impl._init = KMeans.Initialization.Furthest;
-      return impl;
-    }
   }
 
   //==========================

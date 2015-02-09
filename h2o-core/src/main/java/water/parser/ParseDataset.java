@@ -1068,12 +1068,10 @@ public final class ParseDataset extends Job<Frame> {
         Vec v = vecArr[i];
         boolean isCategorical = v.isEnum();
         boolean isConstant = v.isConst();
-        boolean isString = v.isString();
-        boolean isTime = v.isTime();
         String CStr = String.format("%"+namelen+"s:", fr.names()[i]);
-        String typeStr = String.format("%s", (v.isUUID() ? "UUID" : (isCategorical ? "categorical" : (isString ? "string" : (isTime ? "time" : "numeric")))));
-        String minStr = isString ? "" : String.format("%g", v.min());
-        String maxStr = isString ? "" : String.format("%g", v.max());
+        String typeStr;
+        String minStr;
+        String maxStr;
 
         switch( v.get_type() ) {
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
@@ -1089,7 +1087,7 @@ public final class ParseDataset extends Job<Frame> {
         long numNAs = v.naCnt();
         String naStr = (numNAs > 0) ? String.format("%d", numNAs) : "";
         String isConstantStr = isConstant ? "constant" : "";
-        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : (isString ? String.format("%d", v.nzCnt()) : "");
+        String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
 
         boolean printLogSeparatorToStdout = false;
         boolean printColumnToStdout;
