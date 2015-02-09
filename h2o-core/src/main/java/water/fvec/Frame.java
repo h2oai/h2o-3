@@ -863,6 +863,8 @@ public class Frame extends Lockable<Frame> {
 
   // Convert len rows starting at off to a 2-d ascii table
   public String toString( long off, int len ) {
+    if( off > numRows() ) off = numRows();
+    if( off+len > numRows() ) len = (int)(numRows()-off);
 
     String[] rowHeaders = new String[len+4];
     rowHeaders[0] = "min";

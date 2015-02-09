@@ -508,7 +508,7 @@ public class Vec extends Keyed {
    *  @return true if the Vec is all integers */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
-  long byteSize(){return rollupStats()._size; }
+  public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
   public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};

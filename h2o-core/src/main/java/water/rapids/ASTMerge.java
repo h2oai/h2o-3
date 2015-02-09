@@ -2,12 +2,6 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 
 
 /** plyr's merge: Join by any other name.
@@ -50,10 +44,53 @@ public class ASTMerge extends ASTOp {
   }
 
   @Override void exec(Env e, AST arg1, AST[] args) {
-    arg1.exec(e);
-    throw H2O.unimpl();
+    throw H2O.fail();
   }
 
-  @Override void apply(Env e) { throw H2O.fail(); }
+  @Override void apply(Env env) {
+    Frame l = env.popAry();
+    System.out.println(l);
+    Frame r = env.popAry();
+    System.out.println(r);
+    System.out.println(_allLeft+" "+_allRite);
+
+    // Look for the set of columns in common; resort left & right to make the
+    // leading prefix of column names match.
+    int len=0;                  // Number of columns in common
+    for( int i=0; i<l._names.length; i++ ) {
+      int idx = r.find(l._names[i]);
+      if( idx != -1 ) {
+        l.swap(i  ,len);
+        r.swap(idx,len);
+        len++;
+      }
+    }
+    if( len == 0 ) 
+      throw new IllegalArgumentException("Frames must have at least one column in common to merge them");
+
+    // Pick the frame to replicate & hash; smallest bytesize of the non-key
+    // columns.  Hashed dataframe is completely replicated per-node
+    long lsize = 0, rsize = 0;
+    for( int i=len; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
+    for( int i=len; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
+    Frame repl = lsize < rsize ? l : r;
+
+    // hash keys: just hash the raw double bits from the leading columns
+
+    // hashSET is from local (non-replicated) chunks/row to other-chunks/row.
+    // HashKey object in table has e.g. chunks and a row number; passed-in
+    // hashkey object can also have chunks & a row number.  Hash based on
+    // contents of chunks.  Returns matched hashkey object (which has
+    // replicated chunk ptrs & row).
+
+    // Need a unique merge-in-progress set, same as ddply
+    
+    // run a local parallel hash of all data to populate hashSET
+
+    // run a global parallel work: lookup non-hashed rows in hashSet; find
+    // matching row; append matching column data
+
+    throw H2O.unimpl(); 
+  }
 
 }
