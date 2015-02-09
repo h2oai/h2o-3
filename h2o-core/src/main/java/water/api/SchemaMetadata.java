@@ -158,9 +158,20 @@ public final class SchemaMetadata extends Iced {
         this.type = consType(schema, f.getType(), f.getName());
         this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
 
-        // Note, this has to work when the field is null.
+        // Note, this has to work when the field is null.  In addition, if the field's type is a base class we want to see if we have a versioned schema for its Iced type and, if so, use it.
         if (this.is_schema) {
-          this.schema_name = f.getType().getSimpleName(); // handles arrays as well
+          // First, get the class of the field:
+          Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : (Class<? extends Schema>)f.getType();
+
+          // Now see if we have a versioned schema for its Iced type:
+          Class<? extends Schema>  versioned_schema_class = Schema.schemaClass(schema.getSchemaVersion(), Schema.getImplClass(schema_class));
+
+          // If we found a versioned schema class for its iced type use it, else fall back to the type of the field:
+          if (null != versioned_schema_class) {
+            this.schema_name = versioned_schema_class.getSimpleName();
+          } else {
+            this.schema_name = schema_class.getSimpleName();
+          }
         }
 
         API annotation = f.getAnnotation(API.class);

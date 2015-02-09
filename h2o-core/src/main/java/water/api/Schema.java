@@ -613,7 +613,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * be returned.  This compatibility lookup is cached.
    */
   public static Class<? extends Schema> schemaClass(int version, String type) {
-    Schema.registerAllSchemasIfNecessary();
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -630,7 +629,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
    */
   public static Class<? extends Schema>  schemaClass(String schema_name) {
-    Schema.registerAllSchemasIfNecessary();
     return schemas.get(schema_name);
   }
 
@@ -680,7 +678,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
   public static Schema schema(String schema_name) {
-    Schema.registerAllSchemasIfNecessary();
     Class<? extends Schema> clz = schemas.get(schema_name);
     if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
                                                             "Failed to find schema for schema_name: " + schema_name);
