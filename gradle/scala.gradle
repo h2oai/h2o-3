@@ -24,6 +24,12 @@ task testJar(type: Jar, dependsOn: testClasses) {
     from sourceSets.test.output
 }
 
+// Create jar with scaladoc
+task scaladocJar(type: Jar, dependsOn: scaladoc) {
+    classifier = 'scaladoc'
+    from scaladoc
+}
+
 // Create a configuration containing only for test artifacts
 configurations {
     testArchives
@@ -32,7 +38,9 @@ configurations {
 // Explicitly
 artifacts {
     testArchives testJar
+    archives scaladocJar
 }
 
 // Enable support for multi-node testing
 apply from: "$rootDir/gradle/multiNodeTesting.gradle"
+

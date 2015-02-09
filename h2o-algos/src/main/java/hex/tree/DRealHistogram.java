@@ -163,7 +163,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
     }
 
-    // If the min==max, we can also try an equality-based split
+    // If the bin covers a single value, we can also try an equality-based split
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
@@ -193,7 +193,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
       bs = new IcedBitSet(max-min+1,min);
       for( int i=0; i<best; i++ ) bs.set(idxs[i]);
-      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
+      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
     if( best==0 ) return null;  // No place to split

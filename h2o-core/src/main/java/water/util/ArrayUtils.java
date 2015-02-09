@@ -1,5 +1,7 @@
 package water.util;
 
+import water.MemoryManager;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
@@ -103,6 +105,12 @@ public class ArrayUtils {
     return a;
   }
 
+  public static double[] wadd(double[] a, double[] b, double w) {
+    if( a==null ) return b;
+    for(int i = 0; i < a.length; i++ ) a[i] += w*b[i];
+    return a;
+  }
+
   // a <- b + c
   public static double[] add(double[] a, double[] b, double [] c) {
     for(int i = 0; i < a.length; i++ )
@@ -159,6 +167,18 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+
+  public static double [][] generateLineSearchVecs(double [] srcVec, double [] gradient, int n, final double step) {
+    double [][] res = new double[n][];
+    double x = step;
+    for(int i = 0; i < res.length; ++i) {
+      res[i] = MemoryManager.malloc8d(srcVec.length);
+      for(int j = 0; j < res[i].length; ++j)
+        res[i][j] = srcVec[j] + gradient[j] * x;
+      x *= step;
+    }
+    return res;
   }
 
   // Convert array of primitives to an array of Strings.
@@ -267,6 +287,12 @@ public class ArrayUtils {
   }
   public static float minValue(float[] from) {
     float result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
+  }
+  public static double minValue(double[] from) {
+    double result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]<result) result = from[i];
     return result;
@@ -619,10 +645,21 @@ public class ArrayUtils {
   // Painful simple O(n^2) insertion sort, suitable for small arrays only.
   public interface IntComparator { public int compare(int a, int b); }
   public static void sort(final int[] data, final IntComparator comparator) {
-    for( int i = 0; i < data.length + 0; i++ ) {
-      for( int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j-- ) {
-        int tmp = data[j];   data[j] = data[j-1];   data[j-1] = tmp;
+    for (int i = 0; i < data.length + 0; i++) {
+      for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
+        int tmp = data[j];
+        data[j] = data[j - 1];
+        data[j - 1] = tmp;
       }
     }
+  }
+  public static double [] subtract (double [] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length);
+    subtract(a,b,c);
+    return c;
+  }
+  public static void subtract (double [] a, double [] b, double [] c) {
+    for(int i = 0; i < a.length; ++i)
+      c[i] = a[i] - b[i];
   }
 }

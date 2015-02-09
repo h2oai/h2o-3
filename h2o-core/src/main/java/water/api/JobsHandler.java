@@ -33,7 +33,15 @@ public class JobsHandler extends Handler {
     jobs._jobs = new Job[1];
     jobs._jobs[0] = (Job) ice;
     s.jobs = new JobV2[0]; // Give PojoUtils.copyProperties the destination type.
-    return s.fillFromImpl(jobs);
+    s.fillFromImpl(jobs);
+
+    // TODO:  This is a hack but I'm not sure how else to marshal the message.
+    if (s.jobs.length > 0) {
+      Job j = jobs._jobs[0];
+      s.jobs[0].progress_msg = j.progress_msg();
+    }
+
+    return s;
   }
 
   public Schema cancel(int version, JobsV2 c) {

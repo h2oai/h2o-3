@@ -59,3 +59,6 @@ smalldata/
 .project
 .settings/
 
+# Stuff created by 'gradle dist'
+h2o-dist/tmp
+target

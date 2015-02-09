@@ -109,16 +109,23 @@ public class IcedBitSet extends Iced {
   public int size() { return _nbits; }
   private static int bytes(int nbits) { return ((nbits-1) >> 3) + 1; }
   public int numBytes() { return bytes(_nbits); };
-  public int max() { return _bitoff+_nbits; }
+  public int max() { return _bitoff+_nbits; } // 1 larger than the largest bit allowed
 
   // Smaller compression format: just exactly 4 bytes
+  public void compress2( AutoBuffer ab ) {
+    assert max() <= 32;         // Expect a larger format
+    assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
+    assert _val.length==4;
+    ab.putA1(_val,4);
+  }
   public void fill2( byte[] bits, AutoBuffer ab ) {
-    throw H2O.unimpl();
+    fill(bits,ab.position(),32,0);
+    ab.skip(4);            // Skip inline bitset
   }
 
   // Larger compression format: dump down bytes into the AutoBuffer.
   public void compress3( AutoBuffer ab ) {
-    assert max() >= 32;         // Expect a larger format
+    assert max() > 32;          // Expect a larger format
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==numBytes();
     ab.put2((char)_bitoff);

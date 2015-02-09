@@ -64,10 +64,11 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     for (int r=0; r<t.getRowDim(); ++r) {
       data[0][r] = t.getRowHeaders()[r];
     }
+    String[][]cellValues = t.getCellValues();
     for (int c=1; c<cols; ++c) {
       data[c] = new String[rows];
       for (int r=0; r<rows; ++r) {
-        data[c][r] = t.get(r,c-1) != null ? t.get(r,c-1).toString() : null; // don't use String.format(): client is supposed to format
+        data[c][r] = cellValues[r][c-1];
       }
     }
     return this;

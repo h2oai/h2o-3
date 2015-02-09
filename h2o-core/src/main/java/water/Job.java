@@ -265,6 +265,13 @@ public class Job<T extends Keyed> extends Keyed {
   private float progress_impl() {
     return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress();
   }
+
+  /** Returns last progress message. */
+  public String progress_msg() { return isStopped() ? _state.toString() : progress_msg_impl(); }
+  private String progress_msg_impl() {
+    return (_progressKey == null || DKV.get(_progressKey) == null) ? "" : DKV.get(_progressKey).<Progress>get().progress_msg();
+  }
+
   protected Key _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
@@ -280,12 +287,36 @@ public class Job<T extends Keyed> extends Keyed {
    * Helper class to store the job progress in the DKV
    */
   public static class Progress extends Iced { // TODO: shouldn't this be a Keyed? And keys for it be Key<Progress> ?
+    // Progress methodology 1:  Specify total work up front and periodically tell when new units of work complete.
     private final long _work;
     private long _worked;
-    public Progress(long total) { _work = total; }
+
+    // Progress methodology 2:  Client tells what fraction is total work is done every time.
+    // In addition, a short one-line message can optionally be provided for a smart client like Flow.
+    private float _fraction_done;
+    private String _progress_msg;
+
+    // Methodology 1.
+    public Progress(long total) { _work = total; _fraction_done = -1.0f; _progress_msg = "Running...";}
+
+    // Methodology 2.
+    public Progress() { _work = -1; _fraction_done = 0; _progress_msg = "Running..."; }
+
     /** Report Job progress from 0 to 1.  Completed jobs are always 1.0 */
     public float progress() {
-      return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float)_worked / (float)_work));
+      if (_work >= 0) {
+        // Methodology 1.
+        return _work == 0 /*not yet initialized*/ ? 0f : Math.max(0.0f, Math.min(1.0f, (float) _worked / (float) _work));
+      }
+      else {
+        // Methodology 2.
+        return _fraction_done;
+      }
+    }
+
+    /** Report most recent progress message. */
+    public String progress_msg() {
+      return _progress_msg;
     }
   }
 
@@ -293,12 +324,87 @@ public class Job<T extends Keyed> extends Keyed {
    * Helper class to atomically update the job progress in the DKV
    */
   protected static class ProgressUpdate extends TAtomic<Progress> {
+    // Methodology 1
     final long _newwork;
-    public ProgressUpdate(long newwork) { _newwork = newwork; }
+
+    // Methodology 2
+    final float _fraction_done;
+    final String _progress_msg;
+
+    /** Methodology 1 */
+    public ProgressUpdate(long newwork) {
+      _newwork = newwork;
+      _fraction_done = -1.0f;
+      _progress_msg = null;
+    }
+
+    public ProgressUpdate(long newwork, String progress_msg) {
+      _newwork = newwork;
+      _fraction_done = -1.0f;
+      _progress_msg = progress_msg;
+    }
+
+    // Methodology 2
+    /**
+     * Update progress object.
+     * @param fraction_done A number between 0 and 1 (clamped if needed)
+     * @param progress_msg Short message to display to the user
+     */
+    public ProgressUpdate(float fraction_done, String progress_msg) {
+      if (fraction_done < 0.0f) {
+        fraction_done = 0.0f;
+      }
+      if (fraction_done > 1.0f) {
+        fraction_done = 1.0f;
+      }
+
+      _newwork = 0;
+      _fraction_done = fraction_done;
+      _progress_msg = progress_msg;
+    }
+
+    /**
+     * Update progress object.
+     * @param fraction_done A number between 0 and 1 (clamped if needed)
+     */
+    public ProgressUpdate(float fraction_done) {
+      if (fraction_done < 0.0f) {
+        fraction_done = 0.0f;
+      }
+      if (fraction_done > 1.0f) {
+        fraction_done = 1.0f;
+      }
+
+      _newwork = 0;
+      _fraction_done = fraction_done;
+      _progress_msg = null;
+    }
+
+    /**
+     * Update progress object.
+     * @param progress_msg Short message to display to the user
+     */
+    public ProgressUpdate(String progress_msg) {
+      _newwork = 0;
+      _fraction_done = -1.0f;
+      _progress_msg = progress_msg;
+    }
+
     /** Update progress with new work */
     @Override public Progress atomic(Progress old) {
       if(old == null) return old;
+
+      // Methodology 1
       old._worked += _newwork;
+
+      // Methodology 2
+      if (_fraction_done >= 0.0f) {
+        old._fraction_done = _fraction_done;
+      }
+      if (_progress_msg != null) {
+        old._progress_msg = _progress_msg;
+      }
+
       return old;
     }
   }

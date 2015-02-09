@@ -1,8 +1,10 @@
 package hex.deeplearning;
 
-import hex.FrameTask.DataInfo;
+
+import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -30,6 +32,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             Model.ModelCategory.Binomial,
             Model.ModelCategory.Multinomial,
     };
+  }
+
+  @Override
+  public boolean isSupervised() {
+    return !_parms._autoencoder;
   }
 
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
@@ -165,7 +172,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                                               _parms._autoencoder ? 0 : 1, 
                                               _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
                                               _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
+                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);
           DKV.put(dinfo._key,dinfo);
           cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());

@@ -15,6 +15,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
 
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
   public final boolean isClassifier() { return _parms._convert_to_enum || _nclass > 1; }
+  public boolean isSupervised() { return true; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
   public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
@@ -39,7 +40,16 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
     if( _train.numCols() <= 1 )
       error("_train", "Training data must have at least 2 features (incl. response).");
 
-    if( null == _parms._response_column ) {
+    if (!isSupervised()) {
+      hide(_parms._response_column, "Ignored for unsupervised methods.");
+      _response = null;
+      _response_key = null;
+      _vresponse = null;
+      _nclass = 1;
+      return;
+    }
+
+    if( null == _parms._response_column) {
       error("_response_column", "Response column parameter not set.");
       return;
     }

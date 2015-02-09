@@ -1,5 +1,6 @@
 package hex.deeplearning;
 
+import hex.DataInfo;
 import hex.FrameTask;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
@@ -18,10 +19,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   transient Neurons[] _neurons;
 
   int _chunk_node_count = 1;
-
-  @Override protected boolean skipMissing() {
-    return _output.get_params()._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
-  }
 
   public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(jobKey, input,fraction,null);}
   private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
@@ -47,14 +44,15 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _neurons = makeNeuronsForTraining(_output);
   }
 
-  @Override public final void processRow(long seed, final double [] nums, final int numcats, final int [] cats, double [] responses){
+  @Override public final void processRow(long seed, DataInfo.Row r){
+    assert !r.isSparse():"Deep learning does not support sparse rows.";
     if (model_info().get_params()._reproducible) {
       seed += model_info().get_processed_global(); //avoid periodicity
     } else {
       seed = new Random().nextLong();
     }
-    ((Neurons.Input)_neurons[0]).setInput(seed, nums, numcats, cats);
-    step(seed, _neurons, _output, _training, responses);
+    ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
+    step(seed, _neurons, _output, _training, r.response);
   }
 
   @Override protected void chunkDone(long n) {

@@ -164,31 +164,18 @@ public class TwoDimTable extends Iced {
    * Accessor for table cells
    * @param row a row index
    * @param col a column index
-   * @return Object (either String or Double)
+   * @return Object (either String or Double or Float or Integer or Long)
    */
   public Object get(final int row, final int col) {
-    Object cell = cellValues[row][col];
-    if (cell.equals(""))
-      cell = null;
-    else {
-      switch (colTypes[col]) {
-        case "double":
-          cell = new Double((String) cell);
-          break;
-        case "float":
-          cell = new Float((String) cell);
-          break;
-        case "integer":
-          cell = new Integer((String) cell);
-          break;
-        case "long":
-          cell = new Long((String) cell);
-          break;
-        default:
-          break;
-      }
+    String cell = cellValues[row][col];
+    if( cell.equals("") ) return null;
+    switch( colTypes[col] ) {
+    case "double":  return new Double (cell);
+    case "float":   return new Float  (cell);
+    case "integer": return new Integer(cell);
+    case "long":    return new Long   (cell);
+    default:        return cell;
     }
-    return cell;
   }
 
   public String getTableHeader() {
@@ -238,10 +225,7 @@ public class TwoDimTable extends Iced {
    * @param s String value
    */
   public void set(final int row, final int col, final String s) {
-    if (s == null)
-      cellValues[row][col] = "";
-    else
-      cellValues[row][col] = s;
+    cellValues[row][col] = s == null ? "" : s;
   }
 
   /**
@@ -277,15 +261,9 @@ public class TwoDimTable extends Iced {
    * @param f float value
    */
   public void set(final int row, final int col, final float f) {
-    switch (colTypes[col]) {
-      case "double":
-      case "float":
-        cellValues[row][col] = Float.toHexString(f);
-        break;
-      default:
-        cellValues[row][col] = Float.toString(f);
-        break;
-    }
+    cellValues[row][col] = (colTypes[col] == "double" || colTypes[col] == "float")
+      ? Float.toHexString(f)
+      : Float.toString(f);
   }
 
   /**

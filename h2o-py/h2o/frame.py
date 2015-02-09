@@ -108,14 +108,15 @@ class H2OFrame:
     #
     #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
     else:
-      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + type(python_obj))
+      raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
 
     if header is None or data_to_write is None:
       raise ValueError("No data to write")
 
-    self._write_python_data_to_file_and_upload(header, data_to_write)
+    #
+    ## write python data to file and upload
+    #
 
-  def _write_python_data_to_file_and_upload(self, header, data_to_write):
     # create a temporary file that will be written to
     tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
     tmp_file = open(tmp_file_path, 'wb')
@@ -130,7 +131,7 @@ class H2OFrame:
     # actually upload the data to H2O
     self._upload_raw_data(tmp_file_path, header)
     # delete the tmp file
-    #os.remove(tmp_file_path)  # not at all secure!
+    os.remove(tmp_file_path)  # insecure
 
   def _handle_raw_fname(self, raw_fname, column_names=None):
     """
@@ -282,7 +283,7 @@ class H2OFrame:
       return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
 
     # have a list of numbers or strings
-    if isinstance(i, list):
+    if isinstance(i, (list,tuple)):
       vecs = []
       for it in i:
         if isinstance(it, int):    vecs.append(self._vecs[it])
@@ -290,7 +291,7 @@ class H2OFrame:
         else:                      raise NotImplementedError
       return H2OFrame(vecs=vecs)
 
-    raise NotImplementedError
+    raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
   def __setitem__(self, b, c):
     """
@@ -723,3 +724,21 @@ class H2OVec:
     if len(self) != len(x):
       raise ValueError("H2OVec length mismatch: "+str(len(self))+" vs "+str(len(x)))
     return self
+
+  @staticmethod
+  def mktime(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0):
+    """
+    All units are zero-based (including months and days).  Missing year is 1970.
+    :return: Returns msec since the Epoch.
+    """
+    # Some error checking on length
+    xlen = 1
+    e = None
+    for x in [msec,second,minute,hour,day,month,year]:
+      (l,x) = (1,Expr(x)) if isinstance(x,int) else (len(x),x)
+      if xlen != l:
+        if xlen == 1: xlen = l
+        else:  raise ValueError("length of "+str(x)+" not compatible with "+xlen)
+      e = Expr(",", x, e)
+    e2 = Expr("mktime",e,None,xlen)
+    return e2 if xlen==1 else H2OVec("mktime",e2)

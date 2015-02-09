@@ -92,6 +92,7 @@ public class RequestServer extends NanoHTTPD {
     // Data
 
     addToNavbar(register("/2/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/2/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Something something something."),"/SplitFrame",  "Split Frame",   "Data");
     addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
