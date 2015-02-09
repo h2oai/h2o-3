@@ -97,7 +97,7 @@ public class ModelMetrics extends Keyed {
     String [] col_formats = new String[3];
     Arrays.fill(col_types, "double");
     Arrays.fill(col_formats, "%5f");
-    return new TwoDimTable(table_header, sorted_names, col_headers, col_types, col_formats,
+    return new TwoDimTable(table_header, sorted_names, col_headers, col_types, col_formats, "Variable",
             new String[rel_imp.length][], sorted_imp);
   }
 

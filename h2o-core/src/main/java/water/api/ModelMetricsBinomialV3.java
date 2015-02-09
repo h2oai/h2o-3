@@ -52,7 +52,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     thresholds,
                     metrics,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"});
+                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
             int row = 0;
             for(String threshold : thresholds){
                 int col = 0;
@@ -106,7 +106,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     criteria,
                     columnNames,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"});
+                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
             row = 0;
             for(String criterion : criteria){
                 int col = 0;

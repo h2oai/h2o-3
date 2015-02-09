@@ -185,7 +185,7 @@ class ModelMetricsHandler extends Handler {
             throw new H2OIllegalArgumentException("Can only compute either reconstruction error OR deep features.", "");
           if (null == parms._destination_key)
             parms._destination_key = "reconstruction_errors_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-          predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame);
+          predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame, Key.make(parms._destination_key));
         } else {
           if (s.deep_features_hidden_layer < 0)
             throw new H2OIllegalArgumentException("Deep features hidden layer index must be >= 0.", "");

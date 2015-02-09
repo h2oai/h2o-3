@@ -203,7 +203,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers_raw);
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, "", new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error

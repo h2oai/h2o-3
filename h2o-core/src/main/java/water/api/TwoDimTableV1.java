@@ -48,7 +48,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     rowcount = rows;
     columns = new ColumnSpecsV1[cols];
     columns[0] = new ColumnSpecsV1();
-    columns[0].name = "";
+    columns[0].name = t.getColHeaderForRowHeaders();
     columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
     columns[0].format = "%s";
     columns[0].description = null;
@@ -84,6 +84,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     assert(rows == rowcount);
     final int cols = data.length+1;
     String tableHeader = name;
+    String colHeaderForRowHeaders = columns[0].name;
     String[] rowHeaders = new String[rows];
     for (int r=0; r<rows; ++r) {
       rowHeaders[r] = data[0][r];
@@ -129,6 +130,6 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
         }
       }
     }
-    return new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, strCellValues, dblCellValues);
+    return new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders, strCellValues, dblCellValues);
   }
 }

@@ -911,8 +911,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             new String[rows],
             colHeaders.toArray(new String[0]),
             colTypes.toArray(new String[0]),
-            colFormat.toArray(new String[0])
-    );
+            colFormat.toArray(new String[0]),
+            "");
     int row = 0;
     for( int i = 0; i<errors.length ; i++ ) {
       if (errors.length > size_limit && !which.contains(new Integer(i))) continue;
@@ -1174,8 +1174,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               },
               new String[]{"integer", "integer", "string", "double", "double", "double",
                            "string", "string", "string", "string"},
-              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"}
-      );
+              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"},
+              "");
 
       final String format = "%7g";
       for (int i = 0; i < neurons.length; ++i) {
@@ -1597,7 +1597,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (printme) Log.info("Scoring the auto-encoder.");
           // training
           {
-            final Frame mse_frame = scoreAutoEncoder(ftrain);
+            final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             err.train_mse = l2.mean();
@@ -1811,7 +1811,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         f = new Frame(k, f.names(), f.vecs());
         DKV.put(k, f);
       }
-//      makeMetricBuilder(null).makeModelMetrics(this,f,Double.NaN);
+      makeMetricBuilder(null).makeModelMetrics(this,f,Double.NaN);
 
       return f;
     }
@@ -1854,7 +1854,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param frame Original data (can contain response, will be ignored)
    * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
    */
-  public Frame scoreAutoEncoder(Frame frame) {
+  public Frame scoreAutoEncoder(Frame frame, Key destination_key) {
     if (!get_params()._autoencoder)
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
     final int len = _output._names.length;
@@ -1878,7 +1878,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Scope.exit();
 
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
-    makeMetricBuilder(null).makeModelMetrics(this, res, Double.NaN);
+    res = new Frame(destination_key, res.names(), res.vecs());
+    DKV.put(res);
+    makeMetricBuilder(null).makeModelMetrics(this, res, res.vecs()[0].mean());
     return res;
   }
 

@@ -21,7 +21,7 @@ import java.util.Comparator;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
   public abstract interface DeepFeatures {
-    public Frame scoreAutoEncoder(Frame frame);
+    public Frame scoreAutoEncoder(Frame frame, Key destination_key);
     public Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 

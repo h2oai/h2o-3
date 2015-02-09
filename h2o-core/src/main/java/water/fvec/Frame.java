@@ -2,10 +2,8 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import water.*;
 import water.parser.ValueString;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -914,7 +912,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
 
-    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
   }
 
 
