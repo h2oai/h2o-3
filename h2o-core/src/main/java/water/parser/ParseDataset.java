@@ -102,7 +102,7 @@ public final class ParseDataset extends Job<Frame> {
       ice = DKV.getGet(keys[i]);
       update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update).setChunkSize(setup._chunkSize);
+        ((FileVec) update).setChunkSize(FileVec.DFLT_CHUNK_SIZE);//setup._chunkSize);
         DKV.put(update._key, update, fs);
         fs.blockForPending();
         // also update Frame to invalidate local caches
