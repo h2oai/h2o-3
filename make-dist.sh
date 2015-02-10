@@ -16,11 +16,13 @@ IMAGEDIR=${TOPDIR}/h2o-dist/tmp/h2o-dev-${PROJECT_VERSION}
 rm -fr target
 rm -fr h2o-dist/tmp
 
-# Run some required gradle tasks to produce final build output.
-./gradlew :h2o-core:javadoc
-./gradlew :h2o-algos:javadoc
-./gradlew :h2o-scala:scaladoc
-./gradlew publish
+if [ -x "$DO_FAST" ]; then
+  # Run some required gradle tasks to produce final build output.
+  ./gradlew :h2o-core:javadoc
+  ./gradlew :h2o-algos:javadoc
+  ./gradlew :h2o-scala:scaladoc
+  ./gradlew publish
+fi
 
 # Create image dir, which contains what is in the zip file.
 cd $TOPDIR
