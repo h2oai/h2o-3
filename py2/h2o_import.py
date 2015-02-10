@@ -546,7 +546,9 @@ def delete_keys_at_all_nodes(node=None, pattern=None, timeoutSecs=120):
     print "Just using remove_all_keys and saying 0 removed"
     print "WARNING: pattern is ignored"
     if 1==1:
-        h2o.n0.remove_all_keys()
+        # can this be called when the cloud didn't get built?
+        if h2o.n0:
+            h2o.n0.remove_all_keys()
         return 0
     else:
         print "Going to delete all keys one at a time (slower than 'remove all keys')"
