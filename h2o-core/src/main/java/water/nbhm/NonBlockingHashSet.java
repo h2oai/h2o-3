@@ -29,7 +29,7 @@ public class NonBlockingHashSet<E> extends AbstractSet<E> implements Serializabl
   /** Add {@code o} to the set.  
    *  @return <tt>true</tt> if {@code o} was added to the set, <tt>false</tt>
    *  if {@code o} was already in the set.  */
-  public boolean add( final E o ) { return _map.putIfAbsent(o,V) != V; }
+  public boolean add( final E o ) { return _map.putIfAbsent(o,V) == null; }
 
   /** Atomically add {@code o} to the set.  
    *  @return any old match for {@code o} if it was already in the set, or null
