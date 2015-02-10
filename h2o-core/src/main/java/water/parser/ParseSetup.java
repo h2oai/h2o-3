@@ -420,6 +420,8 @@ public final class ParseSetup extends Iced {
 
     if( _pType != ps._pType || ( (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) || (_pType == ParserType.ARFF && (_sep != ps._sep || _ncols != ps._ncols)) ) )
       return new ParseSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
+
+    ps._ctypes = _ctypes;
     return ps;
 
     /* h2ov1

@@ -321,6 +321,7 @@ public abstract class Parser extends Iced {
     int [] _ndates;
     int [] _nUUID;
     int [] _nzeros;
+    int [] _nempty;
     int _nlines = 0;
     final int _ncols;
 
@@ -332,6 +333,7 @@ public abstract class Parser extends Iced {
       _nUUID = new int[ncols];
       _ndates = new int[ncols];
       _nnums = new int[ncols];
+      _nempty = new int[ncols];
       for(int i = 0; i < ncols; ++i)
         _domains[i] = new HashSet<String>();
     }
@@ -340,19 +342,20 @@ public abstract class Parser extends Iced {
       ColTypeInfo [] res = new ColTypeInfo[_ncols];
       for(int i = 0; i < _ncols; ++i) {
         res[i] = new ColTypeInfo();
+        int nonemptyLines = _nlines-_nempty[i];
 
         // Numeric
-        if (((_nnums[i] + _nzeros[i]) > (_nlines/2)) // over 50% numbers
+        if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
             || (_domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
-                && _nnums[i] + _nstrings[i] + _nzeros[i] - _nlines <= 1)) {
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
           res[i]._type = ColType.NUM;
           continue;
         }
 
         // Datetime
-        if ((_ndates[i] > _nlines/2) // over 50% dates
+        if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
             || (_domains[i].size() <= 1 // or time + 1 unique string (NA?)
-                && _ndates[i] + _nstrings[i] - _nlines <= 1)) {
+                && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
           res[i]._type = ColType.TIME;
           continue;
         }
@@ -360,15 +363,15 @@ public abstract class Parser extends Iced {
         // UUID
         if ((_nUUID[i] > 0) //  some UUID
                 || (_domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
-                && _nUUID[i] + _nstrings[i] - _nlines <= 1)) {
-          res[i]._type = ColType.TIME;
+                && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
+          res[i]._type = ColType.UUID;
           continue;
         }
 
         // Enum or string?
         // Enum with 0s for NAs
         if(_nzeros[i] > 0
-                && (Math.abs(_nzeros[i] + _nstrings[i] - _nlines) <= 1) //just strings and zeros
+                && (_nzeros[i] + _nstrings[i] >= (nonemptyLines - 1)) //just strings and zeros
                 && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // not all unique strings
           res[i]._naStr = new ValueString("0");
           res[i]._type = ColType.ENUM;
@@ -384,6 +387,7 @@ public abstract class Parser extends Iced {
         // Strings, almost no dups
         if (_domains[i].size() >= 0.98 * _nstrings[i]) {
           res[i]._type = ColType.STR;
+          continue;
         }
 
         // All guesses failed
@@ -425,7 +429,7 @@ public abstract class Parser extends Iced {
 
     @Override
     public void addInvalidCol(int colIdx) {
-
+      ++_nempty[colIdx];
     }
 
     @Override

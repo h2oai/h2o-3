@@ -53,10 +53,11 @@ public class ParseTimeTest extends TestUtil {
       d(1     ,     115200000L, 1136275200000L, 1136275200000L, 1 ),
       d(1500  ,  129625200000L, 1247641200000L, 1247641200000L, 0 ),
       d(15000 , 1296028800000L, 1254294000000L, 1254294000000L, 2 ),
+      d(15000 , 1296028800000L, 1254294000000L, 1254294000000L, 2 ),
     };
 
     for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
-      for (int j=1; j < 4; j++)
+      for (int j=1; j < 5; j++)
         exp[i][j] += pst.getOffset((long)exp[i][j]) - localTZ.getOffset((long)exp[i][j]);
     //File items will be converted to ms for local timezone
     ParserTest.testParsed(parse_test_file("smalldata/junit/ven-11.csv"),exp,exp.length);

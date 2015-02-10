@@ -692,11 +692,8 @@ public final class ParseDataset extends Job<Frame> {
         FVecDataOut dout;
         Parser p;
         switch(_setup._pType) {
-        case CSV:
-          p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, null,_setup._chunkSize, avs);
-          break;
         case ARFF:
+        case CSV:
           p = new CsvParser(_setup);
           dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, _setup._ctypes, _setup._chunkSize, avs); //TODO: use _setup._domains instead of enums
           break;
