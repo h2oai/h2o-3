@@ -488,6 +488,7 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file("smalldata/airlines/AirlinesTrainMM.csv.zip");
     frMM.remove("").remove();
+    DKV.put(frMM._key,frMM);
     Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
 
     //  Distance + Origin + Dest + UniqueCarrier
