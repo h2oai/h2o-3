@@ -833,53 +833,53 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colFormat = new ArrayList<>();
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
-    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%.5f");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (get_params()._valid != null) {
-      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (!_output.autoencoder) {
         colHeaders.add("Validation R^2");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
     } else if (get_params()._n_folds > 0) {
-      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
 //      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Cross-Validation AUC");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Cross-Validation Classification Error");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
     }
 
@@ -1165,7 +1165,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers",
-              new String[neurons.length + 2],
+              new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
                       (get_params()._adaptive_rate ? "" : "Momentum"),
