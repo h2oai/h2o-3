@@ -63,6 +63,7 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
     key = new JobKeyV1(job._key);
     description = job._description;
     progress = job.progress();
+    progress_msg = job.progress_msg();
     status = job._state.toString();
     msec = (job.isStopped() ? job._end_time : System.currentTimeMillis())-job._start_time;
     Key dest_key = job.dest();
