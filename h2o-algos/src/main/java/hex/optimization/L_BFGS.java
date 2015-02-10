@@ -295,7 +295,7 @@ public final class L_BFGS extends Iced {
   // Armijo line-search rule
   public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] pk, final double[] gradOld){
     if(Double.isNaN(objNew))
-      return true;
+      return false;
     // line search
     double f_hat = 0;
     for(int i = 0; i < pk.length; ++i)
@@ -307,7 +307,7 @@ public final class L_BFGS extends Iced {
   // Armijo line-search rule - to be used with glm (to avoid making explicit pk [] array)
   public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] betaOld, final double[] betaNew, final double[] gradOld){
     if(Double.isNaN(objNew))
-      return true;
+      return false;
     // line search
     double f_hat = 0;
     for(int i = 0; i < betaNew.length; ++i)

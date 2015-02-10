@@ -371,6 +371,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();

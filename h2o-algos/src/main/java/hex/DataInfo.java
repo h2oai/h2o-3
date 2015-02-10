@@ -492,6 +492,7 @@ public class DataInfo extends Keyed {
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
+    row.bad = false;
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
