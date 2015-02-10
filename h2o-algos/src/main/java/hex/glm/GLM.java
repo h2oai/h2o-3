@@ -81,12 +81,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        done();
         _parms.read_unlock_frames(GLM.this);
         if( _clean_enums ) {
           train().lastVec().remove();
           if (valid() != null) valid().lastVec().remove();
         }
+        done();
       }
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
