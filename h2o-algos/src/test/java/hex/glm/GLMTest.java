@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
@@ -22,6 +23,7 @@ import water.util.ArrayUtils;
 import water.util.ModelUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
@@ -63,6 +65,7 @@ public class GLMTest  extends TestUtil {
       if( job != null ) job.remove();
     }
   }
+
 
   /**
    * Test Poisson regression on simple and small synthetic dataset.
@@ -157,7 +160,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-//  //simple tweedie test
+////  //simple tweedie test
 //  @Test public void testTweedieRegression() throws InterruptedException, ExecutionException{
 //    Key raw = Key.make("gaussian_test_data_raw");
 //    Key parsed = Key.make("gaussian_test_data_parsed");
@@ -368,6 +371,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -476,6 +480,88 @@ public class GLMTest  extends TestUtil {
 //      Scope.exit();
 //    }
 //  }
+
+  // test categorical autoexpansions, run on airlines which has several categorical columns,
+  // once on explicitly expanded data, once on h2o autoexpanded and compare the results
+  @Test public void testAirlines() {
+    GLM job = null;
+    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
+    Frame frMM = parse_test_file("smalldata/airlines/AirlinesTrainMM.csv.zip");
+    frMM.remove("").remove();
+    DKV.put(frMM._key,frMM);
+    Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+
+    //  Distance + Origin + Dest + UniqueCarrier
+    String [] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime","ArrTime","IsDepDelayed_REC"};
+    try{
+      Scope.enter();
+      GLMParameters params = new GLMParameters(Family.gaussian);
+      params._response_column = "IsDepDelayed";
+      params._ignored_columns = ignoredCols;
+      params._train = fr._key;
+      params._lambda = new double[]{1e-5};
+//      params._alpha = new double[]{0};
+      params._standardize = false;
+      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+      model1 = job.trainModel().get();
+      params._train = frMM._key;
+      params._ignored_columns = new String[]{"X"};
+      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+      model2 = job.trainModel().get();
+      HashMap<String, Double> coefs1 = model1.coefficients();
+      HashMap<String, Double> coefs2 = model2.coefficients();
+      GLMValidation val1 = model1.validation();
+      GLMValidation val2 = model2.validation();
+      // compare against each other
+      for(String s:coefs2.keySet()) {
+        String s1 = s;
+        if(s.startsWith("Origin"))
+          s1 = "Origin." + s.substring(6);
+        if(s.startsWith("Dest"))
+          s1 = "Dest." + s.substring(4);
+        if(s.startsWith("UniqueCarrier"))
+          s1 = "UniqueCarrier." + s.substring(13);
+        assertEquals("coeff " + s1 + " differs, " + coefs1.get(s1) + " != " + coefs2.get(s), coefs1.get(s1), coefs2.get(s),1e-4);
+      DKV.put(frMM._key,frMM); // update the frame in the KV after removing the vec!
+      }
+      assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
+      assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
+      assertEquals(val1.aic(), val2.aic(),1e-4);
+      // compare result against glmnet
+      assertEquals(5336.918,val1.residualDeviance(),1);
+      assertEquals(6051.613,val1.nullDeviance(),1);
+      // lbfgs
+//      params._solver = Solver.L_BFGS;
+//      params._train = fr._key;
+//      params._lambda = new double[]{.3};
+//      job = new GLM(Key.make("lbfgs_cat"),"lbfgs glm built over categorical columns",params);
+//      model3 = job.trainModel().get();
+//      params._train = frMM._key;
+//      job = new GLM(Key.make("lbfgs_mm"),"lbfgs glm built over pre-expanded categoricals (model.matrix)",params);
+//      model4 = job.trainModel().get();
+//      HashMap<String, Double> coefs3 = model3.coefficients();
+//      HashMap<String, Double> coefs4 = model4.coefficients();
+//      // compare against each other
+//      for(String s:coefs4.keySet()) {
+//        String s1 = s;
+//        if(s.startsWith("Origin"))
+//          s1 = "Origin." + s.substring(6);
+//        if(s.startsWith("Dest"))
+//          s1 = "Dest." + s.substring(4);
+//        if(s.startsWith("UniqueCarrier"))
+//          s1 = "UniqueCarrier." + s.substring(13);
+//        assertEquals("coeff " + s1 + " differs, " + coefs3.get(s1) + " != " + coefs4.get(s), coefs3.get(s1), coefs4.get(s),1e-4);
+//      }
+    } finally {
+      fr.delete();
+      frMM.delete();
+      if(model1 != null)model1.delete();
+      if(model2 != null)model2.delete();
+//      if(score != null)score.delete();
+      if( job != null ) job.remove();
+      Scope.exit();
+    }
+  }
   /**
    * Simple test for binomial family (no regularization, test both lsm solvers).
    * Runs the classical prostate, using dataset with race replaced by categoricals (probably as it's supposed to be?), in any case,

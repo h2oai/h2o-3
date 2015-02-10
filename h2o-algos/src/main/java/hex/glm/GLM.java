@@ -81,12 +81,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override public void compute2(){}
       @Override
       public void onCompletion(CountedCompleter cc){
-        done();
         _parms.read_unlock_frames(GLM.this);
         if( _clean_enums ) {
           train().lastVec().remove();
           if (valid() != null) valid().lastVec().remove();
         }
+        done();
       }
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
         if(!_gotException.getAndSet(true)) {
@@ -421,7 +421,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         final int workInc = WORK_TOTAL/_taskInfo._params._lambda.length/_taskInfo._lbfgs.maxIter();
         L_BFGS.Result r = _taskInfo._lbfgs.solve(solver, beta, gOld, new ProgressMonitor() {
           @Override
-          public boolean progress(GradientInfo ginfo) {
+          public boolean progress(double [] beta, GradientInfo ginfo) {
             update(workInc, _jobKey);
             // todo update the model here wo we can show intermediate results
             return Job.isRunning(_jobKey);
@@ -455,10 +455,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(_jobKey != null && !isRunning(_jobKey) )  throw new JobCancelledException();
         assert _activeCols == null || glmt._beta == null || glmt._beta.length == (_activeCols.length+1):LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _activeCols.length);
         assert _activeCols == null || _activeCols.length == _activeData.fullN();
-        assert getCompleter().getPendingCount() <= 1 : LogInfo("unexpected pending count, expected <=  1, got " + getCompleter().getPendingCount()); // will be decreased by 1 after we leave this callback
         if (_countIteration) ++_iter;
         long callbackStart = System.currentTimeMillis();
-        if(glmt.hasNaNsOrInf() || (glmt._computeGradient && L_BFGS.needLineSearch(_lineSearchStep, _lastResult._objval, glmt._ginfo._objVal, _lastResult._beta, glmt._beta, _lastResult._grad))){
+        if(glmt.hasNaNsOrInf() || (glmt._computeGradient && !L_BFGS.admissibleStep(_lineSearchStep, _lastResult._objval, glmt._ginfo._objVal, _lastResult._beta, glmt._beta, _lastResult._grad))){
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
           new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params, 1.0/_taskInfo._nobs, _lastResult._beta, ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
@@ -486,7 +485,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         final double [] newBeta = MemoryManager.malloc8d(glmt._xy.length);
         long t1 = System.currentTimeMillis();
         ADMMSolver slvr = new ADMMSolver(_currentLambda, _taskInfo._params._alpha[0], GLM_GRAD_EPS, _addedL2);
-        slvr.solve(glmt._gram,glmt._xy,glmt._yy,newBeta, _currentLambda * _taskInfo._params._alpha[0]);
+        slvr.solve(glmt._gram,glmt._xy,glmt._yy,newBeta, Math.max(_currentLambda,_taskInfo._lambdaMax * 1e-4) * _taskInfo._params._alpha[0]);
         if(_lineSearchStep < 1){
           if(glmt._beta != null)
             for(int i = 0; i < newBeta.length; ++i)
@@ -528,16 +527,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       @Override public void callback(final GLMLineSearchTask lst) {
         assert getCompleter().getPendingCount() <= 1:"unexpected pending count, expected 1, got " + getCompleter().getPendingCount();
-        LineSearchSol ls = L_BFGS.doLineSearch(lst._objVals, _taskInfo._ginfo, lst._direction, 1, LINE_SEARCH_STEP);
-        if(ls != null) {
-          LogInfo("line search: found admissible step = " + ls.step + ",  objval = " + ls.objVal);
-          _taskInfo._params._higher_accuracy = true;
-          getCompleter().addToPendingCount(1);
-          double [] beta = ArrayUtils.add(lst._beta, ArrayUtils.mult(lst._direction, ls.step));
-          new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, true, true, beta, _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false, ls.step)).asyncExec(_activeData._adaptedFrame);
-          return;
+        double t = 1;
+        for(int i = 0; i < lst._objVals.length; ++i, t *= LINE_SEARCH_STEP) {
+          if(L_BFGS.admissibleStep(t, _taskInfo._ginfo._objVal, lst._objVals[i], lst._direction, _taskInfo._ginfo._gradient)){
+            LogInfo("line search: found admissible step = " + t + ",  objval = " + lst._objVals[i]);
+            _taskInfo._params._higher_accuracy = true;
+            getCompleter().addToPendingCount(1);
+            double [] beta = ArrayUtils.wadd(lst._beta, lst._direction, t);
+            new GLMIterationTask(_jobKey, _activeData, _taskInfo._params, true, true, true, beta, _taskInfo._ymu, 1.0/ _taskInfo._nobs, _taskInfo._thresholds, new Iteration(getCompleter(),false, t)).asyncExec(_activeData._adaptedFrame);
+            return;
+          }
         }
-      // no line step worked converge
+      // no line step worked => converge
         if(!_taskInfo._params._higher_accuracy){ // start from scratch
           _taskInfo._params._higher_accuracy = true;
           int add2iter = (_iter - _taskInfo._iter);
@@ -551,8 +552,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         checkKKTAndComplete(_lastResult._beta,true);
       }
     }
-
-
   }
 
   private final double lmax(GLMGradientTask gLmax) {
@@ -851,8 +850,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final double _ymu;
     final double _lambda;
     final long _nobs;
-    // line search params, do 48 steps by .75 decrement, min step = .8^31 = 0.0001339366
-    int _nsteps = 32;
+    int _nsteps = 48;
 
     public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
       _glmp = glmp;
@@ -860,7 +858,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _ymu = ymu;
       _nobs = nobs;
       _lambda = lambda;
-      _step = .75;
     }
 
     @Override
@@ -870,8 +867,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     @Override
-    public double[] lineSearch(double[] beta, double[] direction) {
-      return new GLMLineSearchTask(_dinfo, _glmp, 1.0/_nobs, beta, direction, _step, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
+    public double[] getObjVals(double[] beta, double[] direction) {
+      return new GLMLineSearchTask(_dinfo, _glmp, 1.0/_nobs, beta, direction, LINE_SEARCH_STEP, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
     }
   }
 

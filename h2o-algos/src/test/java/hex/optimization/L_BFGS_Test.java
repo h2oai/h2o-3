@@ -48,7 +48,7 @@ public class L_BFGS_Test  extends TestUtil {
       }
 
       @Override
-      public double[] lineSearch(double[] beta, double[] pk) {
+      public double[] getObjVals(double[] beta, double[] pk) {
         double [] res = new double[128];
         double step = 1;
         for(int i = 0; i < res.length; ++i) {
@@ -56,7 +56,7 @@ public class L_BFGS_Test  extends TestUtil {
           double y = beta[1] + pk[1]*step;
           double xx = x * x;
           res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= _step;
+          step *= _stepDec;
         }
         return res;
       }
