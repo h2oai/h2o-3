@@ -4,6 +4,7 @@ import org.junit.*;
 
 import water.*;
 import water.fvec.*;
+import water.parser.Parser.ColTypeInfo;
 
 public class ParserTest2 extends TestUtil {
   @BeforeClass
@@ -42,9 +43,11 @@ public class ParserTest2 extends TestUtil {
       " ,          ,           ,            ,            ,            ,           ,        ,                \n" ,
       "?,        NA,          ?,           ?,           ?,           ?,          ?,       ?,                \n" ,
     };
-  
+
     Key rkey = ParserTest.makeByteVec(data);
-    Frame fr = ParseDataset.parse(Key.make("na_test.hex"), rkey);
+    ParseSetup ps = new ParseSetup(true, 0, 1, null, ParserType.CSV, (byte)',', 9, false, null, null, null, 0,
+            ColTypeInfo.fromStrings(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}));
+    Frame fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
     int nlines = (int)fr.numRows();
     Assert.assertEquals(9,nlines);
     Assert.assertEquals(9,fr.numCols());
@@ -61,13 +64,14 @@ public class ParserTest2 extends TestUtil {
   }
 
   
-  @Test public void testSingleQuotes(){
+ @Test public void testSingleQuotes(){
     String[] data  = new String[]{"'Tomass,test,first,line'\n'Tomas''s,test2',test2\nlast,'line''","s, trailing, piece'"};
     String[][] expectFalse = new String[][] { ar("'Tomass"  ,"test"  ,"first","line'"),
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
     ParseSetup gSetupF = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, -1, null, null);
+    gSetupF._ctypes = ColTypeInfo.fromStrings(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
@@ -75,6 +79,7 @@ public class ParserTest2 extends TestUtil {
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
     ParseSetup gSetupT = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null, null);
+    gSetupT._ctypes = ColTypeInfo.fromStrings(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
     frT.delete();

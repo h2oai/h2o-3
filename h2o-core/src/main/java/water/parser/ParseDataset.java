@@ -35,13 +35,13 @@ public final class ParseDataset extends Job<Frame> {
   // Suitable for e.g. testing setups, where the data is known to be sane.
   // NOT suitable for random user input!
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, boolean singleQuote, int checkHeader) {
-    return parse(okey,keys,delete_on_done,setup(keys[0],singleQuote,checkHeader));
+    return parse(okey,keys,delete_on_done,ParseSetup.guessSetup(keys, singleQuote, checkHeader));
   }
   public static Frame parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup) {
     return parse(okey,keys,delete_on_done,globalSetup,true).get();
   }
   public static ParseDataset parse(Key okey, Key[] keys, boolean delete_on_done, ParseSetup globalSetup, boolean blocking) {
-    ParseDataset job = forkParseDataset(okey,keys,globalSetup,delete_on_done);
+    ParseDataset job = forkParseDataset(okey, keys, globalSetup, delete_on_done);
     try { if( blocking ) job.get(); return job; } 
     catch( Throwable ex ) {
 
@@ -59,13 +59,6 @@ public final class ParseDataset extends Job<Frame> {
       assert DKV.<Job>getGet(job._key).isStopped();
       throw ex;
     }
-  }
-
-  public static ParseSetup setup(Key k, boolean singleQuote, int checkHeader) {
-    byte[] bits = ZipUtil.getFirstUnzippedBytes(getByteVec(k));
-    ParseSetup globalSetup = ParseSetup.guessSetup(bits, singleQuote, checkHeader);
-    if( globalSetup._ncols <= 0 ) throw new UnsupportedOperationException(globalSetup.toString());
-    return globalSetup;
   }
 
   // Allow both ByteVec keys and Frame-of-1-ByteVec
@@ -88,8 +81,6 @@ public final class ParseDataset extends Job<Frame> {
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long totalParseSize=0;
-    ByteVec bv;
-    float dcr, maxDecompRatio = 0;
     for( int i=0; i<keys.length; i++ ) {
       Key k = keys[i];
       if( dest.equals(k) )
@@ -100,32 +91,28 @@ public final class ParseDataset extends Job<Frame> {
             throw new IllegalArgumentException("Source key "+k+" appears twice, delete_on_done must be false");
 
       // estimate total size in bytes
-      bv = getByteVec(k);
-      dcr = ZipUtil.decompressionRatio(bv);
-      if (dcr > maxDecompRatio) maxDecompRatio = dcr;
-      if (maxDecompRatio > 1.0)
-        totalParseSize += bv.length() * maxDecompRatio; // Sum of all input filesizes
-      else  // numerical issues was distorting files sizes when no decompression
-        totalParseSize += bv.length();
+      totalParseSize += getByteVec(k).length();
     }
 
-    // Calc chunk-size, and set into the incoming FileVecs
-    Iced ice = DKV.getGet(keys[0]);
-    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
-      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;
-    } else {
-      setup._chunkSize = FileVec.DFLT_CHUNK_SIZE;//Vec.calcOptimalChunkSize(totalParseSize, setup._ncols);
-    }
-    Log.info("Chunk size " + setup._chunkSize);
-
+    Vec update;
+    Iced ice;
+    Futures fs = new Futures();
+    Log.info("Parse chunk size " + setup._chunkSize);
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
-      Vec update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
+      update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update)._chunkSize = setup._chunkSize;
-        DKV.put(update._key, update);
+        ((FileVec) update).setChunkSize(setup._chunkSize);
+        DKV.put(update._key, update, fs);
+        fs.blockForPending();
+        // also update Frame to invalidate local caches
+        if (ice instanceof Frame) {
+          ((Frame) ice).reloadVecs();
+          DKV.put(((Frame)ice)._key, ice, fs);
+        }
       }
     }
+    fs.blockForPending();
 
     long memsz = H2O.CLOUD.memsz();
     if( totalParseSize > memsz*4 )
@@ -189,6 +176,11 @@ public final class ParseDataset extends Job<Frame> {
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = job._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,delete_on_done);
     mfpt.doAll(fkeys);
+/*    if (mfpt._errors != null) {
+      job.cancel();
+      //TODO replace with H2OParseException
+      throw new RuntimeException(mfpt._errors[0]);
+    }*/
     AppendableVec [] avs = mfpt.vecs();
 
     Frame fr = null;
@@ -423,7 +415,7 @@ public final class ParseDataset extends Job<Frame> {
   // files are parsed in parallel across the cluster), but we want to throttle
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
-    private final ParseSetup _setup; // The expected column layout
+    private final ParseSetup _gblSetup; // The expected column layout
     private final VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
@@ -447,8 +439,8 @@ public final class ParseDataset extends Job<Frame> {
 
     int _reservedKeys;
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
-      _vg = vg; _setup = setup;
-      _vecIdStart = _vg.reserveKeys(_reservedKeys = _setup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
+      _vg = vg; _gblSetup = setup;
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _gblSetup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
 
@@ -541,8 +533,8 @@ public final class ParseDataset extends Job<Frame> {
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
       return localSetup._pType == ParserType.SVMLight
-        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _setup._chunkSize, avs)
-        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _setup._chunkSize, avs);
+        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _gblSetup._chunkSize, avs)
+        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _gblSetup._chunkSize, avs);
     }
 
     // Called once per file
@@ -553,14 +545,34 @@ public final class ParseDataset extends Job<Frame> {
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr,_setup._chunkSize);
-      ParseSetup localSetup = _setup.guessSetup(bits,0/*guess header in each file*/);
-      localSetup._chunkSize = _setup._chunkSize;
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr, _gblSetup._chunkSize);
+      ParseSetup localSetup = _gblSetup.guessSetup(bits, 0/*guess header in each file*/);
+
+      localSetup._chunkSize = _gblSetup._chunkSize;
+
+      //check local setup info
       if( !localSetup._isValid ) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
         return;
+      } else if (!localSetup.isCompatible(_gblSetup)) {
+        // Local setup should be nearly the same as the global all-files setup,
+        // with maybe the header-flag changed.
+        //TODO throw error "Conflicting file layouts, expecting: " + _setup + " but found " + localSetup;
+        return;
       }
+
+      // Allow dup headers, if they are equals-ignoring-case
+/*      boolean has_hdr = _setup._header && localSetup._header;
+      if( has_hdr ) {           // Both have headers?
+        for( int i = 0; has_hdr && i < localSetup._columnNames.length; ++i )
+          has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_setup._columnNames[i]);
+        if( !has_hdr )          // Headers not compatible?
+          // Then treat as no-headers, i.e., parse it as a normal row
+          localSetup = new CustomParser.ParserSetup(ParserType.CSV,localSetup._separator, false);
+      }
+*/
+
       // Parse the file
       try {
         switch( cpr ) {
@@ -608,7 +620,7 @@ public final class ParseDataset extends Job<Frame> {
     // Roll-up other meta data
     @Override public void reduce( MultiFileParseTask mfpt ) {
       assert this != mfpt;
-      // Collect & combine columns across files
+
       // Collect & combine columns across files
       if( _dout == null ) _dout = mfpt._dout;
       else if(_dout != mfpt._dout) _dout = ArrayUtils.append(_dout,mfpt._dout);
@@ -625,7 +637,6 @@ public final class ParseDataset extends Job<Frame> {
     // ------------------------------------------------------------------------
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-//    private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, int vecIdStart, int chunkStartIdx, InputStream bvs) throws IOException {
     private FVecDataOut streamParse( final InputStream is, final ParseSetup localSetup, FVecDataOut dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser();
@@ -681,11 +692,8 @@ public final class ParseDataset extends Job<Frame> {
         FVecDataOut dout;
         Parser p;
         switch(_setup._pType) {
-        case CSV:
-          p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, null,_setup._chunkSize, avs);
-          break;
         case ARFF:
+        case CSV:
           p = new CsvParser(_setup);
           dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, _setup._ctypes, _setup._chunkSize, avs); //TODO: use _setup._domains instead of enums
           break;
@@ -735,7 +743,7 @@ public final class ParseDataset extends Job<Frame> {
     // Find & remove all partially built output chunks & vecs
     private Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2Enum.length;
-      int ncols = _setup._ncols;
+      int ncols = _gblSetup._ncols;
       for( int i = 0; i < ncols; ++i ) {
         Key vkey = _vg.vecKey(_vecIdStart + i);
         Keyed.remove(vkey,fs);

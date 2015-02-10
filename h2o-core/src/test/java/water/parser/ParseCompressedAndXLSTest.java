@@ -44,19 +44,6 @@ public class ParseCompressedAndXLSTest extends TestUtil {
     }
   }
 
-  @Test public void testMixedCSVXLS(){
-    Frame k1 = null;
-    try {
-      NFSFileVec nfs1 = NFSFileVec.make(find_test_file("smalldata/junit/iris.csv"));
-      NFSFileVec nfs2 = NFSFileVec.make(find_test_file("smalldata/junit/iris.xls"));
-      k1 = ParseDataset.parse(Key.make(), nfs1._key, nfs2._key);
-      assertEquals(  5,k1.numCols());
-      assertEquals(150,k1.numRows());
-    } finally {
-      if( k1 != null ) k1.delete();
-    }
-  }
-
   @Test public void  testXLSBadArgs(){
     Frame k1 = null;
     try {
@@ -83,6 +70,4 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       if( k1 != null ) k1.delete();
     }
   }
-
-
 }

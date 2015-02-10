@@ -171,19 +171,6 @@ public class FVecTest extends TestUtil {
     }
   }
 
-  // ==========================================================================
-  @Test public void testLargeCats() {
-    Frame fr = null;
-    try {
-      fr = parse_test_file("./smalldata/junit/40k_categoricals.csv.gz");
-      assertEquals(fr.numRows(),40000); // Count of rows
-      assertEquals(fr.vecs()[0].domain().length,40000);
-
-    } finally {
-      if( fr != null ) fr.delete();
-    }
-  }
-
   @Test public void testRollups() {
 //    Frame fr = null;
 //    try {
