@@ -11,25 +11,25 @@ import water.fvec.Frame;
 public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test @Ignore public void test1() {
+  @Test public void test1() {
     // Checking `hex + 5`
     String tree = "(+ %a.hex #5)";
     checkTree(tree);
   }
 
-  @Test @Ignore public void test2() {
+  @Test public void test2() {
     // Checking `hex + 5 + 10`
     String tree = "(+ %a.hex (+ #5 #10))";
     checkTree(tree);
   }
 
-  @Test @Ignore public void test3() {
+  @Test public void test3() {
     // Checking `hex + 5 - 1 * hex + 15 * (23 / hex)`
     String tree = "(+ (- (+ %a.hex #5) (* #1 %a.hex)) (* #15 (/ #23 %a.hex)))";
     checkTree(tree);
   }
 
-  @Test @Ignore public void test4() {
+  @Test public void test4() {
     //Checking `hex == 5`, <=, >=, <, >, !=
     String tree = "(n %a.hex #5)";
     checkTree(tree);
@@ -47,7 +47,7 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
-  @Test @Ignore public void test5() {
+  @Test public void test5() {
     // Checking `hex && hex`, ||, &, |
     String tree = "(&& %a.hex %a.hex)";
     checkTree(tree);
@@ -59,7 +59,7 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
   
-  @Test @Ignore public void test6() {
+  @Test public void test6() {
 //    Checking `hex[,1]`
     String tree = "([ %a.hex \"null\" #1)";
     checkTree(tree);
@@ -74,7 +74,7 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
-  @Test @Ignore public void test7() {
+  @Test public void test7() {
     Frame fr = parse_test_file(Key.make("iris.hex"),"smalldata/iris/iris_wheader.csv");
     String x = "(del %iris.hex 'class')";
     checkTree(x);
@@ -100,7 +100,7 @@ public class RapidsTest extends TestUtil {
     r.delete();
   }
 
-  @Test public void testMerge() {
+  @Test @Ignore public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
       l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
