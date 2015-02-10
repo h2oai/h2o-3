@@ -443,7 +443,8 @@ public abstract class LSMSolver extends Iced{
             if(gerr < grad[x]) gerr = grad[x];
             else if(gerr < -grad[x]) gerr = -grad[x];
           }
-          if(gerr < 1e-4 || reltol <= 1e-6)break;
+          if(gerr < 1e-4 || reltol <= 1e-6)
+            break;
           while(rnorm < reltol*xnorm && snorm < reltol*unorm)
             reltol *= .1;
         }
