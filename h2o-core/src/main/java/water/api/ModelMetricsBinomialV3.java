@@ -53,8 +53,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     metrics,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
                     new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
-            int row = 0;
-            for(String threshold : thresholds){
+            for(int row = 0; row<thresholds.length; ++row) {
                 int col = 0;
                 for(String metric : metrics) {
                     switch(metric) {
@@ -89,9 +88,8 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                             thresholdsByMetrics.set(row, col, modelMetrics._aucdata.max_per_class_error[row]);
                             break;
                     }
-                    col = col + 1;
+                    col++;
                 }
-                row = row + 1;
             }
             this.thresholdsAndMetricScores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
 
@@ -107,10 +105,8 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     columnNames,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
                     new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
-            row = 0;
-            for(String criterion : criteria){
-                int col = 0;
-                for(String colName : columnNames){
+            for(int row=0; row<criteria.length; ++row) {
+                for(int col=0; col<columnNames.length;++col) {
                     if(col==0){
                         criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.threshold_for_criteria[row]);
                     }
@@ -148,9 +144,8 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                                 break;
                         }
                     }
-                    col = col + 1;
+                    col++;
                 }
-                row = row + 1;
             }
             this.maxCriteriaAndMetricScores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
         }
