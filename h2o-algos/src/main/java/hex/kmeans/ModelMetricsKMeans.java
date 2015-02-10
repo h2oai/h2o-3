@@ -30,12 +30,12 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
     public long[] _size;        // Number of elements in cluster
     public double[] _within_sumsqe;   // Within-cluster sum of squared error
 
-    public MetricBuilderKMeans(int dims) {
-      _size = new long[dims];
-      _within_sumsqe = new double[dims];
+    public MetricBuilderKMeans(int ncol, int nclust) {
+      _size = new long[nclust];
+      _within_sumsqe = new double[nclust];
       Arrays.fill(_size, 0);
       Arrays.fill(_within_sumsqe, 0);
-      _work = new float[dims];
+      _work = new float[ncol];
     }
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
