@@ -29,8 +29,8 @@ import java.util.Random;
  *
  * L-BFGS will then perform following loop:
  *   while(not converged):
- *     coefs    := doLineSearch (coefs, dir)  // distributed
- *     gradient := getGradient(coefs)         // distributed
+ *     coefs    := doLineSearch (coefs, dir)  // distributed, 1 pass over data
+ *     gradient := getGradient(coefs)         // distributed, 1 pass over data
  *     history  += (coefs, gradient)          // local
  *     dir      := newDir(history, gradient)  // local
  *
@@ -94,12 +94,11 @@ public final class L_BFGS extends Iced {
      * Evaluate objective values at k line search points beta_k.
      *
      * When used as part of default line search behavior, the line search points are expected to be
-     * beta_k = beta + direction * step_k; step_k = _startStep * _stepDec^k
-     *
+     *     beta_k = beta + direction * _startStep * _stepDec^k
      *
      * @param beta - initial vector of coefficients
      * @param pk   - search direction
-     * @return objective values evaluated at k line-search points
+     * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
     protected abstract double [] getObjVals(double[] beta, double[] pk);
 
@@ -253,10 +252,10 @@ public final class L_BFGS extends Iced {
     beta = beta.clone();
     // just loop until good enough or line search can not progress
     int iter = 0;
-    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) <= _gradEps && iter != _maxIter) {
+    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
-      if(ls.madeProgress) {
+      if(ls.madeProgress || _hist._k < _hist._m) {
         ArrayUtils.mult(pk,ls.step);
         ++iter; // only count successful iterations
         ArrayUtils.add(beta, pk);
