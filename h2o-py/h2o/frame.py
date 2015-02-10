@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
-import itertools
 # import numpy    no numpy cuz windoz
-import csv
-import tabulate
-import uuid
-import collections
-import tempfile
-import os
-import re
+import collections, csv, itertools, os, re, tabulate, tempfile, uuid
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -15,7 +8,7 @@ from expr import Expr
 
 class H2OFrame:
 
-  def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, raw_fname=None):
+  def __init__(self, python_obj=None, local_fname=None, remote_fname=None, vecs=None, text_key=None):
     """
     Create a new H2OFrame object by passing a file path or a list of H2OVecs.
 
@@ -37,10 +30,9 @@ class H2OFrame:
     :param local_fname: A local path to a data source. Data is python-process-local.
     :param remote_fname: A remote path to a data source. Data is cluster-local.
     :param vecs: A list of H2OVec objects.
-    :param raw_fname: A raw key resulting from an upload_file.
+    :param text_key: A raw key resulting from an upload_file.
     :return: An instance of an H2OFrame object.
     """
-
     self.local_fname = local_fname
     self.remote_fname = remote_fname
     self._vecs = None
@@ -81,8 +73,8 @@ class H2OFrame:
           raise ValueError("Vecs not the same size: " + str(vlen) + " != " + str(len(v)))
       self._vecs = vecs
 
-    elif raw_fname:
-      self._handle_raw_fname(raw_fname, None)
+    elif text_key:
+      self._handle_text_key(text_key, None)
 
     else:
       raise ValueError("Frame made from CSV file or an array of Vecs only")
@@ -118,29 +110,24 @@ class H2OFrame:
     #
 
     # create a temporary file that will be written to
-    tmp_file_path = tempfile.mkstemp(suffix=".csv")[1]
-    tmp_file = open(tmp_file_path, 'wb')
+    tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
+    tmp_file = os.fdopen(tmp_handle,'wb')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",")
-    # write the header
-    csv_writer.writeheader()
-    # write the data
-    csv_writer.writerows(data_to_write)
-    # close the streams
-    tmp_file.close()
-    # actually upload the data to H2O
-    self._upload_raw_data(tmp_file_path, header)
-    # delete the tmp file
-    os.remove(tmp_file_path)  # insecure
+    csv_writer.writeheader()            # write the header
+    csv_writer.writerows(data_to_write) # write the data
+    tmp_file.close()                    # close the streams
+    self._upload_raw_data(tmp_path, header) # actually upload the data to H2O
+    os.remove(tmp_path)                     # delete the tmp file
 
-  def _handle_raw_fname(self, raw_fname, column_names=None):
+  def _handle_text_key(self, text_key, column_names):
     """
     Handle result of upload_file
-    :param raw_fname: A raw key
+    :param test_key: A key pointing to raw text to be parsed
     :return: Part of the H2OFrame constructor.
     """
     # perform the parse setup
-    setup = h2o.parse_setup(raw_fname)
+    setup = h2o.parse_setup(text_key)
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
@@ -152,8 +139,7 @@ class H2OFrame:
     # create a new vec[] array
     self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
     # print some information on the *uploaded* data
-    print "Uploaded", raw_fname, "into cluster with", rows, "rows and", len(cols), "cols"
-    print
+    print "Uploaded", text_key, "into cluster with", rows, "rows and", len(cols), "cols"
 
   def _upload_raw_data(self, tmp_file_path, column_names):
     # file upload info is the normalized path to a local file
@@ -163,7 +149,7 @@ class H2OFrame:
     # do the POST -- blocking, and "fast" (does not real data upload)
     H2OConnection.post_json("PostFile", fui, destination_key=dest_key)
     # actually parse the data and setup self._vecs
-    self._handle_raw_fname(dest_key, column_names)
+    self._handle_text_key(dest_key, column_names)
 
   def __iter__(self):
     return (vec for vec in self._vecs.__iter__() if vec is not None)
@@ -503,6 +489,11 @@ class H2OFrame:
 
   # ddply in h2o
   def ddply(self,cols,fun):
+    """
+    :param cols: Column names used to control grouping
+    :param fun: Function to execute on each group.  Right now limited to textual Rapids expression
+    :return: New frame with 1 row per-group, of results from 'fun'
+    """
     # Confirm all names present in dataset; collect column indices
     colnums = [str(self._find_idx(name)) for name in cols]
     rapids_series = "{"+";".join(colnums)+"}"
@@ -523,6 +514,42 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
+  def merge(self, other, allLeft=False, allRite=False):
+    """
+    Merge two datasets based on common column names
+    :param other: Other dataset to merge.  Must have at least one column in
+    common with self, and all columns in common are used as the merge key.  If
+    you want to use only a subset of the columns in common, rename the other
+    columns so the columns are unique in the merged result.
+    :param allLeft: If true, include all rows from the left/self frame
+    :param allRite: If true, include all rows from the right/other frame
+    :return: Original self frame enhanced with merged columns and rows
+    """
+    for v0 in self._vecs:
+      for v1 in other._vecs:
+        if v0._name==v1._name: break
+      if v0._name==v1._name: break
+    else:
+      raise ValueError("frames must have some columns in common to merge on")
+    # Eagerly eval and send the cbind'd frame over
+    lkey = self .send_frame()
+    rkey = other.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (merge %{} %{} %{} %{}))".format(tmp_key,lkey,rkey,
+                                                    "TRUE" if allLeft else "FALSE",
+                                                    "TRUE" if allRite else "FALSE")
+    h2o.rapids(expr) # merge in h2o
+    # Remove h2o temp frame after merge
+    h2o.remove(lkey)
+    h2o.remove(rkey)
+    # Make backing H2OVecs for the remote h2o vecs
+    j = h2o.frame(tmp_key) # Fetch the frame as JSON
+    fr = j['frames'][0]    # Just the first (only) frame
+    rows = fr['rows']      # Row count
+    veckeys = fr['veckeys']# List of h2o vec keys
+    cols = fr['columns']   # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
 class H2OVec:
   """
