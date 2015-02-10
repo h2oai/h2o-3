@@ -4,8 +4,10 @@ H2OConnection object will be active at any one time.
 """
 
 import requests
+import math
 import sys
 import time
+import tabulate
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -41,8 +43,22 @@ class H2OConnection(object):
     cld = self._connect(size)
     self._session_id = self.get_session_id()
     ncpus = sum([n['num_cpus'] for n in cld['nodes']])
+    allowed_cpus = sum([n['cpus_allowed'] for n in cld['nodes']])
     mmax = sum([n['max_mem'] for n in cld['nodes']])
-    print "Connected to cloud '" + cld['cloud_name'] + "' size", cld['cloud_size'], "ncpus", ncpus, "maxmem", get_human_readable_size(mmax), "session_id", self._session_id
+    cluster_health = all([n['healthy'] for n in cld['nodes']])
+    cluster_info = [
+      ["H2O cluster uptime: ", get_human_readable_time(cld["cloud_uptime_millis"])],
+      ["H2O cluster version: ", cld["version"]],
+      ["H2O cluster name: ", cld["cloud_name"]],
+      ["H2O cluster total nodes: ", cld["cloud_size"]],
+      ["H2O cluster total memory: ", get_human_readable_size(mmax)],
+      ["H2O cluster total cores: ", str(ncpus)],
+      ["H2O cluster allowed cores: ", str(allowed_cpus)],
+      ["H2O cluster healthy: ", str(cluster_health)],
+    ]
+    print
+    print tabulate.tabulate(cluster_info)
+    print
 
   def _connect(self,size):
     """
@@ -246,3 +262,21 @@ def get_human_readable_size(num):
     i += 1
     rounded_val = round(float(num) / 2 ** exp_str[i][0], 2)
   return '%s %s' % (rounded_val, exp_str[i][1])
+
+def get_human_readable_time(epochTimeMillis):
+  days = epochTimeMillis/(24*60*60*1000.0)
+  hours = (days-math.floor(days))*24
+  minutes = (hours-math.floor(hours))*60
+  seconds = (minutes-math.floor(minutes))*60
+  milliseconds = (seconds-math.floor(seconds))*1000
+  duration_vec = [int(math.floor(t)) for t in [days,hours,minutes,seconds,milliseconds]]
+  names_duration_vec = ["days","hours","minutes","seconds","milliseconds"]
+
+  duration_dict = dict(zip(names_duration_vec, duration_vec))
+
+  readable_time = ""
+  for name in names_duration_vec:
+    if duration_dict[name] > 0:
+      readable_time += str(duration_dict[name]) + " " + name + " "
+
+  return readable_time
