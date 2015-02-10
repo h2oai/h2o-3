@@ -57,14 +57,11 @@ public abstract class GLMTask  {
          ++_nobs;
        }
      }
-     _ymu /= _nobs;
    }
-
+   @Override public void postGlobal() { _ymu /= _nobs;}
    @Override public void reduce(YMUTask ymt) {
      if(_nobs > 0 && ymt._nobs > 0) {
-       double a = _nobs / (_nobs + ymt._nobs);
-       double b = ymt._nobs / (_nobs + ymt._nobs);
-       _ymu = _ymu * a  + ymt._ymu * b;
+       _ymu += ymt._ymu;
        _nobs += ymt._nobs;
        if(_yMin > ymt._yMin)
          _yMin = ymt._yMin;
