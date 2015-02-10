@@ -111,7 +111,7 @@ test_r2_glm  = glm.model_performance(test ).r2()
 hold_r2_glm  = glm.model_performance(hold ).r2()
 print "GLM R2 TRAIN=",train_r2_glm,", R2 TEST=",test_r2_glm,", R2 HOLDOUT=",hold_r2_glm
 
-# Here we see an r^2 of 0.9 for GBM, and 0.7 for GLM.  This means given just
+# Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
 # variance of the bike-trip-starts.
 
