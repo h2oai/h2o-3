@@ -25,9 +25,13 @@ class Basic(unittest.TestCase):
         if (localhost):
             # h2o.nodes[0].delete_keys_at_teardown should cause the testdir_release
             # tests to delete keys after each test completion (not cloud teardown, don't care then)
-            h2o.init(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
+            # h2o.init(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
+            # RemoveAll.json doesn't work?
+            h2o.init(3, create_json=True, java_heap_GB=4)
         else:
-            h2o.init(create_json=True, delete_keys_at_teardown=True)
+            # RemoveAll.json doesn't work?
+            # h2o.init(create_json=True, delete_keys_at_teardown=True)
+            h2o.init(create_json=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -75,7 +79,7 @@ class Basic(unittest.TestCase):
                 print "Checking sandbox log files"
                 h2o.check_sandbox_for_errors(cloudShutdownIsError=True)
             else:
-                print str(datetime.datetime.now()), h2o.python_cmd_line, "still here", totalTime, maxTime, incrTime
+                print str(datetime.datetime.now()), h2o_args.python_cmd_line, "still here", totalTime, maxTime, incrTime
 
         # don't do this, as the cloud may be hung?
         if 1==0:
