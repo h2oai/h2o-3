@@ -13,6 +13,10 @@ def calcArtifactId() {
     return rv
 }
 
+task sourceJar(type: Jar) {
+  from sourceSets.main.allJava
+}
+
 // This is part of publish module responsible by putting jars into local Ivy cache
 // The code is here to support Spark assembly which expects modules in local Ivy cache
 publishing {
@@ -25,6 +29,9 @@ publishing {
           version "$projectVersion"
 
           from components.java
+          artifact sourceJar {
+            classifier "source"
+          }
       }
   }
 
