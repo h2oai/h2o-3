@@ -521,6 +521,7 @@ public class GLMTest  extends TestUtil {
         if(s.startsWith("UniqueCarrier"))
           s1 = "UniqueCarrier." + s.substring(13);
         assertEquals("coeff " + s1 + " differs, " + coefs1.get(s1) + " != " + coefs2.get(s), coefs1.get(s1), coefs2.get(s),1e-4);
+      DKV.put(frMM._key,frMM); // update the frame in the KV after removing the vec!
       }
       assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
       assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
