@@ -42,7 +42,36 @@ Users will use JSON/REST-api via H2O.R through connects the Analytics Engine int
 
 Using H2O Dev Artifacts
 --------------------------------
-Find H2O Dev on Maven Central via http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+Every nightly build publishes R, python, java and scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
+
+Here is an example snippet of a gradle build file using h2o-dev as a dependency.  Replace x, y, z, and nnnn with valid numbers.
+
+```
+// h2o-dev dependency information
+def h2oBranch = 'master'
+def h2oBuildNumber = 'nnnn'
+def h2oProjectVersion = "x.y.z.${h2oBuildNumber}"
+
+repositories {
+  // h2o-dev dependencies
+  maven {
+    url "https://s3.amazonaws.com/h2o-release/h2o-dev/${h2oBranch}/${h2oBuildNumber}/maven/repo/"
+  }
+}
+
+dependencies {
+  compile "ai.h2o:h2o-core:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-algos:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-web:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-app:${h2oProjectVersion}"
+}
+```
+
+See the latest H2O Dev [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
+
+See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
+
+> Note: Stable H2O Dev artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may lag substantially behind H2O Dev Bleeding Edge nightly builds.
 
 Building H2O Dev
 --------------------------------
