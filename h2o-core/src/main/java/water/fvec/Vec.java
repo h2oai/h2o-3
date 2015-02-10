@@ -190,6 +190,7 @@ public class Vec extends Keyed {
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
+  static final String[] TYPE_STR=new String[] { "BAD", "UUID", "string", "numeric", "enum", "time", "time", "time" };
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -275,6 +276,7 @@ public class Vec extends Keyed {
   public long[] get_espc() { return _espc; }
   /** Get the column type. */
   public byte get_type() { return _type; }
+  public String get_type_str() { return TYPE_STR[_type]; }
 
   public boolean isBinary(){
     RollupStats rs = rollupStats();
