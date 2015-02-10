@@ -16,7 +16,7 @@ IMAGEDIR=${TOPDIR}/h2o-dist/tmp/h2o-dev-${PROJECT_VERSION}
 rm -fr target
 rm -fr h2o-dist/tmp
 
-if [ -x "$DO_FAST" ]; then
+if [ -z "$DO_FAST" ]; then
   # Run some required gradle tasks to produce final build output.
   ./gradlew :h2o-core:javadoc
   ./gradlew :h2o-algos:javadoc
