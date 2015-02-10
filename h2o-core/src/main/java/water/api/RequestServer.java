@@ -431,6 +431,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
     if (uri.contains("WaterMeterCpuTicks")) return;
+    if (method.equals("GET") && uri.matches("/Jobs.*/.+")) return;
 
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);

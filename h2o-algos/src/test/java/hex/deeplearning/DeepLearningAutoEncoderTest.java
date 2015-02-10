@@ -83,7 +83,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
           double quantile = 0.95;
-          l2_frame_train = mymodel.scoreAutoEncoder(train);
+          l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make());
           final Vec l2_train = l2_frame_train.anyVec();
           sb.append("Mean reconstruction error: ").append(l2_train.mean()).append("\n");
           Assert.assertEquals(mymodel.mse(), l2_train.mean(), 1e-7);
@@ -117,7 +117,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           // Test data
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
-          l2_frame_test = mymodel.scoreAutoEncoder(test);
+          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make());
           final Vec l2_test = l2_frame_test.anyVec();
           double mult = 10;
           double thresh_test = mult * thresh_train;

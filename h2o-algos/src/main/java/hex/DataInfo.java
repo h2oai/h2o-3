@@ -418,7 +418,7 @@ public class DataInfo extends Keyed {
   }
 
   public class Row {
-    public boolean good;
+    public boolean bad;
     public double [] numVals;
     public double [] response;
     public int    [] numIds;
@@ -437,7 +437,7 @@ public class DataInfo extends Keyed {
       if(sparse)
         numIds = MemoryManager.malloc4(nNums);
       this.etaOffset = etaOffset;
-      this.nNums = nNums;
+      this.nNums = sparse?0:nNums;
     }
 
     public double response(int i) {return response[i];}
@@ -448,17 +448,14 @@ public class DataInfo extends Keyed {
       binIds[nBins++] = id;
     }
     public void addNum(int id, double val) {
-      if(numIds != null) {
-        if(numIds.length == nNums) {
-          int newSz = Math.max(4,numIds.length + (numIds.length >> 1));
-          numIds = Arrays.copyOf(numIds, newSz);
-          numVals = Arrays.copyOf(numVals, newSz);
-        }
-        int i = nNums++;
-        numIds[i] = id;
-        numVals[i] = val;
-      } else
-        numVals[id] = val;
+      if(numIds.length == nNums) {
+        int newSz = Math.max(4,numIds.length + (numIds.length >> 1));
+        numIds = Arrays.copyOf(numIds, newSz);
+        numVals = Arrays.copyOf(numVals, newSz);
+      }
+      int i = nNums++;
+      numIds[i] = id;
+      numVals[i] = val;
     }
 
 
@@ -495,10 +492,11 @@ public class DataInfo extends Keyed {
   }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
+    row.bad = false;
     if (_skipMissing)
       for (Chunk c : chunks)
         if(c.isNA(rid)) {
-          row.good = false;
+          row.bad = true;
           return row;
         }
     int nbins = 0;
@@ -524,11 +522,10 @@ public class DataInfo extends Keyed {
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
-        row.good = false;
+        row.bad = true;
         return row;
       }
     }
-    row.good = true;
     return row;
   }
   public Row newDenseRow(){
@@ -549,18 +546,17 @@ public class DataInfo extends Keyed {
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
     for (int i = 0; i < rows.length; ++i)
-      rows[i] = new Row(true, Math.max(_bins >> 10, 16) + _cats, Math.max(16, (_nums - _bins) >> 10), _responses, etaOffset);
+      rows[i] = new Row(true, Math.min(_nums - _bins,16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        if (row.good) continue;
         if (chunks[i].isNA(r)) {
           if (_skipMissing) {
-            row.good = true;
+            row.bad = true;
             continue;
-          }
-          row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+          } else
+            row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
         } else {
           int c = getCategoricalId(i,(int)chunks[i].at8(r));
           if(c >=0)
@@ -574,23 +570,26 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[cid + _cats];
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
         Row row = rows[r];
-        if (row.good) continue;
-        if (c.isNA(r)) {
-          row.good = _skipMissing;
-          continue;
-        }
+        if (c.isNA(r))
+          row.bad = _skipMissing;
+        if (row.bad) continue;
         row.addBinId(cid + numStart);
       }
     }
     // generic numbers
     for (int cid = 0; cid < _nums; ++cid) {
       Chunk c = chunks[_cats + cid];
+      int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        assert r > oldRow;
+        oldRow = r;
         Row row = rows[r];
-        if (c.isNA(r)) row.good = _skipMissing;
-        if (row.good) continue;
-        if(_normMul != null) // no centering here, we already have etaOffset
-          row.addNum(cid + numStart + _bins, c.atd(r) * _normMul[cid]);
+        if (c.isNA(r)) row.bad = _skipMissing;
+        if (row.bad) continue;
+        double d = c.atd(r);
+        if(_normMul != null)
+          d *= _normMul[cid]; // no centering here, we already have etaOffset
+        row.addNum(cid + numStart + _bins, d);
       }
     }
     // response(s)
@@ -601,7 +600,7 @@ public class DataInfo extends Keyed {
         if (_normRespMul != null)
           row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         if (Double.isNaN(row.response[row.response.length - i]))
-          row.good = true;
+          row.bad = true;
       }
     }
     return rows;

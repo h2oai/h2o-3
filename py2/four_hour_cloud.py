@@ -69,7 +69,8 @@ class Basic(unittest.TestCase):
             totalTime += incrTime
             # good to touch all the nodes to see if they're still responsive
             # give them up to 120 secs to respond (each individually)
-            h2o.verify_cloud_size(timeoutSecs=120)
+
+            ### h2o.verify_cloud_size(timeoutSecs=120)
             if CHECK_WHILE_SLEEPING:        
                 print "Checking sandbox log files"
                 h2o.check_sandbox_for_errors(cloudShutdownIsError=True)

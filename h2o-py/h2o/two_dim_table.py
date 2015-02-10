@@ -37,10 +37,10 @@ class H2OTwoDimTable(object):
     for col_index, column in enumerate(values):
       for row_index, row_value in enumerate(column):
         if types[col_index] == 'integer':
-          values[col_index][row_index]  = "" if not row_value else int(float.fromhex(row_value))
+          values[col_index][row_index]  = "" if not row_value else int(float(row_value))
 
         elif types[col_index] in ['double', 'float', 'long']:
-          values[col_index][row_index]  = "" if not row_value else float.fromhex(row_value)
+          values[col_index][row_index]  = "" if not row_value else float(row_value)
 
         else:  # string?
           continue

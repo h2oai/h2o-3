@@ -212,7 +212,7 @@ public abstract class GLMTask  {
       double [] b = _beta;
       for(int rid = 0; rid < chks[0]._len; ++rid) {
         row = _dinfo.extractDenseRow(chks, rid, row);
-        if(!row.good) continue;
+        if(row.bad) continue;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
         _objVal += _params.deviance(row.response(0),mu);
@@ -433,8 +433,6 @@ public abstract class GLMTask  {
         _newThresholds[yi][i >> 2] = _newThresholds[yi][i];
     }
 
-
-
     @Override
     public void map(Chunk [] chks) {
       if(_jobKey != null && !Job.isRunning(_jobKey))
@@ -497,7 +495,7 @@ public abstract class GLMTask  {
     private transient double _gsum;
 
     protected final void processRow(Row r) {
-      if(!r.good) return;
+      if(r.bad) return;
       ++_nobs;
       final double y = r.response(0);
       assert ((_glm._family != Family.gamma) || y > 0) : "illegal response column, y must be > 0  for family=Gamma.";

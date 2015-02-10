@@ -2,10 +2,8 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import water.*;
 import water.parser.ValueString;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -499,10 +497,10 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Create a subframe from given interval of columns.
-   *  @param startIdx index of first column (inclusiAST
+   *  @param startIdx  index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
-  Frame subframe(int startIdx, int endIdx) {
+  public Frame subframe(int startIdx, int endIdx) {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
@@ -865,6 +863,8 @@ public class Frame extends Lockable<Frame> {
 
   // Convert len rows starting at off to a 2-d ascii table
   public String toString( long off, int len ) {
+    if( off > numRows() ) off = numRows();
+    if( off+len > numRows() ) len = (int)(numRows()-off);
 
     String[] rowHeaders = new String[len+4];
     rowHeaders[0] = "min";
@@ -914,7 +914,7 @@ public class Frame extends Lockable<Frame> {
       }
     }
 
-    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
   }
 
 

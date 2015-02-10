@@ -513,8 +513,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
               coefficient_names,
               new String []{"Coefficients", "Norm Coefficients"},
               colTypes,
-              colFormat
-      );
+              colFormat,
+              "Column");
       _binomial = binomial;
     }
 
