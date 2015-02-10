@@ -185,10 +185,7 @@ class RollupStats extends Iced {
     double delta = _mean - rs._mean;
     if (_rows == 0) { _mean = rs._mean;  _sigma = rs._sigma; }
     else {
-      // still converting long to double, most likely ok, can be avoided...
-      double a = (double)_rows/(_rows + rs._rows);
-      double b = (double)rs._rows/(_rows + rs._rows);
-      _mean = (_mean*a + rs._mean*b);
+      _mean = (_mean * _rows + rs._mean * rs._rows) / (_rows + rs._rows);
       _sigma = _sigma + rs._sigma + delta*delta * _rows*rs._rows / (_rows+rs._rows);
     }
     _rows += rs._rows;
