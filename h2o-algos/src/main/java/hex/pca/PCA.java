@@ -29,7 +29,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-            Model.ModelCategory.Clustering,
+      Model.ModelCategory.Clustering
     };
   }
 
