@@ -9,7 +9,12 @@ import hex.gram.Gram.GramTask;
 import water.DKV;
 import water.H2O;
 import water.Job;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.util.Log;
+import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 /**
  * Generalized Low Rank Models
@@ -47,6 +52,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if(_train.numCols() < 2) error("_train", "_train must have more than one column");
+    if(_parms._num_pc > _train.numCols()) error("_num_pc", "_num_pc cannot be greater than the number of columns in _train");
     if(_parms._lambda < 0) error("_lambda", "lambda must be a non-negative number");
   }
 
@@ -63,15 +69,26 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_key);
 
-        // TODO: How do we initialize X and Y matrices?
+        // TODO: Initialize Y' matrix using k-means++
+        double[][] yt = new double[_train.numCols()][_parms._num_pc];
+        for(int i = 0; i < yt.length; i++) Arrays.fill(yt[i], 0);
 
+        // 1) Compute X = AY'(YY' + \gamma I)^(-1)
+        // a) Form Gram matrix YY' and add \gamma to diagonal
+
+        // 2) Compute Y = (X'X + \gamma I)^(-1)X'A
+        // a) Form Gram matrix X'X and add \gamma to diagonal
         GramTask gtsk = new GramTask(_xkey, xinfo).doAll(xinfo._adaptedFrame);
-        if(_parms._lambda > 0)
-          gtsk._gram.addDiag(_parms._lambda);
+        if(_parms._lambda > 0) gtsk._gram.addDiag(_parms._lambda);
+
+        // b) Get Cholesky decomposition of D = X'X + \gamma I
         Cholesky chol = gtsk._gram.cholesky(null);
 
-        // TODO: Compute X'A or AY' and use Cholesky to solve
-        MultTask mtsk = new MultTask(_xkey, xinfo, _key, dinfo).doAll(xinfo._adaptedFrame, dinfo._adaptedFrame);
+        // b) Compute A'X and solve for Y' of DY' = A'X
+        // TODO: Jam A (original data) and X into single frame dinfo
+        yt = new MulTask(_dkey, dinfo).doAll(dinfo._adaptedFrame)._prod;
+        for(int i = 0; i < yt.length; i++) chol.solve(yt[i]);
+
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
@@ -86,6 +103,43 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
+    }
+  }
+
+  // TODO: Adapt this to work for right multiply AY' as well
+  // Computes A'X on a matrix [A, X], where A is n by p, X is n by k, and p < k
+  // Resulting matrix D = A'X will have dimensions p by k
+  private static class MulTask extends MRTask<MulTask> {
+    int _ncolA, _ncolX; // _ncolA = p, _ncolX = k
+    double[][] _prod;   // _prod = D = A'X
+
+    MulTask(int ncolA, int ncolX) {
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+      _prod = new double[ncolX][ncolA];
+    }
+
+    @Override public void map(Chunk[] cs) {
+      assert (_ncolA + _ncolX) == cs.length;
+
+      // Cycle over columns of A
+      for( int i = 0; i < _ncolA; i++ ) {
+        // Cycle over columns of X
+        for(int j = _ncolA; j < _ncolX; j++ ) {
+          double sum = 0;
+          for( int row = 0; row < cs[0]._len; row++ ) {
+            double a = cs[i].atd(row);
+            double x = cs[j].atd(row);
+            if(Double.isNaN(a) || Double.isNaN(x)) continue;
+            sum += a*x;
+          }
+          _prod[i][j] = sum;
+        }
+      }
+    }
+
+    @Override public void reduce(MulTask other) {
+      ArrayUtils.add(_prod, other._prod);
     }
   }
 }

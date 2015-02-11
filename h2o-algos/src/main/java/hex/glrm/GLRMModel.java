@@ -10,7 +10,7 @@ import hex.schemas.GLRMModelV2;
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
   public static class GLRMParameters extends Model.Parameters {
-    public int _max_pc = 5000;           // Maximum number of principal components
+    public int _num_pc = 2;
     public double _tolerance = 0;
     public double _lambda = 0;
     public boolean _standardized = true;
