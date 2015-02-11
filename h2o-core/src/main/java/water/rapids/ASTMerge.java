@@ -168,26 +168,26 @@ public class ASTMerge extends ASTOp {
     final int _ncols;     // Number of leading columns for the Hash Key
     final int[][] _id_maps;
     final Frame _fr;      // Frame to hash-all-rows locally per-node
-    // The Set
-    NonBlockingHashSet<Row> _rows = new NonBlockingHashSet<>();
+    transient NonBlockingHashSet<Row> _rows;
 
-    MergeSet( int ncols, int[][] id_maps, Frame fr ) { _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps; _fr = fr; }
+    MergeSet( int ncols, int[][] id_maps, Frame fr ) { 
+      _uniq=Key.make();  _ncols = ncols;  _id_maps = id_maps; _fr = fr; 
+    }
     // Per-node, hash the entire _fr dataset
     @Override public void setupLocal() {
       MERGE_SETS.put(_uniq,this);
-      new MakeHash(this,_id_maps).doAll(_fr,true/*run locally*/);
+      _rows = new NonBlockingHashSet<>();
+      new MakeHash(this).doAll(_fr,true/*run locally*/);
     }
 
     // Executed locally only, build a local HashSet over the entire given dataset
     private static class MakeHash extends MRTask<MakeHash> {
-      transient final int _ncols;
-      transient final NonBlockingHashSet<Row> _rows;
-      transient final int[][] _id_maps;
-      MakeHash( MergeSet ms, int[][] id_maps ) { _ncols = ms._ncols; _rows = ms._rows; _id_maps = id_maps; }
+      transient final MergeSet _ms;
+      MakeHash( MergeSet ms ) { _ms = ms; }
       @Override public void map( Chunk chks[] ) {
         int len = chks[0]._len;
         for( int i=0; i<len; i++ ) {
-          boolean added = _rows.add(new Row(chks).fill(i,_ncols,_id_maps));
+          boolean added = _ms._rows.add(new Row(chks).fill(i,_ms._ncols,_ms._id_maps));
           if( !added ) throw H2O.unimpl(); // dup handling?  Need to gather absolute rows in Row
         }
       }
