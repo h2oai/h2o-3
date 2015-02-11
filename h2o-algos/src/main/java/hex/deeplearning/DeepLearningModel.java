@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import static hex.ModelMetrics.calcVarImp;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
@@ -642,6 +643,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
+    TwoDimTable variableImportances;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
 
@@ -1496,6 +1498,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
     _output.scoringHistory = createScoringHistoryTable(errors);
+    _output.variableImportances = calcVarImp(last_scored().variable_importances);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1527,6 +1530,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0].num_folds = parms._n_folds;
       _output.errors = last_scored();
       _output.scoringHistory = createScoringHistoryTable(errors);
+      _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
     assert _key.equals(destKey);
   }
@@ -1670,6 +1674,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
         _output.errors = last_scored();
         _output.scoringHistory = createScoringHistoryTable(errors);
+        _output.variableImportances = calcVarImp(last_scored().variable_importances);
         if (_output.modelSummary == null)
           _output.modelSummary = model_info.createSummaryTable();
 
@@ -1757,16 +1762,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     sb.append(model_info.toString());
     //sb.append(last_scored().toString());
     sb.append(_output.scoringHistory.toString());
-    return sb.toString();
-  }
-
-  public String toStringAll() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
-    sb.append(model_info.toStringAll());
-    sb.append(last_scored().toString());
+    if (_output.variableImportances != null) {
+      for (String s : Arrays.asList(_output.variableImportances.toString().split("\n")).subList(0, 12))
+        sb.append(s).append("\n");
+    }
     return sb.toString();
   }
 
