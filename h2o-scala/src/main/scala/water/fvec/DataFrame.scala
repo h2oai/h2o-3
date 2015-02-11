@@ -25,7 +25,7 @@ class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[
   def this(s : String) = this ( Key.make(s).asInstanceOf[Key[Frame]] )
 
   // Scala DataFrame by reading a CSV file
-  def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(file.getName)),file))
+  def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(file.getName)),file.getAbsoluteFile))
 
   // Uniform call to load any resource referenced by URI
   def this(uri: URI) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(uri.toString)), uri))
