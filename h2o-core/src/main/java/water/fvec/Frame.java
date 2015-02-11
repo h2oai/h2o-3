@@ -272,10 +272,15 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {
+    if (name == null)
+      return -1;
+
     if (_names!=null)
       for( int i=0; i<_names.length; i++ )
-        if( name.equals(_names[i]) )
-          return i;
+        if (_names[i] != null)
+          if( name.equals(_names[i]) )
+            return i;
+
     return -1;
   }
 
