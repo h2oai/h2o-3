@@ -15,7 +15,7 @@ def calcArtifactId() {
 }
 
 task sourcesJar(type: Jar) {
-  from sourceSets.main.allJava
+  from sourceSets.main.allSource
   classifier = 'sources'
 }
 
