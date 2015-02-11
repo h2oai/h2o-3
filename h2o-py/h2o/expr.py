@@ -60,8 +60,8 @@ class Expr(object):
     self._left = left._expr if isinstance(left, frame.H2OVec) else left
     self._rite = rite._expr if isinstance(rite, frame.H2OVec) else rite
 
-    assert self._left is None or self._is_valid(self._left), self.debug()
-    assert self._rite is None or self._is_valid(self._rite), self.debug()
+    assert self._left is None or self._left._is_valid(), self._left.debug()
+    assert self._rite is None or self._rite._is_valid(), self._rite.debug()
 
     # Compute length eagerly
     if self.is_remote():   # Length must be provided for remote data
@@ -104,9 +104,7 @@ class Expr(object):
 
   def is_slice(self): return isinstance(self._data, slice)
 
-  def _is_valid(self, obj=None):
-    if obj:  # not None'ness depends on short-circuiting `or`; see python docs
-      return isinstance(obj, Expr) or isinstance(self._data, unicode)
+  def _is_valid(self):
     return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
 
   def __len__(self):
@@ -120,11 +118,11 @@ class Expr(object):
     """
     :return: The structure of this object without evaluating.
     """
-    return ("([" + self._name + "] = " +
+    return ("(" + self._name + " <== " +
             str(self._left._name if isinstance(self._left, Expr) else self._left) +
             " " + self._op + " " +
             str(self._rite._name if isinstance(self._rite, Expr) else self._rite) +
-            " = " + str(type(self._data)) + ")")
+            " ==> " + str(type(self._data)) + ")")
 
   def show(self, noprint=False):
     """
@@ -246,7 +244,7 @@ class Expr(object):
     return self._data
 
   def _do_child(self, child):
-    assert child is None or isinstance(child, Expr)
+    assert child is None or isinstance(child, Expr), " expected None or Expr but found: %r" % child
     global __CMD__
     if child:
       if child.is_pending():
@@ -350,7 +348,7 @@ class Expr(object):
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
 
-    elif self._op in ["as.factor", "h2o.runif"]:
+    elif self._op in ["as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)
       else:                 pass
 
@@ -382,7 +380,9 @@ class Expr(object):
 
     # Keep LHS alive
     if assign_vec:
-      if assign_vec._op != "rawdata":  # Need to roll-up nested exprs
-        raise NotImplementedError
+      #if assign_vec._op != "rawdata":  # Need to roll-up nested exprs
+      #  print assign_vec.debug()
+      #  print assign_vec._data,assign_vec._left,assign_vec._rite
+      #  raise NotImplementedError
       self._left = assign_vec
       self._data = assign_vec._data

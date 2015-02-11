@@ -34,6 +34,7 @@ big_test =   ["bigdata/laptop/citibike-nyc/2013-07.csv",
 # 1- Load data - 1 row per bicycle trip.  Has columns showing the start and end
 # station, trip duration and trip start time and day.  The larger dataset
 # totals about 10 million rows
+print "Import and Parse bike data"
 data = h2o.import_frame(path=big_test)
 
 
@@ -58,6 +59,7 @@ bpd["C1"]._name = "bikes" # Rename column from generic name
 
 # Quantiles: the data is fairly unbalanced; some station/day combos are wildly
 # more popular than others.
+print "Quantiles of bikes-per-day"
 bpd["bikes"].quantile().show()
 
 # A little feature engineering
@@ -66,52 +68,58 @@ secs = bpd["Days"]*secsPerDay
 bpd["Month"]     = secs.month()
 # Add in day-of-week (work-week; more bike rides on Sunday than Monday)
 bpd["DayOfWeek"] = secs.dayOfWeek()
+print "Bikes-Per-Day"
 bpd.describe()
 
-# Classic Test/Train split
-r = bpd['Days'].runif()   # Random UNIForm numbers, one per row
-train = bpd[ r < 0.6  ]
-test  = bpd[(0.6 <= r) & (r < 0.9)]
-hold  = bpd[ 0.9 <= r ]
-train.describe()
-test .describe()
-
 
 # ----------
-# 3- build model on train; using test as validation
+# 3- Fit a model on train; using test as validation
 
-# Run GBM
-gbm = h2o.gbm(x           =train.drop("bikes"),
-              y           =train     ["bikes"],
-              validation_x=test .drop("bikes"),
-              validation_y=test      ["bikes"],
-              ntrees=50, # 500 works well
-              max_depth=6,
-              min_rows=10,
-              nbins=20,
-              learn_rate=0.1)
-#gbm.show()
+# Function for doing class test/train/holdout split
+def split_fit_predict(data):
+  # Classic Test/Train split
+  r = data['Days'].runif()   # Random UNIForm numbers, one per row
+  train = data[ r < 0.6  ]
+  test  = data[(0.6 <= r) & (r < 0.9)]
+  hold  = data[ 0.9 <= r ]
+  print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow(),"rows, holdout has",hold.nrow()
+  
+  # Run GBM
+  gbm = h2o.gbm(x           =train.drop("bikes"),
+                y           =train     ["bikes"],
+                validation_x=test .drop("bikes"),
+                validation_y=test      ["bikes"],
+                ntrees=500, # 500 works well
+                max_depth=6,
+                min_rows=10,
+                nbins=20,
+                learn_rate=0.1)
+  #gbm.show()
+  
+  # Run GLM
+  glm = h2o.glm(x           =train.drop("bikes"),
+                y           =train     ["bikes"],
+                validation_x=test .drop("bikes"),
+                validation_y=test      ["bikes"],
+                dropNA20Cols=True)
+  #glm.show()
+  
+  
+  # ----------
+  # 4- Score on holdout set & report
+  train_r2_gbm = gbm.model_performance(train).r2()
+  test_r2_gbm  = gbm.model_performance(test ).r2()
+  hold_r2_gbm  = gbm.model_performance(hold ).r2()
+  print "GBM R2 TRAIN=",train_r2_gbm,", R2 TEST=",test_r2_gbm,", R2 HOLDOUT=",hold_r2_gbm
+  
+  train_r2_glm = glm.model_performance(train).r2()
+  test_r2_glm  = glm.model_performance(test ).r2()
+  hold_r2_glm  = glm.model_performance(hold ).r2()
+  print "GLM R2 TRAIN=",train_r2_glm,", R2 TEST=",test_r2_glm,", R2 HOLDOUT=",hold_r2_glm
+  # --------------
 
-# Run GLM
-glm = h2o.glm(x           =train.drop("bikes"),
-              y           =train     ["bikes"],
-              validation_x=test .drop("bikes"),
-              validation_y=test      ["bikes"])
-#glm.show()
-
-
-# ----------
-# 4- Score on holdout set & report
-train_r2_gbm = gbm.model_performance(train).r2()
-test_r2_gbm  = gbm.model_performance(test ).r2()
-hold_r2_gbm  = gbm.model_performance(hold ).r2()
-print "GBM R2 TRAIN=",train_r2_gbm,", R2 TEST=",test_r2_gbm,", R2 HOLDOUT=",hold_r2_gbm
-
-train_r2_glm = glm.model_performance(train).r2()
-test_r2_glm  = glm.model_performance(test ).r2()
-hold_r2_glm  = glm.model_performance(hold ).r2()
-print "GLM R2 TRAIN=",train_r2_glm,", R2 TEST=",test_r2_glm,", R2 HOLDOUT=",hold_r2_glm
-
+# Split the data (into test & train), fit some models and predict on the holdout data
+split_fit_predict(bpd)  
 # Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
 # variance of the bike-trip-starts.
@@ -166,12 +174,18 @@ wthr3.describe()
 # 1970).  Epoch Days matches closely with the epoch day numbers from the
 # CitiBike dataset.  
 
-# Lets drop off the extra time columns to make a easy-to-handle dataet.
+# Lets drop off the extra time columns to make a easy-to-handle dataset.
 wthr4 = wthr3.drop("Year Local").drop("Month Local").drop("Day Local").drop("Hour Local").drop("msec")
-wthr4.describe()
-
+# Also, most rain numbers are missing - lets assume those are zero rain days
+rain = wthr4["Rain (mm)"]
+rain[rain == None ] = 0
 
 # ----------
 # 6 - Join the weather data-per-day to the bike-starts-per-day
-bpd.merge(wthr4,allLeft=True,allRite=False)
-bpd.describe()
+print "Merge Daily Weather with Bikes-Per-Day"
+bpd_with_weather = bpd.merge(wthr4,allLeft=True,allRite=False)
+bpd_with_weather.describe()
+bpd_with_weather.show()
+
+# 7 - Test/Train split again, model build again, this time with weather
+split_fit_predict(bpd_with_weather)
