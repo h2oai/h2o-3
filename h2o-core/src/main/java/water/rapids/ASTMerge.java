@@ -3,6 +3,7 @@ package water.rapids;
 import water.*;
 import water.fvec.*;
 import water.nbhm.*;
+import java.util.Arrays;
 
 
 /** plyr's merge: Join by any other name.
@@ -115,9 +116,11 @@ public class ASTMerge extends ASTOp {
 
     // run a global parallel work: lookup non-hashed rows in hashSet; find
     // matching row; append matching column data
-    new DoJoin(ncols,uniq,enum_maps).doAll(small.numCols()-ncols,large);
-
-    throw H2O.unimpl(); 
+    String[]   names  = Arrays.copyOfRange(small._names   ,ncols,small._names.length-ncols+1);
+    String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
+    Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
+    Frame res2 = large.add(res);
+    env.push(new ValFrame(res2));
   }
 
   // One Row object per row of the smaller dataset, so kept as small as
@@ -139,12 +142,20 @@ public class ASTMerge extends ASTOp {
     }
     @Override public int hashCode() { return _hash; }
     @Override public boolean equals( Object o ) {
+      assert o instanceof Row;
       Row r = (Row)o;
       if( _hash != r._hash ) return false;
       if( _chks == r._chks && _row == r._row ) return true;
       // Now must check field contents
-      int len = Math.min(_chks.length,r._chks.length);
-      throw H2O.unimpl();
+      int len = _enum_maps.length;
+      for( int i=0; i<len; i++ ) {
+        if( _enum_maps[i] == null ) {
+          if( _chks[i].atd(_row) != r._chks[i].atd(_row) ) return false;
+        } else {
+          if( _enum_maps[i][(int) _chks[i].at8(_row)] != r._enum_maps[i][(int) r._chks[i].at8(r._row)] ) return false;
+        }
+      }
+      return true;
     }
   }
 
@@ -190,7 +201,10 @@ public class ASTMerge extends ASTOp {
     private final int _ncols;     // Number of merge columns
     private final Key _uniq;      // Which mergeset being merged
     private final int[][] _enum_maps; // Mapping enum domains
-    DoJoin( int ncols, Key uniq, int[][] enum_maps ) { _ncols = ncols; _uniq = uniq; _enum_maps = enum_maps; }
+    private final boolean _allLeft;
+    DoJoin( int ncols, Key uniq, int[][] enum_maps, boolean allLeft ) {
+      _ncols = ncols; _uniq = uniq; _enum_maps = enum_maps;_allLeft = allLeft;
+    }
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       // Shared common hash map
       NonBlockingHashSet<Row> rows = MergeSet.MERGE_SETS.get(_uniq)._rows;
@@ -198,9 +212,17 @@ public class ASTMerge extends ASTOp {
       Row row = new Row(chks);  // Recycled Row object on the bigger dataset
       for( int i=0; i<len; i++ ) {
         Row smaller = rows.get(row.fill(i,_ncols,_enum_maps));
-        if( smaller == null ) throw H2O.unimpl(); // Missing matching row?
-        // Copy fields from matching smaller set into larger set
-        throw H2O.unimpl();
+        if( smaller == null ) { // Smaller is missing
+          if( _allLeft )        // But need all of larger, so force a NA row
+            for( NewChunk nc : nchks ) nc.addNA();
+          else
+            throw H2O.unimpl(); // Need to remove larger row
+        } else {
+          // Copy fields from matching smaller set into larger set
+          assert smaller._chks.length == _ncols + nchks.length;
+          for( int c = 0; c < nchks.length; c++ )
+            nchks[c].addNum(smaller._chks[_ncols + c].atd(smaller._row));
+        }
       }
     }
     // Cleanup after last pass
