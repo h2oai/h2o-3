@@ -7,7 +7,7 @@ import water.fvec.*;
 public class SplitFrame extends Job<SplitFrame> {
   public Frame    dataset;
   public double[]  ratios;
-  public Key[]    destKeys;
+  public Key<Frame>[]    destKeys;
 
   public SplitFrame(Key<SplitFrame> dest, String desc) { super(dest, desc); }
   public SplitFrame() { super(Key.make(), null); }
