@@ -890,32 +890,35 @@ public class Frame extends Lockable<Frame> {
       dblCells[2][i] = vec.sigma();
       dblCells[3][i] = vec.max();
       switch( vec.get_type() ) {
-      case Vec.T_STR : {
+      case Vec.T_BAD:
+        coltypes[i] = "string";
+        for( int j=0; j<len; j++ ) { strCells[j+4][i] = null; dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        break;
+      case Vec.T_STR :
         coltypes[i] = "string"; 
         ValueString vstr = new ValueString();
         for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.atStr(vstr,off+j).toString(); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
         break;
-      }
-      case Vec.T_ENUM: {
+      case Vec.T_ENUM:
         coltypes[i] = "string"; 
         for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+4][i] = TwoDimTable.emptyDouble; }
         break;
-      }
       case Vec.T_TIME:
       case Vec.T_TIME+1:
-      case Vec.T_TIME+2: {
+      case Vec.T_TIME+2:
         coltypes[i] = "string"; 
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         for( int j=0; j<len; j++ ) { strCells[j+4][i] = fmt.print(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
         break;
-      }
-      case Vec.T_NUM: {
+      case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 
         for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+4][i] = null; }
         break;
-      }
       case Vec.T_UUID:
-      default: throw H2O.unimpl();
+        throw H2O.unimpl();
+      default:
+        System.err.println("bad vector type during debug print: "+vec.get_type());
+        throw H2O.fail();
       }
     }
 

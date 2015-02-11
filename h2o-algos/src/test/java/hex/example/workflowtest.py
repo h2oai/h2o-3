@@ -34,7 +34,7 @@ big_test =   ["bigdata/laptop/citibike-nyc/2013-07.csv",
 # 1- Load data - 1 row per bicycle trip.  Has columns showing the start and end
 # station, trip duration and trip start time and day.  The larger dataset
 # totals about 10 million rows
-data = h2o.import_frame(path=small_test)
+data = h2o.import_frame(path=big_test)
 
 
 # ----------
@@ -55,6 +55,7 @@ data.describe()
 ddplycols=["Days","start station name"]
 bpd = h2o.ddply(data[ddplycols],ddplycols,"(%nrow)")  # Compute bikes-per-day
 bpd["C1"]._name = "bikes" # Rename column from generic name
+
 # Quantiles: the data is fairly unbalanced; some station/day combos are wildly
 # more popular than others.
 bpd["bikes"].quantile().show()
@@ -126,9 +127,12 @@ wthr1.describe()
 
 # Lots of columns in there!  Lets plan on converting to time-since-epoch to do
 # a 'join' with the bike data, plus gather weather info that might affect
-# cyclists - rain, snow, temperature.  Also dew point and humidity just in case.
-# Slice out just the columns of interest and drop the rest.
-wthr2 = wthr1["Year Local","Month Local","Day Local","Hour Local","Dew Point (C)","Humidity Fraction","Precipitation One Hour (mm)","Snow Depth (cm)","Temperature (C)","Weather Code 1/ Description"]
+# cyclists - rain, snow, temperature.  Alas, drop the "snow" column since it's
+# all NA's.  Also add in dew point and humidity just in case.  Slice out just
+# the columns of interest and drop the rest.
+wthr2 = wthr1["Year Local","Month Local","Day Local","Hour Local","Dew Point (C)","Humidity Fraction","Precipitation One Hour (mm)","Temperature (C)","Weather Code 1/ Description"]
+wthr2["Precipitation One Hour (mm)"]._name = "Rain (mm)" # Shorter column name
+wthr2["Weather Code 1/ Description"]._name = "WC1" # Shorter column name
 wthr2.describe()
 # Much better!  
 
@@ -137,15 +141,19 @@ wthr2.describe()
 # assuming there are fewer bike rides at midnight.  There's a Better Way to do
 # this, but I'm just making easy baby steps).  
 
-# Filtering first, between 7:00 and 19:00 (7am to 7pm).  Note: want to do
-# pythonic 7 <= col <= 19, but cannot overload the double-ended range operator
-# (probably turns into a boolean operator over 2 exprs, but cannot overload the
-# boolean)
-wthr3 = wthr2[ (7 <= wthr2["Hour Local"]) & (wthr2["Hour Local"] <= 19)]
+## Filtering first, between 7:00 and 19:00 (7am to 7pm).  Note: want to do
+## pythonic 7 <= col <= 19, but cannot overload the double-ended range operator
+## (probably turns into a boolean operator over 2 exprs, but cannot overload the
+## boolean)
+#wthr3 = wthr2[ (7 <= wthr2["Hour Local"]) & (wthr2["Hour Local"] <= 19)]
+#wthr3.describe()
+## A quick check at the row count shows we chopped out about half the rows
+## (since we chopped half the hours), and the min and max for the Hour column is
+## in the range from 7am to 7pm.
+
+# Filter down to the weather at Noon
+wthr3 = wthr2[ wthr2["Hour Local"]==12 ]
 wthr3.describe()
-# A quick check at the row count shows we chopped out about half the rows
-# (since we chopped half the hours), and the min and max for the Hour column is
-# in the range from 7am to 7pm.
 
 # Lets now get Days since the epoch... we'll convert year/month/day into Epoch
 # time, and then back to Epoch days.  Need zero-based month and days, but have
@@ -162,7 +170,8 @@ wthr3.describe()
 wthr4 = wthr3.drop("Year Local").drop("Month Local").drop("Day Local").drop("Hour Local").drop("msec")
 wthr4.describe()
 
+
 # ----------
 # 6 - Join the weather data-per-day to the bike-starts-per-day
-bpd.merge(wthr4,allLeft=true,allRight=false)
+bpd.merge(wthr4,allLeft=True,allRite=False)
 bpd.describe()
