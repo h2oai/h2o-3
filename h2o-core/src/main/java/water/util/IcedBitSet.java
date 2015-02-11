@@ -77,7 +77,7 @@ public class IcedBitSet extends Iced {
 
   // Smaller compression format: just exactly 4 bytes
   public void compress2( AutoBuffer ab ) {
-    assert max() <= 32;         // Expect a larger format
+    assert max() < 32;          // Expect a larger format
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==4;
     ab.putA1(_val,4);
@@ -89,7 +89,7 @@ public class IcedBitSet extends Iced {
 
   // Larger compression format: dump down bytes into the AutoBuffer.
   public void compress3( AutoBuffer ab ) {
-    assert max() > 32;          // Expect a larger format
+    assert max() >= 32;         // Expect a larger format
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==numBytes();
     ab.put2((char)_bitoff);

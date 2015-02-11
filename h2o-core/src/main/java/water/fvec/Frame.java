@@ -898,7 +898,7 @@ public class Frame extends Lockable<Frame> {
       }
       case Vec.T_ENUM: {
         coltypes[i] = "string"; 
-        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.factor(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+4][i] = TwoDimTable.emptyDouble; }
         break;
       }
       case Vec.T_TIME:

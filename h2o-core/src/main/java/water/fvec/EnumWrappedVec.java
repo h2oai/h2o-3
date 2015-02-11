@@ -34,12 +34,15 @@ public class EnumWrappedVec extends WrappedVec {
     DKV.put(this);
   }
 
-  /** Constructor just to generate the map and domain; used in tests */
-  EnumWrappedVec(String[] from, String[] to) {
+  /** Constructor just to generate the map and domain; used in tests or when
+   *  mixing enum columns */
+  public EnumWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
     computeMap(from,to);
     DKV.put(this);
   }
+
+  public int[] enum_map() { return _map; }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new EnumWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
