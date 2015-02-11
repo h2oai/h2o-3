@@ -57,10 +57,7 @@ public class ASTMerge extends ASTOp {
 
   @Override void apply(Env env) {
     Frame l = env.popAry();
-    System.out.println(l);
     Frame r = env.popAry();
-    System.out.println(r);
-    System.out.println(_allLeft+" "+_allRite);
 
     // Look for the set of columns in common; resort left & right to make the
     // leading prefix of column names match.  Bail out if we find any weird
@@ -76,8 +73,10 @@ public class ASTMerge extends ASTOp {
         if( lv.get_type() != rv.get_type() )
           throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
-        if( lv.isString() )
+        if( lv.isString() )  
           throw new IllegalArgumentException("Cannot merge Strings; flip toEnum first");
+        if( lv.isNumeric() && !lv.isInt())  
+          throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
         ncols++;
       }
     }
@@ -120,6 +119,7 @@ public class ASTMerge extends ASTOp {
     String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
     Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
     Frame res2 = large.add(res);
+    System.out.println(res2);
     env.push(new ValFrame(res2));
   }
 
@@ -134,9 +134,14 @@ public class ASTMerge extends ASTOp {
     Row fill( int row, int ncols, int[][] enum_maps ) {
       _row = row; 
       _enum_maps = enum_maps;
+      // Precompute hash: columns are integer only (checked before we started
+      // here).  NAs count as a zero for hashing.
       long hash = 0;
-      for( int i=0; i<ncols; i++ )
-        hash += enum_maps[i]==null ? Double.doubleToLongBits(_chks[i].atd(row)) : enum_maps[i][(int)(_chks[i].at8(row))];
+      for( int i=0; i<ncols; i++ ) {
+        if( _chks[i].isNA(_row) ) continue;
+        long l = _chks[i].at8(_row);
+        hash += enum_maps[i]==null ? l : enum_maps[i][(int)l];
+      }
       _hash = (int)(hash^(hash>>32));
       return this;
     }
@@ -148,11 +153,16 @@ public class ASTMerge extends ASTOp {
       if( _chks == r._chks && _row == r._row ) return true;
       // Now must check field contents
       int len = _enum_maps.length;
-      for( int i=0; i<len; i++ ) {
-        if( _enum_maps[i] == null ) {
-          if( _chks[i].atd(_row) != r._chks[i].atd(_row) ) return false;
+      for( int c=0; c<len; c++ ) {
+        boolean lb = _chks[c].isNA(_row), rb = r._chks[c].isNA(r._row);
+        if( lb && rb ) continue;     // Both NA, count as equal
+        if( lb || rb ) return false; // One NA, one not - count as unequal
+        // Check longs for equality (thru the enum maps, if needed)
+        long ll = _chks[c].at8(_row), rl = r._chks[c].at8(r._row);
+        if( _enum_maps[c] == null ) {
+          if( ll != rl ) return false;
         } else {
-          if( _enum_maps[i][(int) _chks[i].at8(_row)] != r._enum_maps[i][(int) r._chks[i].at8(r._row)] ) return false;
+          if( _enum_maps[c][(int) ll] != r._enum_maps[c][(int) rl] ) return false;
         }
       }
       return true;
@@ -187,8 +197,21 @@ public class ASTMerge extends ASTOp {
       @Override public void map( Chunk chks[] ) {
         int len = chks[0]._len;
         for( int i=0; i<len; i++ ) {
-          boolean added = _ms._rows.add(new Row(chks).fill(i,_ms._ncols,_ms._id_maps));
-          if( !added ) throw H2O.unimpl(); // dup handling?  Need to gather absolute rows in Row
+          Row row = new Row(chks).fill(i,_ms._ncols,_ms._id_maps);
+          boolean added = _ms._rows.add(row);
+          if( !added ) { // dup handling?  Need to gather absolute rows in Row
+            Row other = _ms._rows.get(row);
+            /*
+            ... bikes is small, weather is big (4x bigger, 2x more cols?)
+            bikes gets replicated locally; based on Days - and has 1
+            day-per-station, so about 340 rows for each unique Day
+
+            weather: did it per-hour, but now need to average per-hour to get a per-day value
+
+            
+            */
+            throw H2O.unimpl();
+          }
         }
       }
     }

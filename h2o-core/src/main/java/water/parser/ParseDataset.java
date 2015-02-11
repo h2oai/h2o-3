@@ -1071,6 +1071,7 @@ public final class ParseDataset extends Job<Frame> {
         String maxStr;
 
         switch( v.get_type() ) {
+        case Vec.T_BAD:   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;
