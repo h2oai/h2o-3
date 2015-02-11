@@ -10,7 +10,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init()
+        h2o.init(delete_keys_at_teardown=True)
 
     @classmethod
     def tearDownClass(cls):

@@ -151,7 +151,6 @@ snippet::
 
 After this operation, `vol` has been permanently mutated in place (it is not a copy!).
 
-
 H2OVec
 ++++++
 An H2OVec is...
@@ -164,11 +163,29 @@ Expr
 Models
 ++++++
 
+The model-building experience with this module is unique, and is not the same experience
+for those coming from a background in scikit-learn.
+
+Rather than have each model define its own class, each model will belong to one of the following
+categories:
+
+    * Regression
+    * Binomial
+    * Multinomial
+    * Clustering
+
+This is not an entirely representative list of model categories (e.g., what about Time Series,
+and Grid Search, or PCA?); but it represents the core set of underlying model categories
+that form the foundation and current state of modeling in H2O.
+
+
 * No explicit model objects -- have model categories
 * How to create new models
 * train and validation data
 * parameter specification
-
+* categoricals are dealt with internally (no need to one-hot expand them!)
+* what about categoricals in my response?
+* what about an integral response column that I want to do classification on
 * See more on the chapter on Models
 
 Metrics
@@ -184,5 +201,5 @@ from model import *
 from frame import H2OFrame
 from frame import H2OVec
 from two_dim_table import H2OTwoDimTable
-#
+
 __all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]

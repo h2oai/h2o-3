@@ -151,9 +151,14 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public void validate(GLM glm) {
       if(_family == Family.binomial) {
-        Vec response = DKV.<Frame>getGet(_train).vec(_response_column);
-        if(response.min() != 0 || response.max() != 1) {
-          glm.error("_response_column", "Illegal response for family binomial, must be binary, got  min = " + response.min() + ", max = " + response.max() + ")");
+        Frame frame = DKV.getGet(_train);
+        if (frame != null) {
+          Vec response = frame.vec(_response_column);
+          if (response != null) {
+            if (response.min() != 0 || response.max() != 1) {
+              glm.error("_response_column", "Illegal response for family binomial, must be binary, got min = " + response.min() + ", max = " + response.max() + ")");
+            }
+          }
         }
       }
       if (_solver == Solver.L_BFGS) {
