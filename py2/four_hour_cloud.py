@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import unittest, time, sys, datetime
 sys.path.extend(['.','..','py','../h2o/py','../../h2o/py'])
-import h2o, h2o_hosts
+import h2o, h2o_hosts, h2o_args
 import h2o_print as h2p
 
 beginning = time.time()
