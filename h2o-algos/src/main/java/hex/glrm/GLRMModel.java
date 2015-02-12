@@ -12,7 +12,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   public static class GLRMParameters extends Model.Parameters {
     public int _num_pc = 2;
     public double _tolerance = 0;
-    public double _lambda = 0;
+    public double _gamma = 0;
     public boolean _standardized = true;
   }
 
