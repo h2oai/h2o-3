@@ -110,11 +110,18 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
+To install these packages from within an R session, enter:
+
+    R> install.packages("RCurl")
+    R> install.packages("rjson")
+    R> install.packages("statmod")
+    R> install.packages(c("devtools", "roxygen2", "testthat"))
+
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
 
-Install the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
+To manually install packages, download the releases of the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
@@ -128,12 +135,6 @@ Install the following R packages: [bitops](http://cran.r-project.org/package=bit
     R CMD INSTALL roxygen2_x.x.x.zip
     R CMD INSTALL devtools_x.x.x.zip
 
-To install these packages from within an R session, enter:
-
-    R> install.packages("RCurl")
-    R> install.packages("rjson")
-    R> install.packages("statmod")
-    R> install.packages(c("devtools", "roxygen2", "testthat"))
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 **NOTE**: During Rtools installation, do **not** install Cygwin.dll.
