@@ -124,6 +124,7 @@ public abstract class Parser extends Iced {
     }
 
     public static ColTypeInfo[] fromStrings(String strs[]) {
+      if(strs == null) return null;
       ColTypeInfo[] res = new ColTypeInfo[strs.length];
       for (int i=0; i < strs.length; i++)
         res[i] = new ColTypeInfo(strs[i]);
