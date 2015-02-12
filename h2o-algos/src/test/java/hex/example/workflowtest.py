@@ -79,7 +79,7 @@ bpd.describe()
 def split_fit_predict(data):
   # Classic Test/Train split
   r = data['Days'].runif()   # Random UNIForm numbers, one per row
-  train = data[ r < 0.6  ]
+  train = data[  r  < 0.6]
   test  = data[(0.6 <= r) & (r < 0.9)]
   hold  = data[ 0.9 <= r ]
   print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow(),"rows, holdout has",hold.nrow()
