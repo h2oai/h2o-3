@@ -58,6 +58,10 @@ abstract public class AST extends Iced {
       } else if (this instanceof ASTddply) {
         _asts[0].treeWalk(e);
         ((ASTddply)this).apply(e);
+      } else if (this instanceof ASTMerge) {
+        _asts[1].treeWalk(e);
+        _asts[0].treeWalk(e);
+        ((ASTMerge)this).apply(e);
       } else {
         throw H2O.fail("Unknown AST in tree walk: " + this.getClass());
         // TODO: do the udf op thing: capture env...
@@ -107,7 +111,7 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
             this instanceof ASTDelete )
       { this.exec(e); }
 
@@ -121,21 +125,6 @@ abstract public class AST extends Iced {
   }
 
   StringBuilder toString( StringBuilder sb, int d ) { return indent(sb,d).append(this); }
-}
-
-class ASTRaft extends AST {
-  final Key _key;
-  ASTRaft(String id) { _key = Key.make(id); }
-  @Override public String toString() { return _key.toString(); }
-  @Override void exec(Env e) {
-    Key k;
-    Raft r = DKV.get(_key).get();
-    if ((k=r.get_key())==null) r.get_ast().treeWalk(e);
-    else (new ASTFrame(k)).exec(e);
-  }
-  @Override int type() { return Env.AST; }
-  @Override String value() { return _key.toString(); }
-
 }
 
 class ASTId extends AST {
@@ -700,7 +689,8 @@ class ASTAssign extends AST {
       double d = Double.NaN;
       if (e.isStr()) s = e.popStr();
       else if (e.isNum()) d = e.popDbl();
-      else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment.");
+      else if (e.isNul()) d = Double.NaN;
+      else throw new IllegalArgumentException("Did not get a single number or factor level on the RHS of the assignment. Got type #:" + Env.typeToString(e.peekType()));
       final double d0 = d;
       final String s0 = s;
 

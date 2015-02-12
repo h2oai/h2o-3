@@ -210,7 +210,7 @@ class H2OCloudNode:
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port),
                #"-hdfs_version", "cdh3",
-               ]
+        ]
 
         # Add S3N credentials to cmd if they exist.
         #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -633,7 +633,7 @@ class Test:
         """
         return (self.returncode == 0)
 
-    def get_nopass(self):
+    def get_nopass(self, nopass):
         """
         Some tests are known not to fail and even if they don't pass we don't want
         to fail the overall regression PASS/FAIL status.
@@ -641,7 +641,7 @@ class Test:
         @return: True if the test has been marked as NOPASS, False otherwise.
         """
         a = re.compile("NOPASS")
-        return a.search(self.test_name)
+        return a.search(self.test_name) and not nopass
 
     def get_completed(self):
         """
@@ -730,6 +730,7 @@ class TestRunner:
         self.regression_passed = False
         self._create_output_dir()
         self._create_failed_output_dir()
+        self.nopass_counter = 0
 
         if (use_cloud):
             node_num = 0
@@ -810,7 +811,7 @@ class TestRunner:
             print("")
             sys.exit(1)
 
-    def build_test_list(self, test_group, run_small, run_medium, run_large):
+    def build_test_list(self, test_group, run_small, run_medium, run_large, nopass):
         """
         Recursively find the list of tests to run and store them in the object.
         Fills in self.tests and self.tests_not_started.
@@ -838,6 +839,7 @@ class TestRunner:
                 is_small = False
                 is_medium = False
                 is_large = False
+                is_nopass = False
 
                 if (re.match(".*large.*", f)):
                     is_large = True
@@ -846,11 +848,19 @@ class TestRunner:
                 else:
                     is_small = True
 
+                if (re.match(".*NOPASS.*", f)):
+                    is_nopass = True
+
                 if (is_small and not run_small):
                     continue
                 if (is_medium and not run_medium):
                     continue
                 if (is_large and not run_large):
+                    continue
+                if (is_nopass and not nopass):  # skip all NOPASS tests for regular runs
+                    self.nopass_counter += 1    # but still count the number of NOPASS tests
+                    continue
+                if (nopass and not is_nopass):  # if g_nopass flag is set, then ONLY run the NOPASS tests (skip all other tests)
                     continue
 
                 if (test_group is not None):
@@ -913,7 +923,7 @@ class TestRunner:
                 return
             cloud.wait_for_cloud_to_be_up()
 
-    def run_tests(self):
+    def run_tests(self, nopass):
         """
         Run all tests.
 
@@ -927,16 +937,33 @@ class TestRunner:
             self._log("Setting up R H2O package...")
             out_file_name = os.path.join(self.output_dir, "runnerSetupPackage.out.txt")
             out = open(out_file_name, "w")
-            cloud = self.clouds[0]
-            port = cloud.get_port()
-            #ip = "127.0.0.1:"
-            ip = cloud.get_ip()+":"
-            if (g_use_cloud2):
-                ip = cloud.get_ip()+":"
+
+            runner_setup_package_r = None
+            if (True):
+                possible_utils_parent_dir = self.test_root_dir
+                while (True):
+                    possible_utils_dir = os.path.join(possible_utils_parent_dir, "Utils")
+                    possible_runner_setup_package_r = os.path.join(possible_utils_dir, "runnerSetupPackage.R")
+                    if (os.path.exists(possible_runner_setup_package_r)):
+                        runner_setup_package_r = possible_runner_setup_package_r
+                        break
+
+                    next_possible_utils_parent_dir = os.path.dirname(possible_utils_parent_dir)
+                    if (next_possible_utils_parent_dir == possible_utils_parent_dir):
+                        break
+
+                    possible_utils_parent_dir = next_possible_utils_parent_dir
+
+            if (runner_setup_package_r is None):
+                print("")
+                print("ERROR: runnerSetupPackage.R not found.")
+                print("")
+                sys.exit(1)
+
             cmd = ["R",
                    "--quiet",
                    "-f",
-                   os.path.join(self.test_root_dir, "Utils/runnerSetupPackage.R")]
+                   runner_setup_package_r]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
@@ -945,7 +972,7 @@ class TestRunner:
                 return
             if (rv != 0):
                 print("")
-                print("ERROR: Utils/runnerSetupPackage.R failed.")
+                print("ERROR: " + runner_setup_package_r + " failed.")
                 print("       (See " + out_file_name + ")")
                 print("")
                 sys.exit(1)
@@ -981,7 +1008,7 @@ class TestRunner:
             completed_test = self._wait_for_one_test_to_complete()
             if (self.terminated):
                 return
-            self._report_test_result(completed_test)
+            self._report_test_result(completed_test, nopass)
             ip_of_completed_test = completed_test.get_ip()
             port_of_completed_test = completed_test.get_port()
             self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
@@ -993,7 +1020,7 @@ class TestRunner:
             completed_test = self._wait_for_one_test_to_complete()
             if (self.terminated):
                 return
-            self._report_test_result(completed_test)
+            self._report_test_result(completed_test, nopass)
 
     def stop_clouds(self):
         """
@@ -1016,7 +1043,7 @@ class TestRunner:
         for cloud in self.clouds:
             cloud.stop()
 
-    def report_summary(self):
+    def report_summary(self, nopass):
         """
         Report some summary information when the tests have finished running.
 
@@ -1032,12 +1059,12 @@ class TestRunner:
             if (test.get_passed()):
                 passed += 1
             else:
-                if (test.get_nopass()):
+                if (test.get_nopass(nopass)):
                     nopass_but_tolerate += 1
 
                 if (test.get_completed()):
                     failed += 1
-                    if (not test.get_nopass()):
+                    if (not test.get_nopass(nopass)):
                         true_fail_list.append(test.test_name)
                 else:
                     notrun += 1
@@ -1063,6 +1090,7 @@ class TestRunner:
         self._log("Did not pass:         " + str(failed))
         self._log("Did not complete:     " + str(notrun))
         self._log("Tolerated NOPASS:     " + str(nopass_but_tolerate))
+        self._log("NOPASS tests skipped: " + str(self.nopass_counter))
         self._log("")
         self._log("Total time:           %.2f sec" % delta_seconds)
         if (run > 0):
@@ -1179,7 +1207,7 @@ class TestRunner:
                 return
             time.sleep(1)
 
-    def _report_test_result(self, test):
+    def _report_test_result(self, test, nopass):
         port = test.get_port()
         now = time.time()
         duration = now - test.start_seconds
@@ -1194,7 +1222,7 @@ class TestRunner:
             f.write(test.get_test_dir_file_name() + "\n")
             f.close()
             # Copy failed test output into directory failed
-            if not test.get_nopass():
+            if not test.get_nopass(nopass):
                 shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
 
     def _log(self, s):
@@ -1206,12 +1234,12 @@ class TestRunner:
 
     def _get_summary_filehandle_for_appending(self):
         summary_file_name = os.path.join(self.output_dir, "summary.txt")
-        f = open(summary_file_name, "a")
+        f = open(summary_file_name, "a+")
         return f
 
     def _get_failed_filehandle_for_appending(self):
         summary_file_name = os.path.join(self.output_dir, "failed.txt")
-        f = open(summary_file_name, "a")
+        f = open(summary_file_name, "a+")
         return f
 
     def __str__(self):
@@ -1255,6 +1283,7 @@ g_use_ip = None
 g_use_port = None
 g_no_run = False
 g_jvm_xmx = "1g"
+g_nopass = False
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1343,6 +1372,8 @@ def usage():
     print("")
     print("    --jvm.xmx     Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
     print("")
+    print("    --nopass      Run the NOPASS tests only and do not ignore any failures.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1417,6 +1448,7 @@ def parse_args(argv):
     global g_use_port
     global g_no_run
     global g_jvm_xmx
+    global g_nopass
 
     i = 1
     while (i < len(argv)):
@@ -1492,6 +1524,8 @@ def parse_args(argv):
                 unknown_arg(s)
             g_use_cloud2 = True
             g_config = s
+        elif (s == "--nopass"):
+            g_nopass = True
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
@@ -1564,6 +1598,7 @@ def main(argv):
     global g_test_list_file
     global g_test_group
     global g_runner
+    global g_nopass
 
     g_script_name = os.path.basename(argv[0])
 
@@ -1619,7 +1654,7 @@ def main(argv):
         g_runner.read_test_list_file(g_test_list_file)
     else:
         # Test group can be None or not.
-        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large)
+        g_runner.build_test_list(g_test_group, g_run_small, g_run_medium, g_run_large, g_nopass)
 
     # If no run is specified, then do an early exit here.
     if (g_no_run):
@@ -1639,10 +1674,10 @@ def main(argv):
     # Run.
     try:
         g_runner.start_clouds()
-        g_runner.run_tests()
+        g_runner.run_tests(g_nopass)
     finally:
         g_runner.stop_clouds()
-        g_runner.report_summary()
+        g_runner.report_summary(g_nopass)
 
     # If the overall regression did not pass then exit with a failure status code.
     if (not g_runner.get_regression_passed()):

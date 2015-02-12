@@ -1,5 +1,8 @@
 package water.parser;
 
+import water.fvec.FileVec;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -498,7 +501,7 @@ MAIN_LOOP:
     // If we have trailing empty columns (split by separators) such as ",,\n"
     // then we did not add the final (empty) column, so the column count will
     // be down by 1.  Add an extra empty column here
-    if( bits[bits.length-1] == separator  && bits[bits.length-1] != CsvParser.CHAR_SPACE)
+    if( bits.length > 0 && bits[bits.length-1] == separator  && bits[bits.length-1] != CsvParser.CHAR_SPACE)
       tokens.add("");
     return tokens.toArray(new String[tokens.size()]);
   }
@@ -567,7 +570,7 @@ MAIN_LOOP:
    *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
    *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
-  static ParseSetup CSVguessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames) {
 
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
@@ -589,7 +592,7 @@ MAIN_LOOP:
       }
     }
     if( nlines==0 )
-      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null);
+      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -601,7 +604,7 @@ MAIN_LOOP:
         if( lines[0].split(",").length > 2 ) sep = (byte)',';
         else if( lines[0].split(" ").length > 2 ) sep = ' ';
         else 
-          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
@@ -663,7 +666,21 @@ MAIN_LOOP:
     if( !errors.isEmpty() )
       errors.toArray(err = new String[errors.size()]);
 
+    // Assemble the setup understood so far
+    ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
+
+    // now guess the types
+    InputStream is = new ByteArrayInputStream(bits);
+    CsvParser p = new CsvParser(resSetup);
+    TypeGuesserDataOut dout = new TypeGuesserDataOut(resSetup._ncols);
+    try{
+      p.streamParse(is, dout);
+      resSetup._ctypes = dout.guessTypes();
+    }catch(Throwable e){
+    // TODO need to say something if we are having parse troubles this early
+    }
+
     // Return the final setup
-    return new ParseSetup( true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
+    return resSetup;
   }
 }

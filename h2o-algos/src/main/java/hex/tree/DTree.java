@@ -27,7 +27,7 @@ public class DTree extends Iced {
   final int _ncols;      // Active training columns
   final char _nbins;     // Max number of bins to split over
   final char _nclass;    // #classes, or 1 for regression trees
-  final int _min_rows;   // Fewest allowed rows in any split
+  public final int _min_rows;   // Fewest allowed rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array
@@ -119,6 +119,7 @@ public class DTree extends Iced {
     float splat(DHistogram hs[]) {
       DHistogram h = hs[_col];
       assert _bin > 0 && _bin < h.nbins();
+      assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
       if( _equal == 1 ) { assert h.bins(_bin)!=0; return h.binAt(_bin); }
       // Find highest non-empty bin below the split
       int x=_bin-1;
@@ -179,42 +180,35 @@ public class DTree extends Iced {
         // Tighter bounds on the column getting split: exactly each new
         // DHistogram's bound are the bins' min & max.
         if( _col==j ) {
-          if( _equal != 0 ) {        // Equality split; no change on unequals-side
-            if( way == 1 ) continue; // but know exact bounds on equals-side - and this col will not split again
-          } else {              // Less-than split
+          switch( _equal ) {
+          case 0:  // Ranged split; know something about the left & right sides
             if( h._bins[_bin]==0 )
               throw H2O.unimpl(); // Here I should walk up & down same as split() above.
+            assert _bs==null : "splat not defined for BitSet splits";
             float split = splat;
             if( h._isInt > 0 ) split = (float)Math.ceil(split);
             if( way == 0 ) maxEx= split;
             else           min  = split;
+            break;
+          case 1:               // Equality split; no change on unequals-side
+            if( way == 1 ) continue; // but know exact bounds on equals-side - and this col will not split again
+            break;
+          case 2:               // BitSet (small) split
+          case 3:               // BitSet (big)   split
+            break;
+          default: throw H2O.fail();
           }
         }
         if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
         assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
-        nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h._doGrpSplit,h.isBinom());
+        nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
     }
 
-    public static StringBuilder ary2str( StringBuilder sb, int w, long xs[] ) {
-      sb.append('[');
-      for( long x : xs ) UndecidedNode.p(sb,x,w).append(",");
-      return sb.append(']');
-    }
-    public static StringBuilder ary2str( StringBuilder sb, int w, float xs[] ) {
-      sb.append('[');
-      for( float x : xs ) UndecidedNode.p(sb,x,w).append(",");
-      return sb.append(']');
-    }
-    public static StringBuilder ary2str( StringBuilder sb, int w, double xs[] ) {
-      sb.append('[');
-      for( double x : xs ) UndecidedNode.p(sb,(float)x,w).append(",");
-      return sb.append(']');
-    }
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("{").append(_col).append("/");
@@ -264,7 +258,6 @@ public class DTree extends Iced {
       sb.append("Nid# ").append(_nid).append(", ");
       printLine(sb).append("\n");
       if( _hs == null ) return sb.append("_hs==null").toString();
-      final int ncols = _hs.length;
       for( DHistogram hs : _hs )
         if( hs != null )
           p(sb,hs._name+String.format(", %4.1f-%4.1f",hs._min,hs._maxEx),colW).append(colPad);
@@ -281,12 +274,11 @@ public class DTree extends Iced {
 
       // Max bins
       int nbins=0;
-      for( int j=0; j<ncols; j++ )
-        if( _hs[j] != null && _hs[j].nbins() > nbins ) nbins = _hs[j].nbins();
+      for( DHistogram hs : _hs )
+        if( hs != null && hs.nbins() > nbins ) nbins = hs.nbins();
 
       for( int i=0; i<nbins; i++ ) {
-        for( int j=0; j<ncols; j++ ) {
-          DHistogram h = _hs[j];
+        for( DHistogram h : _hs ) {
           if( h == null ) continue;
           if( i < h.nbins() && h._bins != null ) {
             p(sb, h.bins(i),cntW).append('/');
@@ -389,7 +381,6 @@ public class DTree extends Iced {
         return d != _splat ? 0 : 1;
       else
         return _split._bs.contains((int)d) ? 1 : 0;
-      // return _split._equal ? (d != _splat ? 0 : 1) : (d < _splat ? 0 : 1);
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
@@ -478,22 +469,9 @@ public class DTree extends Iced {
       ab.put2((short)_split._col);
 
       // Save split-at-value or group
-      if(_split._equal == 0 || _split._equal == 1)
-        ab.put4f(_splat);
-      else if(_split._equal == 2) {
-        /* byte[] ary = MemoryManager.malloc1(4);
-        for(int i = 0; i < 4; i++)
-          ary[i] = _split._bs._val[i];
-        ab.putA1(ary, 4); */
-        //ab.putA1(_split._bs._val, 4);
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      } else {
-        assert _split._equal == 3;
-        //ab.put2((char)_split._bs._offset);
-        //ab.put2((char)_split._bs.numBytes());
-        //ab.putA1(_split._bs._val, _split._bs.numBytes());
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      }
+      if(_split._equal == 0 || _split._equal == 1) ab.put4f(_splat);
+      else if(_split._equal == 2) _split._bs.compress2(ab);
+      else _split._bs.compress3(ab);
 
       Node left = _tree.node(_nids[0]);
       if( (_nodeType&48) == 0 ) { // Size bits are optional for left leaves !

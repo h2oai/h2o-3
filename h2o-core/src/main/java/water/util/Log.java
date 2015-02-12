@@ -166,13 +166,23 @@ abstract public class Log {
     return logFileName;
   }
 
-  private static String DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER = "-2-debug.log";
-
   /**
    * @return This is what shows up in the Web UI when clicking on show log file.  File name only.
    */
-  public static String getLogFileName() throws Exception {
-    return getLogFileNameStem() + DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER;
+  public static String getLogFileName(String level) throws Exception {
+    String f;
+    switch (level) {
+      case "trace": f = "-1-trace.log"; break;
+      case "debug": f = "-2-debug.log"; break;
+      case "info":  f = "-3-info.log"; break;
+      case "warn":  f = "-4-warn.log"; break;
+      case "error": f = "-5-error.log"; break;
+      case "fatal": f = "-6-fatal.log"; break;
+      default:
+        throw new Exception("Unknown level");
+    }
+
+    return getLogFileNameStem() + f;
   }
 
   private static void setLog4jProperties(String logDirParent, java.util.Properties p) throws Exception {
@@ -248,6 +258,7 @@ abstract public class Log {
     p.setProperty("log4j.logger.com.amazonaws",                 "WARN");
     p.setProperty("log4j.logger.org.apache.hadoop",             "WARN");
     p.setProperty("log4j.logger.org.jets3t.service",            "WARN");
+    p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR");
 
     // See the following document for information about the pattern layout.
     // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html

@@ -1,8 +1,10 @@
 package hex.deeplearning;
 
-import hex.FrameTask.DataInfo;
+
+import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -22,7 +24,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningOutput> {
+public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> {
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
@@ -30,6 +32,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             Model.ModelCategory.Binomial,
             Model.ModelCategory.Multinomial,
     };
+  }
+
+  @Override
+  public boolean isSupervised() {
+    return !_parms._autoencoder;
   }
 
   public DeepLearning( DeepLearningModel.DeepLearningParameters parms ) {
@@ -61,17 +68,22 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Scope.enter();
         _parms.read_lock_frames(DeepLearning.this);
         init(true);
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
+        if (error_count() > 0)
+          throw new IllegalArgumentException("Found validation errors: " + validationErrors());
         buildModel();
+        done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);
       } catch( Throwable t ) {
-        t.printStackTrace();
-        cancel2(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          failed(t);
+          throw t;
+        }
       } finally {
         _parms.read_unlock_frames(DeepLearning.this);
         Scope.exit();
-        done();                 // Job done!
       }
       tryComplete();
     }
@@ -129,7 +141,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       Scope.enter();
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningOutput(DeepLearning.this), _train, _valid);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -160,7 +172,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
                                               _parms._autoencoder ? 0 : 1, 
                                               _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
                                               _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE);
+                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);
           DKV.put(dinfo._key,dinfo);
           cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());
@@ -168,7 +180,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           Object B = _parms;
           for (Field fA : A.getClass().getDeclaredFields()) {
             if (ArrayUtils.contains(cp_modifiable, fA.getName())) {
-              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
+//              if (!_parms._expert_mode && ArrayUtils.contains(cp.get_params().expert_options, fA.getName())) continue;
               for (Field fB : B.getClass().getDeclaredFields()) {
                 if (fA.equals(fB)) {
                   try {
@@ -295,8 +307,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
         }
 
-        Log.info(model);
+        Log.info("==============================================================================================");
         Log.info("Finished training the Deep Learning model.");
+        Log.info(model);
+        Log.info("==============================================================================================");
       }
       catch(RuntimeException ex) {
         model = DKV.get(dest()).get();

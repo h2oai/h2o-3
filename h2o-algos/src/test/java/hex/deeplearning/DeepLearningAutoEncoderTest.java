@@ -45,7 +45,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._response_column = train.names()[train.names().length-1];
         p._convert_to_enum = false;
         p._seed = seed;
-        p._hidden = new int[]{100, 100};
+        p._hidden = new int[]{97, 102};
         p._adaptive_rate = true;
         p._train_samples_per_iteration = -1;
         p._sparsity_beta = sparsity_beta;
@@ -83,7 +83,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
           double quantile = 0.95;
-          l2_frame_train = mymodel.scoreAutoEncoder(train);
+          l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make());
           final Vec l2_train = l2_frame_train.anyVec();
           sb.append("Mean reconstruction error: ").append(l2_train.mean()).append("\n");
           Assert.assertEquals(mymodel.mse(), l2_train.mean(), 1e-7);
@@ -117,12 +117,23 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           // Test data
 
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
-          l2_frame_test = mymodel.scoreAutoEncoder(test);
+          l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make());
           final Vec l2_test = l2_frame_test.anyVec();
           double mult = 10;
           double thresh_test = mult * thresh_train;
           sb.append("\nFinding outliers.\n");
           sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
+
+          Frame df1 = mymodel.scoreDeepFeatures(test, 0);
+          Assert.assertTrue(df1.numCols() == 97);
+          Assert.assertTrue(df1.numRows() == test.numRows());
+          df1.delete();
+
+          Frame df2 = mymodel.scoreDeepFeatures(test, 1);
+          Assert.assertTrue(df2.numCols() == 102);
+          Assert.assertTrue(df2.numRows() == test.numRows());
+          df2.delete();
+
 
           // print stats and potential outliers
           sb.append("The following test points are reconstructed with an error greater than ").append(mult).append(" times the mean reconstruction error of the training data:\n");

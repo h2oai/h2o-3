@@ -16,7 +16,13 @@ IMAGEDIR=${TOPDIR}/h2o-dist/tmp/h2o-dev-${PROJECT_VERSION}
 rm -fr target
 rm -fr h2o-dist/tmp
 
-
+if [ -z "$DO_FAST" ]; then
+  # Run some required gradle tasks to produce final build output.
+  ./gradlew :h2o-core:javadoc
+  ./gradlew :h2o-algos:javadoc
+  ./gradlew :h2o-scala:scaladoc
+  ./gradlew publish
+fi
 
 # Create image dir, which contains what is in the zip file.
 cd $TOPDIR
@@ -46,18 +52,37 @@ mv $IMAGEDIR/../h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
 mkdir -p target/R/src
 cp -rp h2o-r/R/src/contrib target/R/src
 
+# Add Python dist to target.
+mkdir -p target/Python
+
+name=""
+for f in h2o-py/dist/*
+do
+  name=${f##*/}
+done
+
+cp h2o-py/dist/*whl target/Python
+
+cd h2o-py && sphinx-build -b html docs/ docs/docs/
+cd ..
+
+# Add Maven repo to target.
+mkdir target/maven
+cp -rp build/repo target/maven
+
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-r
+mkdir target/docs-website/h2o-py
 mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
+mkdir target/docs-website/h2o-scala
 cp -rp build/docs/REST target/docs-website
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
-
-
+cp -rp h2o-py/docs/docs/ target/docs-website/h2o-py
+cp -rp h2o-scala/build/docs/scaladoc target/docs-website/h2o-scala
 
 # Create index file.
-cat h2o-dist/index.html | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html
-
+cat h2o-dist/index.html | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" > target/index.html

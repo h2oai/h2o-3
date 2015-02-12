@@ -22,7 +22,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "score_each_iteration" };
+  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "dropNA20Cols" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
   private transient String[] __fields_cache = null;
@@ -67,8 +67,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
 
-  @API(help="Score validation set on each major model-building iteration; can be slow", direction=API.Direction.INOUT)
-  public boolean score_each_iteration;
+  @API(help="Drop columns with more than 20% missing values", direction=API.Direction.INOUT)
+  public boolean dropNA20Cols; // Drop columns with more than 20% missing values
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
@@ -121,10 +121,12 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     // Version&Schema-specific filling from the implementation object
     public S fillFromImpl(ValidationMessage vm) {
       PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
-      if (this.field_name.startsWith("_"))
-        this.field_name = this.field_name.substring(1);
-      else
-        Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      if (this.field_name != null) {
+        if (this.field_name.startsWith("_"))
+          this.field_name = this.field_name.substring(1);
+        else
+          Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      }
       return (S)this;
     }
   }

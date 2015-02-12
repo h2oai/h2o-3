@@ -362,7 +362,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         Field f = fields.get(key); // No such field error, if parm is junk
 
         if (null == f) {
-          throw new H2OIllegalArgumentException(key, "fillFromParms", this.getClass().getSimpleName());
+          throw new H2OIllegalArgumentException("Unknown parameter: " + key, "Unknown parameter in fillFromParms: " + key + " for class: " + this.getClass().toString());
         }
 
         int mods = f.getModifiers();
@@ -562,35 +562,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // normally not allowed because it has no version:
     new Schema();
 
+    // Ensure that water is pulled in:
     for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(Schema.class))
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);
 
+    // Ensure that hex is pulled in:
     for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(Schema.class))
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);
 
-    for (Class<? extends ModelSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("water")).getSubTypesOf(ModelOutputSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelOutputSchema> schema_class : (new Reflections("hex")).getSubTypesOf(ModelOutputSchema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("water")).getSubTypesOf(ModelParameterSchemaV2.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
-
-    for (Class<? extends ModelParameterSchemaV2> schema_class : (new Reflections("hex")).getSubTypesOf(ModelParameterSchemaV2.class))
+    // Get mixed-package schemas:
+    for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(Schema.class))
       if (! Modifier.isAbstract(schema_class.getModifiers()))
         Schema.register(schema_class);
 

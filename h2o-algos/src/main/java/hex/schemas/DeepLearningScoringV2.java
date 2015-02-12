@@ -45,10 +45,10 @@ public class DeepLearningScoringV2<I extends DeepLearningScoring, S extends Deep
     public AUCBase validAUC;
 
     @API(help="Hit ratio on training data", direction=API.Direction.OUTPUT)
-    public HitRatioBase train_hitratio;
+    public float[] train_hitratio;
 
     @API(help="Hit ratio on validation data", direction=API.Direction.OUTPUT)
-    public HitRatioBase valid_hitratio;
+    public float[] valid_hitratio;
 
     // regression
     @API(help="Training MSE", direction=API.Direction.OUTPUT)

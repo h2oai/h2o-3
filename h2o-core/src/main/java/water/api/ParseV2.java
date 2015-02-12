@@ -39,6 +39,9 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   @API(help="Domains for categorical columns")
   String[][] domains;
 
+  @API(help="Value types for columns")
+  String[] columnTypes;
+
   @API(help="Delete input key after parse")
   boolean delete_on_done;
 
@@ -47,6 +50,9 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
 
   @API(help="Remove Frame after blocking parse, and return array of Vecs")
   boolean removeFrame;
+
+  @API(help="Size of individual parse tasks", direction=API.Direction.INPUT)
+  int chunkSize;
 
   // Output fields
   @API(help="Parse Job", direction=API.Direction.OUTPUT)

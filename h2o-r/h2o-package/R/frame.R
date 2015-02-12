@@ -120,20 +120,35 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(res$dest$name, conn)
 }
 
-h2o.splitFrame <- function(data, ratios = 0.75) {
+h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
     stop("`ratios` must be between 0 and 1 exclusive")
   if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
-  res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-  .h2o.__waitOnJob(data@conn, res$job$key$name)
+  params <- list()
+  params$dataset <- data@key
+  params$ratios <- .collapse(ratios)
+  if (!missing(destination_keys))
+    params$destKeys <- .collapse.char(destination_keys)
 
-  model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
-  splits <- lapply(model.view$models[[1L]]$output$splits,
-                   function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
-  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
+  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
+  # .h2o.__waitOnJob(data@conn, res$key$name)
+
+  splits <- list()
+  if (missing(destination_keys))
+    splits <- lapply(0:length(ratios), function(x) {
+      name <- paste0(iris.hex@key, "_part", x)
+      h2o.getFrame(name, conn)
+    }) else 
+    splits <- lapply(destination_keys, function(x) { h2o.getFrame(x, conn) })
+
   splits
+  # model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
+  # splits <- lapply(model.view$models[[1L]]$output$splits,
+  #                  function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
+  # names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
+  # splits
 }
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
@@ -338,7 +353,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     if (missingI)
       return(x)
 
-    if ((nargs() - !missing(drop)) < 3L) {
+    if (((nargs() - !missing(drop)) < 3L) && (ncol(x) != 1L)) {
       j <- i
       missingI <- TRUE
       missingJ <- FALSE
@@ -1070,7 +1085,7 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' as.data.frame.H2OFrame(prostate.hex)
 as.data.frame.H2OFrame <- function(x, ...) {
-  .byref.update.frame(x)
+  .byref.update.frame(x, scalarAsFrame = FALSE)
 
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.

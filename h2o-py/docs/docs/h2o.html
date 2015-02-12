@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The H2O Python Module &mdash; H2O  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="H2O  documentation" href="index.html" />
+    <link rel="next" title="H2OFrame" href="frame.html" />
+    <link rel="prev" title="Welcome to H2O’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to H2O’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-h2o.__init__"></span><div class="section" id="the-h2o-python-module">
+<h1>The H2O Python Module<a class="headerlink" href="#the-h2o-python-module" title="Permalink to this headline">¶</a></h1>
+<p>This module provides access to the H2O JVM (and extensions thereof), its objects, its
+machine-learning algorithms, and modeling support (basic munging and feature generation)
+capabilities.</p>
+<p>The H2O JVM sports a web server such that all communication occurs on a socket (specified
+by an IP address and a port) via a series of REST calls (see connection.py for the REST
+layer implementation and details). There is a single active connection to the H2O JVM at
+any one time, and this handle is stashed away out of sight in a singleton instance of
+<tt class="xref py py-class docutils literal"><span class="pre">H2OConnection</span></tt> (this is the global  <span class="target" id="index-0"></span><tt class="xref std std-envvar docutils literal"><span class="pre">__H2OConn__</span></tt>).</p>
+<p>The H2O python module is not intended as a replacement for other popular machine learning
+modules such as scikit-learn, pylearn2, and their ilk. This module is a complementary
+interface to a modeling engine intended to make the transition of models from development
+to production as seamless as possible. Additionally, it is designed to bring H2O to a
+wider audience of data and machine learning devotees that work exclusively with Python
+(rather than R or scala or Java &#8211; which are other popular interfaces that H2O supports),
+and are wanting another tool for building applications or doing data munging in a fast,
+scalable environment without any extra mental anguish about threads and parallelism.</p>
+<div class="section" id="what-is-h2o">
+<h2>What is H2O?<a class="headerlink" href="#what-is-h2o" title="Permalink to this headline">¶</a></h2>
+<p>H2O is a piece of java software for data modeling and general computing. There are many
+different views of the H2O software, but the primary view of H2O is that of a distributed
+(many machines), parallel (many CPUs), in memory (several hundred GBs Xmx) processing
+engine.</p>
+<p>There are two levels of parallelism:</p>
+<blockquote>
+<div><ul class="simple">
+<li>within node</li>
+<li>across (or between) node.</li>
+</ul>
+</div></blockquote>
+<p>The goal, remember, is to &#8220;simply&#8221; add more processors to a given problem in order to
+produce a solution faster. The conceptual paradigm MapReduce (also known as
+&#8220;divide and conquer and combine&#8221;) along with a good concurrent application structure
+(c.f. jsr166y and NonBlockingHashMap) enable this type of scaling in H2O (we&#8217;re really
+cooking with gas now!).</p>
+<p>For application developers and data scientists, the gritty details of thread-safety,
+algorithm parallelism, and node coherence on a network are concealed by simple-to-use REST
+calls that are all documented here. In addition, H2O is an open-source project under the
+Apache v2 licence. All of the source code is on
+<a class="reference external" href="https://github.com/h2oai/h2o-dev">github</a>, there is an active
+<a class="reference external" href="https://groups.google.com/forum/#!forum/h2ostream">google group mailing list</a>, our
+<a class="reference external" href="http://test.0xdata.com/">nightly tests</a> are open for perusal, our <a class="reference external" href="http://jira.0xdata.com">JIRA ticketing
+system</a> is also open for public use. Last, but not least, we
+regularly engage the machine learning community all over the nation with a very busy
+<a class="reference external" href="http://h2o.ai/events/">meetup schedule</a> (so if you&#8217;re not in The Valley, no sweat,
+we&#8217;re probably coming to you soon!), and finally, we host our very own <a class="reference external" href="http://h2o.ai/h2o-world/">H2O World
+conference</a>. We also sometimes host hack-a-thons at our
+campus in Mountain View, CA. Needless to say, there is a lot of support for the
+application developer.</p>
+<p>In order to make the most out of H2O, there are some key conceptual pieces that are helpful
+to know before getting started. Mainly, it&#8217;s helpful to know about the different types of
+objects that live in H2O and what the rules of engagement are in the context of the REST
+API (which is what any non-JVM interface is all about).</p>
+<p>Let&#8217;s get started!</p>
+<div class="section" id="the-h2o-object-system">
+<h3>The H2O Object System<a class="headerlink" href="#the-h2o-object-system" title="Permalink to this headline">¶</a></h3>
+<p>H2O sports a distributed key-value store (the &#8220;DKV&#8221;), which contains pointers to the
+various objects that make up the H2O ecosystem. The DKV is a kind of biosphere in that it
+encapsulates all shared objects (though, it may not encapsulate all objects). Some shared
+objects are mutable by the client; some shared objects are read-only by the client, but
+mutable by H2O (e.g. a model being constructed will change over time); and actions by the
+client may have side-effects on other clients (multi-tenancy is not a supported model of
+use, but it is possible for multiple clients to attach to a single H2O cloud).</p>
+<p>Briefly, these objects are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Key</span></tt>:    A key is an entry in the DKV that maps to an object in H2O.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Frame</span></tt>:  A Frame is a collection of Vec objects. It is a 2D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Vec</span></tt>:    A Vec is a collection of Chunk objects. It is a 1D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Chunk</span></tt>:  A Chunk holds a fraction of the BigData. It is a 1D array of elements.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">ModelMetrics</span></tt>:   A collection of metrics for a given category of model.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Model</span></tt>:  A model is an immutable object having <cite>predict</cite> and <cite>metrics</cite> methods.</li>
+<li><tt class="xref py py-mod docutils literal"><span class="pre">Job</span></tt>:    A Job is a non-blocking task that performs a finite amount of work.</li>
+</ul>
+</div></blockquote>
+<p>Many of these objects have no meaning to an end python user, but in order to make sense of
+the objects available in this module it is helpful to understand how these objects map to
+objects in the JVM (because after all, this module is an interface that allows the
+manipulation of a distributed system).</p>
+</div>
+</div>
+<div class="section" id="objects-in-this-module">
+<h2>Objects In This Module<a class="headerlink" href="#objects-in-this-module" title="Permalink to this headline">¶</a></h2>
+<p>The objects that are of primary concern to the python user are (in order) Keys, Frames,
+Vecs, Models, ModelMetrics, and to a lesser extent Jobs. Each of these objects are
+described in greater detail throughout this documentation, but a few brief notes are
+warranted here.</p>
+<div class="section" id="h2oframe">
+<h3>H2OFrame<a class="headerlink" href="#h2oframe" title="Permalink to this headline">¶</a></h3>
+<p>An H2OFrame is 2D array of uniformly-typed columns. Data in H2O is compressed (often
+achieving 2-4x better compression the gzip on disk) and is held in the JVM heap (i.e.
+data is &#8220;in memory&#8221;), and <em>not</em> in the python process local memory.. The H2OFrame is an
+iterable (supporting list comprehensions) wrapper around a list of H2OVec objects. All an
+H2OFrame object is, therefore, is a wrapper on a list that supports various types of operations
+that may or may not be lazy. Here&#8217;s an example showing how a list comprehension is combined
+with lazy expressions to compute the column means for all columns in the H2OFrame:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">import_frame</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;smalldata/logreg/prostate.csv&quot;</span><span class="p">)</span>  <span class="c"># import prostate data</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">colmeans</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">eager</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="p">]</span>                     <span class="c"># compute column means eagerly</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">colmeans</span>                                                     <span class="c"># print the results</span>
+<span class="go">[5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]</span>
+</pre></div>
+</div>
+<p>Lazy expressions will be discussed in detail in the coming sections, but their primary
+purpose is to cut down on the chatter between the client (a.k.a this python interface) and
+H2O. Lazy expressions are
+<a class="reference external" href="http://www.urbandictionary.com/define.php?term=Katamari">Katamari&#8217;d</a> together and only
+ever evaluated when some piece of output is requested (e.g. print-to-screen).</p>
+<p>The set of operations on an H2OFrame is described in a chapter devoted to this object, but
+suffice it to say that this set of operations closely resembles those that may be
+performed on an R data.frame. This includes all manner of slicing (with complex
+conditionals), broadcasting operations, and a slew of math operations for transforming and
+mutating a Frame (the actual Big Data sitting in the H2O cloud). The semantics for
+modifying a Frame closely resembles R&#8217;s copy-on-modify semantics, except when it comes
+to mutating a Frame in place. For example, it&#8217;s possible to assign all occurrences of the
+number <cite>0</cite> in a column to missing (or <cite>NA</cite> in R parlance) as demonstrated in the following
+snippet:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">h2o</span><span class="o">.</span><span class="n">import_frame</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s">&quot;smalldata/logreg/prostate.csv&quot;</span><span class="p">)</span>  <span class="c"># import prostate data</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vol</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s">&#39;VOL&#39;</span><span class="p">]</span>                                              <span class="c"># select the VOL column</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vol</span><span class="p">[</span><span class="n">vol</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>                                         <span class="c"># 0 VOL means &#39;missing&#39;</span>
+</pre></div>
+</div>
+<p>After this operation, <cite>vol</cite> has been permanently mutated in place (it is not a copy!).</p>
+</div>
+<div class="section" id="h2ovec">
+<h3>H2OVec<a class="headerlink" href="#h2ovec" title="Permalink to this headline">¶</a></h3>
+<p>An H2OVec is...</p>
+</div>
+<div class="section" id="expr">
+<h3>Expr<a class="headerlink" href="#expr" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Lazy expressions...</li>
+</ul>
+</div>
+<div class="section" id="models">
+<h3>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>No explicit model objects &#8211; have model categories</li>
+<li>How to create new models</li>
+<li>train and validation data</li>
+<li>parameter specification</li>
+<li>See more on the chapter on Models</li>
+</ul>
+</div>
+<div class="section" id="metrics">
+<h3>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Metrics for different types of model categories</li>
+<li>See more in the chapter on Metrics</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The H2O Python Module</a><ul>
+<li><a class="reference internal" href="#what-is-h2o">What is H2O?</a><ul>
+<li><a class="reference internal" href="#the-h2o-object-system">The H2O Object System</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#objects-in-this-module">Objects In This Module</a><ul>
+<li><a class="reference internal" href="#h2oframe">H2OFrame</a></li>
+<li><a class="reference internal" href="#h2ovec">H2OVec</a></li>
+<li><a class="reference internal" href="#expr">Expr</a></li>
+<li><a class="reference internal" href="#models">Models</a></li>
+<li><a class="reference internal" href="#metrics">Metrics</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to H2O&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="frame.html"
+                        title="next chapter">H2OFrame</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/h2o.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="frame.html" title="H2OFrame"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to H2O’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">H2O  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, H2O.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

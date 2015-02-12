@@ -399,7 +399,8 @@ class H2O(object):
                 return result
 
             if time.time() - start_time > timeoutSecs:
-                H2O.verboseprint('Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.')
+                print 'Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.'
+                # downstream checkers should tolerate None. Print msg in case it's overlooked.
                 return None
 
             time.sleep(retryDelaySecs)
@@ -466,6 +467,8 @@ class H2O(object):
             'checkHeader': setup_result['checkHeader'],
             'singleQuotes': setup_result['singleQuotes'],
             'columnNames': setup_result['columnNames'], # gets stringified inside __do_json_request()
+            'chunkSize': setup_result['chunkSize'],
+            'columnTypes': setup_result['columnTypes'], # gets stringified inside __do_json_request()
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
@@ -696,7 +699,7 @@ class H2O(object):
         return mm
 
 
-    def predict(self, model, frame, timeoutSecs=60, **kwargs):
+    def predict(self, model, frame, destination_key = None, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
@@ -709,7 +712,9 @@ class H2O(object):
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
         assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
-        result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+        postData = { 'destination_key': destination_key }
+
+        result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
         return result
 
 

@@ -53,6 +53,7 @@ public abstract class Parser extends Iced {
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
+  public final static int STRING_DOMINANCE_RATIO = 4;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
 
@@ -64,6 +65,40 @@ public abstract class Parser extends Iced {
     ColType _type = ColType.UNKNOWN;
     ValueString _naStr = new ValueString("");
     boolean _strongGuess = false;
+
+    public ColTypeInfo() {}
+
+    public ColTypeInfo(ColType type) {
+      _type = type;
+    }
+
+    public ColTypeInfo(String str) {
+      if (str.equalsIgnoreCase("Unknown")) {
+        _type = ColType.UNKNOWN;
+        return;
+      } else if (str.equalsIgnoreCase("Unknown")) {
+        _type = ColType.UNKNOWN;
+        return;
+      } else if(str.equalsIgnoreCase("Numeric")) {
+        _type = ColType.NUM;
+        return;
+      } else if(str.equalsIgnoreCase("Enum")) {
+        _type = ColType.ENUM;
+        return;
+      } else if(str.equalsIgnoreCase("Time")) {
+        _type = ColType.TIME;
+        return;
+      } else if(str.equalsIgnoreCase("UUID")) {
+        _type = ColType.UUID;
+        return;
+      } else if(str.equalsIgnoreCase("String")) {
+        _type = ColType.STR;
+        return;
+      } else if(str.equalsIgnoreCase("Invalid")) {
+        _type = ColType.INVALID;
+        return;
+      } //TODO Throw error
+    }
 
     public void merge(ColTypeInfo tinfo){
       if(_type == ColType.UNKNOWN || !_strongGuess && tinfo._strongGuess){ // copy over stuff from the other
@@ -88,6 +123,12 @@ public abstract class Parser extends Iced {
       }
     }
 
+    public static ColTypeInfo[] fromStrings(String strs[]) {
+      ColTypeInfo[] res = new ColTypeInfo[strs.length];
+      for (int i=0; i < strs.length; i++)
+        res[i] = new ColTypeInfo(strs[i]);
+      return res;
+    }
   }
 
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
@@ -271,4 +312,159 @@ public abstract class Parser extends Iced {
     }
     String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
   }
+
+  protected static class TypeGuesserDataOut extends Iced implements DataOut {
+
+    transient private HashSet<String> [] _domains;
+    int [] _nnums;
+    int [] _nstrings;
+    int [] _ndates;
+    int [] _nUUID;
+    int [] _nzeros;
+    int [] _nempty;
+    int _nlines = 0;
+    final int _ncols;
+
+    public TypeGuesserDataOut(int ncols){
+      _ncols = ncols;
+      _domains = new HashSet[ncols];
+      _nzeros = new int[ncols];
+      _nstrings = new int[ncols];
+      _nUUID = new int[ncols];
+      _ndates = new int[ncols];
+      _nnums = new int[ncols];
+      _nempty = new int[ncols];
+      for(int i = 0; i < ncols; ++i)
+        _domains[i] = new HashSet<String>();
+    }
+
+    public ColTypeInfo[] guessTypes() {
+      ColTypeInfo [] res = new ColTypeInfo[_ncols];
+      for(int i = 0; i < _ncols; ++i) {
+        res[i] = new ColTypeInfo();
+        int nonemptyLines = _nlines-_nempty[i];
+
+        // Numeric
+        if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
+            || (_domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
+          res[i]._type = ColType.NUM;
+          continue;
+        }
+
+        // Datetime
+        if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
+            || (_domains[i].size() <= 1 // or time + 1 unique string (NA?)
+                && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
+          res[i]._type = ColType.TIME;
+          continue;
+        }
+
+        // UUID
+        if ((_nUUID[i] > 0) //  some UUID
+                || (_domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
+                && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
+          res[i]._type = ColType.UUID;
+          continue;
+        }
+
+        // Enum or string?
+        // Enum with 0s for NAs
+        if(_nzeros[i] > 0
+                && (_nzeros[i] + _nstrings[i] >= (nonemptyLines - 1)) //just strings and zeros
+                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // not all unique strings
+          res[i]._naStr = new ValueString("0");
+          res[i]._type = ColType.ENUM;
+          res[i]._strongGuess = true;
+          continue;
+        }
+        // Enum mixed with numbers
+        if(_nstrings[i] >= STRING_DOMINANCE_RATIO*(_nnums[i]+_nzeros[i]) // mostly strings
+                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // but not all unique
+          res[i]._type = ColType.ENUM;
+          continue;
+        }
+        // Strings, almost no dups
+        if (_domains[i].size() >= 0.98 * _nstrings[i]) {
+          res[i]._type = ColType.STR;
+          continue;
+        }
+
+        // All guesses failed
+        res[i]._type = ColType.UNKNOWN;
+      }
+      return res;
+    }
+
+    @Override
+    public void setColumnNames(String[] names) {}
+
+    @Override
+    public void newLine() {
+      ++_nlines;
+    }
+
+    @Override
+    public boolean isString(int colIdx) {
+      return false;
+    }
+
+    @Override
+    public void addNumCol(int colIdx, long number, int exp) {
+      if(colIdx < _nnums.length)
+        if (number == 0)
+          ++_nzeros[colIdx];
+        else
+          ++_nnums[colIdx];
+    }
+
+    @Override
+    public void addNumCol(int colIdx, double d) {
+      if(colIdx < _nnums.length)
+        if (d == 0)
+          ++_nzeros[colIdx];
+        else
+          ++_nnums[colIdx];
+    }
+
+    @Override
+    public void addInvalidCol(int colIdx) {
+      ++_nempty[colIdx];
+    }
+
+    @Override
+    public void addStrCol(int colIdx, ValueString str) {
+      if(colIdx < _nstrings.length) {
+
+        // Check for time
+        if (ParseTime.attemptTimeParse(str) != Long.MIN_VALUE) {
+          ++_ndates[colIdx];
+          return;
+        }
+
+        //Check for UUID
+        int old = str.get_off();
+        ParseTime.attemptUUIDParse0(str);
+        ParseTime.attemptUUIDParse1(str);
+        if( str.get_off() != -1 ) {
+          ++_nUUID[colIdx];
+          return;
+        }
+        str.setOff(old);
+
+        //Add string to for later determining string, NA, or enum
+        ++_nstrings[colIdx];
+        _domains[colIdx].add(str.toString());
+      }
+    }
+
+    @Override
+    public void rollbackLine() {--_nlines;}
+
+    @Override
+    public void invalidLine(String err) {}
+
+    public void invalidValue(int line, int col) {}
+  }
+
 }

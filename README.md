@@ -42,7 +42,36 @@ Users will use JSON/REST-api via H2O.R through connects the Analytics Engine int
 
 Using H2O Dev Artifacts
 --------------------------------
-Find H2O Dev on Maven Central via http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+Every nightly build publishes R, python, java and scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
+
+Here is an example snippet of a gradle build file using h2o-dev as a dependency.  Replace x, y, z, and nnnn with valid numbers.
+
+```
+// h2o-dev dependency information
+def h2oBranch = 'master'
+def h2oBuildNumber = 'nnnn'
+def h2oProjectVersion = "x.y.z.${h2oBuildNumber}"
+
+repositories {
+  // h2o-dev dependencies
+  maven {
+    url "https://s3.amazonaws.com/h2o-release/h2o-dev/${h2oBranch}/${h2oBuildNumber}/maven/repo/"
+  }
+}
+
+dependencies {
+  compile "ai.h2o:h2o-core:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-algos:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-web:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-app:${h2oProjectVersion}"
+}
+```
+
+See the latest H2O Dev [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
+
+See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
+
+> Note: Stable H2O Dev artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may lag substantially behind H2O Dev Bleeding Edge nightly builds.
 
 Building H2O Dev
 --------------------------------
@@ -71,7 +100,7 @@ Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\P
 
     npm install -g bower
 
-##### Step 3. Install R, the required packages, and Rtools
+##### Step 3a. Install R, the required packages, and Rtools
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
@@ -99,6 +128,24 @@ You may alternatively install these packages from within an R session:
     R> install.packages(c("devtools", "roxygen2", "testthat"))
 
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which are a collection of command line tools to facilitate R development on Windows.
+
+##### Step 3b. Install pip (Upgrade pip) and the wheel module
+
+The version of Python that we test is 2.7; other versions may work, but they are untested.
+
+To install pip, please follow the directions here:
+
+https://pip.pypa.io/en/latest/installing.html
+
+If you already have pip installed, then please ensure that it is upgraded:
+  
+    pip install --upgrade pip
+    
+After this, you'll need to grab the wheel module:
+
+    pip install wheel --upgrade
+    
+This will auto-update your wheel module if you already have it installed, or just perform an install of the latest version.
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
@@ -297,6 +344,60 @@ H2O cluster (3 nodes) is up
 Blocking until the H2O cluster shuts down...
 H2O node 172.16.2.185:54321 reports H2O cluster size 3
 H2O node 172.16.2.184:54321 reports H2O cluster size 3
+```
+
+Sparkling Water
+---------------------------------
+Sparkling Water combines two open source technologies: Apache Spark and H2O - a machine learning engine.  It makes H2O’s library of Advanced Algorithms including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest accessible from Spark workflows. Spark users are provided with the options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
+
+### Prerequisites
+
+Spark 1.2 for Sparkling Water v0.2.4-65+
+Spark 1.1 for older versions
+
+### Sparkling Water on Hadoop
+
+Compatiable Hadoop Distribution: CDH4, CDH5, and HDP2.1.
+
+#### Install on Hadoop
+
+- To install on your Hadoop Cluster clone the git repository and make a build:
+
+```
+git clone https://github.com/0xdata/sparkling-water.git 
+cd sparkling-water
+./gradlew build
+```
+
+- Then set MASTER to the IP address of where your Spark Master Node is launched and set SPARK_HOME to the location of your Spark installation. In the example below the path for SPARK_HOME is the default location of Spark preinstalled on a CDH5 cluster. Please change MASTER below:
+
+```
+export MASTER="spark://mr-0xd9-precise1.0xdata.loc:7077"
+export SPARK_HOME="/opt/cloudera/parcels/CDH-5.2.0-1.cdh5.2.0.p0.11/lib/spark"
+```
+
+- Launch Sparkling Shell:
+
+```
+./bin/sparkling-shell
+```
+
+#### Import Data from HDFS
+
+The initialization of H2O remains the same with the exception of importing data from a HDFS path. Please change path variable below to one suitable for your data.
+
+```scala
+import org.apache.spark.h2o._
+import org.apache.spark.examples.h2o._
+// Create H2O context
+val h2oContext = new H2OContext(sc).start()
+// Export H2O context to the 
+import h2oContext._
+
+// URI to access HDFS file
+val path = "hdfs://mr-0xd6-precise1.0xdata.loc:8020/datasets/airlines_all.05p.csv"
+val d = new java.net.URI(path)
+val f = new DataFrame(d)
 ```
 
 Community

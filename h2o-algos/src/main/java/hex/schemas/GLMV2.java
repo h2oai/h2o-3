@@ -2,8 +2,10 @@ package hex.schemas;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
+import water.DKV;
 import water.api.API;
 import water.api.API.Level;
 import water.api.SupervisedModelParametersSchema;
@@ -40,7 +42,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @API(help = "Standardize numeric columns to have zero mean and unit variance.")
     public boolean standardize;
 
-    @API(help = "Family.", values={ "gaussian", "binomial", "poisson", "gamma", "tweedie" })
+    @API(help = "Family.", values={ "gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}) // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
     @API(help = "", level= Level.secondary, values={ "family_default", "identity", "logit", "log", "inverse", "tweedie" })
@@ -78,6 +80,22 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
 
     @API(help = "validation folds")
     public int n_folds;
+
+    @Override
+    public GLMParametersV2 fillFromImpl(GLMParameters impl) {
+      super.fillFromImpl(impl);
+      this.do_classification = family == Family.binomial;
+      return this;
+    }
+
+    @Override
+    public GLMParameters fillImpl(GLMParameters impl) {
+      super.fillImpl(impl);
+      impl._convert_to_enum = false;
+      return impl;
+    }
+
+
   }
 
   //==========================

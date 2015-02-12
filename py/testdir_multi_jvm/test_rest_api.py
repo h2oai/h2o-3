@@ -1,6 +1,10 @@
 # TODO: ugh:
-import sys, pprint
-sys.path.extend(['.','..','py'])
+import sys, pprint, os
+
+sys.path.insert(1, '..')
+sys.path.insert(1, '.')
+sys.path.insert(1, os.path.join("..", "py"))
+
 import h2o, h2o_util
 import os
 import argparse
@@ -87,16 +91,19 @@ def validate_model_builder_result(result, original_params, model_name):
     and that it has a Job with a Key.  Note that model build will return a
     Job if successful, and a ModelBuilder with errors if it's not.
     '''
-
     error = False
-    if 'validation_error_count' in result and result['validation_error_count'] > 0:
+    if result is None:
+        print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
+        error = True
+
+    elif result['__http_response']['status_code'] != requests.codes.ok:
+        error = True
+        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+
+    elif 'validation_error_count' in result and result['validation_error_count'] > 0:
         # error case
         print 'FAIL: Parameters validation error for model: ', model_name
         error = True
-
-    if result['__http_response']['status_code'] != requests.codes.ok:
-        error = True
-        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
 
     if error:
         print 'Input parameters: '
@@ -131,13 +138,30 @@ def validate_validation_messages(result, expected_error_fields):
     assert len(not_found) == 0, 'FAIL: Failed to find all expected ERROR validation messages.  Missing: ' + repr(not_found) + ' from result: ' + repr(result['validation_messages'])
 
 
-def validate_model_exists(model_name, models):
+def validate_model_exists(model_name, models=None):
     '''
     Validate that a given model key is found in the models list.
     '''
+    if models is None:
+        result = a_node.models()
+        models = result['models']
+
     models_dict = list_to_dict(models, 'key/name')
     assert model_name in models_dict, "FAIL: Failed to find " + model_name + " in models list: " + repr(models_dict.keys())
     return models_dict[model_name]
+
+
+def validate_frame_exists(frame_name, frames=None):
+    '''
+    Validate that a given frame key is found in the frames list.
+    '''
+    if frames is None:
+        result = a_node.frames()
+        frames = result['frames']
+
+    frames_dict = list_to_dict(frames, 'key/name')
+    assert frame_name in frames_dict, "FAIL: Failed to find " + frame_name + " in frames list: " + repr(frames_dict.keys())
+    return frames_dict[frame_name]
 
 
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
@@ -383,7 +407,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep', 'splitframe']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -749,13 +773,11 @@ mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame=
 assert mm is not None, "FAIL: Got a null result for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial'
 assert 'model_category' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a model_category."
 assert 'Binomial' == mm['model_category'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " model_category is not Binomial, it is: " + str(mm['model_category'])
-assert 'auc' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc element: " + h2o_util.dump_json(mm)
-assert 'AUC' in mm['auc'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an auc/AUC element: " + h2o_util.dump_json(mm)
-assert type(mm['auc']['AUC']) is float, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " auc/AUC element is not a float: " + h2o_util.dump_json(mm)
+assert 'AUC' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain an AUC element: " + h2o_util.dump_json(mm)
+assert type(mm['AUC']) is float, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " AUC element is not a float: " + h2o_util.dump_json(mm)
 
-assert 'cm' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a CM."
-assert 'confusion_matrix' in mm['cm'], "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a cm/confusion_matrix element: " + h2o_util.dump_json(mm)
-assert type(mm['cm']['confusion_matrix']) is list, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " cm/confusion_matrix element is not a list: " + h2o_util.dump_json(mm)
+assert 'confusion_matrices' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a confusion_matrices element: " + h2o_util.dump_json(mm)
+assert type(mm['confusion_matrices']) is list, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " confusion_matrices element is not a list: " + h2o_util.dump_json(mm)
 
 # print h2o_util.dump_json(mm)
 h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
@@ -784,8 +806,9 @@ assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deepl
 
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
-p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial')
+p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
 validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380)
+validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 
 ###################################

@@ -11,40 +11,50 @@ import java.util.Random;
 
 /**
  * Created by tomasnykodym on 9/15/14.
- * L-BFGS optmizer implementation.
  *
- * Use by calling solve() and passing in your own gradient computation function.
+ * Generic L-BFGS optmizer implementation.
+ *
+ * NOTE: The solver object keeps its state and so the same object can not be reused to solve different problems.
+ * (but can be used for warm-starting/continuation of the same problem)
+ *
+ * Usage:
+ *
+ * To apply L-BFGS to your optimization problem, provide a GradientSolver with following 2 methods:
+ *   1) double [] getGradient(double []):
+ *      evaluate gradient at given coefficients, typically an MRTask
+ *   2) double [] getObjVals(double[] beta,double[] direction):
+ *      evaluate objective value at line-search search points (e.g. objVals[k] = obj(beta + step(k)*direction), step(k) = .75^k)
+ *      typically a single MRTask
+ *   @see hex.glm.GLM.GLMGradientSolver
+ *
+ * L-BFGS will then perform following loop:
+ *   while(not converged):
+ *     coefs    := doLineSearch (coefs, dir)  // distributed, 1 pass over data
+ *     gradient := getGradient(coefs)         // distributed, 1 pass over data
+ *     history  += (coefs, gradient)          // local
+ *     dir      := newDir(history, gradient)  // local
+ *
+ * 1 L-BFGS iteration thus takes 2 passes over the (distributed) dataset.
  *
 */
 public final class L_BFGS extends Iced {
   int _maxIter = 500;
   double _gradEps = 1e-8;
   // line search params
-  int _nBetas = 32; // number of line search steps done in each pass (to minimize passes over the whole data)
-  double _stepDec = .7; // line search step decrement
-  double _minStep = Math.pow(_stepDec,_nBetas);
   int _historySz = 20;
   History _hist;
 
-
-
   public L_BFGS() {}
-
   public L_BFGS setMaxIter(int m) {_maxIter = m; return this;}
   public L_BFGS setGradEps(double d) {_gradEps = d; return this;}
   public L_BFGS setHistorySz(int sz) {_historySz = sz; return this;}
-  public L_BFGS setMinStep(double d) {
-    _minStep = d;
-    int nBetas = (int)(Math.log(d)/Math.log(_stepDec));
-    _nBetas = Math.min(48,nBetas);
-    return this;
-  }
+
 
   public int k() {return _hist._k;}
   public int maxIter(){ return _maxIter;}
 
-  public static class GradientInfo {
-    public final double _objVal;
+  public static class GradientInfo extends Iced {
+    public double _objVal;
     public final double [] _gradient;
 
     public GradientInfo(double objVal, double [] grad){
@@ -61,23 +71,66 @@ public final class L_BFGS extends Iced {
     public String toString(){
       return " objVal = " + _objVal + ", " + Arrays.toString(_gradient);
     }
-  }
 
-  /**
-   * To be overriden to provide gradient computation specific for given problem.
-   */
-  public static abstract class GradientSolver {
-    public abstract GradientInfo [] getGradient(double [][] betas);
-    public final GradientInfo getGradient(double [] betas){
-      return getGradient(new double[][]{betas})[0];
+    public boolean hasNaNsOrInfs() {
+      return Double.isNaN(_objVal) || ArrayUtils.hasNaNsOrInfs(_gradient);
     }
   }
 
-  public static class ProgressMonitor {
-    public boolean progress(GradientInfo ginfo){return true;}
+  /**
+   *  Provides gradient computation and line search evaluation specific to given problem.
+   *  Typically just a wrapper around MRTask calls.
+   */
+  public static abstract class GradientSolver {
+
+    /**
+     * Evaluate gradient at solution beta.
+     * @param beta
+     * @return
+     */
+    public abstract GradientInfo  getGradient(double [] beta);
+
+    /**
+     * Evaluate objective values at k line search points beta_k.
+     *
+     * When used as part of default line search behavior, the line search points are expected to be
+     *     beta_k = beta + direction * _startStep * _stepDec^k
+     *
+     * @param beta - initial vector of coefficients
+     * @param pk   - search direction
+     * @return objective values evaluated at k line-search points beta + pk*step[k]
+     */
+    protected abstract double [] getObjVals(double[] beta, double[] pk);
+
+    protected double _startStep = 1.0;
+    protected double _stepDec = .75;
+
+    /**
+     * Perform line search at given solution and search direction.
+     *
+     * @param ginfo     - gradient and objective value at current solution
+     * @param beta      - current solution
+     * @param direction - search direction
+     * @return
+     */
+    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction) {
+      double [] objVals = getObjVals(beta, direction);
+      double t = _startStep, tdec = _stepDec;
+      for (int i = 0; i < objVals.length; ++i) {
+        if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
+          return new LineSearchSol(true, objVals[i], t);
+        t *= tdec;
+      }
+      return new LineSearchSol(false, objVals[objVals.length-1], t);
+    }
   }
 
-
+  /**
+   * Monitor progress and enable early termination.
+   */
+  public static class ProgressMonitor {
+    public boolean progress(double [] beta, GradientInfo ginfo){return true;}
+  }
 
   // constants used in line search
   public static final double c1 = 1e-1;
@@ -142,9 +195,9 @@ public final class L_BFGS extends Iced {
     }
 
     // the actual core of L-BFGS algo
-    private  final double [] getSearchDirection(final double [] gradient) {
-      // get search direction
-      double[] alpha = MemoryManager.malloc8d(_m);
+    // compute new search direction using the gradient at current beta and history
+    protected  final double [] getSearchDirection(final double [] gradient) {
+      double [] alpha = MemoryManager.malloc8d(_m);
       double [] q = gradient.clone();
       for (int i = 1; i <= Math.min(_k,_m); ++i) {
         alpha[i-1] = rho(-i) * ArrayUtils.innerProduct(getS(-i), q);
@@ -160,15 +213,10 @@ public final class L_BFGS extends Iced {
         double beta = rho(-i)*ArrayUtils.innerProduct(getY(-i),q);
         MathUtils.wadd(q,getS(-i),alpha[i-1]-beta);
       }
-      ArrayUtils.mult(q,-1);
-      // q now has the search direction
-      return q;
+      return ArrayUtils.mult(q,-1);
     }
 
   }
-
-
-
 
   /**
    * Solve the optimization problem defined by the user-supplied gradient function using L-BFGS algorithm.
@@ -178,7 +226,6 @@ public final class L_BFGS extends Iced {
    * The gradient is likely to be the most expensive part and key for good perfomance.
    *
    * @param gslvr  - user gradient function
-   * @param params - internal L-BFGS parameters.
    * @params coefs - intial solution
    * @return Optimal solution (coefficients) + gradient info returned by the user gradient
    * function evaluated at the found optmimum.
@@ -186,11 +233,6 @@ public final class L_BFGS extends Iced {
   public final Result solve(GradientSolver gslvr, double [] coefs){
     return solve(gslvr, coefs, gslvr.getGradient(coefs), new ProgressMonitor());
   }
-
-
-
-
-
 
   /**
    * Solve the optimization problem defined by the user-supplied gradient function using L-BFGS algorithm.
@@ -204,59 +246,27 @@ public final class L_BFGS extends Iced {
    * @return Optimal solution (coefficients) + gradient info returned by the user gradient
    * function evaluated at the found optmimum.
    */
-  public final Result solve(GradientSolver gslvr, final double [] beta, GradientInfo gOld, ProgressMonitor pm) {
+  public final Result solve(GradientSolver gslvr, double [] beta, GradientInfo ginfo, ProgressMonitor pm) {
     if(_hist == null)
       _hist = new History(_historySz, beta.length);
-    double [][] lsBetas = new double[_nBetas][]; // do 32 line-search steps at once to minimize passes through the whole dataset
-    for(int i = 0; i < lsBetas.length; ++i)
-      lsBetas[i] = MemoryManager.malloc8d(beta.length);
-    double step = 1;
+    beta = beta.clone();
     // just loop until good enough or line search can not progress
     int iter = 0;
-_MAIN:
-    while(pm.progress(gOld) && MathUtils.l2norm2(gOld._gradient) > _gradEps && iter++ < _maxIter) {
-      double[] pk = _hist.getSearchDirection(gOld._gradient);
-      double t = step;
-      while (t > _minStep) {
-        for (int i = 0; i < _nBetas; ++i) {
-          wadd(lsBetas[i], beta, pk, t);
-          t *= _stepDec;
-        }
-        GradientInfo[] ginfos = gslvr.getGradient(lsBetas);
-        t = step;
-        // check the line search, we do several steps at once each time to limit number of passes over all data
-        for (int i = 0; i < ginfos.length; ++i) {
-          if(t < _minStep)
-            break _MAIN; // line search did not progress -> converged
-          if (ginfos[i].isValid() && !needLineSearch(t, gOld._objVal, ginfos[i]._objVal, pk, gOld._gradient)) {
-            // we got admissible solution
-            ArrayUtils.mult(pk, t);
-            _hist.update(pk, ginfos[i]._gradient, gOld._gradient);
-            gOld = ginfos[i];
-            ArrayUtils.add(beta, pk);
-            assert Arrays.equals(beta, lsBetas[i]);
-            step = 1; // reset line search to start from step = 1 again
-            continue _MAIN;
-          }
-          t *= _stepDec;
-        }
-        step = t;
-      }
-      // line search did not progress -> converged
-      --iter; // decrement iteration since we did not reallyupdate the result in the last one
-      break _MAIN;
+    while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
+      double [] pk = _hist.getSearchDirection(ginfo._gradient);
+      LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
+      if(ls.madeProgress || _hist._k < _hist._m) {
+        ArrayUtils.mult(pk,ls.step);
+        ++iter; // only count successful iterations
+        ArrayUtils.add(beta, pk);
+        GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+        _hist.update(pk, newGinfo._gradient, ginfo._gradient);
+        ginfo = newGinfo;
+      } else
+        break; // line search did not make any progress
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + gOld._objVal + ", gradient norm2 = " + MathUtils.l2norm2(gOld._gradient) + ",  converged = " + (MathUtils.l2norm2(gOld._gradient) <= _gradEps) );
-    return new Result(iter,beta, gOld);
-  }
-
-
-
-
-  private static final double [] wadd(double [] res, double [] x, double [] y, double w){
-    for(int i = 0; i < x.length; ++i)
-      res[i] = x[i] +  w*y[i];
-    return x;
+    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
+    return new Result(iter,beta, ginfo);
   }
 
   public static double [] startCoefs(int n, long seed){
@@ -267,14 +277,43 @@ _MAIN:
     return res;
   }
 
+  /**
+   * Line search results.
+   */
+  public static class LineSearchSol {
+    public final double objVal;        // objective value at the step
+    public final double step;          // returned line search step size
+    public final boolean madeProgress; // true if the step is admissible
+
+    public LineSearchSol(boolean progress, double obj, double step) {
+      objVal = obj;
+      this.step = step;
+      madeProgress = progress;
+    }
+  }
+
   // Armijo line-search rule
-  private static final boolean needLineSearch(double step, final double objOld, final double objNew, final double [] pk, final double [] gradOld){
+  public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] pk, final double[] gradOld){
+    if(Double.isNaN(objNew))
+      return false;
     // line search
     double f_hat = 0;
     for(int i = 0; i < pk.length; ++i)
       f_hat += gradOld[i] * pk[i];
     f_hat = c1*step*f_hat + objOld;
-    return objNew > f_hat;
+    return objNew < f_hat;
+  }
+
+  // Armijo line-search rule - to be used with glm (to avoid making explicit pk [] array)
+  public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] betaOld, final double[] betaNew, final double[] gradOld){
+    if(Double.isNaN(objNew))
+      return false;
+    // line search
+    double f_hat = 0;
+    for(int i = 0; i < betaNew.length; ++i)
+      f_hat += gradOld[i] * (betaNew[i] - betaOld[i]);
+    f_hat = c1*step*f_hat + objOld;
+    return objNew < f_hat;
   }
 
 }

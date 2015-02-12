@@ -28,9 +28,9 @@ public class ParseSetupHandler extends Handler {
 
     // Fill in data type names for each column.
     if (ps._ctypes != null) {
-      p.columnDataTypes = new String[ps._ctypes.length];
+      p.columnTypes = new String[ps._ctypes.length];
       for (int i = 0; i < ps._ctypes.length; i++) {
-        p.columnDataTypes[i] = ps._ctypes[i].toString();
+        p.columnTypes[i] = ps._ctypes[i].toString();
       }
     }
 

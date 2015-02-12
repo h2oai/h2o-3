@@ -7,6 +7,16 @@ dependencies {
   compile project(":h2o-app")
 }
 
+fatJarPrepareFiles {
+  exclude 'META-INF/*.DSA'
+  exclude 'META-INF/*.SF'
+  exclude 'synchronize.properties'
+  exclude 'uploader.properties'
+  exclude 'test.properties'
+  exclude 'cockpitlite.properties'
+  exclude 'devpay_products.properties'
+}
+
 fatJar {
    manifest {
       attributes 'Main-Class': 'water.H2OApp'

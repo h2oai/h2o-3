@@ -1,0 +1,49 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.zip.GZIPOutputStream
+import static java.nio.file.StandardCopyOption.*;
+
+defaultTasks 'build_python'
+description = "H2O Python Package"
+
+dependencies {
+    compile project(":h2o-assembly")
+}
+
+def getOS() {
+    String os = [Os.FAMILY_WINDOWS, Os.FAMILY_MAC, Os.FAMILY_UNIX].find {String family -> Os.isFamily(family) }
+    return os
+}
+
+def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
+
+
+task upgradeOrInstallTabulate(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
+}
+
+task upgradeOrInstallWheel(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade"])
+}
+
+task buildDist(type: Exec) {
+    commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
+}
+
+
+task cleaner << {
+    println "Cleaning..."
+    getProjectDir().toString()
+    new File([getProjectDir().toString(), "dist"].join(File.separator)).deleteDir()
+    new File([getProjectDir().toString(), "h2o.egg-info"].join(File.separator)).deleteDir()
+    new File([getProjectDir().toString(), " build/"].join(File.separator)).deleteDir()
+}
+
+clean.dependsOn cleaner
+upgradeOrInstallWheel.dependsOn cleaner
+// buildDist.dependsOn upgradeOrInstallTabulate
+// buildDist.dependsOn upgradeOrInstallWheel
+task build_python(dependsOn: buildDist)
+build.dependsOn build_python

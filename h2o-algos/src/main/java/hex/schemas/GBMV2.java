@@ -34,6 +34,9 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
     @API(help="Build a histogram of this many bins, then split at the best point")
     public int nbins;
 
+    @API(help="Score validation set on each major model-building iteration; can be slow")
+    public boolean score_each_iteration;
+
     @API(help="Learning rate from 0.0 to 1.0")
     public float learn_rate;
 

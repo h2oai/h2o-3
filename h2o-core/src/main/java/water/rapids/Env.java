@@ -80,6 +80,24 @@ public class Env extends Iced {
 
   public boolean isGlobal() { return _isGlobal && _parent == null && _local == null; }
 
+  public static String typeToString(int type) {
+    switch(type) {
+      case ID: return "ID";
+      case ARY: return "ARY";
+      case STR: return "STR";
+      case NUM: return "NUM";
+      case FUN: return "FUN";
+      case SPAN: return "SPAN";
+      case SERIES: return "SERIES";
+      case LARY: return "LARY";
+      case AST: return "AST";
+      case VEC: return "VEC";
+      case NULL: return "NULL";
+      default: return  "No type for number: " + type;
+    }
+  }
+
+
   /**
    * The stack API
    */
@@ -672,14 +690,12 @@ public class Env extends Iced {
       case ARY: return new ASTFrame(id.value());
       case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
-      case AST: return new ASTRaft(id.value());
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);
     }
   }
 
   static AST staticLookup(water.rapids.ASTId id) {
     switch(kvLookup(id.value())) {
-      case AST: return new ASTRaft(id.value());
       case ARY: return new ASTFrame(id.value());
       default: return id;
     }

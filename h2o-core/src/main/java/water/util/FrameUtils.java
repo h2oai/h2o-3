@@ -13,24 +13,37 @@ import water.parser.ParseDataset;
 import water.persist.Persist;
 
 public class FrameUtils {
-  /** Parse given file into the form of frame represented by the given key.
+
+
+  /** Parse given file(s) into the form of single frame represented by the given key.
    *
    * @param okey  destination key for parsed frame
-   * @param file  file to parse
+   * @param files  files to parse
    * @return a new frame
    */
-  public static Frame parseFrame(Key okey, File file) throws IOException {
-    if( !file.exists() )
-      throw new FileNotFoundException("File not found " + file);
-    if(okey == null) okey = Key.make(file.getName());
-    NFSFileVec nfs = NFSFileVec.make(file);
-    return ParseDataset.parse(okey, nfs._key);
+  public static Frame parseFrame(Key okey, File ...files) throws IOException {
+    if (files == null || files.length == 0) {
+      throw new IllegalArgumentException("List of files is empty!");
+    }
+    for (File f : files) {
+      if (!f.exists())
+        throw new FileNotFoundException("File not found " + f);
+    }
+    // Create output key if it is not given
+    if(okey == null) okey = Key.make(files[0].getName());
+    Key[] inKeys = new Key[files.length];
+    for (int i=0; i<files.length; i++) inKeys[i] =  NFSFileVec.make(files[i])._key;
+    return ParseDataset.parse(okey, inKeys);
   }
 
-  public static Frame parseFrame(Key okey, URI uri) throws IOException {
-    Key ikey = Persist.anyURIToKey(uri);
-    if(okey == null) okey = Key.make(uri.toString());
-    return ParseDataset.parse(okey, ikey);
+  public static Frame parseFrame(Key okey, URI ...uris) throws IOException {
+    if (uris == null || uris.length == 0) {
+      throw new IllegalArgumentException("List of uris is empty!");
+    }
+    Key[] inKeys = new Key[uris.length];
+    for (int i=0; i<uris.length; i++)  inKeys[i] = Persist.anyURIToKey(uris[i]);
+    if(okey == null) okey = Key.make(uris[0].toString());
+    return ParseDataset.parse(okey, inKeys);
   }
 
   /**
@@ -73,5 +86,19 @@ public class FrameUtils {
         }
       }
     }
+  }
+
+  /**
+   * compute fraction of sparse chunks in this array.
+   * @param chks
+   * @return
+   */
+  public static double sparseRatio(Chunk [] chks) {
+    int cnt = 0;
+    double reg = 1.0/chks.length;
+    for(Chunk c :chks)
+      if(c.isSparse())
+        ++cnt;
+    return cnt * reg;
   }
 }

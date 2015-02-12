@@ -1,14 +1,15 @@
 package hex.coxph;
 
-import hex.*;
-import hex.FrameTask.DataInfo;
-import hex.schemas.CoxPHModelV2;
-import water.*;
-import water.api.ModelSchema;
-import water.fvec.Frame;
-import water.fvec.Vec;
 
-import java.util.Arrays;
+import hex.DataInfo;
+import hex.ModelMetrics;
+import hex.ModelMetricsRegression;
+import hex.SupervisedModel;
+import hex.schemas.CoxPHModelV2;
+import water.Key;
+import water.MemoryManager;
+import water.api.ModelSchema;
+import water.fvec.Vec;
 
 /**
  * The Deep Learning model
@@ -74,6 +75,11 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
     double[] cumhaz_0;
     double[] var_cumhaz_1;
     double[][] var_cumhaz_2;
+  }
+
+  @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    return new ModelMetricsRegression.MetricBuilderRegression();
   }
 
   // Default publically visible Schema is V2

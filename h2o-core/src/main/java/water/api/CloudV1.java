@@ -13,6 +13,9 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
   @API(help="version", direction=API.Direction.OUTPUT)
   public String version;
 
+  @API(help="Node index number cloud status is collected from (zero-based)", direction=API.Direction.OUTPUT)
+  public int node_idx;
+
   @API(help="cloud_name", direction=API.Direction.OUTPUT)
   public String cloud_name;
 
@@ -42,7 +45,7 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
     public NodeV1() {}
 
     @API(help="IP", direction=API.Direction.OUTPUT)
-    public H2ONode h2o;
+    public String h2o;
 
     @API(help="IP address and port in the form a.b.c.d:e", direction=API.Direction.OUTPUT)
     public String ip_port;
@@ -114,7 +117,7 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
       HeartBeat hb = h2o._heartbeat;
 
       // Basic system health
-      this.h2o = h2o;
+      this.h2o = h2o.toString();
       ip_port = h2o.getIpPortString();
       healthy = (System.currentTimeMillis()-h2o._last_heard_from)<HeartBeatThread.TIMEOUT;
       last_ping = h2o._last_heard_from;

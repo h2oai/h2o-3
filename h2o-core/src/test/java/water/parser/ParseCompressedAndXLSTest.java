@@ -2,6 +2,7 @@ package water.parser;
 
 import static org.junit.Assert.*;
 import org.junit.*;
+import java.io.File;
 
 import water.*;
 import water.fvec.Frame;
@@ -43,14 +44,28 @@ public class ParseCompressedAndXLSTest extends TestUtil {
     }
   }
 
-  @Test public void testMixedCSVXLS(){
+  @Test public void  testXLSBadArgs(){
     Frame k1 = null;
     try {
-      NFSFileVec nfs1 = NFSFileVec.make(find_test_file("smalldata/junit/iris.csv"));
-      NFSFileVec nfs2 = NFSFileVec.make(find_test_file("smalldata/junit/iris.xls"));
-      k1 = ParseDataset.parse(Key.make(), nfs1._key, nfs2._key);
-      assertEquals(  5,k1.numCols());
-      assertEquals(150,k1.numRows());
+      File f = find_test_file("smalldata/airlines/AirlinesTest.csv.zip");
+      NFSFileVec nfs = NFSFileVec.make(f);
+      ParseSetup setup = new ParseSetup( true, // is valid
+                                         0,    // invalidLines
+                                         1,    // headerlines
+                                         null, // errors
+                                         ParserType.XLS,
+                                         (byte)52, // sep; ascii '4'
+                                         12,       // ncols
+                                         true,     // singleQuotes 
+                                         new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
+                                         null, 
+                                         null, 
+                                         -1, // check header
+                                         null);
+      k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
+      assertEquals( 0,k1.numCols());
+      assertEquals( 0,k1.numRows());
+      k1.delete();
     } finally {
       if( k1 != null ) k1.delete();
     }

@@ -92,6 +92,7 @@ public class RequestServer extends NanoHTTPD {
     // Data
 
     addToNavbar(register("/2/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/2/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Something something something."),"/SplitFrame",  "Split Frame",   "Data");
     addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
@@ -137,6 +138,8 @@ public class RequestServer extends NanoHTTPD {
       "Typehead hander for filename completion.");
     register("/2/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
       "Get the status of the given H2O Job (long-running action).");
+
+    register("/2/Jobs/(?<key>.*)/cancel"                           ,"POST",JobsHandler     .class, "cancel", new String[] {"key"}, "Cancel a running job.");
 
     register("/2/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
@@ -210,7 +213,6 @@ public class RequestServer extends NanoHTTPD {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    register("/3/Logs/nodes/(?<nodeidx>.*)/files/default",     "GET", LogsHandler.class, "fetch", new String[] {"nodeidx"},         "Get default log file for a node.");
     register("/3/Logs/nodes/(?<nodeidx>.*)/files/(?<name>.*)", "GET", LogsHandler.class, "fetch", new String[] {"nodeidx", "name"}, "Get named log file for a node.");
 
 
@@ -428,6 +430,7 @@ public class RequestServer extends NanoHTTPD {
     if (uri.startsWith("/Cloud")) return;
     if (uri.contains("Progress")) return;
     if (uri.contains("WaterMeterCpuTicks")) return;
+    if (method.equals("GET") && uri.matches("/Jobs.*/.+")) return;
 
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);

@@ -1,0 +1,74 @@
+h2o Package
+===========
+
+:mod:`h2o` Package
+------------------
+
+.. automodule:: h2o.__init__
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`connection` Module
+------------------------
+
+.. automodule:: h2o.connection
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`expr` Module
+------------------
+
+.. automodule:: h2o.expr
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`frame` Module
+-------------------
+
+.. automodule:: h2o.frame
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`h2o` Module
+-----------------
+
+.. automodule:: h2o.h2o
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`h2o_model_builder` Module
+-------------------------------
+
+.. automodule:: h2o.h2o_model_builder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`job` Module
+-----------------
+
+.. automodule:: h2o.job
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`two_dim_table` Module
+---------------------------
+
+.. automodule:: h2o.two_dim_table
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    h2o.model
+

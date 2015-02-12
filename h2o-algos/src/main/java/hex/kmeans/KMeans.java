@@ -203,7 +203,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers_raw);
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, "", new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -287,15 +287,20 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
         }
+        done();                 // Job done!
 
       } catch( Throwable t ) {
-        t.printStackTrace();
-        cancel2(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(KMeans.this);
-        done();                 // Job done!
       }
       tryComplete();
     }

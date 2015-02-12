@@ -78,9 +78,13 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
         }
 
       } catch( Throwable t ) {
-        t.printStackTrace();
-        cancel2(t);
-        throw t;
+        if (_state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Example.this);

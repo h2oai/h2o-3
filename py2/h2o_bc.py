@@ -627,7 +627,8 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExt
                     # of a different md5 version. We'll eventually exception out?
                     # raise Exception("What happened to the 'h2o' ci dict entry?, not there")
                 else:
-                    print "node %s" % i, ci['h2o']['node']
+                    print "node %s" % i, ci['h2o']
+                    ### print "node %s" % i, ci['h2o']['node']
 
         if cloud_size > node_count:
             emsg = (
@@ -652,7 +653,9 @@ def stabilize_cloud(node, nodeList, timeoutSecs=14.0, retryDelaySecs=0.25, noExt
             verboseprint("\tLocked won't happen until after keys are written")
             verboseprint("\nNodes in final cloud:")
             for ci in c['nodes']:
-                verboseprint(ci['h2o']['node'])
+                verboseprint("ci", ci)
+                # this isn't in there all the time?
+                # verboseprint(ci['h2o']['node'])
 
         return a
 

@@ -45,13 +45,14 @@ public class DeepLearningMissingTest extends TestUtil {
         try {
           NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
-
+          Log.info("FrameSplitting");
           // Create holdout test data on clean data (before adding missing values)
-          FrameSplitter fs = new FrameSplitter(data, new float[]{0.75f});
-          H2O.submitTask(fs).join();
+          FrameSplitter fs = new FrameSplitter(data, new double[]{0.75f});
+          H2O.submitTask(fs);//.join();
           Frame[] train_test = fs.getResult();
           train = train_test[0];
           test = train_test[1];
+          Log.info("Done...");
 
           // add missing values to the training data (excluding the response)
           if (missing_fraction > 0) {

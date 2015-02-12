@@ -19,7 +19,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "keep_cross_validation_splits",
         "checkpoint",
         "override_with_best_model",
-//        "expert_mode",
         "use_all_factor_levels",
         "activation",
         "hidden",
@@ -57,14 +56,13 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "fast_mode",
         "ignore_const_cols",
         "force_load_balance",
-            "variable_importances",
+        "variable_importances",
         "replicate_training_data",
         "single_node_mode",
-
         "shuffle_training_data",
         "missing_values_handling",
-            "quiet_mode",
-            "max_confusion_matrix_size",
+        "quiet_mode",
+        "max_confusion_matrix_size",
         "autoencoder",
         "sparse",
         "col_major",
@@ -94,16 +92,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
     @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean override_with_best_model;
 
-//    /**
-//     * Unlock expert mode parameters than can affect model building speed,
-//     * predictive accuracy and scoring. Leaving expert mode parameters at default
-//     * values is fine for many problems, but best results on complex datasets are often
-//     * only attainable via expert mode options.
-//     */
-//    @API(help = "Enable expert mode (to access all options from GUI)", level = API.Level.critical, direction=API.Direction.INOUT)
-//    public boolean expert_mode;
-
-    @API(help = "Auto-Encoder (Experimental)", level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Auto-Encoder (Experimental)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean autoencoder;
 
     @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT)

@@ -166,7 +166,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE))
 
 #' Endpoint Version
-.h2o.__REST_API_VERSION <- 3L
+.h2o.__REST_API_VERSION <- "LATEST"
 
 #' Administrative Endpoints
 .h2o.__JOBS           <- "Jobs.json"          # Jobs.json/$90w3r52hfej_JOB_KEY_12389471jsdfs

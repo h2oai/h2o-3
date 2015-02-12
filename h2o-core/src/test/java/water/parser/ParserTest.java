@@ -346,7 +346,9 @@ public class ParserTest extends TestUtil {
     fr.delete();
   }
 
-  @Test public void testStrings() {
+  // TODO Update, originally tested enum to string conversion
+  // TODO now just tests missing values among strings
+@Test public void testStrings() {
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/junit/string_test.csv");
@@ -363,7 +365,7 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(vecs[2].isString());
       Assert.assertTrue(vecs[3].isString());
       Assert.assertTrue(vecs[4].isString());
-      Assert.assertTrue(vecs[5].isEnum());
+      Assert.assertTrue(vecs[5].isString());
       Assert.assertTrue(vecs[6].isString());
 
       //checks column counts - expects MAX_ENUM == 65000
@@ -680,7 +682,6 @@ public class ParserTest extends TestUtil {
             "smalldata/./covtype/covtype.20k.data",
             "smalldata/./iris/iris.csv",
             "smalldata/./iris/iris_wheader.csv",
-            "smalldata/./junit/40k_categoricals.csv.gz",
             "smalldata/./junit/benign.xls",
             "smalldata/./junit/bestbuy_train_10k.csv.gz",
             "smalldata/./junit/cars.csv",

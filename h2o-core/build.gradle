@@ -22,15 +22,22 @@ dependencies {
       exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-app'
       exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
       exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-jobclient'
+      exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+      exclude group: 'org.apache.curator', module: 'curator-framework'
+      exclude group: 'org.apache.curator', module: 'curator-client'
+      exclude group: 'org.apache.curator', module: 'curator-recipes'
   }
 
   // guava only needed by hadoop now, not by H2O
-  compile "com.google.guava:guava:16.0.1"
-  compile "commons-logging:commons-logging:1.1.1"
-  compile "commons-collections:commons-collections:3.0"
-  compile "org.javassist:javassist:3.18.2-GA"
+  compile 'com.google.guava:guava:16.0.1'
+  compile 'commons-logging:commons-logging:1.1.1'
+  compile 'commons-collections:commons-collections:3.0'
+  compile 'org.javassist:javassist:3.18.2-GA'
 
   compile "org.reflections:reflections:0.9.9"
+
+  // Jets3t is required by S3N support
+  compile 'net.java.dev.jets3t:jets3t:0.9.2'
 
   testCompile "junit:junit:${junitVersion}"
 }

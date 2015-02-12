@@ -1,8 +1,10 @@
 package hex.coxph;
 
 import Jama.Matrix;
+import hex.DataInfo;
+import hex.DataInfo.Row;
+import hex.DataInfo.TransformType;
 import hex.FrameTask;
-import hex.FrameTask.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 // import hex.schemas.CoxPHV2;
@@ -430,8 +432,7 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         int nResponses = 1;
         boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN);
-
+        final DataInfo dinfo = new DataInfo(Key.make(), _modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true);
         initStats(model, dinfo);
 
         final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;
@@ -489,9 +490,14 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
 
         model.update(_key);
       } catch( Throwable t ) {
-        t.printStackTrace();
-        cancel2(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         _parms.read_unlock_frames(CoxPH.this);
         Scope.exit();
@@ -597,8 +603,12 @@ public class CoxPH extends SupervisedModelBuilder<CoxPHModel,CoxPHModel.CoxPHPar
     }
 
     @Override
-    protected void processRow(long gid, double [] nums, int ncats, int [] cats, double [] response) {
+    protected void processRow(long gid, Row row) {
       n++;
+      double [] response = row.response;
+      int ncats = row.nBins;
+      int [] cats = row.numIds;
+      double [] nums = row.numVals;
       final double weight = _has_weights_column ? response[0] : 1.0;
       if (weight <= 0)
         throw new IllegalArgumentException("weights must be positive values");

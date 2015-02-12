@@ -12,6 +12,7 @@ import water.util.Log;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.Random;
 import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
@@ -189,6 +190,7 @@ public class Vec extends Keyed {
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
+  static final String[] TYPE_STR=new String[] { "BAD", "UUID", "string", "numeric", "enum", "time", "time", "time" };
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -274,6 +276,12 @@ public class Vec extends Keyed {
   public long[] get_espc() { return _espc; }
   /** Get the column type. */
   public byte get_type() { return _type; }
+  public String get_type_str() { return TYPE_STR[_type]; }
+
+  public boolean isBinary(){
+    RollupStats rs = rollupStats();
+    return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
+  }
   
   // ======= Create zero/constant Vecs ======
 
@@ -444,6 +452,18 @@ public class Vec extends Keyed {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
+  /** Make a new vector initialized random numbers with the given seed */
+  public Vec makeRand( final long seed ) {
+    Vec randVec = makeZero();
+    new MRTask() {
+      @Override public void map(Chunk c){
+        Random rng = new Random(seed*c.cidx());
+        for(int i = 0; i < c._len; ++i)
+          c.set(i, rng.nextFloat());
+      }
+    }.doAll(randVec);
+    return randVec;
+  }
 
   // ======= Rollup Stats ======
 
@@ -490,7 +510,7 @@ public class Vec extends Keyed {
    *  @return true if the Vec is all integers */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
-  long byteSize(){return rollupStats()._size; }
+  public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
   public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};

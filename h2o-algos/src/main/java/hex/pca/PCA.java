@@ -2,7 +2,7 @@ package hex.pca;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
-import hex.FrameTask.DataInfo;
+import hex.DataInfo;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.GramTask;
@@ -11,6 +11,8 @@ import hex.schemas.PCAV2;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
+
 import java.util.ArrayList;
 
 
@@ -84,12 +86,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if( fr.numCols() < 2 )
           throw new IllegalArgumentException("Need more than one column to run PCA");
 
-        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._standardized ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._standardized ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key,dinfo);
         model._output._catOffsets = dinfo._catOffsets;
         model._output._normSub = dinfo._normSub;
         model._output._normMul = dinfo._normMul;
-        GramTask tsk = new GramTask(_key, dinfo, false,false).doAll(dinfo._adaptedFrame);
+        GramTask tsk = new GramTask(_key, dinfo).doAll(dinfo._adaptedFrame);
         // TODO: Need to ensure this maps correctly to scored data cols
         Matrix myGram = new Matrix(tsk._gram.getXX());   // X'X/n where n = num rows
         SingularValueDecomposition mySVD = myGram.svd();
@@ -124,15 +126,20 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         model._output._propVar = propVar;
         model._output._cumVar = cumVar;
+        done();                 // Job done!
       } catch( Throwable t ) {
-        t.printStackTrace();
-        cancel2(t);
-        throw t;
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          t.printStackTrace();
+          failed(t);
+          throw t;
+        }
       } finally {
         if( model != null ) model.unlock(_key);
         DKV.remove(dinfo._key);
         _parms.read_unlock_frames(PCA.this);
-        done();                 // Job done!
       }
       tryComplete();
     }
