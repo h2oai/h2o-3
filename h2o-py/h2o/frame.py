@@ -664,7 +664,7 @@ class H2OVec:
       # whole vec replacement
       self._len_check(b)
       # lazy update in-place of the whole vec
-      self._expr = Expr("=", Expr("[", self._expr, b), Expr(c))
+      self._expr = Expr("=", Expr("[", self._expr, b), None if c is None else Expr(c))
     else:
       raise NotImplementedError("Only vector replacement is currently supported.")
 
