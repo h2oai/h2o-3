@@ -12,7 +12,7 @@ public class DownloadDataHandler extends Handler { // TODO: recursive generics s
   public DownloadDataV1 fetch(int version, DownloadDataV1 server) {
 
     if (DKV.get(server.key.key()) == null) throw new H2OKeyNotFoundArgumentException("key", server.key.key());
-    Frame value = server.key.key().get();
+    Frame value = (Frame)server.key.key().get();
 
     InputStream is = value.toCSV(true, server.hex_string);
     java.util.Scanner scanner = new java.util.Scanner(is).useDelimiter("\\A");

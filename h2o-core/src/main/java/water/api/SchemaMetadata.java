@@ -248,8 +248,8 @@ public final class SchemaMetadata extends Iced {
         return "Key";
       }
 
-      if (KeySchema.class.isAssignableFrom(clz)) {
-        return "Key<" + KeySchema.getKeyedClassType((Class<? extends KeySchema>)clz) + ">";
+      if (KeyV1.class.isAssignableFrom(clz)) {
+        return "Key<" + KeyV1.getKeyedClassType((Class<? extends KeyV1>)clz) + ">";
       }
 
       if (Schema.class.isAssignableFrom(clz)) {

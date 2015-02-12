@@ -791,7 +791,7 @@ for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
     assert 'name' in mm['model'], "FAIL: mm[model] isn't a key with a name: " + repr(mm)
     assert 'type' in mm['model'], "FAIL: mm[model] does not contain a type: " + repr(mm)
-    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm)
+    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm['model']['type'])
 
     assert 'frame' in mm, "FAIL: mm does not contain a frame element: " + repr(mm)
     assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)
