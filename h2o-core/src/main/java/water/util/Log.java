@@ -178,6 +178,7 @@ abstract public class Log {
       case "warn":  f = "-4-warn.log"; break;
       case "error": f = "-5-error.log"; break;
       case "fatal": f = "-6-fatal.log"; break;
+      case "httpd": f = "-httpd.log"; break;
       default:
         throw new Exception("Unknown level");
     }
