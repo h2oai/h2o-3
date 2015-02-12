@@ -649,6 +649,28 @@ assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
 assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
 assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile for AGE.'
 
+# Test /SplitFrame for prostate.csv
+if verbose: print 'Testing SplitFrame with named destKeys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destKeys=['bigger', 'smaller'])
+frames = a_node.frames()['frames']
+validate_frame_exists('bigger', frames)
+validate_frame_exists('smaller', frames)
+bigger = a_node.frames(key='bigger')['frames'][0]
+smaller = a_node.frames(key='smaller')['frames'][0]
+assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
+assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
+
+if verbose: print 'Testing SplitFrame with generated destKeys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
+frames = a_node.frames()['frames']
+validate_frame_exists(splits['destKeys'][0]['name'], frames)
+validate_frame_exists(splits['destKeys'][1]['name'], frames)
+
+first = a_node.frames(key=splits['destKeys'][0]['name'])['frames'][0]
+second = a_node.frames(key=splits['destKeys'][1]['name'])['frames'][0]
+assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
+assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
+
 
 ####################################################################################################
 # Build and do basic validation checks on models

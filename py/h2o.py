@@ -419,6 +419,18 @@ class H2O(object):
 
 
     ''' 
+    Split a Frame.
+    '''
+    def split_frame(self, timeoutSecs=180, **kwargs):
+        a = self.__do_json_request('2/SplitFrame.json', cmd="post",
+            timeout=timeoutSecs,
+            postData=kwargs
+        )
+        H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
+        return a
+
+
+    ''' 
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
