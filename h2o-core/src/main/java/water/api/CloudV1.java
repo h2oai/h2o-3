@@ -13,6 +13,9 @@ public class CloudV1 extends Schema<Iced, CloudV1> {
   @API(help="version", direction=API.Direction.OUTPUT)
   public String version;
 
+  @API(help="Node index number cloud status is collected from (zero-based)", direction=API.Direction.OUTPUT)
+  public int node_idx;
+
   @API(help="cloud_name", direction=API.Direction.OUTPUT)
   public String cloud_name;
 

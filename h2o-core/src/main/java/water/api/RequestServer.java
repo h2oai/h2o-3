@@ -213,7 +213,6 @@ public class RequestServer extends NanoHTTPD {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    register("/3/Logs/nodes/(?<nodeidx>.*)/files/default",     "GET", LogsHandler.class, "fetch", new String[] {"nodeidx"},         "Get default log file for a node.");
     register("/3/Logs/nodes/(?<nodeidx>.*)/files/(?<name>.*)", "GET", LogsHandler.class, "fetch", new String[] {"nodeidx", "name"}, "Get named log file for a node.");
 
 
