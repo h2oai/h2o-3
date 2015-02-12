@@ -1244,9 +1244,9 @@ abstract class ASTReducerOp extends ASTOp {
       a = E.skipWS().parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
-        if (ast instanceof ASTFrame || ast instanceof ASTRaft) {dblarys.add(a); continue; } else break;
+        if (ast instanceof ASTFrame) {dblarys.add(a); continue; } else break;
       }
-      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft)
+      if (a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp)
         dblarys.add(a);
       else break;
     }
@@ -1348,10 +1348,10 @@ class ASTRbind extends ASTUniPrefixOp {
       a = E.parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
-        if (ast instanceof ASTFrame || ast instanceof ASTRaft) { dblarys.add(a); }
+        if (ast instanceof ASTFrame) { dblarys.add(a); }
         else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
       }
-      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft) { // basically anything that returns a Frame...
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
         dblarys.add(a);
       }
       else { broke = true; break; }
@@ -1547,10 +1547,10 @@ class ASTCbind extends ASTUniPrefixOp {
       a = E.parse();
       if (a instanceof ASTId) {
         AST ast = E._env.lookup((ASTId)a);
-        if (ast instanceof ASTFrame || ast instanceof ASTRaft) { dblarys.add(a); }
+        if (ast instanceof ASTFrame) { dblarys.add(a); }
         else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
       }
-      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp || a instanceof ASTRaft) { // basically anything that returns a Frame...
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
         dblarys.add(a);
       }
       else { broke = true; break; }
