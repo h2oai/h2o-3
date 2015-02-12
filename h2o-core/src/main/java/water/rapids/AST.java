@@ -111,7 +111,7 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
             this instanceof ASTDelete )
       { this.exec(e); }
 
@@ -125,21 +125,6 @@ abstract public class AST extends Iced {
   }
 
   StringBuilder toString( StringBuilder sb, int d ) { return indent(sb,d).append(this); }
-}
-
-class ASTRaft extends AST {
-  final Key _key;
-  ASTRaft(String id) { _key = Key.make(id); }
-  @Override public String toString() { return _key.toString(); }
-  @Override void exec(Env e) {
-    Key k;
-    Raft r = DKV.get(_key).get();
-    if ((k=r.get_key())==null) r.get_ast().treeWalk(e);
-    else (new ASTFrame(k)).exec(e);
-  }
-  @Override int type() { return Env.AST; }
-  @Override String value() { return _key.toString(); }
-
 }
 
 class ASTId extends AST {
