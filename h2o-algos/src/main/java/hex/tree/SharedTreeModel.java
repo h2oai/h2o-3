@@ -6,6 +6,7 @@ import water.Futures;
 import water.H2O;
 import water.Key;
 import water.util.ModelUtils;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -62,7 +63,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_valid[/*_ntrees+1*/];
 
     /** Variable Importance */
-    public VarImp _varimp;
+    public TwoDimTable _varimp;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);
