@@ -63,7 +63,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_valid[/*_ntrees+1*/];
 
     /** Variable Importance */
-    public TwoDimTable _varimp;
+    public TwoDimTable _variableImportances;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);

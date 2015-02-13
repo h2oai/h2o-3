@@ -382,7 +382,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       out._mse_train[out._ntrees] = _parms._valid == null ? mm._mse : Double.NaN;
       out._mse_valid[out._ntrees] = _parms._valid == null ? Double.NaN : mm._mse;
       if( out._ntrees > 0 )
-        out._varimp = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
+        out._variableImportances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
       if (mm instanceof ModelMetricsBinomial) {
         ConfusionMatrix cm = ((ModelMetricsBinomial)mm)._cm;
