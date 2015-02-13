@@ -16,7 +16,6 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "nbins",
         "learn_rate",
         "loss",
-        "variable_importance",
         "seed",
         "group_split"
     };
