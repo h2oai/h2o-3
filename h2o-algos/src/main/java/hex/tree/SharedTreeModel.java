@@ -25,8 +25,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public boolean _score_each_iteration;
 
-    public boolean _variable_importance; // compute variable importance
-
     public long _seed;          // Seed for psuedo-random redistribution
 
     // TRUE: Continue extending an existing checkpointed model
@@ -63,7 +61,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_valid[/*_ntrees+1*/];
 
-    /** Variable Importance, if asked for */
+    /** Variable Importance */
     public VarImp _varimp;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
