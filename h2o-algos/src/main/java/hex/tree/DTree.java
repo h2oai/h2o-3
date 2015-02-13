@@ -635,7 +635,8 @@ public class DTree extends Iced {
       // All NAs are going always to the left
       _sb.p(" (Double.isNaN(data[").p(col).p("]) || ");
       if(equal == 0 || equal == 1) {
-        String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
+        //String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
+        String scmp = "< ";
         _sb.p("(float) data[").p(col).p(" /* ").p(_tm._output._names[col]).p(" */").p("] ").p(equal == 1 ? "!= " : scmp).pj(fcmp); // then left and then right (left is !=)
       } else {
         //_sb.p("!water.genmodel.GeneratedModel.grpContains(GRPSPLIT").p(_grpcnt).p(", ").p(gcmp._offset).p(", (int) data[").p(col).p(" /* ").p(_tm._names[col]).p(" */").p("])");

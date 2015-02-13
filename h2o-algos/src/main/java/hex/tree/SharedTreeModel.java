@@ -118,6 +118,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         preds[keys.length==1?0:c+1] += DKV.get(keys[c]).<CompressedTree>get().score(data);
   }
 
+  // Numeric type used in generated code to hold predicted value between the
+  // calls; i.e. the numerical precision of predictions.
+  static final String PRED_TYPE = "float";
+
   @Override protected Futures remove_impl( Futures fs ) {
     for( Key ks[] : _output._treeKeys)
       for( Key k : ks )
