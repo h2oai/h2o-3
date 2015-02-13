@@ -18,7 +18,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public boolean isSupervised() { return true; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
+  //public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
 
