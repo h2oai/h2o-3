@@ -111,6 +111,33 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+"""
+Here are some testing utilities for running the pyunit tests in conjunction with run.py.
+
+run.py issues an ip and port as a string:  "<ip>:<port>".
+The expected value of sys_args[1] is "<ip>:<port>"
+"""
+
+
+"""
+All tests MUST have the following structure:
+
+import sys
+sys.path.insert(1, "..")  # may vary depending on this test's position relative to h2o-py
+import h2o
+
+
+def my_test(ip=None, port=None):
+  ...test filling...
+
+if __name__ == "__main__":
+  h2o.run_test(sys.argv, my_test)
+
+So each test must have an ip and port
+"""
+def run_test(sys_args, test_to_run):
+  ip, port = sys_args[2].split(":")
+  test_to_run(ip, port)
 
 def remove(key):
   """

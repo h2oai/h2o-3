@@ -34,7 +34,9 @@ public class StrWrappedVec extends WrappedVec {
   static class StrWrappedChunk extends Chunk {
     final Chunk _c;             // Test-set map
 
-    StrWrappedChunk(Chunk c, StrWrappedVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec;}
+    StrWrappedChunk(Chunk c, StrWrappedVec vec) {
+      _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _cidx = _c._cidx;
+    }
 
     @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
     @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}

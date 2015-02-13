@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1, "..")
 import h2o
 
 ######################################################
@@ -42,7 +43,4 @@ def prostateGBM(ip,port):
   my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 if __name__ == "__main__":
-  args = sys.argv
-  print args
-  if len(args) > 1:  prostateGBM(args[1],int(args[2]))
-  else:              prostateGBM("localhost",54321)
+  h2o.run_test(sys.argv, prostateGBM)

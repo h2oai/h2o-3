@@ -20,6 +20,9 @@ def is_python_test_file(file_name):
     if (file_name == "test_config.py"):
         return False
 
+    if re.match("^pyunit.*\.py$", file_name):
+      return True
+
     if (re.match("^test.*\.py$", file_name)):
         return True
 
@@ -221,10 +224,23 @@ class H2OCloudNode:
         self.output_file_name = \
             os.path.join(self.output_dir, "java_" + str(self.cloud_num) + "_" + str(self.node_num) + ".out.txt")
         f = open(self.output_file_name, "w")
-        self.child = subprocess.Popen(args=cmd,
-                                      stdout=f,
-                                      stderr=subprocess.STDOUT,
-                                      cwd=self.output_dir)
+
+        if g_convenient:
+          cwd = os.getcwd()
+          here = os.path.abspath(os.path.dirname(__file__))
+          there = os.path.abspath(os.path.join(here, "..", ".."))
+          os.chdir(there)
+          self.child = subprocess.Popen(args=cmd,
+                                        stdout=f,
+                                        stderr=subprocess.STDOUT,
+                                        cwd=there)
+          os.chdir(cwd)
+        else:
+          self.child = subprocess.Popen(args=cmd,
+                                        stdout=f,
+                                        stderr=subprocess.STDOUT,
+                                        cwd=self.output_dir)
+
         self.pid = self.child.pid
         print("+ CMD: " + ' '.join(cmd))
 
@@ -1284,6 +1300,7 @@ g_use_port = None
 g_no_run = False
 g_jvm_xmx = "1g"
 g_nopass = False
+g_convenient = False
 
 # Global variables that are set internally.
 g_output_dir = None
@@ -1374,6 +1391,8 @@ def usage():
     print("")
     print("    --nopass      Run the NOPASS tests only and do not ignore any failures.")
     print("")
+    print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1449,6 +1468,7 @@ def parse_args(argv):
     global g_no_run
     global g_jvm_xmx
     global g_nopass
+    global g_convenient
 
     i = 1
     while (i < len(argv)):
@@ -1526,6 +1546,8 @@ def parse_args(argv):
             g_config = s
         elif (s == "--nopass"):
             g_nopass = True
+        elif s == "--c":
+          g_convenient = True
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
