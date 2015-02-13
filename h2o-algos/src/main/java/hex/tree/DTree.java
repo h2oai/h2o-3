@@ -107,7 +107,7 @@ public class DTree extends Iced {
       _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
-      assert se > se0+se1;      // No point in splitting unless error goes down
+      assert se > se0+se1 || se==Double.MAX_VALUE;      // No point in splitting unless error goes down
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
