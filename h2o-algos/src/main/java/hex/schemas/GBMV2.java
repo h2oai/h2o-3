@@ -16,8 +16,7 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
         "nbins",
         "learn_rate",
         "loss",
-        "seed",
-        "group_split"
+        "seed"
     };
 
     // Input fields
@@ -44,9 +43,6 @@ public class GBMV2 extends SupervisedModelBuilderSchema<GBM,GBMV2,GBMV2.GBMParam
 
     @API(help = "RNG Seed for balancing classes", level = API.Level.expert)
     public long seed;
-
-    @API(help = "Perform Group Splitting Categoricals")
-    public boolean group_split;
 
     @Override public GBMParametersV2 fillFromImpl(GBMParameters parms) {
       super.fillFromImpl(parms);
