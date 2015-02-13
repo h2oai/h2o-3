@@ -45,6 +45,7 @@ class H2OConnection(object):
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :return: None
     """
+    port = as_int(port)
     if not (isinstance(port, int) and 0 <= port <= sys.maxint):
        raise ValueError("Port out of range, "+port)
     global __H2OCONN__
@@ -458,6 +459,17 @@ def get_human_readable_time(epochTimeMillis):
 
   return readable_time
 
+def is_int(possible_int):
+  try:
+    int(possible_int)
+    return True
+  except ValueError:
+    return False
+
+def as_int(the_int):
+  if not is_int(the_int):
+    raise ValueError("Not a valid int value: " + str(the_int))
+  return int(the_int)
 
 def _kill_jvm_fork():
   global __H2OCONN__
