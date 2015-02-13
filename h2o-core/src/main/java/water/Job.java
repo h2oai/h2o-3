@@ -333,7 +333,7 @@ public class Job<T extends Keyed> extends Keyed {
   /**
    * Helper class to atomically update the job progress in the DKV
    */
-  protected static class ProgressUpdate extends TAtomic<Progress> {
+  public static class ProgressUpdate extends TAtomic<Progress> {
     // Methodology 1
     final long _newwork;
 
