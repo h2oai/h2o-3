@@ -1653,12 +1653,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               _output.validMetrics = mm2;
             }
           }
-
-          if (get_params()._variable_importances) {
-            if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-            final float[] vi = model_info().computeVariableImportances();
-            err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
-          }
+        }
+        if (get_params()._variable_importances) {
+          if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
+          final float[] vi = model_info().computeVariableImportances();
+          err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
         }
 
         _timeLastScoreEnd = System.currentTimeMillis();
