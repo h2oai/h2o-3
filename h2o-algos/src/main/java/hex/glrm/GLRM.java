@@ -2,6 +2,8 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.DataInfo.Row;
+import hex.kmeans.KMeans;
+import hex.kmeans.KMeansModel;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.*;
@@ -30,10 +32,6 @@ import java.util.Arrays;
 public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   static final int MAX_COL = 5000;
 
-  public enum Initialization {
-    SVD, PlusPlus
-  }
-
   @Override
   public ModelBuilderSchema schema() {
     return new GLRMV2();
@@ -46,106 +44,189 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   @Override
   public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
+    return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
   }
 
   // Called from an http request
-  public GLRM(GLRMModel.GLRMParameters parms ) { super("GLRM",parms); init(false); }
+  public GLRM(GLRMModel.GLRMParameters parms) {
+    super("GLRM", parms);
+    init(false);
+  }
 
-  @Override public void init(boolean expensive) {
+  @Override
+  public void init(boolean expensive) {
     super.init(expensive);
-    if(_train.numCols() < 2) error("_train", "_train must have more than one column");
-    if(_parms._num_pc > _train.numCols()) error("_num_pc", "_num_pc cannot be greater than the number of columns in _train");
-    if(_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+    if (_train.numCols() < 2) error("_train", "_train must have more than one column");
+    if (_parms._num_pc > _train.numCols())
+      error("_num_pc", "_num_pc cannot be greater than the number of columns in _train");
+    if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
 
     Vec[] vecs = _train.vecs();
-    for(int i = 0; i < vecs.length; i++) {
-      if(!vecs[i].isNumeric()) throw H2O.unimpl();
+    for (int i = 0; i < vecs.length; i++) {
+      if (!vecs[i].isNumeric()) throw H2O.unimpl();
     }
   }
 
   private class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
+
+    // Initialize Y to be the k centers from k-means++
+    double[][] initialY(GLRMModel model) {
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = _parms._train;
+      parms._ignored_columns = _parms._ignored_columns;
+      parms._dropConsCols = _parms._dropConsCols;
+      parms._dropNA20Cols = _parms._dropNA20Cols;
+      parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
+      parms._score_each_iteration = _parms._score_each_iteration;
+      parms._init = KMeans.Initialization.PlusPlus;
+      parms._k = _parms._num_pc;
+      parms._max_iterations = _parms._max_iterations;
+      parms._standardize = _parms._standardize;
+
+      KMeansModel km = null;
+      KMeans job = null;
+      try {
+        job = new KMeans(parms);
+        km = job.trainModel().get();
+      } finally {
+        if (job != null) job.remove();
+      }
+
+      return km._output._centers_raw;
+    }
+
+    // Add constant \gamma to the diagonal of a k by k symmetric matrix X
+    double[] addDiag(double[][] x, double gamma) {
+      if (x == null) return null;
+      if (x.length != x[0].length)
+        throw new IllegalArgumentException("x must be a symmetric matrix!");
+
+      int len = x.length;
+      double[] diag = new double[len];
+      if (gamma == 0) return diag;
+      for (int i = 0; i < len; i++) {
+        x[i][i] += gamma;
+        diag[i] = gamma;
+      }
+      return diag;
+    }
+
+    // Given a n by k matrix X, form its k by k Gram matrix X'X
+    double[][] formGram(double[][] x) {
+      if (x == null) return null;
+      int ncol = x[0].length;
+      double[][] xgram = new double[ncol][ncol];
+
+      // Compute all entries on and above diagonal
+      for (int i = 0; i < x.length; i++) {
+        // Outer product = x[i]' * x[i], where x[i] is row i
+        for (int j = 0; j < ncol; j++) {
+          for (int k = j; k < ncol; k++)
+            xgram[j][k] += x[i][j] * x[i][k];
+        }
+      }
+
+      // Fill in entries below diagonal since Gram is symmetric
+      for (int i = 0; i < x.length; i++) {
+        for (int j = 0; j < ncol; j++) {
+          for (int k = 0; k < j; k++)
+            xgram[j][k] = xgram[k][j];
+        }
+      }
+      return xgram;
+    }
+
+    // Stopping criteria
+    boolean isDone(GLRMModel model) {
+      if (!isRunning()) return true; // Stopped/cancelled
+      // Stopped for running out iterations
+      if (model._output._iterations > _parms._max_iterations) return true;
+
+      // TODO: Stop if average change < _parms._tolerance
+      return false;             // Not stopping
+    }
+
+    // Main worker thread
     @Override
     protected void compute2() {
-      Frame x;
       GLRMModel model = null;
-      DataInfo dinfo, xinfo, axinfo, ayinfo;
-      Key xkey = Key.make();
-      Key axkey = Key.make();
-      Key aykey = Key.make();
 
       try {
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
         init(true);
-        if( error_count() > 0 ) throw new IllegalArgumentException("Found validation errors: "+validationErrors());
+        if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_key);
+        _train.read_lock(_key);
 
-        // TODO: Initialize Y' matrix using k-means++
-        double[][] yt = new double[_train.numCols()][_parms._num_pc];
-        for(int i = 0; i < yt.length; i++) Arrays.fill(yt[i], 0);
+        // 0) Initialize Y' matrix using k-means++
+        double[][] yt = ArrayUtils.transpose(initialY(model));
 
-        // TODO: Put this in while loop that ends when error < tolerance or over max iterations
-        // 1) Compute X = AY'(YY' + \gamma I)^(-1)
-        // a) Form transpose of Gram matrix (YY')' = Y'Y
-        double[][] ygram = new double[_parms._num_pc][_parms._num_pc];
-        for(int i = 0; i < yt.length; i++) {
-          // Outer product = yt[i]' * yt[i]
-          for(int j = 0; j < yt[i].length; j++) {
-            for(int k = 0; k < yt[i].length; k++)
-              ygram[k][j] += yt[i][j]*yt[i][k];
-          }
-        }
-
-        // b) Get Cholesky decomposition of D = Y'Y + \gamma I
-        double[] diag = new double[_parms._num_pc];
-        if(_parms._gamma > 0) {
-          for (int i = 0; i < ygram.length; i++) {
-            ygram[i][i] += _parms._gamma;
-            diag[i] = ygram[i][i];
-          }
-        }
-        // CholeskyDecomposition yychol = new Matrix(ygram).chol();
-        Cholesky yychol = new Cholesky(ygram, diag);
-
-        // c) Compute AY' and solve for X of XD = AY'
-        dinfo = new DataInfo(_train._key, _train, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-        BMulTask mtsk = new BMulTask(self(), dinfo, _parms._num_pc, yt).doAll(_parms._num_pc, dinfo._adaptedFrame);
-        Frame ay = mtsk.outputFrame(aykey, null, null);
-        DKV.put(ay);
-        // ay.unlock(self());
-
-        // Solve for X of XD = AY' -> D'X' = YA' using distributed Cholesky
-        ayinfo = new DataInfo(ay._key, ay, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-        CholTask ctsk = new CholTask(self(), ayinfo, yychol, _parms._num_pc).doAll(_parms._num_pc, ayinfo._adaptedFrame);
-        x = ctsk.outputFrame(xkey, null, null);
-        DKV.put(x);
-
-        // 2) Compute Y = (X'X + \gamma I)^(-1)X'A
-        // a) Form Gram matrix X'X and add \gamma to diagonal
-        xinfo = new DataInfo(x._key, x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-        GramTask xgram = new GramTask(xkey, xinfo).doAll(xinfo._adaptedFrame);
-        if(_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma);
-
-        // b) Get Cholesky decomposition of D = X'X + \gamma I
-        Cholesky xxchol = xgram._gram.cholesky(null);
-
-        // c) Compute A'X and solve for Y' of DY' = A'X
-        // Jam A and X into single frame [A,X] for distributed computation
+        // Jam A and X into a single frame [A,X] for distributed computation
+        // A is read-only training data, X will be modified in place every iteration
+        Vec[] xvecs = new Vec[_parms._num_pc];
         Vec[] vecs = new Vec[_train.numCols() + _parms._num_pc];
-        for(int i = 0; i < _train.numCols(); i++) vecs[i] = _train.vec(i);
-        for(int i = _train.numCols(); i < vecs.length; i++) vecs[i] = x.vec(i);
-        Frame ax = new Frame(axkey, null, vecs);
-        axinfo = new DataInfo(ax._key, ax, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        for (int i = 0; i < _train.numCols(); i++) vecs[i] = _train.vec(i);
+        int c = 0;
+        for (int i = _train.numCols(); i < vecs.length; i++) {
+          vecs[i] = _train.anyVec().makeZero();
+          xvecs[c++] = vecs[i];
+        }
+        assert c == xvecs.length;
+
+        Frame fr = new Frame(Key.make(), null, vecs);
+        DataInfo dinfo = new DataInfo(fr._key, fr, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
 
-        yt = new SMulTask(_train.numCols(), _parms._num_pc).doAll(axinfo._adaptedFrame)._prod;
-        for(int i = 0; i < yt.length; i++) xxchol.solve(yt[i]);
+        // Create separate reference to X for Gram task
+        Frame x = new Frame(Key.make(), null, xvecs);
+        DataInfo xinfo = new DataInfo(x._key, x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
 
-        // TODO: Compute solution XY
-      } catch( Throwable t ) {
+        while (!isDone(model)) {
+          // 1) Compute X = AY'(YY' + \gamma I)^(-1)
+          double[][] ygram = formGram(yt);    // a) Form Gram matrix of Y', which is (Y')'Y' = YY'
+
+          // b) Get Cholesky decomposition of D = Y'Y + \gamma I
+          double[] diag = addDiag(ygram, _parms._gamma);
+          // CholeskyDecomposition yychol = new Matrix(ygram).chol();
+          Cholesky yychol = new Cholesky(ygram, diag);
+
+          // c) Compute AY' and solve for X of XD = AY'
+          CholMulTask cmtsk = new CholMulTask(self(), dinfo, yychol, yt, _train.numCols(), _parms._num_pc);
+          cmtsk.doAll(dinfo._adaptedFrame);
+          model._output._avg_change = cmtsk._err / fr.numRows();
+
+          // 2) Compute Y = (X'X + \gamma I)^(-1)X'A
+          // a) Form Gram matrix X'X
+          GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
+
+          // b) Get Cholesky decomposition of D = X'X + \gamma I
+          if (_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma);
+          Cholesky xxchol = xgram._gram.cholesky(null);
+
+          // c) Compute A'X and solve for Y' of DY' = A'X
+          yt = new SMulTask(_train.numCols(), _parms._num_pc).doAll(dinfo._adaptedFrame)._prod;
+          for (int i = 0; i < yt.length; i++) xxchol.solve(yt[i]);
+          // TODO: Calculate average error on yt (save yt_old)
+          // model._output._avg_change += average error on yt from yt_old
+
+          model._output._iterations++;
+          model.update(_key); // Update model in K/V store
+          update(1);          // One unit of work
+        }
+
+        // TODO: Should we compute difference ||A - XY||?
+        // 3) Compute solution XY
+        BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._num_pc, xinfo._adaptedFrame);
+        String[] names = new String[_parms._num_pc];
+        for(int i = 0; i < names.length; i++) names[i] = "PC" + String.valueOf(i);
+        tsk.outputFrame(names, null);
+        // TODO: Need to save and output final Frame
+
+        done();
+      } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {
           Log.info("Job cancelled by user.");
@@ -155,16 +236,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           throw t;
         }
       } finally {
-        if( model != null ) model.unlock(_key);
+        if (model != null) model.unlock(_key);
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
     }
 
-    Key self() { return _key; }
+    Key self() {
+      return _key;
+    }
   }
 
-  // Computes A'X on a matrix [A, X], where A is n by p, X is n by k, and k <= p
+  // Computes A'X on a matrix [A,X], where A is n by p, X is n by k, and k <= p
   // Resulting matrix D = A'X will have dimensions p by k
   private static class SMulTask extends MRTask<SMulTask> {
     int _ncolA, _ncolX; // _ncolA = p, _ncolX = k
@@ -176,74 +259,112 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _prod = new double[ncolX][ncolA];
     }
 
-    @Override public void map(Chunk[] cs) {
+    @Override
+    public void map(Chunk[] cs) {
       assert (_ncolA + _ncolX) == cs.length;
 
       // Cycle over columns of A
-      for( int i = 0; i < _ncolA; i++ ) {
+      for (int i = 0; i < _ncolA; i++) {
         // Cycle over columns of X
-        for(int j = _ncolA; j < _ncolX; j++ ) {
+        for (int j = _ncolA; j < _ncolX; j++) {
           double sum = 0;
-          for( int row = 0; row < cs[0]._len; row++ ) {
+          for (int row = 0; row < cs[0]._len; row++) {
             double a = cs[i].atd(row);
             double x = cs[j].atd(row);
-            if(Double.isNaN(a) || Double.isNaN(x)) continue;
-            sum += a*x;
+            if (Double.isNaN(a) || Double.isNaN(x)) continue;
+            sum += a * x;
           }
           _prod[i][j] = sum;
         }
       }
     }
 
-    @Override public void reduce(SMulTask other) {
+    @Override
+    public void reduce(SMulTask other) {
       ArrayUtils.add(_prod, other._prod);
     }
   }
 
-  // TODO: Generalize this with boolean flag indicating whether to transpose Y
-  // Computes AY' where A is n by p, Y is k by p, and k <= p
-  // Resulting matrix D = AY' will have dimensions n by k
+  // Computes XY where X is n by k, Y is k by p, and k <= p
+  //  Resulting matrix Z = XY will have dimensions n by k
   private static class BMulTask extends FrameTask<BMulTask> {
-    int _ncomp;       // _ncomp = k (number of PCs)
     double[][] _yt;   // _yt = Y' (transpose of Y)
 
-    BMulTask(Key jobKey, DataInfo dinfo, final int ncomp, final double[][] yt) {
+    BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
       super(jobKey, dinfo);
-      _ncomp = ncomp;
       _yt = yt;
     }
 
     @Override protected void processRow(long gid, Row row, NewChunk[] outputs) {
       double[] nums = row.numVals;
-      for (int k = 0; k < _ncomp; k++) {
+      assert nums.length == _yt[0].length;
+
+      for(int k = 0; k < _yt[0].length; k++) {
         double x = 0;
         int c = _dinfo.numStart();
         for(int d = 0; d < nums.length; d++)
-          x += nums[d] * _yt[c++][k];
-        assert c == _yt.length;
+          x += nums[d] * _yt[k][c++];
+        assert c == _yt[0].length;
         outputs[k].addNum(x);
       }
     }
   }
 
-  // Solves XD = Y -> D'X' = Y' for X where D is k by k, Y is n by k, and n >> k
-  // Resulting matrix X = YD^(-1) will have dimensions n by k
-  private static class CholTask extends FrameTask<CholTask> {
-    int _ncomp;
-    Cholesky _chol;   // Cholesky decomposition of D' (transpose since left multiply)
+  // TODO: Generalize this with boolean flag indicating whether to transpose Y
+  // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
+  // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
+  private static class CholMulTask extends FrameTask<CholMulTask> {
+    int _ncolA;       // _ncolA = p (number of training cols)
+    int _ncolX;       // _ncolX = k (number of PCs)
+    double[][] _yt;   // _yt = Y' (transpose of Y)
+    Cholesky _chol;   // Cholesky decomposition of D' (transpose of D, since need left multiply)
 
-    CholTask(Key jobKey, DataInfo dinfo, final Cholesky chol, final int ncomp) {
-      super(jobKey, dinfo);
-      _chol = chol;
-      _ncomp = ncomp;
+    double _err;      // Total sum of squared error over rows of X
+
+    CholMulTask(Key jobKey, DataInfo dinfo, final Cholesky chol, final double[][] yt) {
+      this(jobKey, dinfo, chol, yt, yt.length, yt[0].length);
     }
 
-    @Override protected void processRow(long gid, Row row, NewChunk[] outputs) {
-      double[] ynums = row.numVals.clone();
-      assert ynums.length == _ncomp;
-      _chol.solve(ynums);
-      for(int k = 0; k < _ncomp; k++)
-        outputs[k].addNum(ynums[k]);
+    CholMulTask(Key jobKey, DataInfo dinfo, final Cholesky chol, final double[][] yt, final int ncolA, final int ncolX) {
+      super(jobKey, dinfo);   // dinfo = [A,X] jammed into single frame
+      assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      _chol = chol;
+      _yt = yt;
+      _ncolA = ncolA;
+      _ncolX = ncolX;
+      _err = 0;
+    }
+
+    @Override protected void processRow(long gid, Row row) {
+      double[] nums = row.numVals;
+      double[] xrow = new double[_ncolX];
+      assert (_ncolX + _ncolA) == nums.length;
+
+      // Compute single row of AY'
+      for(int k = 0; k < _ncolX; k++) {
+        double x = 0;
+        int c = _dinfo.numStart();
+        for(int d = 0; d < _ncolA; d++)
+          x += nums[d] * _yt[c++][k];
+        assert c == _yt.length;
+        xrow[k] = x;
+      }
+
+      // Cholesky solve for single row of X
+      _chol.solve(xrow);
+
+      // Update X in place with new solved values
+      int i = 0;
+      for(int d = _ncolA; d < nums.length; d++) {
+        // Sum of squared error compared to row of old X
+        _err += xrow[i] - nums[d];
+        row.addNum(d, xrow[i++]);
+      }
+      assert i == xrow.length;
+    }
+
+    @Override public void reduce(CholMulTask other) {
+      _err += other._err;
     }
   }
 }

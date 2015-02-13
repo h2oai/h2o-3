@@ -10,15 +10,22 @@ import hex.schemas.GLRMModelV2;
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
   public static class GLRMParameters extends Model.Parameters {
-    public int _num_pc = 2;
-    public double _tolerance = 0;
+    public int _num_pc = 1;                // Number of principal components
     public double _gamma = 0;
-    public boolean _standardized = true;
+    public int _max_iterations = 1000;     // Max iterations
+    public double _tolerance = 0;
+    public boolean _standardize = true;
   }
 
   public static class GLRMOutput extends Model.Output {
-    //Column names expanded to accommodate categoricals
-    public String[] _namesExp;
+    // Iterations executed
+    public int _iterations;
+
+    // Average change (l2) in X and Y
+    public double _avg_change;
+
+    //Rank of eigenvector matrix
+    public int _rank;
 
     //Standard deviation of each principal component
     public double[] _sdev;
@@ -38,15 +45,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     //If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
 
-    //Offsets of categorical columns into the sdev vector. The last value is the offset of the first numerical column.
-    public int[] _catOffsets;
-
-    //Rank of eigenvector matrix
-    public int _rank;
-
-    //Number of principal components to display
-    public int _numPC;
-
     //@API(help = "Model parameters")
     GLRMParameters _parameters;
 
@@ -65,7 +63,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   public GLRMModel(Key selfKey, GLRMParameters parms, GLRMOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public boolean isSupervised() {return false;}
+  public boolean isSupervised() { return false; }
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
