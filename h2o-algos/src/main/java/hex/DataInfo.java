@@ -417,7 +417,7 @@ public class DataInfo extends Keyed {
       out[k] = in[k] / (float)_normMul[k-numStart()] + (float)_normSub[k-numStart()];
   }
 
-  public class Row {
+  public final class Row {
     public boolean bad;
     public double [] numVals;
     public double [] response;
@@ -459,7 +459,7 @@ public class DataInfo extends Keyed {
     }
 
 
-    public double innerProduct(double [] vec) {
+    public final double innerProduct(double [] vec) {
       double res = 0;
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)

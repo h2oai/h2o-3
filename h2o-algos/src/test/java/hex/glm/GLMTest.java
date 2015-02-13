@@ -86,7 +86,6 @@ public class GLMTest  extends TestUtil {
       // params._response = 1;
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
-      params._higher_accuracy = true;
       params._standardize = false;
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
@@ -104,7 +103,6 @@ public class GLMTest  extends TestUtil {
       // params2._response = 1;
       params2._response_column = fr._names[1];
       params2._lambda = new double[]{0};
-      params2._higher_accuracy = true;
       params2._standardize = false;
       params2._beta_epsilon = 1e-5;
       job = new GLM(modelKey,"glm test simple poisson",params2);

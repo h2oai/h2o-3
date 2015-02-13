@@ -286,8 +286,13 @@ public class Job<T extends Keyed> extends Keyed {
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /** Report new work done for this job */
-  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
+  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey);  }
+  /** Report new work done for this job */
+  public final void update(final long newworked, String msg) { new ProgressUpdate(newworked, msg).fork(_progressKey); }
 
+  public static void update(final long newworked,  String msg, Key<Job> jobkey) {
+    jobkey.get().update(newworked,msg);
+  }
   /** Report new work done for a given job key */
   public static void update(final long newworked, Key<Job> jobkey) {
     jobkey.get().update(newworked);

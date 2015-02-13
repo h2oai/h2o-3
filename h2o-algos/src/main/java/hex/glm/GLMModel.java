@@ -143,7 +143,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
     public double _lambda_min_ratio = -1; // special
-    public boolean _higher_accuracy = false;
     public boolean _use_all_factor_levels = false;
     public double _beta_epsilon = 1e-4;
     public int _max_iter = 50;
@@ -361,7 +360,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case logit:
           double div = (x * (1 - x));
           if(div == 0) return 1e9; // avoid numerical instability
-          return 1 / (x * (1 - x));
+          return 1.0 / div;
         case identity:
           return 1;
         case log:
