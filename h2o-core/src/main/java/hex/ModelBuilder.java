@@ -1,7 +1,5 @@
 package hex;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.Frame;
@@ -167,7 +165,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Log parameters
     if (expensive) {
       Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-      Log.info(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(new String(_parms.writeJSON(new AutoBuffer()).buf()))));
+      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
 
     // NOTE: allow re-init:

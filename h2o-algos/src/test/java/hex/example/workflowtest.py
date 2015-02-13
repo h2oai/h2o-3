@@ -79,7 +79,7 @@ bpd.describe()
 def split_fit_predict(data):
   # Classic Test/Train split
   r = data['Days'].runif()   # Random UNIForm numbers, one per row
-  train = data[ r < 0.6  ]
+  train = data[  r  < 0.6]
   test  = data[(0.6 <= r) & (r < 0.9)]
   hold  = data[ 0.9 <= r ]
   print "Training data has",train.ncol(),"columns and",train.nrow(),"rows, test has",test.nrow(),"rows, holdout has",hold.nrow()
@@ -161,7 +161,6 @@ wthr2.describe()
 
 # Filter down to the weather at Noon
 wthr3 = wthr2[ wthr2["Hour Local"]==12 ]
-wthr3.describe()
 
 # Lets now get Days since the epoch... we'll convert year/month/day into Epoch
 # time, and then back to Epoch days.  Need zero-based month and days, but have

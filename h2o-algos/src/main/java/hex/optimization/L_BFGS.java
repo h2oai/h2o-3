@@ -42,6 +42,7 @@ public final class L_BFGS extends Iced {
   double _gradEps = 1e-8;
   // line search params
   int _historySz = 20;
+
   History _hist;
 
   public L_BFGS() {}
@@ -133,7 +134,7 @@ public final class L_BFGS extends Iced {
   }
 
   // constants used in line search
-  public static final double c1 = 1e-1;
+  public static final double c1 = .5;
 
   public static final class Result {
     public final int iter;
@@ -293,25 +294,13 @@ public final class L_BFGS extends Iced {
   }
 
   // Armijo line-search rule
-  public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] pk, final double[] gradOld){
+  private static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] pk, final double[] gradOld){
     if(Double.isNaN(objNew))
       return false;
     // line search
     double f_hat = 0;
     for(int i = 0; i < pk.length; ++i)
       f_hat += gradOld[i] * pk[i];
-    f_hat = c1*step*f_hat + objOld;
-    return objNew < f_hat;
-  }
-
-  // Armijo line-search rule - to be used with glm (to avoid making explicit pk [] array)
-  public static final boolean admissibleStep(double step, final double objOld, final double objNew, final double[] betaOld, final double[] betaNew, final double[] gradOld){
-    if(Double.isNaN(objNew))
-      return false;
-    // line search
-    double f_hat = 0;
-    for(int i = 0; i < betaNew.length; ++i)
-      f_hat += gradOld[i] * (betaNew[i] - betaOld[i]);
     f_hat = c1*step*f_hat + objOld;
     return objNew < f_hat;
   }

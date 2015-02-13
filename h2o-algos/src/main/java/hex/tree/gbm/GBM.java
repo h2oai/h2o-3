@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.Model;
-import hex.VarImp;
 import hex.schemas.GBMV2;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -88,9 +87,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // ----------------------
   private class GBMDriver extends Driver {
 
-    /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
-    private transient float[/*nfeatures*/] _improvPerVar;
-
     @Override protected void buildModel() {
       // For GBM multinomial, initial predictions are class-distributions
       // For GBM, keep the original zero guesses
@@ -103,9 +99,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //  }
       //  throw H2O.unimpl("untested");
       //}
-
-      // Initialize gbm-specific data structures
-      if( _parms._variable_importance ) _improvPerVar = new float[_nclass];
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
@@ -219,7 +212,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
     private void buildNextKTrees() {
-
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -433,13 +425,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Find the column with the best split (lowest score).  Unlike RF, GBM
     // scores on all columns and selects splits on all columns.
     @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
-      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
+      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
         DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
         if( s == null ) continue;
-        if( best == null || s.se() < best.se() ) best = s;
+        if( best == null || s.se() < best.se() )
+          best = s;
         if( s.se() <= 0 ) break; // No point in looking further!
       }
       return best;
@@ -466,8 +459,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
     @Override protected int size() { return 4; }
   }
-
-  @Override protected VarImp doVarImpCalc(boolean scale) { throw H2O.unimpl(); }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum

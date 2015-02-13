@@ -85,17 +85,15 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     // Common for e.g. boolean columns, or near leaves.  Allow more
     // than the usual nbins for factors and ints
     int xbins = nbins;
-    float step;
     if( isInt>0 && maxEx-min <= Math.max(nbins,(isInt==2?MAX_FACTOR_BINS:nbins)) ) {
       assert ((long)min)==min;                // No overflow
       xbins = (char)((long)maxEx-(long)min);  // Shrink bins
       assert xbins > 1;                       // Caller ensures enough range to bother
-      step = 1.0f;                            // Fixed stepsize
+      _step = 1.0f;                           // Fixed stepsize
     } else {
-      step = (maxEx-min)/nbins; // Step size for linear interpolation
-      assert step > 0;
+      _step = nbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
+      assert _step > 0 && !Float.isInfinite(_step);
     }
-    _step = 1.0f/step; // Use multiply instead of division during frequent binning math
     _nbin = (char)xbins;
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }

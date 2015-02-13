@@ -145,6 +145,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _lambda_min_ratio = -1; // special
     public boolean _higher_accuracy = false;
     public boolean _use_all_factor_levels = false;
+    public double _beta_epsilon = 1e-4;
+    public int _max_iter = 50;
     public int _n_folds;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
@@ -281,11 +283,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public final double deviance(double yr, double ym){
+    public final double deviance(double yr, double eta, double ym){
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
         case binomial:
+//          if(yr == ym) return 0;
+//          return 2*( -yr * eta - Math.log(1 - ym));
           return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
         case poisson:
           if( yr == 0 ) return 2 * ym;
@@ -304,6 +308,34 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           throw new RuntimeException("unknown family " + _family);
       }
     }
+
+    public final double likelihood(double yr, double eta, double ym){
+      switch(_family){
+        case gaussian:
+          return .5 * (yr - ym) * (yr - ym);
+        case binomial:
+          return .5*deviance(yr,eta,ym);
+//          if(yr == ym) return 0;
+//          double res = -yr * eta - Math.log(1 - ym);
+//          return res;
+        case poisson:
+          if( yr == 0 ) return 2 * ym;
+          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
+        case gamma:
+          if( yr == 0 ) return -2;
+          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
+        case tweedie:
+          // Theory of Dispersion Models: Jorgensen
+          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+          double one_minus_p = 1 - _tweedie_variance_power;
+          double two_minus_p = 2 - _tweedie_variance_power;
+          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
+    }
+
 
     public final double link(double x) {
       switch(_link) {

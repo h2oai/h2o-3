@@ -11,7 +11,7 @@ test.GBM.groupsplit <- function(conn) {
   
   # Train H2O GBM Model:
   Log.info(paste("H2O GBM with parameters:\nntrees = 10, max_depth = 20, nbins = 20\n", sep = ""))
-  drfmodel.h2o <- h2o.gbm(x = c("x1", "x2"), y = "y", training_frame = train.hex, ntrees = 10, max_depth = 5, nbins = 20, group_split = TRUE)
+  drfmodel.h2o <- h2o.gbm(x = c("x1", "x2"), y = "y", training_frame = train.hex, ntrees = 10, max_depth = 5, nbins = 20)
   print(drfmodel.h2o) 
  
   # Test dataset has all 50 categories cat1 through cat50

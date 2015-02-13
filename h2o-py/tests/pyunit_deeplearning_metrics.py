@@ -37,7 +37,4 @@ def deep_learning_metrics_test(ip, port):
 
 
 if __name__ == "__main__":
-  args = sys.argv
-  print args
-  if len(args) > 1:  deep_learning_metrics_test(args[1],int(args[2]))
-  else:              deep_learning_metrics_test("localhost",54321)
+  h2o.run_test(sys.argv, deep_learning_metrics_test)

@@ -4,11 +4,10 @@ import hex.tree.gbm.GBMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-//import water.util.DocGen.HTML;
 
-public class GBMModelV2 extends ModelSchema<GBMModel, GBMModelV2, GBMModel.GBMParameters, GBMModel.GBMOutput> {
+public class GBMModelV2 extends SharedTreeModelV2<GBMModel, GBMModelV2, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
-  public static final class GBMModelOutputV2 extends ModelOutputSchema<GBMModel.GBMOutput, GBMModelOutputV2> {
+  public static final class GBMModelOutputV2 extends SharedTreeModelOutputV2<GBMModel.GBMOutput, GBMModelOutputV2> {
     // Output fields; input fields are in the parameters list
     @API(help="Mean Square Error for Train Frame")
     public double mse_train[];           // Total MSE, variance

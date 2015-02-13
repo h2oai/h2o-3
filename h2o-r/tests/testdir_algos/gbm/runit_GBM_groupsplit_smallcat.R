@@ -20,13 +20,14 @@ test.GBM.smallcat <- function(conn) {
   print(summary(alphabet.data))
   
   # Train H2O GBM Model:
+  # No longer naive since group_split is always on
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = FALSE)
+  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100)
   print(drfmodel.nogrp)
   drfmodel.nogrp.perf <- h2o.performance(drfmodel.nogrp, alphabet.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = TRUE)
+  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100)
   print(drfmodel.grpsplit)
   drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, alphabet.hex)
   
@@ -34,8 +35,8 @@ test.GBM.smallcat <- function(conn) {
   #Log.info("Expect GBM with Group Split to give Perfect Prediction in Single Iteration")
   #expect_true(drfmodel.grpsplit@model$auc == 1)
   #expect_true(drfmodel.grpsplit@model$confusion[3,3] == 0)
-  expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
-  expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
+  #expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
+  #expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
   
   # Train R GBM Model:
   # Log.info("R GBM with same parameters:")

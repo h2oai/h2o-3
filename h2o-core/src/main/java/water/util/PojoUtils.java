@@ -2,7 +2,7 @@ package water.util;
 
 import water.*;
 import water.api.FrameV2;
-import water.api.KeySchema;
+import water.api.KeyV1;
 import water.api.Schema;
 
 import java.lang.reflect.Array;
@@ -162,28 +162,28 @@ public class PojoUtils {
             //
             Value v = DKV.get((Key) orig_field.get(origin));
             dest_field.set(dest, (null == v ? null : v.get()));
-          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
+          } else if (KeyV1.class.isAssignableFrom(dest_field.getType()) && Keyed.class.isAssignableFrom(orig_field.getType())) {
             //
-            // Assigning a Keyed (e.g., a Frame or Model) to a KeySchema.
+            // Assigning a Keyed (e.g., a Frame or Model) to a KeyV1.
             //
-            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
-          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, KeyV1.make(((Class<? extends KeyV1>) dest_field.getType()), ((Keyed) orig_field.get(origin))._key));
+          } else if (KeyV1.class.isAssignableFrom(orig_field.getType()) && Keyed.class.isAssignableFrom(dest_field.getType())) {
             //
-            // Assigning a KeySchema (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
+            // Assigning a KeyV1 (for e.g., a Frame or Model) to a Keyed (e.g., a Frame or Model).
             //
-            KeySchema k = (KeySchema)orig_field.get(origin);
+            KeyV1 k = (KeyV1)orig_field.get(origin);
             Value v = DKV.get(Key.make(k.name));
             dest_field.set(dest, (null == v ? null : v.get()));
-          } else if (KeySchema.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
+          } else if (KeyV1.class.isAssignableFrom(dest_field.getType()) && Key.class.isAssignableFrom(orig_field.getType())) {
             //
-            // Assigning a Key to a KeySchema.
+            // Assigning a Key to a KeyV1.
             //
-            dest_field.set(dest, KeySchema.make(((Class<? extends KeySchema>)dest_field.getType()), (Key)orig_field.get(origin)));
-          } else if (KeySchema.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
+            dest_field.set(dest, KeyV1.make(((Class<? extends KeyV1>)dest_field.getType()), (Key)orig_field.get(origin)));
+          } else if (KeyV1.class.isAssignableFrom(orig_field.getType()) && Key.class.isAssignableFrom(dest_field.getType())) {
             //
-            // Assigning a KeySchema to a Key.
+            // Assigning a KeyV1 to a Key.
             //
-            KeySchema k = (KeySchema)orig_field.get(origin);
+            KeyV1 k = (KeyV1)orig_field.get(origin);
             dest_field.set(dest, (null == k.name ? null : Key.make(k.name)));
           } else if (dest_field.getType() == Pattern.class && String.class.isAssignableFrom(orig_field.getType())) {
             //

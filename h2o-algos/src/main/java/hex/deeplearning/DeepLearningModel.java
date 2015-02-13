@@ -1544,9 +1544,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
+   * @param progressKey key of the progress
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
     boolean keep_running;
     try {
       final long now = System.currentTimeMillis();
@@ -1586,6 +1587,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if( !keep_running ||
               (sinceLastScore > get_params()._score_interval *1000 //don't score too often
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
+        if (progressKey != null) new Job.ProgressUpdate("Scoring...").fork(progressKey);
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
         if (get_params()._diagnostics) model_info().computeStats();
@@ -1653,12 +1655,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               _output.validMetrics = mm2;
             }
           }
-
-          if (get_params()._variable_importances) {
-            if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-            final float[] vi = model_info().computeVariableImportances();
-            err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
-          }
+        }
+        if (get_params()._variable_importances) {
+          if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
+          final float[] vi = model_info().computeVariableImportances();
+          err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
         }
 
         _timeLastScoreEnd = System.currentTimeMillis();

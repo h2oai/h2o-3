@@ -57,7 +57,9 @@ public class LogsHandler extends Handler {
                 || name.equals("info")
                 || name.equals("warn")
                 || name.equals("error")
-                || name.equals("fatal")) {
+                || name.equals("fatal")
+                || name.equals("httpd")
+                ) {
           name = water.util.Log.getLogFileName(name);
           logPathFilename = Log.getLogDir() + File.separator + name;
         }
