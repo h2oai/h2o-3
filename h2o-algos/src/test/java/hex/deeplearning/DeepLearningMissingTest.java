@@ -19,7 +19,7 @@ public class DeepLearningMissingTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() {
-    long seed = new Random().nextLong();
+    long seed = 1234;
 
     DeepLearningModel mymodel = null;
     Frame train = null;
@@ -75,6 +75,8 @@ public class DeepLearningMissingTest extends TestUtil {
           p._epochs = 10;
           p._quiet_mode = true;
           p._destination_key = Key.make();
+          p._reproducible = true;
+          p._seed = seed;
           DeepLearning dl = new DeepLearning(p);
           try {
             Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");

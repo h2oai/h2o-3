@@ -54,7 +54,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
       String sname = cname.substring(0,nlen-5);
       // Table lookup, roughly sorted by frequency
-      int j=0;
+      int j;
       for( j = 0; j < chunkTypes.length; ++j )
         if( sname.equals(chunkTypes[j]) )
           break;
@@ -88,7 +88,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Vec v : _fr.vecs())
       check += v.nChunks();
     assert(total_chunk_count == check);
-    assert(total_chunk_byte_size == _fr.byteSize());
+//    assert(total_chunk_byte_size == _fr.byteSize());
 
     // compute min, max, mean
     byte_size_per_node_min = Float.MAX_VALUE;
@@ -112,25 +112,36 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
 
   String display(long val) { return String.format("%10s", val == 0 ? "  0  B" : PrettyPrint.bytes(val)); }
 
+  public TwoDimTable toTwoDimTable() {
+    final String tableHeader = "Internal FluidVec compression/distribution summary";
+    int rows = 0;
+    for (int j = 0; j < chunkTypes.length; ++j) if (chunk_counts != null && chunk_counts[j] > 0) rows++;
+    final String[] rowHeaders = new String[rows];
+    final String[] colHeaders = new String[]{"Chunk Type", "Count", "Count Percentage", "Size", "Size Percentage"};
+    final String[] colTypes = new String[]{"string", "integer", "float", "string", "float"};
+    final String[] colFormats = new String[]{"%8s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
+    final String colHeaderForRowHeaders = null;
+    TwoDimTable table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+
+    int row = 0;
+    for (int j = 0; j < chunkTypes.length; ++j) {
+      if (chunk_counts != null && chunk_counts[j] > 0) {
+        table.set(row, 0, chunkTypes[j]);
+        table.set(row, 1, chunk_counts[j]);
+        table.set(row, 2, (float) chunk_counts[j] / total_chunk_count * 100.);
+        table.set(row, 3, display(chunk_byte_sizes[j]));
+        table.set(row, 4, (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.);
+        row++;
+      }
+    }
+    return table;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("Internal FluidVec compression/distribution summary:\n");
-    sb.append("Chunk type    count     fraction       size     rel. size\n");
-    for (int j = 0; j < chunkTypes.length; ++j) {
-      if (chunk_counts != null && chunk_counts[j] > 0)
-        sb.append(String.format("%8s %10d %10.3f %% %10s %10.3f %%\n",
-                chunkTypes[j],
-                chunk_counts[j],
-                (float) chunk_counts[j] / total_chunk_count * 100.,
-                display(chunk_byte_sizes[j]),
-                (float) chunk_byte_sizes[j] / total_chunk_byte_size * 100.));
-    }
-    // if more than 50% is double data, inform the user to consider compressing to single precision
-//    if ((float)chunk_byte_sizes[chunk_byte_sizes.length-1] / total_chunk_byte_size > 0.5 && !H2O.SINGLE_PRECISION) {
-//      sb.append("** Warning: Significant amount of double precision data (C8DChunk),\n" +
-//              "   consider launching with -single_precision to reduce memory consumption **\n");
-//    }
+    sb.append(toTwoDimTable().toString());
+    sb.append(" Total memory usage : " + display(total_chunk_byte_size) + "\n");
     // if standard deviation is more than 20% of mean, then show detailed per-node distribution
     if (byte_size_per_node_stddev > 0.2 * byte_size_per_node_mean) {
       sb.append("** Note: Dataset is not well distributed, consider rebalancing **\n");
@@ -145,7 +156,6 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       sb.append("  max size per node : " + display((long) byte_size_per_node_max) + "\n");
       sb.append("stddev of node size : " + display((long) byte_size_per_node_stddev) + "\n");
     }
-    sb.append(" Total memory usage : " + display(total_chunk_byte_size) + "\n");
     return sb.toString();
   }
 }
