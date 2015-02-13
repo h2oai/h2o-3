@@ -88,6 +88,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Vec v : _fr.vecs())
       check += v.nChunks();
     assert(total_chunk_count == check);
+
+    // This doesn't always hold, FileVecs have File-based byte size, while Vecs have Chunk-based byte size.
 //    assert(total_chunk_byte_size == _fr.byteSize());
 
     // compute min, max, mean
