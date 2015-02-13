@@ -36,7 +36,7 @@ def upload_file(path, destination_key=""):
   fui = {"file": os.path.abspath(path)}
   dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_key=dest_key)
-  return H2OFrame(raw_fname=dest_key)
+  return H2OFrame(text_key=dest_key)
 
 
 def import_frame(path=None, vecs=None):
