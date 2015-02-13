@@ -39,7 +39,7 @@ def prostateGBM(ip,port):
   my_gbm_metrics = my_gbm.model_performance(train)
   my_gbm_metrics.show()
 
-  my_gbm_metrics.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
+  my_gbm_metrics  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
 if __name__ == "__main__":
   args = sys.argv
