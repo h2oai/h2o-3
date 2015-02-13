@@ -88,7 +88,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Vec v : _fr.vecs())
       check += v.nChunks();
     assert(total_chunk_count == check);
-    assert(total_chunk_byte_size == _fr.byteSize());
+//    assert(total_chunk_byte_size == _fr.byteSize());
 
     // compute min, max, mean
     byte_size_per_node_min = Float.MAX_VALUE;
