@@ -202,9 +202,10 @@ public class DTree extends Iced {
           default: throw H2O.fail();
           }
         }
-        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
-        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
+        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
+        if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
+        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
         nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
         cnt++;                    // At least some chance of splitting
