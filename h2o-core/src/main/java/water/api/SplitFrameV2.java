@@ -2,17 +2,17 @@ package water.api;
 
 import hex.SplitFrame;
 import water.Key;
-import water.fvec.Frame;
+import water.api.KeyV1.FrameKeyV1;
 
 public class SplitFrameV2 extends JobV2<SplitFrame, SplitFrameV2> {
   @API(help="dataset")
-  public KeyV1.FrameKeyV1 dataset;
+  public FrameKeyV1 dataset;
 
   @API(help="Split ratios - resulting number of split is ratios.length+1", json=true)
   public double[] ratios;
 
   @API(help="Destination keys for each output frame split.")
-  public KeyV1[] destKeys;
+  public FrameKeyV1[] destKeys;
 
   @Override public SplitFrame createImpl() { return new SplitFrame(Key.make(), null); }
 }

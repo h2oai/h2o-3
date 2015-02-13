@@ -164,6 +164,10 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
     return Key.make(this.name);
   }
 
+  @Override public I createImpl() {
+    return (I)Key.make(this.name);
+  }
+
   @Override
   public String toString() {
     return type + " " + name;

@@ -161,7 +161,6 @@ wthr2.describe()
 
 # Filter down to the weather at Noon
 wthr3 = wthr2[ wthr2["Hour Local"]==12 ]
-wthr3.describe()
 
 # Lets now get Days since the epoch... we'll convert year/month/day into Epoch
 # time, and then back to Epoch days.  Need zero-based month and days, but have
