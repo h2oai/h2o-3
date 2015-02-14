@@ -131,7 +131,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     final String[] colHeaders = new String[]{"Chunk Type", "Count", "Count Percentage", "Size", "Size Percentage"};
     final String[] colTypes = new String[]{"string", "integer", "float", "string", "float"};
     final String[] colFormats = new String[]{"%8s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
-    final String colHeaderForRowHeaders = null;
+    final String colHeaderForRowHeaders = "";
     TwoDimTable table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     int row = 0;
