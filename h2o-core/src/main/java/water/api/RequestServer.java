@@ -421,19 +421,21 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String method, String uri, String versioned_path, String pattern, Properties parms) {
+  void maybeLogRequest(String method, String uri, String pattern, Properties parms) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
     if (uri.endsWith(".ico")) return;
-    if (uri.startsWith("/Typeahead")) return;
-    if (uri.startsWith("/Cloud")) return;
-    if (uri.contains("Progress")) return;
-    if (uri.contains("WaterMeterCpuTicks")) return;
-    if (method.equals("GET") && uri.matches("/Jobs.*/.+")) return;
+
+    if (uri.contains("/Cloud")) return;
+    if (uri.contains("/Jobs") && method.equals("GET")) return;
+    if (uri.contains("/Log")) return;
+    if (uri.contains("/Progress")) return;
+    if (uri.contains("/Typeahead")) return;
+    if (uri.contains("/WaterMeterCpuTicks")) return;
 
     String paddedMethod = String.format("%-6s", method);
-    Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
+    Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -507,11 +509,11 @@ public class RequestServer extends NanoHTTPD {
       versioned_path = "/" + version + path;
     }
 
-    alwaysLogRequest(versioned_path, method, parms);
+    alwaysLogRequest(uri, method, parms);
 
     // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
     if (uri.endsWith("/Logs/download")) {
-      maybeLogRequest(method, path, versioned_path, "", parms);
+      maybeLogRequest(method, uri, "", parms);
       return downloadLogs();
     }
 
@@ -535,7 +537,7 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(method, path, versioned_path, route._url_pattern.pattern(), parms);
+        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms);
         return wrap(handle(type,route,version,parms),type);
       }
     }
