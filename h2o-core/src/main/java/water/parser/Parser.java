@@ -347,7 +347,7 @@ public abstract class Parser extends Iced {
 
         // Numeric
         if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
-            || (_domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
+            || (_nnums[i]+_nzeros[i] > 0 && _domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
                 && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
           res[i]._type = ColType.NUM;
           continue;
@@ -355,7 +355,7 @@ public abstract class Parser extends Iced {
 
         // Datetime
         if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
-            || (_domains[i].size() <= 1 // or time + 1 unique string (NA?)
+            || (_ndates[i] > 1 && _domains[i].size() <= 1 // or time + 1 unique string (NA?)
                 && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
           res[i]._type = ColType.TIME;
           continue;
@@ -363,7 +363,7 @@ public abstract class Parser extends Iced {
 
         // UUID
         if ((_nUUID[i] > 0) //  some UUID
-                || (_domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
+                || (_nUUID[i] > 0 && _domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
                 && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
           res[i]._type = ColType.UUID;
           continue;
