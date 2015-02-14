@@ -138,32 +138,28 @@ public class MRUtils {
       for (int i=0; i<dist.length;++i)
         Log.info("Class " + label.factor(i) + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
 
-    // create sampling_ratios for class balance with max. maxrows rows (fill existing array if not null)
-    if (sampling_ratios == null || (ArrayUtils.minValue(sampling_ratios) == 0 && ArrayUtils.maxValue(sampling_ratios) == 0)) {
+    // create sampling_ratios for class balance with max. maxrows rows (fill
+    // existing array if not null).  Make a defensive copy.
+    sampling_ratios = sampling_ratios == null ? new float[dist.length] : sampling_ratios.clone();
+    assert sampling_ratios.length == dist.length;
+    if( ArrayUtils.minValue(sampling_ratios) == 0 && ArrayUtils.maxValue(sampling_ratios) == 0 ) {
       // compute sampling ratios to achieve class balance
-      if (sampling_ratios == null) {
-        sampling_ratios = new float[dist.length];
-      }
-      assert(sampling_ratios.length == dist.length);
-      for (int i=0; i<dist.length;++i) {
+      for (int i=0; i<dist.length;++i)
         sampling_ratios[i] = ((float)fr.numRows() / label.domain().length) / dist[i]; // prior^-1 / num_classes
-      }
       final float inv_scale = ArrayUtils.minValue(sampling_ratios); //majority class has lowest required oversampling factor to achieve balance
       if (!Float.isNaN(inv_scale) && !Float.isInfinite(inv_scale))
         ArrayUtils.div(sampling_ratios, inv_scale); //want sampling_ratio 1.0 for majority class (no downsampling)
     }
 
-    if (!allowOversampling) {
-      for (int i=0; i<sampling_ratios.length; ++i) {
+    if (!allowOversampling)
+      for (int i=0; i<sampling_ratios.length; ++i)
         sampling_ratios[i] = Math.min(1.0f, sampling_ratios[i]);
-      }
-    }
 
     // given these sampling ratios, and the original class distribution, this is the expected number of resulting rows
     float numrows = 0;
-    for (int i=0; i<sampling_ratios.length; ++i) {
+    for (int i=0; i<sampling_ratios.length; ++i)
       numrows += sampling_ratios[i] * dist[i];
-    }
+
     final long actualnumrows = Math.min(maxrows, Math.round(numrows)); //cap #rows at maxrows
     assert(actualnumrows >= 0); //can have no matching rows in case of sparse data where we had to fill in a makeZero() vector
     Log.info("Stratified sampling to a total of " + String.format("%,d", actualnumrows) + " rows" + (actualnumrows < numrows ? " (limited by max_after_balance_size).":"."));

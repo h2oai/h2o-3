@@ -221,20 +221,12 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
       _lockers = Arrays.copyOf(lks,lks.length-1);
       int j=1;                  // Skip the initial null slot
       for( int i=1; i<lks.length; i++ )
-        if(job_key != null && !job_key.equals(lks[i]) || (job_key == null && lks[i] != null)){
-            _lockers[j++] = lks[i];
-        }
+        if( job_key != null && !job_key.equals(lks[i]) || (job_key == null && lks[i] != null) )
+          _lockers[j++] = lks[i];
       assert j==lks.length-1;   // Was locked exactly once
     }
     assert !is_locked(job_key);
   }
-
-  /** Force-unlock (break a lock); useful in some debug situations. */
-  //public static void unlock_lockable(final Key lockable, final Key job) {
-  //  new DTask.DKeyTask<DTask.DKeyTask,Lockable>(null,lockable){
-  //    @Override public void map(Lockable l) { l.unlock(job);}
-  //  }.invokeTask();
-  //}
 
   /** Force-unlock (break a lock) all lockers; useful in some debug situations. */
   public void unlock_all() {
@@ -251,7 +243,4 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
       return Lockable.this;
     }
   }
-
-  /** Pretty string when locking fails */
-  //protected abstract String errStr();
 }
