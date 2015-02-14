@@ -6,14 +6,14 @@ import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
 import hex.schemas.GLRMModelV2;
+import water.util.TwoDimTable;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
 
   public static class GLRMParameters extends Model.Parameters {
-    public int _num_pc = 1;                // Number of principal components
+    public int _k = 1;                // Number of principal components
     public double _gamma = 0;
     public int _max_iterations = 1000;     // Max iterations
-    public double _tolerance = 0;
     public boolean _standardize = true;
   }
 
@@ -21,23 +21,14 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Iterations executed
     public int _iterations;
 
-    // Average change (l2) in X and Y
-    public double _avg_change;
+    // Average change in objective function this iteration
+    public double _avg_change_obj;
 
-    //Rank of eigenvector matrix
+    //Rank of final loading matrix
     public int _rank;
 
-    //Standard deviation of each principal component
-    public double[] _sdev;
-
-    //Proportion of variance explained by each principal component
-    public double[] _propVar;
-
-    //Cumulative proportion of variance explained by each principal component
-    public double[] _cumVar;
-
-    //Principal components (eigenvector) matrix
-    public double[][] _eigVec;
+    //Mapping from training data cols to lower dimensional k-space
+    public TwoDimTable _archetypes;
 
     //If standardized, mean of each numeric data column
     public double[] _normSub;
