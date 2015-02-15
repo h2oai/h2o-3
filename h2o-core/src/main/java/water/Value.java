@@ -4,13 +4,10 @@ import jsr166y.ForkJoinPool;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingSetInt;
-import water.persist.Persist;
 import water.util.Log;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
@@ -208,7 +205,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Store complete Values to disk */
   void storePersist() throws IOException {
     if( isPersisted() ) return;
-    Persist.I[backend()].store(this);
+    H2O.getPM().store(backend(), this);
   }
 
   /** Remove dead Values from disk */
@@ -217,13 +214,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     //  free_mem();
     if( !isPersisted() || !onICE() ) return; // Never hit disk?
     clrdsk();  // Not persisted now
-    Persist.I[backend()].delete(this);
+    H2O.getPM().delete(backend(), this);
   }
   /** Load some or all of completely persisted Values */
   byte[] loadPersist() {
     assert isPersisted();
     try { 
-      return Persist.I[backend()].load(this);
+      return H2O.getPM().load(backend(), this);
     } catch( IOException ioe ) {
       throw Log.throwErr(ioe);
     }

@@ -116,7 +116,7 @@ public final class PersistHdfs extends Persist {
 
   @Override public void store(Value v) {
     // Should be used only if ice goes to HDFS
-    assert this == getIce();
+    assert this == H2O.getPM().getIce();
     assert !v.isPersisted();
 
     byte[] m = v.memOrLoad();
@@ -142,7 +142,7 @@ public final class PersistHdfs extends Persist {
   }
 
   @Override public void delete(final Value v) {
-    assert this == getIce();
+    assert this == H2O.getPM().getIce();
     assert !v.isPersisted();   // Upper layers already cleared out
 
     run(new Callable() {

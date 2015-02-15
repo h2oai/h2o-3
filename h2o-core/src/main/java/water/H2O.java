@@ -7,6 +7,7 @@ import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
+import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -896,8 +897,8 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   static void initializePersistence() {
-    // Need to figure out the multi-jar HDFS story here
-    //water.persist.HdfsLoader.loadJars();
+    PM = new PersistManager(ICE_ROOT);
+
     if( ARGS.aws_credentials != null ) {
       try { water.persist.PersistS3.getClient(); }
       catch( IllegalArgumentException e ) { Log.err(e); }
@@ -980,6 +981,10 @@ final public class H2O {
     return sb.toString();
   }
 
+  // Persistence manager
+  private static PersistManager PM;
+  public static PersistManager getPM() { return PM; }
+
   // Node persistent storage
   private static NodePersistentStorage NPS;
   public static NodePersistentStorage getNPS() { return NPS; }
@@ -1046,12 +1051,6 @@ final public class H2O {
     // Start network services, including heartbeats
     startNetworkServices();   // start server services
     Log.trace("Network services started");
-
-    // Deadlock initializing PersistNFS occurred when doHeartbeat was earlier
-    // (allowed a cloud to form before the persistence layer was initialized,
-    // and then started accepting REST calls), so put it here.
-    Persist.getIce();
-    Log.trace("Persist static block initialized");
 
     // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
     // for users of H2O to know that it's OK to start sending REST API requests.
