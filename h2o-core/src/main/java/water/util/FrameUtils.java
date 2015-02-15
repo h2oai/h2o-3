@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
+import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -41,7 +42,7 @@ public class FrameUtils {
       throw new IllegalArgumentException("List of uris is empty!");
     }
     Key[] inKeys = new Key[uris.length];
-    for (int i=0; i<uris.length; i++)  inKeys[i] = Persist.anyURIToKey(uris[i]);
+    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
     if(okey == null) okey = Key.make(uris[0].toString());
     return ParseDataset.parse(okey, inKeys);
   }

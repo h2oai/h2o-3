@@ -52,7 +52,7 @@ class Cleaner extends Thread {
     return H2O.SELF._heartbeat.get_free_disk() > MemoryManager.MEM_MAX;
   }
   static boolean isDiskFull(){ // free disk space < 5K?
-    long space = Persist.getIce().getUsableSpace();
+    long space = H2O.getPM().getIce().getUsableSpace();
     return space >= 0 && space < (5 << 10);
   }
 
