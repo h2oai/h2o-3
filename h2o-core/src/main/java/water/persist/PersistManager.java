@@ -54,6 +54,10 @@ public class PersistManager {
     }
   }
 
+  long getStoreCount() { return storeCount.get(); }
+  long getDeleteCount() { return deleteCount.get(); }
+  long getLoadCount() { return loadCount.get(); }
+
   public void store(int backend, Value v) {
     storeCount.incrementAndGet();
     I[backend].store(v);
