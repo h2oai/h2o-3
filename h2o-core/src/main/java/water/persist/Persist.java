@@ -5,9 +5,6 @@ import java.net.URI;
 import java.util.Arrays;
 
 import water.*;
-import water.fvec.HDFSFileVec;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.util.Log;
 
 /** Abstract class describing various persistence targets.
