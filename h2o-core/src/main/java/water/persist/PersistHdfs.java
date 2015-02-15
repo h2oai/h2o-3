@@ -5,13 +5,10 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.Callable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 import com.google.common.io.ByteStreams;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-//import org.jets3t.service.S3ServiceException;
 
 import water.*;
 
