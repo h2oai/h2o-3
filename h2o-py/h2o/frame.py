@@ -238,7 +238,16 @@ class H2OFrame:
       self._row('zeros', None),
       self._row('missing', None)
     ]
+
+    chunk_summary_tmp_key = H2OFrame.send_frame(self)
+
+    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunkSummary"]
+
+    h2o.remove(chunk_summary_tmp_key)
+
     print tabulate.tabulate(table, headers)
+    print
+    print chunk_summary
     print
 
   #def __repr__(self):

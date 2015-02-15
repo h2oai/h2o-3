@@ -237,6 +237,35 @@ public abstract class GLMTask  {
       return this;
     }
 
+//    private final void goByRowsLogistic(Chunk [] chks){
+//      Row row = _dinfo.newDenseRow();
+//      double [] g = _gradient;
+//      double [] b = _beta;
+//      for(int rid = 0; rid < chks[0]._len; ++rid) {
+//        double y = row.response(0);
+//        row = _dinfo.extractDenseRow(chks, rid, row);
+//        if(row.bad) continue;
+//        double eta = row.innerProduct(b);
+//        double mu =  1.0 / (Math.exp(-eta) + 1.0);
+//        double l = y == mu?0:-y * eta - Math.log(1 - mu);
+//        _objVal += l;
+//        double var = mu * (1 - mu);//_params.variance(mu);
+//        if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
+//        double d = (mu * (1 - mu));
+//        d = d == 0?1e9:1/d;
+//        double gval = (mu-y) / (var * d);
+//        // categoricals
+//        for(int i = 0; i < row.nBins; ++i)
+//          g[row.binIds[i]] += gval;
+//        int off = _dinfo.numStart();
+//        // numbers
+//        for(int j = 0; j < _dinfo._nums; ++j)
+//          g[j + off] += row.numVals[j] * gval;
+//        // intercept
+//        if(_dinfo._intercept)
+//          g[g.length-1] += gval;
+//      }
+//    }
     private final void goByRows(Chunk [] chks){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
