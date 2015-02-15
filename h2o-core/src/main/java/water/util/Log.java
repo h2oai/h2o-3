@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
-import water.persist.Persist;
 import water.persist.PersistManager;
 
 /** Log for H2O. 
