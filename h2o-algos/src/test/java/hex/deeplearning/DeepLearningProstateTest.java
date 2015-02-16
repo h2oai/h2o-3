@@ -22,7 +22,7 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
