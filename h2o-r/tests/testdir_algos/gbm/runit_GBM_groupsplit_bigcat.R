@@ -14,19 +14,20 @@ test.GBM.bigcat <- function(conn) {
   print(summary(bigcat.hex))
   
   # Train H2O GBM Model:
+  # No longer Naive, since group_split is always on by default
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = FALSE)
+  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100)
   print(drfmodel.nogrp)
   drfmodel.nogrp.perf <- h2o.performance(drfmodel.nogrp, bigcat.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100, group_split = TRUE)
+  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, nbins = 100)
   print(drfmodel.grpsplit)
   drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, bigcat.hex)
   
   # Check AUC and overall prediction error at least as good with group split than without
-  expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
-  expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
+  #expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
+  #expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
   testEnd()
 }
 

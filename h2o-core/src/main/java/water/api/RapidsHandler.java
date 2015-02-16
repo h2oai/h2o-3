@@ -1,12 +1,10 @@
 package water.api;
 
 import water.DKV;
-import water.Value;
 import water.fvec.Frame;
-import water.rapids.Env;
-import water.rapids.Raft;
-import water.util.Log;
 import water.parser.ValueString;
+import water.rapids.Env;
+import water.util.Log;
 import water.util.PrettyPrint;
 
 class RapidsHandler extends Handler {
@@ -15,34 +13,13 @@ class RapidsHandler extends Handler {
     if (rapids == null) return null;
     if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
     boolean isEval = false;
-    Value v;
-    if ((v=DKV.get(rapids.ast_key.key()))!=null) {
-      if (!(v.get() instanceof Frame)) {
-        Raft raft = v.get();
-        Value vv = raft == null ? null : DKV.get(raft.get_key());
-        isEval = vv != null && (vv.get() != null);
-      } else isEval = true;
+    if ((DKV.get(rapids.ast_key.key()))!=null) {
+      isEval = true;
     }
     rapids.evaluated = isEval;
     return rapids;
   }
 
-  public RapidsV1 getKey(int version, RapidsV1 rapids) {
-    if (rapids == null) return null;
-    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
-    Raft raf = DKV.getGet(rapids.ast_key.key());
-    rapids.raft_key = new KeyV1(raf.get_key());
-    return rapids;
-  }
-
-//  public RapidsV1 force(int version, Rapids rapids) {
-//    if (rapids == null) return null;
-//    if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to force.");
-//    Raft raft = DKV.getGet(rapids.ast_key);
-//    // get the ast and exec
-//    rapids.ast = raft.get_ast();
-//    return exec(version, rapids);
-//  }
 
   public RapidsV1 exec(int version, RapidsV1 rapids) {
     if (rapids == null) return null;

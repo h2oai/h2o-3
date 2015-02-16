@@ -17,6 +17,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.MathUtils;
 
 /**
  * All GLM related distributed tasks:
@@ -86,13 +87,16 @@ public abstract class GLMTask  {
     final int _nSteps;
     final GLMParameters _params;
     final double _reg;
+    final double _lambda;
+    final double _alpha;
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, reg, beta, direction, step, nsteps, null);}
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, double alpha, double lambda, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, alpha, lambda, params, reg, beta, direction, step, nsteps, null);}
+    public GLMLineSearchTask(DataInfo dinfo, double alpha, double lamdba, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
       _reg = reg;
-
+      _alpha = alpha;
+      _lambda = lamdba;
       _beta = beta;
       _direction = direction;
       _step = step;
@@ -165,7 +169,6 @@ public abstract class GLMTask  {
             eta[j][r] += beta(j,numStart + i) * d;
         }
       }
-      // TODO compute objvals
       _objVals = MemoryManager.malloc8d(_nSteps);
       for(int r = 0; r < chks[0]._len; ++r){
         if(skip[r] || responseChunk.isNA(r))
@@ -175,11 +178,34 @@ public abstract class GLMTask  {
         for(int i = 0; i < eta.length; ++i) {
           double offset = off + (_dinfo._intercept ? beta(i,_beta.length-1): 0);
           double mu = _params.linkInv(eta[i][r] + offset);
-          _objVals[i] += _params.deviance(y, mu);
+          _objVals[i] += _params.likelihood(y,eta[i][r]+offset,mu);
         }
       }
-      for (int i = 0; i < _objVals.length; ++i)
-        _objVals[i] *= _reg;
+    }
+    @Override public void reduce(GLMLineSearchTask glt){
+      ArrayUtils.add(_objVals,glt._objVals);
+    }
+    @Override public void postGlobal(){
+      double l2pen = .5 * (1-_alpha)*_lambda;
+      double l1pen =  _alpha*_lambda;
+      int N = _beta.length - (_dinfo._intercept?1:0);
+      double b2 = ArrayUtils.l2norm2(_beta,_dinfo._intercept);
+      double d2 = ArrayUtils.l2norm2(_direction,_dinfo._intercept);
+      double bd = 0;
+      for(int i = 0; i < _beta.length - (_dinfo._intercept?1:0); ++i)
+        bd += _beta[i] * _direction[i];
+      double t = 1;
+      for(int i = 0; i < _objVals.length; ++i) {
+        double l1norm = 0;
+        if(_alpha > 0) {
+          for(int j = 0; j < N; ++j){
+            double b = _beta[j] + t*_direction[j];
+            if(b >= 0) l1norm += b; else l1norm -= b;
+          }
+        }
+        _objVals[i] = _objVals[i]*_reg + l2pen * (b2 + t*t*d2 + 2*t*bd) +l1pen*l1norm;
+        t *= _step;
+      }
     }
   }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
@@ -191,6 +217,9 @@ public abstract class GLMTask  {
     public double [] _gradient;
     public double    _objVal;
     protected transient boolean [] _skip;
+    boolean _validate;
+    double _ymu;
+    GLMValidation _val;
 
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg){this(dinfo,params, lambda, beta,reg,null);}
     public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
@@ -202,7 +231,41 @@ public abstract class GLMTask  {
       _currentLambda = lambda;
     }
 
+    public GLMGradientTask setValidate(double ymu, boolean validate) {
+      _ymu = ymu;
+      _validate = validate;
+      return this;
+    }
 
+//    private final void goByRowsLogistic(Chunk [] chks){
+//      Row row = _dinfo.newDenseRow();
+//      double [] g = _gradient;
+//      double [] b = _beta;
+//      for(int rid = 0; rid < chks[0]._len; ++rid) {
+//        double y = row.response(0);
+//        row = _dinfo.extractDenseRow(chks, rid, row);
+//        if(row.bad) continue;
+//        double eta = row.innerProduct(b);
+//        double mu =  1.0 / (Math.exp(-eta) + 1.0);
+//        double l = y == mu?0:-y * eta - Math.log(1 - mu);
+//        _objVal += l;
+//        double var = mu * (1 - mu);//_params.variance(mu);
+//        if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
+//        double d = (mu * (1 - mu));
+//        d = d == 0?1e9:1/d;
+//        double gval = (mu-y) / (var * d);
+//        // categoricals
+//        for(int i = 0; i < row.nBins; ++i)
+//          g[row.binIds[i]] += gval;
+//        int off = _dinfo.numStart();
+//        // numbers
+//        for(int j = 0; j < _dinfo._nums; ++j)
+//          g[j + off] += row.numVals[j] * gval;
+//        // intercept
+//        if(_dinfo._intercept)
+//          g[g.length-1] += gval;
+//      }
+//    }
     private final void goByRows(Chunk [] chks){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
@@ -212,7 +275,9 @@ public abstract class GLMTask  {
         if(row.bad) continue;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
-        _objVal += _params.deviance(row.response(0),mu);
+        if(_validate)
+          _val.add(row.response(0),eta, mu);
+        _objVal += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
@@ -230,9 +295,15 @@ public abstract class GLMTask  {
     }
     @Override
     public void postGlobal(){
-      _objVal += .5 * _currentLambda * ArrayUtils.l2norm2(_beta,_dinfo._intercept);
+      _objVal = _objVal*_reg + .5 * _currentLambda * ArrayUtils.l2norm2(_beta,_dinfo._intercept);
+      if(_validate) {
+        _val.computeAIC();
+        _val.computeAUC();
+      }
       for(int j = 0; j < _beta.length - (_dinfo._intercept?1:0); ++j)
-        _gradient[j] += _currentLambda * _beta[j];
+        _gradient[j] = _gradient[j]*_reg + _currentLambda * _beta[j];
+      if(_dinfo._intercept)
+        _gradient[_gradient.length-1] *= _reg;
     }
 
     // compute linear estimate by summing contributions for all columns
@@ -301,7 +372,9 @@ public abstract class GLMTask  {
         double y = responseChunk.atd(r);
         double offset = off + (_dinfo._intercept?b[b.length-1]:0);
         double mu = _params.linkInv(eta[r] + offset);
-        _objVal += _params.deviance(y,mu);
+        if(_validate)
+          _val.add(y,eta[r] + offset, mu);
+        _objVal += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         eta[r] = (mu-y) / (var * _params.linkDeriv(mu));
@@ -361,6 +434,12 @@ public abstract class GLMTask  {
       return this;
     }
     public void map(Chunk [] chks){
+      int rank = 0;
+      for(int i = 0; i < _beta.length; ++i)
+        if(_beta[i] != 0)
+          ++rank;
+      if(_validate)
+        _val = new GLMValidation(_dinfo._key,_ymu,_params,rank);
       _gradient = MemoryManager.malloc8d(_beta.length);
 
       if(_forceCols || (!_forceRows && (chks.length >= 100 || mostlySparse(chks))))
@@ -368,13 +447,11 @@ public abstract class GLMTask  {
       else
         goByRows(chks);
       // apply reg
-      _objVal *= _reg;
-      double [] g = _gradient;
-      for (int j = 0; j < g.length; ++j)
-        g[j] *= _reg;
     }
     public void reduce(GLMGradientTask grt) {
       _objVal += grt._objVal;
+      if(_validate)
+        _val.add(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
     }
   }
@@ -399,12 +476,12 @@ public abstract class GLMTask  {
     final float [] _thresholds;
     float [][] _newThresholds;
     int [] _ti;
-    final boolean _computeGradient;
-    final boolean _computeGram;
-    GradientInfo _ginfo;
-    public static final int N_THRESHOLDS = 50;
+    public double _objVal;
 
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, boolean computeGram, boolean validate, boolean computeGradient, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
+    public static final int N_THRESHOLDS = 50;
+    final double _lambda;
+
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, double reg, float [] thresholds, H2OCountedCompleter cmp) {
       super(cmp);
       _jobKey = jobKey;
       _dinfo = dinfo;
@@ -412,12 +489,10 @@ public abstract class GLMTask  {
       _beta = beta;
       _ymu = ymu;
       _reg = reg;
-      _computeGram = computeGram;
       _validate = validate;
       assert glm._family != Family.binomial || thresholds != null;
       _thresholds = _validate?thresholds:null;
-      _computeGradient = computeGradient;
-      assert !_computeGradient || validate;
+      _lambda = lambda;
     }
 
     private void sampleThresholds(int yi){
@@ -435,7 +510,7 @@ public abstract class GLMTask  {
       if(_jobKey != null && !Job.isRunning(_jobKey))
         throw new Job.JobCancelledException();
       // initialize
-      if(_computeGram)_gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
       // public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
       if(_validate) {
         int rank = 0;
@@ -444,9 +519,6 @@ public abstract class GLMTask  {
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
 
-      if(_computeGradient) {
-        _ginfo = new GradientInfo(0,MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept?1:0))); // + 1 is for intercept
-      }
       if(_glm._family == Family.binomial && _validate){
         _ti = new int[2];
         _newThresholds = new float[2][4*N_THRESHOLDS];
@@ -459,27 +531,11 @@ public abstract class GLMTask  {
           processRow(r);
         // need to adjust gradient by centered zeros
         int numStart = _dinfo.numStart();
-        if(_computeGradient && sparse && _dinfo._normSub != null) {
-          double [] g = _ginfo._gradient;
-          for(int i = 0; i < _dinfo._nums; ++i)
-            g[numStart+i] -= _gsum * _dinfo._normSub[i] * _dinfo._normMul[i];
-        }
       } else {
         Row row = _dinfo.newDenseRow();
         for(int r = 0 ; r < chks[0]._len; ++r)
           processRow(_dinfo.extractDenseRow(chks,r, row));
       }
-      // finalize
-      if(_computeGram)
-        _gram.mul(_reg);
-      for(int i = 0; i < _xy.length; ++i)
-        _xy[i] *= _reg;
-      if(_computeGradient) {
-        _ginfo._objVal *= _reg;
-        for (int i = 0; i < _ginfo._gradient.length; ++i)
-          _ginfo._gradient[i] *= _reg;
-      }
-      _yy *= _reg;
       if(_validate && _glm._family == Family.binomial) {
         assert _val != null;
         _newThresholds[0] = Arrays.copyOf(_newThresholds[0],_ti[0]);
@@ -489,7 +545,7 @@ public abstract class GLMTask  {
       }
     }
 
-    private transient double _gsum;
+
 
     protected final void processRow(Row r) {
       if(r.bad) return;
@@ -503,8 +559,9 @@ public abstract class GLMTask  {
       if( _glm._family == Family.gaussian){
         w = 1;
         z = y;
-        mu = (_validate || _computeGradient)?r.innerProduct(_beta):0;
+        mu = 0;
         var = 1;
+        eta = mu;
       } else {
         eta = r.innerProduct(_beta);
         mu = _glm.linkInv(eta);
@@ -514,7 +571,7 @@ public abstract class GLMTask  {
         w = 1.0/(var*d*d);
       }
       if(_validate) {
-        _val.add(y, mu);
+        _val.add(y, eta, mu);
         if(_glm._family == Family.binomial) {
           int yi = (int) y;
           if (_ti[yi] == _newThresholds[yi].length)
@@ -522,32 +579,20 @@ public abstract class GLMTask  {
           _newThresholds[yi][_ti[yi]++] = (float) mu;
         }
       }
+      _objVal += _glm.likelihood(y,eta,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
       double wz = w * z;
       _yy += wz * z;
-      if(_computeGradient || _computeGram){
-        if(_computeGradient)
-          _ginfo._objVal += _glm.deviance(y,mu);
-        double grad = ((mu-y) / (var * d));
-        double [] g = _computeGradient?_ginfo._gradient:null;
-        _gsum += grad;
-        for(int i = 0; i < r.nBins; ++i){
-          int ii = r.binIds[i];
-          if(_computeGradient)g[ii] += grad;
-          _xy[ii] += wz;
-        }
-        for(int i = 0; i < r.nNums; ++i){
-          int id = r.numIds == null?(i + numStart):r.numIds[i];
-          double val = r.numVals[i];
-          _xy[id] += wz*val;
-          if(_computeGradient)
-            g[id] += grad*val;
-        }
-        if(_computeGradient)g[numStart + _dinfo._nums] += grad;
-        if(_dinfo._intercept)
-          _xy[_xy.length-1] += wz;
-        if(_computeGram)_gram.addRow(r, w);
+      for(int i = 0; i < r.nBins; ++i)
+        _xy[r.binIds[i]] += wz;
+      for(int i = 0; i < r.nNums; ++i){
+        int id = r.numIds == null?(i + numStart):r.numIds[i];
+        double val = r.numVals[i];
+        _xy[id] += wz*val;
       }
+      if(_dinfo._intercept)
+        _xy[_xy.length-1] += wz;
+      _gram.addRow(r, w);
     }
 
 
@@ -555,11 +600,10 @@ public abstract class GLMTask  {
     public void reduce(GLMIterationTask git){
       if(_jobKey == null || Job.isRunning(_jobKey)) {
         ArrayUtils.add(_xy, git._xy);
-        if (_computeGram) _gram.add(git._gram);
+        _gram.add(git._gram);
         _yy += git._yy;
         _nobs += git._nobs;
         if (_validate) _val.add(git._val);
-        if (_computeGradient) ArrayUtils.add(_ginfo._gradient, git._ginfo._gradient);
         if(_validate && _glm._family == Family.binomial) {
           _newThresholds[0] = ArrayUtils.join(_newThresholds[0], git._newThresholds[0]);
           _newThresholds[1] = ArrayUtils.join(_newThresholds[1], git._newThresholds[1]);
@@ -576,11 +620,16 @@ public abstract class GLMTask  {
           if (_newThresholds[1].length > N_THRESHOLDS)
             _newThresholds[1] = Arrays.copyOf(_newThresholds[1], N_THRESHOLDS);
         }
+        _objVal += git._objVal;
         super.reduce(git);
       }
     }
 
     @Override protected void postGlobal(){
+      _objVal *= _reg;
+      _gram.mul(_reg);
+      for(int i = 0; i < _xy.length; ++i)
+        _xy[i] *= _reg;
       if(_val != null){
         _val.computeAIC();
         _val.computeAUC();
@@ -588,96 +637,95 @@ public abstract class GLMTask  {
     }
 
     public boolean hasNaNsOrInf() {
-      return (_xy != null && ArrayUtils.hasNaNsOrInfs(_xy)) || (_gram != null && _gram.hasNaNsOrInfs()) || (_ginfo != null && _ginfo.hasNaNsOrInfs());
+      return ArrayUtils.hasNaNsOrInfs(_xy) || _gram.hasNaNsOrInfs();
     }
   }
 
-  public static class GLMValidationTask<T extends GLMValidationTask<T>> extends MRTask<T> {
-    protected final GLMModel _model;
-    protected GLMValidation _res;
-    public final double _lambda;
-    public boolean _improved;
-    Key _jobKey;
-    public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make().toString());}
-    public GLMValidationTask(GLMModel model, double lambda){this(model,lambda,null);}
-    public GLMValidationTask(GLMModel model, double lambda, H2OCountedCompleter completer){super(completer); _lambda = lambda; _model = model;}
-    @Override public void map(Chunk[] chunks){
-      _res = new GLMValidation(null,_model._ymu,_model._parms,_model.rank(_lambda));
-      final int nrows = chunks[0]._len;
-      double [] row   = MemoryManager.malloc8d(_model._output._names.length);
-      float  [] preds = MemoryManager.malloc4f(_model._parms._family == Family.binomial?3:1);
-      OUTER:
-      for(int i = 0; i < nrows; ++i){
-        if(chunks[chunks.length-1].isNA(i))continue;
-        for(int j = 0; j < chunks.length-1; ++j){
-          if(chunks[j].isNA(i))continue OUTER;
-          row[j] = chunks[j].atd(i);
-        }
-        _model.score0(row, preds);
-        double response = chunks[chunks.length-1].atd(i);
-        _res.add(response, _model._parms._family == Family.binomial?preds[2]:preds[0]);
-      }
-    }
-    @Override public void reduce(GLMValidationTask gval){_res.add(gval._res);}
-    @Override public void postGlobal(){
-      _res.computeAIC();
-      _res.computeAUC();
-    }
-  }
+//  public static class GLMValidationTask<T extends GLMValidationTask<T>> extends MRTask<T> {
+//    protected final GLMModel _model;
+//    protected GLMValidation _res;
+//    public final double _lambda;
+//    public boolean _improved;
+//    Key _jobKey;
+//    public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make().toString());}
+//    public GLMValidationTask(GLMModel model, double lambda){this(model,lambda,null);}
+//    public GLMValidationTask(GLMModel model, double lambda, H2OCountedCompleter completer){super(completer); _lambda = lambda; _model = model;}
+//    @Override public void map(Chunk[] chunks){
+//      _res = new GLMValidation(null,_model._ymu,_model._parms,_model.rank(_lambda));
+//      final int nrows = chunks[0]._len;
+//      double [] row   = MemoryManager.malloc8d(_model._output._names.length);
+//      float  [] preds = MemoryManager.malloc4f(_model._parms._family == Family.binomial?3:1);
+//      OUTER:
+//      for(int i = 0; i < nrows; ++i){
+//        if(chunks[chunks.length-1].isNA(i))continue;
+//        for(int j = 0; j < chunks.length-1; ++j){
+//          if(chunks[j].isNA(i))continue OUTER;
+//          row[j] = chunks[j].atd(i);
+//        }
+//        _model.score0(row, preds);
+//        double response = chunks[chunks.length-1].atd(i);
+//        _res.add(response, _model._parms._family == Family.binomial?preds[2]:preds[0]);
+//      }
+//    }
+//    @Override public void reduce(GLMValidationTask gval){_res.add(gval._res);}
+//    @Override public void postGlobal(){
+//      _res.computeAIC();
+//      _res.computeAUC();
+//    }
+//  }
   // use general score to reduce number of possible different code paths
-  public static class GLMXValidationTask extends GLMValidationTask<GLMXValidationTask>{
-    protected final GLMModel [] _xmodels;
-    protected GLMValidation [] _xvals;
-    long _nobs;
-    final float [] _thresholds;
-    public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make().toString());}
-
-    public GLMXValidationTask(GLMModel mainModel,double lambda, GLMModel [] xmodels, float [] thresholds){this(mainModel,lambda,xmodels,thresholds,null);}
-    public GLMXValidationTask(GLMModel mainModel,double lambda, GLMModel [] xmodels, float [] thresholds, final H2OCountedCompleter completer){
-      super(mainModel, lambda,completer);
-      _xmodels = xmodels;
-      _thresholds = thresholds;
-    }
-    @Override public void map(Chunk [] chunks) {
-      long gid = chunks[0].start();
-      _xvals = new GLMValidation[_xmodels.length];
-      for(int i = 0; i < _xmodels.length; ++i)
-        _xvals[i] = new GLMValidation(null,_xmodels[i]._ymu,_xmodels[i]._parms,_xmodels[i]._output.rank(),_thresholds);
-      final int nrows = chunks[0]._len;
-      double [] row   = MemoryManager.malloc8d(_xmodels[0]._output._names.length);
-      float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms._family == Family.binomial?3:1);
-      OUTER:
-      for(int i = 0; i < nrows; ++i){
-        if(chunks[chunks.length-1].isNA(i))continue;
-        for(int j = 0; j < chunks.length-1; ++j) {
-          if(chunks[j].isNA(i))continue OUTER;
-          row[j] = chunks[j].atd(i);
-        }
-        ++_nobs;
-        final int mid = (int)((i + gid)  % _xmodels.length);
-        final GLMModel model = _xmodels[mid];
-        final GLMValidation val = _xvals[mid];
-        model.score0(row, preds);
-        double response = chunks[chunks.length-1].at8(i);
-        val.add(response, model._parms._family == Family.binomial?preds[2]:preds[0]);
-      }
-    }
-    @Override public void reduce(GLMXValidationTask gval){
-      _nobs += gval._nobs;
-      for(int i = 0; i < _xvals.length; ++i)
-        _xvals[i].add(gval._xvals[i]);}
-
-    @Override public void postGlobal() {
-      H2OCountedCompleter cmp = (H2OCountedCompleter)getCompleter();
-      if(cmp != null)cmp.addToPendingCount(_xvals.length + 1);
-      for (int i = 0; i < _xvals.length; ++i) {
-        _xvals[i].computeAIC();
-        _xvals[i].computeAUC();
-        _xvals[i].nobs = _nobs - _xvals[i].nobs;
-        GLMModel.setXvalidation(cmp, _xmodels[i]._key, _lambda, _xvals[i]);
-      }
-      GLMModel.setXvalidation(cmp, _model._key, _lambda, new GLMXValidation(_model, _xmodels, _xvals, _lambda, _nobs,_thresholds));
-    }
-  }
-
+//  public static class GLMXValidationTask extends GLMValidationTask<GLMXValidationTask>{
+//    protected final GLMModel [] _xmodels;
+//    protected GLMValidation [] _xvals;
+//    long _nobs;
+//    final float [] _thresholds;
+//    public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make().toString());}
+//
+//    public GLMXValidationTask(GLMModel mainModel,double lambda, GLMModel [] xmodels, float [] thresholds){this(mainModel,lambda,xmodels,thresholds,null);}
+//    public GLMXValidationTask(GLMModel mainModel,double lambda, GLMModel [] xmodels, float [] thresholds, final H2OCountedCompleter completer){
+//      super(mainModel, lambda,completer);
+//      _xmodels = xmodels;
+//      _thresholds = thresholds;
+//    }
+//    @Override public void map(Chunk [] chunks) {
+//      long gid = chunks[0].start();
+//      _xvals = new GLMValidation[_xmodels.length];
+//      for(int i = 0; i < _xmodels.length; ++i)
+//        _xvals[i] = new GLMValidation(null,_xmodels[i]._ymu,_xmodels[i]._parms,_xmodels[i]._output.rank(),_thresholds);
+//      final int nrows = chunks[0]._len;
+//      double [] row   = MemoryManager.malloc8d(_xmodels[0]._output._names.length);
+//      float  [] preds = MemoryManager.malloc4f(_xmodels[0]._parms._family == Family.binomial?3:1);
+//      OUTER:
+//      for(int i = 0; i < nrows; ++i){
+//        if(chunks[chunks.length-1].isNA(i))continue;
+//        for(int j = 0; j < chunks.length-1; ++j) {
+//          if(chunks[j].isNA(i))continue OUTER;
+//          row[j] = chunks[j].atd(i);
+//        }
+//        ++_nobs;
+//        final int mid = (int)((i + gid)  % _xmodels.length);
+//        final GLMModel model = _xmodels[mid];
+//        final GLMValidation val = _xvals[mid];
+//        model.score0(row, preds);
+//        double response = chunks[chunks.length-1].at8(i);
+//        val.add(response, model._parms._family == Family.binomial?preds[2]:preds[0]);
+//      }
+//    }
+//    @Override public void reduce(GLMXValidationTask gval){
+//      _nobs += gval._nobs;
+//      for(int i = 0; i < _xvals.length; ++i)
+//        _xvals[i].add(gval._xvals[i]);}
+//
+//    @Override public void postGlobal() {
+//      H2OCountedCompleter cmp = (H2OCountedCompleter)getCompleter();
+//      if(cmp != null)cmp.addToPendingCount(_xvals.length + 1);
+//      for (int i = 0; i < _xvals.length; ++i) {
+//        _xvals[i].computeAIC();
+//        _xvals[i].computeAUC();
+//        _xvals[i].nobs = _nobs - _xvals[i].nobs;
+//        GLMModel.setXvalidation(cmp, _xmodels[i]._key, _lambda, _xvals[i]);
+//      }
+//      GLMModel.setXvalidation(cmp, _model._key, _lambda, new GLMXValidation(_model, _xmodels, _xvals, _lambda, _nobs,_thresholds));
+//    }
+//  }
 }

@@ -114,11 +114,15 @@ public class EnumWrappedVec extends WrappedVec {
   }
 
 
-  static class EnumWrappedChunk extends Chunk {
-    final Chunk _c;             // Test-set map
+  public static class EnumWrappedChunk extends Chunk {
+    public final Chunk _c;             // Test-set map
     final transient int[] _map;
 
-    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _map = vec._map; }
+    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) {
+      _c  = c; set_len(_c._len);
+      _start = _c._start; _vec = vec; _cidx = _c._cidx;
+      _map = vec._map;
+    }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk return

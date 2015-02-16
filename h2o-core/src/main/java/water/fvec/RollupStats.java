@@ -383,7 +383,8 @@ class RollupStats extends Iced {
       if(v == oldValue) { // got the lock, start the task to compute the rollups/histo/checksum
         this.nnn = nnn;
         _didCompute = true;
-        final Vec vec = DKV.get(_vecKey).get();
+        final Vec vec = DKV.getGet(_vecKey);
+        assert vec != null;
         if(!_rs.hasStats()){
           addToPendingCount(1);
           new Roll(new H2OCallback<Roll>(this) {

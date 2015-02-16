@@ -137,6 +137,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
 
     if( best==0 ) return null;  // No place to split
     assert best > 0 : "Must actually pick a split "+best;
+    double se = sums1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
     long   n1 = equal == 0 ?   ns1[best] : _bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
@@ -173,7 +174,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       //  throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
       //}
     }
-    return new DTree.Split(col,best,bs,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
+    return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
   @Override public long byteSize0() {

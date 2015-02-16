@@ -87,7 +87,7 @@ public class L_BFGS_Test  extends TestUtil {
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.vec("CAPSULE").mean());
       L_BFGS.Result r = lbfgs.solve(solver, beta);
-      assertEquals(378.34, r.ginfo._objVal * source.numRows(), 1e-1);
+      assertEquals(378.34, 2 * r.ginfo._objVal * source.numRows(), 1e-1);
     } finally {
       if(dinfo != null)
         DKV.remove(dinfo._key);

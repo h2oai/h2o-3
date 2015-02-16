@@ -97,9 +97,9 @@ public class NewChunk extends Chunk {
   }
 
   // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk C ) {
-    this(C._vec, C._vec.elem2ChunkIdx(C._start));
-    _start = C._start;
+  public NewChunk( Chunk c ) {
+    this(c._vec, c.cidx());
+    _start = c._start;
   }
 
   // Pre-sized newchunks.
@@ -1205,4 +1205,10 @@ public class NewChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._len="+ sparseLen(); }
+
+  // We have to explicitly override cidx implementation since we hide _cidx field with new version
+  @Override
+  public int cidx() {
+    return _cidx;
+  }
 }

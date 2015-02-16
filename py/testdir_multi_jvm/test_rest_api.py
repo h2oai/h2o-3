@@ -164,6 +164,19 @@ def validate_frame_exists(frame_name, frames=None):
     return frames_dict[frame_name]
 
 
+def validate_job_exists(job_name, jobs=None):
+    '''
+    Validate that a given job key is found in the jobs list.
+    '''
+    if jobs is None:
+        result = a_node.jobs()
+        jobs = result['jobs']
+
+    jobs_dict = list_to_dict(jobs, 'key/name')
+    assert job_name in jobs_dict, "FAIL: Failed to find " + job_name + " in jobs list: " + repr(jobs_dict.keys())
+    return jobs_dict[job_name]
+
+
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
     '''
     Validate that the returned parameters list for a model build contains all the values we passed in as input.
@@ -649,6 +662,30 @@ assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
 assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
 assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile for AGE.'
 
+# Test /SplitFrame for prostate.csv
+if verbose: print 'Testing SplitFrame with named destKeys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destKeys=['bigger', 'smaller'])
+frames = a_node.frames()['frames']
+validate_frame_exists('bigger', frames)
+validate_frame_exists('smaller', frames)
+bigger = a_node.frames(key='bigger')['frames'][0]
+smaller = a_node.frames(key='smaller')['frames'][0]
+assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
+assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
+# TODO: validate_job_exists(splits['key']['name'])
+
+if verbose: print 'Testing SplitFrame with generated destKeys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
+frames = a_node.frames()['frames']
+validate_frame_exists(splits['destKeys'][0]['name'], frames)
+validate_frame_exists(splits['destKeys'][1]['name'], frames)
+
+first = a_node.frames(key=splits['destKeys'][0]['name'])['frames'][0]
+second = a_node.frames(key=splits['destKeys'][1]['name'])['frames'][0]
+assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
+assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
+# TODO: validate_job_exists(splits['key']['name'])
+
 
 ####################################################################################################
 # Build and do basic validation checks on models
@@ -791,7 +828,7 @@ for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
     assert 'name' in mm['model'], "FAIL: mm[model] isn't a key with a name: " + repr(mm)
     assert 'type' in mm['model'], "FAIL: mm[model] does not contain a type: " + repr(mm)
-    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm)
+    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm['model']['type'])
 
     assert 'frame' in mm, "FAIL: mm does not contain a frame element: " + repr(mm)
     assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)

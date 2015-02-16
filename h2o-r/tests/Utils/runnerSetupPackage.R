@@ -29,7 +29,11 @@ if (! failed) {
 }
 
 h2o_r_package_file <- NULL
-dir_to_search = normalizePath("../../R/src/contrib")
+raw_dir_to_search = "../../R/src/contrib"
+if (! file.exists(raw_dir_to_search)) {
+    stop("R build directory does not exist, you probably need to do a gradle build")
+}
+dir_to_search = normalizePath(raw_dir_to_search)
 files = dir(dir_to_search, pattern="h2o.*.gz")
 for (i in 1:length(files)) {
     f = files[i]

@@ -113,6 +113,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   transient long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
+  /** Global index of this chunk filled during chunk load */
+  transient int _cidx = -1;
 
   /** Number of rows in this Chunk; publically a read-only field.  Odd API
    *  design choice: public, not-final, read-only, NO-ACCESSOR.
@@ -475,7 +477,10 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** @return Chunk index */
-  public int cidx() { return _vec.elem2ChunkIdx(_start); }
+  public int cidx() {
+    assert _cidx != -1 : "Chunk idx was not properly loaded!";
+    return _cidx;
+  }
 
   /** Chunk-specific readers.  Not a public API */ 
   abstract double   atd_impl(int idx);

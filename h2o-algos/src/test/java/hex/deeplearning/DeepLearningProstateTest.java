@@ -50,7 +50,7 @@ public class DeepLearningProstateTest extends TestUtil {
                 false,
         }) {
           for (boolean load_balance : new boolean[]{
-                  true,
+                  // true,
                   false,
           }) {
             for (boolean shuffle : new boolean[]{
@@ -154,6 +154,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
+                                      Log.info("Trained for " + model1.epoch_counter + " epochs.");
                                       assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
                                               || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 

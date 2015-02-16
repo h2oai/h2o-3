@@ -111,7 +111,7 @@ abstract public class AST extends Iced {
     // Check if String, Num, Null, Series, Key, Span, Frame, or Raft
     } else if (this instanceof ASTString || this instanceof ASTNum || this instanceof ASTNull ||
             this instanceof ASTSeries || this instanceof ASTKey || this instanceof ASTSpan ||
-            this instanceof ASTRaft || this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
+            this instanceof ASTFrame || this._asts[0] instanceof ASTFrame ||
             this instanceof ASTDelete )
       { this.exec(e); }
 
@@ -125,21 +125,6 @@ abstract public class AST extends Iced {
   }
 
   StringBuilder toString( StringBuilder sb, int d ) { return indent(sb,d).append(this); }
-}
-
-class ASTRaft extends AST {
-  final Key _key;
-  ASTRaft(String id) { _key = Key.make(id); }
-  @Override public String toString() { return _key.toString(); }
-  @Override void exec(Env e) {
-    Key k;
-    Raft r = DKV.get(_key).get();
-    if ((k=r.get_key())==null) r.get_ast().treeWalk(e);
-    else (new ASTFrame(k)).exec(e);
-  }
-  @Override int type() { return Env.AST; }
-  @Override String value() { return _key.toString(); }
-
 }
 
 class ASTId extends AST {
@@ -871,11 +856,43 @@ class ASTAssign extends AST {
         if (col < 0 && Math.abs(col) > ary.numCols()) throw new IllegalArgumentException("Cannot extend columns.");
         if (e.isNum()) {
           double d = e.popDbl();
-          if (ary.vecs()[col].isEnum()) throw new IllegalArgumentException("Currently can only set numeric columns");
-          ary.vecs()[col].set(row, d);
+          if (ary.vecs()[col].isEnum()) ary.vecs()[col].set(row, Double.NaN);
+          else ary.vecs()[col].set(row, d);
           if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
           e.push(new ValFrame(ary));
           return;
+
+        } else if (e.isAry()) {
+          Frame one_by_one_ary = e.popAry();
+          if (one_by_one_ary.numCols() != 1 && one_by_one_ary.numRows() != 1)
+            throw new IllegalArgumentException("Expected RHS to be a 1x1 (one row, one column). Got: " + one_by_one_ary.numRows() + " rows " + one_by_one_ary.numCols() + " cols.");
+          Vec theVec = one_by_one_ary.anyVec();
+
+          // RHS is enum
+          if (theVec.isEnum()) {
+            String s = theVec.domain()[(int)theVec.at(0)];
+            String[] dom = ary.vecs()[col].domain();
+            if (in(s, dom)) ary.vecs()[col].set(row, Arrays.asList(dom).indexOf(s));
+            else ary.vecs()[col].set(row, Double.NaN);
+            if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
+            e.push(new ValFrame(ary));
+            return;
+
+            // LHS is enum but RHS is not
+          } else if (ary.vecs()[col].isEnum()) {
+            ary.vecs()[col].set(row, Double.NaN);
+            if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
+            e.push(new ValFrame(ary));
+            return;
+
+          // LHS and RHS are both numeric
+          } else {
+            double d = theVec.at(0);
+            ary.vecs()[col].set(row, d);
+            if (ary._key != null && DKV.get(ary._key) != null) DKV.put(ary);
+            e.push(new ValFrame(ary));
+            return;
+          }
         } else if (e.isStr()) {
           if (!ary.vecs()[col].isEnum())
             throw new IllegalArgumentException("Currently can only set categorical columns.");

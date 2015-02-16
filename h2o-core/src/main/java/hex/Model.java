@@ -442,9 +442,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           water.util.Log.info(cm.table.toString(1));
       }
 
-      String sdomain[] = actual.domain(); // Scored/test domain; can be null
-      if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
-        output.replace(0,new EnumWrappedVec(actual.group().addVec(),actual.get_espc(),sdomain,predicted._key));
+      if( actual != null ) {  // Predict does not have an actual, scoring does
+        String sdomain[] = actual.domain(); // Scored/test domain; can be null
+        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+          output.replace(0, new EnumWrappedVec(actual.group().addVec(), actual.get_espc(), sdomain, predicted._key));
+      }
     }
 
     // Remove temp keys.  TODO: Really should use Scope but Scope does not

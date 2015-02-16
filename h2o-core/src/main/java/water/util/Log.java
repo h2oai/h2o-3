@@ -31,11 +31,12 @@ abstract public class Log {
   static final int TRACE= 5;
   static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   static int _level=INFO;
+  static boolean _clientMode = false;
 
   // Common pre-header
   private static String _preHeader;
 
-  public static void init( String slvl ) {
+  public static void init( String slvl, boolean clientMode ) {
     if( slvl != null ) {
       slvl = slvl.toLowerCase();
       if( slvl.startsWith("fatal") ) _level = FATAL;
@@ -45,6 +46,7 @@ abstract public class Log {
       if( slvl.startsWith("debug") ) _level = DEBUG;
       if( slvl.startsWith("trace") ) _level = TRACE;
     }
+    _clientMode = clientMode;
   }
   
   public static void trace( Object... objs ) { write(TRACE,objs); }
@@ -95,7 +97,8 @@ abstract public class Log {
     write0(sb, hdr, s);
 
     // stdout first - in case log4j dies failing to init or write something
-    if( stdout ) System.out.println(sb);
+    // but do not print to stdout in client mode!
+    if( stdout && !_clientMode) System.out.println(sb);
 
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
@@ -166,13 +169,24 @@ abstract public class Log {
     return logFileName;
   }
 
-  private static String DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER = "-2-debug.log";
-
   /**
    * @return This is what shows up in the Web UI when clicking on show log file.  File name only.
    */
-  public static String getLogFileName() throws Exception {
-    return getLogFileNameStem() + DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER;
+  public static String getLogFileName(String level) throws Exception {
+    String f;
+    switch (level) {
+      case "trace": f = "-1-trace.log"; break;
+      case "debug": f = "-2-debug.log"; break;
+      case "info":  f = "-3-info.log"; break;
+      case "warn":  f = "-4-warn.log"; break;
+      case "error": f = "-5-error.log"; break;
+      case "fatal": f = "-6-fatal.log"; break;
+      case "httpd": f = "-httpd.log"; break;
+      default:
+        throw new Exception("Unknown level");
+    }
+
+    return getLogFileNameStem() + f;
   }
 
   private static void setLog4jProperties(String logDirParent, java.util.Properties p) throws Exception {
