@@ -8,6 +8,8 @@ dependencies {
   compile "joda-time:joda-time:2.3"
   compile "gov.nist.math:jama:1.0.3"
   compile "org.apache.commons:commons-math3:3.3"
+  compile "org.jboss.netty:netty:3.2.10.Final"
+  compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
@@ -15,17 +17,6 @@ dependencies {
     exclude module: "jmxri" 
     exclude module: "jmxtools" 
     exclude module: "mail" 
-  }
-
-  // All unneeded to read from HDFS.
-  compile("org.apache.hadoop:hadoop-client:${hadoopVersion}") {
-      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-app'
-      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
-      exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-jobclient'
-      exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-      exclude group: 'org.apache.curator', module: 'curator-framework'
-      exclude group: 'org.apache.curator', module: 'curator-client'
-      exclude group: 'org.apache.curator', module: 'curator-recipes'
   }
 
   // guava only needed by hadoop now, not by H2O
