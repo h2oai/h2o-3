@@ -170,6 +170,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
+    if (!vec.isString())
     vec.bins();
 
     // Cons up our result
