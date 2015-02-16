@@ -75,16 +75,18 @@ public class PersistManager {
     try {
       Class klass = Class.forName("water.persist.PersistHdfs");
       java.lang.reflect.Constructor constructor = klass.getConstructor();
-      I[Value.HDFS] = (Persist) constructor.newInstance(iceRoot);
+      I[Value.HDFS] = (Persist) constructor.newInstance();
+      Log.info("HDFS subsystem successfully initialized");
     }
     catch (Exception ignore) {
-      // Not linked against HDFS, so not available in this build
+      Log.info("HDFS subsystem not available");
     }
 
     try {
       I[Value.S3  ] = new PersistS3();
-    } catch(NoClassDefFoundError ignore) {
-      // Not linked against S3, so not available in this build
+      Log.info("S3 subsystem successfully initialized");
+    } catch (NoClassDefFoundError ignore) {
+      Log.info("S3 subsystem not available");
     }
   }
 
@@ -170,6 +172,7 @@ public class PersistManager {
       }
 
       I[Value.HDFS].importFiles(path, files, keys, fails, dels);
+      return;
     }
 
     I[Value.NFS].importFiles(path, files, keys, fails, dels);
