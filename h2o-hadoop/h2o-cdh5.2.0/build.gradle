@@ -1,0 +1,42 @@
+apply plugin: 'fatjar'
+
+description = "H2O for Hadoop cdh5.2.0"
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+compileJava { 
+  options.debug = true 
+}
+
+sourceSets {
+  main {
+    java {
+      srcDir '../src/main/java'
+    }
+  }
+}
+
+dependencies {
+  compile project(":h2o-app")
+  compile("org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0")
+}
+
+fatJarPrepareFiles {
+  exclude 'META-INF/*.DSA'
+  exclude 'META-INF/*.SF'
+  exclude 'synchronize.properties'
+  exclude 'uploader.properties'
+  exclude 'test.properties'
+  exclude 'cockpitlite.properties'
+  exclude 'devpay_products.properties'
+}
+
+fatJar {
+   manifest {
+      attributes 'Main-Class': 'water.hadoop.h2odriver'
+   }
+}
+
+jar.finalizedBy fatJar
+
