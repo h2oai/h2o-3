@@ -25,6 +25,11 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
     super(message, dev_message);
   }
 
+  /** Raw-message constructor for use by subclasses. */
+  public H2OIllegalArgumentException(String message) {
+    super(message, message);
+  }
+
   public static H2OIllegalArgumentException wrongKeyType(String fieldName, String keyName, String expectedType, Class actualType) {
     H2OIllegalArgumentException e =
             new H2OIllegalArgumentException(

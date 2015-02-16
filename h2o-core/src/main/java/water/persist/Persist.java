@@ -2,6 +2,7 @@ package water.persist;
 
 import java.io.*;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import water.*;
@@ -34,6 +35,17 @@ public abstract class Persist {
 
   /** Transform given uri into file vector holding file name. */
   abstract public Key uriToKey(URI uri) throws IOException;
+
+  /**
+   * Calculate typeahead matches for src
+   *
+   * @param filter Source string to match for typeahead
+   * @param limit Max number of entries to return
+   * @return List of matches
+   */
+  abstract public ArrayList<String> calcTypeaheadMatches(String filter, int limit);
+
+  abstract public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
