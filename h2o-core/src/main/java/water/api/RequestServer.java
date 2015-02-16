@@ -238,7 +238,7 @@ public class RequestServer extends NanoHTTPD {
    * @deprecated All routes should have doc methods.
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, null, new String[]{}, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, null, new String[]{}, summary, HandlerFactory.DEFAULT);
   }
 
   @Deprecated
@@ -246,7 +246,7 @@ public class RequestServer extends NanoHTTPD {
    * @deprecated All routes should have doc methods.
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String[] path_params, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, null, path_params, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, null, path_params, summary, HandlerFactory.DEFAULT);
   }
 
 
@@ -265,7 +265,7 @@ public class RequestServer extends NanoHTTPD {
    * @return the Route for this request
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, doc_method, new String[]{}, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, doc_method, new String[]{}, summary, HandlerFactory.DEFAULT);
   }
 
   /**
@@ -285,6 +285,27 @@ public class RequestServer extends NanoHTTPD {
    * @return the Route for this request
    */
   public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary) {
+    return register(uri_pattern_raw, http_method, handler_class, handler_method, doc_method, path_params, summary, HandlerFactory.DEFAULT);
+  }
+
+  /**
+   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
+   * <p>
+   * URIs which match this pattern will have their parameters collected from the path and from the query params
+   *
+   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
+   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
+   * @param handler_class class which contains the handler method
+   * @param handler_method name of the handler method
+   * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
+   * @param path_params list of parameter names to extract from the uri_pattern; they are matched by name from the named pattern capture group
+   * @param summary short help string which summarizes the functionality of this endpoint
+   * @param handler_factory factory to create instance of handler
+   * @see Route
+   * @see water.api.RequestServer
+   * @return the Route for this request
+   */
+  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary, HandlerFactory handler_factory) {
     assert uri_pattern_raw.startsWith("/");
 
     // Search handler_class and all its superclasses for the method.
@@ -330,7 +351,7 @@ public class RequestServer extends NanoHTTPD {
 
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
-    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params);
+    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params, handler_factory);
     _routes.put(uri_pattern, route);
     return route;
   }
@@ -375,7 +396,7 @@ public class RequestServer extends NanoHTTPD {
     for (int i = version; i > route_version && i >= Route.MIN_VERSION; i--) {
       String fallback_route_uri = "/" + i + "/" + route_m.group(2);
       Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
-      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params);
+      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params, fallback._handler_factory);
       _fallbacks.put(fallback_route_pattern, generated);
     }
 
@@ -576,8 +597,10 @@ public class RequestServer extends NanoHTTPD {
     case json:
     case xml: {
       Class<Handler> clz = (Class<Handler>)route._handler_class;
+      HandlerFactory handlerFactory = route._handler_factory;
       // TODO: Handler no longer has state, so we can create single instances and put them in the Routes
-      Handler h = clz.newInstance();
+      // NOTE: even there will be shared single instance, we need to support different creation strategies
+      Handler h = handlerFactory.create(clz);
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
     case query:
