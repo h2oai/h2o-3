@@ -5,6 +5,7 @@ import water.DKV;
 import water.Futures;
 import water.H2O;
 import water.Key;
+import water.util.ArrayUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
@@ -88,9 +89,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       }
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
-      _mse_train= Arrays.copyOf(_mse_train,_ntrees+1);
+      _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
       if( _mse_valid != null )
-        _mse_valid = Arrays.copyOf(_mse_valid ,_ntrees+1);
+        _mse_valid = ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN);
       fs.blockForPending();
     }
 

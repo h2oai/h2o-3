@@ -326,9 +326,10 @@
       if (is.null(names(x)) &&
           ((nrow <- length(x)) > 1L) &&
           all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
-          (length(ncol <- unique(unlist(lapply(x, length)))) == 1L))
+          (length(ncol <- unique(unlist(lapply(x, length)))) == 1L)) {
+        x <- lapply(x, function(y) { if(y == "NaN") NA_real_ else y })
         x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
-      else
+      } else
         x <- lapply(x, processMatrices)
     }
     x
