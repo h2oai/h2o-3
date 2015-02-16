@@ -8,4 +8,8 @@ public class H2ONotFoundArgumentException extends H2OIllegalArgumentException {
   public H2ONotFoundArgumentException(String msg, String dev_msg) {
     super(msg, dev_msg);
   }
+
+  public H2ONotFoundArgumentException(String msg) {
+    super(msg, msg);
+  }
 }
