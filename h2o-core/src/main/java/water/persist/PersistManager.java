@@ -3,13 +3,20 @@ package water.persist;
 import water.H2O;
 import water.Key;
 import water.Value;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * One true persistence manager which hides the implementations from H2O.
+ * In particular, HDFS support or S3 support may or may not exist depending
+ * on what is on the classpath.
+ */
 public class PersistManager {
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public static class Schemes {
@@ -64,14 +71,19 @@ public class PersistManager {
 
     I[Value.ICE ] = ice;
     I[Value.NFS ] = new PersistNFS();
+
     try {
-      I[Value.HDFS] = new PersistHdfs();
-    } catch( NoClassDefFoundError ignore ) {
+      Class klass = Class.forName("water.persist.PersistHdfs");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.HDFS] = (Persist) constructor.newInstance(iceRoot);
+    }
+    catch (Exception ignore) {
       // Not linked against HDFS, so not available in this build
     }
+
     try {
       I[Value.S3  ] = new PersistS3();
-    } catch( NoClassDefFoundError ignore ) {
+    } catch(NoClassDefFoundError ignore) {
       // Not linked against S3, so not available in this build
     }
   }
@@ -110,5 +122,56 @@ public class PersistManager {
       ikey = I[Value.NFS].uriToKey(uri);
     }
     return ikey;
+  }
+
+  /**
+   * Calculate typeahead matches for src
+   *
+   * @param filter Source string to match for typeahead
+   * @param limit Max number of entries to return
+   * @return List of matches
+   */
+  public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
+    String s = filter.toLowerCase();
+    if (s.startsWith("hdfs://") || s.startsWith("s3n://")) {
+      if (I[Value.HDFS] == null) {
+        throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
+      }
+
+      return I[Value.HDFS].calcTypeaheadMatches(filter, limit);
+    }
+
+    return I[Value.NFS].calcTypeaheadMatches(filter, limit);
+  }
+
+  /**
+   * From a path produce a list of files and keys for parsing.
+   *
+   * Use as follows:
+   *
+   * ArrayList<String> files = new ArrayList();
+   * ArrayList<String> keys = new ArrayList();
+   * ArrayList<String> fails = new ArrayList();
+   * ArrayList<String> dels = new ArrayList();
+   * importFiles(importFiles.path, files, keys, fails, dels);
+   *
+   * @param path  (Input) Path to import data from
+   * @param files (Output) List of files found
+   * @param keys  (Output) List of keys corresponding to files
+   * @param fails (Output) List of failed files which mismatch among nodes
+   * @param dels  (Output) I don't know what this is
+   */
+  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    assert path != null;
+    String s = path.toLowerCase();
+    if (s.startsWith("hdfs://") || s.startsWith("s3n://")) {
+      if (I[Value.HDFS] == null) {
+        throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
+      }
+
+      I[Value.HDFS].importFiles(path, files, keys, fails, dels);
+    }
+
+    I[Value.NFS].importFiles(path, files, keys, fails, dels);
   }
 }
