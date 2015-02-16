@@ -227,7 +227,7 @@ public final class PersistHdfs extends Persist {
         } else {
           long size = file.getLen();
           Key k = null;
-          keys.add((k = HDFSFileVec.make(file, futures)).toString());
+          keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
         }
       }
@@ -245,7 +245,7 @@ public final class PersistHdfs extends Persist {
     FileStatus[] fstatus = fs.listStatus(new Path(uri));
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
-    return HDFSFileVec.make(fstatus[0]);
+    return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
   }
 
   private static final Pattern S3N_BARE_BUCKET = Pattern.compile("s3n://[^/]*");
