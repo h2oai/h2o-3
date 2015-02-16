@@ -61,10 +61,10 @@ public final class PersistHdfs extends Persist {
   }
   
   // Loading HDFS files
-  PersistHdfs() { _iceRoot = null; }
+  public PersistHdfs() { _iceRoot = null; }
 
   // Loading/Writing ice to HDFS
-  PersistHdfs(URI uri) {
+  public PersistHdfs(URI uri) {
     try {
       _iceRoot = new Path(uri + "/ice" + H2O.SELF_ADDRESS.getHostAddress() + "-" + H2O.API_PORT);
       // Make the directory as-needed
