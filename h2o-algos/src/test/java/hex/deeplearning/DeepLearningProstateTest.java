@@ -22,7 +22,7 @@ import static hex.ConfusionMatrix.buildCM;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.001f); }
 
@@ -50,7 +50,7 @@ public class DeepLearningProstateTest extends TestUtil {
                 false,
         }) {
           for (boolean load_balance : new boolean[]{
-                  true,
+                  // true,
                   false,
           }) {
             for (boolean shuffle : new boolean[]{
@@ -154,6 +154,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       } finally {
                                         dl.remove();
                                       }
+                                      Log.info("Trained for " + model1.epoch_counter + " epochs.");
                                       assert( ((p._train_samples_per_iteration <= 0 || p._train_samples_per_iteration >= frame.numRows()) && model1.epoch_counter > epochs)
                                               || Math.abs(model1.epoch_counter - epochs)/epochs < 0.20 );
 

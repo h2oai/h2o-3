@@ -34,12 +34,15 @@ public class EnumWrappedVec extends WrappedVec {
     DKV.put(this);
   }
 
-  /** Constructor just to generate the map and domain; used in tests */
-  EnumWrappedVec(String[] from, String[] to) {
+  /** Constructor just to generate the map and domain; used in tests or when
+   *  mixing enum columns */
+  public EnumWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
     computeMap(from,to);
     DKV.put(this);
   }
+
+  public int[] enum_map() { return _map; }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     return new EnumWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
@@ -111,11 +114,15 @@ public class EnumWrappedVec extends WrappedVec {
   }
 
 
-  static class EnumWrappedChunk extends Chunk {
-    final Chunk _c;             // Test-set map
+  public static class EnumWrappedChunk extends Chunk {
+    public final Chunk _c;             // Test-set map
     final transient int[] _map;
 
-    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) { _c  = c; set_len(_c._len); _start = _c._start; _vec = vec; _map = vec._map; }
+    EnumWrappedChunk(Chunk c, EnumWrappedVec vec) {
+      _c  = c; set_len(_c._len);
+      _start = _c._start; _vec = vec; _cidx = _c._cidx;
+      _map = vec._map;
+    }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk return

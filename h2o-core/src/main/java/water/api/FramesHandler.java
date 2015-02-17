@@ -170,6 +170,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
+    if (!vec.isString())
     vec.bins();
 
     // Cons up our result
@@ -190,7 +191,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2().fillFromImpl(frame);
+    s.frames[0] = new FrameV2(frame, s.offset, s.len).fillFromImpl(frame);  // TODO: Refactor with FrameBase
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.

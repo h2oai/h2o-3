@@ -8,12 +8,13 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.api.KeyV1.VecKeyV1;
+import water.parser.Parser;
 
 class ParseHandler extends Handler {
   // Entry point for parsing.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV2 parse(int version, ParseV2 parse) {
-    ParseSetup setup = new ParseSetup(true, 0, 0, null, parse.pType, parse.sep, parse.ncols, parse.singleQuotes, parse.columnNames, parse.domains, null, parse.checkHeader, null);
+    ParseSetup setup = new ParseSetup(true, 0, 0, null, parse.pType, parse.sep, parse.ncols, parse.singleQuotes, parse.columnNames, parse.domains, null, parse.checkHeader, Parser.ColTypeInfo.fromStrings(parse.columnTypes), parse.chunkSize);
 
     Key[] srcs = new Key[parse.srcs.length];
     for (int i = 0; i < parse.srcs.length; i++)

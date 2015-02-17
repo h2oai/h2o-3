@@ -686,7 +686,7 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   static void printAndLogVersion() {
-    Log.init(ARGS.log_level);
+    Log.init(ARGS.log_level, ARGS.client);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());

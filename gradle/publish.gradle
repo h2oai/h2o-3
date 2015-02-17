@@ -1,4 +1,5 @@
 // java byte code converter
+apply plugin: 'java'
 apply from: "$rootDir/gradle/java6bytecode.gradle"
 apply plugin: 'maven-publish'
 
@@ -13,6 +14,13 @@ def calcArtifactId() {
     return rv
 }
 
+task sourcesJar(type: Jar) {
+  from sourceSets.main.allSource
+  classifier = 'sources'
+}
+
+//publish.dependsOn sourcesJar
+
 // This is part of publish module responsible by putting jars into local Ivy cache
 // The code is here to support Spark assembly which expects modules in local Ivy cache
 publishing {
@@ -25,6 +33,7 @@ publishing {
           version "$projectVersion"
 
           from components.java
+          artifact sourcesJar
       }
   }
 

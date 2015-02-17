@@ -18,6 +18,7 @@ public class TwoDimTable extends Iced {
   private String[]   colTypes;
   private String[]   colFormats;
   private String[][] cellValues;
+  private String     colHeaderForRowHeaders;
 
   //public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN (0x7ff8000000000000)
   public static final double emptyDouble = Double.MIN_VALUE*2; //Some unlikely value
@@ -38,11 +39,13 @@ public class TwoDimTable extends Iced {
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
    * @param colFormats C-dim array with printf format strings for each column
+   * @param colHeaderForRowHeaders column header for row headers
    */
   public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-                     String[] colFormats) {
+                     String[] colFormats, String colHeaderForRowHeaders) {
     if (tableHeader == null)
       tableHeader = "";
+    this.colHeaderForRowHeaders = colHeaderForRowHeaders;
 
     if (rowHeaders == null)
       throw new IllegalArgumentException("rowHeaders is null");
@@ -102,12 +105,13 @@ public class TwoDimTable extends Iced {
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
    * @param colFormats C-dim array with printf format strings for each column
+   * @param colHeaderForRowHeaders column header for row headers
    * @param strCellValues String[R][C] array for string cell values, can be null (can provide String[R][], for example)
    * @param dblCellValues double[R][C] array for double cell values, can be empty (marked with emptyDouble - happens when initialized with double[R][])
    */
   public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-                     String[] colFormats, String[][] strCellValues, double[][] dblCellValues) {
-    this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats);
+                     String[] colFormats, String colHeaderForRowHeaders, String[][] strCellValues, double[][] dblCellValues) {
+    this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     assert (isEmpty(emptyDouble));
     assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
@@ -186,9 +190,9 @@ public class TwoDimTable extends Iced {
     return rowHeaders;
   }
 
-  public String[] getColHeaders() {
-    return colHeaders;
-  }
+  public String[] getColHeaders() { return colHeaders; }
+
+  public String getColHeaderForRowHeaders() { return colHeaderForRowHeaders; }
 
   public String[] getColTypes() {
     return colTypes;
@@ -241,7 +245,8 @@ public class TwoDimTable extends Iced {
       switch (colTypes[col]) {
         case "double":
         case "float":
-          cellValues[row][col] = Double.toHexString(d);
+          //cellValues[row][col] = Double.toHexString(d);
+          cellValues[row][col] = Double.toString(d);
           break;
         case "long":
         case "int":
@@ -261,9 +266,10 @@ public class TwoDimTable extends Iced {
    * @param f float value
    */
   public void set(final int row, final int col, final float f) {
-    cellValues[row][col] = (colTypes[col] == "double" || colTypes[col] == "float")
-      ? Float.toHexString(f)
-      : Float.toString(f);
+    cellValues[row][col] = Float.toString(f);
+//    cellValues[row][col] = (colTypes[col] == "double" || colTypes[col] == "float")
+//      ? Float.toHexString(f)
+//      : Float.toString(f);
   }
 
   /**
@@ -310,6 +316,7 @@ public class TwoDimTable extends Iced {
     for (String[] row: cellStrings)
       Arrays.fill(row, "");
 
+    cellStrings[0][0] = colHeaderForRowHeaders != null ? colHeaderForRowHeaders : "";
     for (int r = 0; r < rowDim; ++r)
       cellStrings[r+1][0] = rowHeaders[r];
     for (int c = 0; c < colDim; ++c)
@@ -348,7 +355,7 @@ public class TwoDimTable extends Iced {
           break;
         default:
           for (int r = 0; r < rowDim; ++r)
-            cellStrings[r+1][c+1] = cellValues[r][c];
+            cellStrings[r+1][c+1] = String.format(formatString, cellValues[r][c]);
           break;
       }
     }

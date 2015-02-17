@@ -690,14 +690,12 @@ public class Env extends Iced {
       case ARY: return new ASTFrame(id.value());
       case LARY:return new ASTFrame(get_local(id.value())); // pull the local frame out
       case STR: return id.value().equals("null") ? new ASTNull() : new ASTString('\"', id.value());
-      case AST: return new ASTRaft(id.value());
       default: throw H2O.fail("Could not find appropriate type for identifier "+id);
     }
   }
 
   static AST staticLookup(water.rapids.ASTId id) {
     switch(kvLookup(id.value())) {
-      case AST: return new ASTRaft(id.value());
       case ARY: return new ASTFrame(id.value());
       default: return id;
     }

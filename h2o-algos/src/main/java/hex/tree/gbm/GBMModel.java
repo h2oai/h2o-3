@@ -20,7 +20,6 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     public enum Family {  AUTO, bernoulli, multinomial, gaussian  }
     public Family _loss = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
-    public boolean _group_split = true;
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

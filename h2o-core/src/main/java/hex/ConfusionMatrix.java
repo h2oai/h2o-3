@@ -299,7 +299,7 @@ public class ConfusionMatrix extends Iced {
     colType[colFormat.length-1]   = "string";
     colFormat[colFormat.length-1] = "= %s";
 
-    TwoDimTable table = new TwoDimTable("Confusion Matrix (Act/Pred)", rowHeader, colHeader, colType, colFormat);
+    TwoDimTable table = new TwoDimTable("Confusion Matrix", rowHeader, colHeader, colType, colFormat, "Act/Pred");
 
     // Main CM Body
     long terr = 0;

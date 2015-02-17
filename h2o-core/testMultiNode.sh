@@ -35,7 +35,9 @@ trap cleanup SIGTERM SIGINT
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test
 # classpath before the main classpath.
-JVM="nice java -ea -cp build/classes/test${SEP}build/classes/main${SEP}../lib/*"
+# kbn: Rather than let it default heap to 1/4 of available dram,
+# make it consistent for test. It's 2G is h2o-algos. So mimic that.
+JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/test${SEP}build/classes/main${SEP}../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

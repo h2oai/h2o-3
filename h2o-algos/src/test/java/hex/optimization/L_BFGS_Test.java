@@ -48,7 +48,7 @@ public class L_BFGS_Test  extends TestUtil {
       }
 
       @Override
-      public double[] lineSearch(double[] beta, double[] pk) {
+      public double[] getObjVals(double[] beta, double[] pk) {
         double [] res = new double[128];
         double step = 1;
         for(int i = 0; i < res.length; ++i) {
@@ -56,7 +56,7 @@ public class L_BFGS_Test  extends TestUtil {
           double y = beta[1] + pk[1]*step;
           double xx = x * x;
           res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= _step;
+          step *= _stepDec;
         }
         return res;
       }
@@ -87,7 +87,7 @@ public class L_BFGS_Test  extends TestUtil {
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.vec("CAPSULE").mean());
       L_BFGS.Result r = lbfgs.solve(solver, beta);
-      assertEquals(378.34, r.ginfo._objVal * source.numRows(), 1e-1);
+      assertEquals(378.34, 2 * r.ginfo._objVal * source.numRows(), 1e-1);
     } finally {
       if(dinfo != null)
         DKV.remove(dinfo._key);

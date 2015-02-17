@@ -65,12 +65,12 @@ public class GLMValidation extends Iced {
   }
 
   public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make());}
-  public void add(double yreal, double ymodel){
-    null_deviance += _glm.deviance(yreal, _ymu);
+  public void add(double yreal, double eta, double ymodel){
+    null_deviance += _glm.deviance(yreal, eta, _ymu);
     if(_glm._family == Family.binomial) // classification -> update confusion matrix too
       for(int i = 0; i < thresholds.length; ++i)
         _cms[i].add((int)yreal, (ymodel >= thresholds[i])?1:0);
-    residual_deviance  += _glm.deviance(yreal, ymodel);
+    residual_deviance  += _glm.deviance(yreal, eta, ymodel);
     ++nobs;
 
     if( _glm._family == Family.poisson ) { // aic for poisson

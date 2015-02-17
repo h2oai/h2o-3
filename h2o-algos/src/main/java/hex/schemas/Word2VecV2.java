@@ -10,8 +10,6 @@ import water.fvec.Frame;
 public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV2.Word2VecParametersV2> {
   public static final class Word2VecParametersV2 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV2> {
     static public String[] own_fields = new String[] {
-            "training_frame",
-            "ignored_columns",
             "minWordFreq",
             "wordModel",
             "normModel",

@@ -98,15 +98,18 @@ public class DTree extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
+    final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
     final long    _n0,  _n1;    // Rows in each final split
     final double  _p0,  _p1;    // Predicted value for each split
 
-    public Split( int col, int bin, IcedBitSet bs, byte equal, double se0, double se1, long n0, long n1, double p0, double p1 ) {
-      _col = col;  _bin = bin;  _bs = bs;  _equal = equal;
+    public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, long n0, long n1, double p0, double p1 ) {
+      _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
+      assert se > se0+se1 || se==Double.MAX_VALUE;      // No point in splitting unless error goes down
     }
+    public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
@@ -199,9 +202,10 @@ public class DTree extends Iced {
           default: throw H2O.fail();
           }
         }
-        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
-        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
+        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
+        if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
+        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
         nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
         cnt++;                    // At least some chance of splitting
@@ -631,7 +635,8 @@ public class DTree extends Iced {
       // All NAs are going always to the left
       _sb.p(" (Double.isNaN(data[").p(col).p("]) || ");
       if(equal == 0 || equal == 1) {
-        String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
+        //String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
+        String scmp = "< ";
         _sb.p("(float) data[").p(col).p(" /* ").p(_tm._output._names[col]).p(" */").p("] ").p(equal == 1 ? "!= " : scmp).pj(fcmp); // then left and then right (left is !=)
       } else {
         //_sb.p("!water.genmodel.GeneratedModel.grpContains(GRPSPLIT").p(_grpcnt).p(", ").p(gcmp._offset).p(", (int) data[").p(col).p(" /* ").p(_tm._names[col]).p(" */").p("])");

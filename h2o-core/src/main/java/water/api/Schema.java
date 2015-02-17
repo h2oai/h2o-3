@@ -471,7 +471,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       for( int i=0; i<splits.length; i++ ) {
-        if (String.class == afclz || KeySchema.class.isAssignableFrom(afclz)) {
+        if (String.class == afclz || KeyV1.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
           if (stripped.length() >= 2)
@@ -489,11 +489,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       else if (!required && (s == null || s.length() == 0)) return null;
       else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
-    if( KeySchema.class.isAssignableFrom(fclz) ) {
+    if( KeyV1.class.isAssignableFrom(fclz) ) {
       if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       if (!required && (s == null || s.length() == 0)) return null;
 
-      return KeySchema.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
+      return KeyV1.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
     if( Enum.class.isAssignableFrom(fclz) )
@@ -562,20 +562,24 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // normally not allowed because it has no version:
     new Schema();
 
-    // Ensure that water is pulled in:
-    for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(Schema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
+    // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
+    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
+    for (Class<? extends Schema> clz : clzs) {
+      // Ensure that water is pulled in:
+      for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(clz))
+        if (!Modifier.isAbstract(schema_class.getModifiers()))
+          Schema.register(schema_class);
 
-    // Ensure that hex is pulled in:
-    for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(Schema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
+      // Ensure that hex is pulled in:
+      for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(clz))
+        if (!Modifier.isAbstract(schema_class.getModifiers()))
+          Schema.register(schema_class);
 
-    // Get mixed-package schemas:
-    for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(Schema.class))
-      if (! Modifier.isAbstract(schema_class.getModifiers()))
-        Schema.register(schema_class);
+      // Get mixed-package schemas:
+      for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(clz))
+        if (!Modifier.isAbstract(schema_class.getModifiers()))
+          Schema.register(schema_class);
+    }
 
     schemas_registered = true;
     Log.info("Registered: " + Schema.schemas().size() + " schemas.");
@@ -613,7 +617,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * be returned.  This compatibility lookup is cached.
    */
   public static Class<? extends Schema> schemaClass(int version, String type) {
-    Schema.registerAllSchemasIfNecessary();
     if (version < 1) return null;
 
     Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
@@ -630,7 +633,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return the schema class (e.g., water.api.Framev2).
    */
   public static Class<? extends Schema>  schemaClass(String schema_name) {
-    Schema.registerAllSchemasIfNecessary();
     return schemas.get(schema_name);
   }
 
@@ -680,7 +682,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
   public static Schema schema(String schema_name) {
-    Schema.registerAllSchemasIfNecessary();
     Class<? extends Schema> clz = schemas.get(schema_name);
     if (null == clz) throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name,
                                                             "Failed to find schema for schema_name: " + schema_name);

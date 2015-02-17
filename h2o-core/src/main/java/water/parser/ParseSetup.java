@@ -1,10 +1,15 @@
 package water.parser;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Frame;
+import water.fvec.UploadFileVec;
 import water.fvec.Vec;
 import water.fvec.FileVec;
+import water.fvec.ByteVec;
 import water.util.IcedArrayList;
 import water.parser.Parser.ColTypeInfo;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,7 +41,7 @@ public final class ParseSetup extends Iced {
   long _headerlines; // Number of header lines found
   int _chunkSize = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
 
-  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, ColTypeInfo[] ctypes) {
+  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, ColTypeInfo[] ctypes, int chunkSize) {
     _isValid = isValid;
     _invalidLines = invalidLines;
     _headerlines = headerlines;
@@ -50,18 +55,45 @@ public final class ParseSetup extends Iced {
     _data = data;
     _checkHeader = checkHeader;
     _ctypes = ctypes;
+    _chunkSize = chunkSize;
   }
 
+  /**
+   *  Typically used by file type parsers for returning final valid results
+   * _chunkSize will be set later using results from all files.
+  * */
+  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[] columnNames, String[][] domains, String[][] data, int checkHeader, ColTypeInfo[] ctypes) {
+    this(isValid, invalidLines, headerlines, errors, t, sep, ncols, singleQuotes, columnNames, domains, data, checkHeader, ctypes, FileVec.DFLT_CHUNK_SIZE);
+  }
+
+  /**
+   * Typically used by file type parsers for returning final invalid results
+  */
+  public ParseSetup(boolean isValid, long invalidLines, long headerlines, String[] errors, ParserType t, byte sep, int ncols, boolean singleQuotes, String[][] data, int checkHeader) {
+    this(isValid, invalidLines, headerlines, errors, t, sep, ncols, singleQuotes, null, null, data, checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
+  }
+
+  /**
+   * Creates starting parse setup with auto detect turned on.
+   * @param singleQuotes
+   * @param checkHeader
+   */
   public ParseSetup(boolean singleQuotes, int checkHeader) {
-    this(false, 0, 0, null, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, null, null, null, checkHeader, null);
+    this(false, 0, 0, null, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, null, null, null, checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
   }
 
-  // Invalid setup based on a prior valid one
+  /**
+   * Invalid setup based on a prior valid one
+   * @param ps Setup to be set to invalid
+   * @param err Error message explain why the setup is invalid
+   */
   ParseSetup(ParseSetup ps, String err) {
-    this(false, ps._invalidLines, ps._headerlines, new String[]{err}, ps._pType, ps._sep, ps._ncols, ps._singleQuotes, ps._columnNames, ps._domains, ps._data, ps._checkHeader, null);
+    this(false, ps._invalidLines, ps._headerlines, new String[]{err}, ps._pType, ps._sep, ps._ncols, ps._singleQuotes, ps._columnNames, ps._domains, ps._data, ps._checkHeader, null, ps._chunkSize);
   }
 
-  // Called from Nano request server with a set of Keys, produce a suitable parser setup guess.
+  /**
+   *  Called from Nano request server with a set of Keys, produce a suitable parser setup guess.
+   */
   public ParseSetup() {
   }
 
@@ -117,9 +149,233 @@ public final class ParseSetup extends Iced {
     return allStrings(l1) && !allStrings(l2);
   }
 
-  // Guess everything from a single pile-o-bits.  Used in tests, or in initial
-  // parser inspections when the user has not told us anything about separators
-  // or headers.
+  /**
+   * Used by test harnesses for simple parsing of test data.  Presumes
+   * auto-detection for file and separator types.
+   *
+   * @param fkeys Keys to input vectors to be parsed
+   * @param singleQuote
+   * @param checkHeader
+   * @return ParseSetup settings from looking at all files
+   */
+  public static ParseSetup guessSetup(Key[] fkeys, boolean singleQuote, int checkHeader) {
+    return guessSetup(fkeys, new ParseSetup(true, 0, 0, null, ParserType.AUTO, AUTO_SEP, 0, singleQuote, null, checkHeader));
+  }
+
+  /**
+   * Discover the parse setup needed to correctly parse all files.
+   * This takes a ParseSetup as guidance.  Each file is examined
+   * individually and then results merged.  If a conflict exists
+   * between any results all files are re-examined using the
+   * best guess from the first examination.
+   *
+   * @param fkeys Keys to input vectors to be parsed
+   * @param userSetup Setup guidance from user
+   * @return ParseSetup settings from looking at all files
+   */
+  public static ParseSetup guessSetup( Key[] fkeys, ParseSetup userSetup ) {
+    //Guess setup of each file and collect results
+    GuessSetupTsk t = new GuessSetupTsk(userSetup);
+    t.doAll(fkeys).getResult();
+
+    //check results
+ /*   if (t._gblSetup._isValid && (!t._failedSetup.isEmpty() || !t._conflicts.isEmpty())) {
+      // run guess setup once more, this time knowing the global setup to get rid of conflicts (turns them into failures) and bogus failures (i.e. single line files with unexpected separator)
+      GuessSetupTsk t2 = new GuessSetupTsk(t._gblSetup);
+      HashSet<Key> keySet = new HashSet<Key>(t._conflicts);
+      keySet.addAll(t._failedSetup);
+      Key[] keys2 = new Key[keySet.size()];
+      t2.doAll(keySet.toArray(keys2));
+      t._failedSetup = t2._failedSetup;
+      t._conflicts = t2._conflicts;
+        if(!gSetup._setup._header && t2._gblSetup._setup._header){
+          gSetup._setup._header = true;
+          gSetup._setup._columnNames = t2._gblSetup._setup._columnNames;
+          t._gblSetup._hdrFromFile = t2._gblSetup._hdrFromFile;
+        }*/
+
+      //Calc chunk-size
+      Iced ice = DKV.getGet(fkeys[0]);
+      if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
+        t._gblSetup._chunkSize = FileVec.DFLT_CHUNK_SIZE;
+      } else {
+        t._gblSetup._chunkSize = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._ncols);
+      }
+//      assert t._conflicts.isEmpty(); // we should not have any conflicts here, either we failed to find any valid global setup, or conflicts should've been converted into failures in the second pass
+//      if (!t._failedSetup.isEmpty()) {
+//        // TODO throw and exception ("Can not parse: Got incompatible files.", gSetup, t._failedSetup.keys);
+//      }
+//    }
+//    if (t._gblSetup == null || !t._gblSetup._isValid) {
+//      //TODO throw an exception
+//    }
+    return t._gblSetup;
+  }
+
+  /**
+   * Try to determine the ParseSetup on a file by file basis
+   * and merge results.
+   */
+  public static class GuessSetupTsk extends MRTask<GuessSetupTsk> {
+    // Input
+    final ParseSetup _userSetup;
+    boolean _empty = true;
+
+    // Output
+    public ParseSetup _gblSetup;
+    //IcedArrayList<Key> _failedSetup;
+    //IcedArrayList<Key> _conflicts;
+    public long _totalParseSize;
+
+    /**
+     *
+     * @param userSetup ParseSetup to guide examination of files
+     */
+    public GuessSetupTsk(ParseSetup userSetup) { _userSetup = userSetup; }
+
+    public static final int MAX_ERRORS = 64;
+
+    /**
+     * Runs once on each file to guess that file's ParseSetup
+     */
+    @Override public void map(Key key) {
+      Iced ice = DKV.getGet(key);
+      if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
+      ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
+      byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
+
+      // guess setup
+      if(bits.length > 0) {
+        _empty = false;
+//        _failedSetup = new IcedArrayList<Key>();
+//        _conflicts = new IcedArrayList<Key>();
+        _gblSetup = guessSetup(bits, _userSetup);
+//        if (_gblSetup == null || !_gblSetup._isValid)
+//          _failedSetup.add(key);
+//        else {
+          //  _gblSetup._setupFromFile = key;
+          //  if (_checkHeader && _gblSetup._setup._header)
+          //    _gblSetup._hdrFromFile = key;
+
+          // get file size
+          float decompRatio = ZipUtil.decompressionRatio(bv);
+          if (decompRatio > 1.0)
+            _totalParseSize += bv.length() * decompRatio; // estimate file size
+          else  // avoid numerical distortion of file size when not compressed
+            _totalParseSize += bv.length();
+//        }
+      }
+
+      // guesser chunk uses default
+      if (bv instanceof FileVec && !(bv instanceof UploadFileVec))
+        ((FileVec) bv).clearCachedChunk(0);
+    }
+
+    /**
+     * Merges ParseSetup results, conflicts, and errors from several files
+     */
+    @Override
+    public void reduce(GuessSetupTsk other) {
+      if (other._empty || other == null) return;
+      if (_gblSetup == null || !_gblSetup._isValid) {
+        _empty = false;
+        _gblSetup = other._gblSetup;
+        assert (_gblSetup != null);
+/*        try {
+          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;
+          _gblSetup._setupFromFile = other._gblSetup._setupFromFile;
+//        }
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }*/
+      }
+
+      if (other._gblSetup._isValid && !_gblSetup.isCompatible(other._gblSetup)) {
+        //   if (_conflicts.contains(_gblSetup._setupFromFile) && !other._conflicts.contains(other._gblSetup._setupFromFile)) {
+        //     _gblSetup = other._gblSetup; // setups are not compatible, select random setup to send up (thus, the most common setup should make it to the top)
+        //     _gblSetup._setupFromFile = other._gblSetup._setupFromFile;
+        //     _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;
+        //   } else if (!other._conflicts.contains(other._gblSetup._setupFromFile)) {
+        //     _conflicts.add(_gblSetup._setupFromFile);
+        //    _conflicts.add(other._gblSetup._setupFromFile);
+        //  }
+
+        // unify column names
+        if (other._gblSetup._columnNames != null) {
+          if (_gblSetup._columnNames == null) {
+            _gblSetup._columnNames = other._gblSetup._columnNames;
+          } else {
+            for (int i = 0; i < _gblSetup._columnNames.length; i++) {
+              if (!_gblSetup._columnNames[i].equals(other._gblSetup._columnNames[i]))
+                //TODO throw something more serious
+                Log.warn("Column names do not match between files");
+            }
+          }
+        }
+      } else if (other._gblSetup._isValid) { // merge the two setups
+        //merge ARFF and CSV
+        if (_gblSetup._pType == ParserType.CSV && other._gblSetup._pType == ParserType.ARFF) {
+          _gblSetup._pType = ParserType.ARFF;
+          _gblSetup._ctypes = other._gblSetup._ctypes;
+        }
+        //merge header settings
+/*        if (!_gblSetup._setup._header && other._gblSetup._setup._header) {
+          _gblSetup._setup._header = true;
+          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;*/
+
+        // merge column names
+        if (other._gblSetup._columnNames != null) {
+          if (_gblSetup._columnNames == null) {
+            _gblSetup._columnNames = other._gblSetup._columnNames;
+          } else {
+            for (int i = 0; i < _gblSetup._columnNames.length; i++) {
+              if (!_gblSetup._columnNames[i].equals(other._gblSetup._columnNames[i]))
+                //TODO throw something more serious
+                Log.warn("Column names do not match between files");
+            }
+          }
+
+          //merge column types
+          if (_gblSetup._ctypes == null) _gblSetup._ctypes = other._gblSetup._ctypes;
+          else if (other._gblSetup._ctypes != null) {
+            for (int i = 0; i < _gblSetup._ctypes.length; ++i)
+              if (_gblSetup._ctypes[i]._type != other._gblSetup._ctypes[i]._type)
+                _gblSetup._ctypes[i].merge(other._gblSetup._ctypes[i]);
+          }
+
+        }
+
+        if (_gblSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
+          int n = _gblSetup._data.length;
+          int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + other._gblSetup._data.length - 1);
+          _gblSetup._data = Arrays.copyOf(_gblSetup._data, m);
+          for (int i = n; i < m; ++i) {
+            _gblSetup._data[i] = other._gblSetup._data[i - n + 1];
+          }
+        }
+        _totalParseSize += other._totalParseSize;
+      }
+      // merge failures
+/*      if (_failedSetup == null) {
+        _failedSetup = other._failedSetup;
+        _conflicts = other._conflicts;
+      } else {
+        _failedSetup.addAll(other._failedSetup);
+        _conflicts.addAll(other._conflicts);
+      } */
+    }
+  }
+
+  /**
+   * Guess everything from a single pile-o-bits.  Used in tests, or in initial
+   * parser inspections when the user has not told us anything about separators
+   * or headers.
+   *
+   * @param bits Initial bytes from a parse source
+   * @param singleQuotes
+   * @param checkHeader
+   * @return ParseSetup settings from looking at all files
+   */
   public static ParseSetup guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) {
     return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null, null);
   }
@@ -127,57 +383,22 @@ public final class ParseSetup extends Iced {
     return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, userSetup._singleQuotes, userSetup._checkHeader, null, null);
   }
 
-  public static ParseSetup guessSetup( Key[] fkeys, ParseSetup userSetup ) {
-    ParseSetup gSetup = null;
-    if(fkeys.length > 1){
-      GuessSetupTsk t = new GuessSetupTsk(userSetup);
-      t.doAll(fkeys);
-      gSetup = t._gSetup;
-      if(gSetup._isValid && (!t._failedSetup.isEmpty() || !t._conflicts.isEmpty())){
-        // run guess setup once more, this time knowing the global setup to get rid of conflicts (turns them into failures) and bogus failures (i.e. single line files with unexpected separator)
-        GuessSetupTsk t2 = new GuessSetupTsk(gSetup);
-        HashSet<Key> keySet = new HashSet<Key>(t._conflicts);
-        keySet.addAll(t._failedSetup);
-        Key [] keys2 = new Key[keySet.size()];
-        t2.doAll(keySet.toArray(keys2));
-        t._failedSetup = t2._failedSetup;
-        t._conflicts = t2._conflicts;
-/*        if(!gSetup._setup._header && t2._gSetup._setup._header){
-          gSetup._setup._header = true;
-          gSetup._setup._columnNames = t2._gSetup._setup._columnNames;
-          t._gSetup._hdrFromFile = t2._gSetup._hdrFromFile;
-        }*/
-      }
-      assert t._conflicts.isEmpty(); // we should not have any conflicts here, either we failed to find any valid global setup, or conflicts should've been converted into failures in the second pass
-      if(!t._failedSetup.isEmpty()){
-        // TODO throw and exception ("Can not parse: Got incompatible files.", gSetup, t._failedSetup.keys);
-      }
-    } else if(fkeys.length == 1) {
-      byte[] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(fkeys[0]));
-      gSetup = guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, userSetup._singleQuotes, userSetup._checkHeader, null, null);
-    }
-    if( gSetup == null || !gSetup._isValid){
-      //TODO throw an exception
-    }
-    return gSetup;
-  }
-
-  private static final ParserType guessTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
+  private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
   public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[][] domains ) {
     switch( pType ) {
-      case CSV:      return      CsvParser.CSVguessSetup(bits,sep,ncols,singleQuotes,checkHeader,columnNames);
-      case SVMLight: return SVMLightParser.   guessSetup(bits);
-      case XLS:      return      XlsParser.   guessSetup(bits);
-      case ARFF:     return      ARFFParser.  guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames);
+      case CSV:      return      CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames);
+      case SVMLight: return SVMLightParser.guessSetup(bits);
+      case XLS:      return      XlsParser.guessSetup(bits);
+      case ARFF:     return      ARFFParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames);
       case AUTO:
-        for( ParserType pType2 : guessTypeOrder ) {
+        for( ParserType pTypeGuess : guessFileTypeOrder ) {
           try {
-            ParseSetup ps = guessSetup(bits,pType2,sep,ncols,singleQuotes,checkHeader,columnNames,domains);
+            ParseSetup ps = guessSetup(bits,pTypeGuess,sep,ncols,singleQuotes,checkHeader,columnNames,domains);
             if( ps != null && ps._isValid ) return ps;
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
     }
-    return new ParseSetup( false, 0, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, domains, null, checkHeader, null);
+    return new ParseSetup( false, 0, 0, new String[]{"Cannot determine file type"}, pType, sep, ncols, singleQuotes, columnNames, domains, null, checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
   }
 
   // Guess a local setup that is compatible to the given global (this) setup.
@@ -199,101 +420,63 @@ public final class ParseSetup extends Iced {
 
     if( _pType != ps._pType || ( (_pType == ParserType.CSV && (_sep != ps._sep || _ncols != ps._ncols)) || (_pType == ParserType.ARFF && (_sep != ps._sep || _ncols != ps._ncols)) ) )
       return new ParseSetup(ps,"Conflicting file layouts, expecting: "+this+" but found "+ps+"\n");
+
+    ps._ctypes = _ctypes;
     return ps;
+
+    /* h2ov1
+    switch(_pType){
+      case CSV:
+        return CsvParser.guessSetup(bits,checkHeader);
+      case SVMLight:
+        return SVMLightParser.guessSetup(bits);
+      case XLS:
+        return XlsParser.guessSetup(bits);
+      case AUTO:
+        try{
+          if((res = XlsParser.guessSetup(bits)) != null && res._isValid)
+            if(!res.hasErrors())return res;
+            else guesses.add(res);
+        }catch(Exception e){}
+        try{
+          if((res = SVMLightParser.guessSetup(bits)) != null && res._isValid)
+            if(!res.hasErrors())return res;
+            else guesses.add(res);
+        }catch(Exception e){}
+        try{
+          if((res = CsvParser.guessSetup(bits,setup,checkHeader)) != null && res._isValid)
+            if(!res.hasErrors())return res;
+            else guesses.add(res);
+        }catch(Exception e){e.printStackTrace();}
+        if(res == null || !res._isValid && !guesses.isEmpty()){
+          for(PSetupGuess pg:guesses)
+            if(res == null || pg._validLines > res._validLines)
+              res = pg;
+        }
+        assert res != null;
+        return res;
+      default:
+        throw H2O.unimpl();
+    }
+  } */
   }
 
   public boolean isCompatible(ParseSetup other){
-    if(other == null || _pType != other._pType)return false;
-    if(_pType == ParserType.CSV && (_sep != other._sep || _ncols != other._ncols))
+    // incompatible file types
+    if ((_pType != other._pType)
+            && !(_pType == ParserType.ARFF && other._pType == ParserType.CSV )
+              && !(_pType == ParserType.CSV && other._pType == ParserType.ARFF ))
+        return false;
+
+    //different separators or col counts
+    if (_sep != other._sep && (other._sep != AUTO_SEP || _sep != AUTO_SEP))
       return false;
-    if(_ctypes == null) _ctypes = other._ctypes;
-    else if(other._ctypes != null){
-      for(int i = 0; i < _ctypes.length; ++i)
-        _ctypes[i].merge(other._ctypes[i]);
-    }
+
+    if (_ncols != other._ncols && (other._ncols > 0 && _ncols > 0))
+      return false;
+
     return true;
   }
-
-  public static class GuessSetupTsk extends MRTask<GuessSetupTsk> {
-    final ParseSetup _userSetup;
-    boolean _empty = true;
-    public ParseSetup _gSetup;
-    IcedArrayList<Key> _failedSetup;
-    IcedArrayList<Key> _conflicts;
-
-    public GuessSetupTsk(ParseSetup userSetup) {
-      _userSetup = userSetup;
-    }
-
-    public static final int MAX_ERRORS = 64;
-
-    @Override public void map(Key key) {
-      byte [] bits = ZipUtil.getFirstUnzippedBytes(ParseDataset.getByteVec(key));
-      if(bits.length > 0) {
-        _empty = false;
-        _failedSetup = new IcedArrayList<Key>();
-        _conflicts = new IcedArrayList<Key>();
-        _gSetup = ParseSetup.guessSetup(bits, _userSetup);
-        if (_gSetup == null || !_gSetup._isValid)
-          _failedSetup.add(key);
-        //else {
-        //  _gSetup._setupFromFile = key;
-        //  if (_checkHeader && _gSetup._setup._header)
-        //    _gSetup._hdrFromFile = key;
-        //}
-      }
-    }
-
-    @Override
-    public void reduce(GuessSetupTsk drt) {
-      if (drt._empty) return;
-      if (_gSetup == null || !_gSetup._isValid) {
-        _empty = false;
-        _gSetup = drt._gSetup;
-        if (_gSetup == null)
-          System.out.println("haha");
-/*        try {
-          _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
-          _gSetup._setupFromFile = drt._gSetup._setupFromFile;
-//        }
-        } catch (Throwable t) {
-          t.printStackTrace();
-        }*/
-      } else if (drt._gSetup._isValid && !_gSetup.isCompatible(drt._gSetup)) {
-     //   if (_conflicts.contains(_gSetup._setupFromFile) && !drt._conflicts.contains(drt._gSetup._setupFromFile)) {
-     //     _gSetup = drt._gSetup; // setups are not compatible, select random setup to send up (thus, the most common setup should make it to the top)
-     //     _gSetup._setupFromFile = drt._gSetup._setupFromFile;
-     //     _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
-     //   } else if (!drt._conflicts.contains(drt._gSetup._setupFromFile)) {
-     //     _conflicts.add(_gSetup._setupFromFile);
-      //    _conflicts.add(drt._gSetup._setupFromFile);
-      //  }
-      } else if (drt._gSetup._isValid) { // merge the two setups
-/*        if (!_gSetup._setup._header && drt._gSetup._setup._header) {
-          _gSetup._setup._header = true;
-          _gSetup._hdrFromFile = drt._gSetup._hdrFromFile;
-          _gSetup._setup._columnNames = drt._gSetup._setup._columnNames;
-        } */
-        if (_gSetup._data.length < Parser.InspectDataOut.MAX_PREVIEW_LINES) {
-          int n = _gSetup._data.length;
-          int m = Math.min(Parser.InspectDataOut.MAX_PREVIEW_LINES, n + drt._gSetup._data.length - 1);
-          _gSetup._data = Arrays.copyOf(_gSetup._data, m);
-          for (int i = n; i < m; ++i) {
-            _gSetup._data[i] = drt._gSetup._data[i - n + 1];
-          }
-        }
-      }
-      // merge failures
-      if (_failedSetup == null) {
-        _failedSetup = drt._failedSetup;
-        _conflicts = drt._conflicts;
-      } else {
-        _failedSetup.addAll(drt._failedSetup);
-        _conflicts.addAll(drt._conflicts);
-      }
-    }
-  }
-
 
   public static String hex( String n ) {
     // blahblahblah/myName.ext ==> myName

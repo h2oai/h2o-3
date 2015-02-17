@@ -261,23 +261,38 @@ public class Job<T extends Keyed> extends Keyed {
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
   public float progress() { return isStopped() ? _finalProgress : progress_impl(); }
+  // Read racy progress in a non-racy way: read the DKV exactly once,
+  // null-checking as we go.  Handles the case where the Job is being removed
+  // exactly when we are reading progress e.g. for the GUI.
+  private Progress getProgress() {
+    Key k = _progressKey;
+    Value val;
+    return k!=null && (val=DKV.get(k))!=null ? (Progress)val.get() : null;
+  }
   // Checks the DKV for the progress Key & object
   private float progress_impl() {
-    return _progressKey == null || DKV.get(_progressKey) == null ? 0f : DKV.get(_progressKey).<Progress>get().progress();
+    Progress p = getProgress();
+    return p==null ? 0f : p.progress();
   }
 
   /** Returns last progress message. */
   public String progress_msg() { return isStopped() ? _state.toString() : progress_msg_impl(); }
   private String progress_msg_impl() {
-    return (_progressKey == null || DKV.get(_progressKey) == null) ? "" : DKV.get(_progressKey).<Progress>get().progress_msg();
+    Progress p = getProgress();
+    return p==null ? "" : p.progress_msg();
   }
 
   protected Key _progressKey; //Key to store the Progress object under
   private float _finalProgress = Float.NaN; // Final progress after Job stops running
 
   /** Report new work done for this job */
-  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey); }
+  public final void update(final long newworked) { new ProgressUpdate(newworked).fork(_progressKey);  }
+  /** Report new work done for this job */
+  public final void update(final long newworked, String msg) { new ProgressUpdate(newworked, msg).fork(_progressKey); }
 
+  public static void update(final long newworked,  String msg, Key<Job> jobkey) {
+    jobkey.get().update(newworked,msg);
+  }
   /** Report new work done for a given job key */
   public static void update(final long newworked, Key<Job> jobkey) {
     jobkey.get().update(newworked);
@@ -323,7 +338,7 @@ public class Job<T extends Keyed> extends Keyed {
   /**
    * Helper class to atomically update the job progress in the DKV
    */
-  protected static class ProgressUpdate extends TAtomic<Progress> {
+  public static class ProgressUpdate extends TAtomic<Progress> {
     // Methodology 1
     final long _newwork;
 

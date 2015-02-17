@@ -23,7 +23,7 @@ function(conn) {
     obs       <- nrow(mfrmr)
     # lambda    <- hh@model$params$lambda_best
     alpha     <- hh@parameters$alpha
-    cof       <- hh@model$coefficients_table[2, ]
+    cof       <- hh@model$coefficients_table$'Norm Coefficients'
     L1        <- sum(abs(cof))
     L2        <- sqrt(sum(cof^2))
     penalty   <- ( 0.5*(1-alpha)*L2^2 ) + ( alpha*L1 )

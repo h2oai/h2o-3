@@ -9,7 +9,7 @@ import water.util.DocGen.HTML;
 class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Input fields
   @API(help="Key to inspect",required=true)
-  KeySchema key;
+  KeyV1 key;
 
   @API(help="Offset, used to page through large objects",direction=API.Direction.INPUT)
   long off;
@@ -42,7 +42,7 @@ class InspectV1 extends Schema<InspectPojo, InspectV1> {
   // Version&Schema-specific filling from the impl
   @Override public InspectV1 fillFromImpl( InspectPojo i) {
     if (null != i._val) {
-      key = KeySchema.make(i._val._key);
+      key = KeyV1.make(i._val._key);
       if (i._val.isFrame())
         kind = "frame";
       else if (i._val.isModel())

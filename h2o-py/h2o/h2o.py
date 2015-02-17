@@ -36,7 +36,7 @@ def upload_file(path, destination_key=""):
   fui = {"file": os.path.abspath(path)}
   dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
   H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui,destination_key=dest_key)
-  return H2OFrame(raw_fname=dest_key)
+  return H2OFrame(text_key=dest_key)
 
 
 def import_frame(path=None, vecs=None):
@@ -79,7 +79,8 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'sep' : None,
         'pType' : None,
         'singleQuotes' : None,
-        'checkHeader'  : None
+        'checkHeader'  : None,
+        'chunkSize'    : None
   }
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = 0
@@ -87,6 +88,10 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   if setup["columnNames"]:
     setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
     p["columnNames"] = None
+
+  if setup["columnTypes"]:
+    setup["columnTypes"] = [_quoted(name) for name in setup["columnTypes"]]
+    p["columnTypes"] = None
 
   # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
@@ -106,6 +111,33 @@ def _quoted(key):
   key = key if is_quoted  else "\"" + key + "\""
   return key
 
+"""
+Here are some testing utilities for running the pyunit tests in conjunction with run.py.
+
+run.py issues an ip and port as a string:  "<ip>:<port>".
+The expected value of sys_args[1] is "<ip>:<port>"
+"""
+
+
+"""
+All tests MUST have the following structure:
+
+import sys
+sys.path.insert(1, "..")  # may vary depending on this test's position relative to h2o-py
+import h2o
+
+
+def my_test(ip=None, port=None):
+  ...test filling...
+
+if __name__ == "__main__":
+  h2o.run_test(sys.argv, my_test)
+
+So each test must have an ip and port
+"""
+def run_test(sys_args, test_to_run):
+  ip, port = sys_args[2].split(":")
+  test_to_run(ip, port)
 
 def remove(key):
   """
