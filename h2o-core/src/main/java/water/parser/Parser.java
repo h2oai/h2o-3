@@ -412,7 +412,7 @@ public abstract class Parser extends Iced {
 
     @Override
     public void addNumCol(int colIdx, long number, int exp) {
-      if(colIdx < _nnums.length)
+      if(colIdx < _ncols)
         if (number == 0)
           ++_nzeros[colIdx];
         else
@@ -421,7 +421,7 @@ public abstract class Parser extends Iced {
 
     @Override
     public void addNumCol(int colIdx, double d) {
-      if(colIdx < _nnums.length)
+      if(colIdx < _ncols)
         if (d == 0)
           ++_nzeros[colIdx];
         else
@@ -430,13 +430,13 @@ public abstract class Parser extends Iced {
 
     @Override
     public void addInvalidCol(int colIdx) {
-      ++_nempty[colIdx];
+      if(colIdx < _ncols)
+        ++_nempty[colIdx];
     }
 
     @Override
     public void addStrCol(int colIdx, ValueString str) {
-      if(colIdx < _nstrings.length) {
-
+      if(colIdx < _ncols) {
         // Check for time
         if (ParseTime.attemptTimeParse(str) != Long.MIN_VALUE) {
           ++_ndates[colIdx];
