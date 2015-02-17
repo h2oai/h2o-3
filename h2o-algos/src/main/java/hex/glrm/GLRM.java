@@ -70,6 +70,77 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
+  /**
+   * Given a n by k matrix X, form its Gram matrix
+   * @param x Matrix of real numbers
+   * @param transpose If true, compute n by n Gram of rows = XX'
+   *                  If false, compute k by k Gram of cols = X'X
+   * @return A symmetric positive semi-definite Gram matrix
+   */
+  public static double[][] formGram(double[][] x, boolean transpose) {
+    if (x == null) return null;
+    int dim_in = transpose ? x[0].length : x.length;
+    int dim_out = transpose ? x.length : x[0].length;
+    double[][] xgram = new double[dim_out][dim_out];
+
+    // Compute all entries on and above diagonal
+    if(transpose) {
+      for (int i = 0; i < dim_in; i++) {
+        // Outer product = x[i] * x[i]', where x[i] is col i
+        for (int j = 0; j < dim_out; j++) {
+          for (int k = j; k < dim_out; k++)
+            xgram[j][k] += x[j][i] * x[k][i];
+        }
+      }
+    } else {
+      for (int i = 0; i < dim_in; i++) {
+        // Outer product = x[i]' * x[i], where x[i] is row i
+        for (int j = 0; j < dim_out; j++) {
+          for (int k = j; k < dim_out; k++)
+            xgram[j][k] += x[i][j] * x[i][k];
+        }
+      }
+    }
+
+    // Fill in entries below diagonal since Gram is symmetric
+    for (int i = 0; i < dim_in; i++) {
+      for (int j = 0; j < dim_out; j++) {
+        for (int k = 0; k < j; k++)
+          xgram[j][k] = xgram[k][j];
+      }
+    }
+    return xgram;
+  }
+  public static double[][] formGram(double[][] x) { return formGram(x, false); }
+
+  // Add constant \gamma to the diagonal of a k by k symmetric matrix X
+  public static double[] addDiag(double[][] x, double gamma) {
+    if (x == null) return null;
+    if (x.length != x[0].length)
+      throw new IllegalArgumentException("x must be a symmetric matrix!");
+
+    int len = x.length;
+    double[] diag = new double[len];
+    if (gamma == 0) return diag;
+    for (int i = 0; i < len; i++) {
+      x[i][i] += gamma;
+      diag[i] = gamma;
+    }
+    return diag;
+  }
+
+  // Squared Frobenius norm of a matrix (sum of squared entries)
+  public static double frobenius2(double[][] x) {
+    if(x == null) return 0;
+
+    double frob = 0;
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < x[0].length; j++)
+        frob += x[i][j] * x[i][j];
+    }
+    return frob;
+  }
+
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
     // Initialize Y to be the k centers from k-means++
@@ -97,65 +168,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       return km._output._centers_raw;
     }
-
-    // Add constant \gamma to the diagonal of a k by k symmetric matrix X
-    double[] addDiag(double[][] x, double gamma) {
-      if (x == null) return null;
-      if (x.length != x[0].length)
-        throw new IllegalArgumentException("x must be a symmetric matrix!");
-
-      int len = x.length;
-      double[] diag = new double[len];
-      if (gamma == 0) return diag;
-      for (int i = 0; i < len; i++) {
-        x[i][i] += gamma;
-        diag[i] = gamma;
-      }
-      return diag;
-    }
-
-    /**
-     * Given a n by k matrix X, form its Gram matrix
-     * @param x Matrix of real numbers
-     * @param transpose If true, compute n by n Gram of rows = XX'
-     *                  If false, compute k by k Gram of cols = X'X
-     * @return A symmetric positive semi-definite Gram matrix
-     */
-    public double[][] formGram(double[][] x, boolean transpose) {
-      if (x == null) return null;
-      int dim_in = transpose ? x[0].length : x.length;
-      int dim_out = transpose ? x.length : x[0].length;
-      double[][] xgram = new double[dim_out][dim_out];
-
-      // Compute all entries on and above diagonal
-      if(transpose) {
-        for (int i = 0; i < dim_in; i++) {
-          // Outer product = x[i] * x[i]', where x[i] is col i
-          for (int j = 0; j < dim_out; j++) {
-            for (int k = j; k < dim_out; k++)
-              xgram[j][k] += x[j][i] * x[k][i];
-          }
-        }
-      } else {
-        for (int i = 0; i < dim_in; i++) {
-          // Outer product = x[i]' * x[i], where x[i] is row i
-          for (int j = 0; j < dim_out; j++) {
-            for (int k = j; k < dim_out; k++)
-              xgram[j][k] += x[i][j] * x[i][k];
-          }
-        }
-      }
-
-      // Fill in entries below diagonal since Gram is symmetric
-      for (int i = 0; i < dim_in; i++) {
-        for (int j = 0; j < dim_out; j++) {
-          for (int k = 0; k < j; k++)
-            xgram[j][k] = xgram[k][j];
-        }
-      }
-      return xgram;
-    }
-    double[][] formGram(double[][] x) { return formGram(x, false); }
 
     // Stopping criteria
     boolean isDone(GLRMModel model) {
@@ -312,18 +324,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  // Squared Frobenius norm of a matrix (sum of squared entries)
-  public static double frobenius2(double[][] x) {
-    if(x == null) return 0;
-
-    double frob = 0;
-    for(int i = 0; i < x.length; i++) {
-      for(int j = 0; j < x[0].length; j++)
-        frob += x[i][j] * x[i][j];
-    }
-    return frob;
-  }
-
   // Computes A'X on a matrix [A,X], where A is n by p, X is n by k, and k <= p
   // Resulting matrix D = A'X will have dimensions p by k
   private static class SMulTask extends MRTask<SMulTask> {
@@ -343,7 +343,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // Cycle over columns of A
       for (int i = 0; i < _ncolA; i++) {
         // Cycle over columns of X
-        for (int j = _ncolA; j < _ncolX; j++) {
+        int c = 0;
+        for (int j = _ncolA; j < cs.length; j++) {
           double sum = 0;
           for (int row = 0; row < cs[0]._len; row++) {
             double a = cs[i].atd(row);
@@ -351,8 +352,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             if (Double.isNaN(a) || Double.isNaN(x)) continue;
             sum += a * x;
           }
-          _prod[i][j] = sum;
+          _prod[i][c++] = sum;
         }
+        assert c == _ncolX;
       }
     }
 

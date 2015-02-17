@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
@@ -41,7 +42,14 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testGram() {
-    double[][] x = ard( ard(1, 2, 3), ard(4, 5, 6));
-    // TODO: Finish test of formGram function
+    double[][] x = ard(ard(1, 2, 3), ard(4, 5, 6));
+    double[][] xgram = ard(ard(17, 22, 27), ard(22, 29, 36), ard(27, 36, 45));  // X'X
+    double[][] xtgram = ard(ard(14, 32), ard(32, 77));    // (X')'X' = XX'
+
+    double[][] xgram_glrm = GLRM.formGram(x, false);
+    double[][] xtgram_glrm = GLRM.formGram(x, true);
+
+    Assert.assertArrayEquals(xgram, xgram_glrm);
+    Assert.assertArrayEquals(xtgram, xtgram_glrm);
   }
 }
