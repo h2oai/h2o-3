@@ -2,10 +2,8 @@ package hex.grep;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.schemas.GrepModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 
 public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
 
@@ -28,10 +26,7 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
     throw H2O.unimpl("GrepModel does not have Model Metrics.");
   }
 
-  // Default publically visible Schema is V2
-  @Override public ModelSchema schema() { return new GrepModelV2(); }
-
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {  
+  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 
