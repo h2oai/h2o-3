@@ -27,7 +27,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _avg_change_obj;
 
     // Final loading matrix (X)
-    public Frame _loadings;
+    //public Frame _loadings;
 
     //Mapping from training data to lower dimensional k-space (Y)
     public TwoDimTable _archetypes;

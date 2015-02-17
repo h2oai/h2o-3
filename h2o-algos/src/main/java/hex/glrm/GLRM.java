@@ -188,6 +188,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     protected void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null;
+      Frame fr = null;
 
       try {
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
@@ -211,7 +212,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
         assert c == xvecs.length;
 
-        Frame fr = new Frame(Key.make(), null, vecs);
+        fr = new Frame(Key.make(), null, vecs);
         dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
         model._output._normSub = Arrays.copyOf(dinfo._normSub, _train.numCols());
@@ -298,7 +299,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Arrays.fill(colTypes, "double");
         model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, null, "", new String[_parms._k][], yt);
         model._output._parameters = _parms;
-        model._output._loadings = xinfo._adaptedFrame;
+        //model._output._loadings = xinfo._adaptedFrame;
 
         /* BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
         String[] names = new String[_parms._k];
@@ -319,6 +320,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
+        if (fr != null ) fr.delete();
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
