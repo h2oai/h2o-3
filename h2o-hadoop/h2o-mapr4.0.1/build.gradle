@@ -1,6 +1,6 @@
 apply plugin: 'fatjar'
 
-description = "H2O for Hadoop cdh5.2.0"
+description = "H2O for Hadoop mapr4.0.1"
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -19,7 +19,7 @@ sourceSets {
 
 dependencies {
   compile project(hadoopDependentProject)
-  compile("org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0")
+  compile("org.apache.hadoop:hadoop-client:2.4.1-mapr-1408")
 }
 
 fatJarPrepareFiles {

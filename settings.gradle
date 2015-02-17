@@ -8,7 +8,13 @@ include 'h2o-scala'
 include 'h2o-r'
 include 'h2o-py'
 include 'h2o-assembly'
-include 'h2o-hadoop/h2o-cdh5.2.0'
+
+if (System.getProperty("user.name").equals("jenkins") || System.getenv("BUILD_HADOOP") != null) {
+    include 'h2o-hadoop/h2o-cdh5.2.0'
+    include 'h2o-hadoop/h2o-hdp2.1'
+    include 'h2o-hadoop/h2o-mapr4.0.1'
+}
+
 include 'h2o-docs'
 include 'h2o-test-integ'
 
