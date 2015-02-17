@@ -18,8 +18,9 @@ sourceSets {
 }
 
 dependencies {
-  compile project(hadoopDependentProject)
   compile("org.apache.hadoop:hadoop-client:2.4.0.2.1.1.0-385")
+  compile project(hadoopDependentProject)
+  compile files(hadoopPersistHdfsJarFile)
 }
 
 fatJarPrepareFiles {

@@ -33,8 +33,10 @@ cp build/h2o.jar $IMAGEDIR
 mkdir $IMAGEDIR/R
 cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
 
-mkdir -p $IMAGEDIR/hadoop/cdh5
-cp -p h2o-hadoop/build/libs/h2o-hadoop.jar $IMAGEDIR/hadoop/cdh5
+mkdir $IMAGEDIR/hadoop
+cp -p h2o-hadoop/h2o-cdh5.2.0/build/libs/h2o-cdh5.2.0.jar $IMAGEDIR/hadoop
+cp -p h2o-hadoop/h2o-hdp2.1/build/libs/h2o-hdp2.1.jar $IMAGEDIR/hadoop
+cp -p h2o-hadoop/h2o-mapr4.0.1/build/libs/h2o-mapr4.0.1.jar $IMAGEDIR/hadoop
 
 cd $IMAGEDIR/..
 zip -r h2o-dev-${PROJECT_VERSION}.zip h2o-dev-${PROJECT_VERSION}
