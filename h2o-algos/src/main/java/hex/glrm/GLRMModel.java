@@ -30,6 +30,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     //public Frame _loadings;
 
     //Mapping from training data to lower dimensional k-space (Y)
+    public double[][] _archetypes_raw;
     public TwoDimTable _archetypes;
 
     //If standardized, mean of each numeric data column

@@ -47,6 +47,15 @@ public final class Gram extends Iced<Gram> {
     }
   }
 
+  public Gram(double[][] xx) {
+    this(xx.length, 0, xx.length, 0, false);
+    for( int i = 0; i < _xx.length; ++i ) {
+      for( int j = 0; j < _xx[i].length; ++j ) {
+        _xx[i][j] = xx[i][j];
+      }
+    }
+  }
+
   public final int fullN(){return _fullN;}
   public double _diagAdded;
   public void addDiag(double d) {addDiag(d,false);}
@@ -350,8 +359,6 @@ public final class Gram extends Iced<Gram> {
     public String toString() {
       return "";
     }
-
-
 
     public static abstract class DelayedTask  extends RecursiveAction {
       private static final Unsafe U;
@@ -791,7 +798,6 @@ public final class Gram extends Iced<Gram> {
   public static class GramTask extends FrameTask<GramTask> {
     public Gram _gram;
     public long _nobs;
-
 
     public GramTask(Key jobKey, DataInfo dinfo){
       super(jobKey,dinfo._key,dinfo._activeCols);

@@ -1,9 +1,10 @@
 package hex.glrm;
 
-import Jama.CholeskyDecomposition;
 import Jama.Matrix;
+import Jama.QRDecomposition;
 import hex.DataInfo;
 import hex.DataInfo.Row;
+import hex.gram.Gram;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
 import hex.Model;
@@ -183,6 +184,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return false;             // Not stopping
     }
 
+    void recoverPCA(GLRMModel model) {
+      QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes_raw));
+      Matrix yt_r = yt_qr.getR();
+    }
+
     // Main worker thread
     @Override
     protected void compute2() {
@@ -230,16 +236,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double yt_norm = frobenius2(yt);
 
         // b) Initialize X = AY'(YY' + \gamma I)^(-1)
-        double[][] ygram_init = formGram(yt, true);
-        // double[] diag_init = addDiag(ygram_init, _parms._gamma);
-        // Cholesky yychol_init = new Cholesky(ygram_init, diag_init);
-        // yychol_init.setSPD(true);   // Since Gram matrix always positive semi-definite
-        if(_parms._gamma > 0) {
-          for(int i = 0; i < ygram_init.length; i++)
-            ygram_init[i][i] += _parms._gamma;
-        }
-        CholeskyDecomposition yychol_init = new Matrix(ygram_init).chol();
-        CholMulTask cmtsk_init = new CholMulTask(yychol_init, yt, _train.numCols(), _parms._k);
+        Gram ygram_init = new Gram(formGram(yt, true));
+        if(_parms._gamma > 0) ygram_init.addDiag(_parms._gamma);
+        Cholesky yychol_init = ygram_init.cholesky(null);
+        yychol_init.setSPD(true);   // Since Gram matrix is always positive semi-definite
+
+        CholMulTask cmtsk_init = new CholMulTask(dinfo, yychol_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
         double axy_norm = cmtsk_init._objerr;   // Save squared Frobenius norm ||A - XY||_F^2
 
@@ -251,29 +253,23 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // b) Get Cholesky decomposition of D = X'X + \gamma I
           if (_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma);
           Cholesky xxchol = xgram._gram.cholesky(null);
-          xxchol.setSPD(true);    // Since Gram matrix is always symmetric positive semi-definite
+          xxchol.setSPD(true);    // Since Gram matrix is always positive semi-definite
 
           // c) Compute A'X and solve for Y' of DY' = A'X
-          // TODO: Check this uses standardized values of A in dinfo
-          yt = new SMulTask(_train.numCols(), _parms._k).doAll(dinfo._adaptedFrame)._prod;
+          yt = new SMulTask(dinfo, _train.numCols(), _parms._k).doAll(dinfo._adaptedFrame)._prod;
           for (int i = 0; i < yt.length; i++) xxchol.solve(yt[i]);
 
           // 2) Compute X = AY'(YY' + \gamma I)^(-1)
           // a) Form Gram matrix of rows of Y' = Y'(Y')' = Y'Y
-          double[][] ygram = formGram(yt, true);
+          Gram ygram = new Gram(formGram(yt, true));
 
           // b) Get Cholesky decomposition of D' = Y'Y + \gamma I
-          // double[] diag = addDiag(ygram, _parms._gamma);
-          // Cholesky yychol = new Cholesky(ygram, diag);
-          // yychol.setSPD(true);    // Since Gram matrix always positive semi-definite
-          if(_parms._gamma > 0) {
-            for(int i = 0; i < ygram.length; i++)
-              ygram[i][i] += _parms._gamma;
-          }
-          CholeskyDecomposition yychol = new Matrix(ygram).chol();
+          if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
+          Cholesky yychol = ygram.cholesky(null);
+          yychol.setSPD(true);   // Since Gram matrix always positive semi-definite
 
           // c) Compute AY' and solve for X of XD = AY' -> D'X' = YA'
-          CholMulTask cmtsk = new CholMulTask(yychol, yt, _train.numCols(), _parms._k);
+          CholMulTask cmtsk = new CholMulTask(dinfo, yychol, yt, _train.numCols(), _parms._k);
           cmtsk.doAll(dinfo._adaptedFrame);   // TODO: I sometimes get non-SPD errors here, why??
 
           // 3) Compute average change in objective function
@@ -297,14 +293,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           colHeaders[i] = "PC" + String.valueOf(i+1);
         String[] colTypes = new String[_train.numCols()];
         Arrays.fill(colTypes, "double");
+        model._output._archetypes_raw = yt;
         model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, null, "", new String[_parms._k][], yt);
         model._output._parameters = _parms;
-        //model._output._loadings = xinfo._adaptedFrame;
+        // model._output._loadings = xinfo._adaptedFrame;
 
         /* BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
-        String[] names = new String[_parms._k];
-        for(int i = 0; i < names.length; i++) names[i] = "PC" + String.valueOf(i);
-        tsk.outputFrame(_parms._destination_key, names, null); */
+        tsk.outputFrame(_parms._destination_key, _train._names, null); */
 
         done();
       } catch (Throwable t) {
@@ -334,12 +329,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Computes A'X on a matrix [A,X], where A is n by p, X is n by k, and k <= p
   // Resulting matrix D = A'X will have dimensions p by k
   private static class SMulTask extends MRTask<SMulTask> {
+    double[] _normSub;  // For standardizing A only
+    double[] _normMul;
     int _ncolA, _ncolX; // _ncolA = p, _ncolX = k
+
     double[][] _prod;   // _prod = D = A'X
 
-    SMulTask(final int ncolA, final int ncolX) {
-      _ncolA = ncolA;
-      _ncolX = ncolX;
+    SMulTask(DataInfo dinfo, final int ncolA, final int ncolX) {
+      _normSub = dinfo._normSub;
+      _normMul = dinfo._normMul;
+      _ncolA = ncolA; _ncolX = ncolX;
       _prod = new double[ncolX][ncolA];
     }
 
@@ -356,7 +355,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             double a = cs[i].atd(row);
             double x = cs[j].atd(row);
             if (Double.isNaN(a) || Double.isNaN(x)) continue;
-            sum += a * x;
+            sum += (a - _normSub[i]) * _normMul[i] * x;
           }
           _prod[i][c++] = sum;
         }
@@ -399,11 +398,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
   // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
   private static class CholMulTask extends MRTask<CholMulTask> {
+    double[] _normSub;  // For standardizing A only
+    double[] _normMul;
     int _ncolA;       // _ncolA = p (number of training cols)
     int _ncolX;       // _ncolX = k (number of PCs)
     double[][] _yt;   // _yt = Y' (transpose of Y)
-    // Cholesky _chol;   // Cholesky decomposition of D' (transpose of D, since need left multiply)
-    CholeskyDecomposition _chol;
+    Cholesky _chol;   // Cholesky decomposition of D' (transpose of D, since need left multiply)
 
     double _sserr;      // Sum of squared difference between old and new X
                         // Formula: \sum_{i,j} (xold_{i,j} - xnew_{i,j})^2
@@ -411,18 +411,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
                         // Formula: \sum_{i,j} xold_{i,j}^2 - \sum_{i,j} xnew_{i,j}^2
     double _objerr;     // Squared Frobenius norm of A - XY using new X (and Y)
 
-    // CholMulTask(final Cholesky chol, final double[][] yt) {
-    CholMulTask(final CholeskyDecomposition chol, final double[][] yt) {
-      this(chol, yt, yt.length, yt[0].length);
+    CholMulTask(DataInfo dinfo, final Cholesky chol, final double[][] yt) {
+      this(dinfo, chol, yt, yt.length, yt[0].length);
     }
 
-    // CholMulTask(final Cholesky chol, final double[][] yt, final int ncolA, final int ncolX) {
-    CholMulTask(final CholeskyDecomposition chol, final double[][] yt, final int ncolA, final int ncolX) {
+    CholMulTask(DataInfo dinfo, final Cholesky chol, final double[][] yt, final int ncolA, final int ncolX) {
       assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      _normSub = dinfo._normSub;
+      _normMul = dinfo._normMul;
+      _ncolA = ncolA; _ncolX = ncolX;
       _chol = chol;
       _yt = yt;
-      _ncolA = ncolA;
-      _ncolX = ncolX;
 
       _sserr = 0;
       _frob2err = 0;
@@ -438,15 +437,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // Compute single row of AY'
         for(int k = 0; k < _ncolX; k++) {
           double x = 0;
-          for(int d = 0; d < _ncolA; d++)
-            x += cs[d].atd(row) * _yt[d][k];
+          for(int d = 0; d < _ncolA; d++) {
+            double a = cs[d].atd(row);
+            if(Double.isNaN(a)) continue;
+            x += (a - _normSub[d]) * _normMul[d] * _yt[d][k];
+          }
           xrow[k] = x;
         }
 
         // Cholesky solve for single row of X
-        // _chol.solve(xrow);
-        Matrix tmp = _chol.solve(new Matrix(ArrayUtils.transpose(new double[][]{xrow})));
-        xrow = tmp.getRowPackedCopy();
+        _chol.solve(xrow);
 
         // Compute l2 norm of single row of A - XY (using new X)
         for(int d = 0; d < _ncolA; d++) {
@@ -455,7 +455,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             for(int c = 0; c < _yt.length; c++)
               xysum += xrow[k] * _yt[c][k];
           }
-          double delta = cs[d].atd(row) - xysum;
+          double a = cs[d].atd(row);
+          if(Double.isNaN(a)) continue;
+          double delta = (a - _normSub[d]) * _normMul[d] - xysum;
           _objerr += delta * delta;
         }
 
