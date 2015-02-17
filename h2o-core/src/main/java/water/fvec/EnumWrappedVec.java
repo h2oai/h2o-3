@@ -114,8 +114,8 @@ public class EnumWrappedVec extends WrappedVec {
   }
 
 
-  static class EnumWrappedChunk extends Chunk {
-    final Chunk _c;             // Test-set map
+  public static class EnumWrappedChunk extends Chunk {
+    public final Chunk _c;             // Test-set map
     final transient int[] _map;
 
     EnumWrappedChunk(Chunk c, EnumWrappedVec vec) {

@@ -615,6 +615,17 @@ public class ArrayUtils {
     return nary;
   }
 
+  static public double[] copyAndFillOf(double[] original, int newLength, double padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    double[] newArray = new double[newLength];
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+  }
+
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;

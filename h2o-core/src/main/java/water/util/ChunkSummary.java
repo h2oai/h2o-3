@@ -1,7 +1,9 @@
 package water.util;
+
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.EnumWrappedVec;
 import water.fvec.Vec;
 
 /**
@@ -53,12 +55,19 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       int nlen = cname.length();
       assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
       String sname = cname.substring(0,nlen-5);
+      if (sname.equals("EnumWrapped")) {
+        Chunk ec = ((EnumWrappedVec.EnumWrappedChunk)c)._c;
+        cname = ec.getClass().getSimpleName();
+        nlen = cname.length();
+        assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
+        sname = cname.substring(0,nlen-5);
+      }
       // Table lookup, roughly sorted by frequency
       int j;
       for( j = 0; j < chunkTypes.length; ++j )
         if( sname.equals(chunkTypes[j]) )
           break;
-      if( j==chunkTypes.length ) throw H2O.unimpl();
+      if( j==chunkTypes.length ) throw H2O.unimpl("Unknown Chunk Type: " + sname);
       chunk_counts[j]++;
       chunk_byte_sizes[j] += c.byteSize();
       byte_size_per_node[H2O.SELF.index()] += c.byteSize();
@@ -88,6 +97,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     for (Vec v : _fr.vecs())
       check += v.nChunks();
     assert(total_chunk_count == check);
+
+    // This doesn't always hold, FileVecs have File-based byte size, while Vecs have Chunk-based byte size.
 //    assert(total_chunk_byte_size == _fr.byteSize());
 
     // compute min, max, mean
@@ -120,7 +131,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     final String[] colHeaders = new String[]{"Chunk Type", "Count", "Count Percentage", "Size", "Size Percentage"};
     final String[] colTypes = new String[]{"string", "integer", "float", "string", "float"};
     final String[] colFormats = new String[]{"%8s", "%10d", "%10.3f %%", "%10s", "%10.3f %%"};
-    final String colHeaderForRowHeaders = null;
+    final String colHeaderForRowHeaders = "";
     TwoDimTable table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     int row = 0;

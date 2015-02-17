@@ -15,6 +15,8 @@ final class Route extends Iced {
   static final int MIN_VERSION = 1;
 
   // TODO: handlers are now stateless, so create a single instance and stash it here
+  // TODO: all fields should be final!
+  // TODO: remove no-args ctor, since it is not used
   public String  _http_method;
   public String _url_pattern_raw;
   public Pattern _url_pattern;
@@ -24,11 +26,21 @@ final class Route extends Iced {
   public Method  _doc_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
+  /* package */ HandlerFactory _handler_factory;
 
   public Route() { }
 
-  public Route(String http_method, String url_pattern_raw, Pattern url_pattern, String summary, Class<? extends Handler> handler_class, Method handler_method, Method doc_method, String[] path_params) {
+  public Route(String http_method,
+               String url_pattern_raw,
+               Pattern url_pattern,
+               String summary,
+               Class<? extends Handler> handler_class,
+               Method handler_method,
+               Method doc_method,
+               String[] path_params,
+               HandlerFactory handler_factory) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
+    assert handler_factory != null : "handler_factory should be not null, caller has to pass it!";
     _http_method = http_method;
     _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
@@ -37,6 +49,7 @@ final class Route extends Iced {
     _handler_method = handler_method;
     _doc_method = doc_method;
     _path_params = path_params;
+    _handler_factory = handler_factory;
   }
 
   /**
