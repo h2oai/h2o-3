@@ -384,7 +384,7 @@ class RollupStats extends Iced {
         this.nnn = nnn;
         _didCompute = true;
         final Vec vec = DKV.getGet(_vecKey);
-        assert vec != null;
+        assert vec != null : "Asking for rollup stats but key was not found/missing/deleted:" +_vecKey;
         if(!_rs.hasStats()){
           addToPendingCount(1);
           new Roll(new H2OCallback<Roll>(this) {
