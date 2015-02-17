@@ -110,6 +110,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     @Override public void reduce( MetricBuilder mb ) {
       super.reduce(mb);
       assert(((MetricBuilderMultinomial) mb)._K == _K);
+      ArrayUtils.add(_cm, ((MetricBuilderMultinomial)mb)._cm);
       _hits = ArrayUtils.add(_hits, ((MetricBuilderMultinomial) mb)._hits);
     }
 

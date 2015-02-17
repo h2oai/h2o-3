@@ -14,7 +14,7 @@ def pythonMultiJVMTestsPath = new File("$rootDir/py/testdir_multi_jvm")
 
 task runPythonMultiJVMTests(type: Exec) {
     workingDir pythonMultiJVMTestsPath
-    commandLine 'python', runner, '--wipeall', '--numclouds', '1'
+    commandLine 'python', runner, '--wipeall', '--numclouds', '2'
 }
 
 task cleanPythonMultiJVMTests(type: Delete) {
