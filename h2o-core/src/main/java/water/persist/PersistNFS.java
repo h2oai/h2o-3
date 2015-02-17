@@ -122,7 +122,7 @@ public final class PersistNFS extends Persist {
   @Override
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     File f = new File(path);
-    if( !f.exists() ) throw new H2ONotFoundArgumentException("File" + path + " does not exist");
+    if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + path + " does not exist");
     FileIntegrityChecker.check(f).syncDirectory(files,keys,fails,dels);
   }
 }
