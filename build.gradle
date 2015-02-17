@@ -43,7 +43,8 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
-      project(':h2o-scala')
+      project(':h2o-scala'),
+      project(':h2o-persist-hdfs')
     ]
 
     javaProjects = [
@@ -51,6 +52,7 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
+      project(':h2o-persist-hdfs'),
       project(':h2o-test-integ')
     ]
 
@@ -79,6 +81,7 @@ ext {
     hadoopSrcDir = '../src/main/java'
 
     hadoopDependentProject = ':h2o-app'
+    hadoopPersistHdfsJarFile = "$rootDir/h2o-persist-hdfs/build/libs/h2o-persist-hdfs.jar"
 
     hadoopFatJarExcludes = ['META-INF/*.DSA',
                             'META-INF/*.SF',
