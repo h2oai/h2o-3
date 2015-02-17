@@ -42,6 +42,9 @@ abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.
   @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction=API.Direction.INOUT)
   public float max_after_balance_size;
 
+  @API(help="Score validation set on each major model-building iteration; can be slow")
+  public boolean score_each_iteration;
+
   @Override
   public S fillFromImpl(P impl) {
     super.fillFromImpl(impl);

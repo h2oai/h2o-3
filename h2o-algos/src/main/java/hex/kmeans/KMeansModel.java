@@ -2,9 +2,7 @@ package hex.kmeans;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.schemas.KMeansModelV2;
 import water.Key;
-import water.api.ModelSchema;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
@@ -61,9 +59,6 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     assert domain == null;
     return new ModelMetricsKMeans.MetricBuilderKMeans(_output.nfeatures());
   }
-
-  // Default publicly visible Schema is V2
-  @Override public ModelSchema schema() { return new KMeansModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     preds[0] = KMeans.closest(_output._centers_raw,data,_output._categorical_column_count);

@@ -5,7 +5,7 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
 
-public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModelV2, Word2VecModel.Word2VecParameters, Word2VecModel.Word2VecOutput> {
+public class Word2VecModelV2 extends ModelSchema<Word2VecModel, Word2VecModelV2, Word2VecModel.Word2VecParameters, Word2VecV2.Word2VecParametersV2, Word2VecModel.Word2VecOutput, Word2VecModelV2.Word2VecModelOutputV2> {
 
   public static final class Word2VecModelOutputV2 extends ModelOutputSchema<Word2VecModel.Word2VecOutput, Word2VecModelOutputV2> {
   } // Word2VecModelOutputV2
