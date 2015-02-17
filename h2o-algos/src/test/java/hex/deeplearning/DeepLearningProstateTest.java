@@ -50,7 +50,7 @@ public class DeepLearningProstateTest extends TestUtil {
                 false,
         }) {
           for (boolean load_balance : new boolean[]{
-                  // true,
+                  true,
                   false,
           }) {
             for (boolean shuffle : new boolean[]{
