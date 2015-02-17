@@ -701,5 +701,10 @@ To view a timeline of events in Flow, click the **Admin** menu, then click **Tim
 
 To obtain the most recent information, click the **Refresh** button.  
 
+---
+
+###Shutting Down H2O
+
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
 
