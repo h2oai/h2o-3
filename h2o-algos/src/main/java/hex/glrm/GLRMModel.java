@@ -6,6 +6,7 @@ import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
 import hex.schemas.GLRMModelV2;
+import water.fvec.Frame;
 import water.util.TwoDimTable;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
@@ -15,6 +16,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _gamma = 0;
     public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;
+    public Key<Frame> _loading_key;
   }
 
   public static class GLRMOutput extends Model.Output {
@@ -24,10 +26,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Average change in objective function this iteration
     public double _avg_change_obj;
 
-    //Rank of final loading matrix
-    public int _rank;
+    // Final loading matrix (X)
+    public Frame _loadings;
 
-    //Mapping from training data cols to lower dimensional k-space
+    //Mapping from training data to lower dimensional k-space (Y)
     public TwoDimTable _archetypes;
 
     //If standardized, mean of each numeric data column

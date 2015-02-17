@@ -60,6 +60,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
+    if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
     if (_parms._k > _train.numCols()) error("_k", "_k cannot be greater than the number of columns in _train");
     if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
@@ -144,7 +145,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
     // Initialize Y to be the k centers from k-means++
-    double[][] initialY(GLRMModel model) {
+    double[][] initialY() {
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = _parms._train;
       parms._ignored_columns = _parms._ignored_columns;
@@ -159,14 +160,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       KMeansModel km = null;
       KMeans job = null;
+      double[][] centers = null;
       try {
         job = new KMeans(parms);
         km = job.trainModel().get();
+        centers = km._output._centers_raw.clone();
       } finally {
         if (job != null) job.remove();
+        if (km != null) km.remove();
       }
-
-      return km._output._centers_raw;
+      return centers;
     }
 
     // Stopping criteria
@@ -184,6 +187,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override
     protected void compute2() {
       GLRMModel model = null;
+      DataInfo dinfo = null;
 
       try {
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
@@ -208,20 +212,20 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         assert c == xvecs.length;
 
         Frame fr = new Frame(Key.make(), null, vecs);
-        DataInfo dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
-        model._output._normSub = dinfo._normSub;  // TODO: Copy only first _train.numCols()
-        model._output._normMul = dinfo._normMul;
+        model._output._normSub = Arrays.copyOf(dinfo._normSub, _train.numCols());
+        model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // Create separate reference to X for Gram task
-        Frame x = new Frame(Key.make(), null, xvecs);
+        Frame x = new Frame(_parms._loading_key, null, xvecs);
         DataInfo xinfo = new DataInfo(x._key, x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(xinfo._key, xinfo);
 
         // 0) Initialize X and Y matrices
         // a) Initialize Y' matrix using k-means++
         double nobs = _train.numRows() * _train.numCols();
-        double[][] yt = ArrayUtils.transpose(initialY(model));
+        double[][] yt = ArrayUtils.transpose(initialY());
         double yt_norm = frobenius2(yt);
 
         // b) Initialize X = AY'(YY' + \gamma I)^(-1)
@@ -234,7 +238,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             ygram_init[i][i] += _parms._gamma;
         }
         CholeskyDecomposition yychol_init = new Matrix(ygram_init).chol();
-        CholMulTask cmtsk_init = new CholMulTask(self(), dinfo, yychol_init, yt, _train.numCols(), _parms._k);
+        CholMulTask cmtsk_init = new CholMulTask(yychol_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
         double axy_norm = cmtsk_init._objerr;   // Save squared Frobenius norm ||A - XY||_F^2
 
@@ -246,7 +250,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // b) Get Cholesky decomposition of D = X'X + \gamma I
           if (_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma);
           Cholesky xxchol = xgram._gram.cholesky(null);
-          xxchol.setSPD(true);    // Since Gram matrix is always positive semi-definite
+          xxchol.setSPD(true);    // Since Gram matrix is always symmetric positive semi-definite
 
           // c) Compute A'X and solve for Y' of DY' = A'X
           // TODO: Check this uses standardized values of A in dinfo
@@ -268,7 +272,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           CholeskyDecomposition yychol = new Matrix(ygram).chol();
 
           // c) Compute AY' and solve for X of XD = AY' -> D'X' = YA'
-          CholMulTask cmtsk = new CholMulTask(self(), dinfo, yychol, yt, _train.numCols(), _parms._k);
+          CholMulTask cmtsk = new CholMulTask(yychol, yt, _train.numCols(), _parms._k);
           cmtsk.doAll(dinfo._adaptedFrame);
 
           // 3) Compute average change in objective function
@@ -294,8 +298,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Arrays.fill(colTypes, "double");
         model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, null, "", new String[_parms._k][], yt);
         model._output._parameters = _parms;
-        model._output._rank = _parms._k;
-        DKV.put(_parms._destination_key, xinfo);
+        model._output._loadings = xinfo._adaptedFrame;
 
         /* BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
         String[] names = new String[_parms._k];
@@ -313,7 +316,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           throw t;
         }
       } finally {
+        _train.unlock(_key);
         if (model != null) model.unlock(_key);
+        if (dinfo != null) dinfo.remove();
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
@@ -336,8 +341,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _prod = new double[ncolX][ncolA];
     }
 
-    @Override
-    public void map(Chunk[] cs) {
+    @Override public void map(Chunk[] cs) {
       assert (_ncolA + _ncolX) == cs.length;
 
       // Cycle over columns of A
@@ -392,7 +396,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   // TODO: Generalize this with boolean flag indicating whether to transpose Y
   // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
   // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
-  private static class CholMulTask extends FrameTask<CholMulTask> {
+  private static class CholMulTask extends MRTask<CholMulTask> {
     int _ncolA;       // _ncolA = p (number of training cols)
     int _ncolX;       // _ncolX = k (number of PCs)
     double[][] _yt;   // _yt = Y' (transpose of Y)
@@ -405,13 +409,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
                         // Formula: \sum_{i,j} xold_{i,j}^2 - \sum_{i,j} xnew_{i,j}^2
     double _objerr;     // Squared Frobenius norm of A - XY using new X (and Y)
 
-    /* CholMulTask(Key jobKey, DataInfo dinfo, final Cholesky chol, final double[][] yt) {
-      this(jobKey, dinfo, chol, yt, yt.length, yt[0].length);
-    } */
+    // CholMulTask(final Cholesky chol, final double[][] yt) {
+    CholMulTask(final CholeskyDecomposition chol, final double[][] yt) {
+      this(chol, yt, yt.length, yt[0].length);
+    }
 
-    // CholMulTask(Key jobKey, DataInfo dinfo, final Cholesky chol, final double[][] yt, final int ncolA, final int ncolX) {
-    CholMulTask(Key jobKey, DataInfo dinfo, final CholeskyDecomposition chol, final double[][] yt, final int ncolA, final int ncolX) {
-      super(jobKey, dinfo);   // dinfo = [A,X] jammed into single frame
+    // CholMulTask(final Cholesky chol, final double[][] yt, final int ncolA, final int ncolX) {
+    CholMulTask(final CholeskyDecomposition chol, final double[][] yt, final int ncolA, final int ncolX) {
       assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
       _chol = chol;
       _yt = yt;
@@ -423,49 +427,49 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _objerr = 0;
     }
 
-    @Override protected void processRow(long gid, Row row) {
-      double[] nums = row.numVals;
+    // In chunk, first _ncolA cols are A, next _ncolX cols are X
+    @Override public void map(Chunk[] cs) {
       double[] xrow = new double[_ncolX];
-      assert (_ncolX + _ncolA) == nums.length;
+      assert (_ncolX + _ncolA) == cs.length;
 
-      // Compute single row of AY'
-      for(int k = 0; k < _ncolX; k++) {
-        double x = 0;
-        int c = _dinfo.numStart();
-        for(int d = 0; d < _ncolA; d++)
-          x += nums[d] * _yt[c++][k];
-        assert c == _yt.length;
-        xrow[k] = x;
-      }
-
-      // Cholesky solve for single row of X
-      // _chol.solve(xrow);
-      Matrix tmp = _chol.solve(new Matrix(ArrayUtils.transpose(new double[][] { xrow } )));
-      xrow = tmp.getRowPackedCopy();
-
-      // Update X in place with new solved values
-      int i = 0;
-      for(int d = _ncolA; d < nums.length; d++) {
-        // Sum of squared error between rows of old and new X
-        double delta = nums[d] - xrow[i];
-        _sserr += delta * delta;
-
-        // Difference in l2 norm of old and new X rows
-        _frob2err += nums[d] * nums[d] - xrow[i] * xrow[i];
-        // row.addNum(d, xrow[i++]);
-        row.numVals[d] = xrow[i++];
-      }
-      assert i == xrow.length;
-
-      // Compute l2 norm of single row of A - XY
-      for(int d = 0; d < _ncolA; d++) {
-        double xysum = 0;
+      for(int row = 0; row < cs[0]._len; row++) {
+        // Compute single row of AY'
         for(int k = 0; k < _ncolX; k++) {
-          for(int c = 0; c < _yt.length; c++)
-            xysum += xrow[k] * _yt[c][k];
+          double x = 0;
+          for(int d = 0; d < _ncolA; d++)
+            x += cs[d].atd(row) * _yt[d][k];
+          xrow[k] = x;
         }
-        double delta = nums[d] - xysum;
-        _objerr += delta * delta;
+
+        // Cholesky solve for single row of X
+        // _chol.solve(xrow);
+        Matrix tmp = _chol.solve(new Matrix(ArrayUtils.transpose(new double[][]{xrow})));
+        xrow = tmp.getRowPackedCopy();
+
+        // Compute l2 norm of single row of A - XY (using new X)
+        for(int d = 0; d < _ncolA; d++) {
+          double xysum = 0;
+          for(int k = 0; k < _ncolX; k++) {
+            for(int c = 0; c < _yt.length; c++)
+              xysum += xrow[k] * _yt[c][k];
+          }
+          double delta = cs[d].atd(row) - xysum;
+          _objerr += delta * delta;
+        }
+
+        // Update X in place with new solved values
+        int i = 0;
+        for(int d = _ncolA; d < cs.length; d++) {
+          // Sum of squared error between rows of old and new X
+          double xold = cs[d].atd(row);
+          double delta = xold - xrow[i];
+          _sserr += delta * delta;
+
+          // Difference in l2 norm of old and new X rows
+          _frob2err += xold * xold - xrow[i] * xrow[i];
+          cs[d].set(row, xrow[i++]);
+        }
+        assert i == xrow.length;
       }
     }
 

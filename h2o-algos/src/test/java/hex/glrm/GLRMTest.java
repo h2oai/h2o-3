@@ -3,6 +3,7 @@ package hex.glrm;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -27,6 +28,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 4;
       parms._gamma = 0;
       parms._standardize = true;
+      parms._max_iterations = 1;
 
       try {
         job = new GLRM(parms);
@@ -36,8 +38,10 @@ public class GLRMTest extends TestUtil {
       }
     } finally {
       if( fr    != null ) fr   .delete();
-      if( model != null ) model.delete();
-
+      if( model != null ) {
+        DKV.remove(model._parms._loading_key);
+        model.delete();
+      }
     }
   }
 
