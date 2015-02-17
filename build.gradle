@@ -72,6 +72,23 @@ ext {
     junitVersion  = '4.11'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
+
+    //
+    // Common to Hadoop builds (underneath h2o-hadoop)
+    //
+    hadoopSrcDir = '../src/main/java'
+
+    hadoopDependentProject = ':h2o-app'
+
+    hadoopFatJarExcludes = ['META-INF/*.DSA',
+                            'META-INF/*.SF',
+                            'synchronize.properties',
+                            'uploader.properties',
+                            'test.properties',
+                            'cockpitlite.properties',
+                            'devpay_products.properties']
+
+    hadoopFatJarMainClass = 'water.hadoop.h2odriver'
 }
 
 //
@@ -94,13 +111,14 @@ subprojects {
 
     repositories {
         mavenCentral()
-        // Cloudera dependencies
         maven {
           url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
-        // Hortonworks dependencies
         maven {
           url "http://repo.hortonworks.com/content/repositories/releases/"
+        }
+        maven {
+          url "http://repository.mapr.com/maven/"
         }
         // mavenLocal()
     }
