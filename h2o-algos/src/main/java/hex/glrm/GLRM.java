@@ -274,7 +274,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // c) Compute AY' and solve for X of XD = AY' -> D'X' = YA'
           CholMulTask cmtsk = new CholMulTask(yychol, yt, _train.numCols(), _parms._k);
-          cmtsk.doAll(dinfo._adaptedFrame);
+          cmtsk.doAll(dinfo._adaptedFrame);   // TODO: I sometimes get non-SPD errors here, why??
 
           // 3) Compute average change in objective function
           model._output._avg_change_obj = axy_norm - cmtsk._objerr;
