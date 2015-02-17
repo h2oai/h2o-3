@@ -38,13 +38,9 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
      * Fetch all the Models so we can see if they are compatible with our Frame(s).
      */
     static protected Map<Model, Set<String>> fetchModelCols(Model[] all_models) {
-      Map<Model, Set<String>> all_models_cols = null;
-
-      all_models_cols = new HashMap<Model, Set<String>>();
-
-      for (Model m : all_models) {
-        all_models_cols.put(m, new HashSet<String>(Arrays.asList(m._output._names)));
-      }
+      Map<Model, Set<String>> all_models_cols = new HashMap<>();
+      for (Model m : all_models)
+        all_models_cols.put(m, new HashSet<>(Arrays.asList(m._output._names)));
       return all_models_cols;
     }
 
@@ -92,8 +88,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     } else {
       f3 = list(version, f3);
     }
-    FramesV2 f2 = new FramesV2().fillFromImpl(f3.createAndFillImpl());
-    return f2;
+    return new FramesV2().fillFromImpl(f3.createAndFillImpl());
   }
 
   /** Return all the frames. */
