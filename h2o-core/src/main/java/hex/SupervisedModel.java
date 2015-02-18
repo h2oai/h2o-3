@@ -118,5 +118,10 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     return scored;
   }
 
+  protected SB toJavaPROB( SB sb) {
+    toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
+    toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
+    return sb;
+  }
 }
 
