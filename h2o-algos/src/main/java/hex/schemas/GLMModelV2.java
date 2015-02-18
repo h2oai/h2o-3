@@ -15,10 +15,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 
     // Submodel [] _submodels;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="bets lambda if doing lambda search")
     int         best_lambda_idx;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="The decision threshold to be used in classification")
     float       threshold;
 
 //    @API(help="fill me in GLMModelOutputV2")
@@ -27,10 +27,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 //    @API(help="fill me in GLMModelOutputV2")
 //    String   [] coefficient_names;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="Table of coefficients")
     TwoDimTableV1 coefficients_table;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="Coefficient magnitudes")
     TwoDimTableV1 coefficients_magnitude;
 
     @API(help="Residual Deviance - Training")
