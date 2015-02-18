@@ -31,7 +31,7 @@ class SVMLightParser extends Parser {
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
                                  dout._invalidLines, 0, dout.errors(), ParserType.SVMLight, ParseSetup.AUTO_SEP, dout._ncols,
-                                 false,null,null,dout._data,-1/*never a header on SVM light*/, null);
+                                 false,null,null,dout._data,-1/*never a header on SVM light*/, dout.guessTypes());
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
@@ -337,18 +337,29 @@ class SVMLightParser extends Parser {
   // Fill with zeros not NAs, and grow columns on-demand.
   private static class SVMLightInspectDataOut extends InspectDataOut {
     public SVMLightInspectDataOut() {
+      for (int i = 0; i < MAX_PREVIEW_LINES;++i)
+        _data[i] = new String[MAX_PREVIEW_COLS];
       for (String[] a_data : _data) Arrays.fill(a_data, "0");
     }
+
     // Expand columns on-demand
     @Override public void addNumCol(int colIdx, long number, int exp) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = Double.toString(number*PrettyPrint.pow10(exp));
     }
+
     @Override public void addNumCol(int colIdx, double d) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = Double.toString(d);
+    }
+
+    public ColTypeInfo[] guessTypes() {
+      ColTypeInfo [] res = new ColTypeInfo[_ncols];
+      for(int i = 0; i < _ncols; ++i)
+        res[i] = new ColTypeInfo(ColType.NUM);
+      return res;
     }
   }
 }

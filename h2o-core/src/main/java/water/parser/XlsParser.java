@@ -82,7 +82,7 @@ class XlsParser extends Parser {
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
                                  dout._invalidLines, 0, dout.errors(), ParserType.XLS, ParseSetup.AUTO_SEP, dout._ncols,
-                                 false,dout.colNames(), null, dout._data, dout.colNames()==null?-1:1, null);
+                                 false,dout.colNames(), null, dout._data, dout.colNames()==null?-1:1, dout.guessTypes());
   }
 
 
