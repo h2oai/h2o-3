@@ -61,7 +61,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         vecs[i] = _appendables[i].close(fs);
       }
     }
-    return new Frame(key,names,vecs);
+    Frame fr = new Frame(key,names,vecs);
+    if( key != null ) DKV.put(fr,fs);
+    return fr;
   }
   public AppendableVec[] appendables() { return _appendables; }
   

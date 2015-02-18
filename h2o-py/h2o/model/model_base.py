@@ -86,3 +86,7 @@ class ModelBase(object):
     print
     for v in two_dim_tables:
       v.show()
+
+  # Delete from cluster as model goes out of scope
+  def __del__(self):
+    h2o.remove(self._key)

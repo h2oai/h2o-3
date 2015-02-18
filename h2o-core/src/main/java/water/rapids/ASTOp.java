@@ -1066,7 +1066,6 @@ abstract class ASTBinOp extends ASTOp {
     }
     final ASTBinOp bin = this;  // Final 'this' so can use in closure
 
-    Key tmp_key = Key.make();
     // Run an arbitrary binary op on one or two frames & scalars
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -1119,7 +1118,7 @@ abstract class ASTBinOp extends ASTOp {
           }
         }
       }
-    }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
+    }.doAll(ncols,fr).outputFrame(null, (lf ? fr0 : fr1)._names,null);
     env.poppush(2, new ValFrame(fr2));
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
