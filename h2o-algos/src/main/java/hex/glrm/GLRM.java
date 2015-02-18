@@ -1,7 +1,9 @@
 package hex.glrm;
 
+import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
+import Jama.SingularValueDecomposition;
 import hex.DataInfo;
 import hex.DataInfo.Row;
 import hex.gram.Gram;
@@ -161,16 +163,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       KMeansModel km = null;
       KMeans job = null;
-      double[][] centers = null;
       try {
         job = new KMeans(parms);
         km = job.trainModel().get();
-        centers = km._output._centers_raw.clone();
       } finally {
         if (job != null) job.remove();
         if (km != null) km.remove();
       }
-      return centers;
+      return km._output._centers_raw;
     }
 
     // Stopping criteria
@@ -184,9 +184,52 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return false;             // Not stopping
     }
 
-    void recoverPCA(GLRMModel model) {
+    // Recover eigenvalues and eigenvectors of XY
+    void recoverPCA(GLRMModel model, DataInfo xinfo) {
+      GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
+      if (_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma);
+      Cholesky xxchol = xgram._gram.cholesky(null);
+      xxchol.setSPD(true);    // Since Gram matrix is always positive semi-definite
+      /* double[][] xx = xgram._gram.getXX();
+      if(_parms._gamma > 0) addDiag(xx, _parms._gamma);
+      CholeskyDecomposition xxchol = new CholeskyDecomposition(new Matrix(xx)); */
+
+      // R from QR decomposition of X = QR is upper triangular factor of Cholesky of X'X
+      // TODO: Need to check and test lower triangular matrix of Cholesky
+      Matrix x_r = new Matrix(ArrayUtils.transpose(xxchol.getL()));
+      // Matrix x_r = xxchol.getL().transpose();
       QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes_raw));
-      Matrix yt_r = yt_qr.getR();
+      Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
+      Matrix rrmul = x_r.times(yt_r.transpose());
+      SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
+
+      // Eigenvectors are V'Z' = (ZV)'
+      Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
+      model._output._eigenvectors = eigvec.transpose().getArray();
+      // model._output._eigenvalues = rrsvd.getSingularValues();
+
+      // Calculate standard deviations from \Sigma
+      // Note: Singular values ordered in weakly descending order by algorithm
+      double[] sval = rrsvd.getSingularValues();
+      double[] sdev = new double[sval.length];
+      double tot_var = 0;
+      double dfcorr = _train.numRows()/(_train.numRows() - 1.0);
+      for(int i = 0; i < sval.length; i++) {
+        sval[i] = dfcorr * sval[i];   // Correct since degrees of freedom = n-1
+        sdev[i] = Math.sqrt(sval[i]);
+        tot_var += sval[i];
+      }
+      model._output._std_deviation = sdev;
+
+      // Calculate proportion of variance explained
+      double[] prop_var = new double[sval.length];    // Proportion of total variance
+      double[] cum_var = new double[sval.length];    // Cumulative proportion of total variance
+      for(int i = 0; i < sval.length; i++) {
+        prop_var[i] = sval[i]/tot_var;
+        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
+      }
+      model._output._prop_variance = prop_var;
+      model._output._cum_variance = cum_var;
     }
 
     // Main worker thread
@@ -281,7 +324,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             model._output._avg_change_obj += _parms._gamma * ((yt_old_norm - yt_norm) + cmtsk._frob2err);
           }
           model._output._avg_change_obj /= nobs;
-
           model._output._iterations++;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -297,10 +339,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, null, "", new String[_parms._k][], yt);
         model._output._parameters = _parms;
         // model._output._loadings = xinfo._adaptedFrame;
-
-        /* BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
-        tsk.outputFrame(_parms._destination_key, _train._names, null); */
-
+        recoverPCA(model, xinfo);
+        //BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
+        // tsk.outputFrame(_parms._destination_key, _train._names, null);
         done();
       } catch (Throwable t) {
         Job thisJob = DKV.getGet(_key);

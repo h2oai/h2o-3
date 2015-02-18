@@ -29,18 +29,31 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Final loading matrix (X)
     //public Frame _loadings;
 
-    //Mapping from training data to lower dimensional k-space (Y)
+    // Mapping from training data to lower dimensional k-space (Y)
     public double[][] _archetypes_raw;
     public TwoDimTable _archetypes;
 
-    //If standardized, mean of each numeric data column
+    // PCA output on XY
+    // Principal components (eigenvectors) from SVD of XY
+    public double[/*feature*/][/*k*/] _eigenvectors;
+
+    // Standard deviation of each principal component
+    public double[] _std_deviation;
+
+    // Proportion of variance explained by each principal component
+    public double[] _prop_variance;
+
+    // Cumulative proportion of variance explained by each principal component
+    public double[] _cum_variance;
+
+    // @API(help = "Model parameters")
+    GLRMParameters _parameters;
+
+    // If standardized, mean of each numeric data column
     public double[] _normSub;
 
-    //If standardized, one over standard deviation of each numeric data column
+    // If standardized, one over standard deviation of each numeric data column
     public double[] _normMul;
-
-    //@API(help = "Model parameters")
-    GLRMParameters _parameters;
 
     public GLRMOutput( GLRM b ) { super(b); }
 

@@ -264,6 +264,7 @@ public final class Gram extends Iced<Gram> {
     arr = d.getL();
     for( int i = 0; i < arr.length; ++i )
       System.arraycopy(arr[i], 0, fchol._xx[i], sparseN, i + 1);
+    fchol._ltri = arr;
     return chol;
   }
 
@@ -318,9 +319,13 @@ public final class Gram extends Iced<Gram> {
     protected final double[] _diag;
     private boolean _isSPD;
 
+    // Lower triangular matrix from Cholesky decomposition
+    public double[][] _ltri;
+
     public Cholesky(double[][] xx, double[] diag) {
       _xx = xx;
       _diag = diag;
+      _ltri = null;
     }
 
     public Cholesky(Gram gram) {
@@ -328,7 +333,7 @@ public final class Gram extends Iced<Gram> {
       for( int i = 0; i < _xx.length; ++i )
         _xx[i] = gram._xx[i].clone();
       _diag = gram._diag.clone();
-
+      _ltri = null;
     }
 
     public double[][] getXX() {
@@ -354,6 +359,7 @@ public final class Gram extends Iced<Gram> {
           if(xx[i][j] != 0) nzs += 1;
       return nzs/(xx.length*xx.length);
     }
+    public double[][] getL() { return _ltri; }
 
     @Override
     public String toString() {
