@@ -311,7 +311,7 @@ public class GBMTest extends TestUtil {
       job.remove();
 
       pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
-      pred.remove("Angaus");    // No response column during scoring
+      pred.remove("Angaus").remove();    // No response column during scoring
       res = gbm.score(pred);
 
     } finally {
