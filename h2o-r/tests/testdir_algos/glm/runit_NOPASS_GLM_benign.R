@@ -17,7 +17,7 @@ glm2Benign <- function(conn) {
   Log.info("===================Columns passed in: ================")
   Log.info(paste("index ", X ," ", names(bhexFV)[X], "\n", sep=""))
   Log.info("======================================================")
-  preds <- mFV@model$coefficient_names
+  preds <- mFV@model$coefficients_table$Column
   preds <- preds[1:length(preds)-1]
   Log.info("===================Columns Used in Model: =========================")
   Log.info(paste(preds, "\n", sep=""))

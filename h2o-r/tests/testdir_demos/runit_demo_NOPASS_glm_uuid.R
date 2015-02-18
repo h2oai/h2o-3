@@ -51,7 +51,8 @@ test <- function(conn) {
     print("Head of UUIDs from test set: ")
     head(test.uuid)
   
-  print("Run GLM prediction on test set.inairline.predict.uuid <- predict(object=airline.glm, newdata=airline.test.hex)
+  print("Run GLM prediction on test set")
+    airline.predict.uuid <- predict(object=airline.glm, newdata=airline.test.hex)
     print("Head of prediction on test set: ")
     head(airline.predict.uuid)
   
@@ -65,15 +66,14 @@ test <- function(conn) {
     summary(air.results) 
   
   print("Check performce and AUC")
-    perf <- h2o.performance(air.results$YES,airline.test.hex$IsArrDelayed )
+    perf <- h2o.performance(airline.glm,airline.test.hex)
     print(perf)
-    perf@model$auc
+    perf@metrics$auc
 
   print("Show distribution of predictions with quantile.")
-    quant <- quantile.H2OParsedData(air.results$YES)
-  
+    print(quant <- quantile.H2OFrame(air.results$'1'))
   print("Extract strongest predictions.")
-    top.air <- h2o.assign(air.results[air.results$YES > quant['75%'] ],key="top.air")
+    top.air <- h2o.assign(air.results[air.results$'1' > quant['75%'], ],key="top.air")
     print("Dimension of strongest predictions: ")
     dim(top.air)
     print("Head of strongest predictions: ")
