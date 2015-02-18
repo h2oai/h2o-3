@@ -24,6 +24,7 @@ public class VecStatsTest extends TestUtil {
         chunk.close(i, fs);
       }
       vecs[0] = vec.close(fs);
+      fs.blockForPending();
       frame = new Frame(Key.make(), null, vecs);
 
       // Make sure we test the multi-chunk case
@@ -50,7 +51,6 @@ public class VecStatsTest extends TestUtil {
       assertEquals(min, v.min(), epsilon);
       assertEquals(mean, v.mean(), epsilon);
       assertEquals(sigma, v.sigma(), epsilon);
-      fs.blockForPending();
     } finally {
       if( frame != null ) frame.delete();
     }
