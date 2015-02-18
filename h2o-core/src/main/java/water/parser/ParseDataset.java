@@ -219,7 +219,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._columnNames != null?setup._columnNames:genericColumnNames(setup._ncols),AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
