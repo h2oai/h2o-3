@@ -1,6 +1,10 @@
 Setup and Installation
 ======================
 
+Prerequisites:
+    
+    - Python 2.7
+
 This module depends on *requests* and *tabulate* modules. Both of which are available on pypi.
 
     $ pip install requests
