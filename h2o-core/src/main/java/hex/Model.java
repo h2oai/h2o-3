@@ -252,7 +252,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     // TODO: Needs to be Atomic update, not just synchronized
-    protected synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
+    public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
       for( int i=0; i<_model_metrics.length; i++ ) // Dup removal
         if( _model_metrics[i]==mm._key ) return mm;
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
@@ -425,8 +425,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
     if( _output.isClassifier() ) {
-      assert(mdomain != null); // label must be enum
-
+//      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ModelCategory model_cat = this._output.getModelCategory();
       ConfusionMatrix cm = mm.cm();
@@ -436,7 +435,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
       if (cm.domain != null) { //don't print table for regression
-        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
+//        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
           water.util.Log.info(cm.table.toString(1));
