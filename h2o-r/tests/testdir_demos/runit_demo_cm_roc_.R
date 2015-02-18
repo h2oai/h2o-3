@@ -33,12 +33,16 @@ myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
 myY <- "IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = air.train, ntrees = 100, max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
+air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   loss = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
 print(air.gbm@model)
+print(air.gbm@model$variableImportances[1:10,])
 
 #glm
-air.glm <- h2o.glm(x = myX, y = myY, family = "binomial", training_frame = air.train, do_classification=TRUE, solver = "L_BFGS")
+air.glm <- h2o.glm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   family = "binomial", do_classification=TRUE)
 print(air.glm@model)
+print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
 air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
