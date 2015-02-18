@@ -60,6 +60,8 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms._train + ".");
     } else {
       _response  = _train.remove(ridx);
+      if( _valid != null && _valid.find(_parms._response_column)== -1 )
+        error("_response_column", "Response column is missing in the validation set!");
       _vresponse = _valid == null ? null : _valid.remove(ridx);
       if (_response.isBad())
         error("_response_column", "Response column is all NAs!");
