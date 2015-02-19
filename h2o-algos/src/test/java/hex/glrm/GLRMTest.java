@@ -14,15 +14,40 @@ import water.util.ArrayUtils;
 import java.util.concurrent.ExecutionException;
 
 public class GLRMTest extends TestUtil {
-  @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+  public final double threshold = 0.000001;
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
+  public void checkStddev(double[] expected, double[] actual) {
+    for(int i = 0; i < actual.length; i++)
+      Assert.assertEquals(expected[i], actual[i], threshold);
+  }
+
+  public void checkEigvec(double[][] expected, double[][] actual) {
+    int nfeat = actual.length;
+    int ncomp = actual[0].length;
+    for(int j = 0; j < ncomp; j++) {
+      boolean flipped = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      for(int i = 0; i < nfeat; i++) {
+        if(flipped)
+          Assert.assertEquals(expected[i][j], -actual[i][j], threshold);
+        else
+          Assert.assertEquals(expected[i][j], actual[i][j], threshold);
+      }
+    }
+  }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
-    double[] sdev = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
-    double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
-                            ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
-                            ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
-                            ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
+    double[] stddev = new double[] {83.732400, 14.212402, 6.489426, 2.482790};
+    double[][] eigvec = ard(ard(0.04170432, -0.04482166, 0.07989066, -0.99492173),
+                            ard(0.99522128, -0.05876003, -0.06756974, 0.03893830),
+                            ard(0.04633575, 0.97685748, -0.20054629, -0.05816914),
+                            ard(0.07515550, 0.20071807, 0.97408059, 0.07232502));
+
+    double[] stddev_std = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
+    double[][] eigvec_std = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
+                                ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
+                                ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
+                                ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
     GLRM job = null;
     GLRMModel model = null;
     Frame fr = null;
@@ -30,18 +55,22 @@ public class GLRMTest extends TestUtil {
       Key ksrc = Key.make("arrests.hex");
       fr = parse_test_file(ksrc, "smalldata/pca_test/USArrests.csv");
 
-      GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
-      parms._train = fr._key;
-      parms._k = 4;
-      parms._gamma = 0;
-      parms._standardize = true;
-      parms._max_iterations = 1;
+      for(boolean std : new boolean[] {false, true}) {
+        GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
+        parms._train = fr._key;
+        parms._k = 4;
+        parms._gamma = 0;
+        parms._standardize = std;
+        parms._max_iterations = 0;
 
-      try {
-        job = new GLRM(parms);
-        model = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
+        try {
+          job = new GLRM(parms);
+          model = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+        }
+        checkStddev(std ? stddev_std : stddev, model._output._std_deviation);
+        checkEigvec(std ? eigvec_std : eigvec, model._output._eigenvectors);
       }
     } finally {
       if( fr    != null ) fr   .delete();
@@ -50,8 +79,6 @@ public class GLRMTest extends TestUtil {
         model.delete();
       }
     }
-    Assert.assertArrayEquals(model._output._std_deviation, sdev, 1e-6);
-    Assert.assertArrayEquals(model._output._eigenvectors, eigvec);
   }
 
   @Test public void testGram() {
@@ -61,7 +88,6 @@ public class GLRMTest extends TestUtil {
 
     double[][] xgram_glrm = GLRM.formGram(x, false);
     double[][] xtgram_glrm = GLRM.formGram(x, true);
-
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
   }

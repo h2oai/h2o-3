@@ -27,7 +27,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double _avg_change_obj;
 
     // Final loading matrix (X)
-    //public Frame _loadings;
+    // public Frame _loadings;
 
     // Mapping from training data to lower dimensional k-space (Y)
     public double[][] _archetypes_raw;
@@ -40,13 +40,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Standard deviation of each principal component
     public double[] _std_deviation;
 
-    // Proportion of variance explained by each principal component
-    public double[] _prop_variance;
+    // Importance of principal components
+    // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
+    public TwoDimTable _pc_importance;
 
-    // Cumulative proportion of variance explained by each principal component
-    public double[] _cum_variance;
-
-    // @API(help = "Model parameters")
+    // Model parameters
     GLRMParameters _parameters;
 
     // If standardized, mean of each numeric data column
