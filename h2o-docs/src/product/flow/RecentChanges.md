@@ -24,6 +24,7 @@ These changes are improvements to existing features (which includes changed defa
 -  Removed `group_split` option from GBM
 -  Flow: display varimp for GBM output [(PUBDEV-398)](https://0xdata.atlassian.net/browse/PUBDEV-398)
 -  variable importance for GBM [(github)](https://github.com/h2oai/h2o-dev/commit/f5085c3964d87d5349f406d1cfcc81fa0b34a27f)
+-  GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
 
 ####Bug Fixes
 

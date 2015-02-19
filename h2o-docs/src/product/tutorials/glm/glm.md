@@ -4,7 +4,7 @@ The purpose of this tutorial is to walk new users through Generalized Linear Ana
 Users who have never used H2O before should refer
 [Getting Started](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md) for additional instructions on how to run H2O Flow.
 
-
+**Note**: GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
 
 ###Using GLM
 The variable of interest relates to predictions or
