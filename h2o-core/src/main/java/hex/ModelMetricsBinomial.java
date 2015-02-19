@@ -41,8 +41,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
 
   public static class MetricBuilderBinomial extends MetricBuilderSupervised {
-    final float[] _thresholds;
-    long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
+    protected final float[] _thresholds;
+    protected long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
     public MetricBuilderBinomial( String[] domain, float[] thresholds ) {
       super(domain);
       _thresholds = thresholds;

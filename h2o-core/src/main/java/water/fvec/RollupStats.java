@@ -108,6 +108,7 @@ class RollupStats extends Iced {
         else if( c.at8(i)==0 ) zs++;
       int os = c._len-zs-nans;  // Ones
       _nzCnt = os;
+      _naCnt = nans;
       for( int i=0; i<Math.min(_mins.length,zs); i++ ) { min(0); max(0); }
       for( int i=0; i<Math.min(_mins.length,os); i++ ) { min(1); max(1); }
       _rows = zs+os;
@@ -284,8 +285,7 @@ class RollupStats extends Iced {
       _bins = new long[_nbins];
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.atd(i);
-        if( Double.isNaN(d) ) continue;
-        _bins[idx(d)]++;
+        if( !Double.isNaN(d) ) _bins[idx(d)]++;
       }
       // Sparse?  We skipped all the zeros; do them now
       if( c.isSparse() )
@@ -336,8 +336,8 @@ class RollupStats extends Iced {
       }
       addToPendingCount(1);
       new Histo(new H2OCallback<Histo>(this){
-        @Override
-        public void callback(Histo histo) {
+        @Override public void callback(Histo histo) {
+          assert ArrayUtils.sum(histo._bins)==rows;
           _rs._bins = histo._bins;
           // Compute percentiles from histogram
           _rs._pctiles = new double[Vec.PERCENTILES.length];
@@ -384,7 +384,7 @@ class RollupStats extends Iced {
         this.nnn = nnn;
         _didCompute = true;
         final Vec vec = DKV.getGet(_vecKey);
-        assert vec != null;
+        assert vec != null : "Asking for rollup stats but key was not found/missing/deleted:" +_vecKey;
         if(!_rs.hasStats()){
           addToPendingCount(1);
           new Roll(new H2OCallback<Roll>(this) {

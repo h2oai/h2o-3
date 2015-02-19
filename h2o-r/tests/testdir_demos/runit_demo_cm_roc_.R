@@ -10,10 +10,18 @@ source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+
+# RStudio interactive mode
+if (! exists("myIP")) {
+  library(h2o)
+  myIP = "localhost"
+  myPort = 54321
+}
+
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 #uploading data file to h2o
-air <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -25,15 +33,19 @@ myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
 myY <- "IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = air.train, ntrees = 10, max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
+air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   loss = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
 print(air.gbm@model)
+print(air.gbm@model$variableImportances[1:10,])
 
 #glm
-air.glm <- h2o.glm(x = myX, y = myY, family = "binomial", training_frame = air.train, do_classification=TRUE, solver = "L_BFGS")
+air.glm <- h2o.glm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   family = "binomial", do_classification=TRUE)
 print(air.glm@model)
+print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
 pred.gbm <- predict(air.gbm, air.test)
@@ -64,5 +76,3 @@ h2o.auc(perf.glm)
 plot(perf.glm,type="roc")
 
 PASS_BANNER()
-
-

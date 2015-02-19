@@ -272,15 +272,11 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {
-    if (name == null)
-      return -1;
-
-    if (_names!=null)
-      for( int i=0; i<_names.length; i++ )
-        if (_names[i] != null)
-          if( name.equals(_names[i]) )
-            return i;
-
+    if( name == null ) return -1;
+    assert _names != null;
+    for( int i=0; i<_names.length; i++ )
+      if( name.equals(_names[i]) )
+        return i;
     return -1;
   }
 
@@ -899,7 +895,7 @@ public class Frame extends Lockable<Frame> {
       case Vec.T_STR :
         coltypes[i] = "string"; 
         ValueString vstr = new ValueString();
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_ENUM:
         coltypes[i] = "string"; 

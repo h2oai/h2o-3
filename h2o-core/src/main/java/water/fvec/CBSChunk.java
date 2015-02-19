@@ -67,7 +67,7 @@ public class CBSChunk extends Chunk {
 
   /** Reads 1bit from given b in given offset. */
   public static byte read1b(byte b, int off) { return (byte) ((b >> (7-off)) & 0x1); }
-  /** Reads 1bit from given b in given offset. */
+  /** Reads 2bit from given b in given offset. */
   public static byte read2b(byte b, int off) { return (byte) ((b >> (6-off)) & 0x3); }
 
   /** Returns compressed len of the given array length if the value if represented by bpv-bits. */

@@ -672,7 +672,7 @@ MAIN_LOOP:
     // now guess the types
     InputStream is = new ByteArrayInputStream(bits);
     CsvParser p = new CsvParser(resSetup);
-    TypeGuesserDataOut dout = new TypeGuesserDataOut(resSetup._ncols);
+    InspectDataOut dout = new InspectDataOut(resSetup._ncols);
     try{
       p.streamParse(is, dout);
       resSetup._ctypes = dout.guessTypes();

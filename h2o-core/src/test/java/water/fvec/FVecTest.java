@@ -11,16 +11,10 @@ import water.util.ArrayUtils;
 
 
 public class FVecTest extends TestUtil {
-  public FVecTest() { super(5); }
 
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(5);
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
   }
   static final double EPSILON = 1e-6;
 
@@ -71,24 +65,31 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     try {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      double[] mins =new double[fr.numCols()];
+      for (int i=0; i < mins.length; i++)
+        mins[i] = fr.vecs()[i].min();
       // Scribble into a freshly parsed frame
-      new SetDoubleInt().doAll(fr);
+      new SetDoubleInt(mins).doAll(fr);
     } finally {
       if( fr != null ) fr.delete();
     }
   }
 
   static class SetDoubleInt extends MRTask {
+    final double _mins[];
+    public SetDoubleInt(double [] mins) {_mins = mins;}
     @Override public void map( Chunk chks[] ) {
       Chunk c=null;
-      for( Chunk x : chks )
-        if( x.getClass()==water.fvec.C2Chunk.class )
-          { c=x; break; }
+      int i;
+      for(i=0; i < chks.length; i++) {
+        if( chks[i].getClass()==water.fvec.C2Chunk.class )
+        { c=chks[i]; break; }
+      }
       Assert.assertNotNull("Expect to find a C2Chunk", c);
       assertTrue(c._vec.writable());
 
-      double d=c._vec.min();
-      for( int i=0; i< c._len; i++ ) {
+      double d=_mins[i];
+      for(i=0; i< c._len; i++ ) {
         double e = c.atd(i);
         c.set(i, d);
         d=e;

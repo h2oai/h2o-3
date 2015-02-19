@@ -150,7 +150,8 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetricsList parms = s.createAndFillImpl();
-    parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    Frame fr = parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    DKV.remove(fr._key);
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.

@@ -5,6 +5,7 @@ import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 import water.api.TwoDimTableV1;
+import water.util.ModelUtils;
 //import water.util.DocGen.HTML;
 
 public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMModel.GLMOutput> {
@@ -14,10 +15,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 
     // Submodel [] _submodels;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="bets lambda if doing lambda search")
     int         best_lambda_idx;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="The decision threshold to be used in classification")
     float       threshold;
 
 //    @API(help="fill me in GLMModelOutputV2")
@@ -26,10 +27,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 //    @API(help="fill me in GLMModelOutputV2")
 //    String   [] coefficient_names;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="Table of coefficients")
     TwoDimTableV1 coefficients_table;
 
-    @API(help="fill me in GLMModelOutputV2")
+    @API(help="Coefficient magnitudes")
     TwoDimTableV1 coefficients_magnitude;
 
     @API(help="Residual Deviance - Training")
@@ -84,6 +85,6 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
   @Override public GLMModel createImpl() {
     GLMV2.GLMParametersV2 p = ((GLMV2.GLMParametersV2)this.parameters);
     GLMModel.GLMParameters parms = p.createImpl();
-    return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0 );
+    return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0, ModelUtils.DEFAULT_THRESHOLDS);
   }
 }
