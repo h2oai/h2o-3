@@ -45,7 +45,7 @@ Launch H2O
 ----------
 
 Launch H2O outside of the iPython notebook. You can do this in the top directory of your H2O build download. The version of H2O running must match the version of the H2O Python module for Python to connect to H2O. 
-You can access the H2O Web UI at [https://localhost:54321](https://localhost:54321).
+To access the H2O Web UI, go to [https://localhost:54321](https://localhost:54321) in your web browser.
 
     $ cd h2o-dev-0.1.27.1064
     $ java -jar h2o.jar
