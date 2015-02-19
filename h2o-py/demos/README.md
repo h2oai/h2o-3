@@ -16,7 +16,7 @@ Install iPython Notebook
 
 2. Install iPython using pip install:
 
-    `$ pip install "ipython[notebook]"`
+    `$ sudo pip install "ipython[notebook]"`
 
 ---
 
@@ -25,8 +25,8 @@ Install dependencies
 
 This module uses requests and tabulate modules, both of which are available on pypi, the Python package index.
 
-    $ pip install requests
-    $ pip install tabulate
+    $ sudo pip install requests
+    $ sudo pip install tabulate
   
 ---
 
@@ -35,8 +35,8 @@ Install H2O Module
 
 The following command removes the H2O module for Python, and then use pip install the latest version of the H2O Python module:
 
-    $ pip uninstall h2o
-    $ pip install http://h2o-release.s3.amazonaws.com/h2o-dev/master/1064/Python/h2o-0.0.0a5-py2.py3-none-any.whl
+    $ sudo pip uninstall h2o
+    $ sudo pip install http://h2o-release.s3.amazonaws.com/h2o-dev/master/1064/Python/h2o-0.0.0a5-py2.py3-none-any.whl
 
 ---
 
