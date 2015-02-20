@@ -328,6 +328,7 @@ class RollupStats extends Iced {
     private void installResponse(Value nnn, RollupStats rs) {
       Futures fs = new Futures();
       Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,rs),nnn,fs);
+      assert rs.isReady();
       if(old != nnn)
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
       fs.blockForPending();
@@ -335,7 +336,6 @@ class RollupStats extends Iced {
 
     @Override
     protected void compute2() {
-      Futures fs = new Futures();
       assert _rsKey.home();
       final Vec vec = DKV.getGet(_vecKey);
       while(true) {
@@ -355,9 +355,11 @@ class RollupStats extends Iced {
               if(cc != null) assert cc.getCompleter() == null;
               // note: if cc == null then onExceptionalCompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
               Value nnn = makeComputing();
+              Futures fs = new Futures();
               Value oldv = DKV.DputIfMatch(_rsKey,nnn,v,fs);
+              fs.blockForPending();
               if(oldv == v){ // got the lock
-                computeHisto(rs,vec, nnn);
+                computeHisto(rs, vec, nnn);
                 break;
               } // else someone else is modifying the rollups => try again
             } else
@@ -368,10 +370,11 @@ class RollupStats extends Iced {
             throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
         } else { // d) => compute the rollups
           final Value nnn = makeComputing();
+          Futures fs = new Futures();
           Value oldv = DKV.DputIfMatch(_rsKey,nnn,v,fs);
+          fs.blockForPending();
           if(oldv == v){ // got the lock, compute the rollups
             addToPendingCount(1);
-            assert getPendingCount() == 1;
             new Roll(new H2OCallback<Roll>(this) {
               @Override
               public void callback(Roll rs) {
@@ -386,19 +389,25 @@ class RollupStats extends Iced {
           } // else someone else is modifying the rollups => try again
         }
       }
-      fs.blockForPending();
       tryComplete();
     }
 
     final void computeHisto(final RollupStats rs, Vec vec, final Value nnn){
       // All NAs or non-math; histogram has zero bins
-      if( rs._naCnt == vec.length() || vec.isUUID() ) { rs._bins = new long[0]; return; }
+      if( rs._naCnt == vec.length() || vec.isUUID() ) {
+        rs._bins = new long[0];
+        installResponse(nnn,rs);
+        return;
+      }
       // Constant: use a single bin
       double span = rs._maxs[0]-rs._mins[0];
       final long rows = vec.length()-rs._naCnt;
       assert rows > 0:"rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
-      if( span==0 ) { rs._bins = new long[]{rows}; return;  }
-
+      if( span==0 ) {
+        rs._bins = new long[]{rows};
+        installResponse(nnn,rs);
+        return;
+      }
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
       // - unless the count gets too high; allow a very high count for enums.
       int nbins=MAX_SIZE;
@@ -410,29 +419,29 @@ class RollupStats extends Iced {
       addToPendingCount(1);
       new Histo(new H2OCallback<Histo>(this){
         @Override public void callback(Histo histo) {
-          assert ArrayUtils.sum(histo._bins)==rows;
+          assert ArrayUtils.sum(histo._bins) == rows;
           rs._bins = histo._bins;
           // Compute percentiles from histogram
           rs._pctiles = new double[Vec.PERCENTILES.length];
-          int j=0;                    // Histogram bin number
-          long hsum=0;                // Rolling histogram sum
+          int j = 0;                    // Histogram bin number
+          long hsum = 0;                // Rolling histogram sum
           double base = rs.h_base();
           double stride = rs.h_stride();
           long oldPint = 0;
           double oldVal = rs._mins[0];
-          for( int i=0; i<Vec.PERCENTILES.length; i++ ) {
+          for (int i = 0; i < Vec.PERCENTILES.length; i++) {
             final double P = Vec.PERCENTILES[i];
-            long pint = (long)(P*rows);
-            if(pint == oldPint) { // can happen if rows < 100
+            long pint = (long) (P * rows);
+            if (pint == oldPint) { // can happen if rows < 100
               rs._pctiles[i] = oldVal;
               continue;
             }
             oldPint = pint;
-            while( hsum < pint ) hsum += rs._bins[j++];
+            while (hsum < pint) hsum += rs._bins[j++];
             // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
-            rs._pctiles[i] = base+stride*(j-1);
+            rs._pctiles[i] = base + stride * (j - 1);
             // linear interpolate stride, based on fraction of bin
-            rs._pctiles[i] += stride*((double)(pint-(hsum-rs._bins[j-1]))/rs._bins[j-1]);
+            rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
             oldVal = rs._pctiles[i];
           }
           installResponse(nnn,rs);
