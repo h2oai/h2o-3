@@ -162,7 +162,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     int N = centers[0].length;
     double[][] value = new double[K][N];
     double[] means = normSub == null ? MemoryManager.malloc8d(N) : normSub;
-    double[] mults = normSub == null ? MemoryManager.malloc8d(N) : normSub;
+    double[] mults = normMul == null ? MemoryManager.malloc8d(N) : normMul;
 
     for( int clu = 0; clu < K; clu++ ) {
       System.arraycopy(centers[clu],0,value[clu],0,N);
@@ -214,7 +214,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // K-means automatically destandardizes centers! Need the original standardized version
-        centers = transform(km._output._centers_raw, 0, dinfo._normSub, dinfo._normMul);
+        centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
       }
       return centers;
     }
