@@ -244,12 +244,14 @@ class RollupStats extends Iced {
 
   static RollupStats get(Vec vec, boolean computeHisto) {
     final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = getOrNull(vec);
-    while(rs == null || computeHisto && !rs.hasHisto() && DKV.get(vec._key) != null){
+    RollupStats rs = DKV.getGet(rskey);
+    while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
+      if(rs != null && rs.isMutating())
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
       // 1. compute
       RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
-      rs = getOrNull(vec);
+      rs = DKV.getGet(rskey);
     }
     return rs;
   }
