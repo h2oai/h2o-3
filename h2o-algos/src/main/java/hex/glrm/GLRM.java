@@ -219,6 +219,41 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return centers;
     }
 
+    // Add l2 regularization until Gram matrix is positive definite
+    CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
+      int attempts = 0;
+      double addedL2 = 0;   // TODO: Should I report this to the user?
+      CholeskyDecomposition chol = new CholeskyDecomposition(new Matrix(gram));
+      while(!chol.isSPD() && attempts < max_attempts) {
+        if(addedL2 == 0) addedL2 = 1e-5;
+        else addedL2 *= 10;
+        ++attempts;
+        addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
+        chol = new CholeskyDecomposition(new Matrix(gram));
+      }
+      return chol;
+    }
+    CholeskyDecomposition regularizedCholesky(double[][] gram) {
+      return regularizedCholesky(gram, 10);
+    }
+
+    Cholesky regularizedCholesky(Gram gram, int max_attempts) {
+      int attempts = 0;
+      double addedL2 = 0;   // TODO: Should I report this to the user?
+      Cholesky chol = gram.cholesky(null);
+      while(!chol.isSPD() && attempts < max_attempts) {
+        if(addedL2 == 0) addedL2 = 1e-5;
+        else addedL2 *= 10;
+        ++attempts;
+        gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
+        gram.cholesky(chol);
+      }
+      return chol;
+    }
+    Cholesky regularizedCholesky(Gram gram) {
+      return regularizedCholesky(gram, 10);
+    }
+
     // Stopping criteria
     boolean isDone(GLRMModel model) {
       if (!isRunning()) return true; // Stopped/cancelled
@@ -234,11 +269,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     void recoverPCA(GLRMModel model, DataInfo xinfo) {
       // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
       GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
-      Cholesky xxchol = xgram._gram.cholesky(null);
-      xxchol.setSPD(true);    // Since Gram matrix is always positive semi-definite
-      /* double[][] xx = xgram._gram.getXX();
-      if(_parms._gamma > 0) addDiag(xx, _parms._gamma);
-      CholeskyDecomposition xxchol = new CholeskyDecomposition(new Matrix(xx)); */
+      Cholesky xxchol = regularizedCholesky(xgram._gram);
+      // double[][] xx = xgram._gram.getXX();
+      // if(_parms._gamma > 0) addDiag(xx, _parms._gamma);
+      // CholeskyDecomposition xxchol = regularizedCholesky(xx);
 
       // R from QR decomposition of X = QR is upper triangular factor of Cholesky of X'X
       // Gram = X'X/n = LL' -> X'X = (L*sqrt(n))(L'*sqrt(n))
@@ -337,13 +371,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double yt_norm = frobenius2(yt);
 
         // b) Initialize X = AY'(YY' + \gamma I)^(-1)
-        /* Gram ygram_init = new Gram(formGram(yt));
-        if(_parms._gamma > 0) ygram_init.addDiag(_parms._gamma);
-        Cholesky yychol_init = ygram_init.cholesky(null);
-        yychol_init.setSPD(true);   // Since Gram matrix is always positive semi-definite */
+        // Gram ygram_init = new Gram(formGram(yt));
+        // if(_parms._gamma > 0) ygram_init.addDiag(_parms._gamma);
+        // Cholesky yychol_init = regularizedCholesky(ygram_init);
         double[][] ygram_init = formGram(yt);
         if(_parms._gamma > 0) addDiag(ygram_init, _parms._gamma);
-        CholeskyDecomposition yychol_init = new CholeskyDecomposition(new Matrix(ygram_init));
+        CholeskyDecomposition yychol_init = regularizedCholesky(ygram_init);
 
         CholMulTask cmtsk_init = new CholMulTask(dinfo, yychol_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
@@ -356,8 +389,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // b) Get Cholesky decomposition of D/n = (X'X + \gamma I)/n
           if(_parms._gamma > 0) xgram._gram.addDiag(_parms._gamma/_train.numRows());
-          Cholesky xxchol = xgram._gram.cholesky(null);
-          xxchol.setSPD(true);    // Since Gram matrix is always positive semi-definite
+          Cholesky xxchol = regularizedCholesky(xgram._gram);
 
           // c) Compute A'X and solve for Y' of DY' = A'X
           yt = new SMulTask(dinfo, _train.numCols(), _parms._k).doAll(dinfo._adaptedFrame)._prod;
@@ -372,15 +404,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double[][] ygram = formGram(yt);
 
           // b) Get Cholesky decomposition of D' = D = YY' + \gamma I
-          /* if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
-          Cholesky yychol = ygram.cholesky(null);
-          yychol.setSPD(true);   // Since Gram matrix always positive semi-definite */
+          // if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
+          // Cholesky yychol = regularizedCholesky(ygram);
           if(_parms._gamma > 0) addDiag(ygram, _parms._gamma);
-          CholeskyDecomposition yychol = new CholeskyDecomposition(new Matrix(ygram));
+          CholeskyDecomposition yychol = regularizedCholesky(ygram);
 
           // c) Compute AY' and solve for X of XD = AY' -> D'X' = DX' = YA'
           CholMulTask cmtsk = new CholMulTask(dinfo, yychol, yt, _train.numCols(), _parms._k);
-          cmtsk.doAll(dinfo._adaptedFrame);   // TODO: I sometimes get non-SPD errors here when standardize = TRUE, why??
+          cmtsk.doAll(dinfo._adaptedFrame);
 
           // 3) Compute average change in objective function
           model._output._avg_change_obj = axy_norm - cmtsk._objerr;

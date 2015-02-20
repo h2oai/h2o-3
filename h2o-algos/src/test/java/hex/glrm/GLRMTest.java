@@ -113,6 +113,45 @@ public class GLRMTest extends TestUtil {
     }
   }
 
+  // Add slight positive to diagonal so floating point imprecision won't cause Cholesky to fail with non-SPD
+  // http://math.stackexchange.com/questions/418945/cholesky-decomposition-in-positive-semi-definite-matrix
+  // Maybe try robust Cholesky implementation? http://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html
+  @Test public void testCholeskyRegularization() {
+    GLRM job = null;
+    GLRMModel model = null;
+    Frame train = null;
+
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._gamma = 0;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._max_iterations = 0;
+      parms._seed = 1234;
+
+      try {
+        job = new GLRM(parms);
+        model = job.trainModel().get();
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        if (job != null) job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if(train != null) train.delete();
+      if (model != null) {
+        DKV.remove(model._parms._loading_key);
+        model.delete();
+      }
+    }
+  }
+
   @Test public void testGram() {
     double[][] x = ard(ard(1, 2, 3), ard(4, 5, 6));
     double[][] xgram = ard(ard(17, 22, 27), ard(22, 29, 36), ard(27, 36, 45));  // X'X
