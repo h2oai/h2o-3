@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
 import water.H2O;
@@ -15,7 +16,10 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _k = 1;                // Number of principal components
     public double _gamma = 0;
     public int _max_iterations = 1000;     // Max iterations
-    public boolean _standardize = true;
+    public long _seed = System.nanoTime(); // RNG seed
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
+    public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;
+    public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
   }
 

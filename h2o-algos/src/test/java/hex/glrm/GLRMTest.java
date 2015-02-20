@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.DataInfo;
 import hex.gram.Gram;
 import hex.gram.Gram.Cholesky;
 import org.junit.Assert;
@@ -55,13 +56,15 @@ public class GLRMTest extends TestUtil {
       Key ksrc = Key.make("arrests.hex");
       fr = parse_test_file(ksrc, "smalldata/pca_test/USArrests.csv");
 
-      for(boolean std : new boolean[] {false, true}) {
+      for (DataInfo.TransformType std : new DataInfo.TransformType[] {
+              DataInfo.TransformType.DEMEAN,
+              DataInfo.TransformType.STANDARDIZE }) {
         GLRMModel.GLRMParameters parms = new GLRMModel.GLRMParameters();
         parms._train = fr._key;
         parms._k = 4;
         parms._gamma = 0;
-        parms._standardize = std;
-        parms._max_iterations = 0;
+        parms._transform = std;
+        parms._max_iterations = 1000;
 
         try {
           job = new GLRM(parms);
@@ -69,8 +72,13 @@ public class GLRMTest extends TestUtil {
         } finally {
           if (job != null) job.remove();
         }
-        checkStddev(std ? stddev_std : stddev, model._output._std_deviation);
-        checkEigvec(std ? eigvec_std : eigvec, model._output._eigenvectors);
+        if (std == DataInfo.TransformType.DEMEAN) {
+          checkStddev(stddev, model._output._std_deviation);
+          checkEigvec(eigvec, model._output._eigenvectors);
+        } else {
+          checkStddev(stddev_std, model._output._std_deviation);
+          checkEigvec(eigvec_std, model._output._eigenvectors);
+        }
       }
     } finally {
       if( fr    != null ) fr   .delete();

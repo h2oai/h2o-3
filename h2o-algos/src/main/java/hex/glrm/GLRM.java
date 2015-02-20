@@ -55,6 +55,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
   }
 
+  public enum Initialization {
+    PlusPlus, User
+  }
+
   // Called from an http request
   public GLRM(GLRMModel.GLRMParameters parms) {
     super("GLRM", parms);
@@ -68,6 +72,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
     if (_parms._k > _train.numCols()) error("_k", "_k cannot be greater than the number of columns in _train");
     if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+    if (null != _parms._user_points) { // Check dimensions of user-specified centers
+      if (_parms._user_points.get().numCols() != _train.numCols())
+        error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
+      else if (_parms._user_points.get().numRows() != _parms._k)
+        error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
+    }
 
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
@@ -146,51 +156,67 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     return frob;
   }
 
-  // Standardize (demean and divide by standard deviation) each column of a 2-D array
-  public static double[][] standardize(double[][] centers, int ncats, double[] means, double[] mults) {
+  // Transform each column of a 2-D array
+  public static double[][] transform(double[][] centers, int ncats, double[] normSub, double[] normMul) {
     int K = centers.length;
     int N = centers[0].length;
     double[][] value = new double[K][N];
+    double[] means = normSub == null ? MemoryManager.malloc8d(N) : normSub;
+    double[] mults = normSub == null ? MemoryManager.malloc8d(N) : normSub;
+
     for( int clu = 0; clu < K; clu++ ) {
       System.arraycopy(centers[clu],0,value[clu],0,N);
-      if( mults!=null ) {        // Reverse standardization
-        for (int col = ncats; col < N; col++)
-          value[clu][col] = (value[clu][col] - means[col]) * mults[col];
-      }
+      for (int col = ncats; col < N; col++)
+        value[clu][col] = (value[clu][col] - means[col]) * mults[col];
     }
     return value;
-  }
-  public static double[][] standardize(double[][] centers, double[] means, double[] mults) {
-    return standardize(centers, 0, means, mults);
   }
 
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
     // Initialize Y to be the k centers from k-means++
-    double[][] initialY() {
-      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._train = _parms._train;
-      parms._ignored_columns = _parms._ignored_columns;
-      parms._dropConsCols = _parms._dropConsCols;
-      parms._dropNA20Cols = _parms._dropNA20Cols;
-      parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
-      parms._score_each_iteration = _parms._score_each_iteration;
-      parms._init = KMeans.Initialization.PlusPlus;
-      parms._k = _parms._k;
-      parms._max_iterations = _parms._max_iterations;
-      parms._standardize = _parms._standardize;
+    double[][] initialY(DataInfo dinfo) {
+      double[][] centers;
 
-      KMeansModel km = null;
-      KMeans job = null;
-      try {
-        job = new KMeans(parms);
-        km = job.trainModel().get();
-      } finally {
-        if (job != null) job.remove();
-        if (km != null) km.remove();
+      if (null != _parms._user_points) { // User-specified starting points
+        int numCenters = _parms._k;
+        int numCols = _parms._user_points.get().numCols();
+        centers = new double[numCenters][numCols];
+        Vec[] centersVecs = _parms._user_points.get().vecs();
+
+        // Get the centers and put into array
+        for (int r = 0; r < numCenters; r++) {
+          for (int c = 0; c < numCols; c++)
+            centers[r][c] = centersVecs[c].at(r);
+        }
+      } else {  // Run k-means++ and use resulting cluster centers as initial Y
+        KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+        parms._train = _parms._train;
+        parms._ignored_columns = _parms._ignored_columns;
+        parms._dropConsCols = _parms._dropConsCols;
+        parms._dropNA20Cols = _parms._dropNA20Cols;
+        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
+        parms._score_each_iteration = _parms._score_each_iteration;
+        parms._init = KMeans.Initialization.PlusPlus;
+        parms._k = _parms._k;
+        parms._max_iterations = _parms._max_iterations;
+        parms._standardize = true;
+        parms._seed = _parms._seed;
+
+        KMeansModel km = null;
+        KMeans job = null;
+        try {
+          job = new KMeans(parms);
+          km = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+          if (km != null) km.remove();
+        }
+
+        // K-means automatically destandardizes centers! Need the original standardized version
+        centers = transform(km._output._centers_raw, 0, dinfo._normSub, dinfo._normMul);
       }
-      // K-means automatically destandardizes centers! Need the original standardized version
-      return _parms._standardize ? standardize(km._output._centers_raw, 0, km._output._normSub, km._output._normMul) : km._output._centers_raw;
+      return centers;
     }
 
     // Stopping criteria
@@ -234,12 +260,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // Note: Singular values ordered in weakly descending order by algorithm
       double[] sval = rrsvd.getSingularValues();
       double[] sdev = new double[sval.length];
+      double[] pcvar = new double[sval.length];
       double tot_var = 0;
-      double dfcorr = _train.numRows()/(_train.numRows() - 1.0);
+      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
       for(int i = 0; i < sval.length; i++) {
-        sval[i] = dfcorr * sval[i];   // Correct since degrees of freedom = n-1
-        sdev[i] = Math.sqrt(sval[i]);
-        tot_var += sval[i];
+        sdev[i] = dfcorr * sval[i];   // Correct since degrees of freedom = n-1
+        pcvar[i] = sdev[i] * sdev[i];
+        tot_var += pcvar[i];
       }
       model._output._std_deviation = sdev;
 
@@ -247,7 +274,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       double[] prop_var = new double[sval.length];    // Proportion of total variance
       double[] cum_var = new double[sval.length];    // Cumulative proportion of total variance
       for(int i = 0; i < sval.length; i++) {
-        prop_var[i] = sval[i]/tot_var;
+        prop_var[i] = pcvar[i] / tot_var;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
 
@@ -292,7 +319,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         assert c == xvecs.length;
 
         fr = new Frame(Key.make(), null, vecs);
-        dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
         model._output._normSub = dinfo._normSub == null ? null : Arrays.copyOf(dinfo._normSub, _train.numCols());
         model._output._normMul = dinfo._normMul == null ? null : Arrays.copyOf(dinfo._normMul, _train.numCols());
@@ -306,7 +333,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 0) Initialize X and Y matrices
         // a) Initialize Y' matrix using k-means++
         double nobs = _train.numRows() * _train.numCols();
-        double[][] yt = ArrayUtils.transpose(initialY());
+        double[][] yt = ArrayUtils.transpose(initialY(dinfo));
         double yt_norm = frobenius2(yt);
 
         // b) Initialize X = AY'(YY' + \gamma I)^(-1)
@@ -334,18 +361,20 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
           // c) Compute A'X and solve for Y' of DY' = A'X
           yt = new SMulTask(dinfo, _train.numCols(), _parms._k).doAll(dinfo._adaptedFrame)._prod;
-          for(int i = 0; i < yt.length; i++) xxchol.solve(yt[i]);
-          for(int i = 0; i < yt.length; i++) ArrayUtils.div(yt[i], _train.numRows());   // Divide by n since (D/n)Y' = D(Y'/n)
+          for(int i = 0; i < yt.length; i++) {
+            xxchol.solve(yt[i]);
+            ArrayUtils.div(yt[i], _train.numRows());  // Divide by n since (D/n)Y' = D(Y'/n)
+          }
 
           // 2) Compute X = AY'(YY' + \gamma I)^(-1)
           // a) Form Gram matrix of Y' = (Y')'Y' = YY'
-          /* Gram ygram = new Gram(formGram(yt));
+          // Gram ygram = new Gram(formGram(yt));
+          double[][] ygram = formGram(yt);
 
           // b) Get Cholesky decomposition of D' = D = YY' + \gamma I
-          if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
+          /* if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
           Cholesky yychol = ygram.cholesky(null);
           yychol.setSPD(true);   // Since Gram matrix always positive semi-definite */
-          double[][] ygram = formGram(yt);
           if(_parms._gamma > 0) addDiag(ygram, _parms._gamma);
           CholeskyDecomposition yychol = new CholeskyDecomposition(new Matrix(ygram));
 
@@ -368,13 +397,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // 4) Save solution to model output
-        String[] colHeaders = new String[_parms._k];
-        for(int i = 0; i < colHeaders.length; i++)
-          colHeaders[i] = "PC" + String.valueOf(i+1);
         String[] colTypes = new String[_parms._k];
         String[] colFormats = new String[_parms._k];
+        String[] colHeaders = new String[_parms._k];
         Arrays.fill(colTypes, "double");
         Arrays.fill(colFormats, "%5f");
+        for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
 
         model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], yt);
         model._output._archetypes_raw = yt;
