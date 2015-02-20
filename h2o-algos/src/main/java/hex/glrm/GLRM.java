@@ -253,7 +253,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
       // Eigenvectors are V'Z' = (ZV)'
       Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
-      model._output._eigenvectors = eigvec.transpose().getArray();
+      model._output._eigenvectors = eigvec.getArray();
       // model._output._eigenvalues = rrsvd.getSingularValues();
 
       // Calculate standard deviations from \Sigma
