@@ -7,7 +7,8 @@ test.kmslice.golden <- function(H2Oserver) {
   Log.info("Importing iris.csv data...") 
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
   irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), key = "irisH2O")
-  startIdx <- sort(sample(1:nrow(irisR), 3))
+  # iris has some duplicated rows. Want to guarantee unique init centers
+  startIdx <- sort(sample(unique(1:nrow(irisR)), 3))
   
   Log.info("Initial cluster centers:"); print(irisR[startIdx,1:4])
   fitR <- kmeans(irisR[,1:4], centers = irisR[startIdx,1:4], iter.max = 1000, algorithm = "Lloyd")
@@ -15,7 +16,7 @@ test.kmslice.golden <- function(H2Oserver) {
   
   Log.info("R Final Clusters:"); print(fitR$centers)
   Log.info("H2O Final Clusters:"); print(fitH2O@model$centers)
-  expect_equivalent(as.matrix(fitH2O@model$centers), fitR$centers)
+  expect_equal(as.matrix(fitH2O@model$centers), fitR$centers, tolerance = 0.01)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
   wmseH2O <- sort.int(fitH2O@model$within_mse)
@@ -40,8 +41,23 @@ test.kmslice.golden <- function(H2Oserver) {
   classR <- fitted(fitR, method = "classes")
   # FIXME: predict directly on sliced H2O frame breaks
   # classH2O <- predict(fitH2O, irisH2O[,1:4])
+
   classH2O <- predict(fitH2O, as.h2o(conn, irisR[,1:4]))
-  expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
+  # H2O indexes from 0, but R indexes from 1
+  forCompareH2O <- as.matrix(classH2O)+1
+  forCompareR <- as.matrix(classR)
+  notMatching <- forCompareH2O[forCompareH2O == forCompareR]
+
+  Log.info(dim(forCompareH2O))
+  Log.info(dim(forCompareR))
+  Log.info(head(forCompareH2O))
+  Log.info(head(forCompareR))
+  Log.info(head(notMatching))
+
+  Log.info(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
+
+  # one has dim names, the other doesn't. will get length error unless..
+  expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
   
   testEnd()
 }
