@@ -259,13 +259,14 @@ def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2
     return a
 
 #******************************************************************************************8
-def frame_split(self, timeoutSecs=120, noPoll=False, **kwargs):
+def split_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     params_dict = {
-        'training_frame': None,
+        'dataset': None,
         'ratios': None,
+        'destKeys': None, # ['bigger', 'smaller']
     }
-    check_params_update_kwargs(params_dict, kwargs, 'frame_split', print_params=True)
-    firstResult = self.do_json_request('SplitFrame.json', timeout=timeoutSecs, params=params_dict)
+    check_params_update_kwargs(params_dict, kwargs, 'split_frame', print_params=True)
+    firstResult = self.do_json_request('2/SplitFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
     job_key = firstResult['job']['key']['name']
 
     if noPoll:
@@ -273,7 +274,25 @@ def frame_split(self, timeoutSecs=120, noPoll=False, **kwargs):
         return firstResult
 
     result = self.poll_job(job_key)
-    verboseprint("frame_split result:", dump_json(result))
+    verboseprint("split_frame result:", dump_json(result))
+    return result
+
+#******************************************************************************************8
+def create_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
+    # FIX! have to add legal params
+    params_dict = {
+
+    }
+    check_params_update_kwargs(params_dict, kwargs, 'create_frame', print_params=True)
+    firstResult = self.do_json_request('2/CreateFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
+    job_key = firstResult['job']['key']['name']
+
+    if noPoll:
+        h2o_sandbox.check_sandbox_for_errors()
+        return firstResult
+
+    result = self.poll_job(job_key)
+    verboseprint("create_frame result:", dump_json(result))
     return result
 
 
@@ -343,7 +362,8 @@ H2O.unlock = unlock
 H2O.typeahead = typeahead
 H2O.get_timeline = get_timeline
 
-H2O.frame_split = frame_split
+H2O.split_frame = split_frame
+H2O.create_frame = create_frame
 
 H2O.log_view = log_view
 H2O.log_download = log_download

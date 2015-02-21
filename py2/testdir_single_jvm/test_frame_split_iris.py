@@ -17,7 +17,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_frame_split(self):
+    def test_split_frame(self):
 
         csvFilename = 'iris.csv'
         csvPathname = 'iris/' + csvFilename
@@ -42,12 +42,12 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(splitMe)
             numRows = iA.numRows
 
-            fsResult = h2o.n0.frame_split(training_frame=splitMe, ratios='[0.5]')
-            fs = OutputObj(fsResult, 'frame_split')
+            fsResult = h2o.n0.split_frame(training_frame=splitMe, ratios='[0.5]')
+            fs = OutputObj(fsResult, 'split_frame')
             model_key = fs.jobs[0].dest.name
 
             modelResult = h2o.n0.models(key=model_key)
-            model = OutputObj(modelResult['models'][0]['output'], 'frame_split')
+            model = OutputObj(modelResult['models'][0]['output'], 'split_frame')
             # print "model:", dump_json(model)
             split_keys = [split._key.name for split in model.splits]
 

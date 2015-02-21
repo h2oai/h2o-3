@@ -89,7 +89,7 @@ class KMeansObj(OutputObj):
         # maybe should sort by centers?
         # put a cluster index in there too, (leftmost) so we don't lose track
         tuples = zip(range(len(centers)), centers, size, within_mse)
-        print "tuples:", dump_json(tuples)
+        # print "tuples:", dump_json(tuples)
         # can we sort on the sum of the centers?
         self.tuplesSorted = sorted(tuples, key=lambda tup: sum(tup[1]))
 
