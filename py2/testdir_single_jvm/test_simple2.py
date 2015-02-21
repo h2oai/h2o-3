@@ -20,8 +20,8 @@ class Basic(unittest.TestCase):
 
     def test_simple2(self):
         # h2o-dev doesn't take ../.. type paths? make find_file return absolute path
-        # import_result = h2o.n0.import_files(path=find_file("smalldata/logreg/prostate.csv"))
-        csvPathname = find_file("bigdata/laptop/poker-hand-testing.data")
+        # csvPathname = find_file("bigdata/laptop/poker-hand-testing.data")
+        csvPathname = find_file("smalldata/logreg/prostate.csv")
         import_result = h2o.n0.import_files(path=csvPathname)
         # print dump_json(import_result)
 
@@ -60,8 +60,10 @@ class Basic(unittest.TestCase):
         frame = parse_result['frames'][0]
         hex_key = frame['key']['name']
 
-        colCount = 11
-        rowCount = 1000000
+        colCount = 9
+        rowCount = 380
+        # colCount = 11
+        # rowCount = 1000000
         start = time.time()
         inspect = h2o_cmd.runInspect(None, hex_key)
         print "Inspect:", hex_key, "took", time.time() - start, "seconds"

@@ -8,20 +8,41 @@ def simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailW
     prettyPrint=False, noPrint=False, maxExpectedIterations=None, doNormalized=False):
 
     warnings = ''
+    rank = model.rank
+    binomial = model.binomial
+    residual_deviance = model.residual_deviance
+    threshold = model.threshold
+    auc = model.auc
+    best_lambda_idx = model.best_lambda_idx
+    model_category = model.model_category
+    name = model.name
+    residual_degrees_of_freedom = model.residual_degrees_of_freedom
+    coefficients_magnitude = model.coefficients_magnitude
+    null_deviance = model.null_deviance
+    null_degrees_of_freedom = model.null_degrees_of_freedom
+    domains = model.domains
+    aic = model.aic
+    names = model.names
 
-    intercept = model.global_beta[-1]
-    interceptName = model.coefficient_names[-1]
+    coeffs_names = model.coefficients_table.data[0]
 
-    coeffs = model.global_beta[:-1]
-    coeffs_names = model.coefficient_names[:-1]
+    # these are returned as quoted strings. Turn them into numbers
+    coeffs = map(float, model.coefficients_table.data[1])
 
-    assert len(coeffs) == (len(model.coefficient_names)-1)
-    assert len(coeffs) == len(labelListUsed), "%s %s" % (coeffs, labelListUsed)
+    intercept = coeffs[-1] 
+    interceptName = coeffs_names[-1]
+
+    assert len(coeffs) == len(coeffs_names), "%s %s" % (len(coeffs), len(coeffs_names))
+    # FIX! if a coeff is zeroed/ignored, it doesn't show up?
+    # get rid of intercept in glm response
+    # assert (len(coeffs)-1) == len(labelListUsed, "%s %s %s %s" % (len(coeffs), len(labelListUsed), coeffs, labelListUsed)
     
     # labelList still has the response column?
     # ignored columns aren't in model.names, but output response is.
     # labelListUsed has the response col removed so add 1
-    assert len(model.names) == (len(labelListUsed)+1), "%s %s" % (model.names, labelList)
+
+    # Hmm..dropped coefficients again? can't do this check?
+    # assert len(model.names) == len(labelListUsed), "%s %s %s %s" % (len(model.names), len(labelListUsed), model.names, labelList)
     assert model.threshold!=0
 
     print "len(coeffs)", len(coeffs)
@@ -29,7 +50,7 @@ def simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailW
 
     # last one is intercept
     if interceptName != "Intercept" or abs(intercept)<1e-26:
-        raise Exception("'Intercept' should be last in coefficient_names and global_beta %s %s" % (interceptName, intercept))
+        raise Exception("'Intercept' should be last in coeffs_names %s %s" % (interceptName, intercept))
 
     y = parameters['response_column']
 

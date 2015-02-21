@@ -107,6 +107,8 @@ def parse(self, key, hex_key=None,
         'checkHeader': None, # how is this used
         'singleQuotes': None,
         'columnNames': None, # list?
+        'chunkSize': None,
+        # are these two no longer supported?
         'delete_on_done': None,
         'blocking': None,
     }
@@ -121,10 +123,11 @@ def parse(self, key, hex_key=None,
         # len 1 is ok here. 0 not. what if None or [None] here
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
-        srcs = "[" + ",".join(key) + "]"
+        # do I have to put quotes around individual keys or just the whole thing?            
+        srcs = "['" + ",".join(key) + "']" # quotes required on key
     else:
         # what if None here
-        srcs = "[" + key + "]"
+        srcs = "['" + key + "']" # quotes required on key
 
     params_dict['srcs'] = srcs
 
@@ -153,7 +156,7 @@ def parse(self, key, hex_key=None,
     
     # I suppose we need a way for parameters to parse() to override these
     if setup_result['columnNames']:
-        ascii_column_names = "[" + ",".join(setup_result['columnNames']) + "]"
+        ascii_column_names = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
     else:
         ascii_column_names = None
 
@@ -167,7 +170,8 @@ def parse(self, key, hex_key=None,
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
         'columnNames': ascii_column_names,
-        # how come these aren't in setup_result?
+        'chunkSize': setup_result['chunkSize'],
+        # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
@@ -184,7 +188,8 @@ def parse(self, key, hex_key=None,
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
     print "parse srcs is length:", len(parse_params['srcs'])
-    print "parse columnNames is length:", len(parse_params['columnNames'])
+    # This can be null now? parseSetup doesn't return default colnames?
+    # print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
     parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
@@ -596,3 +601,23 @@ def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
     parameters = { }
     result = self.do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
     return result
+
+
+def schemas(self, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the list of REST API schemas.
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+
+    return result
+
+def schema(self, schemaname, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the metadata for the given named REST API schema (e.g., FrameV2).
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+
+    return result
+

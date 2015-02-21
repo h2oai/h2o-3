@@ -11,7 +11,7 @@ def runStoreView(node=None, **kwargs):
 
     print "\nStoreView:"
     # FIX! are there keys other than frames and models
-    a = node.frames()
+    a = node.frames(**kwargs)
     # print "storeview frames:", dump_json(a)
     frameList = [af['key']['name'] for af in a['frames']]
 
