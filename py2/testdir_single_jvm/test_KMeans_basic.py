@@ -57,7 +57,6 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': None,
-                'score_each_iteration': False,
                 'k': 4,
                 'max_iterations': 50,
                 'standardize': False,
@@ -136,8 +135,7 @@ class Basic(unittest.TestCase):
             kmeansSeed = 7037878434240420762
             parameters = {
                 'validation_frame': parse_key,
-                'ignored_columns': '[ID]',
-                'score_each_iteration': False,
+                'ignored_columns': "['ID']",
                 'k': 3,
                 'max_iterations': 500,
                 'standardize': False,
