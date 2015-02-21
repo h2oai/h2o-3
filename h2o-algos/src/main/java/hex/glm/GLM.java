@@ -19,12 +19,9 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.util.ArrayUtils;
-import water.util.Log;
+import water.util.*;
 import water.util.MRUtils.ParallelTasks;
-import water.util.MathUtils;
-import water.util.ModelUtils;
-
+import water.fvec.RebalanceDataSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,8 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * GLMModel currently never returns Binomial as its ModelCategory.
  */
 public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  private static final double LINE_SEARCH_STEP = .92;
-  private static final int NUM_LINE_SEARCH_STEPS = 128;
+  private static final double LINE_SEARCH_STEP = .5;
+  private static final int NUM_LINE_SEARCH_STEPS = 16;
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
@@ -72,6 +69,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   @Override
   public Job<GLMModel> trainModel() {
     _clean_enums = _parms._convert_to_enum && !_response.isEnum();
+//    Key k = Key.make("rebalanced");
+//    H2O.submitTask(new RebalanceDataSet(_parms.train(), k, 512)).join();
+//    Key oldK = _parms._train;
+//    _parms._train = k;
+//    _train.delete();
+//    DKV.remove(oldK);
+//    _train = DKV.getGet(k);
+//    Log.info(FrameUtils.chunkSummary(_train).toString());
     _parms.read_lock_frames(this);
     init(true);                 // Expensive tests & conversions
     DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
@@ -412,18 +417,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         Log.info("current lambda = " + _currentLambda);
         GradientSolver solver = new GLMGradientSolver(_taskInfo._params,_activeData, _currentLambda * (1-_taskInfo._params._alpha[0]),_taskInfo._ymu,_taskInfo._nobs);
 
-        long t1 = System.currentTimeMillis();
+        final long t1 = System.currentTimeMillis();
         if(_taskInfo._lbfgs == null)
           _taskInfo._lbfgs = new L_BFGS().setMaxIter(_taskInfo._params._max_iter);
         GradientInfo gOld = _taskInfo._gOld == null
           ?solver.getGradient(beta)
           :_taskInfo._ginfo;
 
+
         L_BFGS.Result r = _taskInfo._lbfgs.solve(solver, beta, gOld, new ProgressMonitor() {
           @Override
           public boolean progress(double [] beta, GradientInfo ginfo) {
-            update(1, "iteration " + (_iter+1) + ", objective value = " + ginfo._objVal,_jobKey);
-            LogInfo("LBFGS: objval = " + ginfo._objVal);
+            if((_iter & 7) == 0) {
+              update(8, "iteration " + (_iter + 1) + ", objective value = " + ginfo._objVal, _jobKey);
+              LogInfo("LBFGS: objval = " + ginfo._objVal);
+            }
             ++_iter;
             // todo update the model here wo we can show intermediate results
             return Job.isRunning(_jobKey);
@@ -833,7 +841,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final double _ymu;
     final double _lambda;
     final long _nobs;
-    int _nsteps = 48;
+    int _nsteps = 16;
 
     public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs){
       _glmp = glmp;
@@ -841,17 +849,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _ymu = ymu;
       _nobs = nobs;
       _lambda = lambda;
+      _stepDec = LINE_SEARCH_STEP;
     }
 
     @Override
     public GradientInfo getGradient(double[] beta) {
-      GLMGradientTask gt = new GLMGradientTask(_dinfo,_glmp, _lambda, beta,1.0/_nobs).doAll(_dinfo._adaptedFrame);
+//      GLMGradientTask gt = new GLMGradientTask(_dinfo,_glmp, _lambda, beta,1.0/_nobs).doAll(_dinfo._adaptedFrame); // _glmp._family == Family.binomial
+      GLMGradientTask gt = _glmp._family == Family.binomial
+        ?new LBFGS_LogisticGradientTask(_dinfo,_glmp, _lambda, beta,1.0/_nobs).doAll(_dinfo._adaptedFrame)
+        :new GLMGradientTask(_dinfo,_glmp, _lambda, beta,1.0/_nobs).doAll(_dinfo._adaptedFrame);
       return new GradientInfo(gt._objVal, gt._gradient);
     }
 
     @Override
     public double[] getObjVals(double[] beta, double[] direction) {
-      return new GLMLineSearchTask(_dinfo,0,_lambda, _glmp, 1.0/_nobs, beta, direction, LINE_SEARCH_STEP, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
+      return new GLMLineSearchTask(_dinfo,0,_lambda, _glmp, 1.0/_nobs, beta, direction, _stepDec, _nsteps ).doAll(_dinfo._adaptedFrame)._objVals;
     }
   }
 
