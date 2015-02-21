@@ -1,10 +1,9 @@
 package hex;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -167,7 +166,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Log parameters
     if (expensive) {
       Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
-      Log.info(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(new String(_parms.writeJSON(new AutoBuffer()).buf()))));
+      Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
 
     // NOTE: allow re-init:
@@ -184,38 +183,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
     }
 
-    if( _parms._dropConsCols ) {    // Drop all-constant and all-bad columns.
-      String cstr = "";             // Log of dropped columns
-      for (int i = 0; i < _train.vecs().length; i++) {
-        if (_train.vecs()[i].isConst() || _train.vecs()[i].isBad()) {
-          if (cstr.length() > 0) cstr += ", "; // Log dropped cols
-          cstr += _train._names[i];
-          _train.remove(i);
-          i--; // Re-run at same iteration after dropping a col
-        }
-      }
-      if (cstr.length() > 0) {
-        warn("_train", "Dropping constant columns: " + cstr);
-        if (expensive) Log.info("Dropping constant columns: " + cstr);
-      }
-    }
+    // Drop all-constant and all-bad columns.
+    if( _parms._dropConsCols )
+      new FilterCols() { 
+        @Override protected boolean filter(Vec v) { return v.isConst() || v.isBad(); }
+      }.doIt(_train,"Dropping constant columns: ",expensive);
 
-    if( _parms._dropNA20Cols ) { // Drop cols with >20% NAs
-      String nstr="";            // Log of dropped columns
-      for( int i=0; i<_train.vecs().length; i++ ) {
-        float ratio = (float)_train.vecs()[i].naCnt() / _train.vecs()[i].length();
-        if( ratio > 0.2 ) {
-          if(nstr.length() > 0) nstr += ", "; // Log dropped cols
-          nstr += _train._names[i] + " (" + String.format("%.2f",ratio*100) + "%)";
-          _train.remove(i);
-          i--; // Re-run at same iteration after dropping a col
-        }
-      }
-      if( nstr.length() > 0 ) {
-        warn("_train","Dropping columns with too many missing values: " + nstr);
-        if(expensive) Log.info("Dropping columns with too many missing values: " + nstr);
-      }
-    }
+    // Drop cols with >20% NAs
+    if( _parms._dropNA20Cols )
+      new FilterCols() { 
+        @Override protected boolean filter(Vec v) { return ((float)v.naCnt() / v.length()) > 0.2; }
+      }.doIt(_train,"Dropping columns with too many missing values: ",expensive);
+
+    // Drop all non-numeric columns (e.g., String and UUID).  No current algo
+    // can use them, and otherwise all algos will then be forced to remove
+    // them.  Text algos (grep, word2vec) take raw text columns - which are
+    // numeric (arrays of bytes).
+    new FilterCols() { 
+      @Override protected boolean filter(Vec v) { return v.isString() || v.isUUID(); }
+    }.doIt(_train,"Dropping String and UUID columns: ",expensive);
 
     // Check that at least some columns are not-constant and not-all-NAs
     if( _train.numCols() == 0 )
@@ -233,6 +219,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_valid",iae.getMessage());
     }
     assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
+  }
+
+  abstract class FilterCols {
+    abstract protected boolean filter(Vec v);
+    void doIt( Frame f, String msg, boolean expensive ) {
+      boolean any=false;
+      for( int i = 0; i < f.vecs().length; i++ ) {
+        if( filter(f.vecs()[i]) ) {
+          if( any ) msg += ", "; // Log dropped cols
+          any = true;
+          msg += f._names[i];
+          f.remove(i);
+          i--; // Re-run at same iteration after dropping a col
+        }
+      }
+      if( any ) {
+        warn("_train", msg);
+        if (expensive) Log.info(msg);
+      }
+    }
   }
 
   /** A list of field validation issues. */

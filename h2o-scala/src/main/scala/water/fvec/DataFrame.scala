@@ -25,10 +25,14 @@ class DataFrame private ( key : Key[Frame], names : Array[String], vecs : Array[
   def this(s : String) = this ( Key.make(s).asInstanceOf[Key[Frame]] )
 
   // Scala DataFrame by reading a CSV file
-  def this(file : File) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(file.getName)),file))
+  def this(files : File*) = this( water.util.FrameUtils.parseFrame(
+                                    Key.make(ParseSetup.hex(files(0).getName)),
+                                    files.map(_.getAbsoluteFile) : _*))
 
   // Uniform call to load any resource referenced by URI
-  def this(uri: URI) = this(water.util.FrameUtils.parseFrame(Key.make(ParseSetup.hex(uri.toString)), uri))
+  def this(uri:URI, uris: URI*) = this(water.util.FrameUtils.parseFrame(
+                                Key.make(ParseSetup.hex(uri.toString)),
+                                Seq(uri)++uris : _*))
 
   // No-args public constructor for (de)serialization
   def this() = this(null,null,new Array[Vec](0))

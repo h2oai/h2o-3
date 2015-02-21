@@ -37,7 +37,7 @@ public abstract class SharedTreeV2 extends ModelBuilderSchema<SharedTree,SharedT
     /** AUC for binomial models, or null otherwise */
     public AUC auc;
 
-    /** Variable Importance, if asked for */
+    /** Variable Importance */
     public VarImp varimp;
 
     @Override public SharedTreeParametersV2 fillFromImpl(SharedTreeParameters parms) {

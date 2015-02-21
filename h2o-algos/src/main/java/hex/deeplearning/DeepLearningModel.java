@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import static hex.ModelMetrics.calcVarImp;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
@@ -642,6 +643,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
+    TwoDimTable variableImportances;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
 
@@ -657,7 +659,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
   final public DeepLearningModelInfo model_info() { return model_info; }
 
-  private long run_time;
+  public long run_time;
   private long start_time;
 
   public long actual_train_samples_per_iteration;
@@ -833,53 +835,53 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colFormat = new ArrayList<>();
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
-    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%.5f");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
-    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%g");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
       colHeaders.add("Training AUC");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial || _output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training Classification Error");
       colTypes.add("double");
-      colFormat.add("%g");
+      colFormat.add("%.5f");
     }
     if (get_params()._valid != null) {
-      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (!_output.autoencoder) {
         colHeaders.add("Validation R^2");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Validation AUC");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation Classification Error");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
     } else if (get_params()._n_folds > 0) {
-      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%g");
+      colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
 //      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         colHeaders.add("Cross-Validation AUC");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Cross-Validation Classification Error");
         colTypes.add("double");
-        colFormat.add("%g");
+        colFormat.add("%.5f");
       }
     }
 
@@ -1165,7 +1167,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers",
-              new String[neurons.length + 2],
+              new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
                       (get_params()._adaptive_rate ? "" : "Momentum"),
@@ -1496,6 +1498,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
     _output.scoringHistory = createScoringHistoryTable(errors);
+    _output.variableImportances = calcVarImp(last_scored().variable_importances);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1527,6 +1530,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0].num_folds = parms._n_folds;
       _output.errors = last_scored();
       _output.scoringHistory = createScoringHistoryTable(errors);
+      _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
     assert _key.equals(destKey);
   }
@@ -1540,9 +1544,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param ftrain potentially downsampled training data for scoring
    * @param ftest  potentially downsampled validation data for scoring
    * @param job_key key of the owning job
+   * @param progressKey key of the progress
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame ftrain, Frame ftest, Key job_key) {
+  boolean doScoring(Frame ftrain, Frame ftest, Key job_key, Key progressKey) {
     boolean keep_running;
     try {
       final long now = System.currentTimeMillis();
@@ -1582,6 +1587,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if( !keep_running ||
               (sinceLastScore > get_params()._score_interval *1000 //don't score too often
                       &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
+        if (progressKey != null) {
+          new Job.ProgressUpdate("Scoring on " + ftrain.numRows() + " training samples" +
+                  (ftest != null ? (", " + ftest.numRows() + " validation samples)") : ")")
+          ).fork(progressKey);
+        }
         final boolean printme = !get_params()._quiet_mode;
         _timeLastScoreStart = now;
         if (get_params()._diagnostics) model_info().computeStats();
@@ -1649,12 +1659,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               _output.validMetrics = mm2;
             }
           }
-
-          if (get_params()._variable_importances) {
-            if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-            final float[] vi = model_info().computeVariableImportances();
-            err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
-          }
+        }
+        if (get_params()._variable_importances) {
+          if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
+          final float[] vi = model_info().computeVariableImportances();
+          err.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
         }
 
         _timeLastScoreEnd = System.currentTimeMillis();
@@ -1670,6 +1679,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
         _output.errors = last_scored();
         _output.scoringHistory = createScoringHistoryTable(errors);
+        _output.variableImportances = calcVarImp(last_scored().variable_importances);
         if (_output.modelSummary == null)
           _output.modelSummary = model_info.createSummaryTable();
 
@@ -1757,16 +1767,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     sb.append(model_info.toString());
     //sb.append(last_scored().toString());
     sb.append(_output.scoringHistory.toString());
-    return sb.toString();
-  }
-
-  public String toStringAll() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
-    sb.append(model_info.toStringAll());
-    sb.append(last_scored().toString());
+    if (_output.variableImportances != null) {
+      for (String s : Arrays.asList(_output.variableImportances.toString().split("\n")).subList(0, 12))
+        sb.append(s).append("\n");
+    }
     return sb.toString();
   }
 

@@ -6,7 +6,9 @@ import water.api.KeyV1.VecKeyV1;
 import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
+import water.util.ChunkSummary;
 import water.util.DocGen.HTML;
+import water.util.FrameUtils;
 import water.util.PrettyPrint;
 
 // TODO: need a base (versionless) class!
@@ -46,6 +48,9 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
 
   @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
   public VecKeyV1[] veckeys;
+
+  @API(help="Chunk summary", direction=API.Direction.OUTPUT)
+  public TwoDimTableV1 chunkSummary;
 
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
@@ -203,6 +208,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_pctiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
+    chunkSummary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(fr).toTwoDimTable());
   }
 
   //==========================
@@ -234,6 +240,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
       columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);
     isText = f.numCols()==1 && vecs[0] instanceof ByteVec;
     default_pctiles = Vec.PERCENTILES;
+    chunkSummary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());
     return this;
   }
 

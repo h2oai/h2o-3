@@ -19,6 +19,8 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     ModelMetricsBase trainMetrics;
     @API(help="Validation data model metrics")
     ModelMetricsBase validMetrics;
+    @API(help="Variable Importances")
+    TwoDimTableV1 variableImportances;
   } // DeepLearningModelOutputV2
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

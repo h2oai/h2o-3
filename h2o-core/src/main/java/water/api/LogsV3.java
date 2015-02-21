@@ -7,7 +7,7 @@ public class LogsV3 extends Schema<Iced, LogsV3> {
   public int nodeidx;
 
   @API(help="Which specific log file to read from the log file directory.  If left unspecified, the system chooses a default for you.", direction = API.Direction.INPUT)
-  public String filename;
+  public String name;
 
   @API(help="Content of log file", direction = API.Direction.OUTPUT)
   public String log;

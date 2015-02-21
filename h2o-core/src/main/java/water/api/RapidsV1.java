@@ -7,7 +7,7 @@ public class RapidsV1 extends Schema<Iced, RapidsV1> {
   // Input fields
   @API(help="An Abstract Syntax Tree."            , direction=API.Direction.INPUT) String ast;
   @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String[] funs;
-  @API(help="A pointer to a Frame or Raft."       , direction=API.Direction.INPUT) KeyV1 ast_key;
+  @API(help="A pointer to a Frame"                , direction=API.Direction.INPUT) KeyV1 ast_key;
 
   // Output
   @API(help="Parsing error, if any"  , direction=API.Direction.OUTPUT) String error;
@@ -19,8 +19,6 @@ public class RapidsV1 extends Schema<Iced, RapidsV1> {
   @API(help="Column Names"           , direction=API.Direction.OUTPUT) String[] col_names;
   @API(help="String result"          , direction=API.Direction.OUTPUT) String string;
   @API(help="result"                 , direction=API.Direction.OUTPUT) String result;
-  @API(help="Raft ast"               , direction=API.Direction.OUTPUT) String raft_ast;
-  @API(help="Raft key"               , direction=API.Direction.OUTPUT) KeyV1  raft_key;
   @API(help="Was evaluated"          , direction=API.Direction.OUTPUT) boolean evaluated;
   @API(help="Head of a Frame result" , direction=API.Direction.OUTPUT) String[][] head;
 }

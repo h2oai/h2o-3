@@ -35,7 +35,9 @@ trap cleanup SIGTERM SIGINT
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test
 # classpath before the main classpath.
-JVM="nice java -ea -cp build/classes/test${SEP}build/classes/main${SEP}../lib/*"
+# kbn: Rather than let it default heap to 1/4 of available dram,
+# make it consistent for test. It's 2G is h2o-algos. So mimic that.
+JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/test${SEP}build/classes/main${SEP}../lib/*"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
@@ -47,7 +49,10 @@ JUNIT_TESTS_SLOW="water.parser.ParseProgressTest\|water.fvec.WordCountBigTest"
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT > $OUTDIR/tests.txt
+# add 'sort' to get determinism on order of tests on different machines
+# methods within a class can still reorder due to junit?
+# '/usr/bin/sort' needed to avoid windows native sort when run in cygwin
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_SLOW | grep -v $JUNIT_TESTS_BOOT | /usr/bin/sort > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$

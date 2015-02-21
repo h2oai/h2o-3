@@ -190,6 +190,7 @@ public class Vec extends Keyed {
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
+  static final String[] TYPE_STR=new String[] { "BAD", "UUID", "string", "numeric", "enum", "time", "time", "time" };
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -275,6 +276,7 @@ public class Vec extends Keyed {
   public long[] get_espc() { return _espc; }
   /** Get the column type. */
   public byte get_type() { return _type; }
+  public String get_type_str() { return TYPE_STR[_type]; }
 
   public boolean isBinary(){
     RollupStats rs = rollupStats();
@@ -711,10 +713,13 @@ public class Vec extends Keyed {
     Chunk c = dvec.get();               // Chunk data to compression wrapper
     long cstart = c._start;             // Read once, since racily filled in
     Vec v = c._vec;
-    if( cstart == start && v != null) return c;     // Already filled-in
-    assert cstart == -1 || v == null;       // Was not filled in (everybody racily writes the same start value)
+    int tcidx = c._cidx;
+    if( cstart == start && v != null && tcidx == cidx)
+      return c;                       // Already filled-in
+    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
     c._vec = this;             // Fields not filled in by unpacking from Value
     c._start = start;          // Fields not filled in by unpacking from Value
+    c._cidx = cidx;
     return c;
   }
 

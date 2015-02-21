@@ -54,8 +54,23 @@ public class ModelMetrics extends Keyed {
   public float[] hr() { return null; }
   public AUCData auc() { return null; }
 
+  public static TwoDimTable calcVarImp(VarImp vi) {
+    if (vi == null) return null;
+    double[] dbl_rel_imp = new double[vi._varimp.length];
+    for (int i=0; i<dbl_rel_imp.length; ++i) {
+      dbl_rel_imp[i] = vi._varimp[i];
+    }
+    return calcVarImp(dbl_rel_imp, vi._names);
+  }
+  public static TwoDimTable calcVarImp(final float[] rel_imp, String[] coef_names) {
+    double[] dbl_rel_imp = new double[rel_imp.length];
+    for (int i=0; i<dbl_rel_imp.length; ++i) {
+      dbl_rel_imp[i] = rel_imp[i];
+    }
+    return calcVarImp(dbl_rel_imp, coef_names);
+  }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names) {
-    return calcVarImp(rel_imp, coef_names, "Variable Importance", new String[] {"Relative Importance", "Scaled Importance", "Percentage"});
+    return calcVarImp(rel_imp, coef_names, "Variable Importances", new String[] {"Relative Importance", "Scaled Importance", "Percentage"});
   }
   public static TwoDimTable calcVarImp(final double[] rel_imp, String[] coef_names, String table_header, String[] col_headers) {
     if(rel_imp == null) return null;

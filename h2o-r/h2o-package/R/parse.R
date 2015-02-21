@@ -23,7 +23,8 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   col.types <- parseSetup$columnTypes
   parsedSrcs <- sapply(parseSetup$srcs, function(asrc) asrc$name)
 
-  if (!nzchar(key))
+  linkToGC <- !nzchar(key)
+  if (linkToGC)
     key <- .key.make(data@conn, parseSetup$hexName)
   parse.params <- list(
         srcs = .collapse.char(parsedSrcs),
@@ -46,7 +47,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
   # Return a new H2OFrame object
-  h2o.getFrame(key=hex, linkToGC=TRUE)    
+  h2o.getFrame(key=hex, linkToGC=linkToGC)
 }
 
 #'

@@ -38,6 +38,7 @@ public class SubsetVec extends WrappedVec {
       _len = crows._len;
       _start = crows._start;
       _crows  = crows;
+      _cidx = crows._cidx;
     }
     @Override protected double atd_impl(int idx) {
       long rownum = _crows.at8_impl(idx);

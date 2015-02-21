@@ -100,7 +100,7 @@ public class RapidsTest extends TestUtil {
     r.delete();
   }
 
-  @Test @Ignore public void testMerge() {
+  @Test public void testMerge() {
     Frame l=null,r=null,f=null;
     try {
       l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
@@ -108,12 +108,12 @@ public class RapidsTest extends TestUtil {
       l = new Frame(l);
       DKV.put(l);
       System.out.println(l);
-      r = frame("name" ,vec(ar("Cliff","Arno","Tomas","Michael"),ari(0,1,2,3)));
-      r.    add("skill",vec(ar("hacker","science","linearmath","sparkling"),ari(0,1,2,3)));
+      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
+      r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
       r = new Frame(r);
       DKV.put(r);
       System.out.println(r);
-      String x = String.format("(merge %%%s %%%s #0 #0 )",l._key,r._key);
+      String x = String.format("(merge %%%s %%%s #1 #0 )",l._key,r._key);
       Env env = Exec.exec(x);
       System.out.println(env.toString());
       f = env.popAry();

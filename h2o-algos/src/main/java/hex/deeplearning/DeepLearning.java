@@ -147,6 +147,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
+        new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
         if (_parms._n_folds != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
         _parms._autoencoder = previous.model_info().get_params()._autoencoder;
@@ -226,6 +227,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+        new ProgressUpdate("Setting up training data...").fork(_progressKey);
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
         Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
@@ -234,15 +236,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         train = tra_fr;
-        if (mp._force_load_balance) train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".train");
+        if (mp._force_load_balance) {
+          new ProgressUpdate("Load balancing training data...").fork(_progressKey);
+          train = reBalance(train, mp._replicate_training_data /*rebalance into only 4*cores per node*/, mp._train.toString() + "." + model._key.toString() + ".train");
+        }
         if (model._output.isClassifier() && mp._balance_classes) {
+          new ProgressUpdate("Balancing class distribution of training data...").fork(_progressKey);
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
             if (mp._class_sampling_factors.length != train.lastVec().domain().length)
               throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain().length + " elements");
             trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
           }
-
           train = sampleFrameStratified(
                   train, train.lastVec(), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
           model._output._modelClassDist = new MRUtils.ClassDist(train.lastVec()).doAll(train.lastVec()).rel_dist();
@@ -256,12 +261,17 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           model.validation_rows = val_fr.numRows();
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
           if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningModel.DeepLearningParameters.ClassSamplingMethod.Stratified) {
+            new ProgressUpdate("Sampling validation data (stratified)...").fork(_progressKey);
             validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(), null,
                     mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
           } else {
+            new ProgressUpdate("Sampling validation data...").fork(_progressKey);
             validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
           }
-          if (mp._force_load_balance) validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".valid");
+          if (mp._force_load_balance) {
+            new ProgressUpdate("Balancing class distribution of validation data...").fork(_progressKey);
+            validScoreFrame = reBalance(validScoreFrame, false /*always split up globally since scoring should be distributed*/, mp._valid.toString() + "." + model._key.toString() + ".valid");
+          }
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
         }
 
@@ -276,20 +286,26 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
 
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
-        if (_parms._autoencoder) model.doScoring(trainScoreFrame, validScoreFrame, self()); //get the null model reconstruction error
+        if (_parms._autoencoder) {
+          new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
+          model.doScoring(trainScoreFrame, validScoreFrame, self(), null); //get the null model reconstruction error
+        }
         // put the initial version of the model into DKV
         model.update(self());
         Log.info("Starting to train the Deep Learning model.");
 
         //main loop
         do {
+          final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
+          final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
+          new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
                   new DeepLearningTask(self(), model.model_info(), rowFraction(train, mp, model)).doAll(train).model_info()); //distributed data (always in multi-node mode)
           update(model.actual_train_samples_per_iteration); //update progress
         }
-        while (model.doScoring(trainScoreFrame, validScoreFrame, self()));
+        while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 
         // replace the model with the best model so far (if it's better)
         if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
@@ -302,7 +318,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(self());
-            model.doScoring(trainScoreFrame, validScoreFrame, self());
+            model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey);
             assert(best_model.error() == model.error());
           }
         }

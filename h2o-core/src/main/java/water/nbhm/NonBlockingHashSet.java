@@ -31,16 +31,11 @@ public class NonBlockingHashSet<E> extends AbstractSet<E> implements Serializabl
    *  if {@code o} was already in the set.  */
   public boolean add( final E o ) { return _map.putIfAbsent(o,V) == null; }
 
-  /** Atomically add {@code o} to the set.  
-   *  @return any old match for {@code o} if it was already in the set, or null
-   *  otherwise.  */
-  public E addIfAbsent( final E o ) { return (E)_map.putIfAbsent(o,V); }
-
  /**  @return <tt>true</tt> if {@code o} is in the set.  */
   public boolean contains   ( final Object     o ) { return _map.containsKey(o); }
 
  /**  @return Returns the match for {@code o} if {@code o} is in the set.  */
-  public E get( final E o ) { return (E)_map.getk(o); }
+  public E get( final E o ) { return _map.getk(o); }
 
   /** Remove {@code o} from the set.  
    * @return <tt>true</tt> if {@code o} was removed to the set, <tt>false</tt>

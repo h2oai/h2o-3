@@ -17,7 +17,7 @@ class H2OTwoDimTable(object):
     self.col_header = col_header
     self.col_types = col_types
     self.table_header = table_header
-    self.cell_values = cell_values if cell_values else H2OTwoDimTable._parse_values(raw_cell_values, col_types)
+    self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
     self.col_formats = col_formats
 
   def show(self):
@@ -32,8 +32,11 @@ class H2OTwoDimTable(object):
     self.show()
     return ""
 
-  @staticmethod
-  def _parse_values(values, types):
+  def _parse_values(self, values, types):
+    if self.col_header[0] is None:
+      self.col_header = self.col_header[1:]
+      types = types[1:]
+      values = values[1:]
     for col_index, column in enumerate(values):
       for row_index, row_value in enumerate(column):
         if types[col_index] == 'integer':

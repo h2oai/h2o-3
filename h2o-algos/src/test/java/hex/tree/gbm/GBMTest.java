@@ -293,6 +293,35 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  // Predict with no actual, after training
+  @Test public void testGBMPredict() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._convert_to_enum = true;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      job.remove();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      pred.remove("Angaus").remove();    // No response column during scoring
+      res = gbm.score(pred);
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+    }
+  }
+
   // Adapt a trained model to a test dataset with different enums
   @Test public void testModelAdapt() {
     GBM job = null;
@@ -429,7 +458,7 @@ public class GBMTest extends TestUtil {
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.gaussian)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
-/*
+
   @Test public void testModelMSEEqualityOnTitanic() {
     final PrepData titanicPrep = new PrepData() { @Override int prep(Frame fr) { return fr.find("survived"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, false, Family.AUTO)._mse_train;
@@ -443,7 +472,6 @@ public class GBMTest extends TestUtil {
     double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.bernoulli)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
-*/
   @Test public void testBigCat() {
     final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
     basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, Family.AUTO);

@@ -262,6 +262,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
+- **DropNA20Cols**: (Optional)Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
+
 - **Score\_each\_iteration**: (Optional) Score the validation set after each iteration of the model-building process. If you select this option, the model-building time increases. 
 
 - **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are [0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99]. 
@@ -289,8 +291,6 @@ The available options vary depending on the selected model. If an option is only
 - **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are automatic, mean square, cross-entropy, or none and the default value is mean square. 
 
 - **Variable_importance**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
-
-- **Group_split**: [(GBM)](#GBM) Check this checkbox to perform group-splitting categoricals. This option is selected by default. 
 
 - **K**: [(K-Means)](#Kmeans) Specify the number of clusters. The default is 0.
 
@@ -701,5 +701,10 @@ To view a timeline of events in Flow, click the **Admin** menu, then click **Tim
 
 To obtain the most recent information, click the **Refresh** button.  
 
+---
+
+###Shutting Down H2O
+
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
 

@@ -23,7 +23,7 @@ trap cleanup SIGTERM SIGINT
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
-JVM="nice java -ea -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main"
+JVM="nice java -ea -Xmx2g -Xms2g -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)

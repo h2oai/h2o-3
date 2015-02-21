@@ -219,7 +219,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._columnNames != null?setup._columnNames:genericColumnNames(setup._ncols),AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -1071,6 +1071,7 @@ public final class ParseDataset extends Job<Frame> {
         String maxStr;
 
         switch( v.get_type() ) {
+        case Vec.T_BAD:   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_NUM :  typeStr = "numeric";  minStr = String.format("%g", v.min());  maxStr = String.format("%g", v.max());  break;

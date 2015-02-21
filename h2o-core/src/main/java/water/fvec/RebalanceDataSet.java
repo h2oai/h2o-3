@@ -10,12 +10,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * Created by tomasnykodym on 3/28/14.
+ *  Created by tomasnykodym on 3/28/14.
  *
- * Utility to rebalance dataset so that it has requested number of chunks and each chunk has the same number of rows +/-1.
+ *  Utility to rebalance dataset so that it has requested number of chunks and
+ *  each chunk has the same number of rows +/-1.
  *
- * It *does not* guarantee even chunk-node placement.
- * (This can not currently be done in H2O, since the placement of chunks is governed only by key-hash /vector group/ for Vecs)
+ *  It *does not* guarantee even chunk-node placement.  (This can not currently
+ *  be done in H2O, since the placement of chunks is governed only by key-hash
+ *  /vector group/ for Vecs)
  */
 public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   final Frame _in;
@@ -89,9 +91,9 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     _out.update(_jobKey);
     _out.unlock(_jobKey);
   }
-  @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
-    _in.unlock(_jobKey);
-    if(_out != null)_out.delete(_jobKey,new Futures()).blockForPending();
+  @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
+    t.printStackTrace();
+    if( _out != null ) _out.delete(_jobKey,new Futures()).blockForPending();
     return true;
   }
 

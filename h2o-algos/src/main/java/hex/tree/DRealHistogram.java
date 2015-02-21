@@ -193,15 +193,17 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
       bs = new IcedBitSet(max-min+1,min);
       for( int i=0; i<best; i++ ) bs.set(idxs[i]);
-      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
+      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
     if( best==0 ) return null;  // No place to split
+    double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
+    if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
     long   n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
-    return new DTree.Split(col,best,bs,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
+    return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
   @Override public long byteSize0() {

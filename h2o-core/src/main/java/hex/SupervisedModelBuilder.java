@@ -18,7 +18,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public boolean isSupervised() { return true; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
-  public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
+  //public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
 
@@ -60,6 +60,8 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms._train + ".");
     } else {
       _response  = _train.remove(ridx);
+      if( _valid != null && _valid.find(_parms._response_column)== -1 )
+        error("_response_column", "Response column is missing in the validation set!");
       _vresponse = _valid == null ? null : _valid.remove(ridx);
       if (_response.isBad())
         error("_response_column", "Response column is all NAs!");

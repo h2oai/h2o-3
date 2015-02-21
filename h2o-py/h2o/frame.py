@@ -238,7 +238,16 @@ class H2OFrame:
       self._row('zeros', None),
       self._row('missing', None)
     ]
+
+    chunk_summary_tmp_key = H2OFrame.send_frame(self)
+
+    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunkSummary"]
+
+    h2o.remove(chunk_summary_tmp_key)
+
     print tabulate.tabulate(table, headers)
+    print
+    print chunk_summary
     print
 
   #def __repr__(self):
@@ -407,7 +416,7 @@ class H2OFrame:
     l = [field]
     for vec in self._vecs:
       tmp = vec.summary()[field]
-      l.append(tmp[idx] if idx is not None else tmp)
+      l.append(tmp[idx] if idx is not None and tmp is not None else tmp)
     return l
 
   # private static methods
@@ -538,10 +547,10 @@ class H2OFrame:
     expr = "(= !{} (merge %{} %{} %{} %{}))".format(tmp_key,lkey,rkey,
                                                     "TRUE" if allLeft else "FALSE",
                                                     "TRUE" if allRite else "FALSE")
-    h2o.rapids(expr) # merge in h2o
     # Remove h2o temp frame after merge
-    h2o.remove(lkey)
-    h2o.remove(rkey)
+    expr2 = "(, "+expr+" (del %"+lkey+" #0) (del %"+rkey+" #0) )"
+
+    h2o.rapids(expr2)      # merge in h2o
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
@@ -664,7 +673,7 @@ class H2OVec:
       # whole vec replacement
       self._len_check(b)
       # lazy update in-place of the whole vec
-      self._expr = Expr("=", Expr("[", self._expr, b), c)
+      self._expr = Expr("=", Expr("[", self._expr, b), None if c is None else Expr(c))
     else:
       raise NotImplementedError("Only vector replacement is currently supported.")
 
@@ -673,6 +682,7 @@ class H2OVec:
     if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
+    if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_bin_rop(self, i, op):

@@ -122,28 +122,32 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
 
 h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
-    stop("`ratios` must be between 0 and 1 exclusive")
-  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+  # if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
+  #   stop("`ratios` must be between 0 and 1 exclusive")
+  # if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
   params <- list()
   params$dataset <- data@key
   params$ratios <- .collapse(ratios)
   if (!missing(destination_keys))
-    params$destKeys <- .collapse.char(destination_keys)
+    params$destKeys <- .collapse(destination_keys)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
   # .h2o.__waitOnJob(data@conn, res$key$name)
 
+  splitKeys <- res$destKeys
   splits <- list()
-  if (missing(destination_keys))
-    splits <- lapply(0:length(ratios), function(x) {
-      name <- paste0(iris.hex@key, "_part", x)
-      h2o.getFrame(name, conn)
-    }) else 
-    splits <- lapply(destination_keys, function(x) { h2o.getFrame(x, conn) })
+  splits <- lapply(splitKeys, function(split) h2o.getFrame(split$name))
+  
+  
+  # if (missing(destination_keys))
+  #   splits <- lapply(0:length(ratios), function(x) {
+  #     name <- paste0(data@key, "_part", x)
+  #     h2o.getFrame(name, conn)
+  #   }) else 
+  #   splits <- lapply(destination_keys, function(x) { h2o.getFrame(x, conn) })
 
-  splits
+  # splits
   # model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
   # splits <- lapply(model.view$models[[1L]]$output$splits,
   #                  function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))

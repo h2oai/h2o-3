@@ -3,11 +3,11 @@ This module implements the base model class.  All model things inherit from this
 """
 
 import h2o
-import tabulate
 from . import H2OFrame
 from . import H2OVec
 from . import H2OTwoDimTable
 from . import H2OConnection
+
 
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
@@ -86,3 +86,7 @@ class ModelBase(object):
     print
     for v in two_dim_tables:
       v.show()
+
+  # Delete from cluster as model goes out of scope
+  def __del__(self):
+    h2o.remove(self._key)

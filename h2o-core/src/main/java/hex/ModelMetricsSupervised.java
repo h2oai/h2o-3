@@ -20,8 +20,8 @@ public class ModelMetricsSupervised extends ModelMetrics {
   }
 
   public static class MetricBuilderSupervised extends MetricBuilder {
-    final String[] _domain;
-    final int _nclasses;
+    protected final String[] _domain;
+    protected final int _nclasses;
 
     public MetricBuilderSupervised(String[] domain) {
       _domain = domain;

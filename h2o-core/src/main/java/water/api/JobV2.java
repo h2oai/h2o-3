@@ -27,25 +27,17 @@ public class JobV2<J extends Job, S extends JobV2<J, S>> extends Schema<J, S> {
   @API(help="current progress status description", direction=API.Direction.OUTPUT)
   public String progress_msg;
 
+  @API(help="Start time", direction=API.Direction.OUTPUT)
+  public long start_time;
+
   @API(help="runtime", direction=API.Direction.OUTPUT)
   public long msec;
 
   @API(help="destination key", direction=API.Direction.INOUT)
-  public KeySchema dest;
+  public KeyV1 dest;
 
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
-
-  public JobV2() {}
-  public JobV2(Key<Job> key, String description, String status, float progress, long msec, Key dest, String exception) {
-    this.key = new JobKeyV1(key);
-    this.description = description;
-    this.status = status;
-    this.progress = progress;
-    this.msec = msec;
-    this.dest = KeySchema.make(dest);
-    this.exception = exception;
-  }
 
   //==========================
   // Custom adapters go here
