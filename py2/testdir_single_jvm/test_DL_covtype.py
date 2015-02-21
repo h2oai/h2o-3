@@ -143,7 +143,7 @@ class Basic(unittest.TestCase):
         prResult = h2o.n0.predict(model=model_key, frame=validation_key, timeoutSecs=60)
         pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
-        h2o_cmd.runStoreView()
+        ## h2o_cmd.runStoreView()
 
         actualErr = model['errors']['valid_err']
         print "expected classification error: " + format(expectedErr)

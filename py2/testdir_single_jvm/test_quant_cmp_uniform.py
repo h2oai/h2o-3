@@ -146,7 +146,6 @@ class Basic(unittest.TestCase):
                 'training_frame': parse_key,
                 'validation_frame': parse_key,
                 'ignored_columns': None,
-                'score_each_iteration': False,
                 'probs': probsStr,
             }
 
@@ -166,29 +165,15 @@ class Basic(unittest.TestCase):
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0], 'model')
 
-            # model output {
-            #   "domains": [
-            #     null
-            #   ],
-            #   "iters": 1.0,
-            #   "model_category": null,
-            #   "names": [
-            #     "C1"
-            #   ],
-            #   "quantiles": [
-            #     [
-            #       10009.03502345
-            #     ]
-            #   ],
             print "model.output:", model.output
             print "model.output:['quantiles']", model.output['quantiles']
-            print "model.output:['iters']", model.output['iters']
+            print "model.output:['iterations']", model.output['iterations']
             print "model.output:['names']", model.output['names']
             quantiles = model.output['quantiles'][0] # why is this a double array
-            iters = model.output['iters']
-            assert iters == 11, iters
+            iterations = model.output['iterations']
+            assert iterations == 11, iterations
             print "quantiles: ", quantiles
-            print "iters: ", quantiles
+            print "iterations: ", iterations
 
             # cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             # cmm = OutputObj(cmmResult, 'cmm')
