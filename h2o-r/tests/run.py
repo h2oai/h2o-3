@@ -1071,6 +1071,7 @@ class TestRunner:
         notrun = 0
         total = 0
         true_fail_list = []
+        notrun_list = []
         for test in self.tests:
             if (test.get_passed()):
                 passed += 1
@@ -1084,6 +1085,7 @@ class TestRunner:
                         true_fail_list.append(test.test_name)
                 else:
                     notrun += 1
+                    notrun_list.append(test.test_name)
             total += 1
 
         if ((passed + nopass_but_tolerate) == total):
@@ -1114,7 +1116,10 @@ class TestRunner:
         else:
             self._log("Time/completed test:  N/A")
         self._log("")
-        self._log("True fail list:       " + ", ".join(true_fail_list))
+        if failed:
+            self._log("True fail list:       " + ", ".join(true_fail_list))
+        if notrun:
+            self._log("notrun (hung?) list:  " + ", ".join(notrun_list))
         self._log("")
 
     def terminate(self):
