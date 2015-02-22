@@ -2,6 +2,7 @@ import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i
 from h2o_test import dump_json, verboseprint, OutputObj
+import h2o_jobs
 
 DO_CLASSIFICATION = True
 DO_FAIL_CASE = False
@@ -38,17 +39,24 @@ class Basic(unittest.TestCase):
 
         parameters = {
             'validation_frame': train_key,
-            'ignored_columns': '[ID]', # this has to have []
+            'ignored_columns': "['ID']", # this has to have []
             'score_each_iteration': True,
             'response_column': 'CAPSULE',
             'do_classification': 1 if DO_CLASSIFICATION else 0,
             # 'balance_classes':
             # 'max_after_balance_size':
-            'ntrees': '8, 10',
-            'max_depth': '8, 9',
-            'min_rows': '1, 2',
+            # ??
+            # 'ntrees': '[8, 10]',
+            'ntrees': 8,
+            # 'max_depth': '[8, 9]',
+            'max_depth': 8,
+            # ??
+            # 'min_rows': '[1, 2]',
+            'min_rows': 1,
             'nbins': 40,
-            'learn_rate': '.1, .2',
+            # ??
+            # 'learn_rate': "[0.1, 0.2]",
+            'learn_rate': 0.1,
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
@@ -65,15 +73,17 @@ class Basic(unittest.TestCase):
             modelKey = 'GBMGrid_prostate_%s', i
             bmResult = h2o.n0.build_model(
                 algo='gbm',
-                destination_key=model_key,
+                destination_key=modelKey,
                 training_frame=parse_key,
                 parameters=parameters,
                 timeoutSecs=60)
             bm = OutputObj(bmResult, 'bm')
             print "GBMResult:", h2o.dump_json(bm)
 
-            job_key = bm.job_key
-            model_key = bm.destination_key
+            # FIX! is this right for gridded? 
+            job_key = bm.jobs[0].key.name
+            # FIX! this isn't a full formed name (%)
+            model_key = bm.jobs[0].dest.name
             jobs.append( (job_key, model_key) )
             totalGBMGridJobs += 1
 

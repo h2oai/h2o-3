@@ -13,10 +13,10 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
     Fetch all the jobs or a single job from the /Jobs endpoint.
     '''
     params_dict = {
-        'job_key': job_key
+        # 'job_key': job_key
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -33,7 +33,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     start_time = time.time()
     pollCount = 0
     while True:
-        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
 
         if key:
@@ -57,6 +57,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             h2o_sandbox.check_sandbox_for_errors()
             return result
 
+        # what about 'CREATED'
         # FIX! what are the other legal polling statuses that we should check for?
 
         if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):

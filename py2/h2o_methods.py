@@ -161,7 +161,7 @@ def jobs_admin(self, timeoutSecs=120, **kwargs):
     }
     params_dict.update(kwargs)
     verboseprint("\njobs_admin:", params_dict)
-    a = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    a = self.do_json_request('3/Jobs.json', timeout=timeoutSecs, params=params_dict)
     verboseprint("\njobs_admin result:", dump_json(a))
     # print "WARNING: faking jobs admin"
     # a = { 'jobs': {} }
@@ -267,12 +267,16 @@ def split_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     }
     check_params_update_kwargs(params_dict, kwargs, 'split_frame', print_params=True)
     firstResult = self.do_json_request('2/SplitFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
-    job_key = firstResult['job']['key']['name']
+    print "firstResult:", dump_json(firstResult)
+    # FIX! what is ['dest']['name'] ..It's not there at the beginning?
+    job_key = firstResult['key']['name']
 
     if noPoll:
         h2o_sandbox.check_sandbox_for_errors()
         return firstResult
 
+    # is it polllable while it's in the CREATED state? msec looks wrong. start_time is 0
+    time.sleep(2)
     result = self.poll_job(job_key)
     verboseprint("split_frame result:", dump_json(result))
     return result
@@ -285,7 +289,7 @@ def create_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
     }
     check_params_update_kwargs(params_dict, kwargs, 'create_frame', print_params=True)
     firstResult = self.do_json_request('2/CreateFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
-    job_key = firstResult['job']['key']['name']
+    job_key = firstResult['dest']['name']
 
     if noPoll:
         h2o_sandbox.check_sandbox_for_errors()

@@ -42,7 +42,7 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(splitMe)
             numRows = iA.numRows
 
-            fsResult = h2o.n0.split_frame(training_frame=splitMe, ratios='[0.5]')
+            fsResult = h2o.n0.split_frame(dataset=splitMe, ratios='[0.5]')
             fs = OutputObj(fsResult, 'split_frame')
             model_key = fs.jobs[0].dest.name
 
