@@ -51,8 +51,8 @@ class Basic(unittest.TestCase):
             parameters = {
                 'response_column': 1, 
                 'n_folds': 0,
-                'alpha': 0, 
-                'lambda': 0,
+                'alpha': '[0]', 
+                'lambda': '[0]',
             }
             model_key = 'B.hex'
             bmResult = h2o.n0.build_model(

@@ -393,6 +393,7 @@ def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None,
         raise Exception("Didn't find %s in key list %s or Frames result" % (pattern, importKeyList))
 
     start = time.time()
+    # put quotes on all keys
     parseResult = node.parse(key=matchingList, hex_key=hex_key,
         timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, 
         initialDelaySecs=initialDelaySecs, pollTimeoutSecs=pollTimeoutSecs, noise=noise,

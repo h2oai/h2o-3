@@ -123,8 +123,9 @@ def parse(self, key, hex_key=None,
         # len 1 is ok here. 0 not. what if None or [None] here
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
-        # do I have to put quotes around individual keys or just the whole thing?            
-        srcs = "['" + ",".join(key) + "']" # quotes required on key
+        # have to put quotes around the individual list items
+        srcs = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+
     else:
         # what if None here
         srcs = "['" + key + "']" # quotes required on key
