@@ -748,7 +748,7 @@ class H2O(object):
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
     '''
-    def models(self, api_version=3, key=None, timeoutSecs=10, **kwargs):
+    def models(self, api_version=3, key=None, timeoutSecs=20, **kwargs):
         params_dict = {
             'find_compatible_frames': False
         }
