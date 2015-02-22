@@ -8,7 +8,11 @@ test.kmslice.golden <- function(H2Oserver) {
   irisR <- read.csv(locate("smalldata/iris/iris2.csv"), header = TRUE)
   irisH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/iris/iris2.csv"), key = "irisH2O")
   # iris has some duplicated rows. Want to guarantee unique init centers
-  startIdx <- sort(sample(unique(1:nrow(irisR)), 3))
+  # Still failing intermittently..a random init from the data, is the same as kmeans rand init ..
+  # So that doesn't guarantee one true answer.
+  # startIdx <- sort(sample(unique(1:nrow(irisR)), 3))
+  
+  startIdx <- c(1, 52, 102) # use the first row from each output class
   
   Log.info("Initial cluster centers:"); print(irisR[startIdx,1:4])
   fitR <- kmeans(irisR[,1:4], centers = irisR[startIdx,1:4], iter.max = 1000, algorithm = "Lloyd")
