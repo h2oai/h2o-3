@@ -283,8 +283,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           mp._shuffle_training_data = true;
         }
 
-        model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
-
         if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
@@ -292,6 +290,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         }
         // put the initial version of the model into DKV
         model.update(self());
+        model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
         Log.info("Starting to train the Deep Learning model.");
 
         //main loop
