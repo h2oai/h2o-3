@@ -1,6 +1,5 @@
 import unittest, sys
 sys.path.extend(['.','..','../..','py'])
-import os
 
 import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
@@ -48,7 +47,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_parse_covtype(self):
+    def test_parse_covtype_2(self):
 
         tryList = [
             ('covtype.data', 1, 30),
@@ -56,28 +55,28 @@ class Basic(unittest.TestCase):
         ]
 
         for (csvFilename, multiplyExpected, timeoutSecs) in tryList:
-            # h2o-dev doesn't take ../.. type paths? make find_file return absolute pathj
-            a_node = h2o.nodes[0]
 
             # import_result = a_node.import_files(path=find_file("smalldata/logreg/prostate.csv"))
-            importFolderPath = os.path.expanduser("~/home-0xdiag-datasets/standard")
+            importFolderPath = "standard"
+            hex_key = 'covtype.hex'
             csvPathname = importFolderPath + "/" + csvFilename
-            import_result = a_node.import_files(path=csvPathname)
+            parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='local', 
+                timeoutSecs=timeoutSecs, hex_key=hex_key,
+                chunkSize=4194304*2, doSummary=False)
+            pA = h2o_cmd.ParseObj(parseResult)
 
-            # print "import_result:", dump_json(import_result)
-            k = import_result['keys'][0]
-            frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
-            # print "frames_result from the first import_result key", dump_json(frames_result)
+            # illegal
+            # chunkSize=3000000
+            # fail
+            # chunkSize=4194304/2
+            # fail
 
-            # pass
-            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304)
-            parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304*4)
-            iA = h2o_cmd.InspectObj(pA.parse_key,
-                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
+            iA = h2o_cmd.InspectObj(pA.parse_key)
             print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
-            for i in range(55):
+            for i in range(1):
                 print "Summary on column", i
+                # hack. where is col 1
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
                 coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
                     co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
@@ -85,17 +84,15 @@ class Basic(unittest.TestCase):
                 for k,v in co:
                     print k, v
 
-
-            # illegal
-            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=3000000)
             # fail
-            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
+            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
             # fail
-            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs)
-            k = parse_result['frames'][0]['key']['name']
-            # print "parse_result:", dump_json(parse_result)
+            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs)
+            k = parseResult['frames'][0]['key']['name']
+            # print "parseResult:", dump_json(parseResult)
+            a_node = h2o.nodes[0]
             frames_result = a_node.frames(key=k, len=5)
-            # print "frames_result from the first parse_result key", dump_json(frames_result)
+            # print "frames_result from the first parseResult key", dump_json(frames_result)
             
             parseKeyIndexedCheck(frames_result, multiplyExpected)
 
