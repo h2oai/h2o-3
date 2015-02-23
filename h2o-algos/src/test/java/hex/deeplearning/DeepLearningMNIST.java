@@ -44,6 +44,7 @@ public class DeepLearningMNIST extends TestUtil {
                 p._adaptive_rate = false; //disable adaptive per-weight learning rate, but requires more tuning as learning rate and momentum default values might not be ideal (most likely slower convergence, too).
                 p._replicate_training_data = false; //avoid extra communication cost upfront
                 p._override_with_best_model = false; //no need to keep the best model
+                p._diagnostics = false; //no need to gather statistics
 
                 // reduce time spent on scoring (we don't need to know the training set accuracy of the model)
                 p._score_interval = 20; //score and print progress report every 20 seconds
