@@ -1231,7 +1231,8 @@ class TestRunner:
             waits += 1
             # If a test hangs, it's difficult to tell which test is hung
             # print out a summary while waiting, every once in a while (minute?)
-            if (waits % 60)==0:
+            # increase to 2 minutes so you don't see intermediate report during build (test_rest_api.py)
+            if (waits % 120)==0:
                 print ""
                 print "Showing nopass=False summary so far." 
                 print "We've been waiting a minute or so for another test to complete."

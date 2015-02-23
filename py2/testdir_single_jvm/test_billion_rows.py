@@ -60,7 +60,7 @@ class Basic(unittest.TestCase):
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
-                timeoutSecs=10)
+                timeoutSecs=300)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)

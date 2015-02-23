@@ -21,7 +21,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def no_test_kmeans_benign(self):
+    def notest_kmeans_benign(self):
         importFolderPath = "logreg"
         csvFilename = "benign.csv"
         hex_key = "benign.hex"
