@@ -22,9 +22,8 @@ public class DeepLearningMNIST extends TestUtil {
     @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
     @Test public void run() {
-
+        Scope.enter();
         try {
-            Scope.enter();
             File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
             if (file != null) {
                 NFSFileVec trainfv = NFSFileVec.make(file);
@@ -44,7 +43,8 @@ public class DeepLearningMNIST extends TestUtil {
                 // speed up training
                 p._adaptive_rate = false; //disable adaptive per-weight learning rate, but requires more tuning as learning rate and momentum default values might not be ideal (most likely slower convergence, too).
                 p._replicate_training_data = false; //avoid extra communication cost upfront
-                p._shuffle_training_data = false;
+                p._shuffle_training_data = false; //no need to shuffle training data
+                p._override_with_best_model = false; //no need to keep the best model
 
                 // reduce time spent on scoring (we don't need to know the training set accuracy of the model)
                 p._score_interval = 20; //score and print progress report every 20 seconds
@@ -67,7 +67,6 @@ public class DeepLearningMNIST extends TestUtil {
                         model.delete_best_model();
                         model.delete();
                     }
-                    Scope.exit();
                 }
             } else {
                 Log.info("Please run ./gradlew syncBigDataLaptop in the top-level directory of h2o-dev.");
@@ -75,6 +74,8 @@ public class DeepLearningMNIST extends TestUtil {
         } catch (Throwable t) {
             t.printStackTrace();
             throw new RuntimeException(t);
+        } finally {
+            Scope.exit();
         }
     }
 }
