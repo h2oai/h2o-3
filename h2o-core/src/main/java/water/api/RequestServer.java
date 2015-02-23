@@ -409,6 +409,7 @@ public class RequestServer extends NanoHTTPD {
   // seperate thread (I'm guessing here) so the startup process does not hang
   // if the various web-port accesses causes Nano to hang on startup.
   public static Runnable start() {
+    Schema.registerAllSchemasIfNecessary();
     Runnable run=new Runnable() {
         @Override public void run()  {
           while( true ) {
@@ -542,9 +543,6 @@ public class RequestServer extends NanoHTTPD {
     try {
       // Find handler for url
       Route route = lookup(method, versioned_path);
-
-      if (route != null && route._handler_class != CloudHandler.class && route._handler_class != TutorialsHandler.class && route._handler_class != TypeaheadHandler.class)
-        Schema.registerAllSchemasIfNecessary();
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null) {
