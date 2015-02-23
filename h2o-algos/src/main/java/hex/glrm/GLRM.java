@@ -2,6 +2,7 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.DataInfo.Row;
+import hex.glm.LSMSolver.ADMMSolver.NonSPDMatrixException;
 import hex.gram.Gram;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
@@ -231,6 +232,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
         chol = new CholeskyDecomposition(new Matrix(gram));
       }
+      if(!chol.isSPD())
+        throw new NonSPDMatrixException(gram);
       return chol;
     }
     CholeskyDecomposition regularizedCholesky(double[][] gram) {
@@ -248,6 +251,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
         gram.cholesky(chol);
       }
+      if(!chol.isSPD())
+        throw new NonSPDMatrixException(gram);
       return chol;
     }
     Cholesky regularizedCholesky(Gram gram) {

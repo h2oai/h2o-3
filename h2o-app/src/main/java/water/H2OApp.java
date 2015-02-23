@@ -6,6 +6,7 @@ import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.glm.GLM;
+import hex.glrm.GLRM;
 import hex.grep.Grep;
 import hex.kmeans.KMeans;
 import hex.quantile.Quantile;
@@ -50,6 +51,10 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("glm", GLM.class);
     H2O.registerPOST("/3/ModelBuilders/glm", GLMBuilderHandler.class, "train",                                                        "Train a GLM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("glrm", GLRM.class);
+    H2O.registerPOST("/3/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
+    H2O.registerPOST("/3/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
 
     ModelBuilder.registerModelBuilder("word2vec", Word2Vec.class);
     H2O.registerPOST("/3/ModelBuilders/word2vec", Word2VecBuilderHandler.class, "train",                                              "Train a Word2Vec model on the specified Frame.");

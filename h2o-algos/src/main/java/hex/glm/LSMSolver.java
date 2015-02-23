@@ -8,7 +8,7 @@ import water.H2O;
 import water.Iced;
 import water.Key;
 import water.MemoryManager;
-
+import water.util.ArrayUtils;
 
 
 /**
@@ -183,8 +183,10 @@ public abstract class LSMSolver extends Iced{
     public static class NonSPDMatrixException extends LSMSolverException {
       public NonSPDMatrixException(){super("Matrix is not SPD, can't solve without regularization\n");}
       public NonSPDMatrixException(Gram grm){
-
         super("Matrix is not SPD, can't solve without regularization\n" + grm);
+      }
+      public NonSPDMatrixException(double[][] grm){
+        super("Matrix is not SPD, can't solve without regularization\n" + ArrayUtils.pprint(grm));
       }
     }
 
