@@ -14,9 +14,6 @@ public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.G
     @API(help = "Iterations executed")
     public int iterations;
 
-    @API(help = "Standard deviation of each principal component")
-    public double[] std_deviation;
-
     @API(help = "Mapping from training data to lower dimensional k-space")
     public TwoDimTableV1 archetypes;
 

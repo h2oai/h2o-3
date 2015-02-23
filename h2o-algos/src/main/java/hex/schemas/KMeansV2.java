@@ -19,7 +19,7 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     @API(help = "Number of clusters", required = true)
     public int k;
 
-    @API(help="Maximum training iterations.")
+    @API(help="Maximum training iterations")
     public int max_iterations;        // Max iterations
 
     @API(help = "Standardize columns", level = API.Level.secondary)

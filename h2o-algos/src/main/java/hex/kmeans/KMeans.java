@@ -26,7 +26,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-      Model.ModelCategory.Clustering,
+      Model.ModelCategory.Clustering
     };
   }
 

@@ -70,9 +70,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
-    if (_train.numCols() < 2) error("_train", "_train must have more than one column");
-    if (_parms._k > _train.numCols()) error("_k", "_k cannot be greater than the number of columns in _train");
     if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+
+    if (_train == null) return;
+
+    if (_train.numCols() < 2) error("_train", "_train must have more than one column");
+    if (_parms._k > Math.min(_train.numCols(), _train.numRows())) error("_k", "_k cannot be greater than min(rows, cols) in _train");
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
