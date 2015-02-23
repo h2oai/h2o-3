@@ -12,6 +12,7 @@ test.kmslice.golden <- function(H2Oserver) {
   # So that doesn't guarantee one true answer.
   # startIdx <- sort(sample(unique(1:nrow(irisR)), 3))
   
+  # full iris is used for test and train, so these indices always point to the same data
   startIdx <- c(1, 52, 102) # use the first row from each output class
   
   Log.info("Initial cluster centers:"); print(irisR[startIdx,1:4])
@@ -50,13 +51,16 @@ test.kmslice.golden <- function(H2Oserver) {
   # H2O indexes from 0, but R indexes from 1
   forCompareH2O <- as.matrix(classH2O)+1
   forCompareR <- as.matrix(classR)
-  notMatching <- forCompareH2O[forCompareH2O == forCompareR]
+  notMatchingH2O <- forCompareH2O[forCompareH2O != forCompareR]
+  notMatchingR <- forCompareR[forCompareH2O != forCompareR]
 
   Log.info(dim(forCompareH2O))
   Log.info(dim(forCompareR))
   Log.info(head(forCompareH2O))
   Log.info(head(forCompareR))
-  Log.info(head(notMatching))
+  Log.info(dim(notMatchingH2O))
+  Log.info(head(notMatchingH2O))
+  Log.info(head(notMatchingR))
 
   Log.info(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
 
