@@ -54,13 +54,15 @@ public class DeepLearningMNIST extends TestUtil {
                 DeepLearningModel model = null;
                 try {
                     model = dl.trainModel().get();
+                    if (model != null) {
+                        Assert.assertTrue(1000. * model.model_info().get_processed_total() / model.run_time > 20); //we expect at least a training speed of 20 samples/second (MacBook Pro: ~50 samples/second)
+                    }
                 } catch (Throwable t) {
                     t.printStackTrace();
                     throw new RuntimeException(t);
                 } finally {
                     dl.remove();
                     if (model != null) {
-                        Assert.assertTrue(1000. * model.model_info().get_processed_total() / model.run_time > 50); //we expect at least a training speed of 50 samples / second (MacBook Pro laptop does ~90 samples / second)
                         model.delete_xval_models();
                         model.delete_best_model();
                         model.delete();
