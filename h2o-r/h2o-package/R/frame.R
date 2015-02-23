@@ -117,7 +117,11 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
   res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
-  h2o.getFrame(res$dest$name, conn)
+
+  job_key  <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(conn, job_key)
+  h2o.getFrame(dest_key, conn)
 }
 
 h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
