@@ -68,8 +68,29 @@ class Basic(unittest.TestCase):
             frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
             # print "frames_result from the first import_result key", dump_json(frames_result)
 
-            # how do you parse multiple files
-            parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs)
+            # pass
+            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304)
+            parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304*4)
+            iA = h2o_cmd.InspectObj(pA.parse_key,
+                expectedNumRows=rowCount, expectedNumCols=colCount, expectedMissinglist=[])
+            print iA.missingList, iA.labelList, iA.numRows, iA.numCols
+
+            for i in range(55):
+                print "Summary on column", i
+                co = h2o_cmd.runSummary(key=hex_key, column=i)
+                coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
+                    co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+
+                for k,v in co:
+                    print k, v
+
+
+            # illegal
+            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=3000000)
+            # fail
+            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
+            # fail
+            # parse_result = a_node.parse(key=k, timeoutSecs=timeoutSecs)
             k = parse_result['frames'][0]['key']['name']
             # print "parse_result:", dump_json(parse_result)
             frames_result = a_node.frames(key=k, len=5)

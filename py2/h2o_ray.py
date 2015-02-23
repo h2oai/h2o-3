@@ -151,6 +151,9 @@ def parse(self, key, hex_key=None,
     # and then Parse?srcs=<keys list> and params from the ParseSetup result
     # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
 
+    columnTypes = setup_result['columnTypes']
+    assert columnTypes is not None, "%s %s" % ("columnTypes:", columnTypes)
+
     if setup_result['srcs']:
         setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
     else:
@@ -158,9 +161,14 @@ def parse(self, key, hex_key=None,
     
     # I suppose we need a way for parameters to parse() to override these
     if setup_result['columnNames']:
-        ascii_column_names = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
+        asciiColumnNames = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
     else:
-        ascii_column_names = None
+        asciiColumnNames = None
+
+    if setup_result['columnTypes']:
+        asciiColumnTypes = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnTypes'])) + "]"
+    else:
+        asciiColumnTypes = None
 
 
     parse_params = {
@@ -171,7 +179,8 @@ def parse(self, key, hex_key=None,
         'ncols': setup_result['ncols'],
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
-        'columnNames': ascii_column_names,
+        'columnNames': asciiColumnNames,
+        'columnTypes': asciiColumnTypes,
         'chunkSize': setup_result['chunkSize'],
         # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
