@@ -1510,9 +1510,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
-    run_time = 0;
-    start_time = System.currentTimeMillis();
-    _timeLastScoreEnter = start_time;
     boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = new DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
@@ -1532,6 +1529,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _output.scoringHistory = createScoringHistoryTable(errors);
       _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
+    run_time = 0;
+    start_time = System.currentTimeMillis();
+    _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
   }
 
