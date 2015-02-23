@@ -2483,7 +2483,7 @@ class ASTTable extends ASTUniPrefixOp {
       final int lvl = ++level1;
       vecs[lvl] = new MRTask() {
         @Override public void map(Chunk cs, NewChunk oc) {
-          for (int i = 0; i < cs._len; ++i) //counts[lvl-1].length; i++)
+          for (int i = 0; i < cs._len; ++i)
             oc.addNum((double) counts[lvl-1][(int)(i + cs.start())]);
         }
       }.doAll(1, dataLayoutVec).outputFrame(null,null).anyVec();
