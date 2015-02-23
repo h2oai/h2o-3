@@ -49,7 +49,7 @@ class Basic(unittest.TestCase):
             labelList = iA.labelList
 
             parameters = {
-                'response_column': 1, 
+                'response_column': 'C2', 
                 'n_folds': 0,
                 'alpha': '[0]', 
                 'lambda': '[0]',
