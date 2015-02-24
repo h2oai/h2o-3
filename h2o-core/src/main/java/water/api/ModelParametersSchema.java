@@ -35,6 +35,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       try {
         for (Class<? extends ModelParametersSchema> clz = this_clz; ; clz = (Class<? extends ModelParametersSchema>) clz.getSuperclass()) {
           String[] fields = (String[]) clz.getField("own_fields").get(clz);
+
           String[] tmp = new String[fields.length + __fields_cache.length];
           System.arraycopy(fields, 0, tmp, 0, fields.length);
           System.arraycopy(__fields_cache, 0, tmp, fields.length, __fields_cache.length);
@@ -145,7 +146,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       // Turn param.is_mutually_exclusive_with into a List which we will walk over twice
       List<String> me = new ArrayList<String>();
       me.add(name);
-      me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
+      // Note: this can happen if this field doesn't have an @API annotation, in which case we got an earlier WARN
+      if (null != param.is_mutually_exclusive_with) me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
 
       // Make a new Set which contains ourselves, fields we have already been connected to,
       // and fields *they* have already been connected to.

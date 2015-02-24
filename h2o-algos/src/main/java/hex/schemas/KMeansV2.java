@@ -31,11 +31,4 @@ public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeans
     @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }) // TODO: pull out of enum class. . .
     public KMeans.Initialization init;
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // TODO: UGH
-  // Return a URL to invoke KMeans on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/KMeans?training_frame="+fr._key; }
 }

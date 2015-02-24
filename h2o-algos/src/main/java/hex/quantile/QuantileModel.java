@@ -29,10 +29,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     throw H2O.unimpl("No model metrics for Quantile.");
   }
 
-  // Default publically visible Schema is V2
-  @Override public ModelSchema schema() { return new QuantileModelV2(); }
-
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {  
+  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 

@@ -21,11 +21,4 @@ public class PCAV2 extends ModelBuilderSchema<PCA,PCAV2,PCAV2.PCAParametersV2> {
     @API(help = "standardize")
     public boolean standardize;
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // TODO: UGH
-  // Return a URL to invoke PCA on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/PCA?training_frame="+fr._key; }
 }

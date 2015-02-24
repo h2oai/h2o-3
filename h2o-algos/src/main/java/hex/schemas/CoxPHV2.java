@@ -526,6 +526,4 @@ public class CoxPHV2 extends ModelBuilderSchema<CoxPH,CoxPHV2,CoxPHV2.CoxPHParam
 //    return new CoxPH(parms);
 //  }
 //
-//  // Return a URL to invoke CoxPH on this Frame
-//  @Override protected String acceptsFrame( Frame fr ) { return "/v2/CoxPH?training_frame="+fr._key; }
 // }
