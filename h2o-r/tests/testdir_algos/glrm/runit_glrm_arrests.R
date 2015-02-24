@@ -14,7 +14,6 @@ test.glrm.arrests <- function(conn) {
     Log.info(paste( "Using these columns: ", colnames(arrests.hex)))
     arrests.glrm.h2o <- h2o.glrm(training_frame = arrests.hex, k = as.numeric(i))
     print(arrests.glrm.h2o)
-    # prostate.glrm <- kmeans(prostate.data[,3], centers = i)
   }
   
   testEnd()

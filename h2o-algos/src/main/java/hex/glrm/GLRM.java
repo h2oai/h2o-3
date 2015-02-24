@@ -224,6 +224,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     // Add l2 regularization until Gram matrix is positive definite
+    // Maybe try robust Cholesky implementation? http://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html
     CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
       int attempts = 0;
       double addedL2 = 0;   // TODO: Should I report this to the user?
@@ -366,7 +367,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(dinfo._key, dinfo);
         model._output._normSub = dinfo._normSub == null ? null : Arrays.copyOf(dinfo._normSub, _train.numCols());
         model._output._normMul = dinfo._normMul == null ? null : Arrays.copyOf(dinfo._normMul, _train.numCols());
-        model._output._iterations = 0;
 
         // Create separate reference to X for Gram task
         Frame x = new Frame(_parms._loading_key, null, xvecs);
@@ -390,7 +390,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         CholMulTask cmtsk_init = new CholMulTask(dinfo, yychol_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
         double axy_norm = cmtsk_init._objerr;   // Save squared Frobenius norm ||A - XY||_F^2
-        model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration of alternating minimization
+
+        model._output._iterations = 0;
+        model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
 
         while(!isDone(model)) {
           // 1) Compute Y = (X'X + \gamma I)^(-1)X'A
@@ -440,7 +442,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 4) Save solution to model output
         model._output._archetypes = yt;
         model._output._parameters = _parms;
-        // model._output._loadings = xinfo._adaptedFrame;
         recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
@@ -487,7 +488,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         Arrays.fill(_normMul, 1.0);
       } else _normMul = dinfo._normMul;
       _ncolA = ncolA; _ncolX = ncolX;
-      _prod = new double[ncolX][ncolA];
+      _prod = new double[ncolA][ncolX];
     }
 
     @Override public void map(Chunk[] cs) {

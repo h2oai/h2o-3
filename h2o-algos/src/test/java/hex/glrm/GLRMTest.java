@@ -113,9 +113,6 @@ public class GLRMTest extends TestUtil {
     }
   }
 
-  // Add slight positive to diagonal so floating point imprecision won't cause Cholesky to fail with non-SPD
-  // http://math.stackexchange.com/questions/418945/cholesky-decomposition-in-positive-semi-definite-matrix
-  // Maybe try robust Cholesky implementation? http://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html
   @Test public void testCholeskyRegularization() {
     GLRM job = null;
     GLRMModel model = null;
