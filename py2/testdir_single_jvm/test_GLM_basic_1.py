@@ -51,7 +51,6 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': '[STR]',
-                'score_each_iteration': True,
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
                 'do_classification': True,
@@ -68,7 +67,6 @@ class Basic(unittest.TestCase):
                 'lambda_search': None,
                 'nlambdas': None,
                 'lambda_min_ratio': None,
-                'higher_accuracy': True,
                 'use_all_factor_levels': False,
                 # NPE with n_folds 2?
                 'n_folds': 1,

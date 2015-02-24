@@ -200,7 +200,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       s.frames[0].compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
-        s.compatible_models[i] = m.schema().fillFromImpl(m);
+        s.compatible_models[i] = (ModelSchema)Schema.schema(version, m).fillFromImpl(m);
         s.frames[0].compatible_models[i] = m._key.toString();
         i++;
       }

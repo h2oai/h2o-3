@@ -155,6 +155,7 @@ class H2O(object):
     '''
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
+#    @profile
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
@@ -267,13 +268,16 @@ class H2O(object):
                 log_rest("r is None")
             else:
                 log_rest("HTTP status code: " + str(r.status_code))
-                if hasattr(r, 'text'):
-                    if r.text is None:
-                        log_rest("r.text is None")
+                # The following accesses to r.text were taking most of the runtime:
+                log_text = False
+                if log_text:
+                    if hasattr(r, 'text'):
+                        if r.text is None:
+                            log_rest("r.text is None")
+                        else:
+                            log_rest(r.text)
                     else:
-                        log_rest(r.text)
-                else:
-                    log_rest("r does not have attr text")
+                        log_rest("r does not have attr text")
         except Exception, e:
             # Paranoid exception catch.  
             # Ignore logging exceptions in the case that the above error checking isn't sufficient.
@@ -748,7 +752,7 @@ class H2O(object):
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
     '''
-    def models(self, api_version=3, key=None, timeoutSecs=10, **kwargs):
+    def models(self, api_version=3, key=None, timeoutSecs=20, **kwargs):
         params_dict = {
             'find_compatible_frames': False
         }

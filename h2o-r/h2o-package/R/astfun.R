@@ -176,10 +176,16 @@ function(stmnt) {
       args[[1L]] <- arg1
 
       # Grab defaults and exchange them with any passed in args
+#      browser()
       op_args <- (stmnt_list[-1L])[-1L]         # these are any additional args passed to this op
       l <- NULL
       if (is.primitive(match.fun(op))) l <- formals(args(match.fun(op)))  # primitive methods are special
-      else l <- formals(getMethod(as.character(op), "H2OFrame"))[-1L]
+      else {
+        l <- formals(getMethod(as.character(op), "H2OFrame"))[-1L]
+        if (length(l) == 1 && names(l) == "...") {
+          l <- formals(as.list(as.list(getMethod(as.character(op), "H2OFrame"))[[3]][[2]])[[3]])[-1L]
+        }
+      }
       if (is.null(l)) stop("Could not find args for the op: ", as.character(op))
       l <- lapply(l, function(i)
       if (length(i) != 0L) {

@@ -9,7 +9,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init(1, use_hdfs=True, hdfs_version='cdh5', hdfs_name_node='172.16.2.180', java_heap_GB=12)
+        h2o.init(1, use_hdfs=True, hdfs_version='cdh5', hdfs_name_node='172.16.2.180', java_heap_GB=14)
 
 
     @classmethod
@@ -54,7 +54,7 @@ class Basic(unittest.TestCase):
                 # FIX! doesn't like it?
                 # 'loss': 'Bernoulli',
                 # FIX..no variable importance for GBM yet?
-                'variable_importance': False,
+                # 'variable_importance': False,
                 # 'seed': 
             }
 
@@ -63,7 +63,7 @@ class Basic(unittest.TestCase):
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
-                timeoutSecs=60)
+                timeoutSecs=360)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)

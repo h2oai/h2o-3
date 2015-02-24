@@ -11,7 +11,7 @@ def runStoreView(node=None, **kwargs):
 
     print "\nStoreView:"
     # FIX! are there keys other than frames and models
-    a = node.frames()
+    a = node.frames(**kwargs)
     # print "storeview frames:", dump_json(a)
     frameList = [af['key']['name'] for af in a['frames']]
 
@@ -127,6 +127,8 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
     labelList = i.labelList
     numRows = i.numRows
     numCols = i.numCols
+    print "labelList:", labelList
+    assert labelList is not None
 
     # doesn't take indices? only column labels?
     # return first column, unless specified
@@ -316,9 +318,12 @@ class SummaryObj(OutputObj):
         checksum = frame['checksum']
         rows = frame['rows']
 
-        assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s" % \
-            (colIndex, len(frame['columns']))
-        coJson = frame['columns'][colIndex]
+        # assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s. " % \
+        #     (colIndex, len(frame['columns']))
+        # coJson = frame['columns'][colIndex]
+
+        # is it always 0 now? the one I asked for ?
+        coJson = frame['columns'][0]
 
         assert checksum !=0 and checksum is not None
         assert rows!=0 and rows is not None

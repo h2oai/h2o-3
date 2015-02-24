@@ -38,7 +38,7 @@ class Basic(unittest.TestCase):
 
         parameters = {
             'validation_frame': validation_key, # KeyIndexed None
-            'ignored_columns': '[IsDepDelayed_REC]', # string[] None
+            'ignored_columns': "['IsDepDelayed_REC']", # string[] None
             'score_each_iteration': None, # boolean false
             'response_column': 'IsDepDelayed', # string None
             'do_classification': True, # boolean false

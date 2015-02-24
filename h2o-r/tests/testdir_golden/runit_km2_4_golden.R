@@ -12,8 +12,10 @@ test.kmsplit.golden <- function(conn) {
   testIdx <- sort(setdiff(1:nrow(ozoneR), trainIdx))
   trainR <- ozoneR[trainIdx,]; testR <- ozoneR[testIdx,]
   trainH2O <- ozoneH2O[trainIdx,]; testH2O <- ozoneH2O[testIdx,]
+  # a random sample here, is no different than random init to kmeans
+  # h2o might not get the desired centers with random init
   startIdx <- sort(sample(1:nrow(trainR), 3))
-  
+    
   Log.info("Initial cluster centers:"); print(trainR[startIdx,])
   # fitR <- kmeans(trainR, centers = trainR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
   fitR <- kcca(trainR, k = as.matrix(trainR[startIdx,], family = kccaFamily("kmeans"), control = list(iter.max = 1000)))
@@ -28,7 +30,28 @@ test.kmsplit.golden <- function(conn) {
   # FIXME: predict directly on sliced H2O frame breaks
   # classH2O <- predict(fitH2O, testH2O)
   classH2O <- predict(fitH2O, as.h2o(conn, testR))
-  expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)
+  # expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)
+  # H2O indexes from 0, but R indexes from 1
+  forCompareH2O <- as.matrix(classH2O)+1
+  forCompareR <- as.matrix(classR)
+  notMatchingH2O <- forCompareH2O[forCompareH2O != forCompareR]
+  notMatchingR <- forCompareR[forCompareH2O != forCompareR]
+
+  Log.info(dim(forCompareH2O))
+  Log.info(dim(forCompareR))
+  Log.info(head(forCompareH2O))
+  Log.info(head(forCompareR))
+  Log.info(dim(notMatchingH2O))
+  Log.info(head(notMatchingH2O))
+  Log.info(head(notMatchingR))
+
+  Log.info(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
+
+  # one has dim names, the other doesn't. will get length error unless..
+  # default tolerance is close to 1.5e-8. but should be comparing integers
+  expect_true(all.equal(forCompareH2O, forCompareR, check.attributes=FALSE))
+
+
   
   testEnd()
 }

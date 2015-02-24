@@ -3,7 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
-import water.api.KeyV1.*;
+import water.api.KeyV1.ModelKeyV1;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
@@ -17,23 +17,29 @@ import water.util.PojoUtils;
  * </ul>
  *
  */
-abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P, O>, P extends Model.Parameters, O extends Model.Output> extends Schema<M, S> {
+abstract public class ModelSchema<M extends Model<M, P, O>,
+                                  S extends ModelSchema<M, S, P, PS, O, OS>,
+                                  P extends Model.Parameters,
+                                  PS extends ModelParametersSchema<P, PS>,
+                                  O extends Model.Output,
+                                  OS extends ModelOutputSchema<O, OS>>
+    extends Schema<M, S> {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  protected ModelKeyV1 key;
+  public ModelKeyV1 key;
 
   // Output fields
   @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
-  protected String algo;
+  public String algo;
 
   @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
-  protected ModelParametersSchema parameters;
+  public PS parameters;
 
   @API(help="The build output for the model (e.g. the cluster centers for KMeans).", direction=API.Direction.OUTPUT)
-  protected ModelOutputSchema output;
+  public OS output;
 
   @API(help="Compatible frames, if requested", direction=API.Direction.OUTPUT)
   String[] compatible_frames;
@@ -60,14 +66,15 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
   // TODO: I think we can implement the following two here, using reflection on the type parameters.
 
   /** Factory method to create the model-specific parameters schema. */
-  abstract public ModelParametersSchema createParametersSchema();
+  abstract public PS createParametersSchema();
 
   /** Factory method to create the model-specific output schema. */
-  abstract public ModelOutputSchema createOutputSchema();
+  abstract public OS createOutputSchema();
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {
     this.algo = ModelBuilder.getAlgo(m);
+    // Key<? extends Model> k = m._key;
     this.key = new ModelKeyV1(m._key);
     this.checksum = m.checksum();
 
@@ -90,7 +97,7 @@ abstract public class ModelSchema<M extends Model, S extends ModelSchema<M, S, P
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
     try {
-      ModelParametersSchema defaults = createParametersSchema().fillFromImpl((P) parameters.getImplClass().newInstance());
+      PS defaults = createParametersSchema().fillFromImpl((P) parameters.getImplClass().newInstance());
       ModelParametersSchema.writeParametersJSON(ab, parameters, defaults);
       ab.put1(',');
     }

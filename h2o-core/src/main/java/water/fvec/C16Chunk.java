@@ -38,7 +38,7 @@ public class C16Chunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C16Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     set_len(_mem.length>>4);
     assert _mem.length == _len <<4;
     return this;

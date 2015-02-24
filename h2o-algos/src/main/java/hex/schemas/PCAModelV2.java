@@ -1,12 +1,11 @@
 package hex.schemas;
 
-import hex.pca.PCA;
 import hex.pca.PCAModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
-public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAParameters, PCAModel.PCAOutput> {
+public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAParameters, PCAV2.PCAParametersV2, PCAModel.PCAOutput, PCAModelV2.PCAModelOutputV2> {
 
   public static final class PCAModelOutputV2 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV2> {
     // Output fields; input fields are in the parameters list

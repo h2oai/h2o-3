@@ -247,7 +247,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           Log.err("Failed to instantiate schema class: " + clz + " because: " + e.getMessage());
         }
         if (null != s) {
-          Log.debug("Instantiated: " + clz.getSimpleName());
+          Log.debug("Registered Schema: " + clz.getSimpleName());
 
           // Validate the fields:
           SchemaMetadata ignoreme = new SchemaMetadata(s);
@@ -566,19 +566,25 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
     for (Class<? extends Schema> clz : clzs) {
       // Ensure that water is pulled in:
+      Log.debug("Registering subclasses of: " + clz.toString() + " in package: water");
       for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(clz))
         if (!Modifier.isAbstract(schema_class.getModifiers()))
           Schema.register(schema_class);
 
       // Ensure that hex is pulled in:
+      Log.debug("Registering subclasses of: " + clz.toString() + " in package: hex");
       for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(clz))
         if (!Modifier.isAbstract(schema_class.getModifiers()))
           Schema.register(schema_class);
 
       // Get mixed-package schemas:
-      for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
+      // This takes about 4s at startup time, so disallow schemas whose parent is in the other package.
+      if (false) {
+        Log.debug("Registering subclasses of: " + clz.toString() + " in package: (all)");
+        for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(clz))
+          if (!Modifier.isAbstract(schema_class.getModifiers()))
+            Schema.register(schema_class);
+      }
     }
 
     schemas_registered = true;

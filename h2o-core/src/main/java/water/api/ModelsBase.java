@@ -47,7 +47,7 @@ abstract class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends 
 
       int i = 0;
       for (Model model : m.models) {
-        this.models[i++] = model.schema().fillFromImpl(model);
+        this.models[i++] = (ModelSchema)Schema.schema(this.getSchemaVersion(), model).fillFromImpl(model);
       }
     }
     return this;

@@ -1071,6 +1071,7 @@ class TestRunner:
         notrun = 0
         total = 0
         true_fail_list = []
+        notrun_list = []
         for test in self.tests:
             if (test.get_passed()):
                 passed += 1
@@ -1084,6 +1085,7 @@ class TestRunner:
                         true_fail_list.append(test.test_name)
                 else:
                     notrun += 1
+                    notrun_list.append(test.test_name)
             total += 1
 
         if ((passed + nopass_but_tolerate) == total):
@@ -1114,7 +1116,10 @@ class TestRunner:
         else:
             self._log("Time/completed test:  N/A")
         self._log("")
-        self._log("True fail list:       " + ", ".join(true_fail_list))
+        if failed:
+            self._log("True fail list:       " + ", ".join(true_fail_list))
+        if notrun:
+            self._log("notrun (hung?) list:  " + ", ".join(notrun_list))
         self._log("")
 
     def terminate(self):
@@ -1212,6 +1217,7 @@ class TestRunner:
         test.start(ip, port)
 
     def _wait_for_one_test_to_complete(self):
+        waits = 0
         while (True):
             for test in self.tests_running:
                 if (self.terminated):
@@ -1222,6 +1228,17 @@ class TestRunner:
             if (self.terminated):
                 return
             time.sleep(1)
+            waits += 1
+            # If a test hangs, it's difficult to tell which test is hung
+            # print out a summary while waiting, every once in a while (minute?)
+            # increase to 2 minutes so you don't see intermediate report during build (test_rest_api.py)
+            if (waits % 120)==0:
+                print ""
+                print "Showing nopass=False summary so far." 
+                print "We've been waiting a minute or so for another test to complete."
+                # I don't know how to get this g_nopass in here...force it false for now
+                # want to use the instance's nopass? but doesn't exist as self.nopass
+                self.report_summary(nopass=False)
 
     def _report_test_result(self, test, nopass):
         port = test.get_port()
@@ -1331,6 +1348,8 @@ def signal_handler(signum, stackframe):
     print("SIGNAL CAUGHT (" + str(signum) + ").  TEARING DOWN CLOUDS.")
     print("")
     print("----------------------------------------------------------------------")
+    # get a summary if jenkins causes timeout
+    g_runner.report_summary(g_nopass)
     g_runner.terminate()
 
 
