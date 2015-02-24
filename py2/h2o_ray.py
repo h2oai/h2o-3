@@ -92,7 +92,7 @@ def import_files(self, path, timeoutSecs=180):
 # key is required
 # FIX! for now h2o doesn't support regex here. just key or list of keys
 # FIX! default turn off intermediateResults until NPE is fixed.
-def parse(self, key, hex_key=None,
+def parse(self, key, hex_key=None, columnTypeDict=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
           noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=False, **kwargs):
     '''
@@ -108,6 +108,7 @@ def parse(self, key, hex_key=None,
         'checkHeader': None, # how is this used
         'singleQuotes': None,
         'columnNames': None, # list?
+        'columnTypes': None, # list? or can use columnTypeDict param (see below)
         'chunkSize': None,
         # are these two no longer supported?
         'delete_on_done': None,
@@ -135,8 +136,9 @@ def parse(self, key, hex_key=None,
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
 
+    # columnTypeDict not used here
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
     # Call ParseSetup?srcs=[keys] . . .
 
     # if benchmarkLogging:
@@ -148,39 +150,44 @@ def parse(self, key, hex_key=None,
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
-    # and then Parse?srcs=<keys list> and params from the ParseSetup result
-    # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
+    # this should match what we gave as input?
+    if setup_result['srcs']:
+        # should these be quoted?
+        srcsStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['srcs'] ]) + "]"
+    else:
+        srcsStr = None
+    
+    # I suppose we need a way for parameters to parse() to override these
+    # should it be an array or a dict?
+    if setup_result['columnNames']:
+        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
+    else:
+        columnNamesStr = None
 
     columnTypes = setup_result['columnTypes']
     assert columnTypes is not None, "%s %s" % ("columnTypes:", columnTypes)
 
-    if setup_result['srcs']:
-        setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
-    else:
-        setupSrcs = None
-    
-    # I suppose we need a way for parameters to parse() to override these
-    if setup_result['columnNames']:
-        asciiColumnNames = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
-    else:
-        asciiColumnNames = None
-
-    if setup_result['columnTypes']:
-        asciiColumnTypes = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnTypes'])) + "]"
-    else:
-        asciiColumnTypes = None
-
+    # dict parameter to update columnTypeDict?
+    # but we don't pass columnNames like this?
+    ct = setup_result['columnTypes']
+    if columnTypeDict: 
+        for k,v in columnTypeDict.iteritems():
+            if k>=0 and k<len(ct):
+                ct[k] = v
+            else:
+                raise Exception("bad col index %s in columnTypeDict param %s" % (k, columnTypeDict))
+    columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
 
     parse_params = {
-        'srcs': setupSrcs,
+        'srcs': srcsStr,
         'hex': setup_result['hexName'],
         'pType': setup_result['pType'],
         'sep': setup_result['sep'],
         'ncols': setup_result['ncols'],
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
-        'columnNames': asciiColumnNames,
-        'columnTypes': asciiColumnTypes,
+        'columnNames': columnNamesStr,
+        'columnTypes': columnTypesStr,
         'chunkSize': setup_result['chunkSize'],
         # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
@@ -315,8 +322,8 @@ def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
     params_dict = { 
-        'offset': 0,
-        'len': 100
+        # 'offset': 0,
+        # 'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     

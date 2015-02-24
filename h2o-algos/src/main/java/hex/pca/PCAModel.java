@@ -2,10 +2,8 @@ package hex.pca;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.schemas.PCAModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
@@ -70,9 +68,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     throw H2O.unimpl("No model metrics for PCA.");
   }
-
-  // Default publically visible Schema is V2
-  @Override public ModelSchema schema() { return new PCAModelV2(); }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw new RuntimeException("TODO Auto-generated method stub");

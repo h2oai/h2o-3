@@ -646,6 +646,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable variableImportances;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
+    double run_time;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1637,6 +1638,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
           _output.trainMetrics = mm1;
+          _output.run_time = run_time;
 
           if (ftest != null) {
             Frame validPred = score(ftest);

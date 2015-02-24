@@ -29,10 +29,7 @@ public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.Exam
     throw H2O.unimpl("No Model Metrics for ExampleModel.");
   }
 
-  // Default publically visible Schema is V2
-  @Override public ModelSchema schema() { return new ExampleModelV2(); }
-
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {  
+  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 

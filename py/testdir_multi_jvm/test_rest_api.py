@@ -719,6 +719,7 @@ for model_spec in models_to_build:
 #######################################
 # Test default parameters validation for each model builder
 #
+if verbose: print 'Testing ModelBuilder default parameters. . .'
 model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
 
 # Do we know about all of them?
