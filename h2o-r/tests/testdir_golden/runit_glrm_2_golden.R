@@ -33,12 +33,12 @@ test.glrmstand.golden <- function(H2Oserver) {
   Log.info("Compare Principal Components between R and H2O\n") 
   expect_equal_eigvec(as.matrix(fitH2O@model$eigenvectors), fitR$rotation, tolerance = 1e-6)
   
-  # pcimpR <- summary(fitR)$importance
-  # pcimpH2O <- fitH2O@model$pc_importance
-  # Log.info("R Importance of Components:"); print(pcimpR)
-  # Log.info("H2O Importance of Components:"); print(pcimpH2O)
-  # Log.info("Compare Importance between R and H2O\n") 
-  # expect_equal(as.matrix(pcimpH2O), pcimpR, tolerance = 1e-4)
+#   pcimpR <- summary(fitR)$importance
+#   pcimpH2O <- fitH2O@model$pc_importance
+#   Log.info("R Importance of Components:"); print(pcimpR)
+#   Log.info("H2O Importance of Components:"); print(pcimpH2O)
+#   Log.info("Compare Importance between R and H2O\n") 
+#   expect_equal(as.matrix(pcimpH2O), pcimpR, tolerance = 1e-6)
   
   testEnd()
 }

@@ -338,7 +338,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override protected void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null;
-      Frame fr = null;
+      DataInfo xinfo = null;
 
       try {
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
@@ -362,15 +362,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
         assert c == xvecs.length;
 
-        fr = new Frame(Key.make(), null, vecs);
-        dinfo = new DataInfo(fr._key, fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
+        Frame fr = new Frame(null, vecs);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
         model._output._normSub = dinfo._normSub == null ? null : Arrays.copyOf(dinfo._normSub, _train.numCols());
         model._output._normMul = dinfo._normMul == null ? null : Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // Create separate reference to X for Gram task
         Frame x = new Frame(_parms._loading_key, null, xvecs);
-        DataInfo xinfo = new DataInfo(x._key, x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
 
         // 0) Initialize X and Y matrices
@@ -461,7 +462,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
-        // if (fr != null ) fr.delete();   // FIXME: Not deleting this causes leaked keys
+        if (xinfo != null) xinfo.remove();
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
@@ -603,14 +604,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         xrow = tmp.getColumnPackedCopy();
 
         // Compute l2 norm of single row of A - XY (using new X)
+        // \sum_{i,j} (A_{i,j} - x_i * y_j)^2 where x_i = row i of X, y_j = col j of Y
         for(int d = 0; d < _ncolA; d++) {
-          double xysum = 0;
-          for(int k = 0; k < _ncolX; k++) {
-            for(int c = 0; c < _yt.length; c++)
-              xysum += xrow[k] * _yt[c][k];
-          }
           double a = cs[d].atd(row);
           if(Double.isNaN(a)) continue;
+          double xysum = 0;
+          for(int k = 0; k < _ncolX; k++)
+            xysum += xrow[k] * _yt[d][k];
           double delta = (a - _normSub[d]) * _normMul[d] - xysum;
           _objerr += delta * delta;
         }

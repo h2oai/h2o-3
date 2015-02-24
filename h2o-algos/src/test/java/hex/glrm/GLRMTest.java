@@ -101,7 +101,7 @@ public class GLRMTest extends TestUtil {
           throw new RuntimeException(t);
         } finally {
           if( model != null ) {
-            DKV.remove(model._parms._loading_key);
+            model._parms._loading_key.get().delete();
             model.delete();
           }
         }
@@ -143,7 +143,7 @@ public class GLRMTest extends TestUtil {
     } finally {
       if(train != null) train.delete();
       if (model != null) {
-        DKV.remove(model._parms._loading_key);
+        model._parms._loading_key.get().delete();
         model.delete();
       }
     }
