@@ -297,6 +297,8 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
 setClass("H2OAutoEncoderModel", contains="H2OModel")
+#' @rdname H2OModel-class
+setClass("H2ODimReductionModel", contains="H2OModel")
 
 #' 
 #' The H2OModelMetrics Object.
@@ -338,3 +340,7 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")

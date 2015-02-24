@@ -39,7 +39,7 @@ import java.util.Arrays;
  */
 public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  final private double TOLERANCE = 1e-6;
+  final private double TOLERANCE = 1e-8;
 
   @Override
   public ModelBuilderSchema schema() {
@@ -288,15 +288,24 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       Matrix x_r = new Matrix(xxchol.getL()).transpose();
       x_r = x_r.times(Math.sqrt(_train.numRows()));
 
-      QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes_raw));
+      QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes));
       Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
       Matrix rrmul = x_r.times(yt_r.transpose());
       SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
 
       // Eigenvectors are V'Z' = (ZV)'
       Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
-      model._output._eigenvectors = eigvec.getArray();
+      model._output._eigenvectors_raw = eigvec.getArray();
       // model._output._eigenvalues = rrsvd.getSingularValues();
+
+      String[] colTypes = new String[_parms._k];
+      String[] colFormats = new String[_parms._k];
+      String[] colHeaders = new String[_parms._k];
+      Arrays.fill(colTypes, "double");
+      Arrays.fill(colFormats, "%5f");
+      for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
+      model._output._eigenvectors = new TwoDimTable("Rotation", _train.names(),
+              colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._eigenvectors_raw);
 
       // Calculate standard deviations from \Sigma
       // Note: Singular values ordered in weakly descending order by algorithm
@@ -319,21 +328,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         prop_var[i] = pcvar[i] / tot_var;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
-
-      String[] colTypes = new String[_parms._k];
-      String[] colFormats = new String[_parms._k];
-      String[] colHeaders = new String[_parms._k];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormats, "%5f");
-      for(int i = 0; i < _parms._k; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
       model._output._pc_importance = new TwoDimTable("Importance of components",
               new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
     }
 
     // Main worker thread
-    @Override
-    protected void compute2() {
+    @Override protected void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null;
       Frame fr = null;
@@ -389,6 +390,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         CholMulTask cmtsk_init = new CholMulTask(dinfo, yychol_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
         double axy_norm = cmtsk_init._objerr;   // Save squared Frobenius norm ||A - XY||_F^2
+        model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration of alternating minimization
 
         while(!isDone(model)) {
           // 1) Compute Y = (X'X + \gamma I)^(-1)X'A
@@ -436,15 +438,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
 
         // 4) Save solution to model output
-        String[] colTypes = new String[_parms._k];
-        String[] colFormats = new String[_parms._k];
-        String[] colHeaders = new String[_parms._k];
-        Arrays.fill(colTypes, "double");
-        Arrays.fill(colFormats, "%5f");
-        for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
-
-        model._output._archetypes = new TwoDimTable("Archetypes", _train.names(), colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], yt);
-        model._output._archetypes_raw = yt;
+        model._output._archetypes = yt;
         model._output._parameters = _parms;
         // model._output._loadings = xinfo._adaptedFrame;
         recoverPCA(model, xinfo);
@@ -466,7 +460,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
-        if (fr != null ) fr.delete();
+        // if (fr != null ) fr.delete();   // FIXME: Not deleting this causes leaked keys
         _parms.read_unlock_frames(GLRM.this);
       }
       tryComplete();
@@ -487,8 +481,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     double[][] _prod;   // _prod = D = A'X
 
     SMulTask(DataInfo dinfo, final int ncolA, final int ncolX) {
-      _normSub = dinfo._normSub;
-      _normMul = dinfo._normMul;
+      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
+      if(dinfo._normMul == null) {
+        _normMul = MemoryManager.malloc8d(ncolA);
+        Arrays.fill(_normMul, 1.0);
+      } else _normMul = dinfo._normMul;
       _ncolA = ncolA; _ncolX = ncolX;
       _prod = new double[ncolX][ncolA];
     }

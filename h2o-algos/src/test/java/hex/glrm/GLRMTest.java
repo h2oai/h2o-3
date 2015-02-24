@@ -18,7 +18,7 @@ import water.util.ArrayUtils;
 import java.util.concurrent.ExecutionException;
 
 public class GLRMTest extends TestUtil {
-  public final double threshold = 0.000001;
+  public final double threshold = 1e-6;
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public void checkStddev(double[] expected, double[] actual) {
@@ -41,7 +41,7 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
-    // Initialize using first k rows of demeaned training frame
+    // Initialize using first k rows of de-meaned training frame
     Frame yinit = frame(ard(ard(5.412, 65.24, -7.54, -0.032),
                             ard(2.212, 92.24, -17.54, 23.268),
                             ard(0.312, 123.24, 14.46, 9.768),
@@ -91,10 +91,10 @@ public class GLRMTest extends TestUtil {
 
           if (std == DataInfo.TransformType.DEMEAN) {
             checkStddev(stddev, model._output._std_deviation);
-            checkEigvec(eigvec, model._output._eigenvectors);
+            checkEigvec(eigvec, model._output._eigenvectors_raw);
           } else if (std == DataInfo.TransformType.STANDARDIZE) {
             checkStddev(stddev_std, model._output._std_deviation);
-            checkEigvec(eigvec_std, model._output._eigenvectors);
+            checkEigvec(eigvec_std, model._output._eigenvectors_raw);
           }
         } catch (Throwable t) {
           t.printStackTrace();

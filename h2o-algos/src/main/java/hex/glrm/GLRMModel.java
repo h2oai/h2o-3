@@ -14,7 +14,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   public static class GLRMParameters extends Model.Parameters {
     public int _k = 1;                // Number of principal components
-    public double _gamma = 0;
+    public double _gamma = 0;         // Regularization
     public int _max_iterations = 1000;     // Max iterations
     public long _seed = System.nanoTime(); // RNG seed
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
@@ -34,12 +34,12 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // public Frame _loadings;
 
     // Mapping from training data to lower dimensional k-space (Y)
-    public double[][] _archetypes_raw;
-    public TwoDimTable _archetypes;
+    public double[][] _archetypes;
 
     // PCA output on XY
     // Principal components (eigenvectors) from SVD of XY
-    public double[/*feature*/][/*k*/] _eigenvectors;
+    public double[/*feature*/][/*k*/] _eigenvectors_raw;
+    public TwoDimTable _eigenvectors;
 
     // Standard deviation of each principal component
     public double[] _std_deviation;

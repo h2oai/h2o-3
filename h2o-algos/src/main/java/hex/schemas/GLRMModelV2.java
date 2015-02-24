@@ -11,26 +11,23 @@ public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.G
 
   public static final class GLRMModelOutputV2 extends ModelOutputSchema<GLRMModel.GLRMOutput, GLRMModelOutputV2> {
     // Output fields; input fields are in the parameters list
+    @API(help = "Model parameters")
+    GLRMV2.GLRMParametersV2 parameters;
+
     @API(help = "Iterations executed")
     public int iterations;
 
     @API(help = "Mapping from training data to lower dimensional k-space")
-    public TwoDimTableV1 archetypes;
+    public double[][] archetypes;
 
-    @API(help = "Principal components (eigenvector) matrix")
-    public double[][] eigenvectors;
+    @API(help = "Standard deviation of each principal component")
+    public double[] std_deviation;
+
+    @API(help = "Principal components matrix")
+    public TwoDimTableV1 eigenvectors;
 
     @API(help = "Importance of each principal component")
     public TwoDimTableV1 pc_importance;
-
-    @API(help = "Model parameters")
-    GLRMV2.GLRMParametersV2 parameters;
-
-    @API(help = "If standardized, mean of each numeric data column")
-    public double[] normSub;
-
-    @API(help = "If standardized, one over standard deviation of each numeric data column")
-    public double[] normMul;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
