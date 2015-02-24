@@ -79,7 +79,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     throw H2O.unimpl("No model metrics for GLRM.");
   }
 
-  @Override
   public ModelSchema schema() {
     return new GLRMModelV2();
   }
