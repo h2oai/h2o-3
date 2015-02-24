@@ -314,7 +314,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     long _retry;
     volatile boolean _computedAndReplied; // One time transition from false to true
     volatile boolean _computed; // One time transition from false to true
-    transient AtomicBoolean _firstException = new AtomicBoolean(false);
     // To help with asserts, record the size of the sent DTask - if we resend
     // if should remain the same size.  Also used for profiling.
     int _size;
@@ -380,8 +379,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           if( !_client._heartbeat._client ) // Report on servers only; clients allowed to be flaky
             Log.info("IOException during ACK, "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
           ab.drainClose();
-          if( _client._heartbeat._client && true/*timeout*/ ) // Dead client will not accept a TCP ACK response?
-            CAS_DT.compareAndSet(this,dt,null);          // cancel the ACK
+          if( _client._heartbeat._client ) // Dead client will not accept a TCP ACK response?
+            this.CAS_DT(dt,null);          // cancel the ACK
           try { Thread.sleep(100); } catch (InterruptedException ignore) {}
         } catch( Exception e ) { // Custom serializer just barfed?
           Log.err(e);            // Log custom serializer exception
@@ -559,17 +558,19 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     synchronized(this) {             // Install the answer under lock
       if( _done ) return ackack(ab, _tasknum); // Ignore duplicate response packet
       UDPTimeOutThread.PENDING.remove(this);
-      _dt.read(ab);            // Read the answer (under lock?)
-      _size_rez = ab.size();   // Record received size
-      ab.close();              // Also finish the read (under lock?)
-      _dt.onAck();             // One time only execute (before sending ACKACK)
-      _done = true;            // Only read one (of many) response packets
+      _dt.read(ab);             // Read the answer (under lock?)
+      _size_rez = ab.size();    // Record received size
+      ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)
+      if( !isCancelled() )      // Can be canceled already (locally by MRTask while recieving remote answer)
+        _dt.onAck();            // One time only execute (before sending ACKACK)
+      _done = true;             // Only read one (of many) response packets
       ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null
-      notifyAll();                  // And notify in any case
+      notifyAll();              // And notify in any case
     }
-    doAllCompletions(); // Send all tasks needing completion to the work queues
+    if( !isCancelled() )  // Can be canceled already
+      doAllCompletions(); // Send all tasks needing completion to the work queues
     // AckAck back on a fresh AutoBuffer, since actually closed() the incoming one
-    return new AutoBuffer(_target).putTask(UDP.udp.ackack.ordinal(),_tasknum);
+    return new AutoBuffer(ab._h2o).putTask(UDP.udp.ackack.ordinal(),_tasknum);
   }
 
   private void doAllCompletions() {

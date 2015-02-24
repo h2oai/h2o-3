@@ -10,7 +10,7 @@ import water.fvec.FileVec;
 import water.fvec.Vec;
 
 public class MRThrow extends TestUtil {
-  public MRThrow() { super(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5);}
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
