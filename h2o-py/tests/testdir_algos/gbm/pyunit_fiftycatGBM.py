@@ -5,7 +5,7 @@ import h2o
 this_file_dir = os.path.dirname(os.path.realpath(__file__))
 h2o_home_dir = this_file_dir + "/../../../../"
 
-def groupsplit_50catGBM(ip,port):
+def fiftycatGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
 
@@ -40,4 +40,4 @@ def groupsplit_50catGBM(ip,port):
   test_auc = performance._auc_data.AUC
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, groupsplit_50catGBM)
+  h2o.run_test(sys.argv, fiftycatGBM)
