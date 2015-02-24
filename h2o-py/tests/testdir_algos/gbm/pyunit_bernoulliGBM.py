@@ -8,7 +8,7 @@ from sklearn.metrics import roc_auc_score
 this_file_dir = os.path.dirname(os.path.realpath(__file__))
 h2o_home_dir = this_file_dir + "/../../../../"
 
-def prostateGBM(ip,port):
+def bernoulliGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
 
@@ -63,4 +63,4 @@ def prostateGBM(ip,port):
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
 
 if __name__ == "__main__":
-  h2o.run_test(sys.argv, prostateGBM)
+  h2o.run_test(sys.argv, bernoulliGBM)
