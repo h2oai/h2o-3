@@ -395,49 +395,62 @@ public abstract class Parser extends Iced {
         res[i] = new ColTypeInfo();
         int nonemptyLines = _nlines-_nempty[i];
 
-        // Numeric
-        if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
-            || (_nnums[i]+_nzeros[i] > 0 && _domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
-                && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
+        //Very redundant tests, but clearer and not speed critical
+        
+        // is it clearly numeric?
+        if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
+                && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
+                && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among enums, ignore
+          res[i]._type = ColType.NUM;
+          continue;
+        }
+
+        // with NA, but likely numeric
+        if (_domains[i].size() <= 1
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
           res[i]._type = ColType.NUM;
           continue;
         }
 
         // Datetime
-        if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
-            || (_ndates[i] > 1 && _domains[i].size() <= 1 // or time + 1 unique string (NA?)
-                && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
+        if (_ndates[i] > _nUUID[i]
+                && _ndates[i] > (_nnums[i] + _nzeros[i])
+                && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
           res[i]._type = ColType.TIME;
           continue;
         }
 
         // UUID
-        if ((_nUUID[i] > 0) //  some UUID
-                || (_nUUID[i] > 0 && _domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
-                && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
+        if (_nUUID[i] > _ndates[i]
+                && _nUUID[i] > (_nnums[i] + _nzeros[i])
+                && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
           res[i]._type = ColType.UUID;
+          continue;
+        }
+
+        // Strings, almost no dups
+        if (_nstrings[i] > _ndates[i]
+                && _nstrings[i] > _nUUID[i]
+                && _nstrings[i] > (_nnums[i] + _nzeros[i])
+                && _domains[i].size() >= 0.95 * _nstrings[i]) {
+          res[i]._type = ColType.STR;
           continue;
         }
 
         // Enum or string?
         // Enum with 0s for NAs
         if(_nzeros[i] > 0
-                && (_nzeros[i] + _nstrings[i] >= (nonemptyLines - 1)) //just strings and zeros
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // not all unique strings
+                && ((_nzeros[i] + _nstrings[i]) == _nlines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
           res[i]._naStr = new ValueString("0");
           res[i]._type = ColType.ENUM;
           res[i]._strongGuess = true;
           continue;
         }
         // Enum mixed with numbers
-        if(_nstrings[i] >= STRING_DOMINANCE_RATIO*(_nnums[i]+_nzeros[i]) // mostly strings
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // but not all unique
+        if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
           res[i]._type = ColType.ENUM;
-          continue;
-        }
-        // Strings, almost no dups
-        if (_domains[i].size() >= 0.98 * _nstrings[i]) {
-          res[i]._type = ColType.STR;
           continue;
         }
 
