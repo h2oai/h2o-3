@@ -34,8 +34,7 @@ public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAPa
 
   // Version&Schema-specific filling into the impl
   @Override public PCAModel createImpl() {
-    PCAV2.PCAParametersV2 p = ((PCAV2.PCAParametersV2)this.parameters);
-    PCAModel.PCAParameters parms = p.createImpl();
+    PCAModel.PCAParameters parms = parameters.createImpl();
     return new PCAModel( key.key(), parms, null );
   }
 }

@@ -46,8 +46,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
 
   // Version&Schema-specific filling into the impl
   @Override public KMeansModel createImpl() {
-    KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
-    KMeansModel.KMeansParameters parms = p.createImpl();
+    KMeansModel.KMeansParameters parms = parameters.createImpl();
     return new KMeansModel( key.key(), parms, null );
   }
 }

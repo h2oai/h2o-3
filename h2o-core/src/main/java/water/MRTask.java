@@ -517,7 +517,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** Call user's reduction.  Also reduce any new AppendableVecs.  Called
    *  internal by F/J.  Not expected to be user-called.  */
-  protected void reduce4( T mrt ) {
+  void reduce4( T mrt ) {
     // Reduce any AppendableVecs
     if( _noutputs > 0 )
       for( int i=0; i<_appendables.length; i++ )
@@ -527,15 +527,30 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     reduce(mrt);
   }
 
+  // Full local work-tree cancellation
+  void self_cancel2() { if( !isDone() ) { cancel(true); self_cancel1(); } }
+  private void self_cancel1() {
+    T l = _left;  if( l != null ) { _left = null;  l.self_cancel2(); }
+    T r = _rite;  if( r != null ) { _rite = null;  r.self_cancel2(); }
+  }
+
   /** Cancel/kill all work as we can, then rethrow... do not invisibly swallow
    *  exceptions (which is the F/J default).  Called internal by F/J.  Not
    *  expected to be user-called.  */
   @Override public final boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
     if( !hasException() ) setException(ex);
-    if( _nleft != null ) _nleft.cancel(true); _nleft = null;
-    if( _nrite != null ) _nrite.cancel(true); _nrite = null;
-    if(  _left != null )  _left.cancel(true);  _left = null;
-    if(  _rite != null )  _rite.cancel(true);  _rite = null;
+    self_cancel1();
+    // Block for completion - we don't want the work, but we want all the
+    // workers stopped before we complete this task.  Otherwise this task quits
+    // early and begins post-task processing (generally cleanup from the
+    // exception) but the work is still on-going - often trying to use the same
+    // Keys as are being cleaned-up!
+
+    // Since blocking can throw (generally the same exception, again and again)
+    // catch & ignore, keeping only the first one we already got.
+    if( _nleft != null ) try { _nleft.get(); } catch( Throwable _ ) { } _nleft = null;
+    if( _nrite != null ) try { _nrite.get(); } catch( Throwable _ ) { } _nrite = null;
+
     return super.onExceptionalCompletion(ex, caller);
   }
 

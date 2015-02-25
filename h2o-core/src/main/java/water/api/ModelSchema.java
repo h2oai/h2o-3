@@ -97,7 +97,7 @@ abstract public class ModelSchema<M extends Model<M, P, O>,
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
     try {
-      PS defaults = createParametersSchema().fillFromImpl((P) parameters.getImplClass().newInstance());
+      PS defaults = createParametersSchema().fillFromImpl(parameters.getImplClass().newInstance());
       ModelParametersSchema.writeParametersJSON(ab, parameters, defaults);
       ab.put1(',');
     }

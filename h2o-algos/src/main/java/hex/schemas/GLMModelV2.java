@@ -83,8 +83,7 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 
   // TODO: revisit; we want an empty impl here. . .
   @Override public GLMModel createImpl() {
-    GLMV2.GLMParametersV2 p = ((GLMV2.GLMParametersV2)this.parameters);
-    GLMModel.GLMParameters parms = p.createImpl();
+    GLMModel.GLMParameters parms = parameters.createImpl();
     return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0, ModelUtils.DEFAULT_THRESHOLDS);
   }
 }

@@ -74,15 +74,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
-    if (_parms._k > Math.min(_train.numCols(), _train.numRows())) error("_k", "_k cannot be greater than min(rows, cols) in _train");
+
     // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
+    int k_min = (int)Math.min(_train.numCols(), _train.numRows());
+    if (_parms._k < 1 || _parms._k > k_min) error("_k", "_k must be between 1 and " + k_min);
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
-
+    // Currently, does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) throw H2O.unimpl();

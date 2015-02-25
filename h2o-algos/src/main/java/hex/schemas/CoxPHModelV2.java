@@ -22,8 +22,7 @@ public class CoxPHModelV2 extends ModelSchema<CoxPHModel, CoxPHModelV2, CoxPHMod
 
   // Version&Schema-specific filling into the impl
   @Override public CoxPHModel createImpl() {
-    CoxPHV2.CoxPHParametersV2 p = ((CoxPHV2.CoxPHParametersV2)this.parameters);
-    CoxPHModel.CoxPHParameters parms = p.createImpl();
+    CoxPHModel.CoxPHParameters parms = parameters.createImpl();
     return new CoxPHModel(Key.make() /*dest*/, parms, new CoxPHModel.CoxPHOutput(null));
   }
 }
