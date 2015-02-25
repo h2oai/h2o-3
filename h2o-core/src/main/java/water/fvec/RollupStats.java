@@ -247,9 +247,14 @@ class RollupStats extends Iced {
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
       if(rs != null && rs.isMutating())
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
       // 1. compute
-      RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+      try {
+        RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+      } catch( Throwable t ) {
+        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
+        throw new RuntimeException(t);
+      }
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
       rs = DKV.getGet(rskey);
     }
@@ -332,7 +337,7 @@ class RollupStats extends Iced {
       Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,rs),nnn,fs);
       assert rs.isReady();
       if(old != nnn)
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (2)");
       fs.blockForPending();
     }
 
@@ -369,7 +374,7 @@ class RollupStats extends Iced {
           } else if (rs.isComputing()) { // b) => wait for current computation to finish
             rs._tsk.join();
           } else if(rs.isMutating()) // c) => throw IAE
-            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (3)");
         } else { // d) => compute the rollups
           final Value nnn = makeComputing();
           Futures fs = new Futures();
