@@ -8,7 +8,7 @@ import water.util.ModelUtils;
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
 

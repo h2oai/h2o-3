@@ -207,9 +207,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                     model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in DKV (because of DataInfo...)
 
                                     // score and check result of the best_model
-                                    if (model2.actual_best_model_key != null) {
-                                      final DeepLearningModel best_model = DKV.get(model2.actual_best_model_key).get();
+                                    if (model2.actual_best_model_key != null ) {
                                       if (override_with_best_model) {
+                                        final DeepLearningModel best_model = DKV.get(model2.actual_best_model_key).get();
                                         Assert.assertEquals(best_model.error(), model2.error(), 0);
                                       }
                                     }

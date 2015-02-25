@@ -85,7 +85,7 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
 
   public static class ModelKeyV1 extends KeyV1<Iced, ModelKeyV1, Model> {
     public ModelKeyV1() {}
-    public ModelKeyV1(Key<Model> key) {
+    public ModelKeyV1(Key<? extends Model> key) {
       super(key);
     }
   }

@@ -2,7 +2,7 @@ import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_glm, h2o_import as h2i, h2o_jobs, h2o_exec as h2e
 
-from h2o_test import OutputObj, dump_json
+from h2o_test import dump_json, OutputObj, verboseprint
 
 DO_POLL = False
 class Basic(unittest.TestCase):
@@ -11,23 +11,19 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init(java_heap_GB=4)
+        h2o.init(3, java_heap_GB=4)
 
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_frame_split(self):
+    def test_split_frame(self):
 
-        csvFilename = 'iris.csv'
-        csvPathname = 'iris/' + csvFilename
-        hex_key = "iris.hex"
+        csvFilename = 'covtype.data'
+        csvPathname = 'standard/' + csvFilename
+        hex_key = "covtype.hex"
 
-        parseResultA = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, timeoutSecs=10)
-
-        print "Just split away and see if anything blows up"
-        splitMe = hex_key
-
+        parseResultA = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, hex_key=hex_key, timeoutSecs=20)
         pA = h2o_cmd.ParseObj(parseResultA)
         print pA.numRows
         print pA.numCols
@@ -38,16 +34,16 @@ class Basic(unittest.TestCase):
         iA = h2o_cmd.InspectObj(splitMe)
         origNumRows = iA.numRows
         origNumCols = iA.numCols
-        for s in range(10):
+        for s in range(20):
             iA = h2o_cmd.InspectObj(splitMe)
             numRows = iA.numRows
 
-            fsResult = h2o.n0.frame_split(training_frame=splitMe, ratios='[0.5]')
-            fs = OutputObj(fsResult, 'frame_split')
+            fsResult = h2o.n0.split_frame(dataset=splitMe, ratios='[0.5]')
+            fs = OutputObj(fsResult, 'split_frame')
             model_key = fs.jobs[0].dest.name
 
             modelResult = h2o.n0.models(key=model_key)
-            model = OutputObj(modelResult['models'][0]['output'], 'frame_split')
+            model = OutputObj(modelResult['models'][0]['output'], 'split_frame')
             # print "model:", dump_json(model)
             split_keys = [split._key.name for split in model.splits]
 
@@ -64,6 +60,8 @@ class Basic(unittest.TestCase):
             self.assertLess(abs(split1_rows - split0_rows), 2)
             self.assertEqual(numRows, (split1_rows + split0_rows))
             self.assertEqual(numCols, origNumCols)
+            if split1_rows <= 1:
+                break
 
 
 if __name__ == '__main__':

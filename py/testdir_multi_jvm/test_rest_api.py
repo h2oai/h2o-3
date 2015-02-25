@@ -420,7 +420,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'pca', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -719,6 +719,7 @@ for model_spec in models_to_build:
 #######################################
 # Test default parameters validation for each model builder
 #
+if verbose: print 'Testing ModelBuilder default parameters. . .'
 model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
 
 # Do we know about all of them?

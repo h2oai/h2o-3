@@ -88,7 +88,9 @@ Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We 
 ### For Windows
 
 ##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
-  From the command line, validate `python` is using the newly-installed package. If needed, [update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables). 
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
+  
+  `C:\Python27\;C:\Python27\Scripts\`
 
 ###### Step 2: Install required Python packages:
 

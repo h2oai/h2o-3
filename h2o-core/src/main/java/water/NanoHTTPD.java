@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -592,18 +593,23 @@ public class NanoHTTPD
 
           {
             String key = parms.getProperty("key");
-            boolean nps = Pattern.matches("/[3-9][0-9]*/NodePersistentStorage.*", uri);
+            boolean nps = Pattern.matches("/[^/]+/NodePersistentStorage.*", uri);
             if (nps) {
-              Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)");
+              Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)/([^/]+)");
               Matcher m = p.matcher(uri);
               boolean b = m.matches();
               if (!b) {
                 sendError(HTTP_BADREQUEST, "NodePersistentStorage URL malformed");
               }
               String categoryName = m.group(1);
-              UUID uuid = java.util.UUID.randomUUID();
-              H2O.getNPS().put(categoryName, uuid.toString(), new InputStreamWrapper(in, boundary.getBytes()));
-              String responsePayload = "{ key_name : \"" + uuid + "\" }";
+              String keyName = m.group(2);
+              H2O.getNPS().put(categoryName, keyName, new InputStreamWrapper(in, boundary.getBytes()));
+              long length = H2O.getNPS().get_length(categoryName, keyName);
+              String responsePayload = "{ " +
+                      "\"category\" : "     + "\"" + categoryName + "\", " +
+                      "\"name\" : "         + "\"" + keyName      + "\", " +
+                      "\"total_bytes\" : "  +        length       + " " +
+                      "}";
               sendResponse(HTTP_OK, MIME_JSON, null, new ByteArrayInputStream(responsePayload.getBytes(StandardCharsets.UTF_8)));
               return true;
             }

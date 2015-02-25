@@ -283,15 +283,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           mp._shuffle_training_data = true;
         }
 
-        model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
-
-        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
+        if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null); //get the null model reconstruction error
         }
         // put the initial version of the model into DKV
         model.update(self());
+        model._timeLastScoreEnter = System.currentTimeMillis(); //to keep track of time per iteration, must be called before first call to doScoring
         Log.info("Starting to train the Deep Learning model.");
 
         //main loop
@@ -299,6 +298,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
+          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode

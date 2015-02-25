@@ -5,6 +5,7 @@ import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseSetupHandler;
 import water.util.GetLogsFromNode;
@@ -17,6 +18,7 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -409,6 +411,7 @@ public class RequestServer extends NanoHTTPD {
   // seperate thread (I'm guessing here) so the startup process does not hang
   // if the various web-port accesses causes Nano to hang on startup.
   public static Runnable start() {
+    Schema.registerAllSchemasIfNecessary();
     Runnable run=new Runnable() {
         @Override public void run()  {
           while( true ) {
@@ -532,19 +535,26 @@ public class RequestServer extends NanoHTTPD {
 
     alwaysLogRequest(uri, method, parms);
 
-    // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
-    if (uri.endsWith("/Logs/download")) {
-      maybeLogRequest(method, uri, "", parms);
-      return downloadLogs();
-    }
-
     // Load resources, or dispatch on handled requests
     try {
+      // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
+      if (method.equals("GET") && uri.endsWith("/Logs/download")) {
+        maybeLogRequest(method, uri, "", parms);
+        return downloadLogs();
+      }
+      if (method.equals("GET")) {
+        Pattern p2 = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
+        Matcher m2 = p2.matcher(uri);
+        boolean b2 = m2.matches();
+        if (b2) {
+          String categoryName = m2.group(1);
+          String keyName = m2.group(2);
+          return downloadNps(categoryName, keyName);
+        }
+      }
+
       // Find handler for url
       Route route = lookup(method, versioned_path);
-
-      if (route != null && route._handler_class != CloudHandler.class && route._handler_class != TutorialsHandler.class && route._handler_class != TypeaheadHandler.class)
-        Schema.registerAllSchemasIfNecessary();
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null) {
@@ -864,6 +874,21 @@ public class RequestServer extends NanoHTTPD {
     NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK,NanoHTTPD.MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
     res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
     res.addHeader("Content-Disposition", "attachment; filename="+outputFileStem + ".zip");
+    return res;
+  }
+
+
+  // ---------------------------------------------------------------------
+  // Download NPS support
+  // ---------------------------------------------------------------------
+
+  private Response downloadNps(String categoryName, String keyName) {
+    NodePersistentStorage nps = H2O.getNPS();
+    AtomicLong length = new AtomicLong();
+    InputStream is = nps.get(categoryName, keyName, length);
+    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_DEFAULT_BINARY, is);
+    res.addHeader("Content-Length", Long.toString(length.get()));
+    res.addHeader("Content-Disposition", "attachment; filename="+keyName + ".flow");
     return res;
   }
 }

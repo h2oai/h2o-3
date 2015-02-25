@@ -13,10 +13,10 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
     Fetch all the jobs or a single job from the /Jobs endpoint.
     '''
     params_dict = {
-        'job_key': job_key
+        # 'job_key': job_key
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -33,7 +33,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     start_time = time.time()
     pollCount = 0
     while True:
-        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
 
         if key:
@@ -57,6 +57,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             h2o_sandbox.check_sandbox_for_errors()
             return result
 
+        # what about 'CREATED'
         # FIX! what are the other legal polling statuses that we should check for?
 
         if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
@@ -91,7 +92,7 @@ def import_files(self, path, timeoutSecs=180):
 # key is required
 # FIX! for now h2o doesn't support regex here. just key or list of keys
 # FIX! default turn off intermediateResults until NPE is fixed.
-def parse(self, key, hex_key=None,
+def parse(self, key, hex_key=None, columnTypeDict=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
           noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=False, **kwargs):
     '''
@@ -107,6 +108,9 @@ def parse(self, key, hex_key=None,
         'checkHeader': None, # how is this used
         'singleQuotes': None,
         'columnNames': None, # list?
+        'columnTypes': None, # list? or can use columnTypeDict param (see below)
+        'chunkSize': None,
+        # are these two no longer supported?
         'delete_on_done': None,
         'blocking': None,
     }
@@ -121,17 +125,20 @@ def parse(self, key, hex_key=None,
         # len 1 is ok here. 0 not. what if None or [None] here
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
-        srcs = "[" + ",".join(key) + "]"
+        # have to put quotes around the individual list items
+        srcs = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+
     else:
         # what if None here
-        srcs = "[" + key + "]"
+        srcs = "['" + key + "']" # quotes required on key
 
     params_dict['srcs'] = srcs
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
 
+    # columnTypeDict not used here
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
     # Call ParseSetup?srcs=[keys] . . .
 
     # if benchmarkLogging:
@@ -143,31 +150,46 @@ def parse(self, key, hex_key=None,
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
-    # and then Parse?srcs=<keys list> and params from the ParseSetup result
-    # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
-
+    # this should match what we gave as input?
     if setup_result['srcs']:
-        setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
+        # should these be quoted?
+        srcsStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['srcs'] ]) + "]"
     else:
-        setupSrcs = None
+        srcsStr = None
     
     # I suppose we need a way for parameters to parse() to override these
+    # should it be an array or a dict?
     if setup_result['columnNames']:
-        ascii_column_names = "[" + ",".join(setup_result['columnNames']) + "]"
+        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
     else:
-        ascii_column_names = None
+        columnNamesStr = None
 
+    columnTypes = setup_result['columnTypes']
+    assert columnTypes is not None, "%s %s" % ("columnTypes:", columnTypes)
+
+    # dict parameter to update columnTypeDict?
+    # but we don't pass columnNames like this?
+    ct = setup_result['columnTypes']
+    if columnTypeDict: 
+        for k,v in columnTypeDict.iteritems():
+            if k>=0 and k<len(ct):
+                ct[k] = v
+            else:
+                raise Exception("bad col index %s in columnTypeDict param %s" % (k, columnTypeDict))
+    columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
 
     parse_params = {
-        'srcs': setupSrcs,
+        'srcs': srcsStr,
         'hex': setup_result['hexName'],
         'pType': setup_result['pType'],
         'sep': setup_result['sep'],
         'ncols': setup_result['ncols'],
         'checkHeader': setup_result['checkHeader'],
         'singleQuotes': setup_result['singleQuotes'],
-        'columnNames': ascii_column_names,
-        # how come these aren't in setup_result?
+        'columnNames': columnNamesStr,
+        'columnTypes': columnTypesStr,
+        'chunkSize': setup_result['chunkSize'],
+        # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
@@ -184,7 +206,8 @@ def parse(self, key, hex_key=None,
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
     print "parse srcs is length:", len(parse_params['srcs'])
-    print "parse columnNames is length:", len(parse_params['columnNames'])
+    # This can be null now? parseSetup doesn't return default colnames?
+    # print "parse columnNames is length:", len(parse_params['columnNames'])
 
     # none of the kwargs passed to here!
     parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
@@ -299,8 +322,8 @@ def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
     params_dict = { 
-        'offset': 0,
-        'len': 100
+        # 'offset': 0,
+        # 'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
@@ -596,3 +619,23 @@ def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
     parameters = { }
     result = self.do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
     return result
+
+
+def schemas(self, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the list of REST API schemas.
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+
+    return result
+
+def schema(self, schemaname, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the metadata for the given named REST API schema (e.g., FrameV2).
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+
+    return result
+

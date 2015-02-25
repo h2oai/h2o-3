@@ -8,7 +8,7 @@ import water.api.TwoDimTableV1;
 import water.util.ModelUtils;
 //import water.util.DocGen.HTML;
 
-public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMModel.GLMOutput> {
+public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMParameters, GLMV2.GLMParametersV2, GLMModel.GLMOutput, GLMModelV2.GLMModelOutputV2> {
 
   public static final class GLMModelOutputV2 extends ModelOutputSchema<GLMModel.GLMOutput, GLMModelOutputV2> {
     // Output fields; input fields are in the parameters list
@@ -83,8 +83,7 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 
   // TODO: revisit; we want an empty impl here. . .
   @Override public GLMModel createImpl() {
-    GLMV2.GLMParametersV2 p = ((GLMV2.GLMParametersV2)this.parameters);
-    GLMModel.GLMParameters parms = p.createImpl();
+    GLMModel.GLMParameters parms = parameters.createImpl();
     return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0, ModelUtils.DEFAULT_THRESHOLDS);
   }
 }

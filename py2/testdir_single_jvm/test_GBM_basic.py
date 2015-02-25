@@ -23,7 +23,7 @@ class Basic(unittest.TestCase):
         model_key = 'GBMModelKey'
         timeoutSecs = 1800
         csvPathname = importFolderPath + "/" + trainFilename
-        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local', chunkSize=4194304,
             hex_key=train_key, timeoutSecs=timeoutSecs)
 
         pA = h2o_cmd.ParseObj(parseResult)
@@ -35,6 +35,15 @@ class Basic(unittest.TestCase):
 
         labelListUsed = list(labelList)
         numColsUsed = numCols
+
+        if 1==0:
+            co = h2o_cmd.runSummary(key=parse_key)
+            coList = [ co.base, len(co.bins), len(co.data), co.domain,
+                co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
+                co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+            for c in coList:
+                print c
+
 
         parameters = {
             'validation_frame': train_key,
@@ -52,7 +61,7 @@ class Basic(unittest.TestCase):
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
-            'variable_importance': False,
+            # 'variable_importance': False,
             # 'seed': 
         }
 

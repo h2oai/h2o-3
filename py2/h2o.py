@@ -1,3 +1,4 @@
+import sys
 import h2o_args, h2o_nodes
 
 # tests refer to h2o.unit_main
@@ -15,8 +16,10 @@ def cloud_name():
     return nodes[0].cloud_name
 
 def init(*args, **kwargs):
-    # this will be a no-op if already called once
-    h2o_args.parse_our_args()
+    noseRunning = sys.argv[0].endswith('nosetests')
+    if not noseRunning:
+        # this will be a no-op if already called once
+        h2o_args.parse_our_args()
 
     global nodes, n0
     # ugly, but we have 3 places that are kept in sync..check them all 

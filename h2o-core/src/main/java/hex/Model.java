@@ -1,7 +1,6 @@
 package hex;
 
 import water.*;
-import water.api.ModelSchema;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
@@ -272,13 +271,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
 
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
-
-  /**
-   * Externally visible default schema
-   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-   * This puts a reverse edge into the dependency graph.
-   */
-  public abstract ModelSchema schema();
 
   /** Full constructor */
   public Model( Key selfKey, P parms, O output) {

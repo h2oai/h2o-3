@@ -204,7 +204,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     double m = Double.NaN;
     for( int b=0; b<_bins.length; b++ ) {
       if( _bins[b] == 0 ) continue;
-      if( var(b) > 1e-14 ) return false;
+      if( var(b) > 1e-6 ) return false;
       double mean = mean(b);
       if( mean != m )
         if( Double.isNaN(m) ) m=mean;

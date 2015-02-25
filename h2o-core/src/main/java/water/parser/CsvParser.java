@@ -118,7 +118,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case EOL:
           if(quotes != 0){
-            System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
+            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
             dout.invalidLine("Unmatched quote char " + ((char)quotes));
             colIdx = 0;
             quotes = 0;

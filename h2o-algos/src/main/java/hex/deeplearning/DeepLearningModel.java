@@ -646,6 +646,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable variableImportances;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
+    double run_time;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1510,9 +1511,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid) {
     super(destKey, parms, output);
-    run_time = 0;
-    start_time = System.currentTimeMillis();
-    _timeLastScoreEnter = start_time;
     boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = new DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
@@ -1532,6 +1530,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _output.scoringHistory = createScoringHistoryTable(errors);
       _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
+    run_time = 0;
+    start_time = System.currentTimeMillis();
+    _timeLastScoreEnter = start_time;
     assert _key.equals(destKey);
   }
 
@@ -1637,6 +1638,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
           _output.trainMetrics = mm1;
+          _output.run_time = run_time;
 
           if (ftest != null) {
             Frame validPred = score(ftest);
@@ -1685,7 +1687,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
-          if (actual_best_model_key != null && (
+          if (actual_best_model_key != null && get_params()._override_with_best_model && (
                   // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
                   (DKV.get(actual_best_model_key) != null && (error() < DKV.get(actual_best_model_key).<DeepLearningModel>get().error() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
                           ||

@@ -137,7 +137,7 @@ class Basic(unittest.TestCase):
             if DO_RF:
                 # put in an ignore param, that will fail unless headers were parsed correctly
                 if HEADER:
-                    kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1, 'ignored_cols_by_name': 'ID,CAPSULE'}
+                    kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1, 'ignored_columns': "['ID','CAPSULE']"}
                 else:
                     kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1}
 
