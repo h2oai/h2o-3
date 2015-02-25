@@ -174,12 +174,13 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
             # what is precision. -1?
             print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
 
-            print "FIX! hacking the co.pctiles because it's short by two"
-            
-            if co.pctiles:
-                pctiles = [0] + co.pctiles + [0]
-            else:
-                pctiles = None
+            # print "FIX! hacking the co.pctiles because it's short by two"
+            # if co.pctiles:
+            #     pctiles = [0] + co.pctiles + [0]
+            # else:
+            #     pctiles = None
+            pctiles = co.pctiles
+            assert len(co.pctiles) == len(co.default_pctiles)
 
             # the thresholds h2o used, should match what we expected
                 # expected = [0] * 5
@@ -191,11 +192,11 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
 
             if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
                 msg='min is not approx. expected')
-            if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
+            if expected[1]: h2o_util.assertApproxEqual(pctiles[2], expected[1], tol=maxDelta, 
                 msg='25th percentile is not approx. expected')
-            if expected[2]: h2o_util.assertApproxEqual(pctiles[5], expected[2], tol=maxDelta, 
+            if expected[2]: h2o_util.assertApproxEqual(pctiles[4], expected[2], tol=maxDelta, 
                 msg='50th percentile (median) is not approx. expected')
-            if expected[3]: h2o_util.assertApproxEqual(pctiles[7], expected[3], tol=maxDelta, 
+            if expected[3]: h2o_util.assertApproxEqual(pctiles[6], expected[3], tol=maxDelta, 
                 msg='75th percentile is not approx. expected')
             if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
                 msg='max is not approx. expected')
@@ -229,7 +230,7 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
             if pt is None:
                 compareActual = mn, [None] * 3, mx
             else:
-                compareActual = mn, pt[3], pt[5], pt[7], mx
+                compareActual = mn, pt[2], pt[4], pt[6], mx
 
             h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
             h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
