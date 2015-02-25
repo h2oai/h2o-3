@@ -237,24 +237,26 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       throw Log.throwErr(t);
     }
   }
-  private V result(){
+
+  private V result() {
     DException.DistributedException t = _dt.getDException();
     if( t != null ) throw t;
     return _dt;
   }
-  // Similar to FutureTask.get() but does not throw any exceptions.  Returns
-  // null for canceled tasks, including those where the target dies.
+  // Similar to FutureTask.get() but does not throw any checked exceptions.
+  // Returns null for canceled tasks, including those where the target dies.
+  // Throws a DException if the remote throws, wrapping the original exception.
   @Override public V get() {
     // check priorities - FJ task can only block on a task with higher priority!
     Thread cThr = Thread.currentThread();
     int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
     assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
       : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
-    if( _done ) return result(); // Fast-path shortcut
+    if( _done ) return result(); // Fast-path shortcut, or throw if exception
     // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
     // another thread if needed.
     try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
-    if( _done ) return result(); // Fast-path shortcut
+    if( _done ) return result(); // Fast-path shortcut or throw if exception
     assert isCancelled();
     return null;
   }
