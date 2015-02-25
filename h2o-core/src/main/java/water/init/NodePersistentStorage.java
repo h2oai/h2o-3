@@ -189,6 +189,9 @@ public class NodePersistentStorage {
 
       return stringBuilder.toString();
     }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("Not found");
+    }
     catch (Exception e) {
       throw new RuntimeException(e);
     }
