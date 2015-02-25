@@ -667,14 +667,14 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a new random Key that fits the requirements for a Vec key. 
    *  @return A new random Vec Key */
-  public static Key newKey(){return newKey(Key.make());}
+  public static Key<Vec> newKey(){return newKey(Key.make());}
 
   /** Internally used to help build Vec and Chunk Keys; public to help
    *  PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
-  static Key newKey(Key k) {
+  static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
     byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
@@ -682,7 +682,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return Key.make(bits);
+    return (Key<Vec>)Key.make(bits);
   }
 
   /** Make a Vector-group key.  */

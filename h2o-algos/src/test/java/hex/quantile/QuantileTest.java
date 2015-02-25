@@ -52,4 +52,24 @@ public class QuantileTest extends TestUtil {
       if( kmm != null ) kmm.delete();
     }
   }
+
+  @Test public void test50pct() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      double[][] d = new double[][]{{1.56386606237}, {0.812834256224}, {3.68417563302}, {3.12702210880}, {5.51277746586}};
+      fr = frame(d);
+      System.out.println(fr);
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+      Quantile job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      Assert.assertTrue(kmm._output._quantiles[0][5]==d[2][0]);
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
 }
