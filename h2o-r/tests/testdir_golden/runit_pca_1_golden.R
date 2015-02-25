@@ -10,7 +10,7 @@ test.pcavanilla.golden <- function(H2Oserver) {
   
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
-  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, gamma = 0, init = "PlusPlus", transform = "DEMEAN")
+  fitH2O <- h2o.prcomp(arrestsH2O, k = 4, gamma = 0, init = "PlusPlus", center = TRUE, scale. = FALSE)
   
   sdevR <- fitR$sdev
   sdevH2O <- fitH2O@model$std_deviation

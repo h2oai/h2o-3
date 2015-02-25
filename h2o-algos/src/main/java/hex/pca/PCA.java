@@ -73,9 +73,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
 
     if (_train == null) return;
-
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
     if (_parms._k > Math.min(_train.numCols(), _train.numRows())) error("_k", "_k cannot be greater than min(rows, cols) in _train");
+    // TODO: Initialize _parms._k = min(ncol(_train), nrow(_train)) if not set
     if (null != _parms._user_points) { // Check dimensions of user-specified centers
       if (_parms._user_points.get().numCols() != _train.numCols())
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");

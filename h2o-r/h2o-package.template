@@ -53,7 +53,7 @@ summary(iris.hex)
 # Attach H2O R package and run GLM demo
 ??h2o
 demo(package = "h2o")
-demo(h2o.kmeans)
+demo(h2o.prcomp)
 
 # Shutdown local H2O instance when finished
 h2o.shutdown(localH2O)
