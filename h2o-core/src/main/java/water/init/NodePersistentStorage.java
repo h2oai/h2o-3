@@ -42,21 +42,21 @@ public class NodePersistentStorage {
 
   private void validateCategoryName(String categoryName) {
     if (categoryName == null) {
-      throw new RuntimeException("NodePersistentStorage category not specified");
+      throw new IllegalArgumentException("NodePersistentStorage category not specified");
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9]+", categoryName)) {
-      throw new RuntimeException("NodePersistentStorage illegal category");
+      throw new IllegalArgumentException("NodePersistentStorage illegal category");
     }
   }
 
   private void validateKeyName(String keyName) {
     if (keyName == null) {
-      throw new RuntimeException("NodePersistentStorage name not specified");
+      throw new IllegalArgumentException("NodePersistentStorage name not specified");
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9]+", keyName)) {
-      throw new RuntimeException("NodePersistentStorage illegal name");
+      throw new IllegalArgumentException("NodePersistentStorage illegal name");
     }
   }
 
