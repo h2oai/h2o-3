@@ -145,7 +145,9 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
         colIndexToDo = [column]
     elif isinstance(column, basestring):
         colNameToDo = [column]
-        colIndexToDo = [labelList.index[column]]
+        if column not in labelList:
+            raise Exception("% not in labellist: %s" % (column, labellist))
+        colIndexToDo = [labelList.index(column)]
     else:
         raise Exception("wrong type %s for column %s" % (type(column), column))
 
