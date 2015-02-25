@@ -2,15 +2,12 @@ import sys, os
 sys.path.insert(1, "../../../")
 import h2o
 
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
-
 def bigcatGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
   
   #Log.info("Importing bigcat_5000x2.csv data...\n")
-  bigcat = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/bigcat_5000x2.csv")
+  bigcat = h2o.import_frame(path="smalldata/gbm_test/bigcat_5000x2.csv")
   bigcat["y"] = bigcat["y"].asfactor()
   #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   #bigcat.summary()

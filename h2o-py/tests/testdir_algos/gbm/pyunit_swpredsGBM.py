@@ -2,9 +2,6 @@ import sys, os
 sys.path.insert(1, "../../../")
 import h2o
 
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
-
 def smallcatGBM(ip,port):
   # Training set has two predictor columns
   # X1: 10 categorical levels, 100 observations per level; X2: Unif(0,1) noise
@@ -14,7 +11,7 @@ def smallcatGBM(ip,port):
   h2o.init(ip,port)
   
   #Log.info("Importing swpreds_1000x3.csv data...\n")
-  swpreds = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/swpreds_1000x3.csv")
+  swpreds = h2o.import_frame(path="smalldata/gbm_test/swpreds_1000x3.csv")
   swpreds["y"] = swpreds["y"].asfactor()
 
   #Log.info("Summary of swpreds_1000x3.csv from H2O:\n")

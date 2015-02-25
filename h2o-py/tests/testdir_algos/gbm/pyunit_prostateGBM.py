@@ -2,9 +2,6 @@ import sys, os
 sys.path.insert(1, "../../../")
 import h2o
 
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
-
 ######################################################
 #
 # Sample Running GBM on prostate.csv
@@ -13,7 +10,7 @@ def prostateGBM(ip,port):
   # Connect to a pre-existing cluster
   h2o.init(ip,port)  # connect to localhost:54321
 
-  df = h2o.import_frame(path=h2o_home_dir + "smalldata/logreg/prostate.csv")
+  df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
   df.describe()
 
   # Remove ID from training frame
