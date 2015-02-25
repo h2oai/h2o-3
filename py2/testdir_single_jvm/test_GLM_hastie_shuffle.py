@@ -105,7 +105,8 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
     if self.validation1:
         h2o_glm.compareToFirstGlm(self, 'auc', validation, self.validation1)
     else:
-        self.validation1 = copy.deepcopy(validation)
+        # self.validation1 = copy.deepcopy(validation)
+        self.validation1 = None
 
 
 class Basic(unittest.TestCase):
@@ -117,13 +118,15 @@ class Basic(unittest.TestCase):
         global SEED
         SEED = h2o.setup_random_seed()
         h2o.init(1)
+        global SYNDATASETS_DIR
+        SYNDATASETS_DIR = h2o.make_syn_dir()
 
     @classmethod
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
     validation1 = {}
-    def test_GLM2_hastie_shuffle(self):
+    def test_GLM_hastie_shuffle(self):
         # gunzip it and cat it to create 2x and 4x replications in SYNDATASETS_DIR
         # FIX! eventually we'll compare the 1x, 2x and 4x results like we do
         # in other tests. (catdata?)

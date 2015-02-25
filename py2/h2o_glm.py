@@ -35,15 +35,19 @@ def simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailW
     assert len(coeffs) == len(coeffs_names), "%s %s" % (len(coeffs), len(coeffs_names))
     # FIX! if a coeff is zeroed/ignored, it doesn't show up?
     # get rid of intercept in glm response
-    # assert (len(coeffs)-1) == len(labelListUsed, "%s %s %s %s" % (len(coeffs), len(labelListUsed), coeffs, labelListUsed)
+    # assert (len(coeffs)-1) == len(labelListUsed, \
+    #    "%s %s %s %s" % (len(coeffs), len(labelListUsed), coeffs, labelListUsed)
     
     # labelList still has the response column?
     # ignored columns aren't in model.names, but output response is.
     # labelListUsed has the response col removed so add 1
 
     # Hmm..dropped coefficients again? can't do this check?
-    # assert len(model.names) == len(labelListUsed), "%s %s %s %s" % (len(model.names), len(labelListUsed), model.names, labelList)
-    assert model.threshold!=0
+    # assert len(model.names) == len(labelListUsed), \
+    #    "%s %s %s %s" % (len(model.names), len(labelListUsed), model.names, labelList)
+
+    # this is no longer true!
+    # assert model.threshold!=0
 
     print "len(coeffs)", len(coeffs)
     print  "coeffs:", coeffs
