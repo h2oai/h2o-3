@@ -158,9 +158,9 @@ public final class Gram extends Iced<Gram> {
         Futures fs = new Futures();
         int rpb = 0;                // rows per block
         int p = P;                  // concurrency
-          while (p-- > 1) {
-              fs.add(new BlockTask(xx,i,i+rpb,j,tjR).fork());
         while ( tjR*(rpb=(N - tjR)/p)<Gram.MIN_TSKSZ && p>1) --p;
+        while (p-- > 1) {
+          fs.add(new BlockTask(xx,i,i+rpb,j,tjR).fork());
           i += rpb;
         }
         new BlockTask(xx,i,N,j,tjR).compute();
