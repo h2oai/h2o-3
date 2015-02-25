@@ -179,45 +179,45 @@ public class FVecTest extends TestUtil {
     Vec v = null;
     Frame fr = null;
     try {
-        v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
-        Futures fs = new Futures();
-        assertEquals(0, v.min(), 0);
-        assertEquals(9, v.max(), 0);
-        assertEquals(4.5,v.mean(),1e-8);
-        H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
-        fr = DKV.get(rebalanced).get();
-        Vec v2 = fr.anyVec();
-        assertEquals(0, v2.min(), 0);
-        assertEquals(9, v2.max(), 0);
-        assertEquals(4.5, v.mean(), 1e-8);
-        v2.set(5, -100);
-        assertEquals(-100, v2.min(), 0);
-        v2.set(5, 5);
-        // make several rollups requests in parallel with and without histo and then get histo
-        v2.startRollupStats(fs);
-        v2.startRollupStats(fs);
-        v2.startRollupStats(fs,true);
-        assertEquals(0, v2.min(), 0);
-        long [] bins = v2.bins();
-        assertEquals(10,bins.length);
-        // TODO: should test percentiles?
-        for(long l:bins) assertEquals(1,l);
-        Vec.Writer w = v2.open();
-        try {
-          v2.min();
-          assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-        } catch( DistributedException de ) {
-          assertTrue(de.getMessage().contains("IllegalArgumentException"));
-          // expect to get IAE since we're requesting rollups while also changing the vec
-        } catch( IllegalArgumentException ie ) {
-          // if on local node can get iae directly
-        }
-        w.close(fs);
-        fs.blockForPending();
-        assertEquals(0,v2.min(),0);
-        fr.delete();
-        v.remove();
-        fr = null;
+      v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
+      Futures fs = new Futures();
+      assertEquals(0, v.min(), 0);
+      assertEquals(9, v.max(), 0);
+      assertEquals(4.5,v.mean(),1e-8);
+      H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
+      fr = DKV.get(rebalanced).get();
+      Vec v2 = fr.anyVec();
+      assertEquals(0, v2.min(), 0);
+      assertEquals(9, v2.max(), 0);
+      assertEquals(4.5, v.mean(), 1e-8);
+      v2.set(5, -100);
+      assertEquals(-100, v2.min(), 0);
+      v2.set(5, 5);
+      // make several rollups requests in parallel with and without histo and then get histo
+      v2.startRollupStats(fs);
+      v2.startRollupStats(fs);
+      v2.startRollupStats(fs,true);
+      assertEquals(0, v2.min(), 0);
+      long [] bins = v2.bins();
+      assertEquals(10,bins.length);
+      // TODO: should test percentiles?
+      for(long l:bins) assertEquals(1,l);
+      Vec.Writer w = v2.open();
+      try {
+        v2.min();
+        assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
+      } catch( DistributedException de ) {
+        assertTrue(de.getMessage().contains("IllegalArgumentException"));
+        // expect to get IAE since we're requesting rollups while also changing the vec
+      } catch( IllegalArgumentException ie ) {
+        // if on local node can get iae directly
+      }
+      w.close(fs);
+      fs.blockForPending();
+      assertEquals(0,v2.min(),0);
+      fr.delete();
+      v.remove();
+      fr = null;
     } finally {
       if( v != null)v.remove();
       if(fr != null)fr.delete();
