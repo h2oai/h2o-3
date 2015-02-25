@@ -2,16 +2,13 @@ import sys, os
 sys.path.insert(1, "../../../")
 import h2o
 
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
-
 def fiftycatGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
 
   # Training set has only 45 categories cat1 through cat45
   #Log.info("Importing 50_cattest_train.csv data...\n")
-  train = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/50_cattest_train.csv")
+  train = h2o.import_frame(path="smalldata/gbm_test/50_cattest_train.csv")
   train["y"] = train["y"].asfactor()
 
   #Log.info("Summary of 50_cattest_train.csv from H2O:\n")
@@ -24,7 +21,7 @@ def fiftycatGBM(ip,port):
  
   # Test dataset has all 50 categories cat1 through cat50
   #Log.info("Importing 50_cattest_test.csv data...\n")
-  test = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/50_cattest_test.csv")
+  test = h2o.import_frame(path="smalldata/gbm_test/50_cattest_test.csv")
   #Log.info("Summary of 50_cattest_test.csv from H2O:\n")
   #test.summary()
   

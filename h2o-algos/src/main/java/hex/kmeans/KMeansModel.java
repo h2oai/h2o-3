@@ -28,7 +28,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Cluster centers_raw.  During model init, might be null or might have a "k"
     // which is oversampled a lot.  Not standardized (although if standardization
     // is used during the building process, the *builders* cluster centers_raw are standardized).
-    public TwoDimTable _centers;
+    public TwoDimTable _centers;    // Row = cluster ID, Column = feature
     public double[/*k*/][/*features*/] _centers_raw;
 
     // Cluster size. Defined as the number of rows in each cluster.
@@ -45,6 +45,10 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
     // Sum squared distance between each cluster center and grand mean, divided by total number of observations.
     public double _avg_between_ss;    // Total between-cluster MSE (avgss - avgwithinss)
+
+    // For internal use only: means and 1/(std dev) of each training col
+    public double[] _normSub;
+    public double[] _normMul;
 
     public KMeansOutput( KMeans b ) { super(b); }
 

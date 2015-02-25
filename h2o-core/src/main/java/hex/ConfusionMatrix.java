@@ -297,12 +297,32 @@ public class ConfusionMatrix extends Iced {
     colType[colFormat.length-2]   = "double";
     colFormat[colFormat.length-2] = "%.4f";
     colType[colFormat.length-1]   = "string";
-    colFormat[colFormat.length-1] = "= %s";
+
+    // pass 1: compute width of last column
+    long terr = 0;
+    int width = 0;
+    for (int a = 0; a < confusion_matrix.length; a++) {
+      if (adomain[a] == null) continue;
+      long correct = 0;
+      for (int p = 0; p < pdomain.length; p++) {
+        if (pdomain[p] == null) continue;
+        boolean onDiag = adomain[a].equals(pdomain[p]);
+        if (onDiag) correct = confusion_matrix[a][p];
+      }
+      long err = acts[a] - correct;
+      terr += err;
+      width = Math.max(width, String.format("%,d / %,d", err, acts[a]).length());
+    }
+    long nrows = 0;
+    for (long n : acts) nrows += n;
+    width = Math.max(width, String.format("%,d / %,d", terr, nrows).length());
+
+    // set format width
+    colFormat[colFormat.length-1] = "= %" + width + "s";
 
     TwoDimTable table = new TwoDimTable("Confusion Matrix", rowHeader, colHeader, colType, colFormat, "Act/Pred");
 
     // Main CM Body
-    long terr = 0;
     for (int a = 0; a < confusion_matrix.length; a++) {
       if (adomain[a] == null) continue;
       long correct = 0;
@@ -315,7 +335,7 @@ public class ConfusionMatrix extends Iced {
       long err = acts[a] - correct;
       terr += err;
       table.set(a, pdomain.length, (double) err / acts[a]);
-      table.set(a, pdomain.length + 1, String.format("%,d / %d", err, acts[a]));
+      table.set(a, pdomain.length + 1, String.format("%,d / %,d", err, acts[a]));
     }
 
     // Last row of CM
@@ -323,7 +343,6 @@ public class ConfusionMatrix extends Iced {
       if (pdomain[p] == null) continue;
       table.set(adomain.length, p, preds[p]);
     }
-    long nrows = 0;
     for (long n : acts) nrows += n;
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
     table.set(adomain.length, pdomain.length + 1, String.format("%,d / %,d", terr, nrows));

@@ -172,6 +172,16 @@ public class ArrayUtils {
     return nums;
   }
 
+  public static double[][] transpose(double[][] ary) {
+    if(ary == null) return null;
+    double[][] res = new double[ary[0].length][ary.length];
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
   public static double [][] generateLineSearchVecs(double [] srcVec, double [] gradient, int n, final double step) {
     double [][] res = new double[n][];
     double x = step;
