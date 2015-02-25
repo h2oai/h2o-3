@@ -48,6 +48,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
     if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
+      _parms._convert_to_enum = false;
       if (null != _response && _response.isInt()) {
         long[] domain = new Vec.CollectDomain().doAll(_response).domain();
         if (domain.length == 2) { //bernoulli behavior is desired
