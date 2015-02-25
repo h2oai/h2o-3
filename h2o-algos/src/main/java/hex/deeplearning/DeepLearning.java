@@ -328,11 +328,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info(model);
         Log.info("==============================================================================================");
       }
-      catch(RuntimeException ex) {
+      catch(Throwable ex) {
         model = DKV.get(dest()).get();
         _state = JobState.CANCELLED; //for JSON REST response
         Log.info("Deep Learning model building was cancelled.");
-        throw ex;
+        throw new RuntimeException(ex);
       }
       finally {
         if (model != null) model.unlock(self());
