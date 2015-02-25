@@ -8,7 +8,6 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
@@ -49,6 +48,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
     if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
+      _parms._convert_to_enum = false;
       if (null != _response && _response.isInt()) {
         long[] domain = new Vec.CollectDomain().doAll(_response).domain();
         if (domain.length == 2) { //bernoulli behavior is desired
@@ -61,22 +61,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _parms._convert_to_enum = true;
       super.init(true);
       if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli) {
-        if (_nclass != 2) {
-          error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+        if (_nclass != 2) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+        else if ( _response != null ) {
+          // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+          double mean = _response.mean();
+          _initialPrediction = Math.log(mean / (1.0f - mean));
         }
-        // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-        double mean = _response.mean();
-        _initialPrediction = Math.log(mean / (1.0f - mean));
       }
     }
     else if(_parms._loss == GBMModel.GBMParameters.Family.gaussian){
       _parms._convert_to_enum = false;
       super.init(expensive);
-      if( _nclass != 1 ) {
-        error("_loss","Gaussian requires the response to be numeric");
-      }
-    }
-    else {
+      if( _nclass != 1 ) error("_loss","Gaussian requires the response to be numeric");
+    } else {
       error("_loss","Loss must be specified");
     }
 

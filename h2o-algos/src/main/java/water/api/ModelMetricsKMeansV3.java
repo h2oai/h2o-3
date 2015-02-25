@@ -1,8 +1,6 @@
-package hex.schemas;
+package water.api;
 
 import hex.kmeans.ModelMetricsKMeans;
-import water.api.API;
-import water.api.ModelMetricsBase;
 
 public class ModelMetricsKMeansV3 extends ModelMetricsBase<ModelMetricsKMeans, ModelMetricsKMeansV3> {
   @API(help="Cluster Size[k]")

@@ -1,34 +1,83 @@
 package hex.glm;
 
 import hex.*;
+import hex.ModelMetrics.MetricBuilder;
+import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.schemas.GLMModelV2;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
-import water.api.ModelSchema;
 import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.ModelUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import water.fvec.Vec;
-import water.fvec.Frame;
 /**
  * Created by tomasnykodym on 8/27/14.
  * TODO: should be a subclass of SupervisedModel.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
     super(selfKey, parms, output);
     _ymu = ymu;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
+    _defaultThresholds = thresholds;
   }
 
+  float [] _defaultThresholds;
+
+  public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
+    double _resDev;
+    double _nullDev;
+
+    public GLMMetricsBuilderBinomial(String[] domain, float[] thresholds) {
+      super(domain == null?new String[]{"0","1"}:domain, thresholds);
+    }
+
+    private int rank(double [] beta) {
+      int res = 0;
+      for(double d:beta)
+        if(d != 0) ++res;
+      return res;
+    }
+
+
+    @Override
+    public float[] perRow(float[] ds, float[] yact, Model m) {
+      float [] res = super.perRow(ds,yact,m);
+      GLMModel gm = (GLMModel)m;
+      assert gm._parms._family == Family.binomial;
+      _resDev += gm._parms.deviance(yact[0], ds[2]);
+      _nullDev += gm._parms.deviance(yact[0],(float)gm._ymu);
+      return res;
+    }
+
+    @Override public void reduce( MetricBuilder mb ) {
+      super.reduce(mb);
+      GLMMetricsBuilderBinomial mg = (GLMMetricsBuilderBinomial)mb;
+      _resDev += mg._resDev;
+      _nullDev += mg._nullDev;
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+      GLMModel gm = (GLMModel)m;
+      assert gm._parms._family == Family.binomial;
+      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
+      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
+      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
+      double mse = _sumsqe / _count;
+      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, aucdata, sigma, mse, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
+      return m._output.addModelMetrics(res);
+    }
+  }
   public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
     final double _lambda;
     public GLMModel _res;
@@ -50,15 +99,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Binomial: return new GLMMetricsBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
       case Regression: return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
-  }
-
-  @Override
-  public ModelSchema schema() {
-    return new GLMModelV2();
   }
 
   public double [] beta(){ return _output._global_beta;}
@@ -307,6 +351,31 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           throw new RuntimeException("unknown family " + _family);
       }
     }
+    public final double deviance(float yr, float ym){
+      switch(_family){
+        case gaussian:
+          return (yr - ym) * (yr - ym);
+        case binomial:
+//          if(yr == ym) return 0;
+//          return 2*( -yr * eta - Math.log(1 - ym));
+          return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
+        case poisson:
+          if( yr == 0 ) return 2 * ym;
+          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
+        case gamma:
+          if( yr == 0 ) return -2;
+          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
+        case tweedie:
+          // Theory of Dispersion Models: Jorgensen
+          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+          double one_minus_p = 1 - _tweedie_variance_power;
+          double two_minus_p = 2 - _tweedie_variance_power;
+          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
+    }
 
     public final double likelihood(double yr, double eta, double ym){
       switch(_family){
@@ -484,6 +553,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       @Override
       public GLMModel atomic(GLMModel old) {
         if(old == null)return old; // job could've been cancelled!
+        if(val != null)old._defaultThresholds = val.thresholds;
         if(old._output._submodels == null){
           old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};

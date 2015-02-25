@@ -45,7 +45,7 @@ public class ValueString extends Iced implements Comparable<ValueString> {
    }
 
 
-// WARNING: LOSSY CONVERSION!!!
+  // WARNING: LOSSY CONVERSION!!!
   // Converting to a String will truncate all bytes with high-order bits set,
   // even if they are otherwise a valid member of the field/ValueString.
   // Converting back to a ValueString will then make something with fewer

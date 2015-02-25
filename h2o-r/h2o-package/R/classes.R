@@ -297,6 +297,8 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
 setClass("H2OAutoEncoderModel", contains="H2OModel")
+#' @rdname H2OModel-class
+setClass("H2ODimReductionModel", contains="H2OModel")
 
 #' 
 #' The H2OModelMetrics Object.
@@ -321,9 +323,14 @@ setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     cat("Metric Details:\n\n")
+    if(object@algorithm == "glm") {
+      cat("Null Deviance:     ", object@metrics$nullDeviance,"\n", sep="")
+      cat("Residual Deviance: ", object@metrics$residualDeviance,"\n", sep="")
+      cat("aic:               ", object@metrics$aic,"\n\n", sep="")
+    }
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
+    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")    
     print(object@metrics$maxCriteriaAndMetricScores)
 })
 
@@ -333,3 +340,7 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")

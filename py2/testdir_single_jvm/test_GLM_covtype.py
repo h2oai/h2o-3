@@ -49,7 +49,6 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': None,
-                'score_each_iteration': True,
                 # FIX! for now just use a column that's binomial
                 'response_column': 'C54',
                 # FIX! when is this needed? redundant for binomial?
@@ -67,7 +66,6 @@ class Basic(unittest.TestCase):
                 'lambda_search': None,
                 'nlambdas': None,
                 'lambda_min_ratio': None,
-                'higher_accuracy': True,
                 'use_all_factor_levels': False,
                 # NPE with n_folds 2?
                 'n_folds': 1,
@@ -96,7 +94,8 @@ class Basic(unittest.TestCase):
             prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
             pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
-            h2o_cmd.runStoreView()
+            # too slow!
+            # h2o_cmd.runStoreView(timeoutSecs=30)
 
 if __name__ == '__main__':
     h2o.unit_main()

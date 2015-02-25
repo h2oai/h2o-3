@@ -118,7 +118,7 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case EOL:
           if(quotes != 0){
-            System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
+            //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.get_length()+1) < offset && str.get_off() > 0)?new String(Arrays.copyOfRange(bits,str.get_off()-1,offset)):""));
             dout.invalidLine("Unmatched quote char " + ((char)quotes));
             colIdx = 0;
             quotes = 0;
@@ -672,12 +672,12 @@ MAIN_LOOP:
     // now guess the types
     InputStream is = new ByteArrayInputStream(bits);
     CsvParser p = new CsvParser(resSetup);
-    TypeGuesserDataOut dout = new TypeGuesserDataOut(resSetup._ncols);
+    InspectDataOut dout = new InspectDataOut(resSetup._ncols);
     try{
       p.streamParse(is, dout);
       resSetup._ctypes = dout.guessTypes();
     }catch(Throwable e){
-    // TODO need to say something if we are having parse troubles this early
+      throw new RuntimeException(e);
     }
 
     // Return the final setup

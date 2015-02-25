@@ -59,7 +59,7 @@ test.exec2.demo <- function(conn) {
   print(paste("Number of rows in trimmed dataset:", nrow(prostate.trim)))
   
   Log.info("Construct test and train sets using runif")
-  s <- runif(nrow(prostate.hex))
+  s <- h2o.runif(prostate.hex)
   prostate.train <- prostate.hex[s <= 0.8,]
   prostate.train <- h2o.assign(prostate.train, "prostate.train")
   prostate.test <- prostate.hex[s > 0.8,]
@@ -76,7 +76,7 @@ test.exec2.demo <- function(conn) {
   
   myY <- "CAPSULE"; myX = setdiff(colnames(prostate.train), c(myY, "ID"))
   Log.info(paste("Run GBM with y = CAPSULE, x =", paste(myX, collapse = ",")))
-  prostate.gbm <- h2o.gbm(x = myX, y = myY, distribution = "multinomial", data = prostate.train, validation = prostate.test)
+  prostate.gbm <- h2o.gbm(x = myX, y = myY, training_frame = prostate.train, validation_frame = prostate.test)
   print(prostate.gbm)
   
   Log.info("Generate GBM predictions on test set")
@@ -92,7 +92,7 @@ test.exec2.demo <- function(conn) {
   # prostate.hex[,11] = prostate.hex$PSA >= prostate.qs["75%"]
   
   Log.info("Run GLM2 with y = new boolean column, x = AGE, RACE, VOL, GLEASON")
-  prostate.glm.lin <- h2o.glm(y = 10, x = c("AGE", "RACE", "VOL", "GLEASON"), data = prostate.hex, family = "binomial")
+  prostate.glm.lin <- h2o.glm(y = 10, x = c("AGE", "RACE", "VOL", "GLEASON"), training_frame = prostate.hex, family = "binomial")
   print(prostate.glm.lin)
   
   testEnd()

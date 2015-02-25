@@ -12,6 +12,6 @@ public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClust
   public double[] within_mse;
 
   @Override public ModelMetricsClustering createImpl() {
-    return new ModelMetricsClustering((Model)this.model.key().get(), (Frame)this.frame.key().get());
+    return new ModelMetricsClustering(this.model.key().get(), this.frame.key().get());
   }
 }

@@ -293,6 +293,35 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  // Predict with no actual, after training
+  @Test public void testGBMPredict() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._convert_to_enum = true;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      job.remove();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      pred.remove("Angaus").remove();    // No response column during scoring
+      res = gbm.score(pred);
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+    }
+  }
+
   // Adapt a trained model to a test dataset with different enums
   @Test public void testModelAdapt() {
     GBM job = null;

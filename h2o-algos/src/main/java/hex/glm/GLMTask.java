@@ -17,6 +17,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 /**
@@ -50,6 +51,8 @@ public abstract class GLMTask  {
        if(skip[r]) continue;
        if(!skip[r] && !response.isNA(r)) {
          double d = response.atd(r);
+         assert !Double.isNaN(d);
+         assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
          _ymu += d;
          if(d < _yMin)
            _yMin = d;
@@ -106,27 +109,83 @@ public abstract class GLMTask  {
 
     double [] _objVals; // result
 
-    private transient double [] _steps;
-    @Override public void setupLocal() {
-      _steps = new double[_nSteps];
-      double t = 1;
-      for(int i = 0; i < _nSteps; ++i) {
-        _steps[i] = t;
-        t *= _step;
-      }
-    }
-    private double beta(int i, int j) {
-      return _beta[j] + _direction[j] * _steps[i];
-    }
+//    private final double beta(int i, int j) {
+//      return _beta[j] + _direction[j] * _steps[i];
+//    }
     // compute linear estimate by summing contributions for all columns
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
+//      Chunk responseChunk = chks[chks.length-1];
+//      boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
+//      double [][] eta = new double[_nSteps][];
+//      for(int i = 0; i < eta.length; ++i)
+//        eta[i] = MemoryManager.malloc8d(chks[0]._len);
+//
+//      // categoricals
+//      for(int i = 0; i < _dinfo._cats; ++i) {
+//        Chunk c = chks[i];
+//        for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
+//          if(skip[r] || c.isNA(r)) {
+//            skip[r] = true;
+//            continue;
+//          }
+//          int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
+//          if(off != -1)
+//            for(int j = 0; j < eta.length; ++j)
+//              eta[j][r] += beta(j,off);
+//        }
+//      }
+//
+//      // compute default eta offset for 0s
+//      final int numStart = _dinfo.numStart();
+//      if(_dinfo._normMul != null && _dinfo._normSub != null) {
+//        for (int j = 0; j < eta.length; ++j) {
+//          double off = 0;
+//          for (int i = 0; i < _dinfo._nums; ++i)
+//            off -= beta(j, numStart + i) * _dinfo._normSub[i] * _dinfo._normMul[i];
+//          for (int r = 0; r < chks[0]._len; ++r)
+//            eta[j][r] += off;
+//        }
+//      }
+//      // non-zero numbers
+//      for (int i = 0; i < _dinfo._nums; ++i) {
+//        Chunk c = chks[i + _dinfo._cats];
+//        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+//          if(skip[r] || c.isNA(r)) {
+//            skip[r] = true;
+//            continue;
+//          }
+//          double d = c.atd(r);
+//          if (_dinfo._normMul != null)
+//            d *= _dinfo._normMul[i];
+//          for (int j = 0; j < eta.length; ++j)
+//            eta[j][r] += beta(j,numStart + i) * d;
+//        }
+//      }
+//      _objVals = MemoryManager.malloc8d(_nSteps);
+//      for(int r = 0; r < chks[0]._len; ++r){
+//        if(skip[r] || responseChunk.isNA(r))
+//          continue;
+//        double off = 0; //(_dinfo._offset?offsetChunk.atd(r):0);
+//        double y = responseChunk.atd(r);
+//        double yy = -1 + 2*y;
+//        for(int i = 0; i < eta.length; ++i) {
+//          double offset = off + (_dinfo._intercept ? beta(i,_beta.length-1): 0);
+////          if(_params._family == Family.binomial) {
+////            _objVals[i] += Math.log(1 + Math.exp(-yy*(eta[i][r] + offset)));
+////          } else {
+//            double mu = _params.linkInv(eta[i][r] + offset);
+//            _objVals[i] += _params.likelihood(y, eta[i][r] + offset, mu);
+////          }
+//        }
+//      }
+
       Chunk responseChunk = chks[chks.length-1];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
-      double [][] eta = new double[_nSteps][];
-      for(int i = 0; i < eta.length; ++i)
-        eta[i] = MemoryManager.malloc8d(chks[0]._len);
+      double [][] eta = new double[responseChunk._len][_nSteps];
+      double [] beta = _beta;
+      double [] pk = _direction;
 
       // categoricals
       for(int i = 0; i < _dinfo._cats; ++i) {
@@ -137,21 +196,24 @@ public abstract class GLMTask  {
             continue;
           }
           int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
-          if(off != -1)
-            for(int j = 0; j < eta.length; ++j)
-              eta[j][r] += beta(j,off);
+          if(off != -1) {
+            double t = 1;
+            for (int j = 0; j < _nSteps; ++j, t *= _step)
+              eta[r][j] += beta[off] + pk[off] * t;
+          }
         }
       }
-
       // compute default eta offset for 0s
       final int numStart = _dinfo.numStart();
+      double [] off = new double[_nSteps];
       if(_dinfo._normMul != null && _dinfo._normSub != null) {
-        for (int j = 0; j < eta.length; ++j) {
-          double off = 0;
-          for (int i = 0; i < _dinfo._nums; ++i)
-            off -= beta(j, numStart + i) * _dinfo._normSub[i] * _dinfo._normMul[i];
-          for (int r = 0; r < chks[0]._len; ++r)
-            eta[j][r] += off;
+
+        for (int i = 0; i < _dinfo._nums; ++i) {
+          double b = beta[numStart+i];
+          double s = pk[numStart+i];
+          double d = _dinfo._normSub[i] * _dinfo._normMul[i];
+          for (int j = 0; j < _nSteps; ++j, s *= _step)
+            off[j] -= (b + s) * d;
         }
       }
       // non-zero numbers
@@ -165,20 +227,34 @@ public abstract class GLMTask  {
           double d = c.atd(r);
           if (_dinfo._normMul != null)
             d *= _dinfo._normMul[i];
-          for (int j = 0; j < eta.length; ++j)
-            eta[j][r] += beta(j,numStart + i) * d;
+          double b = beta[numStart+i];
+          double s = pk[numStart+i];
+          for (int j = 0; j < _nSteps; ++j) {
+            eta[r][j] += (b + s) * d;
+            s *= _step;
+          }
         }
       }
       _objVals = MemoryManager.malloc8d(_nSteps);
       for(int r = 0; r < chks[0]._len; ++r){
         if(skip[r] || responseChunk.isNA(r))
           continue;
-        double off = 0; //(_dinfo._offset?offsetChunk.atd(r):0);
+
         double y = responseChunk.atd(r);
-        for(int i = 0; i < eta.length; ++i) {
-          double offset = off + (_dinfo._intercept ? beta(i,_beta.length-1): 0);
-          double mu = _params.linkInv(eta[i][r] + offset);
-          _objVals[i] += _params.likelihood(y,eta[i][r]+offset,mu);
+        double yy = -1 + 2*y;
+        double b = 0, s = 0;
+        if(_dinfo._intercept) {
+          b = beta[beta.length-1];
+          s = pk[pk.length-1];
+        }
+        for(int i = 0; i < _nSteps; ++i, s*= _step) {
+          double e = eta[r][i] + off[i] + b + s;
+          if(_params._family == Family.binomial) {
+            _objVals[i] += Math.log(1 + Math.exp(-yy * e));
+          } else {
+            double mu = _params.linkInv(e);
+            _objVals[i] += _params.likelihood(y, e, mu);
+          }
         }
       }
     }
@@ -266,7 +342,7 @@ public abstract class GLMTask  {
 //          g[g.length-1] += gval;
 //      }
 //    }
-    private final void goByRows(Chunk [] chks){
+    protected void goByRows(Chunk [] chks){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
@@ -350,7 +426,7 @@ public abstract class GLMTask  {
       return eta;
     }
 
-    private final void goByCols(Chunk [] chks){
+    protected void goByCols(Chunk [] chks){
       int numStart = _dinfo.numStart();
       boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       double  [] eta = computeEtaByCols(chks,skp);
@@ -453,6 +529,115 @@ public abstract class GLMTask  {
       if(_validate)
         _val.add(grt._val);
       ArrayUtils.add(_gradient, grt._gradient);
+    }
+  }
+
+  /**
+   * Tassk with simplified gradient computation for logistic regression (and least squares)
+   * Looks like
+   */
+  public static class LBFGS_LogisticGradientTask extends GLMGradientTask {
+
+    public LBFGS_LogisticGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg) {
+      super(dinfo, params, lambda, beta, reg);
+    }
+
+    @Override   protected void goByRows(Chunk [] chks){
+      Log.info("go by rows for start row = " + chks[0].start());
+      Row row = _dinfo.newDenseRow();
+      double [] g = _gradient;
+      double [] b = _beta;
+      for(int rid = 0; rid < chks[0]._len; ++rid) {
+        row = _dinfo.extractDenseRow(chks, rid, row);
+        double y = -1 + 2*row.response(0);
+        if(row.bad) continue;
+        double eta = row.innerProduct(b);
+        double d = 1 + Math.exp(-y*eta);
+        _objVal += Math.log(d);
+        double gval = -y*(1-1.0/d);
+        // categoricals
+        for(int i = 0; i < row.nBins; ++i)
+          g[row.binIds[i]] += gval;
+        int off = _dinfo.numStart();
+        // numbers
+        for(int j = 0; j < _dinfo._nums; ++j)
+          g[j + off] += row.numVals[j] * gval;
+        // intercept
+        if(_dinfo._intercept)
+          g[g.length-1] += gval;
+      }
+    }
+
+    @Override protected void goByCols(Chunk [] chks){
+      int numStart = _dinfo.numStart();
+      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
+      double  [] eta = computeEtaByCols(chks,skp);
+      double  [] b = _beta;
+      double  [] g = _gradient;
+      Chunk offsetChunk = null;
+      int nxs = chks.length-1; // -1 for response
+      if(_dinfo._offset) {
+        nxs -= 1;
+        offsetChunk = chks[nxs];
+      }
+      Chunk responseChunk = chks[nxs];
+      double eta_sum = 0;
+      // compute the predicted mean and variance and gradient for each row
+      for(int r = 0; r < chks[0]._len; ++r){
+        if(skp[r] || responseChunk.isNA(r))
+          continue;
+        double off = (_dinfo._offset?offsetChunk.atd(r):0);
+
+        double e = eta[r]  + off + (_dinfo._intercept?b[b.length-1]:0);
+
+        switch(_params._family) {
+          case gaussian:
+            double diff = e - responseChunk.atd(r);
+            _objVal += diff*diff;
+            eta[r] = diff;
+            break;
+          case binomial:
+            double y = -1 + 2*responseChunk.atd(r);
+            double d = 1 + Math.exp(-y * e);
+            _objVal += Math.log(d);
+            eta[r] = -y * (1 - 1.0 / d);
+            break;
+
+          default:
+            throw H2O.unimpl();
+        }
+        eta_sum += eta[r];
+      }
+      // finally go over the columns again and compute gradient for each column
+      // first handle eta offset and intercept
+      if(_dinfo._intercept)
+        g[g.length-1] = eta_sum;
+      if(_dinfo._normMul != null && _dinfo._normSub != null)
+        for(int i = 0; i < _dinfo._nums; ++i)
+          g[numStart + i] = -_dinfo._normSub[i]*_dinfo._normMul[i]*eta_sum;
+      // categoricals
+      for(int i = 0; i < _dinfo._cats; ++i) {
+        Chunk c = chks[i];
+        for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
+          if(skp[r]) continue;
+          int off = _dinfo.getCategoricalId(i,(int)chks[i].at8(r));
+          if(off != -1)
+            g[off] += eta[r];
+        }
+      }
+      // numerics
+      for (int i = 0; i < _dinfo._nums; ++i) {
+        Chunk c = chks[i + _dinfo._cats];
+        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+          if(skp[r] || c.isNA(r))
+            continue;
+          double d = c.atd(r);
+          if (_dinfo._normMul != null)
+            d = d*_dinfo._normMul[i];
+          g[numStart + i] += eta[r] * d;
+        }
+      }
+      _skip = skp;
     }
   }
   /**

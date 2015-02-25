@@ -114,9 +114,9 @@ public final class L_BFGS extends Iced {
      * @param direction - search direction
      * @return
      */
-    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction) {
+    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, double tdec) {
       double [] objVals = getObjVals(beta, direction);
-      double t = _startStep, tdec = _stepDec;
+      double t = 1;
       for (int i = 0; i < objVals.length; ++i) {
         if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
           return new LineSearchSol(true, objVals[i], t);
@@ -134,7 +134,7 @@ public final class L_BFGS extends Iced {
   }
 
   // constants used in line search
-  public static final double c1 = .5;
+  public static final double c1 = .1;
 
   public static final class Result {
     public final int iter;
@@ -253,18 +253,53 @@ public final class L_BFGS extends Iced {
     beta = beta.clone();
     // just loop until good enough or line search can not progress
     int iter = 0;
+    boolean doLineSearch = true;
+    int ls_switch = 0;
+
     while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
-      LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
-      if(ls.madeProgress || _hist._k < _hist._m) {
-        ArrayUtils.mult(pk,ls.step);
-        ++iter; // only count successful iterations
-        ArrayUtils.add(beta, pk);
-        GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
-        _hist.update(pk, newGinfo._gradient, ginfo._gradient);
-        ginfo = newGinfo;
-      } else
-        break; // line search did not make any progress
+      if(doLineSearch) {
+        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, gslvr._stepDec);
+        if(ls.step == 1) {
+          if (++ls_switch == 2) {
+            ls_switch = 0;
+            doLineSearch = false;
+          }
+        } else {
+          ls_switch = 0;
+        }
+        if (ls.madeProgress || _hist._k < _hist._m) {
+          ArrayUtils.wadd(beta, pk, ls.step);
+        } else break; // ls did not make progress => converged
+      } else  ArrayUtils.add(beta, pk);
+      GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+      if(!doLineSearch) //{
+        if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
+          if(++ls_switch == 2) {
+            doLineSearch = true;
+            ls_switch = 0;
+          }
+          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > .001*ginfo._objVal)) {
+            doLineSearch = true;
+            ArrayUtils.subtract(beta,pk,beta);
+            continue;
+          }
+        } else ls_switch = 0;
+//        doLineSearch = true;
+//        Log.info("switching line search on");
+//        ArrayUtils.subtract(beta, pk);
+//        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
+//        Log.info("ls took " + (System.currentTimeMillis() - t) + "ms, found step " + ls.step);
+//        doLineSearch = ls.step < 1;
+//        if (ls.madeProgress || _hist._k < _hist._m) {
+//          ArrayUtils.mult(pk, ls.step);
+//          ArrayUtils.add(beta, pk);
+//          newGinfo = gslvr.getGradient(beta); // expensive / distributed
+//        } else break;
+//      }
+      ++iter;
+      _hist.update(pk, newGinfo._gradient, ginfo._gradient);
+      ginfo = newGinfo;
     }
     Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);

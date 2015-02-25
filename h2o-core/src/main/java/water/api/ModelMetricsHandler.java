@@ -150,7 +150,8 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetricsList parms = s.createAndFillImpl();
-    parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    Frame fr = parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    DKV.remove(fr._key);
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -176,7 +177,7 @@ class ModelMetricsHandler extends Handler {
     Frame predictions;
     if (!s.reconstruction_error && s.deep_features_hidden_layer < 0 ) {
       if (null == parms._destination_key)
-        parms._destination_key = "predictions_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        parms._destination_key = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       predictions = parms._model.score(parms._frame, parms._destination_key);
     } else {
       if (Model.DeepFeatures.class.isAssignableFrom(parms._model.getClass())) {

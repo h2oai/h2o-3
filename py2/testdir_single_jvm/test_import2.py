@@ -106,7 +106,9 @@ class Basic(unittest.TestCase):
 
             colLength = 1 if DO_TEST_BAD_COL_LENGTH else 55
             expectedColumnNames = map(lambda x: basename + "_" + str(x+1), range(colLength))
-            columnNames = "[" + ",".join(expectedColumnNames) + "]"
+            # need to quote each column name in the string passed 
+            columnNames = "[" + ",".join(map((lambda x: "'" + x + "'"), expectedColumnNames)) + "]"
+
             kwargs = {
                 'columnNames': columnNames,
                 'intermediateResults': False,

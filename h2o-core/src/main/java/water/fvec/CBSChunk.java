@@ -67,7 +67,7 @@ public class CBSChunk extends Chunk {
 
   /** Reads 1bit from given b in given offset. */
   public static byte read1b(byte b, int off) { return (byte) ((b >> (7-off)) & 0x1); }
-  /** Reads 1bit from given b in given offset. */
+  /** Reads 2bit from given b in given offset. */
   public static byte read2b(byte b, int off) { return (byte) ((b >> (6-off)) & 0x3); }
 
   /** Returns compressed len of the given array length if the value if represented by bpv-bits. */
@@ -80,7 +80,7 @@ public class CBSChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
   @Override public CBSChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     _gap   = _mem[0];
     _bpv   = _mem[1];
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);

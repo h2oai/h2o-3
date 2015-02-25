@@ -49,6 +49,8 @@ public class ParseCompressedAndXLSTest extends TestUtil {
     try {
       File f = find_test_file("smalldata/airlines/AirlinesTest.csv.zip");
       NFSFileVec nfs = NFSFileVec.make(f);
+      Parser.ColTypeInfo[] ctypes = new Parser.ColTypeInfo[12];
+      for(int i=0; i < 12; i++) ctypes[i] = new Parser.ColTypeInfo(Parser.ColType.NUM);
       ParseSetup setup = new ParseSetup( true, // is valid
                                          0,    // invalidLines
                                          1,    // headerlines
@@ -56,12 +58,12 @@ public class ParseCompressedAndXLSTest extends TestUtil {
                                          ParserType.XLS,
                                          (byte)52, // sep; ascii '4'
                                          12,       // ncols
-                                         true,     // singleQuotes 
+                                         true,     // singleQuotes
                                          new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
-                                         null, 
-                                         null, 
+                                         null,
+                                         null,
                                          -1, // check header
-                                         null);
+                                         ctypes);
       k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
       assertEquals( 0,k1.numCols());
       assertEquals( 0,k1.numRows());

@@ -1066,7 +1066,6 @@ abstract class ASTBinOp extends ASTOp {
     }
     final ASTBinOp bin = this;  // Final 'this' so can use in closure
 
-    Key tmp_key = Key.make();
     // Run an arbitrary binary op on one or two frames & scalars
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
@@ -1119,7 +1118,7 @@ abstract class ASTBinOp extends ASTOp {
           }
         }
       }
-    }.doAll(ncols,fr).outputFrame(tmp_key, (lf ? fr0 : fr1)._names,null);
+    }.doAll(ncols,fr).outputFrame(null, (lf ? fr0 : fr1)._names,null);
     env.poppush(2, new ValFrame(fr2));
   }
   @Override public String toString() { return "("+opStr()+" "+Arrays.toString(_asts)+")"; }
@@ -2458,39 +2457,43 @@ class ASTTable extends ASTUniPrefixOp {
       throw new IllegalArgumentException("table only applies to integer vectors.");
     String[][] domains = new String[ncol][];  // the domain names to display as row and col names
     // if vec does not have original domain, use levels returned by CollectDomain
-    long[][] levels = new long[ncol][];
+    final long[][] levels = new long[ncol][];
     for (int i = 0; i < ncol; i++) {
       Vec v = fr.vecs()[i];
       levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
       domains[i] = v.domain();
     }
-    long[][] counts = new Tabularize(levels).doAll(fr)._counts;
+    final long[][] counts = new Tabularize(levels).doAll(fr)._counts;
     // Build output vecs
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(counts.length+1);
+    Vec dataLayoutVec = Vec.makeCon(0, levels[0].length);
     Vec[] vecs = new Vec[counts.length+1];
     String[] colnames = new String[counts.length+1];
-    AppendableVec v0 = new AppendableVec(keys[0]);
-    v0.setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
-    NewChunk c0 = new NewChunk(v0,0);
-    for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
-    c0.close(0,null);
-    Futures fs = new Futures();
-    vecs[0] = v0.close(fs);
+
+    (vecs[0] = new MRTask() {
+      @Override public void map(Chunk cs, NewChunk oc) {
+        for (int i = 0; i < cs._len; ++i) {
+          oc.addNum((double) levels[0][(int) (i + cs.start())]);
+        }
+      }
+    }.doAll(1, dataLayoutVec).outputFrame(null,null).anyVec()).setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
     colnames[0] = "row.names";
     if (ncol==1) colnames[1] = "Count";
-    for (int level1=0; level1 < counts.length; level1++) {
-      AppendableVec v = new AppendableVec(keys[level1+1]);
-      NewChunk c = new NewChunk(v,0);
-      v.setDomain(null);
-      for (int level0=0; level0 < counts[level1].length; level0++)
-        c.addNum((double) counts[level1][level0]);
-      c.close(0, null);
-      vecs[level1+1] = v.close(fs);
+    int level1=0;
+    for (; level1 < counts.length;) {
+      final int lvl = ++level1;
+      vecs[lvl] = new MRTask() {
+        @Override public void map(Chunk cs, NewChunk oc) {
+          for (int i = 0; i < cs._len; ++i)
+            oc.addNum((double) counts[lvl-1][(int)(i + cs.start())]);
+        }
+      }.doAll(1, dataLayoutVec).outputFrame(null,null).anyVec();
+
       if (ncol>1) {
-        colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
+        colnames[level1] = domains[1]==null? Long.toString(levels[1][level1-1]) : domains[1][(int)(levels[1][level1])];
       }
     }
-    fs.blockForPending();
+    Keyed.remove(dataLayoutVec._key);
+
     Frame fr2 = new Frame(colnames, vecs);
     env.pushAry(fr2);
   }
