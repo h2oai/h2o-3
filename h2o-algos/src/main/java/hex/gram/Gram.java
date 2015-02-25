@@ -47,6 +47,15 @@ public final class Gram extends Iced<Gram> {
     }
   }
 
+  public Gram(double[][] xx) {
+    this(xx.length, 0, xx.length, 0, false);
+    for( int i = 0; i < _xx.length; ++i ) {
+      for( int j = 0; j < _xx[i].length; ++j ) {
+        _xx[i][j] = xx[i][j];
+      }
+    }
+  }
+
   public final int fullN(){return _fullN;}
   public double _diagAdded;
   public void addDiag(double d) {addDiag(d,false);}
@@ -319,7 +328,6 @@ public final class Gram extends Iced<Gram> {
       for( int i = 0; i < _xx.length; ++i )
         _xx[i] = gram._xx[i].clone();
       _diag = gram._diag.clone();
-
     }
 
     public double[][] getXX() {
@@ -337,6 +345,22 @@ public final class Gram extends Iced<Gram> {
       }
       return xx;
     }
+
+    public double[][] getL() {
+      final int N = _xx.length+_diag.length;
+      double[][] xx = new double[N][];
+      for( int i = 0; i < N; ++i )
+        xx[i] = MemoryManager.malloc8d(N);
+      for( int i = 0; i < _diag.length; ++i )
+        xx[i][i] = _diag[i];
+      for( int i = 0; i < _xx.length; ++i ) {
+        for( int j = 0; j < _xx[i].length; ++j ) {
+          xx[i + _diag.length][j] = _xx[i][j];
+        }
+      }
+      return xx;
+    }
+
     public double sparseness(){
       double [][] xx = getXX();
       double nzs = 0;
@@ -350,8 +374,6 @@ public final class Gram extends Iced<Gram> {
     public String toString() {
       return "";
     }
-
-
 
     public static abstract class DelayedTask  extends RecursiveAction {
       private static final Unsafe U;
@@ -791,7 +813,6 @@ public final class Gram extends Iced<Gram> {
   public static class GramTask extends FrameTask<GramTask> {
     public Gram _gram;
     public long _nobs;
-
 
     public GramTask(Key jobKey, DataInfo dinfo){
       super(jobKey,dinfo._key,dinfo._activeCols);

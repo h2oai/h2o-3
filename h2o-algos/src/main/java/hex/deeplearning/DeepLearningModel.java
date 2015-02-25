@@ -646,6 +646,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable variableImportances;
     ModelMetrics trainMetrics;
     ModelMetrics validMetrics;
+    double run_time;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1637,6 +1638,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
           _output.trainMetrics = mm1;
+          _output.run_time = run_time;
 
           if (ftest != null) {
             Frame validPred = score(ftest);
@@ -1685,7 +1687,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
-          if (actual_best_model_key != null && (
+          if (actual_best_model_key != null && get_params()._override_with_best_model && (
                   // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
                   (DKV.get(actual_best_model_key) != null && (error() < DKV.get(actual_best_model_key).<DeepLearningModel>get().error() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
                           ||

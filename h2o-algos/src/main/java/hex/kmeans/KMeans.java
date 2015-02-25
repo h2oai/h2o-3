@@ -26,7 +26,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-      Model.ModelCategory.Clustering,
+      Model.ModelCategory.Clustering
     };
   }
 
@@ -202,8 +202,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
+      String[] colFormats = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, "", new String[_parms._k][], model._output._centers_raw);
+      Arrays.fill(colFormats, "%5f");
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -258,10 +260,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         //
         model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
+        // mults & means for standardization
         // means are used to impute NAs
         final double[] means = prepMeans(vecs);
-        // mults & means for standardization
         final double[] mults = prepMults(vecs);
+        model._output._normSub = means;
+        model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
         double[][] centers = initial_centers(model,vecs,means,mults);
         if( centers==null ) return; // Stopped/cancelled during center-finding
