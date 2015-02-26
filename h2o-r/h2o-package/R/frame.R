@@ -1282,7 +1282,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   # as column names.  This is a bit complicated
   if(is.character(.variables)) {
     vars <- match(.variables, colnames(.data))
-    if (is.na(vars))
+    if (any(is.na(vars)))
       stop('No column named ', .variables, ' in ', substitute(.data), '.')
   } else if(is(.variables, 'H2Oquoted')) {
     vars <- match(.variables, colnames(.data))
