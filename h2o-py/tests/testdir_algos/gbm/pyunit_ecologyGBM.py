@@ -85,7 +85,7 @@ def ecologyGBM(ip,port):
 
     # h2o
     gbm_perf = gbm_h2o.model_performance(ecology_test)
-    auc_h2o = gbm_perf._auc_data.AUC
+    auc_h2o = gbm_perf.auc()
 
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"

@@ -22,14 +22,14 @@ def smallcatGBM(ip,port):
   h2o_gbm_model1 = h2o.gbm(x=swpreds[["X1"]], y=swpreds["y"], ntrees=50, max_depth=20, nbins=500)
   h2o_gbm_model1.show()
   h2o_gbm_perf1 = h2o_gbm_model1.model_performance(swpreds)
-  h2o_auc1 = h2o_gbm_perf1._auc_data.AUC
+  h2o_auc1 = h2o_gbm_perf1.auc()
 
   # Train H2O GBM Model including Noise Column:
   #Log.info("H2O GBM with parameters:\nntrees = 50, max_depth = 20, nbins = 500\n")
   h2o_gbm_model2 = h2o.gbm(x=swpreds[["X1","X2"]], y=swpreds["y"], ntrees=50, max_depth=20, nbins=500)
   h2o_gbm_model2.show()
   h2o_gbm_perf2 = h2o_gbm_model2.model_performance(swpreds)
-  h2o_auc2 = h2o_gbm_perf2._auc_data.AUC
+  h2o_auc2 = h2o_gbm_perf2.auc()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, smallcatGBM)

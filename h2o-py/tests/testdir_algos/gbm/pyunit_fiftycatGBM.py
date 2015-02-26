@@ -33,8 +33,8 @@ def fiftycatGBM(ip,port):
   # Get the confusion matrix and AUC
   #Log.info("Confusion matrix of predictions (max accuracy):\n")
   performance = model.model_performance(test)
-  test_cm = performance._metric_json['confusion_matrices']
-  test_auc = performance._auc_data.AUC
+  test_cm = performance.confusion_matrices()
+  test_auc = performance.auc()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, fiftycatGBM)
