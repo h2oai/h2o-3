@@ -8,6 +8,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -427,6 +428,7 @@ public class GBMTest extends TestUtil {
       try { Thread.sleep(50); } catch( Exception ignore ) { }
 
       try {
+        Log.info("Trying illegal frame delete.");
         fr.delete();            // Attempted delete while model-build is active
         Assert.fail("Should toss IAE instead of reaching here");
       } catch( IllegalArgumentException ignore ) {
@@ -434,6 +436,7 @@ public class GBMTest extends TestUtil {
         assertTrue( de.getMessage().contains("java.lang.IllegalArgumentException") );
       }
 
+      Log.info("Getting model");
       GBMModel model = gbm.get();
       Assert.assertTrue(gbm._state == Job.JobState.DONE); //HEX-1817
       if( model != null ) model.delete();
