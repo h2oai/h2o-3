@@ -513,7 +513,7 @@ public class Vec extends Keyed<Vec> {
   public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
-  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.9,0.99,0.999};
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
