@@ -157,6 +157,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
+    putPrefix(new ASTMedian());
 
     // Misc
     putPrefix(new ASTMatch ());
@@ -1302,10 +1303,12 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        assert C.vec().isNumeric();
+        double sum = _d;
         for (int r = 0; r < rows; r++)
-          _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+          sum = _bin.op(sum, C.atd(r));
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( RedOp s ) { _d = _bin.op(_d,s._d); }
@@ -1318,18 +1321,58 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
-        for (int r = 0; r < rows; r++)
-          if (!Double.isNaN(C.atd(r)))
-            _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+        assert C.vec().isNumeric();
+        double sum = _d;
+        for (int r = 0; r < rows; r++) {
+          double d = C.atd(r);
+          if (!Double.isNaN(d))
+            sum = _bin.op(sum, d);
+        }
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
   }
 }
 
-class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(){ return "sum";} @Override ASTOp make() {return new ASTSum();} @Override double op(double d0, double d1) { return d0+d1;}}
+class ASTSum extends ASTReducerOp { 
+  ASTSum() {super(0);} 
+  @Override String opStr(){ return "sum";} 
+  @Override ASTOp make() {return new ASTSum();} 
+  @Override double op(double d0, double d1) { return d0+d1;}
+  @Override void apply(Env env) {
+    double sum=_init;
+    int argcnt = _argcnt;
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) sum = op(sum,env.popDbl());
+      else {
+        Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        sum += new RedSum(_narm).doAll(fr)._d;
+      }
+    env.push(new ValNum(sum));
+  }
+
+  private static class RedSum extends MRTask<RedSum> {
+    final boolean _narm;
+    double _d;
+    RedSum( boolean narm ) { _narm = narm; }
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        assert C.vec().isNumeric();
+        double sum=_d;
+        if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
+        else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        sum += d; }
+        _d = sum;
+        if( Double.isNaN(sum) ) break;
+      }
+    }
+    @Override public void reduce( RedSum s ) { _d += s._d; }
+  }
+}
+
 
 class ASTRbind extends ASTUniPrefixOp {
   protected static int argcnt;
@@ -1606,6 +1649,32 @@ class ASTMin extends ASTReducerOp {
           else min = Math.min(min, v.min());
       }
     env.push(new ValNum(min));
+  }
+}
+
+class ASTMedian extends ASTReducerOp {
+  ASTMedian() { super( 0 ); }
+  @Override String opStr() { return "median"; }
+  @Override ASTOp make() { return new ASTMedian(); }
+  ASTMedian parse_impl(Exec E) { return (ASTMedian)super.parse_impl(E); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
+  @Override void apply(Env env) {
+    Frame fr;
+    try {
+      fr = env.popAry();
+    } catch (Exception e) {
+      throw new IllegalArgumentException("`median` expects a single column from a Frame.");
+    }
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    if (!fr.anyVec().isNumeric())
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    Quantiles q = new Quantiles();
+    Quantiles[] qbins = new Quantiles.BinningTask(q._max_qbins, fr.anyVec().min(), fr.anyVec().max()).doAll(fr.anyVec())._qbins;
+    qbins[0].finishUp(fr.anyVec(), new double[]{0.5}, q._interpolation_type, true);
+    env.push(new ValNum(qbins[0]._pctile[0]));
   }
 }
 

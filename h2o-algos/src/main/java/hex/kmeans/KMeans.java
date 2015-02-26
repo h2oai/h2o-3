@@ -569,7 +569,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   }
 
   // For KMeansModel scoring; just the closest cluster center
-  static int closest(double[][] centers, double[] point, int ncats) {
+  public static int closest(double[][] centers, double[] point, int ncats) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {

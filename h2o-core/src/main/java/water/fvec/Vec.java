@@ -1127,5 +1127,4 @@ public class Vec extends Keyed<Vec> {
       return _key.hashCode();
     }
   }
-
 }
