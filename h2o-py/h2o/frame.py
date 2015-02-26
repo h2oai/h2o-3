@@ -46,9 +46,9 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      cols = parse['columnNames']
-      rows = parse['rows']
       veckeys = parse['vecKeys']
+      rows = parse['rows']
+      cols = parse['columnNames'] if parse["columnNames"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
       print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
 
