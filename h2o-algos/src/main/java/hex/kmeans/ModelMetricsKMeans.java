@@ -42,8 +42,8 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
     @Override
     public float[] perRow(float[] preds, float[] dataRow, Model m) {
       assert m instanceof KMeansModel;
-      if (Float.isNaN(preds[0])) return dataRow; // No errors if   actual   is missing
-      if (Float.isNaN(dataRow[0])) return dataRow; // No errors if prediction is missing
+      if (Float.isNaN(preds[0])) return dataRow; // No errors if prediction  is missing
+      if (Float.isNaN(dataRow[0])) return dataRow; // No errors if actual is missing
 
       final TwoDimTable centers = ((KMeansModel) m)._output._centers;
       assert (dataRow.length == centers.getColDim());

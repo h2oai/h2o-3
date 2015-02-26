@@ -28,5 +28,5 @@ testEnd()
 
 }
 
-doTest("PUB-507 H2O does not parse numbers correctly", test.pub_505)
+doTest("PUB-505 H2O does not parse numbers correctly", test.pub_505)
 
