@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 10.5- Target receives dup UDP request, then replies with ACK back.
  * 11- Sender receives ACK result; deserializes; notifies waiters
  * 12- Sender sends ACKACK back
- * 12.5- Sender recieves dup ACK's, sends dup ACKACK's back
- * 13- Target recieves ACKACK, removes TASKS tracking
+ * 12.5- Sender receives dup ACK's, sends dup ACKACK's back
+ * 13- Target receives ACKACK, removes TASKS tracking
  *
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0

@@ -1,0 +1,31 @@
+---
+title: "Performance Analysis of H2O Deep Learning on MNIST"
+author: arno-candel
+date: "2015-02-25"
+---
+
+INSERT1 PerformanceH2ODeepLearning.Rmd
+
+<!-- Do not add content after this line -->
+
+<script type="text/javascript" src="/assets/scripts/lightning-lib.js"></script>
+<script type="text/javascript" src="/assets/scripts/lightning.min.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() { 
+  var renderPlot = function(id){
+    return function(error, vis) {
+      var el = document.getElementById(id);
+      if (el) {
+        if (error) {
+          el.innerHTML = error.message;
+        } else {
+          el.appendChild(vis.element);
+        }
+      }
+    };
+  };
+
+    INSERT2 PerformanceH2ODeepLearning.plots
+
+});
+</script>

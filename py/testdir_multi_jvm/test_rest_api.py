@@ -660,7 +660,7 @@ assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE
 assert col['bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
 assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
 assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
-assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile for AGE.'
+assert col['pctiles'][0] == 43, 'FAIL: Failed to find 43 as the first pctile for AGE. '+str(col['pctiles'][0])
 
 # Test /SplitFrame for prostate.csv
 if verbose: print 'Testing SplitFrame with named destKeys. . .'

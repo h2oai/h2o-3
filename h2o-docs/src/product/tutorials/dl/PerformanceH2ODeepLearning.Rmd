@@ -1,0 +1,240 @@
+## Introduction
+
+This tutorial demonstrates basic performance tuning principles for H2O Deep Learning. This file is both valid R and markdown code, compatible with the *rmarkdown* package.
+
+```{r}
+options(repos=structure(c(CRAN='http://cran.us.r-project.org')))
+install.packages("rmarkdown")
+```
+
+Please consult the [H2O website](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. This tutorial does not attempt to explain how to launch a multi-node H2O cluster, nor does it explain the various hyper-parameters of H2O Deep Learning.
+
+## Part 1 - Single-node Training Speed
+For simplicity, we start with some single-node experiments quantifying the raw training throughput. Of course, there are many parameters that affect predictive accuracies and modeling performance, but for this first part, we only consider the speed of training.
+
+### Establish Connection to H2O
+For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). Its numerical performance is very similar to the performance of [h2o](http://github.com/h2oai/h2o). Instructions can be found at [h2o.ai/download](http://h2o.ai/download).
+
+We use nightly build 1072 of h2o-dev, but you can use the latest nightly or latest stable version as well.
+
+```{r}
+# The following two commands remove any previously installed H2O packages for R.
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+
+# Next, we download packages that H2O depends on.
+if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
+if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
+if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
+if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
+if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
+if (! ("rjson" %in% rownames(installed.packages()))) { install.packages("rjson") }
+if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
+if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+
+# Now we download, install and initialize the H2O package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1072/R")))
+library(h2o)
+library('stringr')
+
+# Start a single-node instance of H2O using all available processor cores and up to 16GB of memory
+h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
+```
+
+First, we set the path to a scratch directory that will contain the downloaded datasets and the CSV files containing the results.
+```{r}
+workdir="/tmp"
+```
+
+###Load Benchmark Dataset
+
+Next, we load the well-known [MNIST](http://yann.lecun.com/exdb/mnist/) dataset of hand-written digits, where each row contains the 28^2=784 gray-scale pixel values from 0 to 255 of digitized digits (last column contains labels from 0 to 9). The training and testing datasets are also available at [H2O Github](https://github.com/h2oai/h2o/tree/master/smalldata/mnist).
+Note: This is small data, but since H2O Deep Learning is a fully distributed streaming algorithm, it's performance in terms of throughput will remain similar for much larger datasets. The dataset limit is given by total aggregate amount of memory of all nodes, and the compression ratio of the dataset. The number of columns will translate directly into the size of the first layer of neurons (input layer), and hence significantly affects the size of the model. For the MNIST dataset, all Deep Learning models below will have 717 input neurons (784 columns, of which 67 are constant (zero) and thus ignored).
+              
+```{r}
+download.file("https://s3.amazonaws.com/h2o-training/mnist/train.csv.gz", file.path(workdir,"train.csv.gz"), "wget", quiet = T)
+download.file("https://s3.amazonaws.com/h2o-training/mnist/test.csv.gz", file.path(workdir,"test.csv.gz"), "wget", quiet = T)
+train_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"train.csv.gz"), header = F, sep = ',', key = 'train.hex')
+test_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"test.csv.gz"), header = F, sep = ',', key = 'test.hex')
+```
+
+
+### Performance Metrics and Observables
+
+In this first part of the benchmark study, we will investigate the single-node performance of H2O Deep Learning in terms of training examples per second.
+
+Notes:
+  * We first look at single-node training speed in terms of training samples per second.
+  * We note that H2O Deep Learning uses online learning with stochastic gradient descent. There are *no mini-batches*, every training sample immediately affects the network weights.
+  * In part 2, we look at the test set error as a function of total training time, a more meaningful met/Pric.
+  * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The training duration depends on the model parameters.
+  * Hardware specs: [Intel i7 5820k](http://rog.asus.com/realbench/show_comment.php?id=6632).
+
+```{r}
+score_test_set=T  #disable if only interested in training throughput
+
+## Helper function to run H2O Deep Learning with user-given parameters, print the test set error and the training speed
+run <- function(extra_params) {
+  str(extra_params)
+  print("Training.")
+  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, do_classification=T, training_frame=train_hex, destination_key="dlmodel"), extra_params))
+  samples <- (model@model$scoringHistory$"Training Samples")[length(model@model$scoringHistory$"Training Samples")]
+  time <- model@model$run_time/1000
+  print(paste0("training samples: ", samples))
+  print(paste0("training time   : ", time, " seconds"))
+  print(paste0("training speed  : ", samples/time, " samples/second"))
+  
+  if (score_test_set) {
+    print("Scoring on test set.")
+    test_error <- h2o.performance(model, test_hex)@metrics$cm$prediction_error ## Note: This scores full test set (10,000 rows) - can take time!
+    print(paste0("test set error  : ", test_error))
+  } else {
+    test_error <- Inf
+  }
+  h2o.rm("dlmodel")
+  c(paste(names(extra_params), extra_params, sep = "=", collapse=" "), samples, sprintf("%.3f", time), sprintf("%.3f", samples/time), sprintf("%.3f", test_error))
+}
+
+writecsv <- function(results, file) {
+  table <- matrix(unlist(results), ncol = 5, byrow = TRUE)
+  colnames(table) <- c("parameters", "training samples", "training time", "training speed", "test set error")
+  write.csv(table, file.path(workdir,file), col.names = T, row.names=F, quote=T, sep=",")
+}
+```
+
+
+### Default parameters on various network topologies
+As a first test, we vary the network topology, and we also fix a number of training samples, specified by the number of epochs. All other parameters are left at default values.
+```{r}
+EPOCHS=0.1
+
+args <- list(
+  list(hidden=c(64),             epochs=EPOCHS),
+  list(hidden=c(128),            epochs=EPOCHS),
+  list(hidden=c(256),            epochs=EPOCHS),
+  list(hidden=c(512),            epochs=EPOCHS),
+  list(hidden=c(1024),           epochs=EPOCHS),
+  list(hidden=c(64,64),          epochs=EPOCHS),
+  list(hidden=c(128,128),        epochs=EPOCHS),
+  list(hidden=c(256,256),        epochs=EPOCHS),
+  list(hidden=c(512,512),        epochs=EPOCHS),
+  list(hidden=c(1024,1024),      epochs=EPOCHS),
+  list(hidden=c(64,64,64),       epochs=EPOCHS),
+  list(hidden=c(128,128,128),    epochs=EPOCHS),
+  list(hidden=c(256,256,256),    epochs=EPOCHS),
+  list(hidden=c(512,512,512),    epochs=EPOCHS),
+  list(hidden=c(1024,1024,1024), epochs=EPOCHS)
+)
+writecsv(lapply(args, run), "network_topology.csv")
+```
+<div id='plot_network_topology'></div>
+<div id='table_network_topology'></div>
+
+
+
+```{r}
+## Quantify training set scoring overhead
+args <- list(
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=60000, score_duty_cycle=1, score_interval=1),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=60000),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=10000),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=1000),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, score_duty_cycle=0, score_interval=10000)
+)
+writecsv(lapply(args, run), "scoring_overhead.csv")
+```
+<div id='plot_scoring_overhead'></div>
+<div id='table_scoring_overhead'></div>
+
+
+```{r}
+## Adaptive (per-coefficient) learning rate vs manual learning rate and momentum
+args <- list(
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, adaptive_rate=T),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, adaptive_rate=T, rho=0.95, epsilon=1e-6),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, adaptive_rate=F),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, adaptive_rate=F, rate=1e-3, momentum_start=0.5, momentum_ramp=1e5, momentum_stable=0.99)
+)
+writecsv(lapply(args, run), "adaptive_rate.csv")
+```
+<div id='plot_adaptive_rate'></div>
+<div id='table_adaptive_rate'></div>
+
+
+
+
+```{r}
+## Modify duration of a MapReduce step in terms of train_samples_per_iteration
+args <- list(
+  #auto-tuning
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=-2),
+  #lots of comm. overhead 
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=100),  
+  #reasonable comm. overhead
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=1000), 
+  #little comm. overhead
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=6000)  
+)
+writecsv(lapply(args, run), "train_samples_per_iteration.csv")
+```
+<div id='plot_train_samples_per_iteration'></div>
+<div id='table_train_samples_per_iteration'></div>
+
+
+
+```{r}
+## Different activation functions
+args <- list(
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=1000, activation="Rectifier"),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=1000, activation="RectifierWithDropout"),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=1000, activation="Tanh"),
+  list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100, train_samples_per_iteration=1000, activation="TanhWithDropout")
+)
+writecsv(lapply(args, run), "activation_function.csv")
+```
+<div id='plot_activation_function'></div>
+<div id='table_activation_function'></div>
+
+
+
+
+```{r}
+## Large neural network - compare to external H2O Benchmark study (of throughput only - should consider (test set) accuracy as well)
+## c.f. http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/
+score_test_set=F
+args <- list(
+  ## default settings (scores on 10k training rows and full validation frame) and adaptive learning rate overhead (which might pay off)
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", validation_frame=test_hex),                  
+  
+  ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0),
+  
+  ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="RectifierWithDropout", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0)
+)
+writecsv(lapply(args, run), "large_deep_net.csv")
+```
+<div id='plot_large_deep_net'></div>
+<div id='table_large_deep_net'></div>
+
+
+
+
+## Part 2 - What Really Matters: Test Set Error vs Training Time
+
+```{r}
+args <- list(
+  list(),
+  list(hidden=c(512,512), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5)
+)
+writecsv(lapply(args, run), "what_really_matters.csv")
+```
+<div id='plot_what_really_matters'></div>
+<div id='table_what_really_matters'></div>
+
+
+
+
+### TODO: don't count final scoring towards training time, set score_interval high and avoid training set scoring
+### NOTE: score_training_sample might not be enforceable on many nodes

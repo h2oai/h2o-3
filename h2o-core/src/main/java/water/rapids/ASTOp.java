@@ -1329,7 +1329,57 @@ abstract class ASTReducerOp extends ASTOp {
   }
 }
 
-class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(){ return "sum";} @Override ASTOp make() {return new ASTSum();} @Override double op(double d0, double d1) { return d0+d1;}}
+class ASTSum extends ASTReducerOp { 
+  ASTSum() {super(0);} 
+  @Override String opStr(){ return "sum";} 
+  @Override ASTOp make() {return new ASTSum();} 
+  @Override double op(double d0, double d1) { return d0+d1;}
+  @Override void apply(Env env) {
+    double sum=_init;
+    int argcnt = _argcnt;
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) sum = op(sum,env.popDbl());
+      else {
+        Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        sum += _narm 
+          ? new NaRmRedSum().doAll(fr)._d
+          : new     RedSum().doAll(fr)._d;
+      }
+    env.push(new ValNum(sum));
+  }
+
+  private static class RedSum extends MRTask<RedSum> {
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        double sum=0;
+        for (int r = 0; r < rows; r++) sum += C.atd(r);
+        _d = sum;
+        if (Double.isNaN(sum)) break;
+      }
+    }
+    @Override public void reduce( RedSum s ) { _d += s._d; }
+  }
+
+  private static class NaRmRedSum extends MRTask<NaRmRedSum> {
+    double _d;
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        double sum=0;
+        for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
+        _d = sum;
+        if (Double.isNaN(_d)) break;
+      }
+    }
+    @Override public void reduce( NaRmRedSum s ) { _d += s._d; }
+  }
+}
+
 
 class ASTRbind extends ASTUniPrefixOp {
   protected static int argcnt;
