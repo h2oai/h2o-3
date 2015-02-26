@@ -16,4 +16,4 @@ def deeplearning_multi(ip, port):
     hh.show()
 
 if __name__ == '__main__':
-    h2o.run_test(argv, deeplearning_multi)
+    h2o.run_test(sys.argv, deeplearning_multi)
