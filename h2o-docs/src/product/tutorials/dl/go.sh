@@ -42,7 +42,7 @@ EOF
     plot.from(
       plot.remote('/blog/$TARGET/$i')
     ),
-    plot.bounds(600, null)
+    plot.bounds(800, null)
   )(renderPlot('plot_$i'));
 
   plot(
@@ -95,7 +95,7 @@ EOF
     plot.from(
       plot.remote('/blog/$TARGET/$i')
     ),
-    plot.bounds(600, null)
+    plot.bounds(800, null)
   )(renderPlot('plot_$i'));
 
   plot(

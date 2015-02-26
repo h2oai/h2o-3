@@ -2,7 +2,7 @@
 
 This tutorial demonstrates basic performance tuning principles for H2O Deep Learning.
 
-Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. This tutorial does not attempt to explain the various hyper-parameters of H2O Deep Learning. You can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd), however, which will automatically download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
+Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the principles of H2O and H2O Deep Learning. This tutorial does not attempt to explain the various hyper-parameters of H2O Deep Learning. You can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd), however, which will automatically download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
 
 ```{r}
 options(repos=structure(c(CRAN='http://cran.us.r-project.org')))
@@ -208,7 +208,7 @@ writecsv(lapply(args, run), "adaptive_rate.csv")
 
 <div id='plot_adaptive_rate'></div>
 
-It is clear that the fastest option is to run with a manual learning rate without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient has its own momentum history), it is only slightly more computationally expensive. Also, different hyperparameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where backpropagation depends on the activation values).
+It is clear that the fastest option is to run with a manual learning rate and without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient has its own momentum history), it is only slightly more computationally expensive. Also, different hyperparameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where backpropagation depends on the activation values).
 
 Note that the lowest test set error was achieved with default settings (adaptive learning rate), corroborating our approach. For cases where fastest possible model training is required (possibly at the expense of accuracy), manual learning rates without momentum can be a good option, but in general, adaptive learning rates simplify the usage of H2O Deep Learning and make this method accessible to non-experts.
 
@@ -274,11 +274,12 @@ For a direct comparison, we aim to use the same [H2O parameters](http://www.comp
 ```
 
 Notes:
-  *  Unfortunately, there was no attempt made at comparing test set errors in the benchmark study. Throughput alone is not a good measure of model performance, see part 2 below for test set error comparisons and part 3 below for our model with world-record test set accuracy.
+  *  Unfortunately, there was no attempt made at comparing test set errors in the benchmark study. Throughput alone is not a good measure of model performance, see part 2 below for test set error comparisons and our model with world-record test set accuracy on the MNIST dataset.
   * The 10 last hidden layer neurons are probably meant to represent the 10 output neurons (automatically done by H2O if `do_classification` is set), and `_do_classification` was left at `FALSE` by default, leading to a regression model, which is arguably not the best way to do digit classification.
   * We will correct those two minor details to avoid misperceptions, since neither affects training speed.
   * Given our observations above, the scoring overhead and activation function choice has to be considered carefully, especially since the model has over 12 million weights and forward-propagation (scoring) is going to take a significant amount of time even on the validation frame with "only" 10,000 rows.
-  * H2O Deep Learning does online learning (or, mini-batch size of 1), while we assume that the other project used a [mini-batch size of 1000](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/), but this our guess.
+  * H2O Deep Learning currently only does online learning (mini-batch size of 1), while we assume that the other project used a [mini-batch size of 1000](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/).
+  * A large part of the benchmark study was the distributed scalability (strong scaling) of H2O (at least in terms of throughput) which we'll address in part 3, but as noted earlier, almost linear speeds can be achieved as communication overhead is user-tunable.
   
 We first run the same parameters as the benchmark study, and then modify the parameters to reduce the scoring overhead:
 ```{r}
@@ -309,7 +310,7 @@ Observations:
 
 ## Part 2 - What Really Matters: Test Set Error vs Training Time
 
-Now that we know how to effectively run H2O Deep Learning, we are ready to run a few models in an attempt to get hopefully good modeling accuracy. The goal is to find a good model with only 2 to 10 training epochs as quickly as possible, so we limit the parameter space to models that have high throughput. We also add input dropout and some L1 penalty, but those are most likely not significant when training for only 10 epochs, and can possible hurt test set performance as they reduce the effective rate of learning.
+Now that we know how to effectively run H2O Deep Learning, we are ready to run a few models in an attempt to get good generalization and high test set accuracy. The goal is to find a good model with only 2 to 10 training epochs as quickly as possible, so we limit the parameter space to models that have high throughput. We also add input dropout and some L1 penalty, but those are most likely not significant when training for only 10 epochs, and can possible hurt test set performance as they reduce the effective rate of learning.
 
 ```{r}
 EPOCHS=2
@@ -333,14 +334,14 @@ We plot the test set error as a function of training time, and the lower left co
 <div id='table_what_really_matters'></div>
 
 ### Summary from all models built so far
-Here's a plot summarizing all the models we've built so far. Default options and fewer parameters often end up in favorable spots on the lower left corner.
+Here's a plot summarizing all the models we've built so far. We are glad to see that default parameters lead to models that are close to optimal (in the lower left corner). We also note that the deep and large networks from the benchmark study don't seem to offer any observable benefit at least after the amount of learning time that we allowed here. It would be interesting to see how they perform after a very long time of training (volunteers, anyone?).
 
 <div id='plot_all'></div>
 <div id='table_all'></div>
 
 
-### World-record Test Set Error (without Convolutions or Pre-Training)
-With the simple 1-line command in R shown below, we achieve 0.83% test set error, which is the [current world record](http://yann.lecun.com/exdb/mnist/) for models without convolutional layers, data augmentation or unsupervised pre-training. This takes about 10 hours on a 10-node cluster with dual 8-core Xeons. Note that this model achieves 1% test set error in about 2 hours, and 0.9% test set error in about 4 hours, so it's clear that improving the regularization properties of the model can take a long time (and is clearly in the statistical noise domain with only 10k test set points).
+### World-Record Test Set Error (without Convolutions or Pre-Training)
+With the simple 1-line command in R shown below, we achieve 0.83% test set error, which is the [current world record](http://yann.lecun.com/exdb/mnist/) for models without convolutional layers, data augmentation (distortions) or unsupervised pre-training. This took about 10 hours on a 10-node cluster with dual 8-core Xeons. Note that this model achieved 1% test set error in about 2 hours, and 0.9% test set error in about 4 hours, so it's clear that improving the regularization properties of the model can take a long time (and is clearly in the statistical noise domain with only 10k test set points). We are hopeful that with further improved parameters, it will be possible to get to even better accuracies (or faster runtime), and leave this as an exercise for the reader!
 
     #   > record_model <- h2o.deeplearning(x = 1:784, y = 785, do_classification=T, training_frame=train_hex, validation_frame = test_hex,
     #                                      activation = "RectifierWithDropout", hidden = c(1024,1024,2048),
@@ -360,6 +361,14 @@ With the simple 1-line command in R shown below, we achieve 0.83% test set error
     #       8        1    0    1    3   0   4   0    2 960    3 0.01437
     #       9        1    2    0    0   4   3   0    2   0  997 0.01189
     #       Totals 981 1142 1038 1013 977 891 956 1031 964 1007 0.00830
+
+### Higgs Boson and H2O Deep Learning
+We also have highly competitive results for the [Higgs Boson](http://www.slideshare.net/0xdata/h2odeeplearning/32) dataset, for which we compare well to a recent [Nature paper](http://arxiv.org/pdf/1402.4735v2.pdf) that used Deep Learning on GPUs to advance the frontier of particle physics.
+
+###Summary
+H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-dev.
+
+Thank you for your interest! May H2O Deep Learning inspire you to build your own [smart applications](http://apps.h2o.ai)! We welcome your feedback!
 
 ## Part 3 - Multi-Node Benchmarks Coming Soon!
 
