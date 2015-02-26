@@ -262,7 +262,7 @@ As expected, the difference in the speed of the runs above is (for single-node o
 
 ### Different activation functions
 
-The activation function can make a big difference in runtime, as evidenced below. The reason for this is that H2O Deep Learning is optimized to take advantage of sparse activation of the neurons, and the Rectifier activation function (`max(0,x)`) is sparse and leads to less computation (at the expense of some accuracy, for which the speed often more than compensates for). Dropout (default: 0.5, randomly disable half of the hidden neuron activations for each training row) further increases the sparsity and makes training faster, and for noisy high-dimensional data, often also leads to better generalization (lower validation and test set error). Since Dropout is a choice the user must make, our default `Rectifier` activation function seems reasonable, especially since it also leads to the lowest test set error (fastest training progress, and not yet over-fit here).
+The activation function can make a big difference in runtime, as evidenced below. The reason for this is that H2O Deep Learning is optimized to take advantage of sparse activation of the neurons, and the Rectifier activation function (`max(0,x)`) is sparse and leads to less computation (at the expense of some accuracy, for which the speed often more than compensates for). Dropout (default: 0.5, randomly disable half of the hidden neuron activations for each training row) further increases the sparsity and makes training faster, and for noisy high-dimensional data, often also leads to better generalization (lower validation and test set error). Since Dropout is a choice the user should make (at least for now), our default `Rectifier` activation function seems reasonable, especially since it also leads to a low test set error.
 ```{r}
 args <- list(
   list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100,
@@ -343,11 +343,11 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study. Using the same parameters, we measure a training speed of 76 samples per second on a single i7 5820k consumer PC.
-  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 87 samples per second (notably with H2O's mini-batch size of 1).
+  * We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study. Using the same parameters, we measure a training speed of 75 samples per second on a single i7 5820k consumer PC.
+  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 85 samples per second (notably with H2O's mini-batch size of 1).
   * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds around 130 samples per second.
   * When further switching to the `Rectifier` activation function, speeds increase to 1000 samples per second.
-  * We observe training speeds of over **1800 samples per second with H2O Deep Learning on a single node**, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). This is *more than 4x faster on a single node than what the other project achieved when training on 16 Xeon nodes* (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take accuracy into account to be meaningful.
+  * We observe training speeds of **1880 samples per second with H2O Deep Learning on a single node**, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). This is *more than 4.5x faster on a single node than what the other project achieved when training on 16 Xeon nodes* (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take accuracy into account to be meaningful.
   * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/)
   * H2O Deep Learning models (single- and multi-node) can be trained from R, Python, Java, Scala, JavaScript and via the Flow Web UI, as well as via JSON through the REST API. 
 <div id='table_large_deep_net'></div>
@@ -430,7 +430,7 @@ With the simple 1-line command in R shown below, we achieve 0.83% test set error
 We also have highly competitive results for the [Higgs Boson](http://www.slideshare.net/0xdata/h2odeeplearning/32) dataset, for which we compare well to a recent [Nature paper](http://arxiv.org/pdf/1402.4735v2.pdf) that used Deep Learning on GPUs to advance the frontier of particle physics.
 
 ##Summary
-H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-dev.
+H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-dev. For information about performance tuning of H2O Deep Learning, you *really* have to read this entire blog, it's worth it!
 
 Thank you for your interest! May H2O Deep Learning inspire you to build your own [smart applications](http://apps.h2o.ai)! We welcome your feedback!
 
