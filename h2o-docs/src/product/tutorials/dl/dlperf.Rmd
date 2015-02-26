@@ -38,7 +38,7 @@ library(h2o)
 library('stringr')
 
 # Start a single-node instance of H2O using all available processor cores and up to 16GB of memory
-h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
+h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="4g", nthreads=-1)
 ```
 
 First, we set the path to a scratch directory that will contain the downloaded datasets and the CSV files containing the results.
@@ -68,7 +68,10 @@ Notes:
   * We note that H2O Deep Learning uses online learning with stochastic gradient descent. There are *no mini-batches*, every training sample immediately affects the network weights.
   * In part 2, we look at the test set error as a function of total training time, a more meaningful met/Pric.
   * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The training duration depends on the model parameters.
-  * Hardware specs: [Intel i7 5820k](http://rog.asus.com/realbench/show_comment.php?id=6632).
+  <!--* Hardware specs: [Intel i7 5820k](http://rog.asus.com/realbench/show_comment.php?id=6632).-->
+  * Hardware specs: [MacBook Pro Late 2013 2.6GHz](http://support.apple.com/kb/SP690).
+
+
 
 ```{r}
 score_test_set=T  #disable if only interested in training throughput
@@ -202,15 +205,16 @@ writecsv(lapply(args, run), "activation_function.csv")
 ```{r}
 ## Large neural network - compare to external H2O Benchmark study (of throughput only - should consider (test set) accuracy as well)
 ## c.f. http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/
-score_test_set=F
+#score_test_set=F
 args <- list(
-  ## default settings (scores on 10k training rows and full validation frame) and adaptive learning rate overhead (which might pay off)
+  ## parameters used by http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/
+  ## (scores on 10k training rows and full validation frame) and adaptive learning rate
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", validation_frame=test_hex),                  
   
   ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0),
   
-  ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
+  ## Rectifier with Dropout - even faster
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="RectifierWithDropout", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0)
 )
 writecsv(lapply(args, run), "large_deep_net.csv")
@@ -224,17 +228,27 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 ## Part 2 - What Really Matters: Test Set Error vs Training Time
 
 ```{r}
+EPOCHS=10
 args <- list(
-  list(),
-  list(hidden=c(512,512), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5)
+  list(epochs=EPOCHS),
+  list(epochs=EPOCHS, activation="Tanh"),
+  list(epochs=EPOCHS, hidden=c(200,200), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=EPOCHS, hidden=c(100,100,100)),
+  list(epochs=EPOCHS, hidden=c(100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=EPOCHS, hidden=c(100,100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5)
 )
 writecsv(lapply(args, run), "what_really_matters.csv")
 ```
 <div id='plot_what_really_matters'></div>
 <div id='table_what_really_matters'></div>
 
+And here's a plot summarizing all the models we've built so far.
+
+<div id='plot_all'></div>
+<div id='table_all'></div>
 
 
 
-### TODO: don't count final scoring towards training time, set score_interval high and avoid training set scoring
-### NOTE: score_training_sample might not be enforceable on many nodes
+
+<!TODO: don't count final scoring towards training time, set score_interval high and avoid training set scoring-->
+<!NOTE: score_training_sample might not be enforceable on many nodes-->

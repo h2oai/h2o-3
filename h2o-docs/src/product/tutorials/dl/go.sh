@@ -10,7 +10,9 @@ rm -rf dlperf/*json
 rm -rf dlperf/*csv
 rm -f PerformanceH2ODeepLearning.plots
 
-## Performance plots
+##################################
+## Performance Plots
+##################################
 for i in network_topology scoring_overhead adaptive_rate train_samples_per_iteration activation_function large_deep_net
 do
     cp -f /tmp/$i.csv dlperf/
@@ -55,7 +57,16 @@ done
 
 
 
-for i in what_really_matters
+##################################
+## Test Set Error Plots
+##################################
+
+for i in network_topology scoring_overhead adaptive_rate train_samples_per_iteration activation_function large_deep_net what_really_matters 
+do
+    sed '1d' /tmp/$i.csv >> dlperf/all.csv
+done
+
+for i in what_really_matters all
 do
     cp -f /tmp/$i.csv dlperf/
 
