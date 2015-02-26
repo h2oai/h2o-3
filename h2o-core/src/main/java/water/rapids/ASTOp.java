@@ -1302,10 +1302,12 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        assert C.vec().isNumeric();
+        double sum = _d;
         for (int r = 0; r < rows; r++)
-          _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+          sum = _bin.op(sum, C.atd(r));
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( RedOp s ) { _d = _bin.op(_d,s._d); }
@@ -1318,11 +1320,15 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
-        for (int r = 0; r < rows; r++)
-          if (!Double.isNaN(C.atd(r)))
-            _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+        assert C.vec().isNumeric();
+        double sum = _d;
+        for (int r = 0; r < rows; r++) {
+          double d = C.atd(r);
+          if (!Double.isNaN(d))
+            sum = _bin.op(sum, d);
+        }
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
@@ -1342,41 +1348,27 @@ class ASTSum extends ASTReducerOp {
       else {
         Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
         for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
-        sum += _narm 
-          ? new NaRmRedSum().doAll(fr)._d
-          : new     RedSum().doAll(fr)._d;
+        sum += new RedSum(_narm).doAll(fr)._d;
       }
     env.push(new ValNum(sum));
   }
 
   private static class RedSum extends MRTask<RedSum> {
+    final boolean _narm;
     double _d;
+    RedSum( boolean narm ) { _narm = narm; }
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
-        double sum=0;
-        for (int r = 0; r < rows; r++) sum += C.atd(r);
+        assert C.vec().isNumeric();
+        double sum=_d;
+        if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
+        else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        sum += d; }
         _d = sum;
-        if (Double.isNaN(sum)) break;
+        if( Double.isNaN(sum) ) break;
       }
     }
     @Override public void reduce( RedSum s ) { _d += s._d; }
-  }
-
-  private static class NaRmRedSum extends MRTask<NaRmRedSum> {
-    double _d;
-    @Override public void map( Chunk chks[] ) {
-      int rows = chks[0]._len;
-      for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
-        double sum=0;
-        for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
-        _d = sum;
-        if (Double.isNaN(_d)) break;
-      }
-    }
-    @Override public void reduce( NaRmRedSum s ) { _d += s._d; }
   }
 }
 
