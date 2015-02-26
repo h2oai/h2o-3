@@ -15,7 +15,7 @@ For simplicity, we start with some single-node experiments quantifying the raw t
 ### Establish Connection to H2O
 For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). Its numerical performance is very similar to the performance of [h2o](http://github.com/h2oai/h2o). Instructions can be found at [h2o.ai/download](http://h2o.ai/download).
 
-We use nightly build 1072 of h2o-dev, but you can use the latest nightly or latest stable version as well.
+We use nightly build 1072 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well.
 
 ```{r}
 # The following two commands remove any previously installed H2O packages for R.
@@ -68,8 +68,8 @@ Notes:
   * We note that H2O Deep Learning uses online learning with stochastic gradient descent. There are *no mini-batches*, every training sample immediately affects the network weights.
   * In part 2, we look at the test set error as a function of total training time, a more meaningful met/Pric.
   * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The training duration depends on the model parameters.
-  <!--* Hardware specs: [Intel i7 5820k](http://rog.asus.com/realbench/show_comment.php?id=6632).-->
-  * Hardware specs: [MacBook Pro Late 2013 2.6GHz](http://support.apple.com/kb/SP690).
+  * Hardware specs: [Intel i7 5820k @4.3GHz](http://rog.asus.com/realbench/show_comment.php?id=6632)
+  <!--* Hardware specs: [MacBook Pro Late 2013 2.6GHz](http://support.apple.com/kb/SP690).-->
 
 
 
@@ -255,7 +255,7 @@ Here's a plot summarizing all the models we've built so far.
 
 
 ### World-record Test Set Error (without Convolutions or Pre-Training)
-When training for 10 hours on 10 nodes, we achieve 0.83% test set error, which is the current world record for models without convolutional layers, data augmentation or unsupervised pre-training.
+With the simple 1-line command in R shown below, we achieve 0.83% test set error, which is the current world record for models without convolutional layers, data augmentation or unsupervised pre-training. This takes about 10 hours on a 10-node cluster with dual 8-core Xeons. Note that this model achieves 1% test set error in about 2 hours, and 0.9% test set error in about 4 hours, so it's clear that improving the regularization properties of the model can take a long time (and is clearly in the statistical noise domain with only 10k test set points).
 
     #   > record_model <- h2o.deeplearning(x = 1:784, y = 785, do_classification=T, training_frame=train_hex, validation_frame = test_hex,
     #                                      activation = "RectifierWithDropout", hidden = c(1024,1024,2048),
