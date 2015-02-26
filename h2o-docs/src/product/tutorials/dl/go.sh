@@ -31,17 +31,6 @@ do
     }
 EOF
 
-
-  #plot(
-  #  plot.point(
-  #    plot.position('Test Set Error', 'Training Speed'),
-  #    plot.tooltip('Parameters')
-  #  ),
-  #  plot.from(
-  #    plot.remote('/blog/$TARGET/$i')
-  #  )
-  #)(renderPlot('plot_$i'));
-
     cat << EOF >> PerformanceH2ODeepLearning.plots
   plot(
     plot.rect(
@@ -50,7 +39,8 @@ EOF
     ),
     plot.from(
       plot.remote('/blog/$TARGET/$i')
-    )
+    ),
+    plot.bounds(600, null)
   )(renderPlot('plot_$i'));
 
   plot(
@@ -88,12 +78,13 @@ EOF
     cat << EOF >> PerformanceH2ODeepLearning.plots
   plot(
     plot.point(
-      plot.position('Test Set Error', 'Training Time'),
+      plot.position('Training Time', 'Test Set Error'),
       plot.tooltip('Parameters')
     ),
     plot.from(
       plot.remote('/blog/$TARGET/$i')
-    )
+    ),
+    plot.bounds(600, null)
   )(renderPlot('plot_$i'));
 
   plot(

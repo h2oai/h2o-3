@@ -9,7 +9,8 @@ install.packages("rmarkdown")
 
 Please consult the [H2O website](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. This tutorial does not attempt to explain how to launch a multi-node H2O cluster, nor does it explain the various hyper-parameters of H2O Deep Learning.
 
-## Part 1 - Single-node performance
+## Part 1 - Single-node Training Speed
+For simplicity, we start with some single-node experiments quantifying the raw training throughput. Of course, there are many parameters that affect predictive accuracies and modeling performance, but for this first part, we only consider the speed of training.
 
 ### Establish Connection to H2O
 For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). Its numerical performance is very similar to the performance of [h2o](http://github.com/h2oai/h2o). Instructions can be found at [h2o.ai/download](http://h2o.ai/download).
@@ -40,10 +41,9 @@ library('stringr')
 h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
 ```
 
-First, we set some global parameters.
+First, we set the path to a scratch directory that will contain the downloaded datasets and the CSV files containing the results.
 ```{r}
 workdir="/tmp"
-EPOCHS=0.1
 ```
 
 ###Load Benchmark Dataset
@@ -64,10 +64,10 @@ test_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"test.csv.gz"), h
 In this first part of the benchmark study, we will investigate the single-node performance of H2O Deep Learning in terms of training examples per second.
 
 Notes:
-  * We first look at training speed in terms of training samples per second, and plot it against the test set error.
-  * We then look at the test set error as a function of total training time, a more meaningful metric.
+  * We first look at single-node training speed in terms of training samples per second.
+  * We note that H2O Deep Learning uses online learning with stochastic gradient descent. There are *no mini-batches*, every training sample immediately affects the network weights.
+  * In part 2, we look at the test set error as a function of total training time, a more meaningful met/Pric.
   * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The training duration depends on the model parameters.
-  * For simplicity, we start with single-node performance to get a feeling for overall system performance.
   * Hardware specs: [Intel i7 5820k](http://rog.asus.com/realbench/show_comment.php?id=6632).
 
 ```{r}
@@ -77,7 +77,7 @@ score_test_set=T  #disable if only interested in training throughput
 run <- function(extra_params) {
   str(extra_params)
   print("Training.")
-  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, do_classification=T, training_frame=train_hex), extra_params))
+  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, do_classification=T, training_frame=train_hex, destination_key="dlmodel"), extra_params))
   samples <- (model@model$scoringHistory$"Training Samples")[length(model@model$scoringHistory$"Training Samples")]
   time <- model@model$run_time/1000
   print(paste0("training samples: ", samples))
@@ -89,8 +89,9 @@ run <- function(extra_params) {
     test_error <- h2o.performance(model, test_hex)@metrics$cm$prediction_error ## Note: This scores full test set (10,000 rows) - can take time!
     print(paste0("test set error  : ", test_error))
   } else {
-    test_error <- "N/A"
+    test_error <- Inf
   }
+  h2o.rm("dlmodel")
   c(paste(names(extra_params), extra_params, sep = "=", collapse=" "), samples, sprintf("%.3f", time), sprintf("%.3f", samples/time), sprintf("%.3f", test_error))
 }
 
@@ -102,8 +103,11 @@ writecsv <- function(results, file) {
 ```
 
 
-### Test default parameters on various network topologies, for a fixed number of training samples, specified by the number of epochs.
+### Default parameters on various network topologies
+As a first test, we vary the network topology, and we also fix a number of training samples, specified by the number of epochs. All other parameters are left at default values.
 ```{r}
+EPOCHS=0.1
+
 args <- list(
   list(hidden=c(64),             epochs=EPOCHS),
   list(hidden=c(128),            epochs=EPOCHS),
@@ -204,7 +208,10 @@ args <- list(
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", validation_frame=test_hex),                  
   
   ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
-  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0)
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="Tanh", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0),
+  
+  ## optimized for throughput - remove validation frame, reduce training set scoring sample, disable adaptive_rate (seems to help initial convergence)
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, train_samples_per_iteration=1500, activation="RectifierWithDropout", adaptive_rate=F, score_training_samples=100, score_duty_cycle=0)
 )
 writecsv(lapply(args, run), "large_deep_net.csv")
 ```
@@ -214,7 +221,7 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 
 
 
-## PART 2 - what really matters - test set error vs training time
+## Part 2 - What Really Matters: Test Set Error vs Training Time
 
 ```{r}
 args <- list(
