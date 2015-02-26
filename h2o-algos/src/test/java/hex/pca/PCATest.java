@@ -106,6 +106,61 @@ public class PCATest extends TestUtil {
     }
   }
 
+  @Test public void testArrestsScoring() {
+    // Initialize using first k rows of training frame
+    Frame yinit = frame(ard(ard(13.2, 236, 58, 21.2),
+                            ard(10.0, 263, 48, 44.5),
+                            ard(8.1, 294, 80, 31.0),
+                            ard(8.8, 190, 50, 19.5)));
+    double[] stddev = new double[] {202.723056, 27.832264, 6.523048, 2.581365};
+    double[][] eigvec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
+                            ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
+                            ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
+                            ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
+
+    PCA job = null;
+    PCAModel model = null;
+    Frame train = null, score = null, scoreR = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._gamma = 0;
+      parms._transform = DataInfo.TransformType.NONE;
+
+      try {
+        job = new PCA(parms);
+        model = job.trainModel().get();
+        checkStddev(stddev, model._output._std_deviation);
+        checkEigvec(eigvec, model._output._eigenvectors_raw);
+
+        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+        score = model.score(train);
+        Assert.assertEquals(scoreR.numCols(), score.numCols());
+        for(int i = 0; i < scoreR.numCols(); i++)
+          assertVecEquals(scoreR.vec(i), score.vec(i), threshold);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        if (job != null) job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      yinit.delete();
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (scoreR != null) scoreR.delete();
+      if (model != null) {
+        model._parms._loading_key.get().delete();
+        model.delete();
+      }
+    }
+  }
+
   @Test public void testCholeskyRegularization() {
     PCA job = null;
     PCAModel model = null;
@@ -134,7 +189,7 @@ public class PCATest extends TestUtil {
       t.printStackTrace();
       throw new RuntimeException(t);
     } finally {
-      if(train != null) train.delete();
+      if (train != null) train.delete();
       if (model != null) {
         model._parms._loading_key.get().delete();
         model.delete();

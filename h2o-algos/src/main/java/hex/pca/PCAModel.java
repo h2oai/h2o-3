@@ -85,6 +85,12 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   @Override
   protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    throw new RuntimeException("TODO Auto-generated method stub");
+    assert data.length == _output._eigenvectors.getRowDim();
+    for(int i = 0; i < _parms._k; i++) {
+      preds[i] = 0;
+      for (int j = 0; j < data.length; j++)
+        preds[i] += data[j] * (double)_output._eigenvectors.get(j,i);
+    }
+    return preds;
   }
 }
