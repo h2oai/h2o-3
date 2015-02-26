@@ -217,6 +217,9 @@ h2o.table <- function(x, y = NULL) {
   .h2o.nary_frame_op("table", x, y)
 }
 
+setMethod("median", "H2OFrame", function(x, na.rm = TRUE) {
+  .h2o.nary_frame_op("median", x, na.rm)
+})
 
 #' Cut H2O Numeric Data to Factor
 #'

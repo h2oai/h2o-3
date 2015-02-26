@@ -157,6 +157,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
+    putPrefix(new ASTMedian());
 
     // Misc
     putPrefix(new ASTMatch ());
@@ -1648,6 +1649,32 @@ class ASTMin extends ASTReducerOp {
           else min = Math.min(min, v.min());
       }
     env.push(new ValNum(min));
+  }
+}
+
+class ASTMedian extends ASTReducerOp {
+  ASTMedian() { super( 0 ); }
+  @Override String opStr() { return "median"; }
+  @Override ASTOp make() { return new ASTMedian(); }
+  ASTMedian parse_impl(Exec E) { return (ASTMedian)super.parse_impl(E); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
+  @Override void apply(Env env) {
+    Frame fr;
+    try {
+      fr = env.popAry();
+    } catch (Exception e) {
+      throw new IllegalArgumentException("`median` expects a single column from a Frame.");
+    }
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    if (!fr.anyVec().isNumeric())
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    Quantiles q = new Quantiles();
+    Quantiles[] qbins = new Quantiles.BinningTask(q._max_qbins, fr.anyVec().min(), fr.anyVec().max()).doAll(fr.anyVec())._qbins;
+    qbins[0].finishUp(fr.anyVec(), new double[]{0.5}, q._interpolation_type, true);
+    env.push(new ValNum(qbins[0]._pctile[0]));
   }
 }
 
