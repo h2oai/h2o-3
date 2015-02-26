@@ -438,7 +438,7 @@ class RollupStats extends Iced {
           double oldVal = rs._mins[0];
           for (int i = 0; i < Vec.PERCENTILES.length; i++) {
             final double P = Vec.PERCENTILES[i];
-            long pint = (long) (P * rows);
+            long pint = (long) ((P * rows)+0.5);
             if (pint == oldPint) { // can happen if rows < 100
               rs._pctiles[i] = oldVal;
               continue;

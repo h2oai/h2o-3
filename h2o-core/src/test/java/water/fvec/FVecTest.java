@@ -11,11 +11,7 @@ import water.util.ArrayUtils;
 
 
 public class FVecTest extends TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
   static final double EPSILON = 1e-6;
 
   public static  Key makeByteVec(Key k, String... data) {
@@ -221,6 +217,29 @@ public class FVecTest extends TestUtil {
     } finally {
       if( v != null)v.remove();
       if(fr != null)fr.delete();
+    }
+  }
+
+  // The rollups only compute approximate quantiles, not exact.
+  @Test public void test50pct() {
+    Vec vec = null;
+    try {
+      double[] d = new double[]{0.812834256224, 1.56386606237, 3.12702210880, 3.68417563302, 5.51277746586};
+      vec = Vec.makeVec(d,Vec.newKey());
+      double pct[] = vec.pctiles();
+      double eps = (vec.max()-vec.min())/1e-3;
+      Assert.assertEquals(pct[0],d[0],eps); // 0.01
+      Assert.assertEquals(pct[1],d[0],eps); // 0.1
+      Assert.assertEquals(pct[2],d[0],eps); // 0.25
+      Assert.assertEquals(pct[3],d[1],eps); // 1/3
+      Assert.assertEquals(pct[4],d[2],eps); // 0.5
+      Assert.assertEquals(pct[5],d[2],eps); // 2/3
+      Assert.assertEquals(pct[6],d[3],eps); // 0.75
+      Assert.assertEquals(pct[7],d[4],eps); // 0.9
+      Assert.assertEquals(pct[8],d[4],eps); // 0.99
+
+    } finally {
+      if( vec != null ) vec.remove();
     }
   }
 }
