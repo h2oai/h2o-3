@@ -226,29 +226,55 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 
 
 ## Part 2 - What Really Matters: Test Set Error vs Training Time
+### Use above benchmark results to select good candidates for parameters
 
 ```{r}
-EPOCHS=10
+EPOCHS=2
 args <- list(
   list(epochs=EPOCHS),
-  list(epochs=EPOCHS, activation="Tanh"),
-  list(epochs=EPOCHS, hidden=c(200,200), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
-  list(epochs=EPOCHS, hidden=c(100,100,100)),
-  list(epochs=EPOCHS, hidden=c(100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
-  list(epochs=EPOCHS, hidden=c(100,100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5)
+  list(epochs=EPOCHS,   activation="Tanh"),
+  list(epochs=EPOCHS,   hidden=c(200,200), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=EPOCHS,   hidden=c(100,100,100)),
+  list(epochs=EPOCHS,   hidden=c(100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=EPOCHS,   hidden=c(100,100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=5*EPOCHS, hidden=c(200,200), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=5*EPOCHS, hidden=c(100,100,100)),
+  list(epochs=5*EPOCHS, hidden=c(100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=5*EPOCHS, hidden=c(100,100,100,100), activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5)
 )
 writecsv(lapply(args, run), "what_really_matters.csv")
 ```
 <div id='plot_what_really_matters'></div>
 <div id='table_what_really_matters'></div>
 
-And here's a plot summarizing all the models we've built so far.
+### Summary from all models built so far
+Here's a plot summarizing all the models we've built so far.
 
 <div id='plot_all'></div>
 <div id='table_all'></div>
 
 
+### World-record Test Set Error (without Convolutions or Pre-Training)
+When training for 10 hours on 10 nodes, we achieve 0.83% test set error, which is the current world record for models without convolutional layers, data augmentation or unsupervised pre-training.
 
+    #   > record_model <- h2o.deeplearning(x = 1:784, y = 785, do_classification=T, training_frame=train_hex, validation_frame = test_hex,
+    #                                      activation = "RectifierWithDropout", hidden = c(1024,1024,2048),
+    #                                      epochs = 8000, l1 = 1e-5, input_dropout_ratio = 0.2,
+    #                                      train_samples_per_iteration = -1, classification_stop = -1)
+    #   > record_model@model$validMetrics$cm$prediction_error
+    #              
+    #     Act/Pred   0    1    2    3   4   5   6    7   8    9 Error
+    #       0      974    1    1    0   0   0   2    1   1    0 0.00612
+    #       1        0 1135    0    1   0   0   0    0   0    0 0.00088
+    #       2        0    0 1028    0   1   0   0    3   0    0 0.00388
+    #       3        0    0    1 1003   0   0   0    3   2    1 0.00693
+    #       4        0    0    1    0 971   0   4    0   0    6 0.01120
+    #       5        2    0    0    5   0 882   1    1   1    0 0.01121
+    #       6        2    3    0    1   1   2 949    0   0    0 0.00939
+    #       7        1    2    6    0   0   0   0 1019   0    0 0.00875
+    #       8        1    0    1    3   0   4   0    2 960    3 0.01437
+    #       9        1    2    0    0   4   3   0    2   0  997 0.01189
+    #       Totals 981 1142 1038 1013 977 891 956 1031 964 1007 0.00830
 
-<!TODO: don't count final scoring towards training time, set score_interval high and avoid training set scoring-->
-<!NOTE: score_training_sample might not be enforceable on many nodes-->
+<!--TODO: don't count final scoring towards training time, set score_interval high and avoid training set scoring-->
+<!--NOTE: score_training_sample might not be enforceable on many nodes-->
