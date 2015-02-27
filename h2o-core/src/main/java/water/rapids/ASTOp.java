@@ -2693,17 +2693,20 @@ class ASTTable extends ASTUniPrefixOp {
       // choose the right hot loop
       if (_flip) {
         for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
           int val = (int) (-1 * c.at8(i));
           _cts[val]++;
         }
       } else if (_mixed) {
         for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
           int val = (int) (c.at8(i));
           int idx = val < 0 ? -1*val + _piv : val;
           _cts[idx]++;
         }
       } else {
         for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
           int val = (int) (c.at8(i));
           _cts[val]++;
         }
