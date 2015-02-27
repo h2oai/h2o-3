@@ -347,10 +347,10 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * **We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of 78 samples per second on a single i7 5820k consumer PC.
+  * **We cannot reproduce the slow numbers (~10 samples per second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of **78 samples per second** on a single i7 5820k consumer PC.
   * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 89 samples per second (notably with H2O's mini-batch size of 1).
   * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of more than 130 samples per second (albeit at the cost of accuracy).
-  * When further switching to the `Rectifier` activation function, speeds increase to over 240 samples per second (and test set accuracy improves significantly too).
+  * When further switching to the `Rectifier` activation function, speeds increase to over **240 samples per second**. This is more than *4 times faster than the original parameters and results in half the test set error!* Note that we used the `max_w2` parameter, which helps to improve the numerical stability for deep `Rectifier` networks.
   * We observe training speeds of **395 samples per second while obtaining a lower test set error** than the original parameters, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Hence, **H2O Deep Learning is as fast on a single PC as the other method on 16 Xeon nodes** (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take test set accuracy into account to be meaningful.
   * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/).
   * H2O Deep Learning models (single- and multi-node) can be trained from R, Python, Java, Scala, JavaScript and via the Flow Web UI, as well as via JSON through the REST API. 
@@ -367,22 +367,22 @@ args <- list(
   list(epochs=EPOCHS),
   
   list(epochs=EPOCHS, activation="Tanh"),
-  
-  list(epochs=EPOCHS, hidden=c(200,200), 
+
+  list(epochs=EPOCHS, hidden=c(512,512)),
+
+  list(epochs=5*EPOCHS, hidden=c(64,128,128)),
+
+  list(epochs=5*EPOCHS, hidden=c(512,512), 
+       activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+    
+  list(epochs=5*EPOCHS, hidden=c(256,256,256), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
   
-  list(epochs=EPOCHS, hidden=c(200,200,200)),
-  
-  list(epochs=EPOCHS, hidden=c(200,200,200), 
-       activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
-  
-  list(epochs=EPOCHS, hidden=c(200,200,200,200), 
-       activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
+  list(epochs=5*EPOCHS, hidden=c(200,200,200,200), 
+       activation="RectifierWithDropout"),
   
   list(epochs=5*EPOCHS, hidden=c(200,200), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
-  
-  list(epochs=5*EPOCHS, hidden=c(100,100,100)),
   
   list(epochs=5*EPOCHS, hidden=c(100,100,100), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
@@ -395,7 +395,7 @@ writecsv(lapply(args, run), "what_really_matters.csv")
 
 We plot the test set error as a function of training time, and the lower left corner is the sweet spot.
 <div id='plot_what_really_matters'></div>
-We are glad to see that default parameters lead to models that are among the best (in the lower left corner). 
+We are glad to see that default parameters lead to models that are among the best. 
 <div id='table_what_really_matters'></div>
 
 ### Summary from all models built so far
