@@ -306,7 +306,7 @@ For a direct comparison, we aim to use the same [H2O parameters](http://www.comp
 
 Notes:
   *  Unfortunately, there was no attempt made at comparing test set errors in the benchmark study. Throughput alone is not a good measure of model performance, see part 2 below for test set error comparisons and our model with world-record test set accuracy on the MNIST dataset.
-  * It is not clear to us why the last *hidden* layer is specified to have 10 neurons, as the output layer will also have 10 neurons (one per class, automatically done by H2O if `do_classification` is set)
+  * It is not clear to me why the last *hidden* layer was specified to have 10 neurons, as the output layer will also have 10 neurons (one per class, automatically done by H2O if `do_classification` is set). This dimensionality reduction severely limits the predictive accuracy.
   * In the Java code used by the other project `_convert_to_enum` was left at `false` by default, leading to a regression model, which is arguably not the best way to do digit classification, but since that doesn't affect performance much, we will set the corresponding parameter in R `do_classification=T`.
   * The other study has *instrumented* the H2O .jar file to obtain speed measures, which is not necessary (and can lead to misinterpretation), as the logs print out the training speed already (wall clock based and easily verified).
   * Given our observations above, the scoring overhead and activation function choice has to be considered carefully, especially since the model has over 12 million weights and forward-propagation (scoring) is going to take a significant amount of time even on the validation frame with "only" 10,000 rows.
@@ -319,23 +319,23 @@ We first run the same parameters as the benchmark study, and then modify the par
 #score_test_set=F ## uncomment if test set error is not needed
 EPOCHS=1
 args <- list(
-  list(hidden=c(2500,2000,1500,1000,500,10), epochs=EPOCHS, activation="Tanh", 
-       train_samples_per_iteration=1500, validation_frame=test_hex),
-
-  list(hidden=c(2500,2000,1500,1000,500,10), epochs=EPOCHS, activation="Tanh", 
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
+       train_samples_per_iteration=1500, validation_frame=test_hex)
+,
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
        train_samples_per_iteration=1500, 
-       score_training_samples=100, score_duty_cycle=0), 
-  
-  list(hidden=c(2500,2000,1500,1000,500,10), epochs=EPOCHS, activation="Tanh", 
+       score_training_samples=100, score_duty_cycle=0)
+ , 
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
        train_samples_per_iteration=1500, adaptive_rate=F, 
-       score_training_samples=100, score_duty_cycle=0),
-  
-  list(hidden=c(2500,2000,1500,1000,500,10), epochs=EPOCHS, activation="Rectifier",
-       train_samples_per_iteration=1500,
-       score_training_samples=100, score_duty_cycle=0),
-  
-  list(hidden=c(2500,2000,1500,1000,500,10), epochs=EPOCHS, activation="RectifierWithDropout",
-       train_samples_per_iteration=1500, adaptive_rate=F, 
+       score_training_samples=100, score_duty_cycle=0)
+  ,
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Rectifier",
+       train_samples_per_iteration=1500, max_w2=10,
+       score_training_samples=100, score_duty_cycle=0)
+  ,
+  list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="RectifierWithDropout",
+       train_samples_per_iteration=1500, adaptive_rate=F, max_w2=10,
        score_training_samples=100, score_duty_cycle=0)
 )
 writecsv(lapply(args, run), "large_deep_net.csv")
