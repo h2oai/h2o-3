@@ -6,7 +6,7 @@ This effort was in part motivated by a [Deep Learning project that benchmarked a
 Summary of our findings (much more at the end of part 1):
 * We are unable to reproduce their findings (our numbers are 8x to 40x faster, on a single node)
 * The benchmark was only on raw training throughput and didn't consider model accuracy (at all)
-* The parameters for H2O Deep Learning were poorly chosen (more below)
+* We present improved parameter options for higher training speed (more below)
 * We present a single-node model that performs as fast as their 16-node model (and leads to higher accuracy than with their settings)
 
 
