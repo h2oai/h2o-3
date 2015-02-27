@@ -680,17 +680,4 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Generates code which unify preds[1,...NCLASSES] */
   protected void toJavaUnifyPreds(SB bodySb) {
   }
-  /** Fill preds[0] based on already filled and unified preds[1,..NCLASSES]. */
-  protected void toJavaFillPreds0(SB bodySb) {
-    // Pick max index as a prediction
-    if (_output.isClassifier()) {
-      if (_priorClassDist!=null && _modelClassDist!=null) {
-        bodySb.i().p("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      }
-      bodySb.i().p("preds[0] = water.util.ModelUtils.getPrediction(preds,data);").nl();
-    } else {
-      bodySb.i().p("preds[0] = preds[1];").nl();
-    }
-  }
-
 }
