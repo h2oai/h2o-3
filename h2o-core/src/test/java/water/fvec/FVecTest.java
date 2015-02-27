@@ -237,6 +237,14 @@ public class FVecTest extends TestUtil {
       Assert.assertEquals(pct[6],d[3],eps); // 0.75
       Assert.assertEquals(pct[7],d[4],eps); // 0.9
       Assert.assertEquals(pct[8],d[4],eps); // 0.99
+      vec.remove();
+
+      d = new double[]{490,492,494,496,498};
+      vec = Vec.makeVec(d,Vec.newKey());
+      pct = vec.pctiles();
+      eps = (vec.max()-vec.min())/1e-3;
+      System.out.println(java.util.Arrays.toString(pct));
+      Assert.assertEquals(pct[0],d[0],eps); // 0.01
 
     } finally {
       if( vec != null ) vec.remove();

@@ -112,7 +112,7 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
   .cframe.map <- c("key" = "dest")
-  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent)
+  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
   parms$conn <- NULL
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 

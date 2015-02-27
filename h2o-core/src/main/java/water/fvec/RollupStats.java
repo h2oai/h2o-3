@@ -448,7 +448,8 @@ class RollupStats extends Iced {
             // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
             rs._pctiles[i] = base + stride * (j - 1);
             // linear interpolate stride, based on fraction of bin
-            rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
+            if( stride != 1.0 || !rs._isInt )
+              rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
             oldVal = rs._pctiles[i];
           }
           installResponse(nnn,rs);
