@@ -2511,8 +2511,7 @@ class ASTTable extends ASTUniPrefixOp {
     if (two != null)
       if (two.numCols() != 1 || one.numCols() != 1)
         throw new IllegalArgumentException("`table` supports at *most* two vectors");
-    else
-      if (one.numCols() < 1 || one.numCols() > 2 )
+      else if (one.numCols() < 1 || one.numCols() > 2)
         throw new IllegalArgumentException("`table` supports at *most* two vectors and at least one vector.");
 
     Frame fr;
@@ -2522,48 +2521,135 @@ class ASTTable extends ASTUniPrefixOp {
     int ncol;
     if ((ncol = fr.vecs().length) > 2)
       throw new IllegalArgumentException("table does not apply to more than two cols.");
-    for (int i = 0; i < ncol; i++) if (!fr.vecs()[i].isInt())
-      throw new IllegalArgumentException("table only applies to integer vectors.");
+    for (int i = 0; i < ncol; i++)
+      if (!fr.vecs()[i].isInt())
+        throw new IllegalArgumentException("table only applies to integer vectors.");
     String[][] domains = new String[ncol][];  // the domain names to display as row and col names
     // if vec does not have original domain, use levels returned by CollectDomain
-    final long[][] levels = new long[ncol][];
-    for (int i = 0; i < ncol; i++) {
-      Vec v = fr.vecs()[i];
-      levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
-      domains[i] = v.domain();
-    }
-    final long[][] counts = new Tabularize(levels).doAll(fr)._counts;
-    // Build output vecs
-    Vec dataLayoutVec = Vec.makeCon(0, levels[0].length);
-    Vec[] vecs = new Vec[counts.length+1];
-    String[] colnames = new String[counts.length+1];
+    long[][] levels = new long[ncol][];
+    long[][] counts;
+    Vec dataLayoutVec;
+    Frame fr2;
 
-    (vecs[0] = new MRTask() {
-      @Override public void map(Chunk cs, NewChunk oc) {
-        for (int i = 0; i < cs._len; ++i) {
-          oc.addNum((double) levels[0][(int) (i + cs.start())]);
+    final int min = (int)fr.anyVec().min();
+    final int max = (int)fr.anyVec().max();
+
+    // optimized path for single column ... single pass, count uniques
+
+    if (ncol == 1) {
+
+      // all pos
+      if (min >= 0) {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max,false,false,0).doAll(fr.anyVec());
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+        String[] colnames = new String[]{"row.names", "Count"};
+        String[][] domain = new String[2][];
+        domain[0] = fr.anyVec().domain();
+        domain[1] = null;
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+
+      // all neg  -- flip the sign and count...
+      } else if (min <= 0 && max <= 0) {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(-1*min,true,false,0).doAll(fr.anyVec());
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+        String[] colnames = new String[]{"row.names", "Count"};
+        String[][] domain = new String[2][];
+        domain[0] = fr.anyVec().domain();  // should always be null for all neg values!
+        domain[1] = null;
+        final int flip = domain[0] == null ? -1 : 1; // flip the idx from pos to neg (if no domain)
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx * flip);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+
+      // mixed
+      } else {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max+-1*min,false,true,max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+        String[] colnames = new String[]{"row.names", "Count"};
+        String[][] domain = new String[2][];
+        domain[0] = fr.anyVec().domain(); // should always be null for all neg values!
+        domain[1] = null;
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx > max ? (idx -max) * -1 : idx);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+      }
+
+    } else {
+
+      for (int i = 0; i < ncol; i++) {
+        Vec v = fr.vecs()[i];
+        levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
+        domains[i] = v.domain();
+      }
+
+      counts = new Tabularize(levels).doAll(fr)._counts;
+
+      // Build output vecs
+      dataLayoutVec = Vec.makeCon(0, levels[0].length);
+      Vec[] vecs = new Vec[counts.length + 1];
+      String[] colnames = new String[counts.length + 1];
+
+      final long[][] lvls = levels;
+      final long[][] cnts = counts;
+      (vecs[0] = new MRTask() {
+        @Override
+        public void map(Chunk cs, NewChunk oc) {
+          for (int i = 0; i < cs._len; ++i) {
+            oc.addNum((double) lvls[0][(int) (i + cs.start())]);
+          }
+        }
+      }.doAll(1, dataLayoutVec).outputFrame(null, null).anyVec()).setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
+      colnames[0] = "row.names";
+      int level1 = 0;
+      for (; level1 < counts.length; ) {
+        final int lvl = ++level1;
+        vecs[lvl] = new MRTask() {
+          @Override
+          public void map(Chunk cs, NewChunk oc) {
+            for (int i = 0; i < cs._len; ++i)
+              oc.addNum((double) cnts[lvl - 1][(int) (i + cs.start())]);
+          }
+        }.doAll(1, dataLayoutVec).outputFrame(null, null).anyVec();
+
+        if (ncol > 1) {
+          colnames[level1] = domains[1] == null ? Long.toString(levels[1][level1 - 1]) : domains[1][(int) (levels[1][level1-1])];
         }
       }
-    }.doAll(1, dataLayoutVec).outputFrame(null,null).anyVec()).setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
-    colnames[0] = "row.names";
-    if (ncol==1) colnames[1] = "Count";
-    int level1=0;
-    for (; level1 < counts.length;) {
-      final int lvl = ++level1;
-      vecs[lvl] = new MRTask() {
-        @Override public void map(Chunk cs, NewChunk oc) {
-          for (int i = 0; i < cs._len; ++i)
-            oc.addNum((double) counts[lvl-1][(int)(i + cs.start())]);
-        }
-      }.doAll(1, dataLayoutVec).outputFrame(null,null).anyVec();
-
-      if (ncol>1) {
-        colnames[level1] = domains[1]==null? Long.toString(levels[1][level1-1]) : domains[1][(int)(levels[1][level1])];
-      }
+      fr2 = new Frame(colnames, vecs);
     }
     Keyed.remove(dataLayoutVec._key);
-
-    Frame fr2 = new Frame(colnames, vecs);
     env.pushAry(fr2);
   }
 
@@ -2592,6 +2678,38 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     @Override public void reduce(Tabularize that) { ArrayUtils.add(_counts, that._counts); }
+  }
+
+  // Fast path for single positive column of ints... count them up and index them with a single long[]
+  private static class UniqueColumnCountTask extends MRTask<UniqueColumnCountTask> {
+    long[] _cts;
+    final int _max;
+    final boolean _flip;
+    final boolean _mixed;
+    final int _piv;
+    public UniqueColumnCountTask(int max, boolean flip, boolean mixed, int piv) { _max = max; _flip = flip; _mixed = mixed; _piv = piv; }
+    @Override public void map( Chunk c ) {
+      _cts = new long[_max+1];
+      // choose the right hot loop
+      if (_flip) {
+        for (int i = 0; i < c._len; ++i) {
+          int val = (int) (-1 * c.at8(i));
+          _cts[val]++;
+        }
+      } else if (_mixed) {
+        for (int i = 0; i < c._len; ++i) {
+          int val = (int) (c.at8(i));
+          int idx = val < 0 ? -1*val + _piv : val;
+          _cts[idx]++;
+        }
+      } else {
+        for (int i = 0; i < c._len; ++i) {
+          int val = (int) (c.at8(i));
+          _cts[val]++;
+        }
+      }
+    }
+    @Override public void reduce(UniqueColumnCountTask t) { ArrayUtils.add(_cts, t._cts); }
   }
 }
 
