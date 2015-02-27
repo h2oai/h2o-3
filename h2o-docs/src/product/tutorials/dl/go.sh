@@ -66,6 +66,8 @@ do
     sed '1d' /tmp/$i.csv >> dlperf/all.csv
 done
 
+cp -f dlperf/all.csv /tmp/
+
 for i in what_really_matters all
 do
     cp -f /tmp/$i.csv dlperf/
