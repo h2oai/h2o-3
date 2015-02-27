@@ -3,30 +3,93 @@ import re, random, math
 from h2o_test import check_sandbox_for_errors, dump_json, verboseprint
 import h2o_nodes
 
+# recursive walk an object check that it has valid numbers only (no "" or nan or inf
+def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
+    """Represent instance of a class as JSON.
+    Arguments:
+    obj -- any object
+    Return:
+    String that represent JSON-encoded object.
+    """
+    def serialize(obj, hierarchy="", curr_depth=0):
+        """Recursively walk object's hierarchy. Limit to max_depth"""
+        if curr_depth>max_depth:
+            return
+
+        if isinstance(obj, (bool, int, long, float, basestring)):
+            try:
+                number = float(obj)
+            except:
+                raise Exception("%s %s is not a valid float" % (hierarchy, obj))
+            if math.isnan(number):
+                raise Exception("%s %s is a NaN" % (hierarchy, obj))
+            if math.isinf(number):
+                raise Exception("%s %s is a Inf" % (hierarchy, obj))
+            print "Yay!", hierarchy, number
+            return number
+
+        elif isinstance(obj, dict):
+            obj = obj.copy()
+            for key in obj:
+                obj[key] = serialize(obj[key], hierarchy + ".%" % key, curr_depth+1)
+            return obj
+
+        elif isinstance(obj, (list, tuple)):
+            return [serialize(item, hierarchy + "[%s]" % i, curr_depth+1) for (i, item) in enumerate(obj)]
+
+        elif hasattr(obj, '__dict__'):
+            return serialize(obj.__dict__, hierarchy, curr_depth+1)
+
+        else:
+            return repr(obj) # Don't know how to handle, convert to string
+
+    return (serialize(obj, hierarchy, curr_depth+1))
+
+
 #************************************************************88
-def simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
-    prettyPrint=False, noPrint=False, maxExpectedIterations=None, doNormalized=False):
+
+# where do we get the CM?
+def simpleCheckGLM(self, model, parameters, 
+    labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
+    prettyPrint=False, noPrint=False, 
+    maxExpectedIterations=None, doNormalized=False):
 
     warnings = ''
     rank = model.rank
     binomial = model.binomial
     residual_deviance = model.residual_deviance
+
     threshold = model.threshold
+    check_obj_has_good_numbers(threshold, 'threshold')
+
     auc = model.auc
+    check_obj_has_good_numbers(auc, 'model.auc')
+
     best_lambda_idx = model.best_lambda_idx
     model_category = model.model_category
     name = model.name
     residual_degrees_of_freedom = model.residual_degrees_of_freedom
+
+    # is this no longer used?
     coefficients_magnitude = model.coefficients_magnitude
+
     null_deviance = model.null_deviance
+    check_obj_has_good_numbers(null_deviance, 'model.null_deviance')
+
     null_degrees_of_freedom = model.null_degrees_of_freedom
+    check_obj_has_good_numbers(null_degrees_of_freedom, 'model.null_degrees_of_freedom')
+
     domains = model.domains
+
     aic = model.aic
+    check_obj_has_good_numbers(aic, 'model.aic')
+
     names = model.names
 
     coeffs_names = model.coefficients_table.data[0]
 
     # these are returned as quoted strings. Turn them into numbers
+    check_obj_has_good_numbers(model.coefficients_table.data[1], 'model.coeffs')
     coeffs = map(float, model.coefficients_table.data[1])
 
     intercept = coeffs[-1] 
