@@ -25,37 +25,51 @@ public class PCATest extends TestUtil {
       Assert.assertEquals(expected[i], actual[i], threshold);
   }
 
-  public void checkEigvec(double[][] expected, double[][] actual) {
-    checkEigvec(expected, actual, TOLERANCE);
+  public boolean[] checkEigvec(double[][] expected, double[][] actual) {
+    return checkEigvec(expected, actual, TOLERANCE);
   }
-  public void checkEigvec(double[][] expected, double[][] actual, double threshold) {
+  public boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
     int nfeat = actual.length;
     int ncomp = actual[0].length;
+    boolean[] flipped = new boolean[ncomp];
+
     for(int j = 0; j < ncomp; j++) {
-      boolean flipped = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        if(flipped)
-          Assert.assertEquals(expected[i][j], -actual[i][j], threshold);
-        else
-          Assert.assertEquals(expected[i][j], actual[i][j], threshold);
+        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
+    return flipped;
   }
 
-  public void checkProjection(Frame expected, Frame actual, double threshold) {
+  public boolean[] checkProjection(Frame expected, Frame actual, double threshold) {
     assert expected.numCols() == actual.numCols();
-    for(int j = 0; j < expected.numCols(); j++) {
+    int ncomp = expected.numCols();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      flipped[j] = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
+    }
+    return checkProjection(expected, actual, threshold, flipped);
+  }
+
+  public boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
+    assert expected.numCols() == actual.numCols();
+    assert expected.numCols() == flipped.length;
+    int nfeat = (int) expected.numRows();
+    int ncomp = expected.numCols();
+
+    for(int j = 0; j < ncomp; j++) {
       Vec vexp = expected.vec(j);
       Vec vact = actual.vec(j);
       Assert.assertEquals(vexp.length(), vact.length());
-      boolean flipped = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
-      for (int i = 0; i < vexp.length(); i++) {
-        if(flipped)
-          Assert.assertEquals(vexp.at8(i), -vact.at8(i), threshold);
-        else
-          Assert.assertEquals(vexp.at8(i), vact.at8(i), threshold);
+      for (int i = 0; i < nfeat; i++) {
+        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
       }
     }
+    return flipped;
   }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
@@ -158,11 +172,11 @@ public class PCATest extends TestUtil {
         job = new PCA(parms);
         model = job.trainModel().get();
         checkStddev(stddev, model._output._std_deviation, 1e-5);
-        checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
+        boolean[] flippedEig = checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
 
-        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
         score = model.score(train);
-        checkProjection(scoreR, score, TOLERANCE);
+        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+        checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
