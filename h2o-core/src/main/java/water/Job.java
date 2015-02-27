@@ -14,6 +14,7 @@ import java.util.Arrays;
  *  <p>
  *  Jobs are {@link Keyed}, because they need to Key to control e.g. atomic updates.
  *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
+ *  NOTE: the Job class is parameterized on the type of its _dest field.
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
@@ -56,7 +57,7 @@ public class Job<T extends Keyed> extends Keyed {
   public final Key<T> dest() { return _dest; }
 
   /** User description */
-  public final String _description;
+  public String _description;
   /** Job start_time using Sys.CTM */
   public long _start_time;     // Job started
   /** Job end_time using Sys.CTM, or 0 if not ended */

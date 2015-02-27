@@ -277,6 +277,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  @return True if the Value's POJO is a {@link Job} subtype. */
   public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
 
+  public Class<? extends Freezable> theFreezableClass() { return TypeMap.theFreezable(this._type).getClass(); }
+
   // --------------------------------------------------------------------------
 
   /** Construct a Value from all parts; not needed for most uses.  This special
