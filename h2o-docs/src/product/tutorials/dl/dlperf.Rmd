@@ -1,8 +1,10 @@
 ## Introduction
 
-This tutorial demonstrates basic performance tuning principles for H2O Deep Learning.
+This document gives guidelines for performance tuning of H2O Deep Learning, both in terms of speed and accuracy. It is intended for existing users of H2O Deep Learning (which is easy to [change](http://h2o.ai/download) if you're not), as it assumes some familiarity with the parameters and use cases.
 
-Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the principles of H2O and H2O Deep Learning. This tutorial does not attempt to explain the various hyper-parameters of H2O Deep Learning. You can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd), however, which will automatically download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
+Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the ideas and use cases for H2O and H2O Deep Learning in particular. This tutorial does not attempt to explain the many potential hyper-parameters of H2O Deep Learning.
+
+To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
 
 ```{r}
 options(repos=structure(c(CRAN='http://cran.us.r-project.org')))
@@ -10,15 +12,15 @@ install.packages("rmarkdown")
 ```
 
 ### Distributed Benchmarking - Coming Soon
-As many of you might know, distributed benchmarking has its own issues and complexity. I've burned many millions of core hours on the world's fastest supercomputers, so I have a good sense of what it takes to get code to scale. Network latencies, bandwidths and model parameters greatly affect the performance on distributed systems. This benchmark script can seamlessly run on a large multi-node H2O cluster (where some parameters would benefit from some changes), and the scalability of H2O Deep Learning can be fully tuned from close-to-linear speedup with very little communication to totally communication-dominated regimes. The current implementation automatically attempts to balance computation and communication with dynamic auto-tuning during runtime. Due to the complexity involved, we refer to a later blog on distributed benchmarking of H2O Deep Learning, so please stay tuned for that.
+As many of you might know, distributed benchmarking has its own issues and complexity. I've burned many millions of core hours on the world's fastest supercomputers over the last decade, so I have a good sense of what it takes to get code to scale. Interconnect performance, load balancing and algorithmic choices greatly affect the scalability of large distributed systems. This benchmark script can seamlessly run on a large multi-node H2O cluster (where some parameters would benefit from some changes), and the scalability of H2O Deep Learning can be fully tuned from close-to-linear speedup with very little communication to totally communication-dominated regimes. The current implementation automatically attempts to balance computation and communication with dynamic auto-tuning during runtime. Due to the complexity involved, we refer to a later blog on distributed benchmarking of H2O Deep Learning, so please stay tuned for that.
 
 ## Part 1 - Single-Node Training Speed
-For simplicity, we start with some single-node experiments quantifying the raw training speed. Of course, many of the parameters we'll change affect the predictive accuracy of a model, but for this first part, and to get an idea of how H2O Deep Learning works, we only look the speed of training (training samples per time).
+For simplicity, we start with some single-node experiments quantifying the raw training speed. Of course, many of the parameters we'll change affect the predictive accuracy of a model, but for this first part, and to get an idea of how H2O Deep Learning works, we only look at the raw training speed (number of processed training samples per second).
 
 ### Establish Connection to H2O
-For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). Its numerical performance is very similar to the performance of [h2o](http://github.com/h2oai/h2o). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
+For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). The numerical performance of H2O Deep Learning in h2o-dev is very similar to the performance of its equivalent in [h2o](http://github.com/h2oai/h2o). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
 
-We use nightly build 1072 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well.
+We use nightly build 1072 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
 
 The following two commands remove any previously installed H2O packages for R.
 ```{r}
@@ -56,7 +58,7 @@ workdir="/tmp"
 
 ###Load Benchmark Dataset into H2O's Memory
 
-Next, we download the well-known [MNIST](http://yann.lecun.com/exdb/mnist/) dataset of hand-written digits, where each row contains the 28^2=784 gray-scale pixel values from 0 to 255 of digitized digits (last column contains labels from 0 to 9). The training and testing datasets are also available at [H2O Github](https://github.com/h2oai/h2o/tree/master/smalldata/mnist). The training dataset has 60,000 digits/rows/points, while the validation/test dataset has 10,000 rows.
+Next, we download the well-known [MNIST](http://yann.lecun.com/exdb/mnist/) dataset of hand-written digits, where each row contains the 28^2=784 gray-scale pixel values from 0 to 255 of digitized digits (last column contains labels from 0 to 9). The training and testing datasets are also available at [H2O Github](https://github.com/h2oai/h2o/tree/master/smalldata/mnist). The training dataset has 60,000 rows and the test set has 10,000 rows.
 
 We are well aware that this is small data for today's standards, but since H2O Deep Learning is a fully distributed streaming algorithm that processes point-by-point, its performance in terms of throughput will remain similar for much larger datasets as each processing core streams through training samples (i.e., image, data point, row) one at a time. The maximum dataset size that can be handled is given by total aggregate amount of memory of all nodes and the compression ratio of the dataset (H2O does lossless compression).
         
@@ -314,26 +316,26 @@ Notes:
   * A large part of the benchmark study was the distributed scalability (strong scaling) of H2O (at least in terms of throughput) which we'll address in part 3, but as noted earlier, almost linear speedups can be achieved when adding compute nodes as the communication overhead is fully user-controllable.
   * For our single-node comparison (`NODES=1`), the parameter `replicate_training_data` has no effect, so we can leave it at its default value (`TRUE`).
   
-We first run the same parameters as the benchmark study, and then modify the parameters to reduce the scoring overhead:
+We first run with the same parameters as the benchmark study, and then modify the parameters to improve the trainings speed successively.
 ```{r}
 #score_test_set=F ## uncomment if test set error is not needed
 EPOCHS=1
 args <- list(
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
-       train_samples_per_iteration=1500, validation_frame=test_hex)
-,
+       train_samples_per_iteration=1500, validation_frame=test_hex),
+
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
        train_samples_per_iteration=1500, 
-       score_training_samples=100, score_duty_cycle=0)
- , 
+       score_training_samples=100, score_duty_cycle=0), 
+  
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Tanh", 
        train_samples_per_iteration=1500, adaptive_rate=F, 
-       score_training_samples=100, score_duty_cycle=0)
-  ,
+       score_training_samples=100, score_duty_cycle=0),
+  
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="Rectifier",
        train_samples_per_iteration=1500, max_w2=10,
-       score_training_samples=100, score_duty_cycle=0)
-  ,
+       score_training_samples=100, score_duty_cycle=0),
+  
   list(hidden=c(2500,2000,1500,1000,500), epochs=EPOCHS, activation="RectifierWithDropout",
        train_samples_per_iteration=1500, adaptive_rate=F, max_w2=10,
        score_training_samples=100, score_duty_cycle=0)
@@ -343,11 +345,11 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study. Using the same parameters, we measure a training speed of 75 samples per second on a single i7 5820k consumer PC.
-  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 85 samples per second (notably with H2O's mini-batch size of 1).
-  * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds around 130 samples per second.
-  * When further switching to the `Rectifier` activation function, speeds increase to 1000 samples per second.
-  * We observe training speeds of **1880 samples per second with H2O Deep Learning on a single node**, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). This is *more than 4.5x faster on a single node than what the other project achieved when training on 16 Xeon nodes* (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take accuracy into account to be meaningful.
+  * We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study. Using the same parameters, we measure a training speed of 78 samples per second on a single i7 5820k consumer PC.
+  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 89 samples per second (notably with H2O's mini-batch size of 1).
+  * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of more than 130 samples per second (albeit at the cost of accuracy).
+  * When further switching to the `Rectifier` activation function, speeds increase to over 240 samples per second (and test set accuracy improves significantly too).
+  * We observe training speeds of **395 samples per second with H2O Deep Learning on a single node**, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Note that *H2O Deep Learning is as fast on a single node than what the other project achieved when training on 16 Xeon nodes* (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take accuracy into account to be meaningful.
   * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/)
   * H2O Deep Learning models (single- and multi-node) can be trained from R, Python, Java, Scala, JavaScript and via the Flow Web UI, as well as via JSON through the REST API. 
 <div id='table_large_deep_net'></div>
@@ -355,7 +357,7 @@ Observations:
 
 ## Part 2 - What Really Matters: Test Set Error vs Training Time
 
-Now that we know how to effectively run H2O Deep Learning, we are ready to run a few models in an attempt to get good generalization and high test set accuracy. The goal is to find a model with only 2 to 10 training epochs as quickly as possible, so we limit the parameter space to models that have high throughput. We also add input dropout and some L1 penalty, but those are most likely not significant when training for only 10 epochs, and can possible hurt test set performance as they reduce the effective rate of learning.
+Now that we know how to effectively run H2O Deep Learning, we are ready to train a few models in an attempt to get good generalization performance (low test set error), which is what ultimately matters for useful Deep Learning models. Our goal is to find good models that can be trained in less than one minute, so we limit the parameter space to models that we expect to have high throughput. This is the point where some hyper-parameter search would be highly beneficial, but for simplicity, we refer to [our tutorial on hyper-parameter search](http://learn.h2o.ai/content/hands-on_training/deep_learning.html). We also add some new features such as input dropout and L1 regularization, but those are most likely to actually hurt test set performance for such short training periods, as the models barely start fitting the training data, and won't be in danger of overfitting yet. This sounds like a good topic for a future blog post...
 
 ```{r}
 EPOCHS=2
@@ -391,10 +393,11 @@ writecsv(lapply(args, run), "what_really_matters.csv")
 
 We plot the test set error as a function of training time, and the lower left corner is the sweet spot.
 <div id='plot_what_really_matters'></div>
+We are glad to see that default parameters lead to models that are among the best (in the lower left corner). 
 <div id='table_what_really_matters'></div>
 
 ### Summary from all models built so far
-Here's a plot summarizing all the models we've built so far. We are glad to see that default parameters lead to models that are close to optimal (in the lower left corner). We also note that the deep and large networks from the benchmark study don't seem to offer any observable benefit at least after the amount of learning time that we allowed here. It would be interesting to see how they perform after a very long time of training (volunteers, anyone?).
+Here's a plot summarizing all the models we've built so far. The deep and large networks from the benchmark study don't seem to offer any observable benefit at least after the relatively short amount of training (1 epoch). It would be interesting to see how they perform with much longer training (volunteers, anyone?).
 
 <div id='plot_all'></div>
 <div id='table_all'></div>
