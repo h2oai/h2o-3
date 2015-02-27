@@ -80,7 +80,8 @@ class OutputObj(AttrDict):
                         if '__meta' in v2:
                             v2 = copy(v)
                             del v2['__meta']
-                        print self.name, k, dump_json(v2)
+                        # print self.name, k, dump_json(v2)
+                        print self.name, k, v2
 
     # these might be useful
     def rec_getattr(self, attr):
