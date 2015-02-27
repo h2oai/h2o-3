@@ -136,7 +136,7 @@ As a first study, we vary the network topology, and we also fix a number of trai
 The number of columns of the dataset (all numerical) translates directly into the size of the first layer of neurons (input layer), and hence significantly affects the size of the model. The number of output neurons is 10, one for each class (digit) probability. For the MNIST dataset, all Deep Learning models below will have 717 input neurons, as the other 67 pixel values are constant (white background) and thus ignored. The size of the model is given by the number of connections between the fully connected input+hidden+output neuron layers (and their bias values), and grows as the sum of the product of the number of connected neurons (~quadratically). Since training involves reading and updating all the model coefficients (weights and biases), the model complexity is linear in the size of the model, up to memory hierarchy effects in the x86 hardware. The speed of the memory subsystem (both in terms of latency and bandwidth) has a direct impact on training speed.
 
 ```{r}
-EPOCHS=0.1 #increase if you have the patience (or run multi-node), shouldn't matter much for single-node
+EPOCHS=.1 #increase if you have the patience (or run multi-node), shouldn't matter much for single-node
 
 args <- list(
   list(hidden=c(64),             epochs=EPOCHS),
@@ -161,17 +161,17 @@ We can plot the training speed (x-axis, more is faster) for the runs above, in t
 
 <div id='plot_network_topology'></div>
 
-As expected, smaller and shallower networks run faster, and larger, deeper networks take more time. An interesting exception is the smallest network (717x64x10 neurons), which has only `717*64 + 64*10 + 64 + 10 = 46602` model parameters (plus adaptive learning rate overhead of a factor of 2), and some overhead (not clear whether it's hardware or software, need to look into it) prevents this from running faster. If you are interested, you can confirm the network topology and model size (among other useful things) by inspecting the logs (available via the Flow GUI on [localhost:54321](http://localhost:54321)):
+As expected, smaller and shallower networks run faster, and larger, deeper networks take more time. An interesting exception is the smallest network (717->64->10 neurons), which has only `717*64 + 64*10 + 64 + 10 = 46602` model parameters (plus adaptive learning rate overhead of a factor of 2), but something prevents this from running faster (unclear, need to look into it). You can confirm the network topology and model size (among other useful things) by inspecting the logs (available via the Flow GUI on [localhost:54321](http://localhost:54321)), and the output will look similar to this:
 
 ```{r}
-# INFO: Number of model parameters (weights/biases): 46,602
+# Number of model parameters (weights/biases): 46,602
 # ...
-# INFO: Number of hidden layers is 1 
-# INFO: Status of Neuron Layers:
-# INFO:  # Units      Type Dropout     L1     L2   Rate (Mean,RMS)  Weight (Mean,RMS)  Bias (Mean,RMS)
-# INFO:  1   717     Input  0.00 %                                                                              
-# INFO:  2    64 Rectifier  0.00 % 0.0000 0.0000  (0.0000, 0.0000)  (0.0000, 0.0000)  (0.0000, 0.0000)
-# INFO:  3    10   Softmax         0.0000 0.0000  (0.0000, 0.0000)  (0.0000, 0.0000)  (0.0000, 0.0000)
+# Number of hidden layers is 1
+# Status of Neuron Layers:
+# # Units      Type Dropout     L1     L2   Rate (Mean,RMS)  Weight (Mean,RMS)  Bias (Mean,RMS)
+# 1   717     Input  0.00 %                                                                              
+# 2    64 Rectifier  0.00 % 0.0000 0.0000  (0.0000, 0.0000)  (0.0000, 0.0000)  (0.0000, 0.0000)
+# 3    10   Softmax         0.0000 0.0000  (0.0000, 0.0000)  (0.0000, 0.0000)  (0.0000, 0.0000)
 ```
 For your convenience, here's the raw data from the CSV file `network_topology.csv` in directory `work_dir`:
 <div id='table_network_topology'></div>
@@ -205,7 +205,7 @@ writecsv(lapply(args, run), "scoring_overhead.csv")
 
 <div id='plot_scoring_overhead'></div>
 
-As you can see, the overhead for scoring the entire training dataset at every opportunity (after each MapReduce pass, more on this below) can be significant (about half the cost of training one full epoch!). The default option (first run) with a specified (reasonably sized) validation dataset is a good compromise, and it's further possible to reduce scoring to a minimum. Test set classification errors are computed after training is finished, and are expected to be similar here (same model parameters) up to noise due to different initial conditions and (intentional) multi-threading race conditions (see Hogwild! reference above).
+As you can see, the overhead for scoring the entire training dataset at every opportunity (after each MapReduce pass, more on this below) can be significant (it's the same as forward propagation!). The default option (first run) with a specified (reasonably sized) validation dataset is a good compromise, and it's further possible to reduce scoring to a minimum. Test set classification errors are computed after training is finished, and are expected to be similar here (same model parameters) up to noise due to different initial conditions and (intentional) multi-threading race conditions (see Hogwild! reference above).
 
 <div id='table_scoring_overhead'></div>
 
@@ -233,16 +233,16 @@ writecsv(lapply(args, run), "adaptive_rate.csv")
 
 <div id='plot_adaptive_rate'></div>
 
-It is clear that the fastest option is to run with a manual learning rate and without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient has its own momentum history), it is only slightly more computationally expensive. Also, different hyper-parameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where back-propagation depends on the activation values).
+It is clear that the fastest option is to run with a manual learning rate and without momentum (default: 0), as this reduces the memory and computational overhead to a minimum. Enabling the adaptive learning rate is roughly equivalent to turning on momentum training (as each model coefficient keeps track of its history), it is only slightly more computationally expensive (it uses an [approximate square-root function](https://github.com/h2oai/h2o-dev/blob/master/h2o-core/src/main/java/water/util/MathUtils.java) that only costs a few clock cycles). Also, different hyper-parameters for adaptive learning rate can affect the training speed (at least for Rectifier activation functions, where back-propagation depends on the activation values).
 
-Note that the lowest test set error was achieved with default settings (adaptive learning rate), corroborating our approach. For cases where fastest possible model training is required (possibly at the expense of accuracy), manual learning rates without momentum can be a good option, but in general, adaptive learning rates simplify the usage of H2O Deep Learning and make this method accessible to non-experts.
+Note that the lowest test set error was achieved with default settings (adaptive learning rate), corroborating our approach. For cases where fastest model training is required (possibly at the expense of highest achievable accuracy), manual learning rates without momentum can be a good option, but in general, adaptive learning rate simplifies the usage of H2O Deep Learning and make this tool highly usable by non-experts.
 
 <div id='table_adaptive_rate'></div>
 
 
 ### Training Samples Per Iteration
 
-As explained earlier, model scoring (and multi-node model averaging) happens aver every MapReduce step, the length of which is given in terms of the number of training samples via the parameters `train_samples_per_iteration`. It can be set to any value, -2, -1, 0, 1, 2, ... and as high as desired. Special values are -2 (auto-tuning), -1 (all available data on each node) and 0 (one epoch). Values above 1 specify the number of samples to process per MapReduce iteration. If the value is less than the number of training data points per node, sampling without replacement is done on the node-local data (which can be the entire dataset if `replicate_training_data=T`). If the value is larger than the number of training data points per node, sampling with replacement is done on the node-local data. Between in-memory MapReduce iterations, in single-node operation, there is potentially model scoring overhead (see above for dependency on parameters), but no model-averaging overhead (only in multi-node mode).
+As explained earlier, model scoring (and multi-node model averaging) happens aver every MapReduce step, the length of which is given in terms of the number of training samples via the parameters `train_samples_per_iteration`. It can be set to any value, -2, -1, 0, 1, 2, ... and as high as desired. Special values are -2 (auto-tuning), -1 (all available data on each node) and 0 (one epoch). Values of 1 and above specify the (approximate) number of samples to process per MapReduce iteration. If the value is less than the number of training data points per node, stochastic sampling without replacement is done on the node-local data (which can be the entire dataset if `replicate_training_data=T`). If the value is larger than the number of training data points per node, stochastic sampling with replacement is done on the node-local data. In either case, the number of actually processed samples can vary between runs due to the stochastic nature of sampling. In single-node operation, there is potentially some model scoring overhead in-between these MapReduce iterations (see above for dependency on parameters), but no model-averaging overhead as there is only one model per node (racily updated by multiple threads).
 
 ```{r}
 args <- list(
@@ -266,7 +266,7 @@ As expected, the difference in the speed of the runs above is (for single-node o
 
 ### Different activation functions
 
-The activation function can make a big difference in runtime, as evidenced below. The reason for this is that H2O Deep Learning is optimized to take advantage of sparse activation of the neurons, and the Rectifier activation function (`max(0,x)`) is sparse and leads to less computation (at the expense of some accuracy, for which the speed often more than compensates for). Dropout (default: 0.5, randomly disable half of the hidden neuron activations for each training row) further increases the sparsity and makes training faster, and for noisy high-dimensional data, often also leads to better generalization (lower validation and test set error). Since Dropout is a choice the user should make (at least for now), our default `Rectifier` activation function seems reasonable, especially since it also leads to a low test set error.
+The activation function can make a big difference in runtime, as evidenced below. The reason for this is that H2O Deep Learning is optimized to take advantage of sparse activation of the neurons, and the Rectifier activation function (`max(0,x)`) is sparse and leads to less computation (at the expense of some accuracy, for which the speed often more than compensates for). Dropout (default: 0.5, randomly disable half of the hidden neuron activations for each training row) further increases the sparsity and makes training faster, and for noisy high-dimensional data, often also leads to better generalization (lower test set error) as it is a form of ensembling of many models with different network architectures. Since Dropout is a choice the user needs to make (at least for now), our default `Rectifier` activation function seems like a reasonable choice, especially since it also leads to a low test set error. We note that we omitted the `Maxout` activation here as we find it least useful (might require a revisit).
 ```{r}
 args <- list(
   list(hidden=c(1024, 1024), epochs=EPOCHS, score_training_samples=100,
@@ -312,10 +312,10 @@ Notes:
   *  Unfortunately, there was no attempt made at comparing test set errors in the benchmark study. Throughput alone is not a good measure of model performance, see part 2 below for test set error comparisons and our model with world-record test set accuracy on the MNIST dataset.
   * From the parameters used by the benchmark study, we can see that the Java field `_convert_to_enum` was left at its default value of `false`, leading to a regression model (1 output neuron with `MeanSquare` loss function), which is arguably not the best way to do digit classification. We will set the corresponding parameter in R with `do_classification=T`.
   * We also note that the last *hidden* layer was specified to have 10 neurons, probably with the intention to emulate the 10-class probability distribution in the last hidden layer of 10 deep features. However, in H2O, the output layer is automatically added after the last hidden layer, and the user only specifies the `hidden` layers. For correctness, we will keep the first 5 hidden layers, and let H2O Deep Learning add the output layer with 10 neurons (and the `CrossEntropy` loss function) automatically (since we're also setting `do_classification=T`). We note that the difference in model size (and loss function) is a mere 11 numbers, and has no impact on training speed (final layers 500->10->1 vs 500->10).
-  * The other study has *instrumented* the H2O .jar file to obtain speed measures, which is not necessary (and can lead to misinterpretation), as the logs print out the training speed already (wall clock based and easily verified).
-  * H2O Deep Learning currently only does online learning (mini-batch size of 1), while we assume that the other project used a [mini-batch size of 1000](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/). This algorithmic difference both affects computational performance and model accuracy, and makes comparisons between different mini-batch sizes less useful (but still interesting).
-  * Given our observations above, the scoring overhead and activation function choice has to be considered carefully, especially since the model has over 12 million weights and forward-propagation (scoring) is going to take a significant amount of time even on the validation frame with "only" 10,000 rows.
-  * A large part of the benchmark study was the distributed scalability (strong scaling) of H2O (at least in terms of throughput) which we'll address in part 3, but as noted earlier, almost linear speedups can be achieved when adding compute nodes as the communication overhead is fully user-controllable.
+  * For unknown reasons, the benchmarkers *instrumented* the H2O .jar file to measure speed inside the mappers/reducers. This is neither necessary nor very useful, as the logs already print out the training speed based on pure wall clock time, which is easily verified.
+  * H2O Deep Learning currently only does online learning (mini-batch size of 1), while it appears that the other method used a [mini-batch size of 1000](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/). This algorithmic difference both affects computational performance and model accuracy, and makes comparisons between different mini-batch sizes less useful (but still interesting).
+  * Given our observations above, parameters such as the scoring overhead or the choice of activation function has to be considered carefully, especially since the model has over 12 million weights and scoring (forward propagation) is going to take a significant amount of time even on the validation frame with "only" 10,000 rows.
+  * A large part of the benchmark study was concerned with the distributed scalability (strong scaling) of H2O (at least in terms of throughput). We will address this topic in part 3, but as noted earlier, almost linear speedups can be achieved when adding compute nodes as the communication overhead is fully user-controllable.
   * For our single-node comparison (`NODES=1`), the parameter `replicate_training_data` has no effect, so we can leave it at its default value (`TRUE`).
   
 We first run with the same parameters as the benchmark study, and then modify the parameters to improve the trainings speed successively.
@@ -347,12 +347,12 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study. Using the same parameters, we measure a training speed of 78 samples per second on a single i7 5820k consumer PC.
+  * **We cannot reproduce the slow numbers (~10 samples/second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of 78 samples per second on a single i7 5820k consumer PC.
   * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 89 samples per second (notably with H2O's mini-batch size of 1).
   * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of more than 130 samples per second (albeit at the cost of accuracy).
   * When further switching to the `Rectifier` activation function, speeds increase to over 240 samples per second (and test set accuracy improves significantly too).
-  * We observe training speeds of **395 samples per second with H2O Deep Learning on a single node**, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Note that *H2O Deep Learning is as fast on a single node than what the other project achieved when training on 16 Xeon nodes* (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take accuracy into account to be meaningful.
-  * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/)
+  * We observe training speeds of **395 samples per second while obtaining a lower test set error** than the original parameters, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Hence, **H2O Deep Learning is as fast on a single PC as the other method on 16 Xeon nodes** (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take test set accuracy into account to be meaningful.
+  * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/).
   * H2O Deep Learning models (single- and multi-node) can be trained from R, Python, Java, Scala, JavaScript and via the Flow Web UI, as well as via JSON through the REST API. 
 <div id='table_large_deep_net'></div>
 
@@ -371,12 +371,12 @@ args <- list(
   list(epochs=EPOCHS, hidden=c(200,200), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
   
-  list(epochs=EPOCHS, hidden=c(100,100,100)),
+  list(epochs=EPOCHS, hidden=c(200,200,200)),
   
-  list(epochs=EPOCHS, hidden=c(100,100,100), 
+  list(epochs=EPOCHS, hidden=c(200,200,200), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
   
-  list(epochs=EPOCHS, hidden=c(100,100,100,100), 
+  list(epochs=EPOCHS, hidden=c(200,200,200,200), 
        activation="RectifierWithDropout", input_dropout_ratio=0.2, l1=1e-5),
   
   list(epochs=5*EPOCHS, hidden=c(200,200), 
