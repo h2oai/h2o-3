@@ -1,11 +1,21 @@
 ## Introduction
 
 This document gives guidelines for performance tuning of H2O Deep Learning, both in terms of speed and accuracy. It is intended for existing users of H2O Deep Learning (which is easy to [change](http://h2o.ai/download) if you're not), as it assumes some familiarity with the parameters and use cases.
+### Motivation
+This effort was in part motivated by a [Deep Learning project that benchmarked against H2O](http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/), and we tried to reproduce their results, especially since they claimed that H2O is slower.
+Summary of our findings (much more at the end of part 1):
+* We are unable to reproduce their findings (our numbers are 8x to 40x faster, on a single node)
+* The benchmark was only on raw training throughput and didn't consider model accuracy (at all)
+* The parameters for H2O Deep Learning were poorly chosen (more below)
+* We present a single-node model that performs as fast as their 16-node model (and leads to higher accuracy than with their settings)
 
+
+### More Information
 ![booklet](../../../2015_02_deep-learning-performance/DL_BookletCover.png)
 
 Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the ideas and use cases for H2O and H2O Deep Learning in particular. This tutorial does not attempt to explain the many potential hyper-parameters of H2O Deep Learning.
 
+### Getting Started
 To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd) ([here's the raw version](https://raw.githubusercontent.com/h2oai/h2o-dev/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd)). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
 
 ```{r}
@@ -14,7 +24,9 @@ install.packages("rmarkdown")
 ```
 
 ### Distributed Benchmarking - Coming Soon
-As many of you might know, distributed benchmarking has its own issues and complexity. I've burned many millions of core hours on the world's fastest supercomputers over the last decade, so I have a good sense of what it takes to get code to scale. Interconnect performance, load balancing and algorithmic choices greatly affect the scalability of large distributed systems. This benchmark script can seamlessly run on a large multi-node H2O cluster (where some parameters would benefit from some changes), and the scalability of H2O Deep Learning can be fully tuned from close-to-linear speedup with very little communication to totally communication-dominated regimes. The current implementation automatically attempts to balance computation and communication with dynamic auto-tuning during runtime. Due to the complexity involved, we refer to a later blog on distributed benchmarking of H2O Deep Learning, so please stay tuned for that.
+As many of you might know, distributed benchmarking has its own issues and complexity. I've burned many millions of core hours on the world's fastest supercomputers over the last decade, so I have a good sense of what it takes to get code to scale. Interconnect performance, load balancing and algorithmic choices greatly affect the scalability of large distributed systems. This benchmark script can seamlessly run on a large multi-node H2O cluster (where some parameters would benefit from some changes), and the scalability of H2O Deep Learning can be fully tuned from close-to-linear speedup with very little communication to totally communication-dominated regimes. The current implementation automatically attempts to balance computation and communication with dynamic auto-tuning during runtime.
+
+Due to the complexity involved, we refer to a later blog on distributed benchmarking of H2O Deep Learning, so please stay tuned for that. We will, however, show some existing use cases and a prior scaling study on multi-node configurations, as practically all our applications of H2O Deep Learning in-house and by customers are run in distributed mode.
 
 ## Part 1 - Single-Node Training Speed
 For simplicity, we start with some single-node experiments quantifying the raw training speed. Of course, many of the parameters we'll change affect the predictive accuracy of a model, but for this first part, and to get an idea of how H2O Deep Learning works, we only look at the raw training speed (number of processed training samples per second).
