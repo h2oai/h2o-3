@@ -1084,9 +1084,15 @@ class ASTSlice extends AST {
           fr2 = ary;            // All of it
         } else {
           long[] cols2 = (long[])colSelect;
-          fr2 = new Frame();
-          for( int i=0; i<cols2.length; i++ )
-            fr2.add(ary._names[(int)cols2[i]],ary.vec((int)cols2[i]));
+          if( cols2.length > 0 && cols2[0] < 0 ) { // Dropping cols
+            fr2 = new Frame(ary);
+            for( int i=0; i<cols2.length; i++ )
+              fr2.remove((int)-cols2[i]-1);
+          } else {              // Else selecting positive cols
+            fr2 = new Frame();
+            for( int i=0; i<cols2.length; i++ )
+              fr2.add(ary._names[(int) cols2[i]], ary.vec((int) cols2[i]));
+          }
         }
       } else {
         fr2 = ary.deepSlice(rowSelect,colSelect);
