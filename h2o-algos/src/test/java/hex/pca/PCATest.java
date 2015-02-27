@@ -7,19 +7,28 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.Assert.assertEquals;
+
 public class PCATest extends TestUtil {
-  public final double threshold = 1e-6;
+  public final double TOLERANCE = 1e-6;
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public void checkStddev(double[] expected, double[] actual) {
+    checkStddev(expected, actual, TOLERANCE);
+  }
+  public void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       Assert.assertEquals(expected[i], actual[i], threshold);
   }
 
   public void checkEigvec(double[][] expected, double[][] actual) {
+    checkEigvec(expected, actual, TOLERANCE);
+  }
+  public void checkEigvec(double[][] expected, double[][] actual, double threshold) {
     int nfeat = actual.length;
     int ncomp = actual[0].length;
     for(int j = 0; j < ncomp; j++) {
@@ -29,6 +38,22 @@ public class PCATest extends TestUtil {
           Assert.assertEquals(expected[i][j], -actual[i][j], threshold);
         else
           Assert.assertEquals(expected[i][j], actual[i][j], threshold);
+      }
+    }
+  }
+
+  public void checkProjection(Frame expected, Frame actual, double threshold) {
+    assert expected.numCols() == actual.numCols();
+    for(int j = 0; j < expected.numCols(); j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      Assert.assertEquals(vexp.length(), vact.length());
+      boolean flipped = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
+      for (int i = 0; i < vexp.length(); i++) {
+        if(flipped)
+          Assert.assertEquals(vexp.at8(i), -vact.at8(i), threshold);
+        else
+          Assert.assertEquals(vexp.at8(i), vact.at8(i), threshold);
       }
     }
   }
@@ -112,7 +137,7 @@ public class PCATest extends TestUtil {
                             ard(10.0, 263, 48, 44.5),
                             ard(8.1, 294, 80, 31.0),
                             ard(8.8, 190, 50, 19.5)));
-    double[] stddev = new double[] {202.723056, 27.832264, 6.523048, 2.581365};
+    double[] stddev = new double[] {202.7230564, 27.8322637, 6.5230482, 2.5813652};
     double[][] eigvec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
                             ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
                             ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
@@ -132,14 +157,12 @@ public class PCATest extends TestUtil {
       try {
         job = new PCA(parms);
         model = job.trainModel().get();
-        checkStddev(stddev, model._output._std_deviation);
-        checkEigvec(eigvec, model._output._eigenvectors_raw);
+        checkStddev(stddev, model._output._std_deviation, 1e-5);
+        checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
 
         scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
         score = model.score(train);
-        Assert.assertEquals(scoreR.numCols(), score.numCols());
-        for(int i = 0; i < scoreR.numCols(); i++)
-          assertVecEquals(scoreR.vec(i), score.vec(i), threshold);
+        checkProjection(scoreR, score, TOLERANCE);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

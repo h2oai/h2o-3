@@ -481,6 +481,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     DKV.put(res);
     return res;
   }
+
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
