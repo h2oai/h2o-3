@@ -47,9 +47,9 @@ install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws
 library(h2o)
 library('stringr')
 ```
-Start a single-node instance of H2O using all available processor cores and reserve 1GB of memory (check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
+Start a single-node instance of H2O using all available processor cores and reserve 16GB of memory (check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
 ```{r}
-h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="1g", nthreads=-1)
+h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
 #h2oServer <- h2o.init(ip="h2o-cluster", port=54321) # optional: connect to running H2O cluster
 ```
 
