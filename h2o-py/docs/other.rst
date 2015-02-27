@@ -1,8 +1,8 @@
-Connection
+Others
 ==========
 
 :mod:`connection` Module
------------------------
+------------------------
 
 .. automodule:: h2o.connection
     :members:

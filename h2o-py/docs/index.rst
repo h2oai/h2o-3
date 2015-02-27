@@ -12,10 +12,10 @@ Contents:
    :maxdepth: 4
 
    h2o
-   connection
    frame
    h2o.h2o
    h2o.model
+   other
 
 Indices and tables
 ==================
