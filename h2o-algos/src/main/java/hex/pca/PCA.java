@@ -363,12 +363,17 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           xvecs[c++] = vecs[i];
         }
         assert c == xvecs.length;
-
         Frame fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
-        model._output._normSub = dinfo._normSub == null ? null : Arrays.copyOf(dinfo._normSub, _train.numCols());
-        model._output._normMul = dinfo._normMul == null ? null : Arrays.copyOf(dinfo._normMul, _train.numCols());
+
+        // Output standardization vectors for use in scoring later
+        model._output._normSub = dinfo._normSub == null ? new double[_train.numCols()] : Arrays.copyOf(dinfo._normSub, _train.numCols());
+        if(dinfo._normMul == null) {
+          model._output._normMul = new double[_train.numCols()];
+          Arrays.fill(model._output._normMul, 1.0);
+        } else
+          model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // Create separate reference to X for Gram task
         Frame x = new Frame(_parms._loading_key, null, xvecs);
