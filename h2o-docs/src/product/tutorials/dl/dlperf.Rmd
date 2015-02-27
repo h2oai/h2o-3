@@ -406,7 +406,7 @@ Here's a plot summarizing all the models we've built so far. The deep and large 
 
 
 ## Part 3 - Distributed (Multi-Node) Benchmarks
-As mentioned above, we will be working on a distributed performance tuning guide shortly, so please stay tuned for that. In the meantime, we refer to two excellent use cases for Deep Learning, where H2O Deep Learning has been applied and delivered impressive results.
+As mentioned above, we will be working on a distributed performance tuning guide shortly, so please stay tuned for that. In the meantime, we refer to a few excellent use cases for Deep Learning, where H2O Deep Learning has been applied in distributed mode and delivered impressive results.
 
 ### World-Record Test Set Error (without Convolutions or Pre-Training)
 With the simple 1-line command in R shown below, we achieve 0.83% test set error, which is the [current world record on MNIST](http://yann.lecun.com/exdb/mnist/) for models without convolutional layers, data augmentation (distortions) or unsupervised pre-training. This took about 10 hours on a 10-node cluster with dual 8-core Xeons. Note that this model achieved 1% test set error in about 2 hours, and 0.9% test set error in about 4 hours, so it's clear that improving the regularization properties of the model can take a long time (and is clearly in the statistical noise domain with only 10k test set points). We are hopeful that with further improved parameters, it will be possible to get to even better accuracies (or faster runtime). We leave this as an exercise for the reader!
@@ -431,8 +431,18 @@ With the simple 1-line command in R shown below, we achieve 0.83% test set error
     #       9        1    2    0    0   4   3   0    2   0  997 0.01189
     #       Totals 981 1142 1038 1013 977 891 956 1031 964 1007 0.00830
 
+For the above parameters, the parallel scalability on 1 to 63 nodes (1 one defective) was studied:
+![MNIST scalability](../../../2015_02_deep-learning-performance/DL_ScalabilityMNIST.png)
+Without going into too much detail, the settings were a balance between fast convergence and high throughput. Also, the 1-node run had no communication overhead, while all the other runs had some communication overhead, so the comparison is not entirely fair, but more later!
+
 ### Higgs Boson and H2O Deep Learning
-We also have highly competitive results for the [Higgs Boson](http://www.slideshare.net/0xdata/h2odeeplearning/32) dataset, for which we compare well to a recent [Nature paper](http://arxiv.org/pdf/1402.4735v2.pdf) that used Deep Learning on GPUs to advance the frontier of particle physics.
+Distributed H2O Deep Learning also achieved highly competitive results for the [Higgs Boson](http://www.slideshare.net/0xdata/h2odeeplearning/32) dataset. It compares well to a recent [Nature paper](http://arxiv.org/pdf/1402.4735v2.pdf) that used Deep Learning on GPUs to advance the frontier of particle physics.
+
+### Ebay Text Classification
+For a successful application of distributed H2O Deep Learning for Ebay text classification with over 8500 columns and 580k rows, with hundreds of output classes, we refer to our [Ebay Text Classification Slides](http://www.slideshare.net/0xdata/h2odeeplearning/27).
+
+### Paypal Fraud Detection
+Distributed H2O Deep Learning is used for [Fraud Detection at PayPal](http://youtu.be/RqkheMI3Ciw).
 
 ##Summary
 H2O Deep Learning is a powerful, easy-to-use tool with highly competitive characteristics, both in terms of raw computing performance as well as predictive accuracy. H2O Deep Learning is used by customers in production. You can learn more about it from our [H2O Deep Learning booklet](https://leanpub.com/u/h2oai) or from [H2O World Training](http://learn.h2o.ai), which will require only minimal changes to migrate from h2o to h2o-dev. For information about performance tuning of H2O Deep Learning, you *really* have to read this entire blog, it's worth it!
