@@ -2,9 +2,11 @@
 
 This document gives guidelines for performance tuning of H2O Deep Learning, both in terms of speed and accuracy. It is intended for existing users of H2O Deep Learning (which is easy to [change](http://h2o.ai/download) if you're not), as it assumes some familiarity with the parameters and use cases.
 
+![booklet](../../../2015_02_deep-learning-performance/DL_BookletCover.png)
+
 Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http://learn.h2o.ai) and the [H2O Booklets](https://leanpub.com/u/h2oai) for detailed instructions on H2O and H2O Deep Learning. There are many [YouTube videos](https://www.youtube.com/user/0xdata) and [Slide decks](http://www.slideshare.net/0xdata/presentations?order=popular) on H2O Deep Learning. You can also follow me on [@ArnoCandel](http://twitter.com/ArnoCandel) to stay up-to-date. Don't forget to read the [KDNuggets interview](http://www.kdnuggets.com/2015/01/interview-arno-candel-0xdata-deep-learning.html), which covers a lot of the ideas and use cases for H2O and H2O Deep Learning in particular. This tutorial does not attempt to explain the many potential hyper-parameters of H2O Deep Learning.
 
-To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
+To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd) ([here's the raw version](https://raw.githubusercontent.com/h2oai/h2o-dev/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd)). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments.
 
 ```{r}
 options(repos=structure(c(CRAN='http://cran.us.r-project.org')))
@@ -45,9 +47,9 @@ install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws
 library(h2o)
 library('stringr')
 ```
-Start a single-node instance of H2O using all available processor cores and reserve 16GB of memory (less should work too, but check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
+Start a single-node instance of H2O using all available processor cores and reserve 1GB of memory (check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
 ```{r}
-h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
+h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="1g", nthreads=-1)
 #h2oServer <- h2o.init(ip="h2o-cluster", port=54321) # optional: connect to running H2O cluster
 ```
 
@@ -60,7 +62,7 @@ workdir="/tmp"
 
 Next, we download the well-known [MNIST](http://yann.lecun.com/exdb/mnist/) dataset of hand-written digits, where each row contains the 28^2=784 gray-scale pixel values from 0 to 255 of digitized digits (last column contains labels from 0 to 9). The training and testing datasets are also available at [H2O Github](https://github.com/h2oai/h2o/tree/master/smalldata/mnist). The training dataset has 60,000 rows and the test set has 10,000 rows.
 
-We are well aware that this is small data for today's standards, but since H2O Deep Learning is a fully distributed streaming algorithm that processes point-by-point, its performance in terms of throughput will remain similar for much larger datasets as each processing core streams through training samples (i.e., image, data point, row) one at a time. The maximum dataset size that can be handled is given by total aggregate amount of memory of all nodes and the compression ratio of the dataset (H2O does lossless compression).
+We are well aware that this is small data for today's standards, but since H2O Deep Learning is a fully distributed streaming algorithm that processes point-by-point, its performance in terms of throughput will remain similar for much larger datasets as each processor core streams through training samples (i.e., image, data point, row) one at a time. The maximum dataset size that can be handled is given by the total aggregate amount of memory of all nodes and the compression ratio of the dataset (H2O does lossless compression).
         
 We upload the MNIST datasets (train and test sets) into H2O's memory. Keep in mind that R just serves as a remote control for this entire experiment and never does any actual computation. All the heavy lifting is done by the fully parallelized H2O in-memory engine.
 ```{r}
@@ -77,15 +79,15 @@ test_hex <- h2o.importFile(h2oServer, path = file.path(workdir,"test.csv.gz"),
 
 ### Performance Metrics and Observables
 
-In this first part of the benchmark study, we will investigate the single-node performance of H2O Deep Learning in terms of training examples per second.
+In this first part of the benchmark study, we will investigate the single-node performance of H2O Deep Learning in terms of training examples per second, mostly ignoring the test set error except for some notable occasions.
 
 Notes:
   * For each set of `parameters` (in addition to specifying the training data, and the predictors and response column), we run H2O Deep Learning and record `training samples`, `training time`, `training speed`, and `test set error`.
-  * H2O Deep Learning uses online learning with stochastic gradient descent and back-propagation. There are *no mini-batches*, every training sample immediately affects the network weights for fastest convergence and highest model accuracy.
-  * [Hogwild!](http://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent) intentional race conditions between multiple threads avoid locking, but leads to non-reproducible results, unless `reproducible=T` is specified and a `seed` is given (which then runs on 1 core - not done here).
-  * In part 2 (below), we look at the test set error as a function of total training time, which is what ultimately matters most.
-  * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The stopping criterion is the number of epochs (i.e., the number of training samples relative to the training data set size).
-  * Hardware specs: [Intel i7 5820k (6 cores @4.3GHz)](http://rog.asus.com/realbench/show_comment.php?id=6632). Yes, it's an overclocked sub-$400 processor. Wish me luck.
+  * The clock starts at the moment the first training example is presented to the neural network, and stops when model building is done. The stopping criterion is the number of epochs (i.e., the number of training samples relative to the training data set size). Training speed is computed as the number of training samples seen since the clock was started, divided by the seconds that have passed. We note that the raw processing speed is somewhat underestimated by this (conservative) approach, as anything that is not training such as scoring or computing statistics counts towards the total time.
+  * The classification error on the entire test set (10,000 rows) is computed after training is done, for all runs. The time for this is not counted.
+  * H2O Deep Learning uses online learning with stochastic gradient descent and back-propagation. There are *no mini-batches* (or only trivial ones of size 1), every training sample immediately affects the network weights for fastest convergence and highest model accuracy.
+  * Intentional race conditions between multiple threads [a la Hogwild!](http://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent)  avoid locking, but lead to non-reproducible results, unless `reproducible=T` is specified and a `seed` is given (which then runs on 1 core - not done here).
+  * Hardware specs: [Intel i7 5820k (6 cores @4.3GHz)](http://rog.asus.com/realbench/show_comment.php?id=6632). Yes, it's an overclocked sub-$400 processor. If it dies, I'll have to get the 8-core version...
   * It is possible to run individual pieces (code *Chunks*) or the entire script at once, each benchmark has its own CSV results file.
 
 Here we go. First, we set up some helper function to run H2O Deep Learning with user-given parameters, and to write the parameters and observables to CSV files.
@@ -129,9 +131,9 @@ writecsv <- function(results, file) {
 ```
 
 ### First Study - Various Neural Network Topologies
-As a first study, we vary the network topology, and we also fix a number of training samples, specified by the number of epochs (we process approximately 10% of the dataset here, chosen at random). All other parameters are left at default values (per-weight adaptive learning rate, no L1/L2 regularization, no Dropout, Rectifier activation function). Note that we run shallow neural nets (1 hidden layer), and deep neural nets with 2 or 3 hidden layers. You can modify this and run other parameter combinations as well.
+As a first study, we vary the network topology, and we also fix a number of training samples, specified by the number of epochs (we process approximately 10% of the dataset here, chosen at random). All other parameters are left at default values (per-weight adaptive learning rate, no L1/L2 regularization, no Dropout, Rectifier activation function). Note that we run shallow neural nets (1 hidden layer), and deep neural nets with 2 or 3 hidden layers. You can modify this and run other parameter combinations as well (and the same holds for all experiments here).
 
-The number of columns of the dataset (all numerical) translates directly into the size of the first layer of neurons (input layer), and hence significantly affects the size of the model. The number of output neurons is 10, one for each class (digit) probability. For the MNIST dataset, all Deep Learning models below will have 717 input neurons, as the other 67 pixel values are constant (white background) and thus ignored. The size of the model is given by the number of connections between the fully connected neuron layers (and some bias values), and is hence roughly quadratic in the number of neurons per layer. Since training involves reading and updating all the model coefficients (weights and biases), the model complexity is linear in the size of the model, up to memory hierarchy effects in the x86 hardware. The speed of the memory subsystem (both in terms of latency and bandwidth) has a direct impact on training speed.
+The number of columns of the dataset (all numerical) translates directly into the size of the first layer of neurons (input layer), and hence significantly affects the size of the model. The number of output neurons is 10, one for each class (digit) probability. For the MNIST dataset, all Deep Learning models below will have 717 input neurons, as the other 67 pixel values are constant (white background) and thus ignored. The size of the model is given by the number of connections between the fully connected input+hidden+output neuron layers (and their bias values), and grows as the sum of the product of the number of connected neurons (~quadratically). Since training involves reading and updating all the model coefficients (weights and biases), the model complexity is linear in the size of the model, up to memory hierarchy effects in the x86 hardware. The speed of the memory subsystem (both in terms of latency and bandwidth) has a direct impact on training speed.
 
 ```{r}
 EPOCHS=0.1 #increase if you have the patience (or run multi-node), shouldn't matter much for single-node
