@@ -11,8 +11,6 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
 
-  @Override public boolean isSupervised() { return true; }
-
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
    *  cached convenience fields.  */
@@ -87,6 +85,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
 
     /** @return Returns number of input features */
     @Override public int nfeatures() { return _names.length - 1; }
+
+    @Override public boolean isSupervised() { return true; }
 
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }

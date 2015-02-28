@@ -651,6 +651,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
+
+    @Override public boolean isSupervised() { return !autoencoder; }
   }
 
   // Default publicly visible Schema is V2
@@ -690,8 +692,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
-
-  @Override public boolean isSupervised() { return !model_info.get_params()._autoencoder; }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {

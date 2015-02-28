@@ -72,9 +72,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public PCAModel(Key selfKey, PCAParameters parms, PCAOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public boolean isSupervised() { return false; }
-
-  @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     throw H2O.unimpl("No model metrics for PCA.");
   }
