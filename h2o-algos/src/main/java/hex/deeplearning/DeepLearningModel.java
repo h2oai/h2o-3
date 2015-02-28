@@ -836,9 +836,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colFormat = new ArrayList<>();
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%.5f");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
+
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2");
       colTypes.add("double");
@@ -926,6 +928,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
+      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples/(e.training_time_ms/1e3)) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.train_mse);
@@ -1576,12 +1579,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       keep_running = (epoch_counter < get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
-      final long samples = model_info().get_processed_total();
-      if (!keep_running || sinceLastPrint > get_params()._score_interval *1000) {
+      if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
-//        Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-//                + ". Processed " + String.format("%,d", samples) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-//                + " Speed: " + String.format("%.3f", 1000.*samples/run_time) + " samples/sec.");
+        if (!get_params()._quiet_mode) {
+          Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
+                  + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+        }
       }
 
       // this is potentially slow - only do every so often
@@ -1763,9 +1767,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
     //sb.append(last_scored().toString());
     sb.append(_output.scoringHistory.toString());
