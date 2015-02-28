@@ -24,6 +24,7 @@ public final class SB {
   public SB pobj( Object s ) { _sb.append(s.toString()); return this; }
   public SB i( int d ) { for( int i=0; i<d+_indent; i++ ) p("  "); return this; }
   public SB i( ) { return i(0); }
+  public SB ip(String s) { return i().p(s); }
   public SB s() { _sb.append(' '); return this; }
   // Java specific append of double
   public SB pj( double  s ) {
