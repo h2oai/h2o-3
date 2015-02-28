@@ -773,7 +773,7 @@ class TestRunner:
             abspath_test = os.path.abspath(test_to_run)
             return abspath_test
 
-        for d, subdirs, files in os.walk(os.path.dirname(os.path.realpath(__file__))):
+        for d, subdirs, files in os.walk(os.getcwd()):
             for f in files:
                 if (f == test_to_run):
                     return os.path.join(d, f)
