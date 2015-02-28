@@ -1216,7 +1216,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       if (get_params()._diagnostics && !get_params()._quiet_mode) {
-        sb.append("Number of hidden layers is " + get_params()._hidden.length + " \n");
         if (get_params()._sparsity_beta > 0) {
           for (int k = 0; k < get_params()._hidden.length; k++)
             sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
@@ -1698,7 +1697,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                           (DKV.get(actual_best_model_key) == null && error() < _bestError)
           ) ) {
             if (!get_params()._quiet_mode)
-              Log.info("Error reduced from " + _bestError + " to " + error() + ". Storing best model so far under key " + actual_best_model_key.toString() + ".");
+              Log.info("Error reduced from " + _bestError + " to " + error() + ".");
             _bestError = error();
             putMeAsBestModel(actual_best_model_key);
 
@@ -2029,13 +2028,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return q;
   }
 
-  // for now, don't keep models separate - main model deletes all its child models
-  @Override public void delete() {
-    delete_xval_models();
-    delete_best_model();
-    super.delete();
-  }
-
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
@@ -2043,10 +2035,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
     assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);
-  }
-
-  void delete_best_model( ) {
-    if (actual_best_model_key != null && actual_best_model_key != _key) DKV.remove(actual_best_model_key);
   }
 
   void delete_xval_models( ) {

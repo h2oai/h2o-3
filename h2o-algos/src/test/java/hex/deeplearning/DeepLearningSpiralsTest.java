@@ -90,7 +90,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           }
           pred.delete();
           mymodel.delete();
-          mymodel.delete_best_model();
         }
       }
     }

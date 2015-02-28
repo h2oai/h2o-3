@@ -336,6 +336,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       }
       finally {
         if (model != null) model.unlock(self());
+        if (model.actual_best_model_key != null) {
+          assert (model.actual_best_model_key != model._key);
+          DKV.remove(model.actual_best_model_key);
+        }
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
       return model;
