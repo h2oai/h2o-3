@@ -133,7 +133,8 @@ public class PCATest extends TestUtil {
           throw new RuntimeException(t);
         } finally {
           if( model != null ) {
-            model._parms._loading_key.get().delete();
+            if (model._parms._keep_loading)
+              model._parms._loading_key.get().delete();
             model.delete();
           }
         }
@@ -192,7 +193,8 @@ public class PCATest extends TestUtil {
       if (score != null) score.delete();
       if (scoreR != null) scoreR.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
         model.delete();
       }
     }
@@ -228,7 +230,8 @@ public class PCATest extends TestUtil {
     } finally {
       if (train != null) train.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
         model.delete();
       }
     }

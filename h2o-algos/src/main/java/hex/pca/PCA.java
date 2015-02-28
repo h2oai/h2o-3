@@ -341,6 +341,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null;
       DataInfo xinfo = null;
+      Frame x = null;
 
       try {
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
@@ -376,7 +377,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // Create separate reference to X for Gram task
-        Frame x = new Frame(_parms._loading_key, null, xvecs);
+        x = new Frame(_parms._loading_key, null, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
@@ -470,6 +471,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
+        if (x != null && !_parms._keep_loading) x.delete();
         _parms.read_unlock_frames(PCA.this);
       }
       tryComplete();

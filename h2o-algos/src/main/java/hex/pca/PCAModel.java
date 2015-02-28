@@ -29,6 +29,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public PCA.Initialization _init = PCA.Initialization.PlusPlus;
     public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
+    boolean _keep_loading = false;
   }
 
   public static class PCAOutput extends Model.Output {
