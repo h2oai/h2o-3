@@ -1566,6 +1566,12 @@ def parse_args(argv):
         elif (s == "--nopass"):
             g_nopass = True
         elif s == "--c":
+            print("")
+            print("ERROR: --c flag no longer supported, since the run.py script moved to h2o-dev/scripts/run.py.")
+            print("       it uses __file__, which is different now.")
+            print("       please revisit the implementation of what this was trying to do.")
+            print("")
+            sys.exit(1)
             g_convenient = True
         elif (s == "--jvm.xmx"):
             i += 1
