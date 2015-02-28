@@ -34,7 +34,7 @@ For simplicity, we start with some single-node experiments quantifying the raw t
 ### Establish Connection to H2O
 For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). The numerical performance of H2O Deep Learning in h2o-dev is very similar to the performance of its equivalent in [h2o](http://github.com/h2oai/h2o). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
 
-We use nightly build 1072 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
+We use nightly build 1076 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
 
 The following two commands remove any previously installed H2O packages for R.
 ```{r}
@@ -55,13 +55,13 @@ if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils")
 ```
 Now we download, install and initialize the H2O package for R.
 ```{r}
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1072/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1076/R")))
 library(h2o)
 library('stringr')
 ```
-Start a single-node instance of H2O using all available processor cores and reserve 16GB of memory (check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
+Start a single-node instance of H2O using all available processor cores and reserve 4GB of memory (less should work too, check your logs for `WARN: Pausing to swap to disk; more memory may help` using the Flow GUI at [localhost:54321](http://localhost:54321), `Admin` -> `View Log` -> `SELECT LOG FILE TYPE: warn`).
 ```{r}
-h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="16g", nthreads=-1)
+h2oServer <- h2o.init(ip="localhost", port=54321, max_mem_size="4g", nthreads=-1)
 #h2oServer <- h2o.init(ip="h2o-cluster", port=54321) # optional: connect to running H2O cluster
 ```
 
@@ -110,7 +110,7 @@ score_test_set=T  #disable if only interested in training throughput
 run <- function(extra_params) {
   str(extra_params)
   print("Training.")
-  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, do_classification=T, 
+  model <- do.call(h2o.deeplearning, modifyList(list(x=1:784, y=785, do_classification=T,
          training_frame=train_hex, destination_key="dlmodel"), extra_params))
   sampleshist <- model@model$scoringHistory$"Training Samples"
   samples <- sampleshist[length(sampleshist)]

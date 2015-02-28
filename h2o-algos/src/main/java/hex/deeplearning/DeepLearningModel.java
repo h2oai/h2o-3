@@ -2029,6 +2029,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return q;
   }
 
+  // for now, don't keep models separate - main model deletes all its child models
+  @Override public void delete() {
+    delete_xval_models();
+    delete_best_model();
+    super.delete();
+  }
+
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, this, true, model_info().data_info());
