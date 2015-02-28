@@ -1221,7 +1221,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for (int k = 0; k < get_params()._hidden.length; k++)
             sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
         }
-        if (summaryTable == null) createSummaryTable();
+        createSummaryTable();
         sb.append(summaryTable.toString(1));
       }
       return sb.toString();
@@ -1686,8 +1686,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         _output.errors = last_scored();
         _output.scoringHistory = createScoringHistoryTable(errors);
         _output.variableImportances = calcVarImp(last_scored().variable_importances);
-        if (_output.modelSummary == null)
-          _output.modelSummary = model_info.createSummaryTable();
+        _output.modelSummary = model_info.createSummaryTable();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
