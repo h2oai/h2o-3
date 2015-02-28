@@ -21,7 +21,7 @@ def is_python_test_file(file_name):
         return False
 
     if re.match("^pyunit.*\.py$", file_name):
-      return True
+        return True
 
     if (re.match("^test.*\.py$", file_name)):
         return True
@@ -211,35 +211,33 @@ class H2OCloudNode:
                "-ea",
                "-jar", self.h2o_jar,
                "-name", self.cloud_name,
-               "-baseport", str(self.my_base_port),
-               #"-hdfs_version", "cdh3",
-        ]
+               "-baseport", str(self.my_base_port)]
 
         # Add S3N credentials to cmd if they exist.
-        #ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
-        #if (os.path.exists(ec2_hdfs_config_file_name)):
-        #    cmd.append("-hdfs_config")
-        #    cmd.append(ec2_hdfs_config_file_name)
+        # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
+        # if (os.path.exists(ec2_hdfs_config_file_name)):
+        #     cmd.append("-hdfs_config")
+        #     cmd.append(ec2_hdfs_config_file_name)
 
         self.output_file_name = \
             os.path.join(self.output_dir, "java_" + str(self.cloud_num) + "_" + str(self.node_num) + ".out.txt")
         f = open(self.output_file_name, "w")
 
         if g_convenient:
-          cwd = os.getcwd()
-          here = os.path.abspath(os.path.dirname(__file__))
-          there = os.path.abspath(os.path.join(here, "..", ".."))
-          os.chdir(there)
-          self.child = subprocess.Popen(args=cmd,
-                                        stdout=f,
-                                        stderr=subprocess.STDOUT,
-                                        cwd=there)
-          os.chdir(cwd)
+            cwd = os.getcwd()
+            here = os.path.abspath(os.path.dirname(__file__))
+            there = os.path.abspath(os.path.join(here, "..", ".."))
+            os.chdir(there)
+            self.child = subprocess.Popen(args=cmd,
+                                          stdout=f,
+                                          stderr=subprocess.STDOUT,
+                                          cwd=there)
+            os.chdir(cwd)
         else:
-          self.child = subprocess.Popen(args=cmd,
-                                        stdout=f,
-                                        stderr=subprocess.STDOUT,
-                                        cwd=self.output_dir)
+            self.child = subprocess.Popen(args=cmd,
+                                          stdout=f,
+                                          stderr=subprocess.STDOUT,
+                                          cwd=self.output_dir)
 
         self.pid = self.child.pid
         print("+ CMD: " + ' '.join(cmd))
@@ -873,10 +871,12 @@ class TestRunner:
                     continue
                 if (is_large and not run_large):
                     continue
-                if (is_nopass and not nopass):  # skip all NOPASS tests for regular runs
-                    self.nopass_counter += 1    # but still count the number of NOPASS tests
+                if (is_nopass and not nopass):
+                    # skip all NOPASS tests for regular runs but still count the number of NOPASS tests
+                    self.nopass_counter += 1
                     continue
-                if (nopass and not is_nopass):  # if g_nopass flag is set, then ONLY run the NOPASS tests (skip all other tests)
+                if (nopass and not is_nopass):
+                    # if g_nopass flag is set, then ONLY run the NOPASS tests (skip all other tests)
                     continue
 
                 if (test_group is not None):
@@ -1147,9 +1147,9 @@ class TestRunner:
         """
         return self.regression_passed
 
-    #--------------------------------------------------------------------
+    # --------------------------------------------------------------------
     # Private methods below this line.
-    #--------------------------------------------------------------------
+    # --------------------------------------------------------------------
 
     def _calc_test_short_dir(self, test_path):
         """
@@ -1232,7 +1232,7 @@ class TestRunner:
             # If a test hangs, it's difficult to tell which test is hung
             # print out a summary while waiting, every once in a while (minute?)
             # increase to 2 minutes so you don't see intermediate report during build (test_rest_api.py)
-            if (waits % 120)==0:
+            if (waits % 120) == 0:
                 print ""
                 print "Showing nopass=False summary so far." 
                 print "We've been waiting a minute or so for another test to complete."
@@ -1292,9 +1292,9 @@ class TestRunner:
         return s
 
 
-#--------------------------------------------------------------------
+# --------------------------------------------------------------------
 # Main program
-#--------------------------------------------------------------------
+# --------------------------------------------------------------------
 
 # Global variables that can be set by the user.
 g_script_name = ""
@@ -1534,11 +1534,11 @@ def parse_args(argv):
                 usage()
             v = argv[i]
             if (re.match(r'(s)?(m)?(l)?', v)):
-                if (not 's' in v):
+                if ('s' not in v):
                     g_run_small = False
-                if (not 'm' in v):
+                if ('m' not in v):
                     g_run_medium = False
-                if (not 'l' in v):
+                if ('l' not in v):
                     g_run_large = False
             else:
                 bad_arg(s)
@@ -1566,7 +1566,7 @@ def parse_args(argv):
         elif (s == "--nopass"):
             g_nopass = True
         elif s == "--c":
-          g_convenient = True
+            g_convenient = True
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
