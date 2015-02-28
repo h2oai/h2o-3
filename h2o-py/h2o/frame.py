@@ -351,11 +351,17 @@ class H2OFrame:
     :param i: Column to select
     :return: Returns an H2OVec or H2OFrame.
     """
+    # i is a named column
     if isinstance(i, str):
       for v in self._vecs:
         if i == v._name:
           return H2OFrame(vecs=[v for v in self._vecs if i != v._name])
       raise ValueError("Name " + i + " not in Frame")
+    # i is a 0-based column
+    elif isinstance(i, int):
+      if i < 0 or i >= self.__len__():
+        raise ValueError("Index out of range: 0 <= " + str(i) + " < " + str(self.__len__()))
+      return H2OFrame(vecs=[v for v in self._vecs if v != self._vecs[i]])
     raise NotImplementedError
 
   def __len__(self):

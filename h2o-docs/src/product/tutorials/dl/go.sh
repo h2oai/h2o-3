@@ -42,7 +42,7 @@ EOF
     plot.from(
       plot.remote('/blog/$TARGET/$i')
     ),
-    plot.bounds(600, null)
+    plot.bounds(800, null)
   )(renderPlot('plot_$i'));
 
   plot(
@@ -65,6 +65,8 @@ for i in network_topology scoring_overhead adaptive_rate train_samples_per_itera
 do
     sed '1d' /tmp/$i.csv >> dlperf/all.csv
 done
+
+cp -f dlperf/all.csv /tmp/
 
 for i in what_really_matters all
 do
@@ -95,7 +97,7 @@ EOF
     plot.from(
       plot.remote('/blog/$TARGET/$i')
     ),
-    plot.bounds(600, null)
+    plot.bounds(800, null)
   )(renderPlot('plot_$i'));
 
   plot(
@@ -119,5 +121,5 @@ rm *md-e
 
 cp dlperf.md $WEB_REPO/src/blog/$TARGET.md
 mkdir -p $WEB_REPO/src/blog/$TARGET
-rsync -avu --delete dlperf/ $WEB_REPO/src/blog/$TARGET/
+rsync -avu --delete --exclude=*.png dlperf/ $WEB_REPO/src/blog/$TARGET/
 (cd $WEB_REPO && make build)

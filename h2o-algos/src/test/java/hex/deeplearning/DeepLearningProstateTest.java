@@ -166,7 +166,6 @@ public class DeepLearningProstateTest extends TestUtil {
 //                                          DeepLearningModel cv_model = UKV.get(k);
 //                                          StringBuilder sb = new StringBuilder();
 //                                          cv_model.generateHTML("cv", sb);
-//                                          cv_model.delete_best_model();
 //                                          cv_model.delete();
 //                                        }
                                       }
@@ -205,14 +204,6 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                     // score and check result (on full data)
                                     model2 = DKV.get(dest).get(); //this actually *requires* frame to also still be in DKV (because of DataInfo...)
-
-                                    // score and check result of the best_model
-                                    if (model2.actual_best_model_key != null ) {
-                                      if (override_with_best_model) {
-                                        final DeepLearningModel best_model = DKV.get(model2.actual_best_model_key).get();
-                                        Assert.assertEquals(best_model.error(), model2.error(), 0);
-                                      }
-                                    }
 
                                     if (valid == null) valid = frame;
                                     double threshold = 0;
@@ -280,17 +271,14 @@ public class DeepLearningProstateTest extends TestUtil {
                                   } finally {
                                     if (model1 != null) {
                                       model1.delete_xval_models();
-                                      model1.delete_best_model();
                                       model1.delete();
                                     }
                                     if (model2 != null) {
                                       model2.delete_xval_models();
-                                      model2.delete_best_model();
                                       model2.delete();
                                     }
                                     if (tmp_model != null) {
                                       tmp_model.delete_xval_models();
-                                      tmp_model.delete_best_model();
                                       tmp_model.delete();
                                     }
                                     Scope.exit();

@@ -298,7 +298,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
-          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
+//          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
@@ -336,6 +336,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       }
       finally {
         if (model != null) model.unlock(self());
+        if (model.actual_best_model_key != null) {
+          assert (model.actual_best_model_key != model._key);
+          DKV.remove(model.actual_best_model_key);
+        }
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
       return model;

@@ -7,6 +7,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -69,10 +70,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
     }
 
-    for( Vec v : _train.vecs() ) {
-      // if (v.isEnum()) _ncats++;
-      if(v.isEnum()) error("_train","Columns cannot have categorical values");
-    }
+    new CheckCols() {
+      @Override protected boolean filter(Vec v) { return v.isEnum(); }
+    }.doIt(_train, "Columns cannot have categorical values: ", expensive);
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
@@ -84,6 +84,24 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       if( ncats < nvecs-1 ) _train.swap(ncats,nvecs-1);
     }
     _ncats = ncats;
+  }
+
+  abstract class CheckCols {
+    abstract protected boolean filter(Vec v);
+    void doIt( Frame f, String msg, boolean expensive ) {
+      boolean any=false;
+      for( int i = 0; i < f.vecs().length; i++ ) {
+        if( filter(f.vecs()[i]) ) {
+          if( any ) msg += ", "; // Log cols with errors
+          any = true;
+          msg += f._names[i];
+        }
+      }
+      if( any ) {
+        error("_train", msg);
+        if (expensive) Log.info(msg);
+      }
+    }
   }
 
   // ----------------------

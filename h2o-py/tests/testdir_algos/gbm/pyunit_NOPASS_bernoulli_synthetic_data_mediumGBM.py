@@ -54,7 +54,7 @@ def bernoulli_synthetic_data_mediumGBM(ip,port):
 
     gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"], loss=loss, ntrees=ntrees, min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
     gbm_perf = gbm_h2o.model_performance(test_h2o)
-    auc_h2o = gbm_perf._auc_data.AUC
+    auc_h2o = gbm_perf.auc()
 
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"

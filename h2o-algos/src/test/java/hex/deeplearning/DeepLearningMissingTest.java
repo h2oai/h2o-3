@@ -102,7 +102,6 @@ public class DeepLearningMissingTest extends TestUtil {
           // cleanup
           if (mymodel != null) {
             mymodel.delete_xval_models();
-            mymodel.delete_best_model();
             mymodel.delete();
           }
           if (train != null) train.delete();
