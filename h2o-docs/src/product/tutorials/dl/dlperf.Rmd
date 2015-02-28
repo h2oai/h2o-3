@@ -34,7 +34,7 @@ For simplicity, we start with some single-node experiments quantifying the raw t
 ### Establish Connection to H2O
 For this study, we use the latest version of H2O, [h2o-dev](http://github.com/h2oai/h2o-dev). The numerical performance of H2O Deep Learning in h2o-dev is very similar to the performance of its equivalent in [h2o](http://github.com/h2oai/h2o). Instructions for installation and execution in stand-alone mode, R, Python, Hadoop or Spark environments can be found at [h2o.ai/download](http://h2o.ai/download), but you can just follow this script from R, and everything should just work.
 
-We use nightly build 1076 of h2o-dev, but you should be able to use the latest nightly or latest stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
+We use nightly build 1077 of h2o-dev, but you should be able to use any future nightly or stable version as well. The code below is copied from the instructions from the [h2o download page](http://h2o.ai/download).
 
 The following two commands remove any previously installed H2O packages for R.
 ```{r}
@@ -55,7 +55,7 @@ if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils")
 ```
 Now we download, install and initialize the H2O package for R.
 ```{r}
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1076/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o-dev/master/1077/R")))
 library(h2o)
 library('stringr')
 ```
