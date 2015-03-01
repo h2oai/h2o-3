@@ -369,16 +369,18 @@
             </div>
 
           <div id="quickstart-hadoop" style="display:none">
-            <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps.</h2>
-            <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
+            <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
+            <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
             <p class="terminal">
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION.zip
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-cdh5.2.0.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
             <p>2. Unpack the zip file and launch a 1g instance of H<sub>2</sub>O: </p>
             <p class="terminal">
-                unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
-                cd h2o-SUBST_PROJECT_VERSION<br/>
-                hadoop jar hadoop/cdh5/h2o-hadoop.jar water.hadoop.h2odriver -libjars h2o.jar -mapperXmx 1g -nodes 1 -output hdfsOutputDirName<br/>
+                unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
+                cd h2o-SUBST_PROJECT_VERSION-*<br/>
+                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName<br/>
             </p>
             <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
             <p class="terminal">
