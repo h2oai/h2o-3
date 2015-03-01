@@ -2,6 +2,7 @@ import h2o_cmd, h2o, h2o_util
 import re, random, math
 from h2o_test import check_sandbox_for_errors, dump_json, verboseprint
 import h2o_nodes
+from tabulate import tabulate
 
 # recursive walk an object check that it has valid numbers only (no "" or nan or inf
 def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
@@ -19,13 +20,20 @@ def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
         if isinstance(obj, (bool, int, long, float, basestring)):
             try:
                 number = float(obj)
+                if math.isnan(number):
+                    raise Exception("%s %s is a NaN" % (hierarchy, obj))
+                if math.isinf(number):
+                    raise Exception("%s %s is a Inf" % (hierarchy, obj))
+                print "Yay!", hierarchy, number
             except:
-                raise Exception("%s %s is not a valid float" % (hierarchy, obj))
-            if math.isnan(number):
-                raise Exception("%s %s is a NaN" % (hierarchy, obj))
-            if math.isinf(number):
-                raise Exception("%s %s is a Inf" % (hierarchy, obj))
-            print "Yay!", hierarchy, number
+                if obj is None:
+                    print "Not Yay! how come you're giving me None for a coefficient? %s %s" % (hierarchy, obj)
+                elif obj == str(obj)=="":
+                    print "Not Yay! how come you're giving me an empty string for a coefficient? %s %s" % (hierarchy, obj)
+                else:
+                    raise Exception("%s %s %s is not a valid float" % (hierarchy, obj, type(obj)))
+                # hack for now
+                number = 0.0
             return number
 
         elif isinstance(obj, dict):
@@ -89,11 +97,17 @@ def simpleCheckGLM(self, model, parameters,
     coeffs_names = model.coefficients_table.data[0]
 
     # these are returned as quoted strings. Turn them into numbers
-    check_obj_has_good_numbers(model.coefficients_table.data[1], 'model.coeffs')
-    coeffs = map(float, model.coefficients_table.data[1])
+    temp = model.coefficients_table.data[1]
+    assert len(coeffs_names)==len(temp), "%s %s" % (len(coeffs_names), len(temp))
+
+    check_obj_has_good_numbers(temp, 'model.coeffs')
+    print "temp", temp[0:10]
+    print "temp[5489:5500]", temp[5489:5500]
+    coeffs = map(lambda x : float(x) if x != "" else 0,  temp)
 
     intercept = coeffs[-1] 
     interceptName = coeffs_names[-1]
+    assert interceptName == 'Intercept'
 
     assert len(coeffs) == len(coeffs_names), "%s %s" % (len(coeffs), len(coeffs_names))
     # FIX! if a coeff is zeroed/ignored, it doesn't show up?
