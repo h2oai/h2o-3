@@ -341,6 +341,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       PCAModel model = null;
       DataInfo dinfo = null;
       DataInfo xinfo = null;
+      Frame x = null;
 
       try {
         _parms.read_lock_frames(PCA.this); // Fetch & read-lock input frames
@@ -363,15 +364,20 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           xvecs[c++] = vecs[i];
         }
         assert c == xvecs.length;
-
         Frame fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
-        model._output._normSub = dinfo._normSub == null ? null : Arrays.copyOf(dinfo._normSub, _train.numCols());
-        model._output._normMul = dinfo._normMul == null ? null : Arrays.copyOf(dinfo._normMul, _train.numCols());
+
+        // Output standardization vectors for use in scoring later
+        model._output._normSub = dinfo._normSub == null ? new double[_train.numCols()] : Arrays.copyOf(dinfo._normSub, _train.numCols());
+        if(dinfo._normMul == null) {
+          model._output._normMul = new double[_train.numCols()];
+          Arrays.fill(model._output._normMul, 1.0);
+        } else
+          model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // Create separate reference to X for Gram task
-        Frame x = new Frame(_parms._loading_key, null, xvecs);
+        x = new Frame(_parms._loading_key, null, xvecs);
         xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
@@ -465,6 +471,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
+        if (x != null && !_parms._keep_loading) x.delete();
         _parms.read_unlock_frames(PCA.this);
       }
       tryComplete();
