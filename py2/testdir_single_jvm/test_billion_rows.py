@@ -49,10 +49,10 @@ class Basic(unittest.TestCase):
             labelList = iA.labelList
 
             parameters = {
-                'response_column': 1, 
+                'response_column': 'C2', 
                 'n_folds': 0,
-                'alpha': 0, 
-                'lambda': 0,
+                'alpha': '[0]', 
+                'lambda': '[0]',
             }
             model_key = 'B.hex'
             bmResult = h2o.n0.build_model(
@@ -60,7 +60,7 @@ class Basic(unittest.TestCase):
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
-                timeoutSecs=10)
+                timeoutSecs=300)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)

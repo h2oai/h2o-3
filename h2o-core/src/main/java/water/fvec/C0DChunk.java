@@ -48,7 +48,7 @@ public class C0DChunk extends Chunk {
   @Override final public AutoBuffer write_impl(AutoBuffer ab) { return ab.putA1(_mem,_mem.length); }
   @Override final public C0DChunk read_impl(AutoBuffer ab) {
     _mem = ab.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     _con = UnsafeUtils.get8d(_mem,0);
     set_len(UnsafeUtils.get4(_mem,8));
     return this;

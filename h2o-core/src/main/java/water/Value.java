@@ -60,7 +60,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // In any case, they will cause issues with both GC (giant pause times on
   // many collectors) and I/O (long term blocking of TCP I/O channels to
   // service a single request, causing starvation of other requests).
-  private static final int MAX = 64*1024*1024;
+  private static final int MAX = 256*1024*1024;
 
   /** Size of the serialized wad of bits.  Values are wads of bits; known small
    *  enough to 'chunk' politely on disk, or fit in a Java heap (larger Vecs

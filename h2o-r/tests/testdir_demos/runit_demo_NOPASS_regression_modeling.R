@@ -20,7 +20,7 @@ test <- function(h) {
 	BostonHousing <- h2o.uploadFile(h, path = filePath, key = "BostonHousing")
 	print(BostonHousing)
 	BostonHousing <-  h2o.importFile(h, path = filePath, key="BostonHousing")
-	dim(BostonHousing)
+	print(dim(BostonHousing))
 	str(BostonHousing)
 	#Convert column type to factor
 	BostonHousing$chas <- as.factor(BostonHousing$chas)
@@ -28,9 +28,9 @@ test <- function(h) {
 	#Split the dataset into train and test sets
 	s <- h2o.runif(BostonHousing)    # Useful when number of rows too large for R to handle
 	BH_train <- h2o.assign(BostonHousing[s <= 0.8,],key="BH_train")
-	dim(BH_train)
+	print(dim(BH_train))
 	BH_test <- h2o.assign(BostonHousing[s > 0.8,],key="BH_test")
-	dim(BH_test)
+	print(dim(BH_test))
 
 	myX <- 1:13
 	myY <- "medv"

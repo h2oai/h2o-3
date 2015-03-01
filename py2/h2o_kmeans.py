@@ -3,7 +3,7 @@ import h2o_nodes
 import re, math, random
 from h2o_test import check_sandbox_for_errors
 from operator import itemgetter
-from h2o_test import OutputObj
+from h2o_test import OutputObj, dump_json
 
 def pickRandKMeansParams(paramDict, params):
     randomGroupSize = random.randint(1,len(paramDict))
@@ -44,7 +44,12 @@ class KMeansObj(OutputObj):
         domains = self.domains 
         names = self.names 
         categorical_column_count = self.categorical_column_count # 0
-        centers = self.centers # [ 4 lists of centers ]
+        centers_data = self.centers.data # [ 4 lists of centers ]
+        # h2o returns it sliced across centers. transpose the list of lists, drop 0 which is the cluster id?
+        # gotta turn the strings into numbers
+        centersStr = [list(x) for x in zip(*centers_data[1:])]
+        centers = [map(float, c) for c in centersStr]
+
         within_mse = self.within_mse
         avg_ss = self.avg_ss
 
@@ -58,7 +63,7 @@ class KMeansObj(OutputObj):
 
         if numCols:
             assert len(names) == numCols, \
-                "Need to pass correct numCols after ignored columns decrement %s %s" % (len(names), numCols)
+                "Need to pass correct numCols after ignored columns decrement %s %s %s" % (len(names), numCols, names)
             for c in centers:
                 assert len(c) == numCols, "%s %s" % (len(c), numCols)
 
@@ -84,6 +89,7 @@ class KMeansObj(OutputObj):
         # maybe should sort by centers?
         # put a cluster index in there too, (leftmost) so we don't lose track
         tuples = zip(range(len(centers)), centers, size, within_mse)
+        # print "tuples:", dump_json(tuples)
         # can we sort on the sum of the centers?
         self.tuplesSorted = sorted(tuples, key=lambda tup: sum(tup[1]))
 

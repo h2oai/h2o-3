@@ -7,6 +7,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -26,7 +27,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-      Model.ModelCategory.Clustering,
+      Model.ModelCategory.Clustering
     };
   }
 
@@ -69,10 +70,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
     }
 
-    for( Vec v : _train.vecs() ) {
-      // if (v.isEnum()) _ncats++;
-      if(v.isEnum()) error("_train","Columns cannot have categorical values");
-    }
+    new CheckCols() {
+      @Override protected boolean filter(Vec v) { return v.isEnum(); }
+    }.doIt(_train, "Columns cannot have categorical values: ", expensive);
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
@@ -84,6 +84,24 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       if( ncats < nvecs-1 ) _train.swap(ncats,nvecs-1);
     }
     _ncats = ncats;
+  }
+
+  abstract class CheckCols {
+    abstract protected boolean filter(Vec v);
+    void doIt( Frame f, String msg, boolean expensive ) {
+      boolean any=false;
+      for( int i = 0; i < f.vecs().length; i++ ) {
+        if( filter(f.vecs()[i]) ) {
+          if( any ) msg += ", "; // Log cols with errors
+          any = true;
+          msg += f._names[i];
+        }
+      }
+      if( any ) {
+        error("_train", msg);
+        if (expensive) Log.info(msg);
+      }
+    }
   }
 
   // ----------------------
@@ -202,8 +220,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
+      String[] colFormats = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, "", new String[_parms._k][], model._output._centers_raw);
+      Arrays.fill(colFormats, "%5f");
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -258,10 +278,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         //
         model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
+        // mults & means for standardization
         // means are used to impute NAs
         final double[] means = prepMeans(vecs);
-        // mults & means for standardization
         final double[] mults = prepMults(vecs);
+        model._output._normSub = means;
+        model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
         double[][] centers = initial_centers(model,vecs,means,mults);
         if( centers==null ) return; // Stopped/cancelled during center-finding
@@ -565,7 +587,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   }
 
   // For KMeansModel scoring; just the closest cluster center
-  static int closest(double[][] centers, double[] point, int ncats) {
+  public static int closest(double[][] centers, double[] point, int ncats) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {

@@ -165,6 +165,7 @@ def check_sandbox_for_errors(LOG_DIR=None, python_test_name='',
                 #[Loaded java.lang.Error from /usr/lib/jvm/java-7-oracle/jre/lib/rt.jar]
                 foundBadPartial = regex1.search(line)
                 foundBad = foundBadPartial and not (
+                    ('INFO:' in line and 'Error' in line) or
                     ('Failed to instantiate schema class:' in line) or
                     ('WARNING: found non-Schema Iced field:' in line) or # arno has 'errors' as a field
                     ('ti-UDP-R ERRR:' in line) or # from Shutdown AIOOBE

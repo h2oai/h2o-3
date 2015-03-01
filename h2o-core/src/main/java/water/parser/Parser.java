@@ -266,56 +266,14 @@ public abstract class Parser extends Iced {
    *  previewing the first few lines &amp; columns of a file.
    */
   protected static class InspectDataOut extends Iced implements DataOut {
+    protected final static int MAX_PREVIEW_COLS  = 100;
+    protected final static int MAX_PREVIEW_LINES = 10;
     protected int _nlines;
     protected int _ncols;
     protected int _invalidLines;
     private   String []   _colNames;
-    protected String [][] _data = new String[MAX_PREVIEW_LINES][MAX_PREVIEW_COLS];
-    protected final static int MAX_PREVIEW_COLS  = 100;
-    protected final static int MAX_PREVIEW_LINES = 50;
-    transient ArrayList<String> _errors;
-    protected InspectDataOut() {
-     for(int i = 0; i < MAX_PREVIEW_LINES;++i)
-       Arrays.fill(_data[i],"NA");
-    }
-    String[] colNames() { return _colNames; }
-    @Override public void setColumnNames(String[] names) {
-      _colNames = names;
-      _data[0] = names;
-      ++_nlines;
-      _ncols = names.length;
-    }
-    @Override public void newLine() { ++_nlines; }
-    @Override public boolean isString(int colIdx) { return false; }
-    @Override public void addNumCol(int colIdx, long number, int exp) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = Double.toString(number*water.util.PrettyPrint.pow10(exp));
-    }
-    @Override public void addNumCol(int colIdx, double d) {
-      _ncols = Math.max(_ncols,colIdx);
-      if(_nlines < MAX_PREVIEW_LINES && colIdx < MAX_PREVIEW_COLS)
-        _data[_nlines][colIdx] = Double.toString(d);
-    }
-    @Override public void addInvalidCol(int colIdx) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = "NA";
-    }
-    @Override public void addStrCol(int colIdx, ValueString str) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = str.toString();
-    }
-    @Override public void rollbackLine() {--_nlines;}
-    @Override public void invalidLine(String err) {
-      ++_invalidLines;
-      if( _errors == null ) _errors = new ArrayList<>();
-      if( _errors.size() < 10 )
-        _errors.add("Error at line: " + _nlines + ", reason: " + err);
-    }
-    String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
-  }
-
-  protected static class TypeGuesserDataOut extends Iced implements DataOut {
-
+    protected String [][] _data = new String[MAX_PREVIEW_LINES][];
+    protected boolean _dataIsColPreview = false;
     transient private HashSet<String> [] _domains;
     int [] _nnums;
     int [] _nstrings;
@@ -323,119 +281,79 @@ public abstract class Parser extends Iced {
     int [] _nUUID;
     int [] _nzeros;
     int [] _nempty;
-    int _nlines = 0;
-    final int _ncols;
+    transient ArrayList<String> _errors;
 
-    public TypeGuesserDataOut(int ncols){
-      _ncols = ncols;
-      _domains = new HashSet[ncols];
-      _nzeros = new int[ncols];
-      _nstrings = new int[ncols];
-      _nUUID = new int[ncols];
-      _ndates = new int[ncols];
-      _nnums = new int[ncols];
-      _nempty = new int[ncols];
-      for(int i = 0; i < ncols; ++i)
-        _domains[i] = new HashSet<String>();
-    }
+    protected InspectDataOut() {}
+    protected InspectDataOut(int ncols) { setColumnCount(ncols); }
 
-    public ColTypeInfo[] guessTypes() {
-      ColTypeInfo [] res = new ColTypeInfo[_ncols];
-      for(int i = 0; i < _ncols; ++i) {
-        res[i] = new ColTypeInfo();
-        int nonemptyLines = _nlines-_nempty[i];
+    String[] colNames() { return _colNames; }
 
-        // Numeric
-        if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
-            || (_nnums[i]+_nzeros[i] > 0 && _domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
-                && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.NUM;
-          continue;
-        }
-
-        // Datetime
-        if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
-            || (_ndates[i] > 1 && _domains[i].size() <= 1 // or time + 1 unique string (NA?)
-                && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.TIME;
-          continue;
-        }
-
-        // UUID
-        if ((_nUUID[i] > 0) //  some UUID
-                || (_nUUID[i] > 0 && _domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
-                && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.UUID;
-          continue;
-        }
-
-        // Enum or string?
-        // Enum with 0s for NAs
-        if(_nzeros[i] > 0
-                && (_nzeros[i] + _nstrings[i] >= (nonemptyLines - 1)) //just strings and zeros
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // not all unique strings
-          res[i]._naStr = new ValueString("0");
-          res[i]._type = ColType.ENUM;
-          res[i]._strongGuess = true;
-          continue;
-        }
-        // Enum mixed with numbers
-        if(_nstrings[i] >= STRING_DOMINANCE_RATIO*(_nnums[i]+_nzeros[i]) // mostly strings
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // but not all unique
-          res[i]._type = ColType.ENUM;
-          continue;
-        }
-        // Strings, almost no dups
-        if (_domains[i].size() >= 0.98 * _nstrings[i]) {
-          res[i]._type = ColType.STR;
-          continue;
-        }
-
-        // All guesses failed
-        res[i]._type = ColType.UNKNOWN;
-      }
-      return res;
-    }
-
-    @Override
-    public void setColumnNames(String[] names) {}
-
-    @Override
-    public void newLine() {
+    @Override public void setColumnNames(String[] names) {
+      _colNames = names;
+      _data[0] = names;
       ++_nlines;
+      setColumnCount(names.length);
     }
-
-    @Override
-    public boolean isString(int colIdx) {
-      return false;
+    private void setColumnCount(int n) {
+      // initialize
+      if (_ncols == 0 && n > 0) {
+        _ncols = n;
+        _nzeros = new int[n];
+        _nstrings = new int[n];
+        _nUUID = new int[n];
+        _ndates = new int[n];
+        _nnums = new int[n];
+        _nempty = new int[n];
+        _domains = new HashSet[n];
+        for(int i = 0; i < n; ++i)
+          _domains[i] = new HashSet<String>();
+        for(int i =0; i < MAX_PREVIEW_LINES; i++)
+          _data[i] = new String[n];
+      } /*else if (n > _ncols) { // resize
+        _nzeros = Arrays.copyOf(_nzeros, n);
+        _nstrings = Arrays.copyOf(_nstrings, n);
+        _nUUID = Arrays.copyOf(_nUUID, n);
+        _ndates = Arrays.copyOf(_ndates, n);
+        _nnums = Arrays.copyOf(_nnums, n);
+        _nempty = Arrays.copyOf(_nempty, n);
+        _domains = Arrays.copyOf(_domains, n);
+        for (int i=_ncols; i < n; i++)
+          _domains[i] = new HashSet<String>();
+        for(int i =0; i < MAX_PREVIEW_LINES; i++)
+          _data[i] = Arrays.copyOf(_data[i], n);
+        _ncols = n;
+      }*/
     }
-
-    @Override
-    public void addNumCol(int colIdx, long number, int exp) {
-      if(colIdx < _ncols)
+    @Override public void newLine() { ++_nlines; }
+    @Override public boolean isString(int colIdx) { return false; }
+    @Override public void addNumCol(int colIdx, long number, int exp) {
+      if(colIdx < _ncols) {
         if (number == 0)
           ++_nzeros[colIdx];
         else
           ++_nnums[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = Double.toString(number * water.util.PrettyPrint.pow10(exp));
+      }
     }
-
-    @Override
-    public void addNumCol(int colIdx, double d) {
-      if(colIdx < _ncols)
+    @Override public void addNumCol(int colIdx, double d) {
+      if(colIdx < _ncols) {
         if (d == 0)
           ++_nzeros[colIdx];
         else
           ++_nnums[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = Double.toString(d);
+      }
     }
-
-    @Override
-    public void addInvalidCol(int colIdx) {
-      if(colIdx < _ncols)
+    @Override public void addInvalidCol(int colIdx) {
+      if(colIdx < _ncols) {
         ++_nempty[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = "NA";
+      }
     }
-
-    @Override
-    public void addStrCol(int colIdx, ValueString str) {
+    @Override public void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _ncols) {
         // Check for time
         if (ParseTime.attemptTimeParse(str) != Long.MIN_VALUE) {
@@ -453,19 +371,93 @@ public abstract class Parser extends Iced {
         }
         str.setOff(old);
 
-        //Add string to for later determining string, NA, or enum
+        //Add string to domains list for later determining string, NA, or enum
         ++_nstrings[colIdx];
         _domains[colIdx].add(str.toString());
+
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = str.toString();
       }
     }
 
-    @Override
-    public void rollbackLine() {--_nlines;}
+    @Override public void rollbackLine() {--_nlines;}
+    @Override public void invalidLine(String err) {
+      ++_invalidLines;
+      if( _errors == null ) _errors = new ArrayList<>();
+      if( _errors.size() < 10 )
+        _errors.add("Error at line: " + _nlines + ", reason: " + err);
+    }
+    String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
 
-    @Override
-    public void invalidLine(String err) {}
+    public ColTypeInfo[] guessTypes() {
+      ColTypeInfo [] res = new ColTypeInfo[_ncols];
+      for(int i = 0; i < _ncols; ++i) {
+        res[i] = new ColTypeInfo();
+        int nonemptyLines = _nlines-_nempty[i];
 
-    public void invalidValue(int line, int col) {}
+        //Very redundant tests, but clearer and not speed critical
+        
+        // is it clearly numeric?
+        if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
+                && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
+                && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among enums, ignore
+          res[i]._type = ColType.NUM;
+          continue;
+        }
+
+        // with NA, but likely numeric
+        if (_domains[i].size() <= 1
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
+          res[i]._type = ColType.NUM;
+          continue;
+        }
+
+        // Datetime
+        if (_ndates[i] > _nUUID[i]
+                && _ndates[i] > (_nnums[i] + _nzeros[i])
+                && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          res[i]._type = ColType.TIME;
+          continue;
+        }
+
+        // UUID
+        if (_nUUID[i] > _ndates[i]
+                && _nUUID[i] > (_nnums[i] + _nzeros[i])
+                && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          res[i]._type = ColType.UUID;
+          continue;
+        }
+
+        // Strings, almost no dups
+        if (_nstrings[i] > _ndates[i]
+                && _nstrings[i] > _nUUID[i]
+                && _nstrings[i] > (_nnums[i] + _nzeros[i])
+                && _domains[i].size() >= 0.95 * _nstrings[i]) {
+          res[i]._type = ColType.STR;
+          continue;
+        }
+
+        // Enum or string?
+        // Enum with 0s for NAs
+        if(_nzeros[i] > 0
+                && ((_nzeros[i] + _nstrings[i]) == _nlines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
+          res[i]._naStr = new ValueString("0");
+          res[i]._type = ColType.ENUM;
+          res[i]._strongGuess = true;
+          continue;
+        }
+        // Enum mixed with numbers
+        if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
+          res[i]._type = ColType.ENUM;
+          continue;
+        }
+
+        // All guesses failed
+        res[i]._type = ColType.UNKNOWN;
+      }
+      return res;
+    }
   }
-
 }

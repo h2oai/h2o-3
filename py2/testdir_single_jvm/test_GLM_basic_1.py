@@ -2,6 +2,7 @@ import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
 from h2o_test import verboseprint, dump_json, OutputObj
+from tabulate import tabulate
 
 
 class Basic(unittest.TestCase):
@@ -51,7 +52,6 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': '[STR]',
-                'score_each_iteration': True,
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
                 'do_classification': True,
@@ -68,7 +68,6 @@ class Basic(unittest.TestCase):
                 'lambda_search': None,
                 'nlambdas': None,
                 'lambda_min_ratio': None,
-                'higher_accuracy': True,
                 'use_all_factor_levels': False,
                 # NPE with n_folds 2?
                 'n_folds': 1,
@@ -90,13 +89,28 @@ class Basic(unittest.TestCase):
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
+            mcms = OutputObj({'data': cmm.maxCriteriaAndMetricScores.data}, 'mcms')
+            m1 = mcms.data[1:]
+            h0 = mcms.data[0]
+            print "\nmcms", tabulate(m1, headers=h0)
+
+            thms = OutputObj(cmm.thresholdsAndMetricScores, 'thms')
+            cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
+
+            if 1==0:
+                print ""
+                for i,c in enumerate(cmms.cm):
+                    print "\ncmms.cm[%s]" % i, tabulate(c)
+                print ""
+                
+
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-            mm = OutputObj(mmResult, 'mm')
+            mm = OutputObj(mmResult['model_metrics'][0], 'mm')
 
             prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
             pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
-            h2o_cmd.runStoreView()
+            # h2o_cmd.runStoreView()
 
 if __name__ == '__main__':
     h2o.unit_main()

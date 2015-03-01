@@ -28,7 +28,7 @@ test.LiblineaR <- function(conn) {
     Log.info(" family = 'binomial': Logistic Regression\n")
     Log.info(" lambda =      1/700: Shrinkage Parameter\n")
     Log.info("  alpha =        0.0: Elastic Net Parameter\n")
-    Log.info("epsilon =      1E-02: Tolerance of termination criterion\n")
+    Log.info("beta_eps =      1E-02: Tolerance of termination criterion\n")
     Log.info(" nfolds =          1: No kfold cross-validation\n")
     h2o.m <- h2o.glm(x              = c("GLEASON","DPROS","PSA","DCAPS","AGE","RACE","VOL"), 
                      y              = "CAPSULE",
@@ -37,9 +37,9 @@ test.LiblineaR <- function(conn) {
                      n_folds         = 1,
                      lambda         = 1/ (7 * 100), #700,
                      alpha          = 0.0,
-                     epsilon        = 1E-2)
+                     beta_eps        = 1E-2)
     
-    h2op         <- h2o.predict(h2o.m, testhex)
+    h2op         <- predict(h2o.m, testhex)
     h2opreds     <- head(h2op, nrow(h2op))
     h2oCM        <- table(testLabels, h2opreds$predict)
     
@@ -59,8 +59,8 @@ test.LiblineaR <- function(conn) {
     Log.info(paste("                           LiblineaR Recall (tp../ (tp + fn): ", LibRRecall, "\n", sep = ""))
     Log.info(paste("                                         LiblineaR F1 Score: ", LibRF1, "\n", sep ="")) 
     Log.info("                ========= H2O & LibR coeff. comparison ====\n")
-    cat("              ", format(names(h2o.m@model$coefficients),width=10,justify='right'), "\n")
-    cat(" H2O coefficients: ", h2o.m@model$coefficients, "\n")
+    cat("              ", format(names(h2o.m@model$coefficients_table$Coefficients),width=10,justify='right'), "\n")
+    cat(" H2O coefficients: ", h2o.m@model$coefficients_table$Coefficients, "\n")
     cat("LibR coefficients: ", LibR.m$W, "\n")
     return(list(h2o.m,LibR.m))
   }
@@ -115,8 +115,8 @@ test.LiblineaR <- function(conn) {
     Log.info(paste("                           LiblineaR Recall (tp../ (tp + fn): ", LibRRecall, "\n", sep = ""))
     Log.info(paste("                                         LiblineaR F1 Score: ", LibRF1, "\n", sep = ""))
     Log.info(paste("                 ========= H2O & LibR coeff. comparison ===\n"))
-    Log.info("              ", format(names(h2o.m@model$coefficients),width=10,justify='right'), "\n")
-    cat(" H2O coefficients: ", h2o.m@model$coefficients, "\n",sep = "")
+    Log.info("              ", format(names(h2o.m@model$coefficients_table$Coefficients),width=10,justify='right'), "\n")
+    cat(" H2O coefficients: ", h2o.m@model$coefficients_table$Coefficients, "\n",sep = "")
     cat("LibR coefficients: ", LibR.m$W, "\n", sep = "")
 
     return(list(h2o.m,LibR.m))
@@ -130,17 +130,19 @@ test.LiblineaR <- function(conn) {
             and coefficients.\n")
 
     Log.info("                ========= H2O & LibR coeff. comparison ===\n")
-    cat("              ", format(names(h2o@model$coefficients),width=10,justify='right'), "\n")
-    cat(" H2O coefficients: ", h2o@model$coefficients, "\n")
+    cat("              ", format(names(h2o@model$coefficients_table$Coefficients),width=10,justify='right'), "\n")
+    cat(" H2O coefficients: ", h2o@model$coefficients_table$Coefficients, "\n")
     cat("LibR coefficients: ", libR$W, "\n")
-    rms_diff <- sqrt(sum(abs(h2o@model$coefficients) - abs(libR$W))**2)
+    rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$Coefficients) - abs(libR$W))**2)
     Log.info(paste("RMS of the absolute difference in the sets of coefficients is: ", rms_diff, "\n", sep = ""))
-    Log.info(paste(all.equal(abs(as.vector(h2o@model$coefficients)), abs(as.vector(libR$W))), "\n", sep = ""))
+    Log.info(paste(all.equal(abs(as.vector(h2o@model$coefficients_table$Coefficients)), abs(as.vector(libR$W))), "\n", sep = ""))
   }
 
   Log.info("Importing prostate test/train data...\n")
   prostate.train.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_train.csv"), "pTrain.hex")
   prostate.test.hex  <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate_test.csv"), "pTest.hex")
+  prostate.train.hex$CAPSULE <- as.factor(prostate.train.hex$CAPSULE)
+  prostate.test.hex$CAPSULE <- as.factor(prostate.test.hex$CAPSULE)
   prostate.train.dat <- read.csv(locate("smalldata/logreg/prostate_train.csv")) #head(prostate.train.hex,nrow(prostate.train.hex))
   prostate.test.dat  <- read.csv(locate("smalldata/logreg/prostate_test.csv")) #head(prostate.test.hex,nrow(prostate.test.hex))
   xTrain             <- prostate.train.dat[,-1]

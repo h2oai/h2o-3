@@ -291,6 +291,7 @@ public final class AutoBuffer {
   }
   static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
   static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
+  public static int TCP_BUF_SIZ = BBP_BIG.size();
 
   private int bbFree() {
     if( _bb != null && _bb.isDirect() ) BBPool.FREE(_bb);

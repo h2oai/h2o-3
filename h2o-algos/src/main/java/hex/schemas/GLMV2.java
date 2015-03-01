@@ -101,10 +101,4 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
 
 
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // Return a URL to invoke GLM on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/GLM?training_frame="+fr._key; }
 }

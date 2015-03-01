@@ -420,7 +420,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'pca', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -660,7 +660,7 @@ assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE
 assert col['bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
 assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
 assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
-assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile for AGE.'
+assert col['pctiles'][0] == 43, 'FAIL: Failed to find 43 as the first pctile for AGE. '+str(col['pctiles'][0])
 
 # Test /SplitFrame for prostate.csv
 if verbose: print 'Testing SplitFrame with named destKeys. . .'
@@ -719,6 +719,7 @@ for model_spec in models_to_build:
 #######################################
 # Test default parameters validation for each model builder
 #
+if verbose: print 'Testing ModelBuilder default parameters. . .'
 model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
 
 # Do we know about all of them?

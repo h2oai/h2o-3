@@ -8,6 +8,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -293,6 +294,35 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  // Predict with no actual, after training
+  @Test public void testGBMPredict() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+      parms._convert_to_enum = true;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      job.remove();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      pred.remove("Angaus").remove();    // No response column during scoring
+      res = gbm.score(pred);
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+    }
+  }
+
   // Adapt a trained model to a test dataset with different enums
   @Test public void testModelAdapt() {
     GBM job = null;
@@ -398,6 +428,7 @@ public class GBMTest extends TestUtil {
       try { Thread.sleep(50); } catch( Exception ignore ) { }
 
       try {
+        Log.info("Trying illegal frame delete.");
         fr.delete();            // Attempted delete while model-build is active
         Assert.fail("Should toss IAE instead of reaching here");
       } catch( IllegalArgumentException ignore ) {
@@ -405,6 +436,7 @@ public class GBMTest extends TestUtil {
         assertTrue( de.getMessage().contains("java.lang.IllegalArgumentException") );
       }
 
+      Log.info("Getting model");
       GBMModel model = gbm.get();
       Assert.assertTrue(gbm._state == Job.JobState.DONE); //HEX-1817
       if( model != null ) model.delete();

@@ -13,7 +13,9 @@ public class RebalanceDatasetTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(5); }
   @Test public void testProstate(){
     Key rebalancedKey = Key.make("rebalanced");
-    for (int i=1; i<381; ++i) {
+    int [] trials = { 380, 1, 3, 8, 12, 256, 16, 32, 64, 11, 13 };
+    for (int k=0; k<trials.length; ++k) {
+      int i = trials[k];
       Frame fr = null, rebalanced = null;
       try {
         NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));

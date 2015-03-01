@@ -102,7 +102,7 @@ public final class ParseDataset extends Job<Frame> {
       ice = DKV.getGet(keys[i]);
       update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update).setChunkSize(FileVec.DFLT_CHUNK_SIZE);//setup._chunkSize);
+        ((FileVec) update).setChunkSize(setup._chunkSize);
         DKV.put(update._key, update, fs);
         fs.blockForPending();
         // also update Frame to invalidate local caches
@@ -219,7 +219,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._columnNames != null?setup._columnNames:genericColumnNames(setup._ncols),AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.

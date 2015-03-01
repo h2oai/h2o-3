@@ -46,9 +46,9 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      cols = parse['columnNames']
-      rows = parse['rows']
       veckeys = parse['vecKeys']
+      rows = parse['rows']
+      cols = parse['columnNames'] if parse["columnNames"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
       print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
 
@@ -218,6 +218,27 @@ class H2OFrame:
     print tabulate.tabulate(head, headers=["Row ID"] + colnames)
     print
 
+  def tail(self, rows=10, cols=200, **kwargs):
+    nrows = min(self.nrow(), rows)
+    ncols = min(self.ncol(), cols)
+    colnames = self.names()[0:ncols]
+
+    exprs = [self[c][(self.nrow()-nrows):(self.nrow())] for c in range(ncols)]
+    print "Last", str(nrows), "rows and first", str(ncols), "columns: "
+    if nrows != 1:
+      fr = H2OFrame.py_tmp_key()
+      cbind = "(= !" + fr + " (cbind %"
+      cbind += " %".join([expr.eager() for expr in exprs]) + "))"
+      res = h2o.rapids(cbind)
+      h2o.remove(fr)
+      tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
+      tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
+      tail = zip(*tail_rows)
+      print tabulate.tabulate(tail, headers=["Row ID"] + colnames)
+    else:
+      print tabulate.tabulate([[self.nrow()] + [expr.eager() for expr in exprs]], headers=["Row ID"] + colnames)
+    print
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -330,11 +351,17 @@ class H2OFrame:
     :param i: Column to select
     :return: Returns an H2OVec or H2OFrame.
     """
+    # i is a named column
     if isinstance(i, str):
       for v in self._vecs:
         if i == v._name:
           return H2OFrame(vecs=[v for v in self._vecs if i != v._name])
       raise ValueError("Name " + i + " not in Frame")
+    # i is a 0-based column
+    elif isinstance(i, int):
+      if i < 0 or i >= self.__len__():
+        raise ValueError("Index out of range: 0 <= " + str(i) + " < " + str(self.__len__()))
+      return H2OFrame(vecs=[v for v in self._vecs if v != self._vecs[i]])
     raise NotImplementedError
 
   def __len__(self):

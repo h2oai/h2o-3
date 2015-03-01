@@ -61,6 +61,10 @@ class OutputObj(AttrDict):
                     print "Not showing 'columns'"
                 elif k == '__meta':
                     print "Not showing '__meta'"
+                elif k == 'veckeys':
+                    print "Not showing 'veckeys'"
+                elif k == 'chunkSummary':
+                    print "Not showing 'chunkSummary'"
                 # this is if I drill into an inspect column with an object
                 elif k == 'domain' and self.name=='inspect_column': 
                     print "Not showing 'domain'"
@@ -76,7 +80,8 @@ class OutputObj(AttrDict):
                         if '__meta' in v2:
                             v2 = copy(v)
                             del v2['__meta']
-                        print self.name, k, dump_json(v2)
+                        # print self.name, k, dump_json(v2)
+                        print self.name, k, v2
 
     # these might be useful
     def rec_getattr(self, attr):
@@ -362,7 +367,11 @@ def setup_random_seed(seed=None):
     # that makes sure it's called to setup any --seed init before we look for a 
     # command line arg here. (h2o.setup_random_seed() is done before h2o.init() in tests)
     # parse_our_args() will be a noop if it was already called once
-    h2o_args.parse_our_args()
+    noseRunning = sys.argv[0].endswith('nosetests')
+    if not noseRunning:
+        # this will be a no-op if already called once
+        h2o_args.parse_our_args()
+
     if h2o_args.random_seed is not None:
         SEED = h2o_args.random_seed
     elif seed is not None:

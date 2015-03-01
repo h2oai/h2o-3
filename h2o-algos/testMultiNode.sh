@@ -46,7 +46,13 @@ JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG > $OUTDIR/tests.txt
+
+# On this h2o-algos testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# If sorted, the result of the cd/grep varies by machine. 
+# If randomness is desired, replace sort with the unix 'shuf'
+# Use /usr/bin/sort because of cygwin on windows. 
+# Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$

@@ -1,7 +1,8 @@
-import unittest, sys, time
+import unittest, sys, time 
 sys.path.extend(['.','..','../..','py'])
 import h2o, h2o_cmd, h2o_import as h2i
 from h2o_test import dump_json, verboseprint, OutputObj
+from tabulate import tabulate
 
 class Basic(unittest.TestCase):
     def tearDown(self):
@@ -9,7 +10,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init(1, java_heap_GB=4)
+        h2o.init(1, java_heap_GB=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -23,8 +24,11 @@ class Basic(unittest.TestCase):
         model_key = 'GBMModelKey'
         timeoutSecs = 1800
         csvPathname = importFolderPath + "/" + trainFilename
-        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, schema='local',
-            hex_key=train_key, timeoutSecs=timeoutSecs)
+
+        # FIX! do I need to force enum for classification? what if I do regression after this?
+        columnTypeDict = {54: 'Enum'}
+        parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, columnTypeDict=columnTypeDict,
+            schema='local', chunkSize=4194304, hex_key=train_key, timeoutSecs=timeoutSecs)
 
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -36,14 +40,21 @@ class Basic(unittest.TestCase):
         labelListUsed = list(labelList)
         numColsUsed = numCols
 
-        parameters = {
-            'validation_frame': train_key,
-            'ignored_columns': None,
+        if 1==0:
+            co = h2o_cmd.runSummary(key=parse_key)
+            coList = [ co.base, len(co.bins), len(co.data), co.domain,
+                co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
+                co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
+            for c in coList:
+                print c
+
+
+        # run through a couple of parameter sets
+        parameters = []
+        parameters.append({
             'score_each_iteration': True,
             'response_column': 'C55',
             'do_classification': True,
-            # 'balance_classes':
-            # 'max_after_balance_size':
             'ntrees': 2,
             'max_depth': 10,
             'min_rows': 3,
@@ -52,36 +63,86 @@ class Basic(unittest.TestCase):
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
-            'variable_importance': False,
+            # 'variable_importance': False,
             # 'seed': 
-        }
+        })
+
+        parameters.append({
+            'score_each_iteration': True, 
+            'response_column': 'C55', 
+            'do_classification': True, 
+            # This does nothing! intent is solely based on type of response col
+            'ntrees': 1, 
+            'max_depth': 20, 
+            'min_rows': 3, 
+            'nbins': 40, 
+            'learn_rate': 0.2, 
+            })
 
         model_key = 'covtype_gbm.hex'
-        bmResult = h2o.n0.build_model(
-            algo='gbm',
-            destination_key=model_key,
-            training_frame=parse_key,
-            parameters=parameters,
-            timeoutSecs=60)
-        bm = OutputObj(bmResult, 'bm')
 
-        modelResult = h2o.n0.models(key=model_key)
-        model = OutputObj(modelResult['models'][0]['output'], 'model')
+        for p in parameters:
+            bmResult = h2o.n0.build_model(
+                algo='gbm',
+                destination_key=model_key,
+                training_frame=train_key,
+                validation_frame=train_key,
+                parameters=p,
+                timeoutSecs=60)
+            bm = OutputObj(bmResult, 'bm')
 
-        cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-        cmm = OutputObj(cmmResult, 'cmm')
-        print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
+            modelResult = h2o.n0.models(key=model_key)
+            model = OutputObj(modelResult['models'][0]['output'], 'model')
 
-        mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-        mmResultShort = mmResult['model_metrics'][0]
-        del mmResultShort['frame'] # too much!
-        mm = OutputObj(mmResultShort, 'mm')
+            cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
+            cmm = OutputObj(cmmResult, 'cmm')
 
-        prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
-        pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
+            # if p.get('do_classification', None):
+            #   print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
 
-        # too slow!
-        # h2o_cmd.runStoreView()
+            vis = OutputObj(model.variableImportances, 'vis')
+
+            # just the first 10
+            visDataChopped = [v[0:9] for v in vis.data]
+            names = visDataChopped[0]
+            relativeImportance = visDataChopped[1]
+            print "names:", names
+            print "relativeImportance:", relativeImportance
+            scaledImportance = visDataChopped[2]
+            percentage = visDataChopped[3]
+            print "\nvis\n", tabulate(visDataChopped[1:], headers=names)
+            # print "\nrelativeImportance (10)\n", tabulate(relativeImportance, headers=names)
+            # print "\nscaledImportance (10)\n", tabulate(scaledImportance, headers=names)
+            # print "\npercentage (10)\n", tabulate(percentage, headers=names)
+
+
+            print "will say Regression or Classification. no Multinomial?"
+            print "model.model_category", model.model_category
+            assert model.model_category=='Multinomial', model.model_category
+
+            print "FIX! why is mse 0 and mes_train Nan?"
+            print "model.mse:", model.mse
+            print "model.mse_train:", model.mse_train
+
+
+            if 1==0:
+                print ""
+                for i,c in enumerate(cmms.cm):
+                    print "\ncmms.cm[%s]" % i, tabulate(c)
+                print ""
+
+
+
+            mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
+            mmResultShort = mmResult['model_metrics'][0]
+            del mmResultShort['frame'] # too much!
+            mm = OutputObj(mmResultShort, 'mm')
+
+            prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
+            pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
+
+            # too slow!
+            # h2o_cmd.runStoreView()
 
 if __name__ == '__main__':
     h2o.unit_main()

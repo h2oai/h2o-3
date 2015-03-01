@@ -9,7 +9,6 @@ import water.util.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
@@ -36,8 +35,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 10.5- Target receives dup UDP request, then replies with ACK back.
  * 11- Sender receives ACK result; deserializes; notifies waiters
  * 12- Sender sends ACKACK back
- * 12.5- Sender recieves dup ACK's, sends dup ACKACK's back
- * 13- Target recieves ACKACK, removes TASKS tracking
+ * 12.5- Sender receives dup ACK's, sends dup ACKACK's back
+ * 13- Target receives ACKACK, removes TASKS tracking
  *
  * @author <a href="mailto:cliffc@0xdata.com"></a>
  * @version 1.0
@@ -237,24 +236,26 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       throw Log.throwErr(t);
     }
   }
-  private V result(){
+
+  private V result() {
     DException.DistributedException t = _dt.getDException();
     if( t != null ) throw t;
     return _dt;
   }
-  // Similar to FutureTask.get() but does not throw any exceptions.  Returns
-  // null for canceled tasks, including those where the target dies.
+  // Similar to FutureTask.get() but does not throw any checked exceptions.
+  // Returns null for canceled tasks, including those where the target dies.
+  // Throws a DException if the remote throws, wrapping the original exception.
   @Override public V get() {
     // check priorities - FJ task can only block on a task with higher priority!
     Thread cThr = Thread.currentThread();
     int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
     assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
       : "*** Attempting to block on task (" + _dt.getClass() + ") with equal or lower priority. Can lead to deadlock! " + _dt.priority() + " <=  " + priority;
-    if( _done ) return result(); // Fast-path shortcut
+    if( _done ) return result(); // Fast-path shortcut, or throw if exception
     // Use FJP ManagedBlock for this blocking-wait - so the FJP can spawn
     // another thread if needed.
     try { ForkJoinPool.managedBlock(this); } catch( InterruptedException ignore ) { }
-    if( _done ) return result(); // Fast-path shortcut
+    if( _done ) return result(); // Fast-path shortcut or throw if exception
     assert isCancelled();
     return null;
   }
@@ -314,7 +315,6 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     long _retry;
     volatile boolean _computedAndReplied; // One time transition from false to true
     volatile boolean _computed; // One time transition from false to true
-    transient AtomicBoolean _firstException = new AtomicBoolean(false);
     // To help with asserts, record the size of the sent DTask - if we resend
     // if should remain the same size.  Also used for profiling.
     int _size;
@@ -380,8 +380,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           if( !_client._heartbeat._client ) // Report on servers only; clients allowed to be flaky
             Log.info("IOException during ACK, "+e._ioe.getMessage()+", t#"+_tsknum+" AB="+ab+", waiting and retrying...");
           ab.drainClose();
-          if( _client._heartbeat._client && true/*timeout*/ ) // Dead client will not accept a TCP ACK response?
-            CAS_DT.compareAndSet(this,dt,null);          // cancel the ACK
+          if( _client._heartbeat._client ) // Dead client will not accept a TCP ACK response?
+            this.CAS_DT(dt,null);          // cancel the ACK
           try { Thread.sleep(100); } catch (InterruptedException ignore) {}
         } catch( Exception e ) { // Custom serializer just barfed?
           Log.err(e);            // Log custom serializer exception
@@ -559,17 +559,19 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     synchronized(this) {             // Install the answer under lock
       if( _done ) return ackack(ab, _tasknum); // Ignore duplicate response packet
       UDPTimeOutThread.PENDING.remove(this);
-      _dt.read(ab);            // Read the answer (under lock?)
-      _size_rez = ab.size();   // Record received size
-      ab.close();              // Also finish the read (under lock?)
-      _dt.onAck();             // One time only execute (before sending ACKACK)
-      _done = true;            // Only read one (of many) response packets
+      _dt.read(ab);             // Read the answer (under lock?)
+      _size_rez = ab.size();    // Record received size
+      ab.close();               // Also finish the read (under lock?  even if canceled, since need to drain TCP)
+      if( !isCancelled() )      // Can be canceled already (locally by MRTask while recieving remote answer)
+        _dt.onAck();            // One time only execute (before sending ACKACK)
+      _done = true;             // Only read one (of many) response packets
       ab._h2o.taskRemove(_tasknum); // Flag as task-completed, even if the result is null
-      notifyAll();                  // And notify in any case
+      notifyAll();              // And notify in any case
     }
-    doAllCompletions(); // Send all tasks needing completion to the work queues
+    if( !isCancelled() )  // Can be canceled already
+      doAllCompletions(); // Send all tasks needing completion to the work queues
     // AckAck back on a fresh AutoBuffer, since actually closed() the incoming one
-    return new AutoBuffer(_target).putTask(UDP.udp.ackack.ordinal(),_tasknum);
+    return new AutoBuffer(ab._h2o).putTask(UDP.udp.ackack.ordinal(),_tasknum);
   }
 
   private void doAllCompletions() {

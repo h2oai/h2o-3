@@ -53,7 +53,7 @@ class Basic(unittest.TestCase):
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
-            'variable_importance': False,
+            # 'variable_importance': False,
             # 'seed': 
         }
 

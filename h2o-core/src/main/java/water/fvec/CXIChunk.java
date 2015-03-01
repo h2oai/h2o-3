@@ -163,7 +163,7 @@ public class CXIChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length); }
   @Override public CXIChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     set_len(UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];
     _valsz = _mem[5];
