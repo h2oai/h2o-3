@@ -1,6 +1,6 @@
 package water.exceptions;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.util.IcedHashMap;
 
 public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
