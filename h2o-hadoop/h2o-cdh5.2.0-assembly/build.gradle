@@ -3,4 +3,4 @@ ext {
   hadoopMavenArtifactVersion = '2.5.0-' + hadoopVersion
 }
 
-apply from: '../h2ojar.gradle'
+apply from: '../assemblyjar.gradle'

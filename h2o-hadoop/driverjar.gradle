@@ -23,7 +23,6 @@ dependencies {
 }
 
 jar {
-   baseName = 'h2odriver'
    manifest {
       attributes 'Main-Class': hadoopDriverJarMainClass
    }

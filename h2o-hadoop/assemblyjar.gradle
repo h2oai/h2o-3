@@ -8,6 +8,7 @@ targetCompatibility = 1.6
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
   compile project(hadoopDependentProject)
+  compile project(':h2o-hadoop:h2o-' + hadoopVersion)
   compile files(hadoopPersistHdfsJarFile)
 }
 
@@ -16,9 +17,9 @@ fatJarPrepareFiles {
 }
 
 fatJar {
-   baseName = 'h2o'
+   baseName = 'h2odriver'
    manifest {
-      attributes 'Main-Class': hadoopFatJarMainClass
+      attributes 'Main-Class': hadoopDriverJarMainClass
    }
 }
 

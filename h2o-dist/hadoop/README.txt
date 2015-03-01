@@ -33,8 +33,10 @@ $ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName
 
 
 
-COMMAND-LINE HELP
------------------
+ADDITONAL COMMAND-LINE HELP
+---------------------------
+
+To see a list of additional options, use the -help flag as follows:
 
 $ hadoop jar h2odriver.jar -help
 
@@ -43,9 +45,10 @@ $ hadoop jar h2odriver.jar -help
 EXAMPLE OF HOW TO START A STANDALONE H2O IN HDFS CLIENT MODE
 ------------------------------------------------------------
 
-$ java -jar h2o.jar
+$ java -cp h2odriver.jar water.H2OApp
 
 
     Note:        This starts a single H2O node with HDFS access capability.
                  If you have kerberos enabled you must use the 'hadoop jar'
                  method to access HDFS.
+
