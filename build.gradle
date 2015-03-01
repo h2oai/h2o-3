@@ -91,7 +91,8 @@ ext {
                             'cockpitlite.properties',
                             'devpay_products.properties']
 
-    hadoopFatJarMainClass = 'water.hadoop.h2odriver'
+    hadoopFatJarMainClass = 'water.H2OApp'
+    hadoopDriverJarMainClass = 'water.hadoop.h2odriver'
 }
 
 //
