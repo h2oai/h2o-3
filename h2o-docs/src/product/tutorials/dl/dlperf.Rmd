@@ -7,7 +7,7 @@ Summary of our findings (much more at the end of part 1):
 * We are unable to reproduce their findings (our numbers are 8x to 45x faster, on a single node)
 * The benchmark was only on raw training throughput and didn't consider model accuracy (at all)
 * We present improved parameter options for higher training speed (more below)
-* We present a single-node model that performs as fast as their 16-node model (and leads to higher accuracy than with their settings)
+* We present a single-node model that trains faster than their 16-node system (and leads to higher accuracy than with their settings)
 
 ### More Information
 ![booklet](../../../2015_02_deep-learning-performance/DL_BookletCover.png)
@@ -360,7 +360,7 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * **We cannot reproduce the slow numbers (~10 samples per second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of **75 samples per second** on a single i7 5820k consumer PC.
+  * **We cannot reproduce the slow performance (~10 samples per second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of **75 samples per second** on a single i7 5820k consumer PC.
   * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 84 samples per second (notably with H2O's mini-batch size of 1).
   * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of 138 samples per second (albeit at the cost of accuracy).
   * When further switching to the `Rectifier` activation function, speeds increase to **310 samples per second**. This is more than *4 times faster than the original parameters and results in half the test set error!* Note that we used the `max_w2` parameter, which helps to improve the numerical stability for deep `Rectifier` networks.
