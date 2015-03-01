@@ -172,7 +172,7 @@ public class PCATest extends TestUtil {
       try {
         job = new PCA(parms);
         model = job.trainModel().get();
-        checkStddev(stddev, model._output._std_deviation, 1e-4);
+        checkStddev(stddev, model._output._std_deviation, 1e-3);
         boolean[] flippedEig = checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
 
         score = model.score(train);
