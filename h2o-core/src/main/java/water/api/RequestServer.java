@@ -1,6 +1,6 @@
 package water.api;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2ONotFoundArgumentException;

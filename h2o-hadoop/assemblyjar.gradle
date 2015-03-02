@@ -1,0 +1,26 @@
+apply plugin: 'fatjar'
+
+description = 'H2O HDFS client fatjar for Hadoop ' + hadoopVersion
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+dependencies {
+  compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
+  compile project(hadoopDependentProject)
+  compile project(':h2o-hadoop:h2o-' + hadoopVersion)
+  compile files(hadoopPersistHdfsJarFile)
+}
+
+fatJarPrepareFiles {
+  exclude hadoopFatJarExcludes
+}
+
+fatJar {
+   baseName = 'h2odriver'
+   manifest {
+      attributes 'Main-Class': hadoopDriverJarMainClass
+   }
+}
+
+jar.finalizedBy fatJar

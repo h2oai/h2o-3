@@ -2,12 +2,10 @@ package water.persist;
 
 import java.io.*;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import water.*;
-import water.fvec.HDFSFileVec;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.util.Log;
 
 /** Abstract class describing various persistence targets.
@@ -20,54 +18,6 @@ import water.util.Log;
  *  load of files - typically raw text for parsing.
  */
 public abstract class Persist {
-  /** All available back-ends, C.f. Value for indexes */
-  public static final Persist[] I = new Persist[8];
-
-  /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
-  public abstract static class Schemes {
-    public static final String FILE = "file";
-    public static final String HDFS = "hdfs";
-    public static final String S3   = "s3";
-    public static final String NFS  = "nfs";
-  }
-
-  static {
-    Persist ice = null;
-    URI uri = H2O.ICE_ROOT;
-    if( uri != null ) { // Otherwise class loaded for reflection
-      boolean windowsPath = uri.toString().matches("^[a-zA-Z]:.*");
-
-      // System.out.println("TOM uri getPath(): " + uri.getPath());
-      // System.out.println("TOM windowsPath: " + (windowsPath ? "true" : "false"));
-
-      if ( windowsPath ) {
-        ice = new PersistFS(new File(uri.toString()));
-      }
-      else if ((uri.getScheme() == null) || Schemes.FILE.equals(uri.getScheme())) {
-        ice = new PersistFS(new File(uri.getPath()));
-      }
-      else if( Schemes.HDFS.equals(uri.getScheme()) ) {
-        ice = new PersistHdfs(uri);
-      }
-
-      // System.out.println("TOM ice is null: " + ((ice == null) ? "true" : "false"));
-
-      I[Value.ICE ] = ice;
-      I[Value.NFS ] = new PersistNFS();
-      try {
-        I[Value.HDFS] = new PersistHdfs();
-        I[Value.S3  ] = new PersistS3();
-      } catch( NoClassDefFoundError e ) {
-        // Not linked against HDFS or S3, so not available in this build
-      }
-    }
-  }
-
-  /** Get the current Persist flavor for user-mode swapping. */
-  public static Persist getIce() { return I[Value.ICE]; }
-
-  static Persist get( byte p ) { return I[p]; }
-
   /** Store a Value into persistent storage, consuming some storage space. */
   abstract public void store(Value v);
 
@@ -86,18 +36,16 @@ public abstract class Persist {
   /** Transform given uri into file vector holding file name. */
   abstract public Key uriToKey(URI uri) throws IOException;
 
-  public static final Key anyURIToKey(URI uri) throws IOException {
-    Key ikey = null;
-    String scheme = uri.getScheme();
-    if ("hdfs".equals(scheme)) {
-      ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("s3n".equals(scheme)) {
-      ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("files".equals(scheme) || scheme == null) {
-      ikey = I[Value.NFS].uriToKey(uri);
-    }
-    return ikey;
-  }
+  /**
+   * Calculate typeahead matches for src
+   *
+   * @param filter Source string to match for typeahead
+   * @param limit Max number of entries to return
+   * @return List of matches
+   */
+  abstract public ArrayList<String> calcTypeaheadMatches(String filter, int limit);
+
+  abstract public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
   //the filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in

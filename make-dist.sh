@@ -8,9 +8,46 @@
 set -e
 set -x
 
-# Set common directory variables.
+# Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-IMAGEDIR=${TOPDIR}/h2o-dist/tmp/h2o-dev-${PROJECT_VERSION}
+HADOOP_VERSIONS="cdh5.2 hdp2.1 mapr4.0.1"
+
+function make_zip_common {
+  PROJECT_BASE=$1
+  IMAGEDIR=$2
+
+  mkdir $IMAGEDIR/R
+  cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
+
+  cd $IMAGEDIR/..
+  zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
+  cd $TOPDIR
+
+  # Add zip file to target.
+  mv $IMAGEDIR/../${PROJECT_BASE}.zip ${TOPDIR}/target
+}
+
+function make_zip {
+  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}
+  IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
+
+  mkdir -p $IMAGEDIR
+  cp build/h2o.jar $IMAGEDIR
+
+  make_zip_common $PROJECT_BASE $IMAGEDIR
+}
+
+function make_hadoop_zip {
+  HADOOP_VERSION=$1
+  PROJECT_BASE=h2o-dev-${PROJECT_VERSION}-${HADOOP_VERSION}
+  IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
+
+  mkdir -p $IMAGEDIR
+  cp h2o-hadoop/h2o-${HADOOP_VERSION}-assembly/build/libs/h2odriver.jar $IMAGEDIR
+  cat h2o-dist/hadoop/README.txt | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" > ${IMAGEDIR}/README.txt
+
+  make_zip_common $PROJECT_BASE $IMAGEDIR
+}
 
 # Remove any previously created build directories.
 rm -fr target
@@ -24,29 +61,15 @@ if [ -z "$DO_FAST" ]; then
   ./gradlew publish
 fi
 
-# Create image dir, which contains what is in the zip file.
-cd $TOPDIR
-mkdir -p $IMAGEDIR
-
-cp build/h2o.jar $IMAGEDIR
-
-mkdir $IMAGEDIR/R
-cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
-
-mkdir -p $IMAGEDIR/hadoop/cdh5
-cp -p h2o-hadoop/build/libs/h2o-hadoop.jar $IMAGEDIR/hadoop/cdh5
-
-cd $IMAGEDIR/..
-zip -r h2o-dev-${PROJECT_VERSION}.zip h2o-dev-${PROJECT_VERSION}
-
-
-
 # Create target dir, which is uploaded to s3.
-cd $TOPDIR
 mkdir target
 
-# Add zip file to target.
-mv $IMAGEDIR/../h2o-dev-${PROJECT_VERSION}.zip ${TOPDIR}/target
+# Create zip files and add them to target.
+make_zip
+
+for HADOOP_VERSION in $HADOOP_VERSIONS; do
+  make_hadoop_zip $HADOOP_VERSION
+done
 
 # Add R CRAN structure to target.
 mkdir -p target/R/src

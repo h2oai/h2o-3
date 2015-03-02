@@ -1,7 +1,5 @@
 package water.exceptions;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import water.fvec.Frame;
 import water.util.IcedHashMap;
 
 /**
