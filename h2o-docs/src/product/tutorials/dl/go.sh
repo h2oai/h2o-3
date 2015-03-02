@@ -121,5 +121,5 @@ rm *md-e
 
 cp dlperf.md $WEB_REPO/src/blog/$TARGET.md
 mkdir -p $WEB_REPO/src/blog/$TARGET
-rsync -avu --delete --exclude=*.png dlperf/ $WEB_REPO/src/blog/$TARGET/
+rsync -avu --delete --exclude=*.log --exclude=*.png dlperf/ $WEB_REPO/src/blog/$TARGET/
 (cd $WEB_REPO && make build)

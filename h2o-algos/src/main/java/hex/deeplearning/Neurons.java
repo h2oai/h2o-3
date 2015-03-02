@@ -9,9 +9,6 @@ import water.util.MathUtils;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import org.apache.hadoop.util.hash.Hash;
-import org.apache.hadoop.util.hash.MurmurHash;
-
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
  * During training, every MRTask F/J thread is expected to create these neurons for every map call (Cheap to make).
@@ -743,7 +740,7 @@ public abstract class Neurons {
           final int cM = params._max_categorical_features;
 
           assert (_a.size() == M);
-          Hash murmur = MurmurHash.getInstance();
+          MurmurHash murmur = MurmurHash.getInstance();
           for (int i = 0; i < numcat; ++i) {
             ByteBuffer buf = ByteBuffer.allocate(4);
             int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params._seed); // turn horizontalized categorical integer into another integer, based on seed

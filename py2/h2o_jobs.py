@@ -1,5 +1,6 @@
 import time, sys
-import h2o, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_browse as h2b
 import h2o_nodes, h2o_args
 from h2o_test import dump_json, check_sandbox_for_errors, verboseprint
 

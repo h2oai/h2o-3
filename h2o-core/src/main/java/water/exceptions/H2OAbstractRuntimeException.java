@@ -1,6 +1,6 @@
 package water.exceptions;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.H2OError;
 import water.util.IcedHashMap;
 

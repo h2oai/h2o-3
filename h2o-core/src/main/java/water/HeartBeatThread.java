@@ -2,7 +2,6 @@ package water;
 
 import java.lang.management.ManagementFactory;
 import javax.management.*;
-import water.persist.Persist;
 import water.util.LinuxProcFileReader;
 import water.util.Log;
 import water.init.*;
@@ -106,8 +105,8 @@ public class HeartBeatThread extends Thread {
 
       // get the usable and total disk storage for the partition where the
       // persistent KV pairs are stored
-      hb.set_free_disk(Persist.getIce().getUsableSpace());
-      hb.set_max_disk(Persist.getIce().getTotalSpace());
+      hb.set_free_disk(H2O.getPM().getIce().getUsableSpace());
+      hb.set_max_disk(H2O.getPM().getIce().getTotalSpace());
 
       // get cpu utilization for the system and for this process.  (linux only.)
       LinuxProcFileReader lpfr = new LinuxProcFileReader();
