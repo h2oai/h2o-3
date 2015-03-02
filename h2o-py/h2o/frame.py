@@ -429,8 +429,8 @@ class H2OFrame:
     """
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec._expr.eager() for vec in self._vecs]) + "))"
+    cbind = "(= !" + fr + " (cbind '"
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "'))"
     h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
