@@ -29,6 +29,8 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
   public static class MetricBuilderKMeans extends ModelMetricsUnsupervised.MetricBuilderUnsupervised {
     public long[] _size;        // Number of elements in cluster
     public double[] _within_sumsqe;   // Within-cluster sum of squared error
+    private double[/*features*/] _colSum;  // Sum of each column
+    private double[/*features*/] _colSumSq;  // Sum of squared values of each column
 
     public MetricBuilderKMeans(int ncol, int nclust) {
       _size = new long[nclust];
@@ -36,8 +38,14 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
       Arrays.fill(_size, 0);
       Arrays.fill(_within_sumsqe, 0);
       _work = new float[ncol];
+
+      _colSum = new double[ncol];
+      _colSumSq = new double[ncol];
+      Arrays.fill(_colSum, 0);
+      Arrays.fill(_colSumSq, 0);
     }
 
+    // FIXME: Is adapted frame (dataRow) standardized when model built on standardized data?
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
     public float[] perRow(float[] preds, float[] dataRow, Model m) {
@@ -55,6 +63,9 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
         double err = (double) centers.get(clus, i) - dataRow[i]; // Error: distance from assigned cluster center
         _sumsqe += err * err;       // Squared error
         _within_sumsqe[clus] += err * err;
+
+        _colSum[i] += dataRow[i];
+        _colSumSq[i] += dataRow[i] * dataRow[i];
       }
       assert !Double.isNaN(_sumsqe);
       _size[clus]++;
@@ -68,6 +79,9 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
       super.reduce(mm);
       ArrayUtils.add(_size, mm._size);
       ArrayUtils.add(_within_sumsqe, mm._within_sumsqe);
+
+      ArrayUtils.add(_colSum, mm._colSum);
+      ArrayUtils.add(_colSumSq, mm._colSumSq);
     }
 
     @Override
@@ -82,76 +96,19 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
       for (int i = 0; i < mm._within_mse.length; i++)
         mm._within_mse[i] = _within_sumsqe[i] / _size[i];
 
-      Vec[] vecs = f.vecs();
-      final double[] means = prepMeans(vecs);
-      final double[] mults = prepMults(vecs, km._parms._standardize);
-
       // Sum-of-square distance from grand mean
-      if (km._parms._k == 1)
+      if(km._parms._standardize)
+        mm._avg_ss = f.numCols()*(f.numRows()-1) / f.numRows();
+      else if (km._parms._k == 1)
         mm._avg_ss = mm._avg_within_ss;
       else {
-        // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means, mults).doAll(vecs);
-        mm._avg_ss = totss._tss / f.numRows(); // mse with respect to grand mean
+        mm._avg_ss = 0;
+        for (int i = 0; i < _colSum.length; i++)
+          mm._avg_ss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / f.numRows();
+        mm._avg_ss /= f.numRows();
       }
       mm._avg_between_ss = mm._avg_ss - mm._avg_within_ss;
       return m.addMetrics(mm);
-    }
-
-    // means are used to impute NAs
-    double[] prepMeans(final Vec[] vecs) {
-      final double[] means = new double[vecs.length];
-      for (int i = 0; i < vecs.length; i++) means[i] = vecs[i].mean();
-      return means;
-    }
-
-    // mults & means for standardization
-    double[] prepMults(final Vec[] vecs, final boolean standardize) {
-      if (!standardize) return null;
-      double[] mults = new double[vecs.length];
-      for (int i = 0; i < vecs.length; i++) {
-        double sigma = vecs[i].sigma();
-        mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
-      }
-      return mults;
-    }
-
-    private static boolean standardize(double sigma) {
-      // TODO unify handling of constant columns
-      return sigma > 1e-6;
-    }
-  }
-
-  // Initial sum-of-square-distance to nearest cluster center
-  private static class TotSS extends MRTask<TotSS> {
-    // IN
-    double[] _means, _mults;
-
-    // OUT
-    double _tss;
-
-    TotSS(double[] means, double[] mults) {
-      _means = means;
-      _mults = mults;
-      _tss = 0;
-    }
-
-    @Override
-    public void map(Chunk[] cs) {
-      for (int row = 0; row < cs[0]._len; row++) {
-        for (int i = 0; i < cs.length; i++) {
-          double d = cs[i].atd(row);
-          if (Double.isNaN(d)) continue;
-          d = (d - _means[i]) * (_mults == null ? 1 : _mults[i]);
-          _tss += d * d;
-        }
-      }
-      _means = null;
-    }
-
-    @Override
-    public void reduce(TotSS other) {
-      _tss += other._tss;
     }
   }
 }
