@@ -2,7 +2,8 @@ import unittest, sys
 sys.path.extend(['.','..','../..','py'])
 import os
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
 
 expectedZeros = [0 for i in range(11)]

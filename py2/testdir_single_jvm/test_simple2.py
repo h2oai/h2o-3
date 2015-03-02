@@ -1,7 +1,8 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
 from h2o_test import find_file, dump_json, verboseprint
 
 DO_INTERMEDIATE_RESULTS = False
