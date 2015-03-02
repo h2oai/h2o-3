@@ -153,7 +153,7 @@ After this operation, `vol` has been permanently mutated in place (it is not a c
 
 H2OVec
 ++++++
-An H2OVec is...
+An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
 
 Expr
 ++++

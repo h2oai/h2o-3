@@ -56,7 +56,7 @@ public class NodePersistentStorage {
       throw new IllegalArgumentException("NodePersistentStorage name not specified");
     }
 
-    if (! Pattern.matches("[\\-a-zA-Z0-9]+", keyName)) {
+    if (! Pattern.matches("[\\-a-zA-Z0-9_ \\(\\)]+", keyName)) {
       throw new IllegalArgumentException("NodePersistentStorage illegal name");
     }
   }
