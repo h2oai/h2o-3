@@ -1,4 +1,5 @@
-import h2o_cmd, h2o, h2o_util
+import h2o_cmd, h2o_util
+import h2o2 as h2o
 import re, random, math
 from h2o_test import check_sandbox_for_errors, dump_json, verboseprint
 import h2o_nodes

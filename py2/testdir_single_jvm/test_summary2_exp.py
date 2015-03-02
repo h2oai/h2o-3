@@ -1,6 +1,7 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
 from h2o_test import OutputObj
 
 print "Same as test_summary2_uniform.py but with exponential distribution on the data"

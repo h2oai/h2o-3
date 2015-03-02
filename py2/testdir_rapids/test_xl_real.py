@@ -1,6 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_xl
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_xl
 
 from h2o_xl import DF, Xbase, Key, KeyIndexed, Assign, Fcn
 from h2o_test import dump_json, verboseprint
