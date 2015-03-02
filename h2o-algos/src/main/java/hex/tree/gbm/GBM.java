@@ -47,33 +47,29 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
-    if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
-      _parms._convert_to_enum = false;
-      if (null != _response && _response.isInt()) {
-        long[] domain = new Vec.CollectDomain().doAll(_response).domain();
-        if (domain.length == 2) { //bernoulli behavior is desired
-          _parms._convert_to_enum = true;
-        }
+    super.init(expensive);
+
+    switch( _parms._loss ) {
+    case AUTO:  
+      break; // Guess the loss by examining the response column
+    case bernoulli:
+      if (_nclass != 2) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+      else if ( _response != null ) {
+        // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+        double mean = _response.mean();
+        _initialPrediction = Math.log(mean / (1.0f - mean));
       }
-      super.init(expensive);
-    }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli || _parms._loss == GBMModel.GBMParameters.Family.multinomial) {
-      _parms._convert_to_enum = true;
-      super.init(true);
-      if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli) {
-        if (_nclass != 2) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
-        else if ( _response != null ) {
-          // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-          double mean = _response.mean();
-          _initialPrediction = Math.log(mean / (1.0f - mean));
-        }
-      }
-    }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.gaussian){
-      _parms._convert_to_enum = false;
-      super.init(expensive);
+      // fall into additional classification check
+    case multinomial:
+      if( !_parms._convert_to_enum && _nclass == 1 )
+        error("_convert_to_enum", "Classification requires the response to be an enum");
+      break;
+    case gaussian:
       if( _nclass != 1 ) error("_loss","Gaussian requires the response to be numeric");
-    } else {
+      if( _parms._convert_to_enum )
+        error("_convert_to_enum", "Regression requires the response to not be an enum");
+      break;
+    default:
       error("_loss","Loss must be specified");
     }
 
