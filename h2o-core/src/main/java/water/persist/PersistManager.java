@@ -135,7 +135,7 @@ public class PersistManager {
    */
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
     String s = filter.toLowerCase();
-    if (s.startsWith("hdfs://") || s.startsWith("s3n://")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
         throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
       }
@@ -166,7 +166,7 @@ public class PersistManager {
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     assert path != null;
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs://") || s.startsWith("s3n://")) {
+    if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
         throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
       }
