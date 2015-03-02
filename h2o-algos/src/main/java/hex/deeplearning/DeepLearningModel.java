@@ -1816,8 +1816,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         f = new Frame(k, f.names(), f.vecs());
         DKV.put(k, f);
       }
-      makeMetricBuilder(null).makeModelMetrics(this,f,Double.NaN);
-
+      makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
       return f;
     }
   }
@@ -1885,7 +1884,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    makeMetricBuilder(null).makeModelMetrics(this, res, res.vecs()[0].mean());
+    makeMetricBuilder(null).makeModelMetrics(this, frame, res.vecs()[0].mean());
     return res;
   }
 

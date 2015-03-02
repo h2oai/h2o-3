@@ -67,7 +67,9 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "sparse",
         "col_major",
         "average_activation",
-        "sparsity_beta"
+        "sparsity_beta",
+        "max_categorical_features",
+        "reproducible"
     };
 
 
