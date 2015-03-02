@@ -687,7 +687,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public final DeepLearningParameters get_params() { return _parms; }
 //  @Override public final Request2 job() { return get_params(); }
 
-  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
+//  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -944,8 +944,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           table.set(row, col++, e.valid_r2);
         if (_output.getModelCategory() == ModelCategory.Binomial)
           table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
-        if (_output.isClassifier())
+        if (_output.isClassifier()) {
           table.set(row, col++, e.valid_err);
+        }
       }
       else if(get_params()._n_folds > 0) {
         throw H2O.unimpl();
@@ -1232,21 +1233,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       sb.append(toString());
 
       for (int i=0; i<units.length-1; ++i)
-        sb.append("\nweights["+i+"][]="+Arrays.toString(get_weights(i).raw()));
-      for (int i=0; i<units.length-1; ++i)
-        sb.append("\nbiases["+i+"][]="+Arrays.toString(get_biases(i).raw()));
+        sb.append("\nweights[").append(i).append("][]=").append(Arrays.toString(get_weights(i).raw()));
+      for (int i=0; i<units.length-1; ++i) {
+        sb.append("\nbiases[").append(i).append("][]=").append(Arrays.toString(get_biases(i).raw()));
+      }
       if (has_momenta()) {
         for (int i=0; i<units.length-1; ++i)
-          sb.append("\nweights_momenta["+i+"][]="+Arrays.toString(get_weights_momenta(i).raw()));
+          sb.append("\nweights_momenta[").append(i).append("][]=").append(Arrays.toString(get_weights_momenta(i).raw()));
       }
       if (biases_momenta != null) {
-        for (int i=0; i<units.length-1; ++i)
-          sb.append("\nbiases_momenta["+i+"][]="+Arrays.toString(biases_momenta[i].raw()));
+        for (int i=0; i<units.length-1; ++i) {
+          sb.append("\nbiases_momenta[").append(i).append("][]=").append(Arrays.toString(biases_momenta[i].raw()));
+        }
       }
-      sb.append("\nunits[]="+Arrays.toString(units));
-      sb.append("\nprocessed global: "+get_processed_global());
-      sb.append("\nprocessed local:  "+get_processed_local());
-      sb.append("\nprocessed total:  " + get_processed_total());
+      sb.append("\nunits[]=").append(Arrays.toString(units));
+      sb.append("\nprocessed global: ").append(get_processed_global());
+      sb.append("\nprocessed local:  ").append(get_processed_local());
+      sb.append("\nprocessed total:  ").append(get_processed_total());
       sb.append("\n");
       return sb.toString();
     }
@@ -1936,7 +1939,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
-        float df[] = new float [features];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
@@ -1944,7 +1946,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           ((Neurons.Input)neurons[0]).setInput(-1, tmp);
           DeepLearningTask.step(-1, neurons, model_info, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
-          for( int c=0; c<df.length; c++ )
+          for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
       }
