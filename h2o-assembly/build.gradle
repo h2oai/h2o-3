@@ -5,6 +5,7 @@ description = "H2O Application Assembly"
 
 dependencies {
   compile project(":h2o-app")
+  compile project(":h2o-persist-hdfs")
 }
 
 fatJarPrepareFiles {
