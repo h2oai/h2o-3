@@ -1717,7 +1717,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         for (int i=0; i<_output.biases.length; ++i) {
           model_info.get_biases(i).toFrame(_output.biases[i]);
         }
-        Log.info("Writing weights and biases to Frames took " + t.time() + " seconds.");
+        Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         _output.scoringHistory = createScoringHistoryTable(errors);
         _output.variableImportances = calcVarImp(last_scored().variable_importances);
         _output.modelSummary = model_info.createSummaryTable();
