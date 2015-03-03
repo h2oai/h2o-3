@@ -2,8 +2,13 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.FrameTask;
-import water.Iced;
-import water.MemoryManager;
+import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
+import water.fvec.FileVec;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import java.nio.ByteBuffer;
@@ -1241,6 +1246,26 @@ public abstract class Neurons {
     public abstract void add(int i, float val);
     public abstract int size();
     public abstract float[] raw();
+    public abstract Frame toFrame(Key key);
+  }
+
+  /**
+   * Helper to convert a Vector into a Frame
+   * @param v Vector
+   * @param key Key for output Frame
+   * @return Reference to Frame (which is also in DKV)
+   */
+  static Frame toFrame(Vector v, Key key) {
+    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
+    Vec vv = makeCon(0, v.size(), log_rows_per_chunk);
+    Frame f = new Frame(key, new Vec[]{vv}, true);
+    Vec.Writer vw = f.vecs()[0].open();
+    for (int r = 0; r < v.size(); ++r) {
+      vw.set(r, v.get(r));
+    }
+    vw.close();
+    DKV.put(key, f);
+    return f;
   }
 
   /**
@@ -1255,6 +1280,7 @@ public abstract class Neurons {
     @Override public void add(int i, float val) { _data[i] += val; }
     @Override public int size() { return _data.length; }
     @Override public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1345,6 +1371,8 @@ public abstract class Neurons {
 
     public Iterator begin() { return new Iterator(0); }
     public Iterator end() { return new Iterator(_indices.length); }
+
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1358,6 +1386,39 @@ public abstract class Neurons {
     abstract int rows();
     abstract long size();
     abstract float[] raw();
+    public Frame toFrame(Key key);
+  }
+
+  /**
+   *  Helper to convert the Matrix to a Frame using MRTask
+   */
+  private static class FrameFiller extends MRTask<FrameFiller> {
+    final Matrix m;
+    FrameFiller(Matrix m) { this.m = m; }
+    @Override public void map(Chunk[] cs) {
+      for (int c = 0; c < cs.length; ++c) {
+        for (int r = 0; r < m.rows(); ++r) {
+          cs[c].set(r, m.get((int)cs[0].start() + r, c));
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper to convert a Matrix into a Frame
+   * @param m Matrix
+   * @param key Key for output Frame
+   * @return Reference to Frame (which is also in DKV)
+   */
+  static Frame toFrame(Matrix m, Key key) {
+    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(m.cols()) / Math.log(2.)));
+    Vec v[] = new Vec[m.cols()];
+    for (int i = 0; i < m.cols(); ++i) {
+      v[i] = makeCon(0, m.rows(), log_rows_per_chunk);
+    }
+    Frame f = new FrameFiller(m).doAll(new Frame(key, v, true))._fr;
+    DKV.put(key, f);
+    return f;
   }
 
   /**
@@ -1376,6 +1437,7 @@ public abstract class Neurons {
     @Override public int rows() { return _rows; }
     @Override public long size() { return (long)_rows*(long)_cols; }
     public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1395,6 +1457,7 @@ public abstract class Neurons {
     @Override public int rows() { return _rows; }
     @Override public long size() { return (long)_rows*(long)_cols; }
     public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1422,6 +1485,7 @@ public abstract class Neurons {
     @Override public long size() { return (long)_rows.length*(long)_cols; }
     TreeMap<Integer, Float> row(int row) { return _rows[row]; }
     public float[] raw() { throw new UnsupportedOperationException("raw access to the data in a sparse matrix is not implemented."); }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1449,5 +1513,6 @@ public abstract class Neurons {
     @Override public long size() { return (long)_rows*(long)_cols.length; }
     TreeMap<Integer, Float> col(int col) { return _cols[col]; }
     public float[] raw() { throw new UnsupportedOperationException("raw access to the data in a sparse matrix is not implemented."); }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 }

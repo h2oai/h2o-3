@@ -15,12 +15,10 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static java.lang.Double.isNaN;
+import water.util.Timer;
 
 /**
  * The Deep Learning model
@@ -640,6 +638,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
+    Key[] weights;
+    Key[] biases;
     DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
@@ -932,18 +932,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.train_mse);
-      if (!_output.autoencoder)
+      if (!_output.autoencoder) {
         table.set(row, col++, e.train_r2);
-      if (_output.getModelCategory() == ModelCategory.Binomial)
+      }
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, e.trainAUC != null ? e.trainAUC.AUC() : Double.NaN);
-      if (_output.isClassifier())
+      }
+      if (_output.isClassifier()) {
         table.set(row, col++, e.train_err);
+      }
       if (get_params()._valid != null) {
         table.set(row, col++, e.valid_mse);
-        if (!_output.autoencoder)
+        if (!_output.autoencoder) {
           table.set(row, col++, e.valid_r2);
-        if (_output.getModelCategory() == ModelCategory.Binomial)
+        }
+        if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
+        }
         if (_output.isClassifier()) {
           table.set(row, col++, e.valid_err);
         }
@@ -1218,8 +1223,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       StringBuilder sb = new StringBuilder();
       if (get_params()._diagnostics && !get_params()._quiet_mode) {
         if (get_params()._sparsity_beta > 0) {
-          for (int k = 0; k < get_params()._hidden.length; k++)
-            sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
+          for (int k = 0; k < get_params()._hidden.length; k++) {
+            sb.append("Average activation in hidden layer ").append(k).append(" is  ").append(mean_a[k]).append(" \n");
+          }
         }
         createSummaryTable();
         sb.append(summaryTable.toString(1));
@@ -1475,6 +1481,21 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
+  /**
+   * Helper to allocate keys for output frames for weights and biases
+   * @param destKey
+   */
+  private void makeWeightsBiases(Key destKey) {
+    _output.weights = new Key[model_info.get_params()._hidden.length + 1];
+    for (int i = 0; i < _output.weights.length; ++i) {
+      _output.weights[i] = Key.make(destKey + ".weights." + i);
+    }
+    _output.biases = new Key[model_info.get_params()._hidden.length + 1];
+    for (int i = 0; i < _output.biases.length; ++i) {
+      _output.biases[i] = Key.make(destKey + ".biases." + i);
+    }
+  }
+
   /** Constructor to restart from a checkpointed model
    * @param destKey New destination key for the model
    *  @param cp Checkpoint to restart from
@@ -1503,6 +1524,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
+    makeWeightsBiases(destKey);
     _output.scoringHistory = createScoringHistoryTable(errors);
     _output.variableImportances = calcVarImp(last_scored().variable_importances);
 
@@ -1535,6 +1557,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _output.scoringHistory = createScoringHistoryTable(errors);
       _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
+    makeWeightsBiases(destKey);
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
@@ -1686,6 +1709,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           errors = err2;
         }
         _output.errors = last_scored();
+        water.util.Timer t = new Timer();
+        // store weights and matrices to Frames
+        for (int i=0; i<_output.weights.length; ++i) {
+          model_info.get_weights(i).toFrame(_output.weights[i]);
+        }
+        for (int i=0; i<_output.biases.length; ++i) {
+          model_info.get_biases(i).toFrame(_output.biases[i]);
+        }
+        Log.info("Writing weights and biases to Frames took " + t.time() + " seconds.");
         _output.scoringHistory = createScoringHistoryTable(errors);
         _output.variableImportances = calcVarImp(last_scored().variable_importances);
         _output.modelSummary = model_info.createSummaryTable();
@@ -2035,7 +2067,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
-    assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);
+  }
+
+  @Override public void delete() {
+    for (Key k : _output.weights) {
+      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
+    }
+    for (Key k : _output.biases) {
+      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
+    }
+    super.delete();
   }
 
   void delete_xval_models( ) {
