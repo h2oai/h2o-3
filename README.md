@@ -82,8 +82,9 @@ Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We 
 
 ##### Install required python packages (using `sudo` if necessary)
 
-	`pip install grip`
-	`pip install tabulate`
+    `pip install grip`
+    `pip install tabulate`
+    `pip install wheel`
 
 ### For Windows
 
@@ -96,7 +97,7 @@ Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We 
 
     `pip install grip`
     `pip install tabulate`
-    `pip install wheel --upgrade`
+    `pip install wheel`
 
 ##### Step 3: Install JDK
 
