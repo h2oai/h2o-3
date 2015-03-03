@@ -1393,9 +1393,42 @@ public abstract class Neurons {
    *  Helper to convert the Matrix to a Frame using MRTask
    */
   private static class FrameFiller extends MRTask<FrameFiller> {
-    final Matrix m;
-    FrameFiller(Matrix m) { this.m = m; }
+    final DenseColMatrix dcm;
+    final DenseRowMatrix drm;
+    final SparseRowMatrix srm;
+    final SparseColMatrix scm;
+    FrameFiller(Matrix m) {
+      if (m instanceof DenseColMatrix) {
+        dcm = (DenseColMatrix)m;
+        drm = null;
+        srm = null;
+        scm = null;
+      }
+      else if (m instanceof DenseRowMatrix) {
+        dcm = null;
+        drm = (DenseRowMatrix)m;
+        srm = null;
+        scm = null;
+      }
+      else if (m instanceof SparseRowMatrix) {
+        dcm = null;
+        drm = null;
+        srm = (SparseRowMatrix)m;
+        scm = null;
+      }
+      else {
+        dcm = null;
+        drm = null;
+        srm = null;
+        scm = (SparseColMatrix)m;
+      }
+    }
     @Override public void map(Chunk[] cs) {
+      Matrix m=null;
+      if (dcm != null) m = dcm;
+      if (drm != null) m = drm;
+      if (scm != null) m = scm;
+      if (srm != null) m = srm;
       for (int c = 0; c < cs.length; ++c) {
         for (int r = 0; r < m.rows(); ++r) {
           cs[c].set(r, m.get((int)cs[0].start() + r, c));
@@ -1463,7 +1496,7 @@ public abstract class Neurons {
   /**
    * Sparse row matrix implementation
    */
-  public final static class SparseRowMatrix implements Matrix {
+  public final static class SparseRowMatrix extends Iced implements Matrix {
     private TreeMap<Integer, Float>[] _rows;
     private int _cols;
     SparseRowMatrix(int rows, int cols) { this(null, rows, cols); }
@@ -1491,7 +1524,7 @@ public abstract class Neurons {
   /**
    * Sparse column matrix implementation
    */
-  static final class SparseColMatrix implements Matrix {
+  static final class SparseColMatrix extends Iced implements Matrix {
     private TreeMap<Integer, Float>[] _cols;
     private int _rows;
     SparseColMatrix(int rows, int cols) { this(null, rows, cols); }
