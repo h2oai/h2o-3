@@ -41,6 +41,16 @@ class ModelMetricsHandler extends Handler {
       return this;              // Flow coding
     }
 
+    // Delete the metrics that match model and/or frame
+    ModelMetricsList delete() {
+      ModelMetricsList matches = fetch();
+
+      for (ModelMetrics mm : matches._model_metrics)
+        DKV.remove(mm._key);
+
+      return matches;
+    }
+
     /** Return all the models matching the model&frame filters */
     public Schema list(int version, ModelMetricsList m) {
       return this.schema(version).fillFromImpl(m.fetch());
@@ -141,6 +151,14 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsListSchemaV3 s) {
     ModelMetricsList m = s.createAndFillImpl();
     s.fillFromImpl(m.fetch());
+    return s;
+  }
+
+  /** Delete one or more ModelMetrics. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelMetricsListSchemaV3 delete(int version, ModelMetricsListSchemaV3 s) {
+    ModelMetricsList m = s.createAndFillImpl();
+    s.fillFromImpl(m.delete());
     return s;
   }
 

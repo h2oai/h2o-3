@@ -737,8 +737,24 @@ class H2O(object):
     '''
     ModelMetrics list. 
     '''
-    def model_metrics(self, timeoutSecs=60, **kwargs):
-        result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+    def model_metrics(self, model=None, frame=None, timeoutSecs=60, **kwargs):
+        if model is None and frame is None:
+            result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+        elif model is not None and frame is not None:
+            result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='get', timeout=timeoutSecs)
+        else:
+            raise ValueError("model_metrics can't yet handle the filter case")
+        return result
+
+
+    '''
+    Delete ModelMetrics. 
+    '''
+    def delete_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
+        assert model is not None, 'FAIL: "model" parameter is null'
+        assert frame is not None, 'FAIL: "frame" parameter is null'
+
+        result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='delete', timeout=timeoutSecs)
 
         return result
 

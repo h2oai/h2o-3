@@ -842,6 +842,14 @@ for mm in mms['model_metrics']:
         found_mm = True
 assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binomial' + " and frame: " + 'prostate_binomial'
 
+# test delete_model_metrics
+mms = a_node.model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+assert len(mms['model_metrics']) == 1, "FAIL: expected 1 ModelMetrics, found: " + str(len(mms['model_metrics']))
+a_node.delete_model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+mms = a_node.model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+assert len(mms['model_metrics']) == 0, "FAIL: expected 0 ModelMetrics, found: " + str(len(mms['model_metrics']))
+
+
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
 p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
