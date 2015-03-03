@@ -48,7 +48,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_parse_covtype(self):
+    def test_parse_covtype200x(self):
 
         tryList = [
             ('covtype200x.data', 200, 360),
