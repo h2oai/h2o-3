@@ -375,6 +375,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           Arrays.fill(model._output._normMul, 1.0);
         } else
           model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
+        final double[] means = _train.means();
 
         // Create separate reference to X for Gram task
         x = new Frame(_parms._loading_key, null, xvecs);
@@ -485,7 +486,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   // Computes A'X on a matrix [A,X], where A is n by p, X is n by k, and k <= p
   // Resulting matrix D = A'X will have dimensions p by k
   private static class SMulTask extends MRTask<SMulTask> {
-    DataInfo _dinfo;
+    double[] _means;    // For replacing NAs
     double[] _normSub;  // For standardizing A only
     double[] _normMul;
     int _ncolA, _ncolX; // _ncolA = p, _ncolX = k
@@ -493,7 +494,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     double[][] _prod;   // _prod = D = A'X
 
     SMulTask(DataInfo dinfo, final int ncolA, final int ncolX) {
-      _dinfo = dinfo;
+      _means = dinfo._adaptedFrame.means();
       _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
       if(dinfo._normMul == null) {
         _normMul = MemoryManager.malloc8d(ncolA);
@@ -515,7 +516,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           for (int row = 0; row < cs[0]._len; row++) {
             double a = cs[i].atd(row);
             double x = cs[j].atd(row);
-            if (Double.isNaN(a) || Double.isNaN(x)) continue;
+            if (Double.isNaN(a)) a = _means[i];
+            if (Double.isNaN(x)) x = _means[j];
             sum += (a - _normSub[i]) * _normMul[i] * x;
           }
           _prod[i][c++] = sum;
@@ -559,6 +561,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   // Solves XD = AY' for X where A is n by p, Y is k by p, D is k by k, and n >> p > k
   // Resulting matrix X = (AY')D^(-1) will have dimensions n by k
   private static class CholMulTask extends MRTask<CholMulTask> {
+    double[] _means;    // For replacing NAs in A only
     double[] _normSub;  // For standardizing A only
     double[] _normMul;
     int _ncolA;       // _ncolA = p (number of training cols)
@@ -578,6 +581,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     CholMulTask(DataInfo dinfo, final CholeskyDecomposition chol, final double[][] yt, final int ncolA, final int ncolX) {
       assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
+      _means = dinfo._adaptedFrame.means();
       _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
       if(dinfo._normMul == null) {
         _normMul = MemoryManager.malloc8d(ncolA);
@@ -603,7 +607,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           double x = 0;
           for (int d = 0; d < _ncolA; d++) {
             double a = cs[d].atd(row);
-            if (Double.isNaN(a)) continue;
+            if (Double.isNaN(a)) a = _means[d];
             x += (a - _normSub[d]) * _normMul[d] * _yt[d][k];
           }
           xrow[k] = x;
@@ -618,7 +622,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // \sum_{i,j} (A_{i,j} - x_i * y_j)^2 where x_i = row i of X, y_j = col j of Y
         for(int d = 0; d < _ncolA; d++) {
           double a = cs[d].atd(row);
-          if(Double.isNaN(a)) continue;
+          if(Double.isNaN(a)) a = _means[d];
           double xysum = 0;
           for(int k = 0; k < _ncolX; k++)
             xysum += xrow[k] * _yt[d][k];

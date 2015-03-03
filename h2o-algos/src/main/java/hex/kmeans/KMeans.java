@@ -107,23 +107,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
 
-    // means are used to impute NAs
-    double[] prepMeans( final Vec[] vecs) {
-      final double[] means = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) means[i] = vecs[i].mean();
-      return means;
-    }
-    // mults & means for standardization
-    double[] prepMults( final Vec[] vecs) {
-      if( !_parms._standardize ) return null;
-      double[] mults = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) {
-        double sigma = vecs[i].sigma();
-        mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
-      }
-      return mults;
-    }
-
     // Initialize cluster centers
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
@@ -279,9 +262,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
         // mults & means for standardization
-        // means are used to impute NAs
-        final double[] means = prepMeans(vecs);
-        final double[] mults = prepMults(vecs);
+        final double[] means = _train.means();  // means are used to impute NAs
+        final double[] mults = _parms._standardize ? _train.mults() : null;
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
@@ -646,11 +628,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   private void randomRow(Vec[] vecs, Random rand, double[] center, double[] means, double[] mults) {
     long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
     data(center, vecs, row, means, mults);
-  }
-
-  private static boolean standardize(double sigma) {
-    // TODO unify handling of constant columns
-    return sigma > 1e-6;
   }
 
   // Pick most common cat level for each cluster_centers' cat columns
