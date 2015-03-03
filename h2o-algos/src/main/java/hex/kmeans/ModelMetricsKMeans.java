@@ -45,7 +45,6 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
       Arrays.fill(_colSumSq, 0);
     }
 
-    // FIXME: Is adapted frame (dataRow) standardized when model built on standardized data?
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
     public float[] perRow(float[] preds, float[] dataRow, Model m) {
@@ -53,7 +52,7 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
       if (Float.isNaN(preds[0])) return dataRow; // No errors if prediction  is missing
       if (Float.isNaN(dataRow[0])) return dataRow; // No errors if actual is missing
 
-      final TwoDimTable centers = ((KMeansModel) m)._output._centers;
+      final TwoDimTable centers = ((KMeansModel) m)._output._centers; // De-standardized centers
       assert (dataRow.length == centers.getColDim());
       final int clus = (int) preds[0];   // Assigned cluster index
       assert 0 <= clus && clus < _within_sumsqe.length;
@@ -97,9 +96,7 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
         mm._within_mse[i] = _within_sumsqe[i] / _size[i];
 
       // Sum-of-square distance from grand mean
-      if(km._parms._standardize)
-        mm._avg_ss = f.numCols()*(f.numRows()-1) / f.numRows();
-      else if (km._parms._k == 1)
+      if (km._parms._k == 1)
         mm._avg_ss = mm._avg_within_ss;
       else {
         mm._avg_ss = 0;
