@@ -793,6 +793,17 @@ public final class AutoBuffer {
     return ts;
   }
 
+  public AutoBuffer putAZ(boolean[] fs) {
+    put4(fs.length);
+    for (boolean f : fs) putZ(f);
+    return this;
+  }
+  public boolean[] getAZ() {
+    boolean[] b = new boolean[get4()];
+    for (int i = 0; i < b.length; ++i) b[i] = getZ();
+    return b;
+  }
+
   public AutoBuffer putAStr(String[] fs)    {
     //_arys++;
     long xy = putZA(fs);
@@ -1461,6 +1472,18 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJStr("" + value); }
+
+  private AutoBuffer putJSONAZ(boolean [] b) {
+    if (b == null) return putJNULL();
+    put1('[');
+    for( int i = 0; i < b.length; ++i) {
+      if (i > 0) put1(',');
+      putJStr(""+b[i]);
+    }
+    return put1(']');
+  }
+  public AutoBuffer putJSONAZ( String name, boolean[] f) { return putJSONStr(name).put1(':').putJSONAZ(f); }
+
 
   // Most simple integers
   private AutoBuffer putJInt( int i ) {
