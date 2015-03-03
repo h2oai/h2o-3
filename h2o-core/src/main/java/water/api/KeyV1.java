@@ -8,6 +8,7 @@ import water.fvec.Vec;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 /**
  * <p>
@@ -36,8 +37,25 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
   // need versioned
   public KeyV1(Key key) {
     this();
-    if (null != key)
+    if (null != key) {
+      Class clz = getKeyedClass();
+      Value v = DKV.get(key);
+
+      if (null != v) {
+        // Type checking of value from DKV
+        if (Job.class.isAssignableFrom(clz) && !v.isJob())
+          throw new H2OIllegalArgumentException("For Key: " + key + " expected a value of type Job; found a: " + v.theFreezableClass(), "For Key: " + key + " expected a value of type Job; found a: " + v.theFreezableClass() + " (" + clz + ")");
+        else if (Frame.class.isAssignableFrom(clz) && !v.isFrame() && !v.isVec())
+        // NOTE: we currently allow Vecs to be fetched via the /Frames endpoint, so this constraint is relaxed accordingly.  Note this means that if the user gets hold of a (hidden) Vec key and passes it to some other endpoint they will get an ugly error instead of an H2OIllegalArgumentException.
+          throw new H2OIllegalArgumentException("For Key: " + key + " expected a value of type Frame; found a: " + v.theFreezableClass(), "For Key: " + key + " expected a value of type Frame; found a: " + v.theFreezableClass() + " (" + clz + ")");
+        else if (Model.class.isAssignableFrom(clz) && !v.isModel())
+          throw new H2OIllegalArgumentException("For Key: " + key + " expected a value of type Model; found a: " + v.theFreezableClass(), "For Key: " + key + " expected a value of type Model; found a: " + v.theFreezableClass() + " (" + clz + ")");
+        else if (Vec.class.isAssignableFrom(clz) && !v.isVec())
+          throw new H2OIllegalArgumentException("For Key: " + key + " expected a value of type Vec; found a: " + v.theFreezableClass(), "For Key: " + key + " expected a value of type Vec; found a: " + v.theFreezableClass() + " (" + clz + ")");
+      }
+
       this.fillFromImpl(key);
+    }
   }
 
   public static KeyV1 make(Class<? extends KeyV1> clz, Key key) {
@@ -47,7 +65,7 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
       result = (KeyV1)c.newInstance(key);
     }
     catch (Exception e) {
-      throw H2O.fail("Caught exception trying to instantiate KeyV1: " + e);
+      throw H2O.fail("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": " + e + "; cause: " + e.getCause() + " " + Arrays.toString(e.getCause().getStackTrace()));
     }
     return result;
   }

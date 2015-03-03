@@ -701,6 +701,12 @@ public class Env extends Iced {
     }
   }
 
+  // Optimistically lookup strings in the K/V.  On hit, return the found Key as a Frame.
+  // On a miss, return the String.
+  static AST staticLookup(water.rapids.ASTString str) {
+    return kvLookup(str.value())==ARY ? new ASTFrame(str.value()) : str;
+  }
+
   // take the local id, check if it maps to a Frame in _local_frames
   // if not, check if the value of id maps to is a key in _local_frames
   Frame get_local(String id) {

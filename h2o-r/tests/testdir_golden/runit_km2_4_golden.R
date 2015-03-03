@@ -14,7 +14,7 @@ test.kmsplit.golden <- function(conn) {
   # trainR <- ozoneR[trainIdx,]; testR <- ozoneR[testIdx,]
   # trainH2O <- ozoneH2O[trainIdx,]; testH2O <- ozoneH2O[testIdx,]
   trainR <- ozoneR; testR <- ozoneR
-  trainH2O <- ozoneH2O; trainH2O <- ozoneH2O
+  trainH2O <- ozoneH2O; testH2O <- ozoneH2O
 
   # a random sample here, is no different than random init to kmeans
   # h2o might not get the desired centers with random init
