@@ -573,9 +573,10 @@ class ASTString extends AST {
   final String _s;
   final char _eq;
   ASTString(char eq, String s) { _eq = eq; _s = s; }
-  ASTString parse_impl(Exec E) {
+  AST parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    return new ASTString(_eq, E.parseString(_eq));
+    ASTString as = new ASTString(_eq, E.parseString(_eq));
+    return Env.staticLookup(as);
   }
   @Override public String toString() { return _s; }
   @Override void exec(Env e) { e.push(new ValStr(_s)); }
@@ -1227,7 +1228,10 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    AST ast = _asts[0];
+    String s = ast instanceof ASTFrame ? ((ASTFrame)ast)._key :
+      (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
+    DKV.remove(Key.make(s));
     env.push(new ValNum(0));
   }
 }

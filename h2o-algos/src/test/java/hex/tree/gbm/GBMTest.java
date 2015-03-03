@@ -456,7 +456,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Test public void testModelMSEEqualityOnProstateGaussian() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.gaussian)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.gaussian)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);

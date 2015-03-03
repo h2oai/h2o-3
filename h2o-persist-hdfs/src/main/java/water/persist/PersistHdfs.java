@@ -262,6 +262,12 @@ public final class PersistHdfs extends Persist {
     }
     // Output matches
     ArrayList<String> array = new ArrayList<String>();
+    {
+      // Filter out partials which are known to print out useless stack traces.
+      String s = filter.toLowerCase();
+      if (s == "hdfs:") return array;
+      if (s == "maprfs:") return array;
+    }
     try {
       Path p = new Path(filter);
       Path expand = p;
@@ -274,9 +280,11 @@ public final class PersistHdfs extends Persist {
         }
         if( array.size() == limit) break;
       }
-    } catch( Throwable xe ) {
-      xe.printStackTrace();
-      Log.debug(xe); /* ignore here */
+    } catch (Exception e) {
+      Log.trace(e);
+    } catch (Throwable t) {
+      t.printStackTrace();
+      Log.warn(t);
     }
 
     return array;

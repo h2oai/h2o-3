@@ -1,7 +1,8 @@
 import unittest, sys
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
 
 expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 551128, 327648, 544044, 577981, 
@@ -47,7 +48,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_parse_covtype(self):
+    def test_parse_covtype200x(self):
 
         tryList = [
             ('covtype200x.data', 200, 360),

@@ -41,6 +41,16 @@ class ModelMetricsHandler extends Handler {
       return this;              // Flow coding
     }
 
+    // Delete the metrics that match model and/or frame
+    ModelMetricsList delete() {
+      ModelMetricsList matches = fetch();
+
+      for (ModelMetrics mm : matches._model_metrics)
+        DKV.remove(mm._key);
+
+      return matches;
+    }
+
     /** Return all the models matching the model&frame filters */
     public Schema list(int version, ModelMetricsList m) {
       return this.schema(version).fillFromImpl(m.fetch());
@@ -62,13 +72,13 @@ class ModelMetricsHandler extends Handler {
   public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = false)
-    public String model;
+    public KeyV1.ModelKeyV1 model;
 
     @API(help = "Key of Frame of interest (optional)", json = false)
-    public String frame;
+    public KeyV1.FrameKeyV1 frame;
 
     @API(help = "Key of predictions frame, if predictions are requested (optional)", json = false, required = false)
-    public String destination_key;
+    public KeyV1.FrameKeyV1 destination_key;
 
     @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
     public boolean reconstruction_error;
@@ -81,9 +91,10 @@ class ModelMetricsHandler extends Handler {
     public ModelMetricsBase[] model_metrics;
 
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
-      mml._model = DKV.getGet(this.model);
-      mml._frame = DKV.getGet(this.frame);
-      mml._destination_key = this.destination_key;
+      // TODO: check for type!
+      mml._model = (null == this.model || null == this.model.key() ? null : this.model.key().get());
+      mml._frame = (null == this.frame || null == this.frame.key() ? null : this.frame.key().get());
+      mml._destination_key = (null == this.destination_key || null == this.destination_key.key() ? null : this.destination_key.key().toString());
       mml._reconstruction_error = this.reconstruction_error;
       mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
 
@@ -100,9 +111,9 @@ class ModelMetricsHandler extends Handler {
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model = (null == mml._model ? null : mml._model._key.toString());
-      this.frame = (null == mml._frame ? null : mml._frame._key.toString());
-      this.destination_key = mml._destination_key;
+      this.model = (mml._model == null ? null : new KeyV1.ModelKeyV1(mml._model._key));
+      this.frame = (mml._frame == null ? null : new KeyV1.FrameKeyV1(mml._frame._key));
+      this.destination_key = (mml._destination_key == null ? null : new KeyV1.FrameKeyV1(Key.make(mml._destination_key)));
       this.reconstruction_error = mml._reconstruction_error;
       this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
@@ -140,6 +151,14 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 fetch(int version, ModelMetricsListSchemaV3 s) {
     ModelMetricsList m = s.createAndFillImpl();
     s.fillFromImpl(m.fetch());
+    return s;
+  }
+
+  /** Delete one or more ModelMetrics. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelMetricsListSchemaV3 delete(int version, ModelMetricsListSchemaV3 s) {
+    ModelMetricsList m = s.createAndFillImpl();
+    s.fillFromImpl(m.delete());
     return s;
   }
 

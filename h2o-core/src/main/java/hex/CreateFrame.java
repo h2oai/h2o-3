@@ -1,9 +1,9 @@
 package hex;
 
-import water.*;
-import water.fvec.*;
-import water.util.FrameUtils;
-import water.util.Log;
+import water.Job;
+import water.Key;
+import water.fvec.Frame;
+import water.fvec.FrameCreator;
 
 import java.util.Random;
 
@@ -11,7 +11,7 @@ import java.util.Random;
  * Create a Frame from scratch
  * If randomize = true, then the frame is filled with Random values.
  */
-public class CreateFrame extends Job<CreateFrame> {
+public class CreateFrame extends Job<Frame> {
   public long rows = 10000;
   public int cols = 10;
   public long seed = new Random().nextLong();
@@ -29,8 +29,8 @@ public class CreateFrame extends Job<CreateFrame> {
   public boolean positive_response; // only for response_factors=1
   public boolean has_response = false;
 
-  public CreateFrame(Key<CreateFrame> dest, String desc) { super(dest, desc); }
-  public CreateFrame() { super(Key.make(), null); }
+  public CreateFrame(Key<Frame> dest, String desc) { super(dest, (desc == null ? "CreateFrame" : desc)); }
+  public CreateFrame() { super(Key.make(), "CreateFrame"); }
 
   public void execImpl() {
     if (integer_fraction + binary_fraction + categorical_fraction > 1) throw new IllegalArgumentException("Integer, binary and categorical fractions must add up to <= 1.");

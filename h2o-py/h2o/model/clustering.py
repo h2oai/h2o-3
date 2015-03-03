@@ -28,6 +28,26 @@ class H2OClusteringModel(ModelBase):
     print "Average Overall SSE: " + str(output["avg_ss"])
     print
 
+  def size(self):
+    return self._model_json["output"]["size"]
+
+  def avg_between_ss(self):
+    return self._model_json["output"]["avg_between_ss"]
+
+  def avg_ss(self):
+    return self._model_json["output"]["avg_ss"]
+
+  def avg_within_ss(self):
+    return self._model_json["output"]["avg_within_ss"]
+
+  def within_mse(self):
+    return self._model_json["output"]["within_mse"]
+
+  def centers(self):
+    return self._model_json['output']['centers'].cell_values
+
 class H2OClusteringModelMetrics(object):
   def __init__(self, metric_json):
     self._metric_json = metric_json
+
+

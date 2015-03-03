@@ -333,6 +333,33 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
+  /** All the column means.
+   *  @return the mean of each column */
+  public double[] means() {
+    Vec[] vecs = vecs();
+    double[] means = new double[vecs.length];
+    for( int i = 0; i < vecs.length; i++ )
+      means[i] = vecs[i].mean();
+    return means;
+  }
+
+  /** One over the standard deviation of each column.
+   *  @return Reciprocal the standard deviation of each column */
+  public double[] mults() {
+    Vec[] vecs = vecs();
+    double[] mults = new double[vecs.length];
+    for( int i = 0; i < vecs.length; i++ ) {
+      double sigma = vecs[i].sigma();
+      mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
+    }
+    return mults;
+  }
+
+  private static boolean standardize(double sigma) {
+    // TODO unify handling of constant columns
+    return sigma > 1e-6;
+  }
+
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
