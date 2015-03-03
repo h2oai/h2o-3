@@ -132,7 +132,7 @@ class Basic(unittest.TestCase):
             model_key = 'benign_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
-                destination_key=bHack,
+                destination_key=model_key,
                 training_frame=bHack,
                 parameters=parameters,
                 timeoutSecs=10)
