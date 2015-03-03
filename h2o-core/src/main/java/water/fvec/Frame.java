@@ -491,7 +491,7 @@ public class Frame extends Lockable<Frame> {
         cnames[ccv] = names[i];
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
-    return new Frame[] { new Frame(names,vecs), ccv>0 ?  new Frame(Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
+    return new Frame[] { new Frame(Key.make("subframe"+Key.make().toString()), names,vecs), ccv>0 ?  new Frame(Key.make("subframe"+Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
   }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once

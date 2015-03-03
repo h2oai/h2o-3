@@ -958,7 +958,7 @@ class TestRunner:
             if (True):
                 possible_utils_parent_dir = self.test_root_dir
                 while (True):
-                    possible_utils_dir = os.path.join(possible_utils_parent_dir, "Utils")
+                    possible_utils_dir = os.path.join(possible_utils_parent_dir, os.path.join("h2o-r", os.path.join("tests", "Utils")))
                     possible_runner_setup_package_r = os.path.join(possible_utils_dir, "runnerSetupPackage.R")
                     if (os.path.exists(possible_runner_setup_package_r)):
                         runner_setup_package_r = possible_runner_setup_package_r

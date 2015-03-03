@@ -11,6 +11,7 @@ import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -122,6 +123,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTScale());
     putPrefix(new ASTCharacter());
     putPrefix(new ASTFactor());
+    putPrefix(new ASTAsNumeric());
     putPrefix(new ASTIsFactor());
     putPrefix(new ASTAnyFactor());              // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
@@ -2518,35 +2520,29 @@ class ASTTable extends ASTUniPrefixOp {
     if (two != null) fr = new Frame(one.add(two));
     else fr = one;
 
-    int ncol;
+    final int ncol;
     if ((ncol = fr.vecs().length) > 2)
       throw new IllegalArgumentException("table does not apply to more than two cols.");
     for (int i = 0; i < ncol; i++)
       if (!fr.vecs()[i].isInt())
         throw new IllegalArgumentException("table only applies to integer vectors.");
-    String[][] domains = new String[ncol][];  // the domain names to display as row and col names
-    // if vec does not have original domain, use levels returned by CollectDomain
-    long[][] levels = new long[ncol][];
-    long[][] counts;
     Vec dataLayoutVec;
     Frame fr2;
-
-    final int min = (int)fr.anyVec().min();
-    final int max = (int)fr.anyVec().max();
-
-    // optimized path for single column ... single pass, count uniques
+    String colnames[];
+    String[][] d = new String[ncol+1][];
 
     if (ncol == 1) {
+      final int min = (int)fr.anyVec().min();
+      final int max = (int)fr.anyVec().max();
+      colnames = new String[]{fr.name(0), "Count"};
+      d[0] = fr.anyVec().domain(); // should always be null for all neg values!
+      d[1] = null;
 
       // all pos
       if (min >= 0) {
         UniqueColumnCountTask t = new UniqueColumnCountTask(max,false,false,0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
-        String[] colnames = new String[]{"row.names", "Count"};
-        String[][] domain = new String[2][];
-        domain[0] = fr.anyVec().domain();
-        domain[1] = null;
 
         // second pass to build the result frame
         fr2 = new MRTask() {
@@ -2558,18 +2554,13 @@ class ASTTable extends ASTUniPrefixOp {
               cs[1].addNum(cts[idx]);
             }
           }
-        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
 
-      // all neg  -- flip the sign and count...
+        // all neg  -- flip the sign and count...
       } else if (min <= 0 && max <= 0) {
         UniqueColumnCountTask t = new UniqueColumnCountTask(-1*min,true,false,0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
-        String[] colnames = new String[]{"row.names", "Count"};
-        String[][] domain = new String[2][];
-        domain[0] = fr.anyVec().domain();  // should always be null for all neg values!
-        domain[1] = null;
-        final int flip = domain[0] == null ? -1 : 1; // flip the idx from pos to neg (if no domain)
 
         // second pass to build the result frame
         fr2 = new MRTask() {
@@ -2577,21 +2568,17 @@ class ASTTable extends ASTUniPrefixOp {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
-              cs[0].addNum(idx * flip);
+              cs[0].addNum(idx * -1);
               cs[1].addNum(cts[idx]);
             }
           }
-        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
 
-      // mixed
+        // mixed
       } else {
         UniqueColumnCountTask t = new UniqueColumnCountTask(max+-1*min,false,true,max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
-        String[] colnames = new String[]{"row.names", "Count"};
-        String[][] domain = new String[2][];
-        domain[0] = fr.anyVec().domain(); // should always be null for all neg values!
-        domain[1] = null;
 
         // second pass to build the result frame
         fr2 = new MRTask() {
@@ -2603,84 +2590,44 @@ class ASTTable extends ASTUniPrefixOp {
               cs[1].addNum(cts[idx]);
             }
           }
-        }.doAll(2, dataLayoutVec).outputFrame(colnames, domain);
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
       }
 
     } else {
-
-      for (int i = 0; i < ncol; i++) {
-        Vec v = fr.vecs()[i];
-        levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
-        domains[i] = v.domain();
+      colnames = new String[]{fr.name(0), fr.name(1), "count"};
+      long s = System.currentTimeMillis();
+      UniqueTwoColumnTask t = new UniqueTwoColumnTask().doAll(fr);
+      Log.info("Finished raw tabling in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+      final NonBlockingHashMap m = t._cnts;
+      dataLayoutVec = Vec.makeCon(0, m.size());
+      d[0] = fr.vec(0).domain();
+      if (ncol == 2) {
+        d[1] = fr.vec(1).domain();
       }
 
-      counts = new Tabularize(levels).doAll(fr)._counts;
-
-      // Build output vecs
-      dataLayoutVec = Vec.makeCon(0, levels[0].length);
-      Vec[] vecs = new Vec[counts.length + 1];
-      String[] colnames = new String[counts.length + 1];
-
-      final long[][] lvls = levels;
-      final long[][] cnts = counts;
-      (vecs[0] = new MRTask() {
+      fr2 = new MRTask() {
         @Override
-        public void map(Chunk cs, NewChunk oc) {
-          for (int i = 0; i < cs._len; ++i) {
-            oc.addNum((double) lvls[0][(int) (i + cs.start())]);
+        public void map(Chunk[] c, NewChunk[] cs) {
+          Iterator it = m.keySet().iterator();
+          for (int j = 0; j < c[0].start(); ++j) it.next();  // stream forward...
+          for (int i = 0; i < c[0]._len; ++i) {
+            GroupPair g = (GroupPair) it.next();
+            cs[0].addNum(g._ls[0]);
+            if (ncol == 2) {
+              cs[1].addNum(g._ls[1]);
+              cs[2].addNum((int) m.get(g));
+            } else {
+              cs[1].addNum((int) m.get(g));
+            }
           }
         }
-      }.doAll(1, dataLayoutVec).outputFrame(null, null).anyVec()).setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
-      colnames[0] = "row.names";
-      int level1 = 0;
-      for (; level1 < counts.length; ) {
-        final int lvl = ++level1;
-        vecs[lvl] = new MRTask() {
-          @Override
-          public void map(Chunk cs, NewChunk oc) {
-            for (int i = 0; i < cs._len; ++i)
-              oc.addNum((double) cnts[lvl - 1][(int) (i + cs.start())]);
-          }
-        }.doAll(1, dataLayoutVec).outputFrame(null, null).anyVec();
-
-        if (ncol > 1) {
-          colnames[level1] = domains[1] == null ? Long.toString(levels[1][level1 - 1]) : domains[1][(int) (levels[1][level1-1])];
-        }
-      }
-      fr2 = new Frame(colnames, vecs);
+      }.doAll(ncol + 1, dataLayoutVec).outputFrame(colnames, d);
     }
     Keyed.remove(dataLayoutVec._key);
     env.pushAry(fr2);
   }
 
-  protected static class Tabularize extends MRTask<Tabularize> {
-    public final long[][]  _domains;
-    public long[][] _counts;
-
-    public Tabularize(long[][] dom) { super(); _domains=dom; }
-    @Override public void map(Chunk[] cs) {
-      assert cs.length == _domains.length;
-      _counts = _domains.length==1? new long[1][] : new long[_domains[1].length][];
-      for (int i=0; i < _counts.length; i++) _counts[i] = new long[_domains[0].length];
-      for (int i=0; i < cs[0]._len; i++) {
-        if (cs[0].isNA(i)) continue;
-        long ds[] = _domains[0];
-        int level0 = Arrays.binarySearch(ds,cs[0].at8(i));
-        assert 0 <= level0 && level0 < ds.length : "l0="+level0+", len0="+ds.length+", min="+ds[0]+", max="+ds[ds.length-1];
-        int level1;
-        if (cs.length>1) {
-          if (cs[1].isNA(i)) continue; else level1 = Arrays.binarySearch(_domains[1],(int)cs[1].at8(i));
-          assert 0 <= level1 && level1 < _domains[1].length;
-        } else {
-          level1 = 0;
-        }
-        _counts[level1][level0]++;
-      }
-    }
-    @Override public void reduce(Tabularize that) { ArrayUtils.add(_counts, that._counts); }
-  }
-
-  // Fast path for single positive column of ints... count them up and index them with a single long[]
+  // gets vast majority of cases and is stupidly fast (35x faster than using UniqueTwoColumnTask)
   private static class UniqueColumnCountTask extends MRTask<UniqueColumnCountTask> {
     long[] _cts;
     final int _max;
@@ -2689,7 +2636,7 @@ class ASTTable extends ASTUniPrefixOp {
     final int _piv;
     public UniqueColumnCountTask(int max, boolean flip, boolean mixed, int piv) { _max = max; _flip = flip; _mixed = mixed; _piv = piv; }
     @Override public void map( Chunk c ) {
-      _cts = new long[_max+1];
+      _cts = MemoryManager.malloc8(_max+1);
       // choose the right hot loop
       if (_flip) {
         for (int i = 0; i < c._len; ++i) {
@@ -2713,6 +2660,72 @@ class ASTTable extends ASTUniPrefixOp {
       }
     }
     @Override public void reduce(UniqueColumnCountTask t) { ArrayUtils.add(_cts, t._cts); }
+  }
+
+  public static class GroupPair extends Iced {
+    public long _ls[];
+    public int _hash;
+    public GroupPair() { _ls = MemoryManager.malloc8(2);}
+    public void fill(int row, Chunk chks[]) {
+      _ls[0] = (long) chks[0].atd(row);
+      _ls[1] = (long) chks[1].atd(row);
+      _hash = hash();
+    }
+    private int hash() {
+      long h=0;                 // hash is sum of field bits
+      for( long d : _ls ) h += Double.doubleToRawLongBits(d);
+      h ^= (h>>>20) ^ (h>>>12);
+      h ^= (h>>> 7) ^ (h>>> 4);
+      return (int)((h^(h>>32))&0x7FFFFFFF);
+    }
+    public boolean has(long ls[]) { return Arrays.equals(_ls, ls); }
+    @Override public boolean equals( Object o ) { return o instanceof GroupPair && Arrays.equals(_ls,((GroupPair)o)._ls); }
+    @Override public int hashCode() { return _hash; }
+    @Override public String toString() { return Arrays.toString(_ls); }
+  }
+
+  // avoids swapping when direct addressing with a long[][], but still slow
+  private static class UniqueTwoColumnTask extends MRTask<UniqueTwoColumnTask> {
+    NonBlockingHashMap<GroupPair, Integer> _cnts;
+    @Override public void map( Chunk[] c ) {
+      _cnts = new NonBlockingHashMap<>();
+      GroupPair g = new GroupPair();
+      for (int r = 0; r < c[0]._len; ++r) {
+        g.fill(r, c);
+        Integer o = _cnts.putIfAbsent(g,1);
+        if (o==null) { g = new GroupPair(); }
+        else {_cnts.put(g,o+1);}
+      }
+    }
+    @Override public void reduce(UniqueTwoColumnTask t) {
+      NonBlockingHashMap<GroupPair, Integer> l = _cnts;
+      NonBlockingHashMap<GroupPair, Integer> r = t._cnts;
+      if (l.size() < r.size()) { l = r; r = this._cnts; }
+      for (GroupPair g : r.keySet()) { //iterate over smaller HM
+        Integer lc = l.get(g);
+        Integer rc = r.get(g);
+        if (rc == null) { l.put(g, lc); }
+        else { l.put(g,rc+(lc==null?0:lc)); }
+      }
+      _cnts = l;
+      t._cnts = null;
+    }
+
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _cnts == null ) return ab.put4(0);
+      ab.put4(_cnts.size());
+      for( GroupPair g : _cnts.keySet() ) {ab.put(g); ab.put4(_cnts.get(g)); }
+      return ab;
+    }
+
+    @Override public UniqueTwoColumnTask read_impl( AutoBuffer ab ) {
+      assert _cnts == null;
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _cnts = new NonBlockingHashMap<>();
+      for( int i=0; i<len; i++ ) { _cnts.put(ab.get(GroupPair.class), ab.get4());}
+      return this;
+    }
   }
 }
 
@@ -2992,6 +3005,27 @@ class ASTCut extends ASTUniPrefixOp {
       }
     }.doAll(1, fr).outputFrame(fr.names(), domains);
     env.pushAry(fr2);
+  }
+}
+
+class ASTAsNumeric extends ASTUniPrefixOp {
+  ASTAsNumeric() { super(new String[]{"as.numeric", "ary"}); }
+  @Override String opStr() { return "as.numeric"; }
+  @Override ASTOp make() {return new ASTAsNumeric(); }
+  ASTAsNumeric parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
+    ASTAsNumeric res = (ASTAsNumeric) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame ary = env.peekAry();
+    Vec[] nvecs = new Vec[ary.numCols()];
+    for (int c = 0; c < ary.numCols(); ++c)
+      (nvecs[c] = ary.vecs()[c]).setDomain(null);
+    ary = new Frame(ary._names, nvecs);
+    env.poppush(1, new ValFrame(ary));
   }
 }
 

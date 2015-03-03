@@ -37,6 +37,7 @@ public abstract class DocGen<T extends DocGen> {
     /* @Override */ public HTML p(Enum e) { _sb.append(e); return this; }
     @Override public String toString() { return _sb.toString(); }
     private HTML p(char c) { _sb.append(c); return this; }
+    private HTML p(boolean b) { _sb.append(b); return this; }
 
     // Weaver shortcuts for placing Java fields nicely.
     private HTML f0(String name) { return p("<dl class='dl-horizontal'><dt>").p(name).p("</dt><dd>"); }
@@ -65,6 +66,8 @@ public abstract class DocGen<T extends DocGen> {
       for( short s : ss ) p("<tr><td>").p(Integer.toString(s)).p("</td></tr>");
       return arrayTail().f1();
     }
+
+    public HTML putAZ (String name, boolean[] b) { return b==null?f(name, "null"):f0(name).array(b).f1(); }
 
     public HTML putA4  (String name, int    [] is) { return is==null?f(name, "null"):f0(name).array(is).f1(); } //throw H2O.unimpl(); }
     public HTML putA4f (String name, float  [] fs) { return fs==null?f(name, "null"):f0(name).array(fs).f1(); }
@@ -155,6 +158,11 @@ public abstract class DocGen<T extends DocGen> {
       if( ss != null ) for( String s : ss ) p("<tr>").cell(s).p("</tr>");
       return arrayTail();
     }
+    public HTML array(boolean[] ss) {
+      arrayHead();
+      if (ss != null ) for (boolean b : ss) p("<tr>").cell(b).p("</tr>");
+      return arrayTail();
+    }
     public HTML array( int[] ds    ) {
       arrayHead();
       if( ds != null ) for( double d : ds ) p("<tr>").cell(d).p("</tr>");
@@ -233,6 +241,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
     public HTML cell( long l )   { return cell(Long.toString(l)); }
     public HTML cell( double d ) { return cell(Double.toString(d)); }
+    public HTML cell( boolean b ) { return p("<td>").p(b).p("</td>"); }
     public HTML cell( String[] ss ) { return p("<td>").array(ss).p("</td>"); }
     public HTML cell( double[] ds ) { return p("<td>").array(ds).p("</td>"); }
 
