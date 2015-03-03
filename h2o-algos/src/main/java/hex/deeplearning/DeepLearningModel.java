@@ -1488,11 +1488,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   private void makeWeightsBiases(Key destKey) {
     _output.weights = new Key[model_info.get_params()._hidden.length + 1];
     for (int i = 0; i < _output.weights.length; ++i) {
-      _output.weights[i] = Key.make(destKey + ".weights." + i);
+      _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
     }
     _output.biases = new Key[model_info.get_params()._hidden.length + 1];
     for (int i = 0; i < _output.biases.length; ++i) {
-      _output.biases[i] = Key.make(destKey + ".biases." + i);
+      _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
     }
   }
 
