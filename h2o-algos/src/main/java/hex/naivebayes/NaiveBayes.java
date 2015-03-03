@@ -9,6 +9,9 @@ import water.*;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
+
+import java.util.Arrays;
 
 /**
  * Naive Bayes
@@ -45,8 +48,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   public void init(boolean expensive) {
     super.init(expensive);
     if (_response != null && !_response.isEnum()) error("_response", "Response must be a categorical column");
-    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0.");
-    if (_parms._min_sdev <= 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10.");
+    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");
+    if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
   }
 
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
@@ -59,7 +62,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       // A-priori probability of response y
       for(int i = 0; i < pprior.length; i++)
         pprior[i] = (pprior[i] + _parms._laplace)/(tsk._nobs + tsk._nres * _parms._laplace);
-      // pprior[i] = pprior[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
+        // pprior[i] = pprior[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
 
       // Probability of categorical predictor x_j conditional on response y
       for(int col = 0; col < dinfo._cats; col++) {
@@ -83,9 +86,26 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
           pcond[cidx][i][1] = Math.sqrt(pvar);
         }
       }
-
       model._output._pprior = pprior;
-      model._output._pcond = pcond;
+      model._output._pcond_raw = pcond;
+
+      // Create table of conditional probabilities for every predictor
+      String[] rowNames = _response.domain();
+      for(int col = 0; col < dinfo._cats; col++) {
+        String[] colNames = _train.vec(col).domain();
+        String[] colTypes = new String[colNames.length];
+        String[] colFormats = new String[colNames.length];
+        Arrays.fill(colTypes, "double");
+        Arrays.fill(colFormats, "%5f");
+        model._output._pcond[col] = new TwoDimTable("Column: " + _train.name(col), rowNames, colNames,
+                colTypes, colFormats, "Response / Predictor", new String[rowNames.length][], model._output._pcond_raw[col]);
+      }
+
+      for(int col = 0; col < dinfo._nums; col++) {
+        int cidx = dinfo._cats + col;
+        model._output._pcond[cidx] = new TwoDimTable("Column: " + _train.name(col), rowNames, new String[] {"Mean", "Standard Deviation"},
+                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "", new String[rowNames.length][], model._output._pcond_raw[cidx]);
+      }
     }
 
     @Override
@@ -133,7 +153,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   }
 
   // Note: NA handling differs from R for efficiency purposes
-  // R's method: For each predictor x_j, skip counting that row for p(x_j|y) calculation if x_j = NA. If response y = NA, skip counting row entirely in all calculations
+  // R's method: For each predictor x_j, skip counting that row for p(x_j|y) calculation if x_j = NA.
+  //             If response y = NA, skip counting row entirely in all calculations
   // H2O's method: Just skip all rows where any x_j = NA or y = NA. Should be more memory-efficient, but results incomparable with R.
   private static class NBTask extends MRTask<NBTask> {
     final protected DataInfo _dinfo;
@@ -142,7 +163,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     public int _nobs;             // Number of rows counted in calculation
     public double[] _rescnt;      // Count of each level in the response
     public double[][][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
-    // For each numeric predictor, sum of entries for every response level
+                                  // For each numeric predictor, sum of entries for every response level
 
     public NBTask(DataInfo dinfo) {
       _dinfo = dinfo;

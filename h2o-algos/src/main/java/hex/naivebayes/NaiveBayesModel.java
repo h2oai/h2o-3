@@ -5,11 +5,12 @@ import hex.SupervisedModel;
 import hex.schemas.NaiveBayesModelV2;
 import water.Key;
 import water.api.ModelSchema;
+import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   public static class NaiveBayesParameters extends SupervisedModel.SupervisedParameters {
-    public double _laplace;    // Laplace smoothing parameter
-    public double _min_sdev;   // Minimum standard deviation to user for observations without enough data
+    public double _laplace = 0;         // Laplace smoothing parameter
+    public double _min_sdev = 1e-10;   // Minimum standard deviation to use for observations without enough data
   }
 
   public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {
@@ -20,7 +21,8 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     public double[] _pprior;
 
     // For every predictor, a table providing, for each attribute level, the conditional probabilities given the target class
-    public double[][][] _pcond;
+    public TwoDimTable[/*predictor*/] _pcond;
+    public double[/*predictor*/][/*res_level*/][/*pred_level*/] _pcond_raw;
 
     // Number of categorical predictor variables
     public int _ncats;
@@ -44,7 +46,6 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     return new NaiveBayesModelV2();
   }
 
-
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return null;
@@ -55,14 +56,13 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
   protected float[] score0(double[] data, float[] preds) {
     double denom = 0;
     assert preds.length == (_output._pprior.length + 1);   // Note: First column of preds is predicted response class
-    // TODO: Check adapted frame is ordered so categorical cols first, followed by numeric cols
     // Compute joint probability of predictors for every response class
     for(int rlevel = 0; rlevel < _output._pprior.length; rlevel++) {
       double num = 1;
       for(int col = 0; col < _output._ncats; col++) {
         if(Double.isNaN(data[col])) continue;   // Skip predictor in joint x_1,...,x_m if NA
         int plevel = (int)data[col];
-        num *= _output._pcond[col][rlevel][plevel];    // p(x|y) = \Pi_{j = 1}^m p(x_j|y)
+        num *= _output._pcond_raw[col][rlevel][plevel];    // p(x|y) = \Pi_{j = 1}^m p(x_j|y)
       }
 
       // For numeric predictors, assume Gaussian distribution with sample mean and variance from model
@@ -70,16 +70,16 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
         if(Double.isNaN(data[col])) continue;
 
         // Two ways to get non-zero std deviation HEX-1852
-//        double stddev = pcond[col][rlevel][1] > 0 ? pcond[col][rlevel][1] : min_std_dev; //only use the placeholder for critically low data
-        double stddev = Math.max(_output._pcond[col][rlevel][1], _parms._min_sdev); // more stable for almost constant data
-        double mean = _output._pcond[col][rlevel][0];
+        // double stddev = pcond[col][rlevel][1] > 0 ? pcond[col][rlevel][1] : min_std_dev;  // only use the placeholder for critically low data
+        double stddev = Math.max(_output._pcond_raw[col][rlevel][1], _parms._min_sdev); // more stable for almost constant data
+        double mean = _output._pcond_raw[col][rlevel][0];
         double x = data[col];
         num *= Math.exp(-((x-mean)*(x-mean)/(2.*stddev*stddev)))/stddev/Math.sqrt(2.*Math.PI); // faster
-//        num *= new NormalDistribution(mean, stddev).density(data[col]); //slower
+        // num *= new NormalDistribution(mean, stddev).density(data[col]); //slower
       }
 
       num *= _output._pprior[rlevel];    // p(x,y) = p(x|y)*p(y)
-      denom += num;             // p(x) = \Sum_{levels of y} p(x,y)
+      denom += num;                     // p(x) = \Sum_{levels of y} p(x,y)
       preds[rlevel+1] = (float)num;
     }
 

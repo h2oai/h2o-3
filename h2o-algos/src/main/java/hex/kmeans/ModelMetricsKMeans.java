@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
   public long[/*k*/] _size;
-  public double[/*k*/] _within_mse; //TODO: add Clustering specific members
+  public double[/*k*/] _within_mse; // TODO: add Clustering specific members
   public double _avg_ss;
   public double _avg_within_ss;
   public double _avg_between_ss;
@@ -33,11 +33,11 @@ public class ModelMetricsKMeans extends ModelMetricsUnsupervised {
     private double[/*features*/] _colSumSq;  // Sum of squared values of each column
 
     public MetricBuilderKMeans(int ncol, int nclust) {
+      _work = new float[ncol];
       _size = new long[nclust];
       _within_sumsqe = new double[nclust];
       Arrays.fill(_size, 0);
       Arrays.fill(_within_sumsqe, 0);
-      _work = new float[ncol];
 
       _colSum = new double[ncol];
       _colSumSq = new double[ncol];
