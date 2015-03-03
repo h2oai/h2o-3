@@ -50,29 +50,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     super.init(expensive);
 
     switch( _parms._loss ) {
-    case AUTO:  
-      break; // Guess the loss by examining the response column
+    case AUTO:               // Guess the loss by examining the response column
+      _parms._convert_to_enum = _response != null && _response.isInt() && _response.min()+1==_response.max();
+      break; 
     case bernoulli:
-      if (_nclass != 2) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
-      else if ( _response != null ) {
+      if( _parms._convert_to_enum && _nclass != 2 ) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         double mean = _response.mean();
         _initialPrediction = Math.log(mean / (1.0f - mean));
       }
-      // fall into additional classification check
-    case multinomial:
-      if( !_parms._convert_to_enum && _nclass == 1 )
-        error("_convert_to_enum", "Classification requires the response to be an enum");
+      _parms._convert_to_enum = true;
       break;
-    case gaussian:
-      if( _nclass != 1 ) error("_loss","Gaussian requires the response to be numeric");
-      if( _parms._convert_to_enum )
-        error("_convert_to_enum", "Regression requires the response to not be an enum");
-      break;
-    default:
-      error("_loss","Loss must be specified");
+    case multinomial:  _parms._convert_to_enum = true;   break;
+    case gaussian:     _parms._convert_to_enum = false;  break;
+    default:           error("_loss","Loss must be specified");
     }
-
+    
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
