@@ -873,6 +873,12 @@ p = a_node.predict(model='kmeans_prostate', frame='prostate_binomial')
 validate_predictions(p, 'kmeans_prostate', 'prostate_binomial', 380)
 h2o.H2O.verboseprint("Predictions for scoring: ", 'kmeans_prostate', " on: ", 'prostate_binomial', ":  ", repr(p))
 
+###################################
+# Predict with reversed keys (should get an H2OErrorV1):
+# TODO: this works, but I'm not handling 500s yet in the automated test:
+# p = a_node.predict(frame='kmeans_prostate', model='prostate_binomial')
+# print repr(p)
+
 ######################################################################
 # Now look for kmeans_prostate_model_name using the one-model API and find_compatible_frames, and check it
 model = a_node.models(key='kmeans_prostate', find_compatible_frames=True)
