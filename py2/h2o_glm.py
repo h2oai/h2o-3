@@ -21,20 +21,20 @@ def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
         if isinstance(obj, (bool, int, long, float, basestring)):
             try:
                 number = float(obj)
-                if math.isnan(number):
-                    raise Exception("%s %s is a NaN" % (hierarchy, obj))
-                if math.isinf(number):
-                    raise Exception("%s %s is a Inf" % (hierarchy, obj))
                 print "Yay!", hierarchy, number
             except:
                 if obj is None:
                     print "Not Yay! how come you're giving me None for a coefficient? %s %s" % (hierarchy, obj)
-                elif obj == str(obj)=="":
+                elif str(obj)=="":
                     print "Not Yay! how come you're giving me an empty string for a coefficient? %s %s" % (hierarchy, obj)
                 else:
                     raise Exception("%s %s %s is not a valid float" % (hierarchy, obj, type(obj)))
                 # hack for now
                 number = 0.0
+            if math.isnan(number):
+                raise Exception("%s %s is a NaN" % (hierarchy, obj))
+            if math.isinf(number):
+                raise Exception("%s %s is a Inf" % (hierarchy, obj))
             return number
 
         elif isinstance(obj, dict):
@@ -72,7 +72,8 @@ def simpleCheckGLM(self, model, parameters,
     check_obj_has_good_numbers(threshold, 'threshold')
 
     auc = model.auc
-    check_obj_has_good_numbers(auc, 'model.auc')
+    # NaN if not logistic
+    # check_obj_has_good_numbers(auc, 'model.auc')
 
     best_lambda_idx = model.best_lambda_idx
     model_category = model.model_category
@@ -90,6 +91,7 @@ def simpleCheckGLM(self, model, parameters,
 
     domains = model.domains
 
+    # when is is this okay to be NaN?
     aic = model.aic
     check_obj_has_good_numbers(aic, 'model.aic')
 

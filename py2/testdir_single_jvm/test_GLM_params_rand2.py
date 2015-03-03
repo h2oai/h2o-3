@@ -129,7 +129,7 @@ class Basic(unittest.TestCase):
                 if f in parameters:
                     parameters[f] = "[%s]" % parameters[f]
 
-            model_key = 'benign_glm.hex'
+            model_key = 'rand_glm.hex'
             bmResult = h2o.n0.build_model(
                 algo='glm',
                 destination_key=model_key,
