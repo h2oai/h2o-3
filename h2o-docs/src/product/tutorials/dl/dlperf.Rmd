@@ -331,7 +331,7 @@ Notes:
   * A large part of the benchmark study was concerned with the distributed scalability (strong scaling) of H2O (at least in terms of throughput). We will address this topic in part 3, but as noted earlier, almost linear speedups can be achieved when adding compute nodes as the communication overhead is fully user-controllable.
   * For our single-node comparison (`NODES=1`), the parameter `replicate_training_data` has no effect, so we can leave it at its default value (`TRUE`).
   
-We first run with the same parameters as the benchmark study, and then modify the parameters to improve the trainings speed successively.
+We first run with the same parameters as the benchmark study, and then modify the parameters to improve the training speed successively.
 ```{r}
 #score_test_set=F ## uncomment if test set error is not needed
 EPOCHS=1
