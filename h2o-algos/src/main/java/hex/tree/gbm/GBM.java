@@ -47,39 +47,37 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
-    if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
-      _parms._convert_to_enum = false;
-      if (null != _response && _response.isInt()) {
-        long[] domain = new Vec.CollectDomain().doAll(_response).domain();
-        if (domain.length == 2) { //bernoulli behavior is desired
-          _parms._convert_to_enum = true;
-        }
+    super.init(expensive);
+
+    switch( _parms._loss ) {
+    case AUTO:               // Guess the loss by examining the response column
+      _parms._convert_to_enum = couldBeBool(_response);
+      break; 
+    case bernoulli:
+      if( _parms._convert_to_enum && _nclass != 2 && !couldBeBool(_response))
+        error("_loss", "Bernoulli requires the response to be a 2-class categorical");
+      else if( _response != null ) {
+        // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+        double mean = _response.mean();
+        _initialPrediction = Math.log(mean / (1.0f - mean));
       }
-      super.init(expensive);
-    }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli || _parms._loss == GBMModel.GBMParameters.Family.multinomial) {
       _parms._convert_to_enum = true;
-      super.init(true);
-      if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli) {
-        if (_nclass != 2) error("_loss", "Bernoulli requires the response to be a 2-class categorical");
-        else if ( _response != null ) {
-          // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-          double mean = _response.mean();
-          _initialPrediction = Math.log(mean / (1.0f - mean));
-        }
-      }
-    }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.gaussian){
-      _parms._convert_to_enum = false;
-      super.init(expensive);
+      break;
+    case multinomial:  
+      _parms._convert_to_enum = true;   
+      break;
+    case gaussian:     
       if( _nclass != 1 ) error("_loss","Gaussian requires the response to be numeric");
-    } else {
+      _parms._convert_to_enum = false;  
+      break;
+    default:
       error("_loss","Loss must be specified");
     }
-
+    
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
+  private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   // ----------------------
   private class GBMDriver extends Driver {

@@ -16,6 +16,12 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     @API(help="Whether the model is an autoencoder")
     boolean autoencoder;
 
+    @API(help="Frame keys for weight matrices")
+    KeyV1[] weights;
+
+    @API(help="Frame keys for bias vectors")
+    KeyV1[] biases;
+
     @API(help="Scoring history")
     TwoDimTableV1 scoringHistory;
 

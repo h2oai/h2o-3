@@ -4,7 +4,7 @@ import h2o
 
 def parametersKmeans(ip,port):
     # Connect to a pre-existing cluster
-    h2o.init()  # connect to localhost:54321
+    h2o.init(ip,port)  # connect to localhost:54321
 
     #Log.info("Getting data...")
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris.csv"))

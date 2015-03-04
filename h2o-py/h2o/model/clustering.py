@@ -44,7 +44,11 @@ class H2OClusteringModel(ModelBase):
     return self._model_json["output"]["within_mse"]
 
   def centers(self):
-    return self._model_json['output']['centers'].cell_values
+    centers_plus = self._model_json['output']['centers'].cell_values
+    centers_only = []
+    for cidx, cval in enumerate(centers_plus):
+      centers_only.append(list(centers_plus[cidx])[1:])
+    return centers_only
 
 class H2OClusteringModelMetrics(object):
   def __init__(self, metric_json):

@@ -10,13 +10,16 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.*;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
@@ -209,8 +212,22 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       trainModel(cp);
 
       // clean up, but don't delete the model and the (last) model metrics
-      Key[] mms = cp._output._model_metrics;
-      Scope.exit(dest(),mms.length==0 ? null : mms[mms.length-1]);
+      List<Key> keep = new ArrayList<>();
+      keep.add(dest());
+      if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
+      for (Key k : Arrays.asList(cp._output.weights)) {
+        keep.add(k);
+        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
+          keep.add(vk._key);
+        }
+      }
+      for (Key k : Arrays.asList(cp._output.biases)) {
+        keep.add(k);
+        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
+          keep.add(vk._key);
+        }
+      }
+      Scope.exit(keep.toArray(new Key[0]));
     }
 
 

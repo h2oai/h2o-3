@@ -93,6 +93,11 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
   }
+  public static boolean[] or(boolean[] a, boolean[] b) {
+    if (b==null)return a;
+    for (int i = 0; i < a.length; i++) a[i] |= b[i];
+    return a;
+  }
 
   public static double[][] deepClone(double [][] ary){
     double [][] res = ary.clone();

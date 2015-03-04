@@ -456,7 +456,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Test public void testModelMSEEqualityOnProstateGaussian() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.gaussian)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.gaussian)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
@@ -481,5 +481,46 @@ public class GBMTest extends TestUtil {
     basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, Family.AUTO);
     basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv" , prep, false, Family.AUTO);
   }
+
+//  @Test public void testKDDTrees() {
+//    GBM job1=null;
+//    GBM job2=null;
+//    GBMModel gbm1=null;
+//    GBMModel gbm2=null;
+//    Frame fr=null;
+//    Frame vfr=null;
+//    try {
+//      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+//      Frame inF1 = parse_test_file("bigdata/laptop/usecases/cup98LRN_z.csv");
+//      fr = inF1.subframe(new String[] {"DOB", "LASTGIFT", "TARGET_D"});
+//      Frame inF2 = parse_test_file("bigdata/laptop/usecases/cup98VAL_z.csv");
+//      vfr = inF2.subframe(new String[] {"DOB", "LASTGIFT", "TARGET_D"});
+//      fr.replace(0, fr.vec("DOB").toEnum());     // Convert 'DOB' to enum
+//      vfr.replace(0, vfr.vec("DOB").toEnum());
+//      DKV.put(fr);
+//      DKV.put(vfr);
+//      parms._train = fr._key;
+//      parms._valid = vfr._key;
+//      parms._response_column = "TARGET_D";
+//      parms._ntrees = 2;
+//      job1 = new GBM(parms);
+//      gbm1 = job1.trainModel().get();
+//      job2 = new GBM(parms);
+//      gbm2 = job2.trainModel().get();
+//      inF1.remove();
+//      inF2.remove();
+//
+//      double[] firstMSE = gbm1._output._mse_valid;
+//      double[] seconMSE = gbm2._output._mse_valid;
+//      Assert.assertArrayEquals("GBM should have the exact same MSEs for identical parameters", firstMSE, seconMSE, 0.0001);
+//    } finally {
+//      if (fr != null) fr.remove();
+//      if (vfr != null) vfr.remove();
+//      if (gbm1 != null) gbm1.delete();
+//      if (gbm2 != null) gbm2.delete();
+//      if (job1 != null) job1.remove();
+//      if (job2 != null) job2.remove();
+//    }
+//  }
 
 }
