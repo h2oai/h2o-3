@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.init.NetworkTest;
+import water.util.Log;
 
 public class NetworkTestTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
@@ -13,8 +14,7 @@ public class NetworkTestTest extends TestUtil {
   @Test public void testNetworkTest() {
     NetworkTest nt = new NetworkTest();
     nt.execImpl();
-    nt.toHTML(new StringBuilder());
-    assertEquals(nt.nodes.length,H2O.CLOUD.size());
+    assertEquals(nt.nodes.length, H2O.CLOUD.size());
     assertTrue(nt.bandwidths.length == nt.msg_sizes.length);
     assertTrue(nt.microseconds.length == nt.msg_sizes.length);
     assertTrue(nt.bandwidths_collective.length == nt.msg_sizes.length);
