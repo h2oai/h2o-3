@@ -105,18 +105,18 @@ public class IcedBitSet extends Iced {
     ab.skip(nbytes);            // Skip inline bitset
   }
 
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("{");
-    if (_bitoff>0) sb.append("...").append(_bitoff).append(" 0-bits... ");
+  @Override public String toString() { return toString(new SB()).toString(); }
+  public SB toString(SB sb) {
+    sb.p("{");
+    if( _bitoff>0 ) sb.p("...").p(_bitoff).p(" 0-bits... ");
 
     int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      if (i>0) sb.append(' ');
-      sb.append(String.format("%8s", Integer.toBinaryString(0xFF & _val[i])).replace(' ', '0'));
+      if( i>0 ) sb.p(' ');
+      for( int j=0; j<8; j++ )
+        sb.p((_val[i]>>j)&1);
     }
-    sb.append("}");
-    return sb.toString();
+    return sb.p("}");
   }
   public String toStrArray() {
     if( _bitoff != 0 ) throw H2O.unimpl(); // TODO

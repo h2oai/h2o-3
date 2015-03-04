@@ -1,11 +1,9 @@
-import sys, os
+import sys
 sys.path.insert(1, "../../../")
 import h2o
 
 import numpy as np
 from sklearn import ensemble
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
 
 def smallcatGBM(ip,port):
   # Training set has 26 categories from A to Z
