@@ -563,15 +563,15 @@ public final class ParseDataset extends Job<Frame> {
       }
 
       // Allow dup headers, if they are equals-ignoring-case
-/*      boolean has_hdr = _setup._header && localSetup._header;
+      boolean has_hdr = false;
+      if (_gblSetup._checkHeader == 1 && localSetup._checkHeader == 1) has_hdr = true;
       if( has_hdr ) {           // Both have headers?
         for( int i = 0; has_hdr && i < localSetup._columnNames.length; ++i )
-          has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_setup._columnNames[i]);
+          has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_gblSetup._columnNames[i]);
         if( !has_hdr )          // Headers not compatible?
           // Then treat as no-headers, i.e., parse it as a normal row
-          localSetup = new CustomParser.ParserSetup(ParserType.CSV,localSetup._separator, false);
+          localSetup._checkHeader = -1;
       }
-*/
 
       // Parse the file
       try {

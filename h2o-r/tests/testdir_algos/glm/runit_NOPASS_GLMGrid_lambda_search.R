@@ -34,8 +34,8 @@ test.GLMGrid.lambda.search <- function(conn) {
   best_model = h2o.getGLMLambdaModel(model.bestlambda, params.bestlambda$lambda_best)
   expect_equal(best_model@model, model.bestlambda@model)
   
-  Log.info("H2O GLM (binomial) with parameters: alpha = c(0.25, 0.5), nlambda = 20, lambda_search = TRUE, return_all_lambda = TRUE, nfolds: 2\n")
-  prostate.search = h2o.glm(x = 3:9, y = 2, data = prostate.hex, family = "binomial", alpha = c(0.25, 0.5), nlambdas = 5, lambda_search = TRUE, return_all_lambda = TRUE, n_folds = 2)
+  Log.info("H2O GLM (binomial) with parameters: alpha = c(0.25, 0.5), nlambda = 20, lambda_search = TRUE, nfolds: 2\n")
+  prostate.search = h2o.glm(x = 3:9, y = 2, data = prostate.hex, family = "binomial", alpha = c(0.25, 0.5), nlambdas = 5, lambda_search = TRUE, n_folds = 2)
   model.search = prostate.search@model[[model_idx]]
   models.best = model.search@models[[model.search@best_model]]
   params.best = models.best@model$params
