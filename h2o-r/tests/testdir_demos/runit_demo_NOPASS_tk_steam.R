@@ -67,7 +67,7 @@ air.glm <- h2o.glm(training_frame = air.train,
                   x = myX, y = myY,
                   family = "binomial",
                   alpha = c(0.1, 0.2, 0.5),
-                  use_all_factor_levels = TRUE, variable_importances = TRUE)
+                  use_all_factor_levels = TRUE)
 
 air.dl <- h2o.deeplearning(training_frame = air.train, validation_frame = air.valid,
                           x = myX, y = myY,
