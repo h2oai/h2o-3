@@ -90,6 +90,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
       model._output._pcond_raw = pcond;
 
       // Create table of conditional probabilities for every predictor
+      model._output._pcond = new TwoDimTable[pcond.length];
       String[] rowNames = _response.domain();
       for(int col = 0; col < dinfo._cats; col++) {
         String[] colNames = _train.vec(col).domain();
@@ -133,7 +134,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         _train.read_lock(_key);
 
         dinfo = new DataInfo(Key.make(), _train, null, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-        NBTask tsk = new NBTask(dinfo).doAll(dinfo._adaptedFrame);
+        NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
         model._output._parameters = _parms;
@@ -165,7 +166,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   //             If response y = NA, skip counting row entirely in all calculations
   // H2O's method: Just skip all rows where any x_j = NA or y = NA. Should be more memory-efficient, but results incomparable with R.
   private static class NBTask extends MRTask<NBTask> {
-    final protected DataInfo _dinfo;
+    final DataInfo _dinfo;
     final int _nres;              // Number of levels for the response y
 
     public int _nobs;             // Number of rows counted in calculation
@@ -173,15 +174,16 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     public double[][][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
                                   // For each numeric predictor, sum of entries for every response level
 
-    public NBTask(DataInfo dinfo) {
+    public NBTask(DataInfo dinfo, int nres) {
       _dinfo = dinfo;
-      _nobs = 0;
+      _nres = nres;
 
       String[][] domains = dinfo._adaptedFrame.domains();
       int ncol = dinfo._adaptedFrame.numCols();
       assert ncol-1 == dinfo._nums + dinfo._cats;   // ncol-1 because we drop response col
-      _nres = domains[ncol-1].length;
+      assert nres == domains[ncol-1].length;  // Response in last vec of adapted frame
 
+      _nobs = 0;
       _rescnt = new double[_nres];
       _jntcnt = new double[ncol-1][][];
       for(int i = 0; i < _jntcnt.length; i++) {
