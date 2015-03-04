@@ -222,7 +222,7 @@ public final class PersistHdfs extends Persist {
       Futures futures = new Futures();
       for( FileStatus file : fs.listStatus(p) ) {
         Path pfs = file.getPath();
-        if( file.isDirectory() ) {
+        if( file.isDir() ) {
           addFolder(fs, pfs, keys, failed);
         } else {
           long size = file.getLen();
