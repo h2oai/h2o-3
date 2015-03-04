@@ -4,7 +4,7 @@ This document gives guidelines for performance tuning of H2O Deep Learning, both
 ### Motivation
 This effort was in part motivated by a [Deep Learning project that benchmarked against H2O](http://www.comp.nus.edu.sg/~dbsystem/singa/development/2015/01/29/compare-h2o/), and we tried to reproduce their results, especially since they claimed that H2O is slower.
 Summary of our findings (much more at the end of part 1):
-* We are unable to reproduce their findings (our numbers are 8x to 45x faster, on a single node)
+* We are unable to reproduce their findings (our numbers are 9x to 52x faster, on a single node)
 * The benchmark was only on raw training throughput and didn't consider model accuracy (at all)
 * We present improved parameter options for higher training speed (more below)
 * We present a single-node model that trains faster than their 16-node system (and leads to higher accuracy than with their settings)
@@ -17,7 +17,7 @@ Please consult the [H2O documentation](http://h2o.ai), [H2O World Training](http
 ### Getting Started
 To reproduce these results (up to small numerical noise intrinsic to the underlying methods), you can [download and execute this script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd) ([here's the raw version](https://raw.githubusercontent.com/h2oai/h2o-dev/master/h2o-docs/src/product/tutorials/dl/dlperf.Rmd)). It will download H2O, launch a single-node H2O cluster on your laptop or workstation and run the benchmarks. The script is both valid R and markdown code, and should run out of the box for you in RStudio (download, open in RStudio, install `rmarkdown` package, then click on `Chunks` -> `Run All`). It was also used to create this blog via a [simple bash script](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/tutorials/dl/go.sh). Please [contact me](arno@h2o.ai) if you have questions or comments. 
 
-The full logs of the run that created this blog post are available [for download here](../../../2015_02_deep-learning-performance/deeplearning-perf.log).
+The full logs of the run that created this blog post are available [for download here](../../../2015_02_deep-learning-performance/deeplearning-perf.log). **Note: _results updated as of March 4 (now on Windows 8.1, system wasn't overclocked in previous post)_**
 
 ```{r}
 options(repos=structure(c(CRAN='http://cran.us.r-project.org')))
@@ -360,11 +360,11 @@ writecsv(lapply(args, run), "large_deep_net.csv")
 <div id='plot_large_deep_net'></div>
 
 Observations:
-  * **We cannot reproduce the slow performance (~10 samples per second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of **75 samples per second** on a single i7 5820k consumer PC.
-  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 84 samples per second (notably with H2O's mini-batch size of 1).
-  * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of 138 samples per second (albeit at the cost of accuracy).
-  * When further switching to the `Rectifier` activation function, speeds increase to **310 samples per second**. This is more than *4 times faster than the original parameters and results in half the test set error!* Note that we used the `max_w2` parameter, which helps to improve the numerical stability for deep `Rectifier` networks.
-  * We observe training speeds of **457 samples per second while obtaining a lower test set error** than the original parameters, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Hence, **H2O Deep Learning is faster on a single PC than the other method on 16 Xeon nodes** (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take test set accuracy into account to be meaningful.
+  * **We cannot reproduce the slow performance (~10 samples per second) cited by the other benchmark study.** Using the same parameters, we measure a training speed of **91 samples per second** on a single i7 5820k consumer PC.
+  * When removing the scoring overhead by not specifying `validation_frame` and reducing the `score_training_samples` to 100 (while keeping the `Tanh` activation and `adaptive_rate=T`), we obtain training speeds of 100 samples per second (notably with H2O's mini-batch size of 1).
+  * When further switching to `adaptive_rate=F` (and no momentum), we obtain training speeds of 156 samples per second (albeit at the cost of accuracy).
+  * When further switching to the `Rectifier` activation function, speeds increase to about **300 samples per second**. This is over *3 times faster than the original parameters and results in half the test set error!* Note that we used the `max_w2` parameter, which helps to improve the numerical stability for deep `Rectifier` networks.
+  * We observe training speeds of **520 samples per second while obtaining a lower test set error** than the original parameters, when using the `RectifierWithDropout` activation function (a good choice for MNIST, see world-record performance in Part 3 below). Hence, **H2O Deep Learning is faster on a single PC than the other method on 16 Xeon nodes** (400 samples per second with `Tanh` and AdaGrad), so further benchmark comparisons really have to take test set accuracy into account to be meaningful. Also, H2O is using a mini-batch size of 1, which means that there are many more random-access memory writes to the weights and biases.
   * Configuring and training H2O Deep Learning models is done with a *1-liner* (function call), while other projects typically require [large configuration files](http://www.comp.nus.edu.sg/~dbsystem/singa/examples/2015/01/20/deep-simple-mlp/).
   * H2O Deep Learning models (single- and multi-node) can be trained from R, Python, Java, Scala, JavaScript and via the Flow Web UI, as well as via JSON through the REST API. 
 <div id='table_large_deep_net'></div>
