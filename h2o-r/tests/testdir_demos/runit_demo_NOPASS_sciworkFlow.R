@@ -33,7 +33,7 @@ myY <- "CAPSULE"
 
 #GLM
 print("Build GLM model")   
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=pros.train, family="binomial",standardize=T,use_all_factor_levels=TRUE,higher_accuracy=T,lambda_search=T,return_all_lambda=T,variable_importances=FALSE)
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=pros.train, family="binomial",standardize=T,use_all_factor_levels=TRUE,lambda_search=T,return_all_lambda=T,variable_importances=FALSE)
 print(my.glm)
 
 print("This is the best model")
