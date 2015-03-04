@@ -356,20 +356,16 @@ public abstract class Parser extends Iced {
     @Override public void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _ncols) {
         // Check for time
-        if (ParseTime.attemptTimeParse(str) != Long.MIN_VALUE) {
+        if (ParseTime.isDateTime(str)) {
           ++_ndates[colIdx];
           return;
         }
 
         //Check for UUID
-        int old = str.get_off();
-        ParseTime.attemptUUIDParse0(str);
-        ParseTime.attemptUUIDParse1(str);
-        if( str.get_off() != -1 ) {
+        if(ParseTime.isUUID(str)) {
           ++_nUUID[colIdx];
           return;
         }
-        str.setOff(old);
 
         //Add string to domains list for later determining string, NA, or enum
         ++_nstrings[colIdx];

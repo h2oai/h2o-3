@@ -1,10 +1,10 @@
 package water.parser;
 
+import org.apache.commons.lang.math.NumberUtils;
 import water.fvec.FileVec;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 class CsvParser extends Parser {
   private static final byte AUTO_SEP = ParseSetup.AUTO_SEP;
@@ -601,10 +601,27 @@ MAIN_LOOP:
     final String[][] data = new String[nlines][];
     if( nlines == 1 ) {       // Ummm??? Only 1 line?
       if( sep == AUTO_SEP ) {
-        if( lines[0].split(",").length > 2 ) sep = (byte)',';
-        else if( lines[0].split(" ").length > 2 ) sep = ' ';
-        else 
-          return new ParseSetup(false,1,0,new String[]{"Failed to guess separator."},ParserType.CSV,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
+        if (lines[0].split(",").length > 2) sep = (byte) ',';
+        else if (lines[0].split(" ").length > 2) sep = ' ';
+        else { //one item, guess type
+          data[0] = new String[]{lines[0]};
+          ColTypeInfo[] ctypes = new ColTypeInfo[1];
+          String[][] domains = new String[1][];
+          if (NumberUtils.isNumber(data[0][0])) {
+            ctypes[0] = new ColTypeInfo(ColType.NUM);
+          } else { // non-numeric
+            ValueString str = new ValueString(data[0][0]);
+            if (ParseTime.isDateTime(str))
+              ctypes[0] = new ColTypeInfo(ColType.TIME);
+            else if (ParseTime.isUUID(str))
+                ctypes[0] = new ColTypeInfo(ColType.UUID);
+            else { // give up and guess enum
+                ctypes[0] = new ColTypeInfo(ColType.ENUM);
+                domains[0] = new String[]{data[0][0]};
+            }
+          }
+          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, 1, singleQuotes, null, domains, data, checkHeader, ctypes, FileVec.DFLT_CHUNK_SIZE);
+        }
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
       ncols = (ncols > 0) ? ncols : data[0].length;
