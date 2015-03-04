@@ -80,7 +80,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       idxs = MemoryManager.malloc4(nbins+1); // Reverse index
       for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
-      for( int i=0; i<nbins; i++ ) avgs[i] = _sums[i]/_bins[i]; // Average response
+      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
       ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() { 
           @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
@@ -165,7 +165,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
 
     // If the bin covers a single value, we can also try an equality-based split
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
-        _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
+        _maxEx-_min > 2 && idxs==null ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
         if( bins[b] < min_rows ) continue; // Ignore too small splits
         long N =         ns0[b  ] + ns1[b+1];
