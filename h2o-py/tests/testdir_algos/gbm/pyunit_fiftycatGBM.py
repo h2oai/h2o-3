@@ -8,7 +8,7 @@ def fiftycatGBM(ip,port):
 
   # Training set has only 45 categories cat1 through cat45
   #Log.info("Importing 50_cattest_train.csv data...\n")
-  train = h2o.import_frame(path="smalldata/gbm_test/50_cattest_train.csv")
+  train = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/50_cattest_train.csv"))
   train["y"] = train["y"].asfactor()
 
   #Log.info("Summary of 50_cattest_train.csv from H2O:\n")
@@ -21,7 +21,7 @@ def fiftycatGBM(ip,port):
  
   # Test dataset has all 50 categories cat1 through cat50
   #Log.info("Importing 50_cattest_test.csv data...\n")
-  test = h2o.import_frame(path="smalldata/gbm_test/50_cattest_test.csv")
+  test = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/50_cattest_test.csv"))
   #Log.info("Summary of 50_cattest_test.csv from H2O:\n")
   #test.summary()
   
@@ -33,8 +33,8 @@ def fiftycatGBM(ip,port):
   # Get the confusion matrix and AUC
   #Log.info("Confusion matrix of predictions (max accuracy):\n")
   performance = model.model_performance(test)
-  test_cm = performance._metric_json['confusion_matrices']
-  test_auc = performance._auc_data.AUC
+  test_cm = performance.confusion_matrices()
+  test_auc = performance.auc()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, fiftycatGBM)

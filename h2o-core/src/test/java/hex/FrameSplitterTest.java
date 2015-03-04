@@ -116,11 +116,4 @@ public class FrameSplitterTest extends TestUtil {
     result = FrameSplitter.computeEspcPerSplit(espc, espc[espc.length-1], ratios);
     Assert.assertArrayEquals(ar(ar(0L, 1500L, 3500L), ar(0L, 1000L, 3500L)), result);
   }
-
-  public static double[][] ear (double ...a)   {
-    double[][] r = new double[a.length][1];
-    for (int i=0; i<a.length;i++) r[i][0] = a[i];
-    return r;
-  }
-
 }

@@ -291,6 +291,7 @@ public final class AutoBuffer {
   }
   static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
   static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
+  public static int TCP_BUF_SIZ = BBP_BIG.size();
 
   private int bbFree() {
     if( _bb != null && _bb.isDirect() ) BBPool.FREE(_bb);
@@ -876,6 +877,15 @@ public final class AutoBuffer {
 
   // -----------------------------------------------
   // Utility functions to read & write arrays
+
+  public boolean[] getAZ() {
+    int len = getInt();
+    if (len == -1) return null;
+    boolean[] r = new boolean[len];
+    for (int i=0;i<len;++i) r[i] = getZ();
+    return r;
+  }
+
   public byte[] getA1( ) {
     //_arys++;
     int len = getInt();
@@ -1080,6 +1090,13 @@ public final class AutoBuffer {
   public Enum getEnum(Enum[] values ) {
     int idx = get1();
     return idx == -1 ? null : values[idx];
+  }
+
+  public AutoBuffer putAZ( boolean[] ary ) {
+    if( ary == null ) return putInt(-1);
+    putInt(ary.length);
+    for (boolean anAry : ary) putZ(anAry);
+    return this;
   }
 
   public AutoBuffer putA1( byte[] ary ) {
@@ -1436,6 +1453,8 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAASer (String name, Object[][] ooo   ) { return putJSONStr(name).put1(':').putJNULL(); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAASer(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
+  public AutoBuffer putJSONAZ( String name, boolean[] f) { return putJSONStr(name).put1(':').putJSONAZ(f); }
+
   public AutoBuffer putJSON(Freezable ice) { return ice == null ? putJNULL() : ice.writeJSON(this); }
   public AutoBuffer putJSONA( Freezable fs[]  ) {
     if( fs == null ) return putJNULL();
@@ -1460,6 +1479,17 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJStr("" + value); }
+
+  private AutoBuffer putJSONAZ(boolean [] b) {
+    if (b == null) return putJNULL();
+    put1('[');
+    for( int i = 0; i < b.length; ++i) {
+      if (i > 0) put1(',');
+      putJStr(""+b[i]);
+    }
+    return put1(']');
+  }
+
 
   // Most simple integers
   private AutoBuffer putJInt( int i ) {

@@ -1,6 +1,6 @@
 package water.api;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2ONotFoundArgumentException;
@@ -180,10 +180,14 @@ public class RequestServer extends NanoHTTPD {
     // TODO: filtering isn't working for these first four; we get all results:
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"},
       "Return the saved scoring metrics for the specified Model and Frame.");
+    register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"},
+            "Return the saved scoring metrics for the specified Model and Frame.");
     register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"model"},
       "Return the saved scoring metrics for the specified Model.");
     register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"},
       "Return the saved scoring metrics for the specified Model and Frame.");
+    register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"},
+            "Return the saved scoring metrics for the specified Model and Frame.");
     register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"frame"},
       "Return the saved scoring metrics for the specified Frame.");
     register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "fetch",

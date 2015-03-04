@@ -210,7 +210,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 ref.train((int) p._epochs, rate, p._momentum_stable, loss);
 
                                 // Train H2O
-                                mymodel.delete_best_model();
                                 mymodel.delete();
                                 dl = new DeepLearning(p);
                                 try {
@@ -335,7 +334,6 @@ public class DeepLearningIrisTest extends TestUtil {
                               } finally {
                                 // cleanup
                                 if (mymodel != null) {
-                                  mymodel.delete_best_model();
                                   mymodel.delete();
                                 }
                                 if (_train != null) _train.delete();

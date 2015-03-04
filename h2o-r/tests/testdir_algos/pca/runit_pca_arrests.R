@@ -11,7 +11,7 @@ test.pca.arrests <- function(conn) {
   
   for(i in 1:4) {
     Log.info(paste("H2O PCA with ", i, " dimensions:\n", sep = ""))
-    Log.info(paste( "Using these columns: ", colnames(arrests.hex)))
+    Log.info(paste("Using these columns: ", colnames(arrests.hex)))
     arrests.pca.h2o <- h2o.prcomp(training_frame = arrests.hex, k = as.numeric(i))
     print(arrests.pca.h2o)
   }

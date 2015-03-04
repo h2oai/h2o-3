@@ -133,6 +133,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                   "any" = "any",
                   "all" = "all",
                   "mean"  = "mean",
+                  "median" = "median",
                   "var"   = "var",
                   "log" = "log",
                   "sd"    = "sd",

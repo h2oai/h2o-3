@@ -94,7 +94,6 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  .key.validate(key)
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
@@ -112,8 +111,11 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
   .cframe.map <- c("key" = "dest")
-  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent)
+  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
   parms$conn <- NULL
+  if(missing(key) || !is.character(key) || !nzchar(key)) 
+    parms$key = .key.make(conn, prefix = "frame")
+  .key.validate(parms$key)
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
   res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
@@ -217,6 +219,9 @@ h2o.table <- function(x, y = NULL) {
   .h2o.nary_frame_op("table", x, y)
 }
 
+setMethod("median", "H2OFrame", function(x, na.rm = TRUE) {
+  .h2o.nary_frame_op("median", x, na.rm)
+})
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -1279,7 +1284,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   # as column names.  This is a bit complicated
   if(is.character(.variables)) {
     vars <- match(.variables, colnames(.data))
-    if (is.na(vars))
+    if (any(is.na(vars)))
       stop('No column named ', .variables, ' in ', substitute(.data), '.')
   } else if(is(.variables, 'H2Oquoted')) {
     vars <- match(.variables, colnames(.data))

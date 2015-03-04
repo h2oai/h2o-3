@@ -3,12 +3,20 @@ package hex.pca;
 import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.ModelMetricsUnsupervised;
+import hex.ModelMetricsUnsupervised.MetricBuilderUnsupervised;
+import water.DKV;
 import water.H2O;
 import water.Key;
+import water.MRTask;
 import water.api.ModelSchema;
 import hex.schemas.PCAModelV2;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.TwoDimTable;
+
+import java.util.Arrays;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
@@ -21,6 +29,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public PCA.Initialization _init = PCA.Initialization.PlusPlus;
     public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
+    boolean _keep_loading = false;
   }
 
   public static class PCAOutput extends Model.Output {
@@ -74,17 +83,90 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   @Override
   public boolean isSupervised() { return false; }
 
-  @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    throw H2O.unimpl("No model metrics for PCA.");
-  }
-
   public ModelSchema schema() {
     return new PCAModelV2();
   }
 
   @Override
+  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    return new ModelMetricsPCA.PCAModelMetrics(_parms._k);
+  }
+
+  public static class ModelMetricsPCA extends ModelMetricsUnsupervised {
+    public ModelMetricsPCA(Model model, Frame frame) {
+      super(model, frame);
+    }
+
+    // PCA currently does not have any model metrics to compute during scoring
+    public static class PCAModelMetrics extends MetricBuilderUnsupervised {
+      public PCAModelMetrics(int dims) {
+        _work = new float[dims];
+      }
+
+      @Override
+      public float[] perRow(float[] dataRow, float[] preds, Model m) { return dataRow; }
+
+      @Override
+      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+        return m._output.addModelMetrics(new ModelMetricsPCA(m, f));
+      }
+    }
+  }
+
+  @Override
+  protected Frame scoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+    Frame adaptFrm = new Frame(adaptedFr);
+    for(int i = 0; i < _parms._k; i++)
+      adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
+
+    new MRTask() {
+      @Override public void map( Chunk chks[] ) {
+        double tmp [] = new double[_output._names.length];
+        float preds[] = new float [_parms._k];
+        for( int row = 0; row < chks[0]._len; row++) {
+          float p[] = score0(chks, row, tmp, preds);
+          for( int c=0; c<preds.length; c++ )
+            chks[_output._names.length+c].set(row, p[c]);
+        }
+      }
+    }.doAll(adaptFrm);
+
+    // Return the projection into principal component space
+    int x = _output._names.length, y = adaptFrm.numCols();
+    Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
+
+    if (destination_key != null) {
+      Key k = Key.make(destination_key);
+      f = new Frame(k, f.names(), f.vecs());
+      DKV.put(k, f);
+    }
+    ModelMetrics mm = makeMetricBuilder(null).makeModelMetrics(this,orig,Double.NaN);
+    DKV.put(mm);
+    return f;
+  }
+
+  @Override
   protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    throw new RuntimeException("TODO Auto-generated method stub");
+    assert data.length == _output._eigenvectors.getRowDim();
+    for(int i = 0; i < _parms._k; i++) {
+      preds[i] = 0;
+      for (int j = 0; j < data.length; j++)
+        preds[i] += (data[j] - _output._normSub[j]) * _output._normMul[j] * (double)_output._eigenvectors.get(j,i);
+    }
+    return preds;
+  }
+
+  @Override
+  public Frame score(Frame fr, String destination_key) {
+    Frame adaptFr = new Frame(fr);
+    adaptTestForTrain(adaptFr, true);   // Adapt
+    Frame output = scoreImpl(fr, adaptFr, destination_key); // Score
+
+    Vec[] vecs = adaptFr.vecs();
+    for (int i = 0; i < vecs.length; i++)
+      if (fr.find(vecs[i]) != -1) // Exists in the original frame?
+        vecs[i] = null;            // Do not delete it
+    adaptFr.delete();
+    return output;
   }
 }

@@ -11,7 +11,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
 
   public static class QuantileParameters extends Model.Parameters {
     // Set of probabilities to compute
-    public double _probs[/*Q*/] = new double[]{0.01,0.05,0.10,0.25,0.333,0.50,0.667,0.75,0.90,0.95,0.99};
+    public double _probs[/*Q*/] = new double[]{0.001,0.01,0.1,0.25,0.333,0.50,0.667,0.75,0.9,0.99,0.999};
     @Override protected boolean defaultDropConsCols() { return false; }
   }
 

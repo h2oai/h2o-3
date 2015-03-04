@@ -1,6 +1,7 @@
 import unittest, time, sys, random 
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_glm, h2o_import as h2i, h2o_jobs, h2o_exec as h2e
+import h2o2 as h2o
+import h2o_cmd, h2o_glm, h2o_import as h2i, h2o_jobs, h2o_exec as h2e
 
 from h2o_test import dump_json, OutputObj, verboseprint
 

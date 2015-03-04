@@ -13,9 +13,10 @@ import h2o_model_builder
 
 def import_file(path):
   """
-  Import a single file or collection of files
-  :param path: A path to a data file (remote or local)
-  :return: Return an H2OFrame.
+  Import a single file or collection of files.
+
+  :param path: A path to a data file (remote or local).
+  :return: A new H2OFrame
   """
   paths = [path] if isinstance(path,str) else path
   return [ _import1(fname) for fname in paths ]
@@ -29,9 +30,10 @@ def _import1(path):
 def upload_file(path, destination_key=""):
   """
   Upload a dataset at the path given from the local machine to the H2O cluster.
-  :param path:    A path specifying the location of the data to upload.
+
+  :param path: A path specifying the location of the data to upload.
   :param destination_key: The name of the H2O Frame in the H2O Cluster.
-  :return:    A new H2OFrame
+  :return: A new H2OFrame
   """
   fui = {"file": os.path.abspath(path)}
   dest_key = H2OFrame.py_tmp_key() if destination_key == "" else destination_key
@@ -41,16 +43,17 @@ def upload_file(path, destination_key=""):
 
 def import_frame(path=None, vecs=None):
   """
-  Import a frame.
-  :param path:
-  :return:
+  Import a frame from a file (remote or local machine). If you run H2O on Hadoop, you can access to HDFS
+
+  :param path: A path specifying the location of the data to import.
+  :return: A new H2OFrame
   """
   return H2OFrame(vecs=vecs) if vecs else H2OFrame(remote_fname=path)
 
 
 def parse_setup(rawkey):
   """
-  :param A collection of imported file keys
+  :param rawkey: A collection of imported file keys
   :return: A ParseSetup "object"
   """
 
@@ -65,10 +68,11 @@ def parse_setup(rawkey):
 def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   """
   Trigger a parse; blocking; removeFrame just keep the Vec keys.
-  :param setup: The result of calling parse_setup
+
+  :param setup: The result of calling parse_setup.
   :param h2o_name: The name of the H2O Frame on the back end.
-  :param first_line_is_header: -1 means data, 0 means guess, 1 means header
-  :return: Return a new parsed object
+  :param first_line_is_header: -1 means data, 0 means guess, 1 means header.
+  :return: A new parsed object  
   """
   # Parse parameters (None values provided by setup)
   p = { 'delete_on_done' : True,
@@ -141,18 +145,20 @@ def run_test(sys_args, test_to_run):
 
 def remove(key):
   """
-  Remove a key from H2O.
+  Remove key from H2O.
+
   :param key: The key pointing to the object to be removed.
-  :return: void
+  :return: Void
   """
   H2OConnection.delete("Remove", key=key)
 
 
 def rapids(expr):
   """
-  Fire off a Rapids expression
-  :param expr: The rapids expression (ascii string)
-  :return: The JSON response of the Rapids execution.
+  Fire off a Rapids expression.
+
+  :param expr: The rapids expression (ascii string).
+  :return: The JSON response of the Rapids execution
   """
   return H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
 
@@ -160,17 +166,19 @@ def rapids(expr):
 def frame(key):
   """
   Retrieve metadata for a key that points to a Frame.
-  :param key: A pointer to a Frame in H2O.
-  :return: Meta information on the Frame.
+
+  :param key: A pointer to a Frame  in H2O.
+  :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + key)
 
 
 def init(ip="localhost", port=54321):
   """
-  Initiate an H2O connection to the specified ip and port
-  :param ip: An IP address, default is "localhost"
-  :param port: A port, default is 54321
+  Initiate an H2O connection to the specified ip and port.
+
+  :param ip: A IP address, default is "localhost".
+  :param port: A port, default is 54321.
   :return: None
   """
   H2OConnection(ip=ip, port=port)
@@ -180,29 +188,51 @@ def init(ip="localhost", port=54321):
 
 def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a supervised Deep Learning model
+  Build a supervised Deep Learning model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"deeplearning",kwargs)
 
 def gbm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Gradient Boosted Method model
+  Build a Gradient Boosted Method model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"gbm",kwargs)
 
 def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
-  Build a Generalized Linear Model
+  Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
 def kmeans(x,validation_x=None,**kwargs):
   """
-  Build a KMeans model
+  Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
 
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
-  
-  
+
+
+def locate(path):
+  """
+  Search for a relative path and turn it into an absolute path.
+  This is handy when hunting for data files to be passed into h2o and used by import file.
+  Note: This function is for unit testing purposes only.
+
+  :param path: Path to search for
+  :return: Absolute path if it is found.  None otherwise.
+  """
+
+  tmp_dir = os.path.realpath(os.getcwd())
+  possible_result = os.path.join(tmp_dir, path)
+  while (True):
+      if (os.path.exists(possible_result)):
+          return possible_result
+
+      next_tmp_dir = os.path.dirname(tmp_dir)
+      if (next_tmp_dir == tmp_dir):
+          return None
+
+      tmp_dir = next_tmp_dir
+      possible_result = os.path.join(tmp_dir, path)

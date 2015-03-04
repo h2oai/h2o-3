@@ -7,7 +7,7 @@ def bigcatGBM(ip,port):
   h2o.init(ip,port)
   
   #Log.info("Importing bigcat_5000x2.csv data...\n")
-  bigcat = h2o.import_frame(path="smalldata/gbm_test/bigcat_5000x2.csv")
+  bigcat = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/bigcat_5000x2.csv"))
   bigcat["y"] = bigcat["y"].asfactor()
   #Log.info("Summary of bigcat_5000x2.csv from H2O:\n")
   #bigcat.summary()
@@ -21,7 +21,7 @@ def bigcatGBM(ip,port):
   
   # Check AUC and overall prediction error
   #test_accuracy = performance.accuracy()
-  test_auc = performance._auc_data.AUC
+  test_auc = performance.auc()
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, bigcatGBM)

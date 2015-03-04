@@ -53,6 +53,8 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   if y:
     kwargs['response_column']=y._name
 
+  kwargs = dict([(k, kwargs[k]) for k in kwargs if kwargs[k] is not None])
+
   # launch the job and poll
   job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
   model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]

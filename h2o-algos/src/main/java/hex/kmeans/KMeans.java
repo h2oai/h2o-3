@@ -7,6 +7,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -69,10 +70,9 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       }
     }
 
-    for( Vec v : _train.vecs() ) {
-      // if (v.isEnum()) _ncats++;
-      if(v.isEnum()) error("_train","Columns cannot have categorical values");
-    }
+    new CheckCols() {
+      @Override protected boolean filter(Vec v) { return v.isEnum(); }
+    }.doIt(_train, "Columns cannot have categorical values: ", expensive);
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
@@ -86,25 +86,26 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     _ncats = ncats;
   }
 
+  abstract class CheckCols {
+    abstract protected boolean filter(Vec v);
+    void doIt( Frame f, String msg, boolean expensive ) {
+      boolean any=false;
+      for( int i = 0; i < f.vecs().length; i++ ) {
+        if( filter(f.vecs()[i]) ) {
+          if( any ) msg += ", "; // Log cols with errors
+          any = true;
+          msg += f._names[i];
+        }
+      }
+      if( any ) {
+        error("_train", msg);
+        if (expensive) Log.info(msg);
+      }
+    }
+  }
+
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
-
-    // means are used to impute NAs
-    double[] prepMeans( final Vec[] vecs) {
-      final double[] means = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) means[i] = vecs[i].mean();
-      return means;
-    }
-    // mults & means for standardization
-    double[] prepMults( final Vec[] vecs) {
-      if( !_parms._standardize ) return null;
-      double[] mults = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) {
-        double sigma = vecs[i].sigma();
-        mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
-      }
-      return mults;
-    }
 
     // Initialize cluster centers
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
@@ -261,9 +262,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
         // mults & means for standardization
-        // means are used to impute NAs
-        final double[] means = prepMeans(vecs);
-        final double[] mults = prepMults(vecs);
+        final double[] means = _train.means();  // means are used to impute NAs
+        final double[] mults = _parms._standardize ? _train.mults() : null;
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
@@ -569,7 +569,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   }
 
   // For KMeansModel scoring; just the closest cluster center
-  static int closest(double[][] centers, double[] point, int ncats) {
+  public static int closest(double[][] centers, double[] point, int ncats) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {
@@ -628,11 +628,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   private void randomRow(Vec[] vecs, Random rand, double[] center, double[] means, double[] mults) {
     long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
     data(center, vecs, row, means, mults);
-  }
-
-  private static boolean standardize(double sigma) {
-    // TODO unify handling of constant columns
-    return sigma > 1e-6;
   }
 
   // Pick most common cat level for each cluster_centers' cat columns

@@ -15,12 +15,10 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static java.lang.Double.isNaN;
+import water.util.Timer;
 
 /**
  * The Deep Learning model
@@ -484,7 +482,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
       }
       else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
-        if (!_quiet_mode) dl.warn("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+        if (!_quiet_mode) dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
 
       if (_input_dropout_ratio < 0 || _input_dropout_ratio >= 1)
@@ -640,6 +638,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
+    Key[] weights;
+    Key[] biases;
     DeepLearningScoring errors;
     TwoDimTable modelSummary;
     TwoDimTable scoringHistory;
@@ -687,7 +687,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public final DeepLearningParameters get_params() { return _parms; }
 //  @Override public final Request2 job() { return get_params(); }
 
-  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
+//  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
 
@@ -836,9 +836,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colFormat = new ArrayList<>();
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%.5f");
     colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
+
     if (!_output.autoencoder) {
       colHeaders.add("Training R^2");
       colTypes.add("double");
@@ -926,23 +928,30 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(start_time + e.training_time_ms));
       table.set(row, col++, PrettyPrint.msecs(e.training_time_ms, true));
+      table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples/(e.training_time_ms/1e3)) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
       table.set(row, col++, e.train_mse);
-      if (!_output.autoencoder)
+      if (!_output.autoencoder) {
         table.set(row, col++, e.train_r2);
-      if (_output.getModelCategory() == ModelCategory.Binomial)
+      }
+      if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, e.trainAUC != null ? e.trainAUC.AUC() : Double.NaN);
-      if (_output.isClassifier())
+      }
+      if (_output.isClassifier()) {
         table.set(row, col++, e.train_err);
+      }
       if (get_params()._valid != null) {
         table.set(row, col++, e.valid_mse);
-        if (!_output.autoencoder)
+        if (!_output.autoencoder) {
           table.set(row, col++, e.valid_r2);
-        if (_output.getModelCategory() == ModelCategory.Binomial)
+        }
+        if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, e.validAUC != null ? e.validAUC.AUC() : Double.NaN);
-        if (_output.isClassifier())
+        }
+        if (_output.isClassifier()) {
           table.set(row, col++, e.valid_err);
+        }
       }
       else if(get_params()._n_folds > 0) {
         throw H2O.unimpl();
@@ -1213,12 +1222,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       if (get_params()._diagnostics && !get_params()._quiet_mode) {
-        sb.append("Number of hidden layers is " + get_params()._hidden.length + " \n");
         if (get_params()._sparsity_beta > 0) {
-          for (int k = 0; k < get_params()._hidden.length; k++)
-            sb.append("Average activation in hidden layer " + k + " is  " + mean_a[k] + " \n");
+          for (int k = 0; k < get_params()._hidden.length; k++) {
+            sb.append("Average activation in hidden layer ").append(k).append(" is  ").append(mean_a[k]).append(" \n");
+          }
         }
-        if (summaryTable == null) createSummaryTable();
+        createSummaryTable();
         sb.append(summaryTable.toString(1));
       }
       return sb.toString();
@@ -1230,21 +1239,23 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       sb.append(toString());
 
       for (int i=0; i<units.length-1; ++i)
-        sb.append("\nweights["+i+"][]="+Arrays.toString(get_weights(i).raw()));
-      for (int i=0; i<units.length-1; ++i)
-        sb.append("\nbiases["+i+"][]="+Arrays.toString(get_biases(i).raw()));
+        sb.append("\nweights[").append(i).append("][]=").append(Arrays.toString(get_weights(i).raw()));
+      for (int i=0; i<units.length-1; ++i) {
+        sb.append("\nbiases[").append(i).append("][]=").append(Arrays.toString(get_biases(i).raw()));
+      }
       if (has_momenta()) {
         for (int i=0; i<units.length-1; ++i)
-          sb.append("\nweights_momenta["+i+"][]="+Arrays.toString(get_weights_momenta(i).raw()));
+          sb.append("\nweights_momenta[").append(i).append("][]=").append(Arrays.toString(get_weights_momenta(i).raw()));
       }
       if (biases_momenta != null) {
-        for (int i=0; i<units.length-1; ++i)
-          sb.append("\nbiases_momenta["+i+"][]="+Arrays.toString(biases_momenta[i].raw()));
+        for (int i=0; i<units.length-1; ++i) {
+          sb.append("\nbiases_momenta[").append(i).append("][]=").append(Arrays.toString(biases_momenta[i].raw()));
+        }
       }
-      sb.append("\nunits[]="+Arrays.toString(units));
-      sb.append("\nprocessed global: "+get_processed_global());
-      sb.append("\nprocessed local:  "+get_processed_local());
-      sb.append("\nprocessed total:  " + get_processed_total());
+      sb.append("\nunits[]=").append(Arrays.toString(units));
+      sb.append("\nprocessed global: ").append(get_processed_global());
+      sb.append("\nprocessed local:  ").append(get_processed_local());
+      sb.append("\nprocessed total:  ").append(get_processed_total());
       sb.append("\n");
       return sb.toString();
     }
@@ -1470,6 +1481,21 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
   }
 
+  /**
+   * Helper to allocate keys for output frames for weights and biases
+   * @param destKey
+   */
+  private void makeWeightsBiases(Key destKey) {
+    _output.weights = new Key[model_info.get_params()._hidden.length + 1];
+    for (int i = 0; i < _output.weights.length; ++i) {
+      _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
+    }
+    _output.biases = new Key[model_info.get_params()._hidden.length + 1];
+    for (int i = 0; i < _output.biases.length; ++i) {
+      _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
+    }
+  }
+
   /** Constructor to restart from a checkpointed model
    * @param destKey New destination key for the model
    *  @param cp Checkpoint to restart from
@@ -1498,6 +1524,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     for (int i=0; i<errors.length;++i)
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
+    makeWeightsBiases(destKey);
     _output.scoringHistory = createScoringHistoryTable(errors);
     _output.variableImportances = calcVarImp(last_scored().variable_importances);
 
@@ -1530,6 +1557,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       _output.scoringHistory = createScoringHistoryTable(errors);
       _output.variableImportances = calcVarImp(last_scored().variable_importances);
     }
+    makeWeightsBiases(destKey);
     run_time = 0;
     start_time = System.currentTimeMillis();
     _timeLastScoreEnter = start_time;
@@ -1576,12 +1604,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       keep_running = (epoch_counter < get_params()._epochs);
       final long sinceLastScore = now -_timeLastScoreStart;
       final long sinceLastPrint = now -_timeLastPrintStart;
-      final long samples = model_info().get_processed_total();
-      if (!keep_running || sinceLastPrint > get_params()._score_interval *1000) {
+      if (!keep_running || sinceLastPrint > get_params()._score_interval * 1000) { //print this after every score_interval, not considering duty cycle
         _timeLastPrintStart = now;
-//        Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
-//                + ". Processed " + String.format("%,d", samples) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-//                + " Speed: " + String.format("%.3f", 1000.*samples/run_time) + " samples/sec.");
+        if (!get_params()._quiet_mode) {
+          Log.info("Training time: " + PrettyPrint.msecs(run_time, true)
+                  + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
+                  + " Speed: " + String.format("%.3f", 1000. * model_info().get_processed_total() / run_time) + " samples/sec.\n");
+        }
       }
 
       // this is potentially slow - only do every so often
@@ -1680,10 +1709,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           errors = err2;
         }
         _output.errors = last_scored();
+        water.util.Timer t = new Timer();
+        // store weights and matrices to Frames
+        for (int i=0; i<_output.weights.length; ++i) {
+          model_info.get_weights(i).toFrame(_output.weights[i]);
+        }
+        for (int i=0; i<_output.biases.length; ++i) {
+          model_info.get_biases(i).toFrame(_output.biases[i]);
+        }
+        Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         _output.scoringHistory = createScoringHistoryTable(errors);
         _output.variableImportances = calcVarImp(last_scored().variable_importances);
-        if (_output.modelSummary == null)
-          _output.modelSummary = model_info.createSummaryTable();
+        _output.modelSummary = model_info.createSummaryTable();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
@@ -1695,7 +1732,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                           (DKV.get(actual_best_model_key) == null && error() < _bestError)
           ) ) {
             if (!get_params()._quiet_mode)
-              Log.info("Error reduced from " + _bestError + " to " + error() + ". Storing best model so far under key " + actual_best_model_key.toString() + ".");
+              Log.info("Error reduced from " + _bestError + " to " + error() + ".");
             _bestError = error();
             putMeAsBestModel(actual_best_model_key);
 
@@ -1763,9 +1800,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("Training time: " + PrettyPrint.msecs(run_time, true)
-            + ". Processed " + String.format("%,d", model_info().get_processed_total()) + " samples" + " (" + String.format("%.3f", epoch_counter) + " epochs)."
-            + " Speed: " + String.format("%.3f", 1000.*model_info().get_processed_total()/run_time) + " samples/sec.\n");
     sb.append(model_info.toString());
     //sb.append(last_scored().toString());
     sb.append(_output.scoringHistory.toString());
@@ -1817,8 +1851,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         f = new Frame(k, f.names(), f.vecs());
         DKV.put(k, f);
       }
-      makeMetricBuilder(null).makeModelMetrics(this,f,Double.NaN);
-
+      makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
       return f;
     }
   }
@@ -1886,7 +1919,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Frame res = adaptFrm.extractFrame(len, adaptFrm.numCols());
     res = new Frame(destination_key, res.names(), res.vecs());
     DKV.put(res);
-    makeMetricBuilder(null).makeModelMetrics(this, res, res.vecs()[0].mean());
+    makeMetricBuilder(null).makeModelMetrics(this, frame, res.vecs()[0].mean());
     return res;
   }
 
@@ -1938,7 +1971,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
-        float df[] = new float [features];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
@@ -1946,7 +1978,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           ((Neurons.Input)neurons[0]).setInput(-1, tmp);
           DeepLearningTask.step(-1, neurons, model_info, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
-          for( int c=0; c<df.length; c++ )
+          for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
       }
@@ -2013,7 +2045,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param quantile Quantile for cut-off
    * @return Threshold in MSE value for a point to be above the quantile
    */
-  double calcOutlierThreshold(Vec mse, double quantile) {
+  public double calcOutlierThreshold(Vec mse, double quantile) {
     Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
     DKV.put(mse_frame._key, mse_frame);
 
@@ -2035,11 +2067,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DKV.put(bestModel._key, bestModel);
     assert (DKV.get(bestModelKey) != null);
     assert (bestModel.compareTo(this) <= 0);
-    assert (((DeepLearningModel) DKV.get(bestModelKey).get()).error() == _bestError);
   }
 
-  void delete_best_model( ) {
-    if (actual_best_model_key != null && actual_best_model_key != _key) DKV.remove(actual_best_model_key);
+  @Override public void delete() {
+    for (Key k : _output.weights) {
+      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
+    }
+    for (Key k : _output.biases) {
+      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
+    }
+    super.delete();
   }
 
   void delete_xval_models( ) {

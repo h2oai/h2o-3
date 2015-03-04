@@ -1,9 +1,10 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
 from h2o_test import verboseprint, dump_json, OutputObj
 
-echo "FIX! why getting NaN in some of the model metrics?"
+print "FIX! why getting NaN in some of the model metrics?"
 
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED, translateList):
     # do we need more than one random generator?

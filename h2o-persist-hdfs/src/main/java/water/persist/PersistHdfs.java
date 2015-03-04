@@ -5,16 +5,18 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.Callable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.io.ByteStreams;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-//import org.jets3t.service.S3ServiceException;
 
 import water.*;
 
+import water.api.HDFSIOException;
+import water.api.Schema;
+import water.api.TypeaheadV2;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
 import water.util.FileUtils;
@@ -59,10 +61,10 @@ public final class PersistHdfs extends Persist {
   }
   
   // Loading HDFS files
-  PersistHdfs() { _iceRoot = null; }
+  public PersistHdfs() { _iceRoot = null; }
 
   // Loading/Writing ice to HDFS
-  PersistHdfs(URI uri) {
+  public PersistHdfs(URI uri) {
     try {
       _iceRoot = new Path(uri + "/ice" + H2O.SELF_ADDRESS.getHostAddress() + "-" + H2O.API_PORT);
       // Make the directory as-needed
@@ -119,7 +121,7 @@ public final class PersistHdfs extends Persist {
 
   @Override public void store(Value v) {
     // Should be used only if ice goes to HDFS
-    assert this == getIce();
+    assert this == H2O.getPM().getIce();
     assert !v.isPersisted();
 
     byte[] m = v.memOrLoad();
@@ -145,7 +147,7 @@ public final class PersistHdfs extends Persist {
   }
 
   @Override public void delete(final Value v) {
-    assert this == getIce();
+    assert this == H2O.getPM().getIce();
     assert !v.isPersisted();   // Upper layers already cleared out
 
     run(new Callable() {
@@ -220,12 +222,12 @@ public final class PersistHdfs extends Persist {
       Futures futures = new Futures();
       for( FileStatus file : fs.listStatus(p) ) {
         Path pfs = file.getPath();
-        if( file.isDirectory() ) {
+        if( file.isDir() ) {
           addFolder(fs, pfs, keys, failed);
         } else {
           long size = file.getLen();
           Key k = null;
-          keys.add((k = HDFSFileVec.make(file, futures)).toString());
+          keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
           Log.debug("PersistHdfs: DKV.put(" + k + ")");
         }
       }
@@ -243,6 +245,75 @@ public final class PersistHdfs extends Persist {
     FileStatus[] fstatus = fs.listStatus(new Path(uri));
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
-    return HDFSFileVec.make(fstatus[0]);
+    return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
+  }
+
+  private static final Pattern S3N_BARE_BUCKET = Pattern.compile("s3n://[^/]*");
+
+  @Override
+  public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
+    // Get HDFS configuration
+    Configuration conf = PersistHdfs.CONF;
+    // Handle S3N bare buckets - s3n://bucketname should be always suffixed by '/'
+    // since underlying Jets3n will throw NPE, i.e. right filter name should be
+    // s3n://bucketname/
+    if (S3N_BARE_BUCKET.matcher(filter).matches()) {
+      filter += "/";
+    }
+    // Output matches
+    ArrayList<String> array = new ArrayList<String>();
+    {
+      // Filter out partials which are known to print out useless stack traces.
+      String s = filter.toLowerCase();
+      if (s == "hdfs:") return array;
+      if (s == "maprfs:") return array;
+    }
+    try {
+      Path p = new Path(filter);
+      Path expand = p;
+      if( !filter.endsWith("/") ) expand = p.getParent();
+      FileSystem fs = FileSystem.get(p.toUri(), conf);
+      for( FileStatus file : fs.listStatus(expand) ) {
+        Path fp = file.getPath();
+        if( fp.toString().startsWith(p.toString()) ) {
+          array.add(fp.toString());
+        }
+        if( array.size() == limit) break;
+      }
+    } catch (Exception e) {
+      Log.trace(e);
+    } catch (Throwable t) {
+      t.printStackTrace();
+      Log.warn(t);
+    }
+
+    return array;
+  }
+
+  private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
+    String s2 = s.toLowerCase();
+    Pattern p = Pattern.compile("s3n://[^/]*");
+    Matcher m = p.matcher(s2);
+    boolean b = m.matches();
+    return b;
+  }
+
+  @Override
+  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    // Fix for S3N kind of URL
+    if (isBareS3NBucketWithoutTrailingSlash(path)) {
+      path += "/";
+    }
+    Log.info("ImportHDFS processing (" + path + ")");
+
+    // List of processed files
+    try {
+      // Recursively import given file/folder
+      addFolder(new Path(path), keys, fails);
+      files.addAll(keys);
+      // write barrier was here : DKV.write_barrier();
+    } catch (IOException e) {
+      throw new HDFSIOException(path, PersistHdfs.CONF.toString(), e);
+    }
   }
 }

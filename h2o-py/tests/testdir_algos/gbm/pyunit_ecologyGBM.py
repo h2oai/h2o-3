@@ -42,7 +42,7 @@ def ecologyGBM(ip,port):
     learn_rate = 0.1
 
     # Prepare data for scikit use
-    trainData = np.genfromtxt(h2o_home_dir + "smalldata/gbm_test/ecology_model.csv",
+    trainData = np.genfromtxt(h2o.locate("smalldata/gbm_test/ecology_model.csv"),
                               delimiter=',',
                               dtype=None,
                               names=("Site","Angaus","SegSumT","SegTSeas","SegLowFlow","DSDist","DSMaxSlope","USAvgT",
@@ -63,10 +63,10 @@ def ecologyGBM(ip,port):
 
     # Evaluate the trained models on test data
     # Load the test data (h2o)
-    ecology_test = h2o.import_frame(path=h2o_home_dir + "smalldata/gbm_test/ecology_eval.csv")
+    ecology_test = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
 
     # Load the test data (scikit)
-    testData = np.genfromtxt(h2o_home_dir + "smalldata/gbm_test/ecology_eval.csv",
+    testData = np.genfromtxt(h2o.locate("smalldata/gbm_test/ecology_eval.csv"),
                               delimiter=',',
                               dtype=None,
                               names=("Angaus","SegSumT","SegTSeas","SegLowFlow","DSDist","DSMaxSlope","USAvgT",
@@ -85,7 +85,7 @@ def ecologyGBM(ip,port):
 
     # h2o
     gbm_perf = gbm_h2o.model_performance(ecology_test)
-    auc_h2o = gbm_perf._auc_data.AUC
+    auc_h2o = gbm_perf.auc()
 
     #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
     assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"

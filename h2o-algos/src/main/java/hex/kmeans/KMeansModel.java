@@ -61,7 +61,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;
-    return new ModelMetricsKMeans.MetricBuilderKMeans(_output.nfeatures());
+    return new ModelMetricsKMeans.MetricBuilderKMeans(_output.nfeatures(),_parms._k);
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {

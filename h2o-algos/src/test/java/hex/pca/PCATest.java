@@ -7,30 +7,69 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.junit.Assert.assertEquals;
+
 public class PCATest extends TestUtil {
-  public final double threshold = 1e-6;
+  public final double TOLERANCE = 1e-6;
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   public void checkStddev(double[] expected, double[] actual) {
+    checkStddev(expected, actual, TOLERANCE);
+  }
+  public void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       Assert.assertEquals(expected[i], actual[i], threshold);
   }
 
-  public void checkEigvec(double[][] expected, double[][] actual) {
+  public boolean[] checkEigvec(double[][] expected, double[][] actual) {
+    return checkEigvec(expected, actual, TOLERANCE);
+  }
+  public boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
     int nfeat = actual.length;
     int ncomp = actual[0].length;
+    boolean[] flipped = new boolean[ncomp];
+
     for(int j = 0; j < ncomp; j++) {
-      boolean flipped = Math.abs(expected[0][j] - actual[0][j]) > threshold;
+      flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       for(int i = 0; i < nfeat; i++) {
-        if(flipped)
-          Assert.assertEquals(expected[i][j], -actual[i][j], threshold);
-        else
-          Assert.assertEquals(expected[i][j], actual[i][j], threshold);
+        Assert.assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
+    return flipped;
+  }
+
+  public boolean[] checkProjection(Frame expected, Frame actual, double threshold) {
+    assert expected.numCols() == actual.numCols();
+    int ncomp = expected.numCols();
+    boolean[] flipped = new boolean[ncomp];
+
+    for(int j = 0; j < ncomp; j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      flipped[j] = Math.abs(vexp.at8(0) - vact.at8(0)) > threshold;
+    }
+    return checkProjection(expected, actual, threshold, flipped);
+  }
+
+  public boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
+    assert expected.numCols() == actual.numCols();
+    assert expected.numCols() == flipped.length;
+    int nfeat = (int) expected.numRows();
+    int ncomp = expected.numCols();
+
+    for(int j = 0; j < ncomp; j++) {
+      Vec vexp = expected.vec(j);
+      Vec vact = actual.vec(j);
+      Assert.assertEquals(vexp.length(), vact.length());
+      for (int i = 0; i < nfeat; i++) {
+        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+      }
+    }
+    return flipped;
   }
 
   @Test public void testArrests() throws InterruptedException, ExecutionException {
@@ -82,19 +121,20 @@ public class PCATest extends TestUtil {
             job.remove();
           }
 
-          if (std == DataInfo.TransformType.DEMEAN) {
+          /* if (std == DataInfo.TransformType.DEMEAN) {
             checkStddev(stddev, model._output._std_deviation);
             checkEigvec(eigvec, model._output._eigenvectors_raw);
           } else if (std == DataInfo.TransformType.STANDARDIZE) {
             checkStddev(stddev_std, model._output._std_deviation);
             checkEigvec(eigvec_std, model._output._eigenvectors_raw);
-          }
+          } */
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
         } finally {
           if( model != null ) {
-            model._parms._loading_key.get().delete();
+            if (model._parms._keep_loading)
+              model._parms._loading_key.get().delete();
             model.delete();
           }
         }
@@ -103,6 +143,60 @@ public class PCATest extends TestUtil {
       yinit    .delete();
       yinit_std.delete();
       if(train != null) train.delete();
+    }
+  }
+
+  @Test public void testArrestsScoring() {
+    // Initialize using first k rows of training frame
+    Frame yinit = frame(ard(ard(13.2, 236, 58, 21.2),
+                            ard(10.0, 263, 48, 44.5),
+                            ard(8.1, 294, 80, 31.0),
+                            ard(8.8, 190, 50, 19.5)));
+    double[] stddev = new double[] {202.7230564, 27.8322637, 6.5230482, 2.5813652};
+    double[][] eigvec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
+                            ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
+                            ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
+                            ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
+
+    PCA job = null;
+    PCAModel model = null;
+    Frame train = null, score = null, scoreR = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._gamma = 0;
+      parms._transform = DataInfo.TransformType.NONE;
+
+      try {
+        job = new PCA(parms);
+        model = job.trainModel().get();
+        // checkStddev(stddev, model._output._std_deviation, 1e-5);
+        // boolean[] flippedEig = checkEigvec(eigvec, model._output._eigenvectors_raw, 1e-5);
+
+        score = model.score(train);
+        scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+        // checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        if (job != null) job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      yinit.delete();
+      if (train != null) train.delete();
+      if (score != null) score.delete();
+      if (scoreR != null) scoreR.delete();
+      if (model != null) {
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
+        model.delete();
+      }
     }
   }
 
@@ -134,9 +228,10 @@ public class PCATest extends TestUtil {
       t.printStackTrace();
       throw new RuntimeException(t);
     } finally {
-      if(train != null) train.delete();
+      if (train != null) train.delete();
       if (model != null) {
-        model._parms._loading_key.get().delete();
+        if (model._parms._keep_loading)
+          model._parms._loading_key.get().delete();
         model.delete();
       }
     }

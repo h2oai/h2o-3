@@ -11,11 +11,7 @@ import water.util.ArrayUtils;
 
 
 public class FVecTest extends TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
   static final double EPSILON = 1e-6;
 
   public static  Key makeByteVec(Key k, String... data) {
@@ -179,48 +175,79 @@ public class FVecTest extends TestUtil {
     Vec v = null;
     Frame fr = null;
     try {
-        v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
-        Futures fs = new Futures();
-        assertEquals(0, v.min(), 0);
-        assertEquals(9, v.max(), 0);
-        assertEquals(4.5,v.mean(),1e-8);
-        H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
-        fr = DKV.get(rebalanced).get();
-        Vec v2 = fr.anyVec();
-        assertEquals(0, v2.min(), 0);
-        assertEquals(9, v2.max(), 0);
-        assertEquals(4.5, v.mean(), 1e-8);
-        v2.set(5, -100);
-        assertEquals(-100, v2.min(), 0);
-        v2.set(5, 5);
-        // make several rollups requests in parallel with and without histo and then get histo
-        v2.startRollupStats(fs);
-        v2.startRollupStats(fs);
-        v2.startRollupStats(fs,true);
-        assertEquals(0, v2.min(), 0);
-        long [] bins = v2.bins();
-        assertEquals(10,bins.length);
-        // TODO: should test percentiles?
-        for(long l:bins) assertEquals(1,l);
-        Vec.Writer w = v2.open();
-        try {
-          v2.min();
-          assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-        } catch( DistributedException de ) {
-          assertTrue(de.getMessage().contains("IllegalArgumentException"));
-          // expect to get IAE since we're requesting rollups while also changing the vec
-        } catch( IllegalArgumentException ie ) {
-          // if on local node can get iae directly
-        }
-        w.close(fs);
-        fs.blockForPending();
-        assertEquals(0,v2.min(),0);
-        fr.delete();
-        v.remove();
-        fr = null;
+      v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
+      Futures fs = new Futures();
+      assertEquals(0, v.min(), 0);
+      assertEquals(9, v.max(), 0);
+      assertEquals(4.5,v.mean(),1e-8);
+      H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
+      fr = DKV.get(rebalanced).get();
+      Vec v2 = fr.anyVec();
+      assertEquals(0, v2.min(), 0);
+      assertEquals(9, v2.max(), 0);
+      assertEquals(4.5, v.mean(), 1e-8);
+      v2.set(5, -100);
+      assertEquals(-100, v2.min(), 0);
+      v2.set(5, 5);
+      // make several rollups requests in parallel with and without histo and then get histo
+      v2.startRollupStats(fs);
+      v2.startRollupStats(fs);
+      v2.startRollupStats(fs,true);
+      assertEquals(0, v2.min(), 0);
+      long [] bins = v2.bins();
+      assertEquals(10,bins.length);
+      // TODO: should test percentiles?
+      for(long l:bins) assertEquals(1,l);
+      Vec.Writer w = v2.open();
+      try {
+        v2.min();
+        assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
+      } catch( DistributedException de ) {
+        assertTrue(de.getMessage().contains("IllegalArgumentException"));
+        // expect to get IAE since we're requesting rollups while also changing the vec
+      } catch( IllegalArgumentException ie ) {
+        // if on local node can get iae directly
+      }
+      w.close(fs);
+      fs.blockForPending();
+      assertEquals(0,v2.min(),0);
+      fr.delete();
+      v.remove();
+      fr = null;
     } finally {
       if( v != null)v.remove();
       if(fr != null)fr.delete();
+    }
+  }
+
+  // The rollups only compute approximate quantiles, not exact.
+  @Test public void test50pct() {
+    Vec vec = null;
+    try {
+      double[] d = new double[]{0.812834256224, 1.56386606237, 3.12702210880, 3.68417563302, 5.51277746586};
+      vec = Vec.makeVec(d,Vec.newKey());
+      double pct[] = vec.pctiles();
+      double eps = (vec.max()-vec.min())/1e-3;
+      Assert.assertEquals(pct[0],d[0],eps); // 0.01
+      Assert.assertEquals(pct[1],d[0],eps); // 0.1
+      Assert.assertEquals(pct[2],d[0],eps); // 0.25
+      Assert.assertEquals(pct[3],d[1],eps); // 1/3
+      Assert.assertEquals(pct[4],d[2],eps); // 0.5
+      Assert.assertEquals(pct[5],d[2],eps); // 2/3
+      Assert.assertEquals(pct[6],d[3],eps); // 0.75
+      Assert.assertEquals(pct[7],d[4],eps); // 0.9
+      Assert.assertEquals(pct[8],d[4],eps); // 0.99
+      vec.remove();
+
+      d = new double[]{490,492,494,496,498};
+      vec = Vec.makeVec(d,Vec.newKey());
+      pct = vec.pctiles();
+      eps = (vec.max()-vec.min())/1e-3;
+      System.out.println(java.util.Arrays.toString(pct));
+      Assert.assertEquals(pct[0],d[0],eps); // 0.01
+
+    } finally {
+      if( vec != null ) vec.remove();
     }
   }
 }

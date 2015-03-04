@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
-import water.persist.Persist;
+import water.persist.PersistManager;
 
 /** Log for H2O. 
  *
@@ -280,7 +280,7 @@ abstract public class Log {
     // Use ice folder if local, or default
     if (windowsPath)
       dir = new File(H2O.ICE_ROOT.toString());
-    else if( H2O.ICE_ROOT.getScheme() == null || Persist.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+    else if( H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
       dir = new File(H2O.ICE_ROOT.getPath());
     else
       dir = new File(H2O.DEFAULT_ICE_ROOT());

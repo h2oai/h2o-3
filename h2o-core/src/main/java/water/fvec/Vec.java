@@ -513,7 +513,7 @@ public class Vec extends Keyed<Vec> {
   public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
-  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.9,0.99,0.999};
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
@@ -667,14 +667,14 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a new random Key that fits the requirements for a Vec key. 
    *  @return A new random Vec Key */
-  public static Key newKey(){return newKey(Key.make());}
+  public static Key<Vec> newKey(){return newKey(Key.make());}
 
   /** Internally used to help build Vec and Chunk Keys; public to help
    *  PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
-  static Key newKey(Key k) {
+  static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
     byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
@@ -682,7 +682,7 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return Key.make(bits);
+    return (Key<Vec>)Key.make(bits);
   }
 
   /** Make a Vector-group key.  */
@@ -914,10 +914,12 @@ public class Vec extends Keyed<Vec> {
   public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    int min, max;
     // Right now, limited to small dense integers.
-    if( min() < 0 || max() > 1000000 )
+    if( (min=(int)min()) < 0 || (max=(int)max()) > 1000000 )
       throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
-    long[] domain= new CollectDomain().doAll(this).domain();
+    // try to do the fast domain collection
+    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
     return adaptTo(ArrayUtils.toString(domain));
@@ -988,6 +990,42 @@ public class Vec extends Keyed<Vec> {
       Arrays.sort(dom);
       return dom;
     }
+  }
+
+  // >11x faster than CollectDomain
+  /** (Optimized for positive ints) Collect numeric domain of given vector
+   *  A map-reduce task to collect up the unique values of an integer vector
+   *  and returned as the domain for the vector.
+   * */
+  public static class CollectDomainFast extends MRTask<CollectDomainFast> {
+    private final int _s;
+    private boolean[] _u;
+    private long[] _d;
+    CollectDomainFast(int s) { _s=s; }
+    @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
+    @Override public void map(Chunk ys) {
+      for( int row=0; row< ys._len; row++ )
+        if( !ys.isNA(row) )
+          _u[(int)ys.at8(row)]=true;
+    }
+    @Override public void reduce(CollectDomainFast mrt) { if( _u != mrt._u ) ArrayUtils.or(_u, mrt._u);}
+    @Override protected void postGlobal() {
+      int c=0;
+      for (boolean b : _u) if(b) c++;
+      _d=MemoryManager.malloc8(c);
+      int id=0;
+      for (int i = 0; i < _u.length;++i)
+        if (_u[i])
+          _d[id++]=i;
+      Arrays.sort(_d);
+    }
+
+    /** Returns exact numeric domain of given vector computed by this task.
+     * The domain is always sorted. Hence:
+     *    domain()[0] - minimal domain value
+     *    domain()[domain().length-1] - maximal domain value
+     */
+    public long[] domain() { return _d; }
   }
 
   /** Class representing the group of vectors.
@@ -1127,5 +1165,4 @@ public class Vec extends Keyed<Vec> {
       return _key.hashCode();
     }
   }
-
 }
