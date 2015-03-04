@@ -49,8 +49,6 @@ h2o.naiveBayes <- function(x, y, training_frame, destination_key,
   parms$y <- args$y
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.naivebayes.map) ) i <- .naivebayes.map[[i]]; i })
   
-  if( !(missing(x)) ) parms[["ignored_columns"]] <- .verify_datacols(training_frame, x)$cols_ignore
-  
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'naivebayes', parms, parent.frame())
 }

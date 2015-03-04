@@ -55,14 +55,14 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      double[] pprior = tsk._rescnt.clone();
+      double[] apriori = tsk._rescnt.clone();
       double[][][] pcond = tsk._jntcnt.clone();
       String[][] domains = dinfo._adaptedFrame.domains();
 
       // A-priori probability of response y
-      for(int i = 0; i < pprior.length; i++)
-        pprior[i] = (pprior[i] + _parms._laplace)/(tsk._nobs + tsk._nres * _parms._laplace);
-        // pprior[i] = pprior[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
+      for(int i = 0; i < apriori.length; i++)
+        apriori[i] = (apriori[i] + _parms._laplace)/(tsk._nobs + tsk._nres * _parms._laplace);
+        // apriori[i] = apriori[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
 
       // Probability of categorical predictor x_j conditional on response y
       for(int col = 0; col < dinfo._cats; col++) {
@@ -86,7 +86,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
           pcond[cidx][i][1] = Math.sqrt(pvar);
         }
       }
-      model._output._pprior = pprior;
+      model._output._apriori_raw = apriori;
       model._output._pcond_raw = pcond;
 
       // Create table of conditional probabilities for every predictor
@@ -97,15 +97,24 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         String[] colFormats = new String[colNames.length];
         Arrays.fill(colTypes, "double");
         Arrays.fill(colFormats, "%5f");
-        model._output._pcond[col] = new TwoDimTable("Column: " + _train.name(col), rowNames, colNames,
-                colTypes, colFormats, "Response / Predictor", new String[rowNames.length][], model._output._pcond_raw[col]);
+        model._output._pcond[col] = new TwoDimTable(_train.name(col), rowNames, colNames, colTypes, colFormats,
+                "Y / " + _train.name(col), new String[rowNames.length][], pcond[col]);
       }
 
       for(int col = 0; col < dinfo._nums; col++) {
         int cidx = dinfo._cats + col;
-        model._output._pcond[cidx] = new TwoDimTable("Column: " + _train.name(col), rowNames, new String[] {"Mean", "Standard Deviation"},
-                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "", new String[rowNames.length][], model._output._pcond_raw[cidx]);
+        model._output._pcond[cidx] = new TwoDimTable(_train.name(col), rowNames, new String[] {"Mean", "Std_Dev"},
+                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y / " + _train.name(col),
+                new String[rowNames.length][], pcond[cidx]);
       }
+
+      // Create table of a-priori probabilities for the response
+      String[] colTypes = new String[_response.cardinality()];
+      String[] colFormats = new String[_response.cardinality()];
+      Arrays.fill(colTypes, "double");
+      Arrays.fill(colFormats, "%5f");
+      model._output._apriori = new TwoDimTable("Y", new String[1], _response.domain(), colTypes, colFormats, "",
+              new String[1][], new double[][] {apriori});
     }
 
     @Override
@@ -127,6 +136,9 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
+        model._output._parameters = _parms;
+        model._output._levels = _response.domain();
+        model._output._ncats = dinfo._cats;
         model.update(_key);
         done();
       } catch (Throwable t) {
@@ -145,10 +157,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         _parms.read_unlock_frames(NaiveBayes.this);
       }
       tryComplete();
-    }
-
-    Key self() {
-      return _key;
     }
   }
 

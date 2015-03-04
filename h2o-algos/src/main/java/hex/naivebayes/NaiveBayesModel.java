@@ -14,21 +14,19 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
   }
 
   public static class NaiveBayesOutput extends SupervisedModel.SupervisedOutput {
-    // Class counts of the dependent variable
-    public double[] _rescnt;
-
-    // Class distribution of the dependent variable
-    public double[] _pprior;
+    // Class distribution of the response
+    public TwoDimTable _apriori;
+    public double[] _apriori_raw;
 
     // For every predictor, a table providing, for each attribute level, the conditional probabilities given the target class
     public TwoDimTable[/*predictor*/] _pcond;
-    public double[/*predictor*/][/*res_level*/][/*pred_level*/] _pcond_raw;
+    public double[/*predictor*/][/*res level*/][/*pred level*/] _pcond_raw;
 
-    // Number of categorical predictor variables
+    // Number of categorical predictors
     public int _ncats;
 
-    // Number of numeric predictor variables
-    public int _nnums;
+    // Categorical levels of the response
+    public String[] _levels;
 
     // Model parameters
     NaiveBayesParameters _parameters;
@@ -51,13 +49,14 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     return null;
   }
 
+  // TODO: Check test data has same number of categorical/numeric cols in same order as training data
   // Note: For small probabilities, product may end up zero due to underflow error. Can circumvent by taking logs.
   @Override
   protected float[] score0(double[] data, float[] preds) {
     double denom = 0;
-    assert preds.length == (_output._pprior.length + 1);   // Note: First column of preds is predicted response class
+    assert preds.length == (_output._apriori_raw.length + 1);   // Note: First column of preds is predicted response class
     // Compute joint probability of predictors for every response class
-    for(int rlevel = 0; rlevel < _output._pprior.length; rlevel++) {
+    for(int rlevel = 0; rlevel < _output._apriori_raw.length; rlevel++) {
       double num = 1;
       for(int col = 0; col < _output._ncats; col++) {
         if(Double.isNaN(data[col])) continue;   // Skip predictor in joint x_1,...,x_m if NA
@@ -78,7 +77,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
         // num *= new NormalDistribution(mean, stddev).density(data[col]); //slower
       }
 
-      num *= _output._pprior[rlevel];    // p(x,y) = p(x|y)*p(y)
+      num *= _output._apriori_raw[rlevel];    // p(x,y) = p(x|y)*p(y)
       denom += num;                     // p(x) = \Sum_{levels of y} p(x,y)
       preds[rlevel+1] = (float)num;
     }

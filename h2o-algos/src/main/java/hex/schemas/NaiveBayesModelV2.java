@@ -12,11 +12,11 @@ public class NaiveBayesModelV2 extends ModelSchema<NaiveBayesModel, NaiveBayesMo
     @API(help = "Model parameters")
     NaiveBayesV2.NaiveBayesParametersV2 parameters;
 
-    @API(help = "Categorical level counts of the response")
-    public double[] rescnt;
+    @API(help = "Categorical levels of the response")
+    public String[] levels;
 
     @API(help = "A-priori probabilities of the response")
-    public double[] pprior;
+    public TwoDimTableV1 apriori;
 
     @API(help = "Conditional probabilities of the predictors")
     public TwoDimTableV1[] pcond;
