@@ -384,7 +384,7 @@ class H2OConnection(object):
         files = {file_upload_info["file"] : open(file_upload_info["file"], "rb")}
         return requests.post(url, files=files)
       elif method == "POST":
-        return requests.post(url, params=post_body)
+        return requests.post(url, data=post_body)
       elif method == "DELETE":
         return requests.delete(url)
       else:

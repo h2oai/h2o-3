@@ -1,8 +1,11 @@
 # GLM Tutorial
 
 The purpose of this tutorial is to walk new users through Generalized Linear Analysis (GLM) using H2O Flow.
-Users who have never used H2O before should refer
-[Getting Started](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md) for additional instructions on how to run H2O Flow.
+
+Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
+
+
+For more details on the math behind H2O's implementation of GLM, refer to <a href="http://docs.h2o.ai/datascience/glm.html" target="_blank">GLM Data Science</a>. 
 
 **Note**: GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
 
@@ -19,14 +22,12 @@ Here are some examples:
 
 
 ### Getting Started
-This tutorial uses a publicly available data set that can be found at:
-
-UCI Machine Learning Repository: http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/
+This tutorial uses a publicly available data set that can be found at the UCI Machine Learning Repository: <a href="http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/" target="_blank">http://archive.ics.uci.edu/ml/machine-learning-databases/abalone/</a>.
 
 The original data are the Abalone data, available from UCI Machine Learning Repository. They are composed of 4177 observations on 9 attributes. All attributes are real valued, and continuous, except for Sex and Rings, found in columns 0 and 8 respectively.
 Sex is categorical with 3 levels (male, female, and infant), and Rings is an integer valued count.
 
-To further explore H2O's capabilities, some [publicly available data sets](http://docs.h2o.ai/resources/publicdata.html) can be found on our website. 
+To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
 
 
 

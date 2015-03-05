@@ -12,12 +12,7 @@ def pub_445_long_request_uri(ip,port):
     mnistTrain[784]._name = "label"
     mnistTest[784]._name = "label"
 
-    mnistModel = h2o.gbm(x=mnistTrain.drop("label"),
-                         y=mnistTrain["label"],
-                         validation_x=mnistTest.drop("label"),
-                         validation_y=mnistTest["label"],
-                         ntrees=100,
-                         max_depth=10)
+    mnistModel = h2o.gbm(x=mnistTrain.drop("label"), y=mnistTrain["label"], validation_x=mnistTest.drop("label"), validation_y=mnistTest["label"], ntrees=100, max_depth=10)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, pub_445_long_request_uri)

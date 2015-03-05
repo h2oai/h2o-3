@@ -380,12 +380,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( out._ntrees > 0 )
         out._variableImportances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
       Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._meanLeaves)+" nodes)");
-      if (mm instanceof ModelMetricsBinomial) {
-        ConfusionMatrix cm = ((ModelMetricsBinomial)mm)._cm;
-        Log.info(cm.toASCII());
-        Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
-      } else if (mm instanceof ModelMetricsMultinomial) {
-        ConfusionMatrix cm = ((ModelMetricsMultinomial) mm)._cm;
+      ConfusionMatrix cm = (mm instanceof ModelMetricsBinomial) ? ((ModelMetricsBinomial)mm)._cm :
+        ((mm instanceof ModelMetricsMultinomial) ? ((ModelMetricsMultinomial)mm)._cm : null);
+      if( cm != null ) {
         Log.info(cm.toASCII());
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
@@ -397,6 +394,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   }
 
   // helper for debugging
+  @SuppressWarnings("unused")
   static protected void printGenerateTrees(DTree[] trees) {
     for( DTree dtree : trees )
       if( dtree != null )
