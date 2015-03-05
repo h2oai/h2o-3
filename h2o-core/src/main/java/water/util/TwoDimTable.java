@@ -220,6 +220,8 @@ public class TwoDimTable extends Iced {
    * @param o Object value
    */
   public void set(final int row, final int col, final Object o) {
+    if (o == null) cellValues[row][col] = null;
+
     if (colTypes[col]=="double")
       cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
     else if (colTypes[col]=="float")
