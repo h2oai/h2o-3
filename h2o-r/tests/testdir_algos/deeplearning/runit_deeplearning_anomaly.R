@@ -24,9 +24,8 @@ check.deeplearning_anomaly <- function(conn) {
   resp = 785
   
   # unsupervised -> drop the response column (digit: 0-9)
-  train_hex <- train_hex[,-resp]
-  test_hex <- test_hex[,-resp]
-  print(train_hex)
+  train_hex <- h2o.assign(train_hex[,-resp], 'train_hex')
+  test_hex <- h2o.assign(test_hex[,-resp], 'test_hex')
   
   # helper functions for display of handwritten digits
   # adapted from http://www.r-bloggers.com/the-essence-of-a-handwritten-digit/
@@ -68,7 +67,7 @@ check.deeplearning_anomaly <- function(conn) {
   # 2) DETECT OUTLIERS
   # anomaly app computes the per-row reconstruction error for the test data set
   # (passing it through the autoencoder model and computing mean square error (MSE) for each row)
-  test_rec_error <- as.data.frame(h2o.anomaly(test_hex, ae_model))
+  test_rec_error <- as.data.frame(h2o.anomaly(ae_model, test_hex))
   
   
   # 3) VISUALIZE OUTLIERS

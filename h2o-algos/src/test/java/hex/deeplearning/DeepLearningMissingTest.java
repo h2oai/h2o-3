@@ -69,6 +69,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
           p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
+          p._convert_to_enum = true;
           p._hidden = new int[]{200,200};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;

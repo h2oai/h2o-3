@@ -59,7 +59,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._input_dropout_ratio = 0.2;
           p._train_samples_per_iteration = 3;
           p._hidden_dropout_ratios = new double[]{0.4, 0.1};
-          p._epochs = 3.32;
+          p._epochs = 1.32;
           p._quiet_mode = true;
           p._reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
