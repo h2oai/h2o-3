@@ -608,12 +608,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
     toJavaInit(clz);            // Model-specific top-level goodness
     clz.addField(CtField.make(toJavaNAMES  (new SB()).toString(),clz));
-....
-    clz.addField(CtField.make(toJavaDOMAINS(new SB(),null).toString(),clz));
-    String cvar = toJavaNCLASSES(new SB()).toString();
-    if( !cvar.isEmpty() ) clz.addField(CtField.make(cvar,clz));
-    clz.addMethod(CtMethod.make(toJavaPredict(new SB(), new SB()).toString(),clz)); // FIX ME
-    return clz;
+    throw H2O.unimpl();
+    //clz.addField(CtField.make(toJavaDOMAINS(new SB(),null).toString(),clz));
+    //String cvar = toJavaNCLASSES(new SB()).toString();
+    //if( !cvar.isEmpty() ) clz.addField(CtField.make(cvar,clz));
+    //clz.addMethod(CtMethod.make(toJavaPredict(new SB(), new SB()).toString(),clz)); // FIX ME
+    //return clz;
   }
   /** Generate implementation for super class. */
   protected SB toJavaSuper( String modelName, SB sb ) {

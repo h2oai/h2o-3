@@ -57,6 +57,8 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     @Override public ModelCategory getModelCategory() {
       return Model.ModelCategory.Clustering;
     }
+    // Output classes is weird for clustering - its like a regression 
+    public int nclasses() { return 1; }
   }
 
   public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
