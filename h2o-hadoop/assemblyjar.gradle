@@ -7,20 +7,30 @@ targetCompatibility = 1.6
 
 dependencies {
   compile('org.apache.hadoop:hadoop-client:' + hadoopMavenArtifactVersion)
-  compile project(hadoopDependentProject)
   compile project(':h2o-hadoop:h2o-' + hadoopVersion)
-  compile files(hadoopPersistHdfsJarFile)
+  compile project(':h2o-app')
+  compile (project(':h2o-persist-hdfs')) {
+    transitive = false
+  }
 }
+
+def hadoopFatJarExcludes = ['META-INF/*.DSA',
+                            'META-INF/*.SF',
+                            'synchronize.properties',
+                            'uploader.properties',
+                            'test.properties',
+                            'cockpitlite.properties',
+                            'devpay_products.properties']
 
 fatJarPrepareFiles {
   exclude hadoopFatJarExcludes
 }
 
 fatJar {
-   baseName = 'h2odriver'
-   manifest {
-      attributes 'Main-Class': hadoopDriverJarMainClass
-   }
+  baseName = 'h2odriver'
+  manifest {
+    attributes 'Main-Class': 'water.hadoop.h2odriver'
+  }
 }
 
 jar.finalizedBy fatJar
