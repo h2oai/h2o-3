@@ -250,7 +250,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           Log.debug("Registered Schema: " + clz.getSimpleName());
 
           // Validate the fields:
-          SchemaMetadata ignoreme = new SchemaMetadata(s);
+          SchemaMetadata meta = new SchemaMetadata(s);
+
+          for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+            String name = field_meta.name;
+
+            if ("__meta".equals(name) || "__http_status".equals(name))
+              continue;
+            if (name.startsWith("_"))
+              Log.warn("Found schema field which violates the naming convention; name starts with underscore: " + meta.name + "." + name);
+            if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase())) // allow AUC but not residualDeviance
+              Log.warn("Found schema field which violates the naming convention; name has mixed lowercase and uppercase characters: " + meta.name + "." + name);
+          }
         }
       }
     }
