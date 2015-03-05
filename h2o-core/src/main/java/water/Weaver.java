@@ -417,7 +417,9 @@ public class Weaver {
       CtClass argClass = _pool.get(clz);
       if( argClass.subtypeOf(_pool.get("water.Freezable")) ) return 9;
       if( argClass.subtypeOf(_enum) ) return 10;
-      if( argClass.subtypeOf(_serialize) ) return 11; // Uses Java Serialization
+      if( argClass.subtypeOf(_serialize) )
+        throw H2O.fail("You must implement your own Serializer (e.g., extend Iced)");
+//        return 11; // Uses Java Serialization
       break;
     case '[':                   // Arrays
       return ftype(ct, sig.substring(1))+20; // Same as prims, plus 20
