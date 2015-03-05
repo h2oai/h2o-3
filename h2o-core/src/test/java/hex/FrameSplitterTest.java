@@ -2,6 +2,7 @@ package hex;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.H2O;
 import water.TestUtil;
@@ -54,6 +55,15 @@ public class FrameSplitterTest extends TestUtil {
     fname = "test3.hex";
     chunkLayout = ar(2L, 2L, 2L);
     data = ar(ar("A", "B"), ar("C", null), ar((String) null, (String) null));
+    testScenario(fname, chunkLayout, data);
+  }
+
+  @Test @Ignore
+  public void splitStringFramePUBDEV468() {
+    // NAs at the end of chunks
+    String fname = "test4.hex";
+    long[] chunkLayout = ar(3L, 3L);
+    String[][] data = ar(ar("A", null, "B"), ar("C", "D", "E"));
     testScenario(fname, chunkLayout, data);
   }
 

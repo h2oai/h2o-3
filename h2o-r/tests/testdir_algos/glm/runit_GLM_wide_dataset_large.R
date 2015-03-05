@@ -34,7 +34,7 @@ test <- function(conn) {
         perf.noSR.3250 <- h2o.performance(model.noSR.3250, arcene.valid.full)
          
     print("Check that prediction AUC better than guessing (0.5).")
-        stopifnot(perf.noSR.3250@model$auc > 0.5)
+        stopifnot(h2o.auc(perf.noSR.3250) > 0.5)
 
   testEnd()
 }

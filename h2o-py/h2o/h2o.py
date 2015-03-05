@@ -213,6 +213,9 @@ def kmeans(x,validation_x=None,**kwargs):
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 
+def network_test():
+  res = H2OConnection.get_json(url_suffix="NetworkTest")
+  res["table"].show()
 
 def locate(path):
   """

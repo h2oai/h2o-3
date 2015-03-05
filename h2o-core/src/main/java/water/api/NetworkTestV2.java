@@ -15,5 +15,5 @@ public class NetworkTestV2 extends Schema<NetworkTest, NetworkTestV2> {
   @API(help="Nodes", direction = API.Direction.OUTPUT)
   public String[] nodes;
   @API(help="NetworkTestResults", direction = API.Direction.OUTPUT)
-  public TwoDimTable table;
+  public TwoDimTableV1 table;
 }
