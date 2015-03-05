@@ -1941,9 +1941,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
    /**
-   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
+   * Score auto-encoded reconstruction (on-the-fly, and materialize the deep features of given layer
    * @param frame Original data (can contain response, will be ignored)
-   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
+   * @param layer index of the hidden layer for which to extract the features
+   * @return Frame containing the deep features (#cols = hidden[layer])
    */
   public Frame scoreDeepFeatures(Frame frame, final int layer) {
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)
