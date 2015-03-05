@@ -567,39 +567,30 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     if (schemas_registered) return;
     // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
 
-    Reflections reflections = null;
+    long before = System.currentTimeMillis();
 
     // Microhack to effect Schema.register(Schema.class), which is
     // normally not allowed because it has no version:
     new Schema();
 
+    String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
+
     // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
     Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
-    for (Class<? extends Schema> clz : clzs) {
-      // Ensure that water is pulled in:
-      Log.debug("Registering subclasses of: " + clz.toString() + " in package: water");
-      for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
 
-      // Ensure that hex is pulled in:
-      Log.debug("Registering subclasses of: " + clz.toString() + " in package: hex");
-      for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
+    for (String pkg :  packages) {
+      Reflections reflections = new Reflections(pkg);
 
-      // Get mixed-package schemas:
-      // This takes about 4s at startup time, so disallow schemas whose parent is in the other package.
-      if (false) {
-        Log.debug("Registering subclasses of: " + clz.toString() + " in package: (all)");
-        for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(clz))
+      for (Class<? extends Schema> clz : clzs) {
+        Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
+        for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
           if (!Modifier.isAbstract(schema_class.getModifiers()))
             Schema.register(schema_class);
       }
     }
 
     schemas_registered = true;
-    Log.info("Registered: " + Schema.schemas().size() + " schemas.");
+    Log.info("Registered: " + Schema.schemas().size() + " schemas in: " + (System.currentTimeMillis() - before) + "mS");
   }
 
   /**
