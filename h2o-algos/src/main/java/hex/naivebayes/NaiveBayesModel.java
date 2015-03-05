@@ -1,13 +1,12 @@
 package hex.naivebayes;
 
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsSupervised;
-import hex.SupervisedModel;
+import hex.*;
 import hex.schemas.NaiveBayesModelV2;
+import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
 import water.fvec.Frame;
+import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
@@ -35,10 +34,6 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     NaiveBayesParameters _parameters;
 
     public NaiveBayesOutput(NaiveBayes b) { super(b); }
-
-    @Override public ModelCategory getModelCategory() {
-      return ModelCategory.Unknown;
-    }
   }
 
   public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { super(selfKey,parms,output); }
@@ -47,26 +42,12 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     return new NaiveBayesModelV2();
   }
 
+  // TODO: Constant response shouldn't be regression. Need to override getModelCategory()
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsNaiveBayes.NaiveBayesModelMetrics(_output._levels);
-  }
-
-  public static class ModelMetricsNaiveBayes extends ModelMetricsSupervised {
-    public ModelMetricsNaiveBayes(Model model, Frame frame) {
-      super(model, frame);
-    }
-
-    // Naive Bayes currently does not have any model metrics to compute during scoring
-    public static class NaiveBayesModelMetrics extends MetricBuilderSupervised {
-      public NaiveBayesModelMetrics(String[] domain) { super(domain); }
-
-      @Override
-      public float[] perRow(float[] dataRow, float[] preds, Model m) { return dataRow; }
-
-      @Override
-      public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
-        return m._output.addModelMetrics(new ModelMetricsNaiveBayes(m, f));
-      }
+    switch(_output.getModelCategory()) {
+      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      default: throw H2O.unimpl();
     }
   }
 
