@@ -126,23 +126,69 @@ public class IcedWrapper extends Iced {
       throw new H2OIllegalArgumentException("o", "IcedWrapper", o);
   }
 
+  public Object get() {
+    if (t == null) {
+      return null;
+    }
+    if (is_array) {
+      if (t == Byte.TYPE) {
+        throw H2O.unimpl();
+        // TODO: i_ar = ArrayUtils.toPrimitive((Byte[])o);
+      } else if (t == Integer.TYPE) {
+        return i_ar;
+      } else if (t == Long.TYPE) {
+        return l_ar;
+      } else if (t == Float.TYPE) {
+        return f_ar;
+      } else if (t == Double.TYPE) {
+        return d_ar;
+      } else if (t == Boolean.TYPE) {
+        throw H2O.unimpl();
+        // TODO: AutoBuffer can't serialize arrays of booleans: b_ar = (boolean[])o;
+      } else if (t == String.class) {
+        return s_ar;
+      } else if (t == Enum.class) {
+        return e_ar;
+      }
+    } else {
+      if (t == Byte.TYPE) {
+        return i;
+      } else if (t == Integer.TYPE) {
+        return i;
+      } else if (t == Long.TYPE) {
+        return l;
+      } else if (t == Float.TYPE) {
+        return f;
+      } else if (t == Double.TYPE) {
+        return d;
+      } else if (t == Boolean.TYPE) {
+        return b;
+      } else if (t == String.class) {
+        return s;
+      } else if (t == Enum.class) {
+        return e;
+      }
+    }
+    throw new H2OIllegalArgumentException(this.toString());
+  }
+
   @Override
   public String toString() {
     if (null == t) {
       return "(null)";
     } else if (is_array) {
       // TODO: return Arrays.toString(ar);
-    } else if (Byte.class == t) {
+    } else if (Byte.TYPE == t) {
       return "" + i;
-    } else if (Integer.class == t) {
+    } else if (Integer.TYPE == t) {
       return "" + i;
-    } else if (Long.class == t) {
+    } else if (Long.TYPE == t) {
       return "" + l;
-    } else if (Float.class == t) {
+    } else if (Float.TYPE == t) {
       return "" + f;
-    } else if (Double.class == t) {
+    } else if (Double.TYPE == t) {
       return "" + d;
-    } else if (Boolean.class == t) {
+    } else if (Boolean.TYPE == t) {
       return "" + b;
     } else if (String.class == t) {
       return s;
