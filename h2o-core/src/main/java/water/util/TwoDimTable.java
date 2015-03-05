@@ -220,7 +220,16 @@ public class TwoDimTable extends Iced {
    * @param o Object value
    */
   public void set(final int row, final int col, final Object o) {
-    cellValues[row][col] = new IcedWrapper(o);
+    if (colTypes[col]=="double")
+      cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
+    else if (colTypes[col]=="float")
+      cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
+    else if (colTypes[col]=="integer")
+      cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
+    else if (colTypes[col]=="long")
+      cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
+    else
+      cellValues[row][col] = new IcedWrapper(o);
   }
 
   /**
@@ -258,22 +267,22 @@ public class TwoDimTable extends Iced {
       switch (colTypes[c]) {
         case "double":
           for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
           }
           break;
         case "float":
           for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
           }
           break;
         case "integer":
           for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
           }
           break;
         case "long":
           for (int r = 0; r < rowDim; ++r) {
-            cellStrings[r + 1][c + 1] = cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
           }
           break;
         default:
