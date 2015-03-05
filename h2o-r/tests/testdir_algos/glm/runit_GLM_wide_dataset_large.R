@@ -25,7 +25,7 @@ test <- function(conn) {
         arcene.valid.full = h2o.assign(data=h2o.cbind(arcene.valid,arcene.valid.label),key="arcene.valid.full")
     
     print("Run model on 3250 columns of Arcene with strong rules off.")
-            time.noSR.3250 <- system.time(model.noSR.3250 <- h2o.glm(x=c(1:3250), y="arcene.train.label", training_frame=arcene.train.full, family="binomial", lambda_search=FALSE, alpha=1, n_folds=0, use_all_factor_levels=TRUE, higher_accuracy=TRUE))
+            time.noSR.3250 <- system.time(model.noSR.3250 <- h2o.glm(x=c(1:3250), y="arcene.train.label", training_frame=arcene.train.full, family="binomial", lambda_search=FALSE, alpha=1, n_folds=0, use_all_factor_levels=TRUE))
         
     print("Test model on validation set.")
         predict.noSR.3250 <- predict(model.noSR.3250, arcene.valid.full)
@@ -34,7 +34,7 @@ test <- function(conn) {
         perf.noSR.3250 <- h2o.performance(model.noSR.3250, arcene.valid.full)
          
     print("Check that prediction AUC better than guessing (0.5).")
-        stopifnot(perf.noSR.3250@model$auc > 0.5)
+        stopifnot(h2o.auc(perf.noSR.3250) > 0.5)
 
   testEnd()
 }

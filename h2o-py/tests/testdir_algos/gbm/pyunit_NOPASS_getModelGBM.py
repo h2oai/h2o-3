@@ -1,4 +1,4 @@
-import sys, os
+import sys
 sys.path.insert(1, "../../../")
 import h2o
 
@@ -6,7 +6,7 @@ def getModelGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
 
-  prostate = h2o.import_frame(path="smalldata/logreg/prostate.csv")
+  prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
   #prostate.summary()
   prostate_gbm = h2o.gbm(y=prostate[1], x=prostate[2:9], nfolds=5)
   prostate_gbm.show()
@@ -19,7 +19,7 @@ def getModelGBM(ip,port):
     assert True
 
   prostate_gbm.predict(prostate)
-  model = prostate_gbm.key().getModel()
+  model = h2o.getModel(prostate_gbm._key)
   model.show()
 
 if __name__ == "__main__":

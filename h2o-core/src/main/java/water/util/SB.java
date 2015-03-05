@@ -47,9 +47,7 @@ public final class SB {
   }
   /* Append Java string - escape all " and \ */
   public SB pj( String s ) { _sb.append(escapeJava(s)); return this; }
-  public SB p( IcedBitSet ibs ) {
-    throw H2O.unimpl();
-  }
+  public SB p( IcedBitSet ibs ) { return ibs.toString(this); }
   // Increase indentation
   public SB ii( int i) { _indent += i; return this; }
   // Decrease indentation

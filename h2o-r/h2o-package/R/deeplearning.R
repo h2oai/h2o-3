@@ -237,3 +237,12 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   
   do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
 }
+
+h2o.anomaly <- function(object, data) {
+  url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
+  res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
+  res <- res$model_metrics[[1L]]$predictions$key$name
+  
+  h2o.getFrame(res)
+}
+
