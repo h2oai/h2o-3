@@ -260,7 +260,14 @@ public final class SchemaMetadata extends Iced {
         if (clz == Schema.Meta.class) {
           // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
           return "Schema.Meta";
-        } else{
+        } else {
+          // Special cases: polymorphic metadata fields that can contain scalars, Schemas (any Iced, actually), or arrays of these:
+          if (schema instanceof ModelParameterSchemaV2 && ("default_value".equals(field_name) || "actual_value".equals(field_name))) {
+            return "Polymorphic";
+          } if (schema instanceof FieldMetadataV1 && "value".equals(field_name)) {
+            return "Polymorphic";
+          }
+
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
           return clz.getSimpleName();
         }
