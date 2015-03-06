@@ -193,6 +193,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 .h2o.__COL_SUMMARY <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/")
+.h2o.__COL_DOMAIN  <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/")
 
 #' Frame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame.json"

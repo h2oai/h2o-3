@@ -150,6 +150,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"key", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
+    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"key", "column"},
+            "Return the domains for the specified column. \"null\" if the column is not an Enum.");
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column",                             new String[] {"key", "column"},
       "Return the specified column from a Frame.");
     register("/3/Frames/(?<key>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns",                            new String[] {"key"},
