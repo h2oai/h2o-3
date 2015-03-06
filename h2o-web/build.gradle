@@ -27,7 +27,7 @@ def checkPrerequisite(name) {
   return 0
 }
 
-task checkClientPrerequisites {
+task checkClientPrerequisites << {
   def nodeInstallationInstruction = """\
  
 To install node.js, try one of these:
@@ -94,9 +94,30 @@ task cleanClientWithGulp(type: Delete) {
   delete 'src/main/resources/www/flow'
 }
 
+def exampleFlowsOutputDir = "$rootDir/h2o-web/src/main/resources/www/flow/flow_examples"
+def exampleFlowsListFile = exampleFlowsOutputDir + '_list'
+
+task copyExampleFlows(type: Copy) {
+  from "$rootDir/h2o-docs/src/product/flow/flow_examples"
+  into exampleFlowsOutputDir
+}
+
+task buildExampleFlowsList << {
+  DirectoryIndexer di = new DirectoryIndexer(exampleFlowsOutputDir)
+  di.emitList('flow/flow_examples/', exampleFlowsListFile)
+}
+
+task cleanExampleFlowsList(type: Delete) {
+  delete exampleFlowsListFile
+}
+
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
 buildClientWithGulp.dependsOn installBowerPackages
 processResources.dependsOn buildClientWithGulp
-cleanClientWithGulp.dependsOn installBowerPackages
 clean.dependsOn cleanClientWithGulp
+
+buildExampleFlowsList.dependsOn copyExampleFlows
+processResources.dependsOn buildExampleFlowsList
+
+clean.dependsOn cleanExampleFlowsList

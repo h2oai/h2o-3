@@ -153,10 +153,12 @@ class H2OCloudNode:
     terminated: Only from a signal.  Not normal shutdown.
     """
 
-    def __init__(self, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port, xmx, output_dir):
+    def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
+                 xmx, output_dir):
         """
         Create a node in a cloud.
 
+        @param is_client: Whether this node is an H2O client node (vs a worker node) or not.
         @param cloud_num: Dense 0-based cloud index number.
         @param nodes_per_cloud: How many H2O java instances are in a cloud.  Clouds are symmetric.
         @param node_num: This node's dense 0-based node index number.
@@ -167,6 +169,7 @@ class H2OCloudNode:
         @param output_dir: The directory where we can create an output file for this process.
         @return: The node object.
         """
+        self.is_client = is_client
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.node_num = node_num
@@ -205,11 +208,16 @@ class H2OCloudNode:
         # to match the cdh3 cluster we're hardwiring tests to
         # i.e. it won't make s3n/s3 break on ec2
 
+        if (self.is_client):
+            main_class = "water.H2OClientApp"
+        else:
+            main_class = "water.H2OApp"
         cmd = ["java",
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
                "-Xmx" + self.xmx,
                "-ea",
-               "-jar", self.h2o_jar,
+               "-cp", self.h2o_jar,
+               main_class,
                "-name", self.cloud_name,
                "-baseport", str(self.my_base_port)]
 
@@ -371,13 +379,14 @@ class H2OCloud:
     A class representing one of the H2O clouds.
     """
 
-    def __init__(self, cloud_num, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir):
+    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir):
         """
         Create a cloud.
         See node definition above for argument descriptions.
 
         @return: The cloud object.
         """
+        self.use_client = use_client
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.h2o_jar = h2o_jar
@@ -392,15 +401,29 @@ class H2OCloud:
 
         self.cloud_name = "H2O_runit_{}_{}".format(user, n)
         self.nodes = []
+        self.client_nodes = []
         self.jobs_run = 0
 
-        for node_num in range(self.nodes_per_cloud):
-            node = H2OCloudNode(self.cloud_num, self.nodes_per_cloud, node_num,
+        if (use_client):
+            actual_nodes_per_cloud = self.nodes_per_cloud + 1
+        else:
+            actual_nodes_per_cloud = self.nodes_per_cloud
+
+        for node_num in range(actual_nodes_per_cloud):
+            is_client = False
+            if (use_client):
+                if (node_num == (actual_nodes_per_cloud - 1)):
+                    is_client = True
+            node = H2OCloudNode(is_client,
+                                self.cloud_num, actual_nodes_per_cloud, node_num,
                                 self.cloud_name,
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.output_dir)
-            self.nodes.append(node)
+            if (is_client):
+                self.client_nodes.append(node)
+            else:
+                self.nodes.append(node)
 
     def start(self):
         """
@@ -410,6 +433,9 @@ class H2OCloud:
         @return: none
         """
         for node in self.nodes:
+            node.start()
+
+        for node in self.client_nodes:
             node.start()
 
     def wait_for_cloud_to_be_up(self):
@@ -430,6 +456,9 @@ class H2OCloud:
         for node in self.nodes:
             node.stop()
 
+        for node in self.client_nodes:
+            node.stop()
+
     def terminate(self):
         """
         Terminate a running cloud.  (Due to a signal.)
@@ -439,22 +468,35 @@ class H2OCloud:
         for node in self.nodes:
             node.terminate()
 
+        for node in self.client_nodes:
+            node.terminate()
+
     def get_ip(self):
         """ Return an ip to use to talk to this cloud. """
-        node = self.nodes[0]
+        if (len(self.client_nodes) > 0):
+            node = self.client_nodes[0]
+        else:
+            node = self.nodes[0]
         return node.get_ip()
 
     def get_port(self):
         """ Return a port to use to talk to this cloud. """
-        node = self.nodes[0]
+        if (len(self.client_nodes) > 0):
+            node = self.client_nodes[0]
+        else:
+            node = self.nodes[0]
         return node.get_port()
 
     def _scrape_port_from_stdout(self):
         for node in self.nodes:
             node.scrape_port_from_stdout()
+        for node in self.client_nodes:
+            node.scrape_port_from_stdout()
 
     def _scrape_cloudsize_from_stdout(self):
         for node in self.nodes:
+            node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
+        for node in self.client_nodes:
             node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
 
     def __str__(self):
@@ -463,6 +505,8 @@ class H2OCloud:
         s += "    name:     {}\n".format(self.cloud_name)
         s += "    jobs_run: {}\n".format(self.jobs_run)
         for node in self.nodes:
+            s += str(node)
+        for node in self.client_nodes:
             s += str(node)
         return s
 
@@ -699,7 +743,7 @@ class TestRunner:
 
     def __init__(self,
                  test_root_dir,
-                 use_cloud, use_cloud2, cloud_config, use_ip, use_port,
+                 use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir, failed_output_dir):
         """
         Create a runner.
@@ -722,6 +766,7 @@ class TestRunner:
 
         self.use_cloud = use_cloud
         self.use_cloud2 = use_cloud2
+        self.use_client = use_client
 
         # Valid if use_cloud is True
         self.use_ip = use_ip
@@ -759,7 +804,8 @@ class TestRunner:
                 node_num += 1
         else:
             for i in range(self.num_clouds):
-                cloud = H2OCloud(i, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, self.output_dir)
+                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx,
+                                 self.output_dir)
                 self.clouds.append(cloud)
 
     @staticmethod
@@ -958,7 +1004,9 @@ class TestRunner:
             if (True):
                 possible_utils_parent_dir = self.test_root_dir
                 while (True):
-                    possible_utils_dir = os.path.join(possible_utils_parent_dir, os.path.join("h2o-r", os.path.join("tests", "Utils")))
+                    possible_utils_dir = os.path.join(possible_utils_parent_dir,
+                                                      os.path.join("h2o-r",
+                                                                   os.path.join("tests", "Utils")))
                     possible_runner_setup_package_r = os.path.join(possible_utils_dir, "runnerSetupPackage.R")
                     if (os.path.exists(possible_runner_setup_package_r)):
                         runner_setup_package_r = possible_runner_setup_package_r
@@ -997,14 +1045,19 @@ class TestRunner:
         num_tests = len(self.tests)
         num_nodes = self.num_clouds * self.nodes_per_cloud
         self._log("")
+        if (self.use_client):
+            client_message = " (+ client mode)"
+        else:
+            client_message = ""
         if (self.use_cloud):
             self._log("Starting {} tests...".format(num_tests))
         elif (self.use_cloud2):
             self._log("Starting {} tests on {} clouds...".format(num_tests, len(self.clouds)))
         else:
-            self._log("Starting {} tests on {} clouds with {} total H2O nodes...".format(num_tests,
-                                                                                         self.num_clouds,
-                                                                                         num_nodes))
+            self._log("Starting {} tests on {} clouds with {} total H2O worker nodes{}...".format(num_tests,
+                                                                                                  self.num_clouds,
+                                                                                                  num_nodes,
+                                                                                                  client_message))
         self._log("")
 
         # Start the first n tests, where n is the lesser of the total number of tests and the total number of clouds.
@@ -1311,6 +1364,7 @@ g_run_medium = True
 g_run_large = True
 g_use_cloud = False
 g_use_cloud2 = False
+g_use_client = False
 g_config = None
 g_use_ip = None
 g_use_port = None
@@ -1355,18 +1409,7 @@ def signal_handler(signum, stackframe):
 
 def usage():
     print("")
-    print("Usage:  " + g_script_name +
-          " [--wipeall]"
-          " [--wipe]"
-          " [--baseport port]"
-          " [--numclouds n]"
-          " [--nodespercloud n]"
-          " [--test path/to/test.R]"
-          " [--testlist path/to/list/file]"
-          " [--testgroup group]"
-          " [--testsize (s|m|l)]"
-          " [--usecloud ip:port]"
-          " [--norun]")
+    print("Usage:  " + g_script_name + " [...options...]")
     print("")
     print("    (Output dir is: " + g_output_dir + ")")
     print("    (Default number of clouds is: " + str(g_num_clouds) + ")")
@@ -1403,6 +1446,8 @@ def usage():
     print("")
     print("    --usecloud2   cloud.cfg: Use a set clouds defined in cloud.config to run tests on.")
     print("                  (When this is specified, numclouds, numnodes, and usecloud are ignored.)")
+    print("")
+    print("    --client      Send REST API commands through client mode.")
     print("")
     print("    --norun       Perform side effects like wipe, but don't actually run tests.")
     print("")
@@ -1481,6 +1526,7 @@ def parse_args(argv):
     global g_run_large
     global g_use_cloud
     global g_use_cloud2
+    global g_use_client
     global g_config
     global g_use_ip
     global g_use_port
@@ -1563,6 +1609,8 @@ def parse_args(argv):
                 unknown_arg(s)
             g_use_cloud2 = True
             g_config = s
+        elif (s == "--client"):
+            g_use_client = True
         elif (s == "--nopass"):
             g_nopass = True
         elif s == "--c":
@@ -1586,6 +1634,12 @@ def parse_args(argv):
             unknown_arg(s)
 
         i += 1
+
+    if ((int(g_use_client) + int(g_use_cloud) + int(g_use_cloud2)) > 1):
+        print("")
+        print("ERROR: --client, --usecloud and --usecloud2 are mutually exclusive.")
+        print("")
+        sys.exit(1)
 
 
 def wipe_output_dir():
@@ -1690,7 +1744,7 @@ def main(argv):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
-                          g_use_cloud, g_use_cloud2, g_config, g_use_ip, g_use_port,
+                          g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
                           g_output_dir, g_failed_output_dir)
 

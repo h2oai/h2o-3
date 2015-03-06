@@ -651,6 +651,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
+
+    @Override public boolean isSupervised() { return !autoencoder; }
   }
 
   // Default publicly visible Schema is V2
@@ -690,8 +692,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //  double missingColumnsType() { return get_params()._sparse ? 0 : Double.NaN; }
 
   public float error() { return (float) (_output.isClassifier() ? cm().err() : mse()); }
-
-  @Override public boolean isSupervised() { return !model_info.get_params()._autoencoder; }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
@@ -1941,9 +1941,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
    /**
-   * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
+   * Score auto-encoded reconstruction (on-the-fly, and materialize the deep features of given layer
    * @param frame Original data (can contain response, will be ignored)
-   * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
+   * @param layer index of the hidden layer for which to extract the features
+   * @return Frame containing the deep features (#cols = hidden[layer])
    */
   public Frame scoreDeepFeatures(Frame frame, final int layer) {
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)

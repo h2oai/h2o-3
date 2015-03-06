@@ -14,7 +14,7 @@ import java.util.Comparator;
  *  the fly" during ModelBuilding - or after-the-fact with a Model and a new
  *  Frame to be scored.
  */
-public class ModelMetrics extends Keyed {
+public class ModelMetrics extends Keyed<ModelMetrics> {
   final Key _modelKey;
   final Key _frameKey;
   final Model.ModelCategory _model_category;
@@ -24,9 +24,6 @@ public class ModelMetrics extends Keyed {
   transient Frame _frame;
 
   public double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
-
-  long duration_in_ms = -1L;
-  long scoring_time = -1L;
 
   public ModelMetrics(Model model, Frame frame, double mse) {
     this(model, frame);
@@ -116,11 +113,11 @@ public class ModelMetrics extends Keyed {
             new String[rel_imp.length][], sorted_imp);
   }
 
-  private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+  private static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
-  private static Key buildKey(Model model, Frame frame) {
+  private static Key<ModelMetrics> buildKey(Model model, Frame frame) {
     return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
@@ -128,8 +125,7 @@ public class ModelMetrics extends Keyed {
   public boolean isForFrame(Frame f) { return _frame_checksum == f.checksum(); }
 
   public static ModelMetrics getFromDKV(Model model, Frame frame) {
-    Key metricsKey = buildKey(model, frame);
-    Value v = DKV.get(metricsKey);
+    Value v = DKV.get(buildKey(model, frame));
     return null == v ? null : (ModelMetrics)v.get();
   }
 
