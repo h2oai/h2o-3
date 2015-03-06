@@ -188,36 +188,4 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       _createFrame.update(1);
     }
   }
-
-
-
-//  public static class MissingInserter extends MRTask<MissingInserter> {
-//    final long _seed;
-//    final double _frac;
-//
-//    public MissingInserter(long seed, double frac, Frame fr) {
-//      super(null);
-//      _seed = seed;
-//      _frac = frac;
-//      _fr = fr;
-//    }
-//
-//    public MissingInserter(H2O.H2OCountedCompleter cmp, long seed, double frac) {
-//      super(cmp);
-//      _seed = seed;
-//      _frac = frac;
-//    }
-//
-//    @Override
-//    public void map(Chunk[] cs) {
-//      if (_frac == 0) return;
-//      final Random rng = new Random();
-//      for (int c = 0; c < cs.length; c++) {
-//        for (int r = 0; r < cs[c]._len; r++) {
-//          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c]._start + r)); //row+col-dependent RNG for reproducibility
-//          if (rng.nextDouble() < _frac) cs[c].setNA(r);
-//        }
-//      }
-//    }
-//  }
 }
