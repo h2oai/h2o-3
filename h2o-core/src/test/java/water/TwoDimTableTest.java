@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.api.TwoDimTableV1;
+import water.util.AtomicUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 import static water.util.TwoDimTable.emptyDouble;
@@ -164,6 +165,59 @@ public class TwoDimTableTest extends TestUtil {
 
     String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
     assertTrue(json.equals("{\"__meta\":{\"schema_version\":1,\"schema_name\":\"TwoDimTableV1\",\"schema_type\":\"TwoDimTable\"},\"name\":\"Mixed\",\"columns\":[{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"\",\"type\":\"string\",\"format\":\"%s\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C0\",\"type\":\"string\",\"format\":\"%s\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C1\",\"type\":\"string\",\"format\":\"%s\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C2\",\"type\":\"string\",\"format\":\"%s\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C3\",\"type\":\"string\",\"format\":\"%s\",\"description\":null}],\"rowcount\":4,\"data\":[[\"R0\",\"R1\",\"R2\",\"R3\"],[null,null,null,\"a30\"],[\"a01\",null,null,null],[\"a02\",1.2,null,null],[null,null,null,\"a33\"]]}"));
+    Log.info(json);
+
+  }
+
+  @Test
+  public void run7() {
+    TwoDimTable table = new TwoDimTable(
+            "Mixed",
+            new String[]{"R0", "R1", "R2", "R3"},
+            new String[]{"C0", "C1", "C2", "C3"},
+            new String[]{"double", "float", "integer", "long"},
+            new String[]{"%f", "%f", "%d", "%d"},
+            "");
+    table.set(0, 0, Double.NEGATIVE_INFINITY);
+    table.set(1, 0, Double.POSITIVE_INFINITY);
+    table.set(2, 0, Double.NaN);
+    table.set(3, 0, -Double.NaN);
+    table.set(0, 1, Float.NEGATIVE_INFINITY);
+    table.set(1, 1, Float.POSITIVE_INFINITY);
+    table.set(2, 1, Float.NaN);
+    table.set(3, 1, -Float.NaN);
+    table.set(0, 2, Integer.MAX_VALUE);
+    table.set(1, 2, Integer.MIN_VALUE);
+    table.set(2, 2, 0);
+    table.set(3, 2, -0);
+    table.set(0, 3, Long.MAX_VALUE);
+    table.set(1, 3, Long.MIN_VALUE);
+    table.set(2, 3, 0);
+    table.set(3, 3, -0);
+
+    String ts = table.toString();
+    assertTrue(ts.length() > 0);
+    Log.info(ts);
+
+    assertTrue(table.get(0, 0).equals(Double.NEGATIVE_INFINITY));
+    assertTrue(table.get(1, 0).equals(Double.POSITIVE_INFINITY));
+    assertTrue(table.get(2, 0).equals(Double.NaN));
+    assertTrue(table.get(3, 0).equals(-Double.NaN));
+    assertTrue(table.get(0, 1).equals(Float.NEGATIVE_INFINITY));
+    assertTrue(table.get(1, 1).equals(Float.POSITIVE_INFINITY));
+    assertTrue(table.get(2, 1).equals(Float.NaN));
+    assertTrue(table.get(3, 1).equals(-Float.NaN));
+    assertTrue(table.get(0, 2).equals(Integer.MAX_VALUE));
+    assertTrue(table.get(1, 2).equals(Integer.MIN_VALUE));
+    assertTrue(table.get(2, 2).equals(0));
+    assertTrue(table.get(3, 2).equals(-0));
+    assertTrue(table.get(0, 3).equals(Long.MAX_VALUE));
+    assertTrue(table.get(1, 3).equals(Long.MIN_VALUE));
+    assertTrue(table.get(2, 3).equals(0L));
+    assertTrue(table.get(3, 3).equals(-0L));
+
+    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    assertTrue(json.equals("{\"__meta\":{\"schema_version\":1,\"schema_name\":\"TwoDimTableV1\",\"schema_type\":\"TwoDimTable\"},\"name\":\"Mixed\",\"columns\":[{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"\",\"type\":\"string\",\"format\":\"%s\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C0\",\"type\":\"double\",\"format\":\"%f\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C1\",\"type\":\"float\",\"format\":\"%f\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C2\",\"type\":\"integer\",\"format\":\"%d\",\"description\":null},{\"__meta\":{\"schema_version\":1,\"schema_name\":\"ColumnSpecsV1\",\"schema_type\":\"Iced\"},\"name\":\"C3\",\"type\":\"long\",\"format\":\"%d\",\"description\":null}],\"rowcount\":4,\"data\":[[\"R0\",\"R1\",\"R2\",\"R3\"],[\"-Infinity\",\"Infinity\",\"NaN\",\"NaN\"],[\"-Infinity\",\"Infinity\",\"NaN\",\"NaN\"],[2147483647,-2147483648,0,0],[9223372036854775807,-9223372036854775808,0,0]]}"));
     Log.info(json);
 
   }

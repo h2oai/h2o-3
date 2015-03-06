@@ -31,12 +31,12 @@ abstract public class Log {
   static final int TRACE= 5;
   static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   static int _level=INFO;
-  static boolean _clientMode = false;
+  static boolean _quiet = false;
 
   // Common pre-header
   private static String _preHeader;
 
-  public static void init( String slvl, boolean clientMode ) {
+  public static void init( String slvl, boolean quiet ) {
     if( slvl != null ) {
       slvl = slvl.toLowerCase();
       if( slvl.startsWith("fatal") ) _level = FATAL;
@@ -46,7 +46,7 @@ abstract public class Log {
       if( slvl.startsWith("debug") ) _level = DEBUG;
       if( slvl.startsWith("trace") ) _level = TRACE;
     }
-    _clientMode = clientMode;
+    _quiet = quiet;
   }
   
   public static void trace( Object... objs ) { write(TRACE,objs); }
@@ -97,8 +97,7 @@ abstract public class Log {
     write0(sb, hdr, s);
 
     // stdout first - in case log4j dies failing to init or write something
-    // but do not print to stdout in client mode!
-    if( stdout && !_clientMode) System.out.println(sb);
+    if(stdout && !_quiet) System.out.println(sb);
 
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
