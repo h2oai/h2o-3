@@ -70,10 +70,10 @@ public class DeepLearningMissingTest extends TestUtil {
           p._missing_values_handling = mvh;
           p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
           p._convert_to_enum = true;
-          p._hidden = new int[]{200,200};
+          p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
-          p._epochs = 10;
+          p._epochs = 3;
           p._quiet_mode = true;
           p._destination_key = Key.make();
           p._reproducible = true;
