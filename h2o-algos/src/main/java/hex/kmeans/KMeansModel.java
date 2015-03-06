@@ -1,10 +1,10 @@
 package hex.kmeans;
 
-import javassist.*;
 import hex.Model;
 import hex.ModelMetrics;
 import water.Key;
 import water.fvec.Frame;
+import water.util.JCodeGen;
 import water.util.SB;
 import water.util.TwoDimTable;
 
@@ -69,7 +69,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._centers_raw,data,_output._categorical_column_count);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._categorical_column_count);
     return preds;
   }
 
@@ -78,11 +78,13 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     sb.nl().ip("public ModelCategory getModelCategory() { return ModelCategory.Clustering; }\n");
     return sb;
   }
-  @Override protected void toJavaInit(CtClass ct) { }
-
   @Override protected void toJavaPredictBody(SB bodySb, SB classCtxSb, SB fileCtxSb) {
-    bodySb    .p("    /*toJavaPredictBody in bodySb*/\n"  ); // indent 4 - at function level
-    classCtxSb.p("  /*toJavaPredictBody in classCtxSb*/\n"); // indent 2 - at class level
-    fileCtxSb .p("/*toJavaPredictBody in fileCtxSb*/\n" );   // indent 0 - at file level
+    // fileCtxSb.ip("").nl(); // at file level
+    // Two class statics to support prediction
+    JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
+    JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
+    // Predict function body
+    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    
   }
 }

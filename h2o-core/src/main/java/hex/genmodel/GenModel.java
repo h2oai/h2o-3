@@ -52,7 +52,7 @@ public abstract class GenModel {
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract protected float[] score0( double[] data, float[] preds );
+  abstract public float[] score0( double[] data, float[] preds );
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
@@ -73,4 +73,49 @@ public abstract class GenModel {
     return score0(map(row,new double[nfeatures()]),new float[nclasses()+1]);
   }
 
+  // KMeans utilities
+  // For KMeansModel scoring; just the closest cluster center
+  public static int KMeans_closest(double[][] centers, double[] point, int ncats) {
+    int min = -1;
+    double minSqr = Double.MAX_VALUE;
+    for( int cluster = 0; cluster < centers.length; cluster++ ) {
+      double sqr = KMeans_distance(centers[cluster],point,ncats);
+      if( sqr < minSqr ) {      // Record nearest cluster center
+        min = cluster;
+        minSqr = sqr;
+      }
+    }
+    return min;
+  }
+
+  public static double KMeans_distance(double[] center, double[] point, int ncats) {
+    double sqr = 0;             // Sum of dimensional distances
+    int pts = point.length;     // Count of valid points
+
+    // Categorical columns first.  Only equals/unequals matters (i.e., distance is either 0 or 1).
+    for(int column = 0; column < ncats; column++) {
+        double d = point[column];
+      if( Double.isNaN(d) ) pts--;
+      else if( d != center[column] )
+        sqr += 1.0;           // Manhattan distance
+    }
+    // Numeric column distance
+    for( int column = ncats; column < center.length; column++ ) {
+      double d = point[column];
+      if( Double.isNaN(d) ) pts--; // Do not count
+      else {
+        double delta = d - center[column];
+        sqr += delta * delta;
+      }
+    }
+    // Scale distance by ratio of valid dimensions to all dimensions - since
+    // we did not add any error term for the missing point, the sum of errors
+    // is small - ratio up "as if" the missing error term is equal to the
+    // average of other error terms.  Same math another way:
+    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
+    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
+    if( 0 < pts && pts < point.length )
+      sqr *= point.length / pts;
+    return sqr;
+  }
 }

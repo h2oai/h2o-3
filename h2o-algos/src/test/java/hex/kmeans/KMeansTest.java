@@ -3,12 +3,10 @@ package hex.kmeans;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import javassist.*;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
 import org.junit.*;
-import hex.Model;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -277,7 +275,7 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
 
-      kmm.testJavaScoring(fr,fr2);
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2));
 
     } finally {
       if( fr  != null ) fr .remove();
