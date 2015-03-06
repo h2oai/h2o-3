@@ -58,7 +58,7 @@ public class DeepLearningMissingTest extends TestUtil {
           if (missing_fraction > 0) {
             Frame frtmp = new Frame(null, train.names(), train.vecs());
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
-            new FrameUtils.MissingInserter(seed, missing_fraction).doAll(frtmp);
+            new FrameUtils.MissingInserter(frtmp, seed, missing_fraction).execImpl();
           }
 
           // Build a regularized DL model with polluted training data, score on clean validation set

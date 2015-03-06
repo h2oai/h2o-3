@@ -5,6 +5,7 @@ import jsr166y.CountedCompleter;
 import water.*;
 import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -108,7 +109,8 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols).doAll(_out);
 
     //overwrite a fraction with N/A
-    new MissingInserter(this, _createFrame.seed, _createFrame.missing_fraction).asyncExec(_out);
+    new FrameUtils.MissingInserter(_out, _createFrame.seed, _createFrame.missing_fraction).execImpl();
+    tryComplete();
   }
 
   @Override public void onCompletion(CountedCompleter caller){
@@ -189,32 +191,33 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
 
 
-  public static class MissingInserter extends MRTask<MissingInserter> {
-    final long _seed;
-    final double _frac;
-
-    public MissingInserter(long seed, double frac) {
-      super(null);
-      _seed = seed;
-      _frac = frac;
-    }
-
-    public MissingInserter(H2O.H2OCountedCompleter cmp, long seed, double frac) {
-      super(cmp);
-      _seed = seed;
-      _frac = frac;
-    }
-
-    @Override
-    public void map(Chunk[] cs) {
-      if (_frac == 0) return;
-      final Random rng = new Random();
-      for (int c = 0; c < cs.length; c++) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c]._start + r)); //row+col-dependent RNG for reproducibility
-          if (rng.nextDouble() < _frac) cs[c].setNA(r);
-        }
-      }
-    }
-  }
+//  public static class MissingInserter extends MRTask<MissingInserter> {
+//    final long _seed;
+//    final double _frac;
+//
+//    public MissingInserter(long seed, double frac, Frame fr) {
+//      super(null);
+//      _seed = seed;
+//      _frac = frac;
+//      _fr = fr;
+//    }
+//
+//    public MissingInserter(H2O.H2OCountedCompleter cmp, long seed, double frac) {
+//      super(cmp);
+//      _seed = seed;
+//      _frac = frac;
+//    }
+//
+//    @Override
+//    public void map(Chunk[] cs) {
+//      if (_frac == 0) return;
+//      final Random rng = new Random();
+//      for (int c = 0; c < cs.length; c++) {
+//        for (int r = 0; r < cs[c]._len; r++) {
+//          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c]._start + r)); //row+col-dependent RNG for reproducibility
+//          if (rng.nextDouble() < _frac) cs[c].setNA(r);
+//        }
+//      }
+//    }
+//  }
 }
