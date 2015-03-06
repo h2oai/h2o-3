@@ -78,36 +78,53 @@ public class FrameUtils {
     final long _seed;
 
     public MissingInserter(Key frame, long seed, double frac){
-      super(frame, "Missing Value Inserter");
+      super(frame, "MissingValueInserter");
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 
     class MI extends MRTask<MI> {
-      long _seed;
-      double _frac;
-      MI(long seed, double frac) {
-        _seed=seed;
-        _frac=frac;
-      }
+      final MissingInserter _mi;
+      MI(MissingInserter mi) { _mi = mi; }
       @Override public void map (Chunk[]cs){
         final Random rng = new Random();
         for (int c = 0; c < cs.length; c++) {
           for (int r = 0; r < cs[c]._len; r++) {
-            rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-            if (rng.nextDouble() < _frac) cs[c].setNA(r);
+            rng.setSeed(_mi._seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+            if (rng.nextDouble() < _mi._fraction) cs[c].setNA(r);
           }
         }
         update(1);
       }
     }
+
     public void execImpl() {
       if (DKV.get(_dataset) == null)
         throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
-
-      Frame frame = DKV.getGet(_dataset);
-      DKV.put(_progressKey = Key.make(), new Progress(frame.vecs()[0].nChunks()));
-      new MI(_seed, _fraction).doAll(frame);
+      try {
+        final MissingInserter mi = this;
+        final Frame frame = DKV.getGet(_dataset);
+        start(new H2O.H2OCountedCompleter() {
+                @Override
+                protected void compute2() {
+                  new MI(mi).doAll(frame);
+                  mi.done();
+                }
+                public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
+                  failed(ex);
+                  return true;
+                }
+              }, frame.vecs()[0].nChunks()
+        );
+      } catch (Throwable t) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          failed(t);
+          throw t;
+        }
+      }
     }
   }
 
