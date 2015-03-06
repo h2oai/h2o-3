@@ -4,14 +4,13 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import hex.FrameSplitter;
+import jsr166y.CountedCompleter;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.persist.Persist;
 
 public class FrameUtils {
 
@@ -73,19 +72,42 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter extends MRTask<MissingInserter> {
+  public static class MissingInserter extends Job<Frame> {
+    final Key _dataset;
+    final double _fraction;
     final long _seed;
-    final double _frac;
-    public MissingInserter(long seed, double frac){ _seed = seed; _frac = frac; }
 
-    @Override public void map (Chunk[]cs){
-      final Random rng = new Random();
-      for (int c = 0; c < cs.length; c++) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-          if (rng.nextDouble() < _frac) cs[c].setNA(r);
-        }
+    public MissingInserter(Key frame, long seed, double frac){
+      super(frame, "Missing Value Inserter");
+      _dataset = frame; _seed = seed; _fraction = frac;
+    }
+
+    class MI extends MRTask<MI> {
+      long _seed;
+      double _frac;
+      MI(long seed, double frac) {
+        _seed=seed;
+        _frac=frac;
       }
+      @Override public void map (Chunk[]cs){
+        final Random rng = new Random();
+        for (int c = 0; c < cs.length; c++) {
+          for (int r = 0; r < cs[c]._len; r++) {
+            rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+            if (rng.nextDouble() < _frac) cs[c].setNA(r);
+          }
+        }
+        update(1);
+      }
+    }
+    public void execImpl() {
+      if (DKV.get(_dataset) == null)
+        throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
+      if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
+
+      Frame frame = DKV.getGet(_dataset);
+      DKV.put(_progressKey = Key.make(), new Progress(frame.vecs()[0].nChunks()));
+      new MI(_seed, _fraction).doAll(frame);
     }
   }
 

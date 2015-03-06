@@ -56,9 +56,13 @@ public class DeepLearningMissingTest extends TestUtil {
 
           // add missing values to the training data (excluding the response)
           if (missing_fraction > 0) {
-            Frame frtmp = new Frame(null, train.names(), train.vecs());
+            Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+            DKV.put(frtmp._key, frtmp);
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
-            new FrameUtils.MissingInserter(seed, missing_fraction).doAll(frtmp);
+            FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
+            j.execImpl();
+            j.remove();
+            DKV.remove(frtmp._key);
           }
 
           // Build a regularized DL model with polluted training data, score on clean validation set
@@ -69,10 +73,11 @@ public class DeepLearningMissingTest extends TestUtil {
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
           p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
-          p._hidden = new int[]{200,200};
+          p._convert_to_enum = true;
+          p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
-          p._epochs = 10;
+          p._epochs = 3;
           p._quiet_mode = true;
           p._destination_key = Key.make();
           p._reproducible = true;

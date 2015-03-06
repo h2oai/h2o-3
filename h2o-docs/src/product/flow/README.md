@@ -54,7 +54,9 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
  
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
-- **MD**: Markdown
+- **MD**: Markdown 
+   
+   **Note**: Markdown formatting is not applied until you run the cell by clicking the **Run** button or clicking the **Run** menu and selecting **Run**. 
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -109,8 +111,9 @@ Now that you are familiar with the cell modes, let's import some data.
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
-- http://docs.h2o.ai/resources/publicdata.html
-- http://data.h2o.ai
+- <a href="http://docs.h2o.ai/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
 
 There are multiple ways to import data in H2O flow:
 
@@ -339,7 +342,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Expert_mode**: [(DL)](#DL) Check this checkbox to enable "expert mode" and configure additional options. This option is not selected by default.
 
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). The default option is Rectifier. 
 

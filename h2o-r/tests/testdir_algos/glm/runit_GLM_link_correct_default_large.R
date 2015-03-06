@@ -30,11 +30,6 @@ test <- function(conn) {
 		model.gamma.specified <- h2o.glm(x=c(4:9), y=3, training_frame=prostate.data, family="gamma", link="inverse")
 		stopifnot(model.gamma.unspecified@model$coefficients_table[1,]==model.gamma.specified@model$coefficients_table[1,])
 
-		print("TWEEDIE: ") 
-        model.tweedie.unspecified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="tweedie")
-		model.tweedie.specified <- h2o.glm(x=c(2:8), y=9, training_frame=prostate.data, family="tweedie", link="tweedie")
-		stopifnot(model.tweedie.unspecified@model$coefficients_table[1,]==model.tweedie.specified@model$coefficients_table[1,])
-
     testEnd()
 }
 

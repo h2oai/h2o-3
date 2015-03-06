@@ -24,7 +24,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
-  @Test public void run() throws Exception { runFraction(0.001f); }
+  @Test public void run() throws Exception { runFraction(0.0007f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;

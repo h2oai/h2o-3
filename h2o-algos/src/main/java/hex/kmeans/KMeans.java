@@ -238,7 +238,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       if( oldCenters==null ) return false; // No prior iteration, not stopping
       double average_change = 0;
       for( int clu=0; clu<_parms._k; clu++ )
-        average_change += distance(oldCenters[clu],newCenters[clu],_ncats);
+        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_ncats);
       average_change /= _parms._k;  // Average change per cluster
       if( average_change < TOLERANCE ) return true;
 
@@ -521,43 +521,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     return closest(centers, point, ncats, cd, centers.length);
   }
 
-  private static double distance(double[] center, double[] point, int ncats) {
-    double sqr = 0;             // Sum of dimensional distances
-    int pts = point.length;     // Count of valid points
-
-    // Categorical columns first.  Only equals/unequals matters (i.e., distance is either 0 or 1).
-    for(int column = 0; column < ncats; column++) {
-        double d = point[column];
-      if( Double.isNaN(d) ) pts--;
-      else if( d != center[column] )
-        sqr += 1.0;           // Manhattan distance
-    }
-    // Numeric column distance
-    for( int column = ncats; column < center.length; column++ ) {
-      double d = point[column];
-      if( Double.isNaN(d) ) pts--; // Do not count
-      else {
-        double delta = d - center[column];
-        sqr += delta * delta;
-      }
-    }
-    // Scale distance by ratio of valid dimensions to all dimensions - since
-    // we did not add any error term for the missing point, the sum of errors
-    // is small - ratio up "as if" the missing error term is equal to the
-    // average of other error terms.  Same math another way:
-    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
-    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
-    if( 0 < pts && pts < point.length )
-      sqr *= point.length / pts;
-    return sqr;
-  }
-
   /** Return both nearest of N cluster center/centroids, and the square-distance. */
   private static ClusterDist closest(double[][] centers, double[] point, int ncats, ClusterDist cd, int count) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < count; cluster++ ) {
-      double sqr = distance(centers[cluster],point,ncats);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[cluster],point,ncats);
       if( sqr < minSqr ) {      // Record nearest cluster
         min = cluster;
         minSqr = sqr;
@@ -566,20 +535,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     cd._cluster = min;          // Record nearest cluster
     cd._dist = minSqr;          // Record square-distance
     return cd;                  // Return for flow-coding
-  }
-
-  // For KMeansModel scoring; just the closest cluster center
-  public static int closest(double[][] centers, double[] point, int ncats) {
-    int min = -1;
-    double minSqr = Double.MAX_VALUE;
-    for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = distance(centers[cluster],point,ncats);
-      if( sqr < minSqr ) {      // Record nearest cluster center
-        min = cluster;
-        minSqr = sqr;
-      }
-    }
-    return min;
   }
 
   // KMeans++ re-clustering

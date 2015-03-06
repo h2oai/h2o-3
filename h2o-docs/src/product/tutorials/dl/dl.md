@@ -1,7 +1,10 @@
 #Deep Learning Tutorial
 
 The purpose of this tutorial is to walk new users through Deep Learning using H2O Flow. 
-Users who have never used H2O before should refer to [Getting Started](https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md) for additional instructions on how to run H2O Flow. 
+
+Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
+
+For more details on the math behind H2O's implementation of Deep Learning, refer to <a href="http://docs.h2o.ai/datascience/deeplearning.html" target="_blank">Deep Learning Data Science</a>. 
 
 ###Using Deep Learning
 
@@ -10,9 +13,9 @@ H2O’s Deep Learning functionalities include:- purely supervised training pro
 
 
 ### Getting Started
-This tutorial uses the publicly available [MNIST](http://yann.lecun.com/exdb/mnist/) data set of hand-written digits, where each row contains the 28^(2)=784 raw gray-scale pixel values from 0 to 255 of the digitized digits (0 to 9). 
+This tutorial uses the publicly available <a href="http://yann.lecun.com/exdb/mnist/" target="_blank"> MNIST</a> data set of hand-written digits, where each row contains the 28^(2)=784 raw gray-scale pixel values from 0 to 255 of the digitized digits (0 to 9). 
 
-To further explore H2O's capabilities, some [publicly available data sets](http://docs.h2o.ai/resources/publicdata.html) can be found on our website. 
+To further explore H2O's capabilities, some <a href="http://docs.h2o.ai/resources/publicdata.html" target="_blank">publicly available data sets</a> can be found on our website. 
 
 
 ####Importing Data

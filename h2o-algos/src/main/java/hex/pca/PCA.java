@@ -178,6 +178,29 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return value;
   }
 
+  // Add l2 regularization until Gram matrix is positive definite
+  // Maybe try robust Cholesky implementation? http://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html
+  static CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
+    int attempts = 0;
+    double addedL2 = 0;   // TODO: Should I report this to the user?
+    CholeskyDecomposition chol = new CholeskyDecomposition(new Matrix(gram));
+    while(!chol.isSPD() && attempts < max_attempts) {
+      if(addedL2 == 0) addedL2 = 1e-5;
+      else addedL2 *= 10;
+      ++attempts;
+      addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
+      chol = new CholeskyDecomposition(new Matrix(gram));
+    }
+    if(!chol.isSPD())
+      throw new NonSPDMatrixException(gram);
+    return chol;
+  }
+
+  static CholeskyDecomposition regularizedCholesky(double[][] gram) {
+    return regularizedCholesky(gram, 10);
+  }
+
+
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
     // Initialize Y to be the k centers from k-means++
@@ -223,27 +246,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
       }
       return centers;
-    }
-
-    // Add l2 regularization until Gram matrix is positive definite
-    // Maybe try robust Cholesky implementation? http://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html
-    CholeskyDecomposition regularizedCholesky(double[][] gram, int max_attempts) {
-      int attempts = 0;
-      double addedL2 = 0;   // TODO: Should I report this to the user?
-      CholeskyDecomposition chol = new CholeskyDecomposition(new Matrix(gram));
-      while(!chol.isSPD() && attempts < max_attempts) {
-        if(addedL2 == 0) addedL2 = 1e-5;
-        else addedL2 *= 10;
-        ++attempts;
-        addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
-        chol = new CholeskyDecomposition(new Matrix(gram));
-      }
-      if(!chol.isSPD())
-        throw new NonSPDMatrixException(gram);
-      return chol;
-    }
-    CholeskyDecomposition regularizedCholesky(double[][] gram) {
-      return regularizedCholesky(gram, 10);
     }
 
     Cholesky regularizedCholesky(Gram gram, int max_attempts) {
@@ -395,9 +397,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // Cholesky yychol_init = regularizedCholesky(ygram_init);
         double[][] ygram_init = formGram(yt);
         if(_parms._gamma > 0) addDiag(ygram_init, _parms._gamma);
-        CholeskyDecomposition yychol_init = regularizedCholesky(ygram_init);
+        CholeskyDecomposition yychol_init = PCA.regularizedCholesky(ygram_init);
 
-        CholMulTask cmtsk_init = new CholMulTask(dinfo, yychol_init, yt, _train.numCols(), _parms._k);
+        CholMulTask cmtsk_init = new CholMulTask(dinfo, ygram_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);
         double axy_norm = cmtsk_init._objerr;   // Save squared Frobenius norm ||A - XY||_F^2
 
@@ -429,10 +431,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // if(_parms._gamma > 0) ygram.addDiag(_parms._gamma);
           // Cholesky yychol = regularizedCholesky(ygram);
           if(_parms._gamma > 0) addDiag(ygram, _parms._gamma);
-          CholeskyDecomposition yychol = regularizedCholesky(ygram);
 
           // c) Compute AY' and solve for X of XD = AY' -> D'X' = DX' = YA'
-          CholMulTask cmtsk = new CholMulTask(dinfo, yychol, yt, _train.numCols(), _parms._k);
+          CholMulTask cmtsk = new CholMulTask(dinfo, ygram, yt, _train.numCols(), _parms._k);
           cmtsk.doAll(dinfo._adaptedFrame);
 
           // 3) Compute average change in objective function
@@ -567,7 +568,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     int _ncolA;       // _ncolA = p (number of training cols)
     int _ncolX;       // _ncolX = k (number of PCs)
     double[][] _yt;   // _yt = Y' (transpose of Y)
-    CholeskyDecomposition _chol;   // Cholesky decomposition of D = D', since we solve D'X' = DX' = AY'
+    double[][] _ygram_init;   // _yt = Y' (transpose of Y)
 
     double _sserr;      // Sum of squared difference between old and new X
                         // Formula: \sum_{i,j} (xold_{i,j} - xnew_{i,j})^2
@@ -575,11 +576,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
                         // Formula: \sum_{i,j} xold_{i,j}^2 - \sum_{i,j} xnew_{i,j}^2
     double _objerr;     // Squared Frobenius norm of A - XY using new X (and Y)
 
-    CholMulTask(DataInfo dinfo, final CholeskyDecomposition chol, final double[][] yt) {
-      this(dinfo, chol, yt, yt.length, yt[0].length);
-    }
-
-    CholMulTask(DataInfo dinfo, final CholeskyDecomposition chol, final double[][] yt, final int ncolA, final int ncolX) {
+    CholMulTask(DataInfo dinfo, final double[][] ygram_init, final double[][] yt, final int ncolA, final int ncolX) {
       assert yt != null && yt.length == ncolA && yt[0].length == ncolX;
       _means = dinfo._adaptedFrame.means();
       _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
@@ -588,9 +585,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         Arrays.fill(_normMul, 1.0);
       } else _normMul = dinfo._normMul;
       _ncolA = ncolA; _ncolX = ncolX;
-      _chol = chol;
       _yt = yt;
-
+      _ygram_init = ygram_init;
       _sserr = 0;
       _frob2err = 0;
       _objerr = 0;
@@ -600,6 +596,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     @Override public void map(Chunk[] cs) {
       double[] xrow = new double[_ncolX];
       assert (_ncolX + _ncolA) == cs.length;
+      CholeskyDecomposition _chol = PCA.regularizedCholesky(_ygram_init);
 
       for(int row = 0; row < cs[0]._len; row++) {
         // Compute single row of AY'

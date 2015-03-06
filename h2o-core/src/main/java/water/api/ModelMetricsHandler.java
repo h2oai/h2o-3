@@ -77,7 +77,7 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Key of Frame of interest (optional)", json = false)
     public KeyV1.FrameKeyV1 frame;
 
-    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = false, required = false)
+    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)
     public KeyV1.FrameKeyV1 destination_key;
 
     @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
@@ -204,13 +204,13 @@ class ModelMetricsHandler extends Handler {
           if (s.deep_features_hidden_layer >= 0)
             throw new H2OIllegalArgumentException("Can only compute either reconstruction error OR deep features.", "");
           if (null == parms._destination_key)
-            parms._destination_key = "reconstruction_errors_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+            parms._destination_key = "reconstruction_error" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame, Key.make(parms._destination_key));
         } else {
           if (s.deep_features_hidden_layer < 0)
             throw new H2OIllegalArgumentException("Deep features hidden layer index must be >= 0.", "");
           if (null == parms._destination_key)
-            parms._destination_key = "deep_features_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+            parms._destination_key = "deep_features" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer);
         }
         predictions = new Frame(Key.make(parms._destination_key), predictions.names(), predictions.vecs());
@@ -225,6 +225,8 @@ class ModelMetricsHandler extends Handler {
     // For the others cons one up here to return the predictions frame.
     if (null == mm)
       mm = new ModelMetricsListSchemaV3();
+
+    mm.destination_key = new KeyV1.FrameKeyV1(predictions._key);
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);

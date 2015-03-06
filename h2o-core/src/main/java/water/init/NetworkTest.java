@@ -7,8 +7,8 @@ import water.util.*;
 import java.util.Random;
 
 
-public class NetworkTest {
-  public int[] msg_sizes = new int[]{1,1<<10,1<<20}; //INPUT // Message sizes
+public class NetworkTest extends Iced {
+  public int[] msg_sizes = new int[]{1, 1 << 10, 1 << 20}; //INPUT // Message sizes
   public int repeats = 10; //INPUT // Repeats
   public boolean collective = true; // Do collective test
   public boolean serial = true; // Do serial test
@@ -17,8 +17,9 @@ public class NetworkTest {
   public double[][] microseconds; //OUTPUT // Round-trip times in microseconds (for each message size, for each node)
   public double[][] bandwidths; //OUTPUT // Bi-directional bandwidths in Bytes/sec (for each message size, for each node)
   public String[] nodes; //OUTPUT // Nodes
+  public TwoDimTable table; //OUTPUT
 
-  public void execImpl() {
+  public NetworkTest execImpl() {
     microseconds = new double[msg_sizes.length][];
     microseconds_collective = new double[msg_sizes.length];
     NetworkTester nt = new NetworkTester(msg_sizes, microseconds, microseconds_collective, repeats, serial, collective);
@@ -27,27 +28,27 @@ public class NetworkTest {
 
     // compute bandwidths from timing results
     bandwidths = new double[msg_sizes.length][];
-    for (int i=0; i<bandwidths.length; ++i) {
+    for (int i = 0; i < bandwidths.length; ++i) {
       bandwidths[i] = new double[microseconds[i].length];
-      for (int j=0; j< microseconds[i].length; ++j) {
+      for (int j = 0; j < microseconds[i].length; ++j) {
         //send and receive the same message -> 2x
-        bandwidths[i][j] = ( 2*msg_sizes[i] /*Bytes*/) / (microseconds[i][j] / 1e6 /*Seconds*/) ;
+        bandwidths[i][j] = (2 * msg_sizes[i] /*Bytes*/) / (microseconds[i][j] / 1e6 /*Seconds*/);
       }
     }
 
     bandwidths_collective = new double[msg_sizes.length];
-    for (int i=0; i<bandwidths_collective.length; ++i) {
+    for (int i = 0; i < bandwidths_collective.length; ++i) {
       //broadcast and reduce the message to all nodes -> 2 x nodes
-      bandwidths_collective[i] = ( 2*H2O.CLOUD.size()*msg_sizes[i] /*Bytes*/) / (microseconds_collective[i] / 1e6 /*Seconds*/) ;
+      bandwidths_collective[i] = (2 * H2O.CLOUD.size() * msg_sizes[i] /*Bytes*/) / (microseconds_collective[i] / 1e6 /*Seconds*/);
     }
 
     // populate node names
     nodes = new String[H2O.CLOUD.size()];
-    for (int i=0; i<nodes.length; ++i)
+    for (int i = 0; i < nodes.length; ++i)
       nodes[i] = H2O.CLOUD._memary[i].toString();
-    StringBuilder sb = new StringBuilder();
-    toASCII(sb);
-    Log.info(sb);
+    fillTable();
+    Log.info(table.toString());
+    return this;
   }
 
   // Helper class to run the actual test
@@ -67,6 +68,7 @@ public class NetworkTest {
       this.serial = serial;
       this.collective = collective;
     }
+
     @Override
     public void compute2() {
       // serial comm
@@ -97,14 +99,21 @@ public class NetworkTest {
     public PingPongTask(byte[] payload) {
       _payload = payload;
     }
-    @Override public void compute2(){tryComplete();}
-    @Override public byte priority() {
+
+    @Override
+    public void compute2() {
+      tryComplete();
+    }
+
+    @Override
+    public byte priority() {
       return H2O.MIN_HI_PRIORITY;
     }
   }
 
   /**
    * Send a message from this node to all nodes in serial (including self), and receive it back
+   *
    * @param msg_size message size in bytes
    * @return Time in nanoseconds that it took to send and receive the message (one per node)
    */
@@ -133,13 +142,14 @@ public class NetworkTest {
   private static class CollectiveTask extends MRTask<CollectiveTask> {
     private final byte[] _payload; //will be sent over the wire (broadcast/reduce)
 
-    public CollectiveTask(byte[] payload){
+    public CollectiveTask(byte[] payload) {
       _payload = payload;
     }
   }
 
   /**
    * Broadcast a message from this node to all nodes and reduce it back
+   *
    * @param msg_size message size in bytes
    * @return Time in nanoseconds that it took
    */
@@ -156,87 +166,38 @@ public class NetworkTest {
     return (double) t.nanos() / repeats;
   }
 
-  public boolean toHTML(StringBuilder sb) {
-    try {
-      sb.append("Origin: " + H2O.SELF._key);
-
-      sb.append("<table cellpadding='10'>");
-      sb.append("<tr>");
-      sb.append("<th>Destination / Message Size</th>");
-      for (int msg_size : msg_sizes) {
-        sb.append("<th>");
-        sb.append(PrettyPrint.bytes(msg_size));
-        sb.append("</th>");
-      }
-      sb.append("</tr>");
-
-      sb.append("<tr>");
-      sb.append("<td>");
-      sb.append("All (broadcast & reduce)");
-      sb.append("</td>");
-      for (int m = 0; m < msg_sizes.length; ++m) {
-        sb.append("<td>");
-        sb.append(PrettyPrint.usecs((long) microseconds_collective[m])).append(", ").
-                append(PrettyPrint.bytesPerSecond((long)bandwidths_collective[m]));
-        sb.append("</td>");
-      }
-      sb.append("</tr>");
-
-      for (int n = 0; n < H2O.CLOUD._memary.length; ++n) {
-        sb.append("</tr>");
-
-        sb.append("<tr>");
-        sb.append("<td>");
-        sb.append(H2O.CLOUD._memary[n]._key);
-        sb.append("</td>");
-        for (int m = 0; m < msg_sizes.length; ++m) {
-          sb.append("<td>");
-          sb.append(PrettyPrint.usecs((long) microseconds[m][n])).append(", ").
-                  append(PrettyPrint.bytesPerSecond((long)bandwidths[m][n]));
-          sb.append("</td>");
-        }
-      }
-      sb.append("</tr>");
-      sb.append("</table>");
-    } catch (Throwable t) {
-      return false;
+  public void fillTable() {
+    String tableHeader = "Network Test (launched from " + H2O.SELF._key + ")";
+    String[] rowHeaders = new String[H2O.CLOUD.size()+1];
+    rowHeaders[0] = "all - collective bcast/reduce";
+    for (int i = 0; i < H2O.CLOUD.size(); ++i) {
+      rowHeaders[1+i] =
+              ((H2O.SELF._key.equals(H2O.CLOUD._memary[i]._key) ? "self" : "remote") + " " + (H2O.CLOUD._memary[i]._key).toString());
     }
-    return true;
-  }
-
-  public boolean toASCII(StringBuilder sb) {
-    try {
-      sb.append("Origin: " + H2O.SELF._key);
-
-      sb.append("\n");
-      sb.append("Destination / Message Size\t");
-      for (int msg_size : msg_sizes) {
-        sb.append("        ").append(PrettyPrint.bytes(msg_size)).append("             ");
-      }
-
-      sb.append("\n");
-      sb.append("All (broadcast & reduce)");
-      sb.append("\t");
-      for (int m = 0; m < msg_sizes.length; ++m) {
-        sb.append("    ").append(PrettyPrint.usecs((long) microseconds_collective[m])).append(", ").
-                append(PrettyPrint.bytesPerSecond((long) bandwidths_collective[m])).append("    ");
-        sb.append("\t");
-      }
-
-      for (int n = 0; n < H2O.CLOUD._memary.length; ++n) {
-
-        sb.append("\n");
-        sb.append(H2O.CLOUD._memary[n]._key);
-        sb.append("    \t");
-        for (int m = 0; m < msg_sizes.length; ++m) {
-          sb.append("    ").append(PrettyPrint.usecs((long) microseconds[m][n])).append(", ").
-                  append(PrettyPrint.bytesPerSecond((long) bandwidths[m][n])).append("   ");
-          sb.append("\t");
-        }
-      }
-    } catch (Throwable t) {
-      return false;
+    String[] colHeaders = new String[msg_sizes.length];
+    for (int i = 0; i < colHeaders.length; ++i) {
+      colHeaders[i] = PrettyPrint.bytes(msg_sizes[i]);
     }
-    return true;
+    String[] colTypes = new String[msg_sizes.length];
+    for (int i = 0; i < colTypes.length; ++i) {
+      colTypes[i] = "string";
+    }
+    String[] colFormats = new String[msg_sizes.length];
+    for (int i = 0; i < colTypes.length; ++i) {
+      colFormats[i] = "%s";
+    }
+    String colHeaderForRowHeaders = "Destination / Message size";
+
+    table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+
+    for (int m = 0; m < msg_sizes.length; ++m) {
+      table.set(0, m, PrettyPrint.usecs((long) microseconds_collective[m]) + ", " + PrettyPrint.bytesPerSecond((long) bandwidths_collective[m]));
+    }
+
+    for (int n = 0; n < H2O.CLOUD._memary.length; ++n) {
+      for (int m = 0; m < msg_sizes.length; ++m) {
+        table.set(1 + n, m, PrettyPrint.usecs((long) microseconds[m][n]) + ", " + PrettyPrint.bytesPerSecond((long) bandwidths[m][n]));
+      }
+    }
   }
 }

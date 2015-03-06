@@ -81,13 +81,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   public PCAModel(Key selfKey, PCAParameters parms, PCAOutput output) { super(selfKey,parms,output); }
 
   @Override
-  public boolean isSupervised() { return false; }
-
-  public ModelSchema schema() {
-    return new PCAModelV2();
-  }
-
-  @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsPCA.PCAModelMetrics(_parms._k);
   }

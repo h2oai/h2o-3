@@ -235,7 +235,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
-def validate_predictions(result, model_name, frame_key, expected_rows):
+def validate_predictions(result, model_name, frame_key, expected_rows, destination_key=None):
     '''
     Validate a /Predictions result.
     '''
@@ -250,8 +250,8 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
     
     predictions_key = mm['predictions']['key']['name']
-    result = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
-    frames = result['frames']
+    f = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
+    frames = f['frames']
     frames_dict = h2o_util.list_to_dict(frames, 'key/name')
     assert predictions_key in frames_dict, "FAIL: Failed to find predictions key" + predictions_key + " in Frames list."
     
@@ -263,6 +263,11 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'predict' == predictions['columns'][0]['label'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " column 0 is not 'predict'."
     assert expected_rows == predictions['rows'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " has an unexpected number of rows."
 
+    assert 'destination_key' in result, "FAIL: failed to find 'destination_key' in predict result:" + h2o_util.dump_json(result)
+    assert 'name' in result['destination_key'], "FAIL: failed to find name in 'destination_key' in predict result:" + h2o_util.dump_json(result)
+
+    if destination_key is not None:
+        assert destination_key == result['destination_key']['name'], "FAIL: bad value for 'destination_key' in predict result; expected: " + destination_key + ", got: " + result['destination_key']['name']
 
 def cleanup(a_node, models=None, frames=None):
     '''
@@ -853,7 +858,7 @@ assert len(mms['model_metrics']) == 0, "FAIL: expected 0 ModelMetrics, found: " 
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
 p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
-validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380)
+validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, destination_key='deeplearning_prostate_binomial_predictions')
 validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 

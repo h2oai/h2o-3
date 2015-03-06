@@ -45,7 +45,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._response_column = train.names()[train.names().length-1];
         p._convert_to_enum = false;
         p._seed = seed;
-        p._hidden = new int[]{97, 102};
+        p._hidden = new int[]{37, 12};
         p._adaptive_rate = true;
         p._train_samples_per_iteration = -1;
         p._sparsity_beta = sparsity_beta;
@@ -57,7 +57,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._loss = DeepLearningModel.DeepLearningParameters.Loss.MeanSquare;
 //        p._initial_weight_distribution = DeepLearningModel.DeepLearningParameters.InitialWeightDistribution.Normal;
 //    p._initial_weight_scale = 1e-3;
-        p._epochs = 500;
+        p._epochs = 100;
 //    p._shuffle_training_data = true;
         p._force_load_balance = false;
         DeepLearning dl = new DeepLearning(p);
@@ -87,7 +87,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           final Vec l2_train = l2_frame_train.anyVec();
           sb.append("Mean reconstruction error: ").append(l2_train.mean()).append("\n");
           Assert.assertEquals(mymodel.mse(), l2_train.mean(), 1e-7);
-          Assert.assertTrue("too big a reconstruction error: " + l2_train.mean(), l2_train.mean() < 0.06);
+          Assert.assertTrue("too big a reconstruction error: " + l2_train.mean(), l2_train.mean() < 0.1);
 
           // manually compute L2
           Frame reconstr = mymodel.score(train); //this creates real values in original space
@@ -125,12 +125,12 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
 
           Frame df1 = mymodel.scoreDeepFeatures(test, 0);
-          Assert.assertTrue(df1.numCols() == 97);
+          Assert.assertTrue(df1.numCols() == 37);
           Assert.assertTrue(df1.numRows() == test.numRows());
           df1.delete();
 
           Frame df2 = mymodel.scoreDeepFeatures(test, 1);
-          Assert.assertTrue(df2.numCols() == 102);
+          Assert.assertTrue(df2.numCols() == 12);
           Assert.assertTrue(df2.numRows() == test.numRows());
           df2.delete();
 

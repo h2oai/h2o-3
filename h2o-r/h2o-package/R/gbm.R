@@ -52,7 +52,8 @@ h2o.gbm <- function(x, y, training_frame, do_classification, ...,
                     validation_frame = FALSE,
                     balance_classes = FALSE,
                     max_after_balance_size = 1,
-                    seed)
+                    seed,
+                    score_each_iteration)
 {
   dots <- list(...)
   
