@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.junit.Assert;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
@@ -60,5 +61,26 @@ public class FrameTestUtil {
     }
     Frame.closeNewChunks(nchunks);
     return nchunks[0];
+  }
+
+  public static void assertValues(Frame f, String[] expValues) {
+    assertValues(f.vec(0), expValues);
+  }
+
+  public static void assertValues(Vec v, String[] expValues) {
+    Assert.assertEquals("Number of rows", expValues.length, v.length());
+    ValueString vs = new ValueString();
+    for (int i = 0; i < v.length(); i++) {
+      if (v.isNA(i)) Assert.assertEquals("NAs should match", null, expValues[i]);
+      else Assert.assertEquals("Values should match", expValues[i], v.atStr(vs, i).toString());
+    }
+  }
+
+  public static String[] collectS(Vec v) {
+    String[] res = new String[(int) v.length()];
+    ValueString vs = new ValueString();
+      for (int i = 0; i < v.length(); i++)
+        res[i] = v.isNA(i) ? null : v.atStr(vs, i).toString();
+    return res;
   }
 }

@@ -28,6 +28,9 @@ abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
 
+  @API(help="Domains", direction=API.Direction.OUTPUT)
+  String[][] domain;
+
   // Non-version-specific filling into the impl
   @Override public I fillImpl(I f) {
     super.fillImpl(f);
