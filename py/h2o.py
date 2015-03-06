@@ -455,7 +455,7 @@ class H2O(object):
               noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
         #
-        # Call ParseSetup?srcs=[keys] . . .
+        # Call ParseSetup?source_keys=[keys] . . .
         #
 
         if benchmarkLogging:
@@ -463,28 +463,29 @@ class H2O(object):
 
         # TODO: multiple keys
         parse_setup_params = {
-            'srcs': '["' + key + '"]'  # NOTE: quote key names
+            'source_keys': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
-        # and then Parse?srcs=<keys list> and params from the ParseSetup result
-        # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
+        # and then Parse?source_keys=<keys list> and params from the ParseSetup result
+        # Parse?source_keys=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_key=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
 
         parse_params = {
-            'srcs': '["' + setup_result['srcs'][0]['name'] + '"]', # TODO: cons up the whole list
-            'hex': dest_key if dest_key else setup_result['hexName'],
-            'pType': setup_result['pType'],
-            'sep': setup_result['sep'],
-            'ncols': setup_result['ncols'],
-            'checkHeader': setup_result['checkHeader'],
-            'singleQuotes': setup_result['singleQuotes'],
-            'columnNames': setup_result['columnNames'], # gets stringified inside __do_json_request()
-            'chunkSize': setup_result['chunkSize'],
-            'columnTypes': setup_result['columnTypes'], # gets stringified inside __do_json_request()
+            'source_keys': '["' + setup_result['source_keys'][0]['name'] + '"]', # TODO: cons up the whole list
+            'destination_key': dest_key if dest_key else setup_result['destination_key'],
+            'parse_type': setup_result['parse_type'],
+            'separator': setup_result['separator'],
+            'single_quotes': setup_result['single_quotes'],
+            'check_header': setup_result['check_header'],
+            'number_columns': setup_result['number_columns'],
+            'column_names': setup_result['column_names'], # gets stringified inside __do_json_request()
+            'column_types': setup_result['column_types'], # gets stringified inside __do_json_request()
+	    'na_strings': setup_result['na_strings'],
+            'chunk_size': setup_result['chunk_size'],
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)

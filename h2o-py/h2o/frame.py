@@ -46,9 +46,10 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      veckeys = parse['vecKeys']
+      veckeys = parse['vec_keys']
+      print "Veckeys", veckeys
       rows = parse['rows']
-      cols = parse['columnNames'] if parse["columnNames"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
+      cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
       print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
 
@@ -131,11 +132,11 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = column_names if column_names and not parse["columnNames"] else parse['columnNames']
+    cols = column_names if column_names and not parse["column_names"] else parse['column_names']
     # set the rows
     rows = parse['rows']
     # set the vector keys
-    veckeys = parse['vecKeys']
+    veckeys = parse['vec_keys']
     # create a new vec[] array
     self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
     # print some information on the *uploaded* data

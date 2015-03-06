@@ -100,16 +100,17 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     '''
     # these should override what parse setup gets below
     params_dict = {
-        'srcs': None,
-        'hex': hex_key, 
-        'pType': None, # This is a list?
-        'sep': None,
-        'ncols': None,
-        'checkHeader': None, # how is this used
-        'singleQuotes': None,
-        'columnNames': None, # list?
-        'columnTypes': None, # list? or can use columnTypeDict param (see below)
-        'chunkSize': None,
+        'source_keys': None,
+        'destination_key': hex_key, 
+        'parse_type': None, # file type 
+        'separator': None,
+        'single_quotes': None,
+        'check_header': None, # forces first line to be seen as column names 
+        'number_columns': None,
+        'column_names': None, # a list
+        'column_types': None, # a list. or can use columnTypeDict param (see below)
+	'na_strings' : None, # a list
+        'chunk_size': None,
         # are these two no longer supported?
         'delete_on_done': None,
         'blocking': None,
@@ -151,26 +152,30 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
     # this should match what we gave as input?
-    if setup_result['srcs']:
+    if setup_result['source_keys']:
         # should these be quoted?
-        srcsStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['srcs'] ]) + "]"
+        srcsStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
     else:
         srcsStr = None
     
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
-    columnNames = setup_result['columnNames']
-    if columnNames:
-        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), columnNames)) + "]"
+    if setup_result['column_names']:
+        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['column_names'])) + "]"
     else:
         columnNamesStr = None
 
-    columnTypes = setup_result['columnTypes']
-    assert columnTypes is not None, "%s %s" % ("columnTypes:", columnTypes)
+    columnTypes = setup_result['column_types']
+    assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
+
+    if setup_result['na_strings']:
+        naStrings = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['na_strings'])) + "]"
+    else:
+        naStrings = None
 
     # dict parameter to update columnTypeDict?
     # but we don't pass columnNames like this?
-    ct = setup_result['columnTypes']
+    ct = setup_result['column_types']
     if columnTypeDict: 
         for k,v in columnTypeDict.iteritems():
             if isinstance(k, int):
@@ -193,23 +198,24 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
 
     parse_params = {
-        'srcs': srcsStr,
-        'hex': setup_result['hexName'],
-        'pType': setup_result['pType'],
-        'sep': setup_result['sep'],
-        'ncols': setup_result['ncols'],
-        'checkHeader': setup_result['checkHeader'],
-        'singleQuotes': setup_result['singleQuotes'],
-        'columnNames': columnNamesStr,
-        'columnTypes': columnTypesStr,
-        'chunkSize': setup_result['chunkSize'],
+        'source_keys': srcsStr,
+        'destination_key': setup_result['destination_key'],
+        'parse_type': setup_result['parse_type'],
+        'separator': setup_result['separator'],
+        'single_quotes': setup_result['single_quotes'],
+        'check_header': setup_result['check_header'],
+        'number_columns': setup_result['number_columns'],
+        'column_names': columnNamesStr,
+        'column_types': columnTypesStr,
+        'na_strings': naStrings, 
+        'chunk_size': setup_result['chunk_size'],
         # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
-    tooManyColNamesToPrint = columnNames and len(columnNames) > 2000
+    tooManyColNamesToPrint = setup_result['column_names'] and len(setup_result['column_names']) > 2000
     if tooManyColNamesToPrint:
         h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
         h2p.yellow_print("See sandbox/commands.log")
@@ -219,16 +225,16 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
-    print "parse srcs is length:", len(parse_params['srcs'])
+    print "parse srcs is length:", len(parse_params['source_keys'])
     # This can be null now? parseSetup doesn't return default colnames?
-    # print "parse columnNames is length:", len(parse_params['columnNames'])
+    # print "parse column_names is length:", len(parse_params['column_names'])
 
     # none of the kwargs passed to here!
     parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['key']['name']
-    hex_key = parse_params['hex']
+    hex_key = parse_params['destination_key']
 
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:

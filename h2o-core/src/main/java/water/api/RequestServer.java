@@ -7,7 +7,6 @@ import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ParseSetupHandler;
 import water.util.GetLogsFromNode;
 import water.util.Log;
 import water.util.RString;
