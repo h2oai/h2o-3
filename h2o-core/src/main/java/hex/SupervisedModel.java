@@ -2,8 +2,7 @@ package hex;
 
 import water.Key;
 import water.fvec.Chunk;
-import water.util.MRUtils;
-import water.util.ModelUtils;
+import water.util.*;
 
 /** Supervised Model
  *  There is a response column used in training.
@@ -11,8 +10,6 @@ import water.util.ModelUtils;
 public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
-
-  @Override public boolean isSupervised() { return true; }
 
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
@@ -89,6 +86,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     /** @return Returns number of input features */
     @Override public int nfeatures() { return _names.length - 1; }
 
+    @Override public boolean isSupervised() { return true; }
+
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }
     public boolean isClassifier() { return nclasses()>1; }
@@ -118,5 +117,22 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     return scored;
   }
 
+  protected SB toJavaPROB( SB sb) {
+    JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
+    JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
+    return sb;
+  }
+  /** Fill preds[0] based on already filled and unified preds[1,..NCLASSES]. */
+  protected void toJavaFillPreds0(SB bodySb) {
+    // Pick max index as a prediction
+    if (_output.isClassifier()) {
+      if (_output._priorClassDist!=null && _output._modelClassDist!=null) {
+        bodySb.i().p("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      }
+      bodySb.i().p("preds[0] = water.util.ModelUtils.getPrediction(preds,data);").nl();
+    } else {
+      bodySb.i().p("preds[0] = preds[1];").nl();
+    }
+  }
 }
 

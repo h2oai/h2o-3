@@ -4,6 +4,8 @@ import hex.Model;
 import hex.ModelMetrics;
 import water.Key;
 import water.fvec.Frame;
+import water.util.JCodeGen;
+import water.util.SB;
 import water.util.TwoDimTable;
 
 public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
@@ -55,6 +57,8 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     @Override public ModelCategory getModelCategory() {
       return Model.ModelCategory.Clustering;
     }
+    // Output classes is weird for clustering - its like a regression 
+    public int nclasses() { return 1; }
   }
 
   public KMeansModel(Key selfKey, KMeansParameters parms, KMeansOutput output) { super(selfKey,parms,output); }
@@ -65,7 +69,22 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = KMeans.closest(_output._centers_raw,data,_output._categorical_column_count);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._categorical_column_count);
     return preds;
+  }
+
+  // Override in subclasses to provide some top-level model-specific goodness
+  @Override protected SB toJavaInit(SB sb, SB fileContextSB) {
+    sb.nl().ip("public ModelCategory getModelCategory() { return ModelCategory.Clustering; }\n");
+    return sb;
+  }
+  @Override protected void toJavaPredictBody(SB bodySb, SB classCtxSb, SB fileCtxSb) {
+    // fileCtxSb.ip("").nl(); // at file level
+    // Two class statics to support prediction
+    JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
+    JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
+    // Predict function body
+    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    
   }
 }

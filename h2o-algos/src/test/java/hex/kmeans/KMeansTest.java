@@ -1,21 +1,17 @@
 package hex.kmeans;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import org.junit.*;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -262,4 +258,29 @@ public class KMeansTest extends TestUtil {
   }
 
 
+  @Test public void testPOJO() {
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[] {"class"};
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._init = KMeans.Initialization.Random;
+      kmm = doSeed(parms,0);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2));
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( fr2 != null ) fr2.remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
 }
