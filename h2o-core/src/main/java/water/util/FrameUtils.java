@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
+import hex.FrameSplitter;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -70,13 +72,13 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter extends Job<MissingInserter> {
-    final Frame _dataset;
+  public static class MissingInserter extends Job<Frame> {
+    final Key _dataset;
     final double _fraction;
     final long _seed;
 
-    public MissingInserter(Frame frame, long seed, double frac){
-      super(null, null);
+    public MissingInserter(Key frame, long seed, double frac){
+      super(frame, "Missing Value Inserter");
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 
@@ -102,8 +104,9 @@ public class FrameUtils {
       if (_dataset == null) throw new IllegalArgumentException("Invalid dataset key (doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
 
-      DKV.put(_progressKey = Key.make(), new Progress(_dataset.vecs()[0].nChunks()));
-      new MI(_seed, _fraction).doAll(_dataset);
+      Frame frame = DKV.getGet(_dataset);
+      DKV.put(_progressKey = Key.make(), new Progress(frame.vecs()[0].nChunks()));
+      new MI(_seed, _fraction).doAll(frame);
     }
   }
 

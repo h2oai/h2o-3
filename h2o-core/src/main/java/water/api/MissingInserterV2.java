@@ -16,6 +16,6 @@ public class MissingInserterV2 extends JobV2<FrameUtils.MissingInserter, Missing
   public long seed = new Random().nextLong();
 
   @Override public FrameUtils.MissingInserter createImpl() {
-    return new FrameUtils.MissingInserter(null, 0, 0);
+    return new FrameUtils.MissingInserter(null, 0, 0); //fill dummy version
   }
 }
