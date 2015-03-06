@@ -109,7 +109,10 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols).doAll(_out);
 
     //overwrite a fraction with N/A
-    new FrameUtils.MissingInserter(_out, _createFrame.seed, _createFrame.missing_fraction).execImpl();
+    FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_out, _createFrame.seed, _createFrame.missing_fraction);
+    mi.execImpl();
+    mi.remove();
+
     tryComplete();
   }
 
