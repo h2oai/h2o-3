@@ -4,10 +4,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
-import water.H2O;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -75,15 +72,15 @@ public class FrameUtils {
    */
   public static class MissingInserter extends Job<MissingInserter> {
     final Frame _dataset;
-    final long _seed;
     final double _fraction;
+    final long _seed;
 
     public MissingInserter(Frame frame, long seed, double frac){
       super(null, null);
       _dataset = frame; _seed = seed; _fraction = frac;
     }
 
-    static class MI extends MRTask<MI> {
+    class MI extends MRTask<MI> {
       long _seed;
       double _frac;
       MI(long seed, double frac) {
@@ -98,9 +95,14 @@ public class FrameUtils {
             if (rng.nextDouble() < _frac) cs[c].setNA(r);
           }
         }
+        update(1);
       }
     }
     public void execImpl() {
+      if (_dataset == null) throw new IllegalArgumentException("Invalid dataset key (doesn't exist).");
+      if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
+
+      DKV.put(_progressKey = Key.make(), new Progress(_dataset.vecs()[0].nChunks()));
       new MI(_seed, _fraction).doAll(_dataset);
     }
   }
