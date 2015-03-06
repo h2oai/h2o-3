@@ -101,7 +101,8 @@ public class FrameUtils {
       }
     }
     public void execImpl() {
-      if (_dataset == null) throw new IllegalArgumentException("Invalid dataset key (doesn't exist).");
+      if (DKV.get(_dataset) == null)
+        throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
 
       Frame frame = DKV.getGet(_dataset);
