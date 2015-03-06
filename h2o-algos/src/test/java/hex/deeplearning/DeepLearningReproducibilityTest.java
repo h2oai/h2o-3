@@ -27,7 +27,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
     Map<Integer,Float> repeatErrs = new TreeMap<>();
 
-    int N = 6;
+    int N = 3;
     StringBuilder sb = new StringBuilder();
     float repro_error = 0;
     for (boolean repro : new boolean[]{true, false}) {
@@ -115,6 +115,9 @@ public class DeepLearningReproducibilityTest extends TestUtil {
             mean += error;
           }
           mean /= N;
+          // check non-reproducibility (Hogwild! will never reproduce)
+          for (int i=1; i<N; ++i)
+            assertTrue(repeatErrs.get(i) != repeatErrs.get(0));
           Log.info("mean error: " + mean);
           double stddev = 0;
           for (Float error : repeatErrs.values()) {
