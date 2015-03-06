@@ -27,7 +27,7 @@ def checkPrerequisite(name) {
   return 0
 }
 
-task checkClientPrerequisites {
+task checkClientPrerequisites << {
   def nodeInstallationInstruction = """\
  
 To install node.js, try one of these:
@@ -102,7 +102,7 @@ task copyExampleFlows(type: Copy) {
   into exampleFlowsOutputDir
 }
 
-task buildExampleFlowsList<< {
+task buildExampleFlowsList << {
   DirectoryIndexer di = new DirectoryIndexer(exampleFlowsOutputDir)
   di.emitList('flow/flow_examples/', exampleFlowsListFile)
 }
