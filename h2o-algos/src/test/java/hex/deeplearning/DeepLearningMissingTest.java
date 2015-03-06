@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.FrameSplitter;
-import org.apache.tools.ant.taskdefs.Sleep;
 import water.TestUtil;
 
 import org.junit.Assert;
