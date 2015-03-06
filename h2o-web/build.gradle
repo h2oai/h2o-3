@@ -102,10 +102,10 @@ task copyExampleFlows(type: Copy) {
   into exampleFlowsOutputDir
 }
 
-task buildExampleFlowsList << {
-  DirectoryIndexer di = new DirectoryIndexer(exampleFlowsOutputDir)
-  di.emitList('flow/flow_examples/', exampleFlowsListFile)
-}
+//task buildExampleFlowsList << {
+//  DirectoryIndexer di = new DirectoryIndexer(exampleFlowsOutputDir)
+//  di.emitList('flow/flow_examples/', exampleFlowsListFile)
+//}
 
 task cleanExampleFlowsList(type: Delete) {
   delete exampleFlowsListFile
@@ -117,7 +117,7 @@ buildClientWithGulp.dependsOn installBowerPackages
 processResources.dependsOn buildClientWithGulp
 clean.dependsOn cleanClientWithGulp
 
-buildExampleFlowsList.dependsOn copyExampleFlows
-processResources.dependsOn buildExampleFlowsList
+//buildExampleFlowsList.dependsOn copyExampleFlows
+//processResources.dependsOn buildExampleFlowsList
 
 clean.dependsOn cleanExampleFlowsList

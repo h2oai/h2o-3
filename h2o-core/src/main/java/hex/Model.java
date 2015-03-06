@@ -644,7 +644,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     GenModel genmodel;
     try { 
       Class clz = JCodeGen.compile(modelName,java_text);
-      genmodel = (GenModel)clz.newInstance(); 
+      genmodel = (GenModel)clz.newInstance();
     } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
 
     Vec[] dvecs = data.vecs();
