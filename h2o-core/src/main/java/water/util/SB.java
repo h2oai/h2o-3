@@ -24,6 +24,7 @@ public final class SB {
   public SB pobj( Object s ) { _sb.append(s.toString()); return this; }
   public SB i( int d ) { for( int i=0; i<d+_indent; i++ ) p("  "); return this; }
   public SB i( ) { return i(0); }
+  public SB ip(String s) { return i().p(s); }
   public SB s() { _sb.append(' '); return this; }
   // Java specific append of double
   public SB pj( double  s ) {
@@ -68,6 +69,20 @@ public final class SB {
     p('{');
     for( int i=0; i<ss.length-1; i++ ) pj(ss[i]).p(',');
     if( ss.length > 0 ) pj(ss[ss.length-1]);
+    return p('}');
+  }
+  public SB toJavaStringInit( double[] ss ) {
+    if (ss==null) return p("null");
+    p('{');
+    for( int i=0; i<ss.length-1; i++ ) pj(ss[i]).p(',');
+    if( ss.length > 0 ) pj(ss[ss.length-1]);
+    return p('}');
+  }
+  public SB toJavaStringInit( double[][] ss ) {
+    if (ss==null) return p("null");
+    p('{');
+    for( int i=0; i<ss.length-1; i++ ) toJavaStringInit(ss[i]).p(',');
+    if( ss.length > 0 ) toJavaStringInit(ss[ss.length-1]);
     return p('}');
   }
   public SB toJSArray(float[] nums) {
