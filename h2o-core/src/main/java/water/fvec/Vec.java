@@ -457,7 +457,7 @@ public class Vec extends Keyed<Vec> {
     Vec randVec = makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
-        Random rng = new Random(seed*c.cidx());
+        Random rng = new Random(seed*(c.cidx()+1));
         for(int i = 0; i < c._len; ++i)
           c.set(i, rng.nextFloat());
       }
