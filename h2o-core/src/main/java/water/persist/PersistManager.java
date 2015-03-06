@@ -4,11 +4,13 @@ import water.H2O;
 import water.Key;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.UploadFileVec;
 import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -166,7 +168,28 @@ public class PersistManager {
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     assert path != null;
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+    if (s.startsWith("http:") || s.startsWith("https:")) {
+      try {
+        java.net.URL url = new URL(path);
+        Key destination_key = Key.make(path);
+        java.io.InputStream is = url.openStream();
+        if( is == null ) {
+          Log.err("Unable to open stream to URL " + path);
+        }
+
+        UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+        UploadFileVec.readPut(destination_key, is, stats);
+
+        files.add(path);
+        keys.add(destination_key.toString());
+      }
+      catch( Throwable e) {
+        fails.add(path);
+      }
+
+      return;
+    }
+    else if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
         throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
       }
