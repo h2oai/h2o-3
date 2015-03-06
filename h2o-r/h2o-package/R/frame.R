@@ -6,7 +6,7 @@
 #'  H2O Methods:
 #'  ------------
 #'
-#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.cut, h2o.table
+#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
 #'
 #'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
 #'  ------------
@@ -126,7 +126,36 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
-h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
+#' Inserting Missing Values to an H2O DataFrame
+#' 
+#' @section WARNING: This will modify the original dataset. Unless this is intended, 
+#' this function should only be called on a subset of the original.
+h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(data)
+  if (delete) {
+    temp_key <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
+  }
+
+  parms = list()
+  
+  parms$dataset <- data@key
+  parms$fraction <- fraction
+  if(!missing(seed))
+    parms$seed <- seed
+  
+  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
+  # .h2o.__waitOnJob(data@conn, json$key$name)
+  # TODO: uncomment once job key progress is functional
+  res <- json$dataset$name
+
+  ## No gc because insertMissingValues modifies the frame in spot
+
+  h2o.getFrame(res)
+}
+
+h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {n
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   # if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
   #   stop("`ratios` must be between 0 and 1 exclusive")
