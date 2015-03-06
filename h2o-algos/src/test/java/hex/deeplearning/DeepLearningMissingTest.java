@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.FrameSplitter;
+import org.apache.tools.ant.taskdefs.Sleep;
 import water.TestUtil;
 
 import org.junit.Assert;
@@ -57,12 +58,12 @@ public class DeepLearningMissingTest extends TestUtil {
           // add missing values to the training data (excluding the response)
           if (missing_fraction > 0) {
             Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
-            DKV.put(frtmp._key, frtmp);
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
+            DKV.put(frtmp._key, frtmp); //need to put the frame (to be modified) into DKV for MissingInserter to pick up
             FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
             j.execImpl();
-            j.remove();
-            DKV.remove(frtmp._key);
+            j.get(); //MissingInserter is non-blocking, must block here explicitly
+            DKV.remove(frtmp._key); //Delete the frame header (not the data)
           }
 
           // Build a regularized DL model with polluted training data, score on clean validation set
