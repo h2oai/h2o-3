@@ -150,4 +150,3 @@ if (exists("TEST_ROOT_DIR")) {
 # Clean up any temporary variables to avoid polluting the user's workspace.
 options(echo=.origEchoValue)
 rm(list=c(".origEchoValue"))
-

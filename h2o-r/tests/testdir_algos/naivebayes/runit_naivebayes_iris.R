@@ -11,11 +11,11 @@ test.nbayes.iris <- function(conn) {
   laplace_range <- seq(0, 1, 0.25)
   for(i in laplace_range) {
     Log.info(paste("H2O Naive Bayes with Laplace smoothing = ", i, ":\n", sep = ""))
-    iris.nbayes.h2o <- h2o.prcomp(x = 1:4, y = 5, training_frame = arrests.hex, laplace = as.numeric(i))
+    iris.nbayes.h2o <- h2o.naiveBayes(x = 1:4, y = 5, training_frame = iris.hex, laplace = as.numeric(i))
     print(iris.nbayes.h2o)
   }
   
   testEnd()
 }
 
-doTest("Naive Bayes Test: Iris Data", test.nbayes.iris)
+doTest("Naive Bayes Test: Iris Data with Laplace Smoothing", test.nbayes.iris)

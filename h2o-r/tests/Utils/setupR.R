@@ -25,6 +25,7 @@ if(!"klaR" %in% rownames(installed.packages())) install.packages("klaR")
 require(glmnet)
 require(gbm)
 require(ROCR)
+library(klaR)
 
 #Global Variables
 myIP   <- ipPort[[1]]

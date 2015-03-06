@@ -32,5 +32,6 @@ checkNaiveBayesPrediction <- function(predH2O, predR, tolerance = 1e-6) {
   postR <- predR$posterior
   postH2O <- predH2O.df[,-1]
   Log.info("Compare Posterior Probabilities between R and H2O\n")
-  expect_equal(as.matrix(postH2O), postR, tolerance = 1e-6)
+  # expect_equal(as.matrix(postH2O), postR, tolerance = 1e-6)
+  expect_equivalent(as.matrix(postH2O), postR)
 }
