@@ -8,16 +8,24 @@ checkNaiveBayesModel <- function(fitH2O, fitR, tolerance = 1e-6) {
   
   tablesR <- fitR$tables
   tablesH2O <- fitH2O@model$pcond
+  expect_equal(length(tablesH2O), length(tablesR))
+  
+  # Reshuffle conditional probability tables so predictors in same order as R
+  headersH2O <- sapply(tablesH2O, function(x) { attr(x, "header") })
+  expect_true(all(headersH2O %in% names(tablesR)))
+  tablesR <- tablesR[order(names(tablesR))]
+  tablesH2O <- tablesH2O[order(headersH2O)]
+  
   Log.info("Compare Conditional Probabilities between R and H2O\n")
   Log.info("R Conditional Probabilities:"); print(tablesR)
   Log.info("H2O Conditional Probabilities:"); print(tablesH2O)
-  expect_equal(length(tablesH2O), length(tablesR))
   
   # Need to reformat H2OTable since first column is actually rownames
   tmp <- mapply(function(probR, probH2O) {
-    compH2O <- data.matrix(probH2O[,-1])
-    dimnames(compH2O) <- list(probH2O[,1], NULL)
-    expect_equal(compH2O, probR, tolerance = tolerance) }, 
+    # compH2O <- data.matrix(probH2O[,-1])
+    # dimnames(compH2O) <- list(probH2O[,1], NULL)
+    # expect_equal(compH2O, probR, tolerance = tolerance) 
+    expect_equivalent(data.matrix(probH2O[,-1]), probR) }, 
   tablesR, tablesH2O )
 }
 

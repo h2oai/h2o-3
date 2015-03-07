@@ -104,8 +104,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
 
       for(int col = 0; col < dinfo._nums; col++) {
         int cidx = dinfo._cats + col;
-        model._output._pcond[cidx] = new TwoDimTable(_train.name(col), rowNames, new String[] {"Mean", "Std_Dev"},
-                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y / " + _train.name(col),
+        model._output._pcond[cidx] = new TwoDimTable(_train.name(cidx), rowNames, new String[] {"Mean", "Std_Dev"},
+                new String[] {"double", "double"}, new String[] {"%5f", "%5f"}, "Y / " + _train.name(cidx),
                 new String[rowNames.length][], pcond[cidx]);
       }
 
