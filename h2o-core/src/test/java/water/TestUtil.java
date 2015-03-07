@@ -208,6 +208,7 @@ public class TestUtil extends Iced {
     for (int i=0; i<a.length;i++) r[i][0] = a[i];
     return r;
   }
+  public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
 
