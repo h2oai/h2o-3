@@ -377,16 +377,17 @@ class H2OConnection(object):
 
   # Low level request call
   def _attempt_rest(self, url, method, post_body, file_upload_info):
+    headers = {'User-Agent': 'H2O Python client/'+sys.version}
     try:
       if method == "GET":
-        return requests.get(url)
+        return requests.get(url, headers=headers)
       elif file_upload_info:
         files = {file_upload_info["file"] : open(file_upload_info["file"], "rb")}
-        return requests.post(url, files=files)
+        return requests.post(url, files=files, headers=headers)
       elif method == "POST":
-        return requests.post(url, data=post_body)
+        return requests.post(url, data=post_body, headers=headers)
       elif method == "DELETE":
-        return requests.delete(url)
+        return requests.delete(url, headers=headers)
       else:
         raise ValueError("Unknown HTTP method " + method)
 
