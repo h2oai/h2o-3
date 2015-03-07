@@ -222,13 +222,13 @@ public class TwoDimTable extends Iced {
   public void set(final int row, final int col, final Object o) {
     if (o == null) cellValues[row][col] = null;
 
-    if (colTypes[col]=="double")
+    if (colTypes[col].equals("double"))
       cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
-    else if (colTypes[col]=="float")
+    else if (colTypes[col].equals("float"))
       cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
-    else if (colTypes[col]=="integer")
+    else if (colTypes[col].equals("integer"))
       cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
-    else if (colTypes[col]=="long")
+    else if (colTypes[col].equals("long"))
       cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
     else
       cellValues[row][col] = new IcedWrapper(o);
