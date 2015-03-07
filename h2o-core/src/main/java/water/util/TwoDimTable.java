@@ -151,10 +151,16 @@ public class TwoDimTable extends Iced {
       switch (colTypes[c]) {
         case "double":
         case "float":
-        case "integer":
-        case "long":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, dblCellValues[r][c]);
+          break;
+        case "integer":
+          for (int r = 0; r < rowDim; ++r)
+            set(r, c, (int) dblCellValues[r][c]);
+          break;
+        case "long":
+          for (int r = 0; r < rowDim; ++r)
+            set(r, c, (long) dblCellValues[r][c]);
           break;
         default:
           for (int r = 0; r < rowDim; ++r)

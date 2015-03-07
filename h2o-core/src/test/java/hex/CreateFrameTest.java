@@ -28,6 +28,8 @@ public class CreateFrameTest extends TestUtil {
     Frame frame = DKV.getGet(cf.dest());
     Assert.assertTrue(frame.numCols() == 101);
     Assert.assertTrue(frame.numRows() == 1000);
+    // Tries to print a frame
+    //frame.toString();
     frame.delete();
   }
 
@@ -49,6 +51,8 @@ public class CreateFrameTest extends TestUtil {
     Frame frame = DKV.getGet(cf.dest());
     Assert.assertTrue(frame.numCols() == 1001);
     Assert.assertTrue(frame.numRows() == 100);
+    // Print a fame
+    //frame.toString();
     frame.delete();
   }
 }
