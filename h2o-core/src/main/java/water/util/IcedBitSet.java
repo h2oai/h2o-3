@@ -128,4 +128,8 @@ public class IcedBitSet extends Iced {
     sb.append("}");
     return sb.toString();
   }
+
+  public SB toJava( SB sb, String varname, int col, String colname ) {
+    return sb.p("!hex.genmodel.GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", (int) data[").p(col).p(" /* ").p(colname).p(" */").p("])");
+  }
 }

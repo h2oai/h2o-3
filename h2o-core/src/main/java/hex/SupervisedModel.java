@@ -112,7 +112,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
       ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
-      scored[0] = ModelUtils.getPrediction(scored, tmp);
+      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);
     }
     return scored;
   }

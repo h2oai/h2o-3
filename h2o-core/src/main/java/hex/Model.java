@@ -555,7 +555,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public final String toJava() { return toJava(new SB()).toString(); }
   public SB toJava( SB sb ) {
-    SB fileContextSB = new SB(); // preserve file context
+    SB fileContext = new SB();  // preserve file context
     String modelName = JCodeGen.toJavaId(_key.toString());
     // HEADER
     sb.p("import java.util.Map;").nl();
@@ -575,24 +575,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
     sb.nl();
     sb.p("public class ").p(modelName).p(" extends hex.genmodel.GenModel {").nl().ii(1);
-    toJavaInit(sb, fileContextSB).nl();
+    toJavaInit(sb, fileContext).nl();
     toJavaNAMES(sb);
     toJavaNCLASSES(sb);
-    toJavaDOMAINS(sb, fileContextSB);
+    toJavaDOMAINS(sb, fileContext);
     toJavaPROB(sb);
     toJavaSuper(modelName,sb); //
-    toJavaPredict(sb, fileContextSB);
+    toJavaPredict(sb, fileContext);
     sb.p("}").nl().di(1);
-    sb.p(fileContextSB).nl(); // Append file
+    sb.p(fileContext).nl(); // Append file
     return sb;
   }
   /** Generate implementation for super class. */
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", _output._names, "Names of columns used by model."); }
+  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
-  private SB toJavaDOMAINS( SB sb, SB fileContextSB ) {
+  private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     sb.nl();
     sb.ip("// Column domains. The last array contains domain of response column.").nl();
     sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
@@ -603,22 +603,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       sb.p(colInfoClazz).p(".VALUES");
       if (i!=_output._domains.length-1) sb.p(',');
       sb.nl();
-      fileContextSB.ip("// The class representing column ").p(_output._names[i]).nl();
-      JCodeGen.toClassWithArray(fileContextSB, null, colInfoClazz, dom);
+      fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
+      JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
     }
     return sb.ip("};").nl();
   }
   protected SB toJavaPROB( SB sb) { return sb; }
   // Override in subclasses to provide some top-level model-specific goodness
-  protected SB toJavaInit(SB sb, SB fileContextSB) { return sb; }
+  protected SB toJavaInit(SB sb, SB fileContext) { return sb; }
   // Override in subclasses to provide some inside 'predict' call goodness
   // Method returns code which should be appended into generated top level class after
   // predict method.
-  protected void toJavaPredictBody(SB bodySb, SB classCtxSb, SB fileCtxSb) {
+  protected void toJavaPredictBody(SB body, SB cls, SB file) {
     throw new IllegalArgumentException("This model type does not support conversion to Java");
   }
   // Wrapper around the main predict call, including the signature and return value
-  private SB toJavaPredict(SB ccsb, SB fileCtxSb) { // ccsb = classContext
+  private SB toJavaPredict(SB ccsb, SB file) { // ccsb = classContext
     ccsb.nl();
     ccsb.ip("// Pass in data in a double[], pre-aligned to the Model's requirements.").nl();
     ccsb.ip("// Jam predictions into the preds[] array; preds[0] is reserved for the").nl();
@@ -626,7 +626,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ccsb.ip("// and remaining columns hold a probability distribution for classifiers.").nl();
     ccsb.ip("public final float[] score0( double[] data, float[] preds ) {").nl();
     SB classCtxSb = new SB().ii(1);
-    toJavaPredictBody(ccsb.ii(1), classCtxSb, fileCtxSb);
+    toJavaPredictBody(ccsb.ii(1), classCtxSb, file);
     ccsb.ip("return preds;").nl();
     ccsb.di(1).ip("}").nl();
     ccsb.p(classCtxSb);
@@ -641,6 +641,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     assert data.numRows()==model_predictions.numRows();
     String modelName = JCodeGen.toJavaId(_key.toString());
     String java_text = toJava();
+    System.out.println(java_text);
     GenModel genmodel;
     try { 
       Class clz = JCodeGen.compile(modelName,java_text);

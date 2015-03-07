@@ -418,4 +418,5 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       return stddev*stddev+bias*bias;
     }
   }
+
 }

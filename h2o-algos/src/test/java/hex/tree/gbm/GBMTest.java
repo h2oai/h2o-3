@@ -313,6 +313,9 @@ public class GBMTest extends TestUtil {
       pred.remove("Angaus").remove();    // No response column during scoring
       res = gbm.score(pred);
 
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred,res));
+
     } finally {
       parms._train.remove();
       if( gbm  != null ) gbm .delete();
