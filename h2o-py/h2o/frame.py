@@ -239,6 +239,13 @@ class H2OFrame:
       print tabulate.tabulate([[self.nrow()] + [expr.eager() for expr in exprs]], headers=["Row ID"] + colnames)
     print
 
+  def levels(self, col=0):
+    if col < 0: col = 0
+    if col >= self.ncol(): col = self.ncol() - 1
+    vec = self._vecs[col]
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
+    print res["domain"][0]
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.

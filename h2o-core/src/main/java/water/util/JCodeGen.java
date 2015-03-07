@@ -103,8 +103,11 @@ public class JCodeGen {
     return s.replaceAll("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]",  "_");
   }
 
+  // Compiler loaded???
+  public static boolean canCompile() { return COMPILER!=null; }
   
   public static Class compile(String class_name, String java_text) throws Exception {
+    if( COMPILER==null ) throw new UnsupportedOperationException("Unable to launch an internal instance of javac");
     // Wrap input string up as a file-like java source thing
     JavaFileObject file = new JavaSourceFromString(class_name, java_text);
     // Capture all output class "files" as simple ByteArrayOutputStreams
@@ -130,6 +133,13 @@ public class JCodeGen {
 
   private static final Method DEFINE_CLASS_METHOD;
   private static final JavaCompiler COMPILER = ToolProvider.getSystemJavaCompiler();
+  // These lines rely on tools.jar in the test-set of jars, and may allow some
+  // Windows java installs to run the POJO tests that otherwise fail because an
+  // internal instance of javac cannot be launched.  Untested; this code works
+  // on my Windows machine & on the Ubuntu Jenkins machines, but not the
+  // Jenkins Windows VM.
+  //import com.sun.tools.javac.api.JavacTool;
+  //private static final JavaCompiler COMPILER = COMPILER1==null ? JavacTool.create() : COMPILER1;
   static {
     try {
       DEFINE_CLASS_METHOD = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);

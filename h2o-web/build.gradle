@@ -94,21 +94,11 @@ task cleanClientWithGulp(type: Delete) {
   delete 'src/main/resources/www/flow'
 }
 
-def exampleFlowsOutputDir = "$rootDir/h2o-web/src/main/resources/www/flow/flow_examples"
-def exampleFlowsListFile = exampleFlowsOutputDir + '_list'
+def exampleFlowsOutputDir = "$rootDir/h2o-web/src/main/resources/www/flow/packs"
 
 task copyExampleFlows(type: Copy) {
-  from "$rootDir/h2o-docs/src/product/flow/flow_examples"
+  from "$rootDir/h2o-docs/src/product/flow/packs"
   into exampleFlowsOutputDir
-}
-
-task buildExampleFlowsList << {
-  DirectoryIndexer di = new DirectoryIndexer(exampleFlowsOutputDir)
-  di.emitList('flow/flow_examples/', exampleFlowsListFile)
-}
-
-task cleanExampleFlowsList(type: Delete) {
-  delete exampleFlowsListFile
 }
 
 installNpmPackages.dependsOn checkClientPrerequisites
@@ -117,7 +107,5 @@ buildClientWithGulp.dependsOn installBowerPackages
 processResources.dependsOn buildClientWithGulp
 clean.dependsOn cleanClientWithGulp
 
-buildExampleFlowsList.dependsOn copyExampleFlows
-processResources.dependsOn buildExampleFlowsList
+processResources.dependsOn copyExampleFlows
 
-clean.dependsOn cleanExampleFlowsList

@@ -158,6 +158,17 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public FramesV3 columnDomain(int version, FramesV3 s) {
+    Frame frame = getFromDKV("key", s.key.key());
+    Vec vec = frame.vec(s.column);
+    if (vec == null)
+      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
+    s.domain = new String[1][];
+    s.domain[0] = vec.domain();
+    return s;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.key.key()); // safe
     Vec vec = frame.vec(s.column);
