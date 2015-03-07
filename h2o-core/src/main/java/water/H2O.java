@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import com.brsanthu.googleanalytics.GoogleAnalytics;
+import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -174,6 +176,12 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
+    /** --ga_hadoop_ver; Version string for hadoop */
+    public String ga_hadoop_ver = null;
+
+    /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
+    public boolean ga_opt_out = false;
+
     //-----------------------------------------------------------------------------------
     // Debugging
     //-----------------------------------------------------------------------------------
@@ -328,6 +336,10 @@ final public class H2O {
       }
     }
   }
+
+  //Google analytics performance measurement
+  public static GoogleAnalytics GA;
+  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -705,6 +717,10 @@ final public class H2O {
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
   }
 
+  private static void startGAStartupReport() {
+    new GAStartupReportThread().start();
+  }
+
   /** Initializes the local node and the local cloud with itself as the only member. */
   private static void startLocalNode() {
     PID = -1L;
@@ -1027,6 +1043,15 @@ final public class H2O {
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
 
+    // Register with GA
+    GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
+    if((new File(".h2o_no_collect")).exists()
+            || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
+            || ARGS.ga_opt_out ) {
+      GA.getConfig().setEnabled(false);
+      Log.info("Opted out of sending usage metrics.");
+    }
+
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
 
@@ -1062,11 +1087,39 @@ final public class H2O {
     // Clouds. This will typically trigger a round of Paxos voting so we can
     // join an existing Cloud.
     new HeartBeatThread().start();
+
+    startGAStartupReport();
   }
 
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
     H2O.exit(-1);
+  }
+
+  public static class GAStartupReportThread extends Thread {
+    final private String threadName = "GAStartupReport";
+    final private int sleepMillis = 150 * 1000; //2.5 min
+
+    // Constructor.
+    public GAStartupReportThread() {
+      super("GAStartupReport");        // Only 9 characters get printed in the log.
+      setDaemon(true);
+      setPriority(MAX_PRIORITY - 2);
+    }
+
+    // Class main thread.
+    @Override
+    public void run() {
+      try {
+        Thread.sleep (sleepMillis);
+      }
+      catch (Exception ignore) {};
+      if (H2O.SELF == H2O.CLOUD._memary[0]) {
+        if (ARGS.ga_hadoop_ver != null)
+          H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
+        H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
+      }
+    }
   }
 }
