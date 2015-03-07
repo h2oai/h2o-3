@@ -2,7 +2,7 @@
 
 ##H2O-Dev
 
-###0.2.0.1 - 3/6/15
+###Selberg (0.2.0.1) - 3/6/15
 ####New Features
 The following features have been added since the last release: 
 
