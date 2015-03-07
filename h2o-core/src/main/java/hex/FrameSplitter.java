@@ -52,7 +52,7 @@ public class FrameSplitter extends H2OCountedCompleter {
     this(null, dataset, ratios,destKeys,jobKey);
   }
   public FrameSplitter(H2OCountedCompleter cc, Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
-    super(cc);
+    super(null);
     assert ratios.length > 0 : "No ratio specified!";
     assert ratios.length < 100 : "Too many frame splits demanded!";
     this.dataset  = dataset;

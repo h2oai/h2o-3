@@ -185,6 +185,9 @@ final public class H2O {
 
     /** -md5skip, -md5skip=true; test-only; Skip the MD5 Jar checksum; allows jars from different builds to mingle in the same cloud */
     public boolean md5skip = false;
+
+    /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
+    public boolean quiet = false;
   }
 
   private static void parseFailed(String message) {
@@ -322,6 +325,9 @@ final public class H2O {
       }
       else if (s.matches("md5skip")) {
         ARGS.md5skip = true;
+      }
+      else if (s.matches("quiet")) {
+        ARGS.quiet = true;
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
@@ -687,8 +693,7 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   static void printAndLogVersion() {
-    boolean quiet = false;
-    Log.init(ARGS.log_level, quiet);
+    Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());

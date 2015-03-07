@@ -754,6 +754,27 @@ setMethod("length", "H2OFrame", function(x) {
 })
 
 #'
+#' Return the levels from the column requested column.
+#'
+#' @name h2o.levels
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param i The index of the column whose domain is to be returned.
+#' @seealso \code{\link[base]{levels}} for the base R method.
+#' @examples
+#' localH2O <- h2o.init()
+#' iris.hex <- as.h2o(localH2O, iris)
+#' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
+NULL
+
+h2o.levels <- function(x, i) {
+  col_idx <- i
+  if (col_idx <= 0) col_idx <- 1
+  if (col_idx >= ncol(x)) col_idx <- ncol(x)
+  res <- .h2o.__remoteSend(x@conn, .h2o.__COL_DOMAIN(x@key, colnames(x)[col_idx]), method="GET")
+  res$domain[[1]]
+}
+
+#'
 #' Returns the Dimensions of a Parsed H2O Data Object.
 #'
 #' Returns the number of rows and columns for an \linkS4class{H2OFrame} object.
@@ -834,12 +855,6 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' calling scope).
 #' @name LazyEval
 NULL
-
-#setMethod("levels", "H2OFrame", function(x) {
-#  if(ncol(x) != 1) return(NULL)
-#  res = .h2o.__remoteSend(x@conn, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
-#  res$levels[[1]]
-#})
 
 #'
 #' Is H2O Data Frame column a enum

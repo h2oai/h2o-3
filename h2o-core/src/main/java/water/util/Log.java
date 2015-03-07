@@ -391,4 +391,7 @@ abstract public class Log {
       POST(n, els[i].toString());
     }
   }
+
+  public static void setQuiet(boolean q) { _quiet = q; }
+  public static boolean getQuiet() { return _quiet; }
 }

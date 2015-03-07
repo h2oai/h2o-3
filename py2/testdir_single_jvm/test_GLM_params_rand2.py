@@ -97,7 +97,7 @@ class Basic(unittest.TestCase):
         numColsUsed = numCols
 
         paramDict = define_params()
-        for trial in range(1):
+        for trial in range(5):
             # family [u'gaussian', u'binomial', u'poisson', u'gamma', u'tweedie']
             # link [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
             # can we do classification with probabilities?
@@ -140,24 +140,28 @@ class Basic(unittest.TestCase):
 
             modelResult = h2o.n0.models(key=model_key)
             model = OutputObj(modelResult['models'][0]['output'], 'model')
-            h2o_glm.simpleCheckGLM(self, model, parameters, labelList, labelListUsed)
+            h2o_glm.simpleCheckGLM(self, model, parameters, labelList, labelListUsed, allowNaN=True)
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
-            mcms = OutputObj({'data': cmm.maxCriteriaAndMetricScores.data}, 'mcms')
-            m1 = mcms.data[1:]
-            h0 = mcms.data[0]
-            print "\nmcms", tabulate(m1, headers=h0)
+            # FIX! when is this legal
+            doClassification = False
+            if doClassification:
+                mcms = OutputObj({'data': cmm.maxCriteriaAndMetricScores.data}, 'mcms')
+                m1 = mcms.data[1:]
+                h0 = mcms.data[0]
+                print "\nmcms", tabulate(m1, headers=h0)
 
-            thms = OutputObj(cmm.thresholdsAndMetricScores, 'thms')
-            cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
+            if doClassification:
+                thms = OutputObj(cmm.thresholdsAndMetricScores, 'thms')
+                cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
 
-            if 1==0:
-                print ""
-                for i,c in enumerate(cmms.cm):
-                    print "\ncmms.cm[%s]" % i, tabulate(c)
-                print ""
+                if 1==0:
+                    print ""
+                    for i,c in enumerate(cmms.cm):
+                        print "\ncmms.cm[%s]" % i, tabulate(c)
+                    print ""
                 
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
