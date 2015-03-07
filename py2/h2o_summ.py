@@ -117,7 +117,7 @@ def quantile_comparisons(csvPathname, skipHeader=False, col=0, datatype='float',
     else:
         print "Using python csv reader"
         target = h2o_util.file_read_csv_col(csvPathname, col=col, datatype=datatype,
-            skipHeader=skipHeader, preview=5)
+            skipHeader=skipHeader, preview=20)
 
     if datatype=='float':
         # to make irene's R runif files first col work (quoted row numbers, integers
