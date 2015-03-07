@@ -30,6 +30,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   final static public String H2O_NTHREADS_KEY = "h2o.nthreads";
   final static public String H2O_BASE_PORT_KEY = "h2o.baseport";
   final static public String H2O_LICENSE_DATA_KEY = "h2o.license.data";
+  final static public String H2O_HADOOP_VERSION = "h2o.hadoop.version";
+  final static public String H2O_GA_OPTOUT = "h2o.ga.optout";
 
   static EmbeddedH2OConfig _embeddedH2OConfig;
 
@@ -303,6 +305,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     String betaString = conf.get(H2O_BETA_KEY);
     String randomUdpDropString = conf.get(H2O_RANDOM_UDP_DROP_KEY);
     String licenseData = conf.get(H2O_LICENSE_DATA_KEY);
+    String hadoopVersion = conf.get(H2O_HADOOP_VERSION);
+    String gaOptOut = conf.get(H2O_GA_OPTOUT);
 
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
@@ -367,6 +371,11 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         argsList.add(fileName);
       }
     }
+    if (hadoopVersion != null) {
+      argsList.add("-ga_hadoop_ver");
+      argsList.add(hadoopVersion);
+    }
+    if (gaOptOut != null) argsList.add(gaOptOut);
 
     context.write(textId, new Text("before water.H2O.main()"));
     String[] args = (String[]) argsList.toArray(new String[0]);
