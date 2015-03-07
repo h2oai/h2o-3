@@ -250,7 +250,7 @@ def validate_predictions(result, model_name, frame_key, expected_rows, destinati
     assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
     
     predictions_key = mm['predictions']['key']['name']
-    f = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
+    f = a_node.frames(key=predictions_key, find_compatible_models=True, row_count=5)
     frames = f['frames']
     frames_dict = h2o_util.list_to_dict(frames, 'key/name')
     assert predictions_key in frames_dict, "FAIL: Failed to find predictions key" + predictions_key + " in Frames list."
@@ -294,7 +294,7 @@ def cleanup(a_node, models=None, frames=None):
     if frames is not None:
         for frame in frames:
             a_node.delete_frame(frame)
-            ms = a_node.frames(len=5)
+            ms = a_node.frames(row_count=5)
 
             found = False;
             for m in ms['frames']:
@@ -402,10 +402,10 @@ class DatasetSpec(dict):
             print "import_result: "
             pp.pprint(import_result)
             print "frames: "
-            pp.pprint(a_node.frames(key=import_result['keys'][0], len=5))
+            pp.pprint(a_node.frames(key=import_result['keys'][0], row_count=5))
 
-        frames = a_node.frames(key=import_result['keys'][0], len=5)['frames']
-        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText: " + repr(frames[0])
+        frames = a_node.frames(key=import_result['keys'][0], row_count=5)['frames']
+        assert frames[0]['is_text'], "FAIL: Raw imported Frame is not is_text: " + repr(frames[0])
         parse_result = a_node.parse(key=import_result['keys'][0], dest_key=self['dest_key']) # TODO: handle multiple files
         key = parse_result['frames'][0]['key']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
@@ -443,7 +443,7 @@ if h2o.H2O.verbose:
     print 'ModelsV92: '
     pp.pprint(models)
 
-frames = a_node.frames(len=5)
+frames = a_node.frames(row_count=5)
 if h2o.H2O.verbose:
     print 'Frames: '
     pp.pprint(frames)
@@ -602,7 +602,7 @@ for dataset_spec in datasets_to_import:
 
 ################################################
 # Test /Frames for prostate.csv
-frames = a_node.frames(len=5)['frames']
+frames = a_node.frames(row_count=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 
 # TODO: remove:
@@ -614,21 +614,20 @@ if h2o.H2O.verbose:
     print "frames_dict: "
     pp.pprint(frames_dict)
 
-# TODO: test len and offset (they aren't working yet)
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find " + 'prostate_binomial' + " in Frames list."
-assert not frames_dict['prostate_binomial']['isText'], "FAIL: Parsed Frame is isText"
+assert not frames_dict['prostate_binomial']['is_text'], "FAIL: Parsed Frame is is_text"
 
 
 # Test /Frames/{key} for prostate.csv
-frames = a_node.frames(key='prostate_binomial', len=5)['frames']
+frames = a_node.frames(key='prostate_binomial', row_count=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 
 # Test /Frames/{key}/columns for prostate.csv
@@ -636,25 +635,25 @@ frames = a_node.columns(key='prostate_binomial')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'ID' in columns_dict, "FAIL: Failed to find ID in Frames/prostate.hex/columns."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label} for prostate.csv
 frames = a_node.column(key='prostate_binomial', column='AGE')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label}/summary for prostate.csv
 frames = a_node.summary(key='prostate_binomial', column='AGE')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns/AGE/summary."
 col = columns_dict['AGE']
-h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing', 'zeros', 'pinfs', 'ninfs', 'mins', 'maxs', 'mean', 'sigma', 'type', 'data', 'precision', 'bins', 'base', 'stride', 'pctiles'])
-h2o_util.assertKeysExist(col, '', ['domain', 'str_data'])
+h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing_count', 'zero_count', 'positive_infinity_count', 'negative_infinity_count', 'mins', 'maxs', 'mean', 'sigma', 'type', 'data', 'precision', 'histogram_bins', 'histogram_base', 'histogram_stride', 'percentiles'])
+h2o_util.assertKeysExist(col, '', ['domain', 'string_data'])
 assert col['mins'][0] == 43, 'FAIL: Failed to find 43 as the first min for AGE.'
 assert col['maxs'][0] == 79, 'FAIL: Failed to find 79 as the first max for AGE.'
 assert col['mean'] == 66.03947368421052, 'FAIL: Failed to find 66.03947368421052 as the mean for AGE.'
@@ -662,14 +661,14 @@ assert col['sigma'] == 6.527071269173308, 'FAIL: Failed to find 6.52707126917330
 assert col['type'] == 'int', 'FAIL: Failed to find int as the type for AGE.'
 assert col['data'][0] == 65, 'FAIL: Failed to find 65 as the first data for AGE.'
 assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE.'
-assert col['bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
-assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
-assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
-assert col['pctiles'][0] == 43, 'FAIL: Failed to find 43 as the first pctile for AGE. '+str(col['pctiles'][0])
+assert col['histogram_bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
+assert col['histogram_base'] == 43, 'FAIL: Failed to find 43 as the histogram_base for AGE.'
+assert col['histogram_stride'] == 1, 'FAIL: Failed to find 1 as the histogram_stride for AGE.'
+assert col['percentiles'][0] == 43, 'FAIL: Failed to find 43 as the first percentile for AGE. '+str(col['percentiles'][0])
 
 # Test /SplitFrame for prostate.csv
-if verbose: print 'Testing SplitFrame with named destKeys. . .'
-splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destKeys=['bigger', 'smaller'])
+if verbose: print 'Testing SplitFrame with named dest_keys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], dest_keys=['bigger', 'smaller'])
 frames = a_node.frames()['frames']
 validate_frame_exists('bigger', frames)
 validate_frame_exists('smaller', frames)
@@ -679,14 +678,14 @@ assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number o
 assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
 # TODO: validate_job_exists(splits['key']['name'])
 
-if verbose: print 'Testing SplitFrame with generated destKeys. . .'
+if verbose: print 'Testing SplitFrame with generated dest_keys. . .'
 splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
 frames = a_node.frames()['frames']
-validate_frame_exists(splits['destKeys'][0]['name'], frames)
-validate_frame_exists(splits['destKeys'][1]['name'], frames)
+validate_frame_exists(splits['dest_keys'][0]['name'], frames)
+validate_frame_exists(splits['dest_keys'][1]['name'], frames)
 
-first = a_node.frames(key=splits['destKeys'][0]['name'])['frames'][0]
-second = a_node.frames(key=splits['destKeys'][1]['name'])['frames'][0]
+first = a_node.frames(key=splits['dest_keys'][0]['name'])['frames'][0]
+second = a_node.frames(key=splits['dest_keys'][1]['name'])['frames'][0]
 assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
 assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
 # TODO: validate_job_exists(splits['key']['name'])
@@ -904,7 +903,7 @@ assert 'prostate_binomial' in model['models'][0]['compatible_frames'], "FAIL: Fa
 
 ######################################################################
 # Now look for 'prostate_binomial' using the one-frame API and find_compatible_models, and check it
-result = a_node.frames(key='prostate_binomial', find_compatible_models=True, len=5)
+result = a_node.frames(key='prostate_binomial', find_compatible_models=True, row_count=5)
 frames = result['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."

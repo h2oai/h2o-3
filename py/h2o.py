@@ -521,8 +521,8 @@ class H2O(object):
     def frames(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_models': 0,
-            'offset': 0,
-            'len': 100     # TODO: len and offset are not working yet
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
@@ -539,8 +539,8 @@ class H2O(object):
     '''
     def columns(self, key, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
@@ -554,8 +554,8 @@ class H2O(object):
     '''
     def column(self, key, column, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
@@ -569,8 +569,8 @@ class H2O(object):
     '''
     def summary(self, key, column, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         

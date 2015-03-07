@@ -264,13 +264,13 @@ class H2OFrame:
       self._row('mean', None),
       self._row('maxs', 0),
       self._row('sigma', None),
-      self._row('zeros', None),
-      self._row('missing', None)
+      self._row('zero_count', None),
+      self._row('missing_count', None)
     ]
 
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
 
-    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunkSummary"]
+    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
 
     h2o.remove(chunk_summary_tmp_key)
 
@@ -553,7 +553,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['veckeys']# List of h2o vec keys
+    veckeys = fr['vec_keys']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -590,7 +590,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['veckeys']# List of h2o vec keys
+    veckeys = fr['vec_keys']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
