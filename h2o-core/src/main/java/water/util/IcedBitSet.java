@@ -119,17 +119,16 @@ public class IcedBitSet extends Iced {
     return sb.p("}");
   }
   public String toStrArray() {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
     StringBuilder sb = new StringBuilder();
-    sb.append("{").append(_val[0]);
+    sb.append("{").append(_val[_byteoff]);
     int bytes = bytes(_nbits);
     for(int i = 1; i < bytes; i++)
-      sb.append(", ").append(_val[i]);
+      sb.append(", ").append(_val[_byteoff+i]);
     sb.append("}");
     return sb.toString();
   }
 
   public SB toJava( SB sb, String varname, int col, String colname ) {
-    return sb.p("!hex.genmodel.GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", (int) data[").p(col).p(" /* ").p(colname).p(" */").p("])");
+    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", (int) data[").p(col).p(" /* ").p(colname).p(" */").p("])");
   }
 }

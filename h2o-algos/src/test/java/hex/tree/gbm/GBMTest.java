@@ -397,6 +397,10 @@ public class GBMTest extends TestUtil {
 
       hex.ModelMetricsMultinomial mm = hex.ModelMetricsMultinomial.getFromDKV(gbm,parms.valid());
       Assert.assertTrue(mm.r2() > 0.5);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(v,res));
+
       res.remove();
 
     } finally {
