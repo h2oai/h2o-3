@@ -32,7 +32,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -136,23 +136,24 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0f);").nl();
     body.ip("float[] fdata = hex.genmodel.GenModel.SharedTree_fclean(data);").nl();
+    String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for( int t=0; t < _output._treeKeys.length; t++ ) {
-      body.ip("Forest_").p(t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body,mname,t).p(".score0(fdata,preds);").nl();
       file.nl();
-      file.ip("class Forest_").p(t).p(" {").nl().ii(1);
+      toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
       file.ip("public static void score0(float[] fdata, float[] preds) {").nl().ii(1);
       for( int c=0; c<nclass; c++ )
         if( !(c==1 && nclass==2) ) // Binomial optimization
-          toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),t,c).p(".score0(fdata);").nl();
+          toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),mname,t,c).p(".score0(fdata);").nl();
       file.di(1).ip("}").nl(); // end of function
       file.di(1).ip("}").nl(); // end of forest class
 
       // Generate the pre-tree classes afterwards
       for( int c=0; c<nclass; c++ ) {
         if( !(c==1 && nclass==2) ) { // Binomial optimization
-          toJavaTreeName(file.ip("class "),t,c).p(" {").nl().ii(1);
+          toJavaTreeName(file.ip("class "),mname,t,c).p(" {").nl().ii(1);
           CompressedTree ct = _output.ctree(t,c);
           new TreeJCodeGen(this,ct, file).generate();
           file.di(1).ip("}").nl(); // close the class
@@ -162,5 +163,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     toJavaUnifyPreds(body,file);
   }
   abstract protected void toJavaUnifyPreds( SB body, SB file );
-  private SB toJavaTreeName( final SB sb, int t, int c ) { return sb.p("Tree_").p(t).p("_class_").p(c); }
+  private SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
+  private SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
 }

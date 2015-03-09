@@ -594,12 +594,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
     sb.nl();
     sb.ip("// Column domains. The last array contains domain of response column.").nl();
     sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
     for (int i=0; i<_output._domains.length; i++) {
       String[] dom = _output._domains[i];
-      String colInfoClazz = "ColInfo_"+i;
+      String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
       sb.p(colInfoClazz).p(".VALUES");
       if (i!=_output._domains.length-1) sb.p(',');
@@ -636,40 +637,71 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   // Convenience method for testing: build Java, convert it to a class &
   // execute it: compare the results of the new class's (JIT'd) scoring with
-  // the built-in (interpreted) scoring on this dataset.  Throws if there
-  // is any error (typically an AssertionError).
+  // the built-in (interpreted) scoring on this dataset.  Returns true if all
+  // is well, false is there are any mismatches.  Throws if there is any error
+  // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions ) {
     assert data.numRows()==model_predictions.numRows();
-    String[] warns = adaptTestForTrain(data,true);
-    if( warns.length > 0 )
-      System.err.println(Arrays.toString(warns));
-
-    String modelName = JCodeGen.toJavaId(_key.toString());
-    String java_text = toJava();
-    System.out.println(java_text);
-    GenModel genmodel;
-    try { 
-      Class clz = JCodeGen.compile(modelName,java_text);
-      genmodel = (GenModel)clz.newInstance();
-    } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
-
-    Vec[] dvecs = data.vecs();
-    Vec[] pvecs = model_predictions.vecs();
-    
-    double features  [] = MemoryManager.malloc8d(genmodel._names.length);
-    float predictions[] = MemoryManager.malloc4f(genmodel.nclasses()+1);
-
-    int miss = 0;
-    for( int row=0; row<data.numRows(); row++ ) {
-      for( int col=0; col<features.length; col++ )
-        features[col] = dvecs[col].at(row);
-      genmodel.score0(features,predictions);
-      for( int col=0; col<predictions.length; col++ )
-        if( predictions[col] != pvecs[col].at(row) ) {
-          System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+pvecs[col].at(row)+", POJO prediction="+predictions[col]);
-          if( miss++ > 10 ) return false;
+    Frame fr = null;
+    try {
+      fr = new Frame(data);
+      String[] warns = adaptTestForTrain(fr,true);
+      if( warns.length > 0 )
+        System.err.println(Arrays.toString(warns));
+      
+      // Output is in the model's domain, but needs to be mapped to the scored
+      // dataset's domain.
+      int[] omap = null;
+      if( _output.isClassifier() ) {
+        Vec actual = fr.vec(_output.responseName());
+        String sdomain[] = actual.domain(); // Scored/test domain; can be null
+        String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
+        if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+          EnumWrappedVec ewv = new EnumWrappedVec(mdomain,sdomain);
+          omap = ewv.enum_map(); // Map from model-domain to scoring-domain
+          ewv.remove();
         }
+      }
+
+      String modelName = JCodeGen.toJavaId(_key.toString());
+      String java_text = toJava();
+      //System.out.println(java_text);
+      GenModel genmodel;
+      try { 
+        Class clz = JCodeGen.compile(modelName,java_text);
+        genmodel = (GenModel)clz.newInstance();
+      } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
+
+      Vec[] dvecs = fr.vecs();
+      Vec[] pvecs = model_predictions.vecs();
+    
+      double features  [] = MemoryManager.malloc8d(genmodel._names.length);
+      float predictions[] = MemoryManager.malloc4f(genmodel.nclasses()+1);
+
+      // Compare predictions, counting mis-predicts
+      int miss = 0;
+      for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+        for( int col=0; col<features.length; col++ ) // Build feature set
+          features[col] = dvecs[col].at(row);
+        genmodel.score0(features,predictions);            // POJO predictions
+        for( int col=0; col<predictions.length; col++ ) { // Compare predictions
+          double d = pvecs[col].at(row);                  // Load internal scoring predictions
+          if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
+          if( predictions[col] != d ) {                   // Compare predictions
+            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
+            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+          }
+        }
+      }
+      return miss==0;
+    } finally {
+      // Remove temp keys.  TODO: Really should use Scope but Scope does not
+      // currently allow nested-key-keepers.
+      Vec[] vecs = fr.vecs();
+      for( int i=0; i<vecs.length; i++ )
+        if( data.find(vecs[i]) != -1 ) // Exists in the original frame?
+          vecs[i] = null;              // Do not delete it
+      fr.delete();
     }
-    return miss==0;
   }
 }
