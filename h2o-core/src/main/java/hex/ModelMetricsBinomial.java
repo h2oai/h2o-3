@@ -44,7 +44,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     protected final float[] _thresholds;
     protected long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
     public MetricBuilderBinomial( String[] domain, float[] thresholds ) {
-      super(domain);
+      super(2,domain);
       _thresholds = thresholds;
       // Thresholds are only for binomial classes
       assert (_nclasses==2 && thresholds.length>0) || (_nclasses!=2 && thresholds.length==1);
@@ -55,7 +55,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     // distribution;
     @Override public float[] perRow( float ds[], float[] yact, Model m ) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Float.isNaN(ds[0])) return ds; // No errors if prediction is missing
+      if( Float.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
 
       // Compute error
@@ -63,7 +63,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
       assert Math.abs(sum-1.0f) < 1e-6;
       float err = 1.0f-ds[iact+1];  // Error: distance from predicting ycls as 1.0
-      _sumsqe += err*err;       // Squared error
+      _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 
       // Binomial classification -> compute AUC, draw ROC
