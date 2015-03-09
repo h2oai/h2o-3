@@ -176,7 +176,7 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
-    /** --ga_hadoop_ver; Version string for hadoop */
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
     public String ga_hadoop_ver = null;
 
     /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
@@ -323,6 +323,13 @@ final public class H2O {
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
         ARGS.aws_credentials = args[i];
+      }
+      else if (s.matches("ga_hadoop_ver")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.ga_hadoop_ver = args[i];
+      }
+      else if (s.matches("ga_opt_out")) {
+        ARGS.ga_opt_out = true;
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
