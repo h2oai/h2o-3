@@ -98,8 +98,8 @@ class Basic(unittest.TestCase):
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
-            # if p.get('do_classification', None):
-            #   print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
+            if p.get('do_classification', None):
+                print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             vis = OutputObj(model.variableImportances, 'vis')
 
@@ -115,7 +115,6 @@ class Basic(unittest.TestCase):
             # print "\nrelativeImportance (10)\n", tabulate(relativeImportance, headers=names)
             # print "\nscaledImportance (10)\n", tabulate(scaledImportance, headers=names)
             # print "\npercentage (10)\n", tabulate(percentage, headers=names)
-
 
             print "will say Regression or Classification. no Multinomial?"
             print "model.model_category", model.model_category

@@ -159,8 +159,9 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
-    if setup_result['columnNames']:
-        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['columnNames'])) + "]"
+    columnNames = setup_result['columnNames']
+    if columnNames:
+        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), columnNames)) + "]"
     else:
         columnNamesStr = None
 
@@ -172,11 +173,24 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     ct = setup_result['columnTypes']
     if columnTypeDict: 
         for k,v in columnTypeDict.iteritems():
-            if k>=0 and k<len(ct):
-                ct[k] = v
+            if isinstance(k, int):
+                # if a column index
+                if k>=0 and k<len(ct):
+                    ct[k] = v
+                else:
+                    raise Exception("bad col index %s in columnTypeDict param %s" % (k, columnTypeDict))
+            # if a column name
+            elif isinstance(k, basestring):
+                # find the index
+                if k not in columnNames:
+                    raise Exception("bad col name %s in columnTypeDict param %s. columnNames: %s" % (k, columnTypeDict, columnNames))
+                ci = columnNames.index(k)
+                ct[ci] = v
             else:
-                raise Exception("bad col index %s in columnTypeDict param %s" % (k, columnTypeDict))
+                raise Exception("%s %s should be int or string" % (k, type(k)))
+
     columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
+
 
     parse_params = {
         'srcs': srcsStr,
@@ -195,7 +209,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     }
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
-    tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
+    tooManyColNamesToPrint = columnNames and len(columnNames) > 2000
     if tooManyColNamesToPrint:
         h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
         h2p.yellow_print("See sandbox/commands.log")
@@ -457,11 +471,14 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     if noPoll:
         result = result1
     elif 'validation_error_count' in result1:
-        h2p.yellow_print("parameter error in model_builders")
+        h2p.yellow_print("parameter error in model_builders: %s")
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
         result = result1
         # don't bother printing a time message
+    elif 'exception_msg' in result1:
+        h2p.yellow_print("exception msg in model_builders: %s" % result1['exception_msg'])
+        result = result1
     else:
         job_result = result1['jobs'][0]
         job_key = job_result['key']['name']

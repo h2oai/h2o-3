@@ -103,10 +103,11 @@ def simpleCheckGLM(self, model, parameters,
     temp = model.coefficients_table.data[1]
     assert len(coeffs_names)==len(temp), "%s %s" % (len(coeffs_names), len(temp))
 
-    check_obj_has_good_numbers(temp, 'model.coeffs', allowNaN=allowNaN)
-    print "temp", temp[0:10]
-    print "temp[5489:5500]", temp[5489:5500]
-    coeffs = map(lambda x : float(x) if x != "" else 0,  temp)
+    # we need coefficients to be floats or empty
+    check_obj_has_good_numbers(temp, 'model.coeffs', allowNaN=False)
+    # print "temp", temp[0:10]
+    # print "temp[5489:5500]", temp[5489:5500]
+    coeffs = map(lambda x : float(x) if str(x) != "" else 0,  temp)
 
     intercept = coeffs[-1] 
     interceptName = coeffs_names[-1]

@@ -88,7 +88,7 @@
 
   if (method == "GET") {
     h = basicHeaderGatherer()
-    tmp = tryCatch(getURL(url = url, headerfunction = h$update),
+    tmp = tryCatch(getURL(url = url, headerfunction = h$update, useragent=R.version.string),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
@@ -99,7 +99,7 @@
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-    tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, verbose = FALSE)),
+    tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, useragent=R.version.string, verbose = FALSE)),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
@@ -109,7 +109,7 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-    tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, verbose = FALSE),
+    tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
@@ -119,7 +119,7 @@
   } else if (method == "DELETE") {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer()
-    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, verbose = FALSE),
+    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE),
                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
