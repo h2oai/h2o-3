@@ -944,23 +944,23 @@ setMethod("summary", "H2OFrame", function(object, ...) {
         if(is.null(col$mins) || length(col$mins) == 0) col$mins = NaN
         if(is.null(col$maxs) || length(col$maxs) == 0) col$maxs = NaN
         if(is.null(col$mean)) col$mean = NaN
-        if(is.null(col$pctiles))
+        if(is.null(col$percentiles))
           params <- format(rep(signif(as.numeric(col$mean), digits), 6), digits = 4)
         else
-          params = format(signif(as.numeric(c(min(col$mins), col$pctiles[3], col$pctiles[5], col$mean, col$pctile[7], max(col$maxs))), digits), digits = 4)
+          params = format(signif(as.numeric(c(min(col$mins), col$percentiles[3], col$percentiles[5], col$mean, col$pctile[7], max(col$maxs))), digits), digits = 4)
         c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
           paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
           paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "))
       } else {
-        top.ix <- sort.int(col$bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
+        top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
         if(is.null(col$domain)) domains <- top.ix[1:6] else domains <- col$domain[top.ix]
-        counts <- col$bins[top.ix]
+        counts <- col$histogram_bins[top.ix]
         
         # TODO: Make sure "NA's" isn't a legal domain level.
-        if(!is.null(col$missing) && col$missing > 0) {
+        if(!is.null(col$missing_count) && col$missing_count > 0) {
           idx <- ifelse(any(is.na(top.ix)), which(is.na(top.ix))[1], 6)
           domains[idx] <- "NA's"
-          counts[idx] <- col$missing
+          counts[idx] <- col$missing_count
         }
         
         width <- c(max(nchar(domains)), max(nchar(counts)))

@@ -80,6 +80,14 @@ h2o.gbm <- function(x, y, training_frame, do_classification, ...,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
+  if (!is.null(validation_frame)) {
+    if (!inherits(validation_frame, "H2OFrame"))
+        tryCatch(validation_frame <- h2o.getFrame(validation_frame),
+                 error = function(err) {
+                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                 })
+  }
+
   #required map for params with different names, assuming it will change in the RESTAPI end
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column",

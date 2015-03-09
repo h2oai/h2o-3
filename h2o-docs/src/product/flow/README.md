@@ -651,6 +651,7 @@ To create a copy of the current flow, select the **Flow** menu, then click **Dup
 
 After saving a flow as a notebook, click the **Flow** menu, then select **Export**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as *<filename>*.flow, where *<filename>* is the name specified when the flow was saved. 
 
+**Caution**: You must have an active internet connection to export flows. 
 
 ###Loading Flows
 

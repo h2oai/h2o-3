@@ -45,6 +45,10 @@ JUNIT_TESTS_BOOT="water.AAA_PreCloudLock"
 # Too slow for normal junit runs
 JUNIT_TESTS_SLOW="water.parser.ParseProgressTest\|water.fvec.WordCountBigTest"
 
+# Runner
+# Default JUnit runner is org.junit.runner.JUnitCore
+JUNIT_RUNNER="water.junit.H2OTestRunner"
+
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
@@ -64,7 +68,7 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-core junit tests...
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | cut "-d " -f23,20 | awk '{print $2 " " $1}'| sort -gr | head -n 10 >> $OUTDIR/out.0
 

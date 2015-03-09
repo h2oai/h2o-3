@@ -33,27 +33,27 @@ public class ParserTestARFF extends TestUtil {
       Assert.assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
         Vec vec = fr.vecs()[j];
-        if (exp[j] == ParseDataset.FVecDataOut.TCOL) { //Time
+        if (exp[j] == Vec.T_TIME) { //Time
           Assert.assertTrue(vec.isTime());
 //          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isEnum());
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset.FVecDataOut.ECOL) { //Categorical
+        } else if (exp[j] == Vec.T_ENUM) { //Categorical
           Assert.assertTrue(vec.isEnum());
 //          Assert.assertFalse(vec.isInt()); //FIXME enum is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isString());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset.FVecDataOut.SCOL) { //String
+        } else if (exp[j] == Vec.T_STR) { //String
           Assert.assertTrue(vec.isString());
           Assert.assertFalse(vec.isInt());
           Assert.assertFalse(vec.isEnum());
           Assert.assertFalse(vec.isTime());
           Assert.assertFalse(vec.isUUID());
-        } else if (exp[j] == ParseDataset.FVecDataOut.NCOL) { //Numeric (can be Int or not)
+        } else if (exp[j] == Vec.T_NUM) { //Numeric (can be Int or not)
           Assert.assertTrue(!vec.isEnum() && !vec.isString() && !vec.isUUID() && !vec.isTime());
-        } else if (exp[j] == ParseDataset.FVecDataOut.ICOL) { //UUID
+        } else if (exp[j] == Vec.T_UUID) { //UUID
           Assert.assertTrue(vec.isUUID());
 //          Assert.assertFalse(vec.isInt()); //FIXME uuid is encoded as integer, but should isInt() be true?
           Assert.assertFalse(vec.isEnum());
@@ -144,7 +144,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.NCOL
+            Vec.T_NUM
     };
     String[] exp_names = new String[]{
             "numeric"
@@ -172,7 +172,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.NCOL
+            Vec.T_NUM
     };
     String[] exp_names = new String[]{
             "numeric"
@@ -204,7 +204,7 @@ public class ParserTestARFF extends TestUtil {
             "10",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.ECOL
+            Vec.T_ENUM
     };
     String[] exp_names = new String[]{
             "class"
@@ -232,7 +232,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.ECOL
+            Vec.T_ENUM
     };
     String[] exp_names = new String[]{
             "enum"
@@ -260,7 +260,7 @@ public class ParserTestARFF extends TestUtil {
             "-2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.ECOL
+            Vec.T_ENUM
     };
     String[] exp_names = new String[]{
             "enum"
@@ -289,7 +289,7 @@ public class ParserTestARFF extends TestUtil {
             "2",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.SCOL
+            Vec.T_STR
     };
     String[] exp_names = new String[]{
             "col"
@@ -323,10 +323,10 @@ public class ParserTestARFF extends TestUtil {
             "2013-07-20,cat,7,N"
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.TCOL,
-            ParseDataset.FVecDataOut.ECOL,
-            ParseDataset.FVecDataOut.NCOL,
-            ParseDataset.FVecDataOut.ECOL
+            Vec.T_TIME,
+            Vec.T_ENUM,
+            Vec.T_NUM,
+            Vec.T_ENUM
     };
     String[] exp_names = new String[]{
             "date",
@@ -363,10 +363,10 @@ public class ParserTestARFF extends TestUtil {
             "2013-07-20,cat,7,N"
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.TCOL,
-            ParseDataset.FVecDataOut.ECOL,
-            ParseDataset.FVecDataOut.ECOL,
-            ParseDataset.FVecDataOut.ECOL
+            Vec.T_TIME,
+            Vec.T_ENUM,
+            Vec.T_ENUM,
+            Vec.T_ENUM
     };
     String[] exp_names = new String[]{
             "date,yeah'!",
@@ -412,7 +412,7 @@ public class ParserTestARFF extends TestUtil {
             "7f79c2b5-da56-721f-22f9-fdd726b13daf8e8",
     };
     byte[] exp_types = new byte[]{
-            ParseDataset.FVecDataOut.ICOL
+            Vec.T_UUID
     };
     final int len = 4;
 

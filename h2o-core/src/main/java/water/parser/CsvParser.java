@@ -1,6 +1,7 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
+import water.fvec.Vec;
 import water.fvec.FileVec;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -29,7 +30,7 @@ class CsvParser extends Parser {
     else offset = 0; // Else start skipping at the start
 
     // For parsing ARFF
-    if (_setup._pType == ParserType.ARFF && _setup.headerLines() > 0) state = WHITESPACE_BEFORE_TOKEN;
+    if (_setup._parse_type == ParserType.ARFF && _setup.headerLines() > 0) state = WHITESPACE_BEFORE_TOKEN;
 
     int quotes = 0;
     long number = 0;
@@ -60,11 +61,11 @@ class CsvParser extends Parser {
     }
     dout.newLine();
 
-    final boolean forceable = dout instanceof ParseDataset.FVecDataOut && ((ParseDataset.FVecDataOut)dout)._ctypes != null && _setup._ctypes != null;
+    final boolean forceable = dout instanceof ParseDataset.FVecDataOut && ((ParseDataset.FVecDataOut)dout)._ctypes != null && _setup._column_types != null;
 MAIN_LOOP:
     while (true) {
-      boolean forcedEnum = forceable && colIdx < _setup._ctypes.length && _setup._ctypes[colIdx]._type == ColType.ENUM;
-      boolean forcedString = forceable && colIdx < _setup._ctypes.length && _setup._ctypes[colIdx]._type == ColType.STR;
+      boolean forcedEnum = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_ENUM;
+      boolean forcedString = forceable && colIdx < _setup._column_types.length && _setup._column_types[colIdx] == Vec.T_STR;
 
       switch (state) {
         // ---------------------------------------------------------------------
@@ -175,7 +176,7 @@ MAIN_LOOP:
         case COND_QUOTED_TOKEN:
           state = TOKEN;
           if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
-              ((_setup._singleQuotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
+              ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
             assert (quotes == 0);
             quotes = c;
             break;
@@ -570,7 +571,7 @@ MAIN_LOOP:
    *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
    *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
-  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
 
     // Parse up to 10 lines (skipping hash-comments & ARFF comments)
     String[] lines = new String[10]; // Parse 10 lines
@@ -592,7 +593,7 @@ MAIN_LOOP:
       }
     }
     if( nlines==0 )
-      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,0,false,null,null,null,checkHeader, null, FileVec.DFLT_CHUNK_SIZE);
+      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -605,22 +606,22 @@ MAIN_LOOP:
         else if (lines[0].split(" ").length > 2) sep = ' ';
         else { //one item, guess type
           data[0] = new String[]{lines[0]};
-          ColTypeInfo[] ctypes = new ColTypeInfo[1];
+          byte[] ctypes = new byte[1];
           String[][] domains = new String[1][];
           if (NumberUtils.isNumber(data[0][0])) {
-            ctypes[0] = new ColTypeInfo(ColType.NUM);
+            ctypes[0] = Vec.T_NUM;
           } else { // non-numeric
             ValueString str = new ValueString(data[0][0]);
             if (ParseTime.isDateTime(str))
-              ctypes[0] = new ColTypeInfo(ColType.TIME);
+              ctypes[0] = Vec.T_TIME;
             else if (ParseTime.isUUID(str))
-                ctypes[0] = new ColTypeInfo(ColType.UUID);
+                ctypes[0] = Vec.T_UUID;
             else { // give up and guess enum
-                ctypes[0] = new ColTypeInfo(ColType.ENUM);
+                ctypes[0] = Vec.T_ENUM;
                 domains[0] = new String[]{data[0][0]};
             }
           }
-          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, 1, singleQuotes, null, domains, data, checkHeader, ctypes, FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
         }
       }
       data[0] = determineTokens(lines[0], sep, single_quote);
@@ -684,15 +685,15 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, ncols, singleQuotes, labels, null /*domains*/, data, checkHeader, null);
+    ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
     InputStream is = new ByteArrayInputStream(bits);
     CsvParser p = new CsvParser(resSetup);
-    InspectDataOut dout = new InspectDataOut(resSetup._ncols);
+    InspectDataOut dout = new InspectDataOut(resSetup._number_columns);
     try{
       p.streamParse(is, dout);
-      resSetup._ctypes = dout.guessTypes();
+      resSetup._column_types = dout.guessTypes();
     }catch(Throwable e){
       throw new RuntimeException(e);
     }

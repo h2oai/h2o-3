@@ -100,7 +100,7 @@ Notes:
   * The classification error on the entire test set (10,000 rows) is computed after training is done, for all runs. The time for this is not counted.
   * H2O Deep Learning uses online learning with stochastic gradient descent and back-propagation. There are *no mini-batches* (or only trivial ones of size 1), every training sample immediately affects the network weights for fastest convergence and highest model accuracy.
   * Intentional race conditions between multiple threads [a la Hogwild!](http://papers.nips.cc/paper/4390-hogwild-a-lock-free-approach-to-parallelizing-stochastic-gradient-descent)  avoid locking, but lead to non-reproducible results, unless `reproducible=T` is specified and a `seed` is given (which then runs on 1 core - not done here).
-  * Hardware specs: [Intel i7 5820k (6 cores @4.4GHz)](http://rog.asus.com/realbench/show_comment.php?id=6764). Yes, it's an overclocked sub-$400 processor. If it dies, I'll have to get the 8-core version...
+  * Hardware specs: [Intel i7 5820k (6 cores @4.4GHz)](http://rog.asus.com/realbench/show_comment.php?id=6909). Yes, it's an overclocked sub-$400 processor. If it dies, I'll have to get the 8-core version...
   * It is possible to run individual pieces (code *Chunks*) or the entire script at once, each benchmark has its own CSV results file.
 
 Here we go. First, we set up some helper function to run H2O Deep Learning with user-given parameters, and to write the parameters and observables to CSV files.

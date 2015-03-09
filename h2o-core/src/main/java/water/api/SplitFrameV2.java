@@ -12,7 +12,7 @@ public class SplitFrameV2 extends JobV2<SplitFrame, SplitFrameV2> {
   public double[] ratios;
 
   @API(help="Destination keys for each output frame split.")
-  public FrameKeyV1[] destKeys;
+  public FrameKeyV1[] dest_keys;
 
   @Override public SplitFrame createImpl() { return new SplitFrame(Key.make(), null); }
 }
