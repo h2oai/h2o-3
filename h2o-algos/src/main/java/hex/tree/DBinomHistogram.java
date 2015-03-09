@@ -14,7 +14,7 @@ import water.util.IcedBitSet;
    @author Cliff Click
 */
 public class DBinomHistogram extends DHistogram<DBinomHistogram> {
-  private int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
+  public int _sums[]; // Sums (& square-sums since only 0 & 1 allowed), shared, atomically incremented
 
   public DBinomHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
     super(name,nbins,isInt,min,maxEx,nelems);
@@ -56,6 +56,20 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   @Override public DTree.Split scoreMSE( int col, int min_rows ) {
     final int nbins = nbins();
     assert nbins > 1;
+
+    // Store indices from sort to determine group split later
+    Integer idx[] = new Integer[nbins];
+    for(int b = 0; b < nbins; b++) idx[b] = b;
+
+    // Sort predictor levels in ascending order of mean response within each bin
+    if(_isInt == 2 && _step == 1.0f && nbins >= 4) {
+      final Double[] means = new Double[nbins];
+      for(int b = 0; b < nbins; b++) means[b] = mean(b);
+      Arrays.sort(idx, new Comparator<Integer>() {
+        @Override public int compare(Integer o1, Integer o2) { return means[o1].compareTo(means[o2]); }
+      });
+    }
+    assert(_sums != null);
 
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
     long sums0[] = MemoryManager.malloc8(nbins+1);

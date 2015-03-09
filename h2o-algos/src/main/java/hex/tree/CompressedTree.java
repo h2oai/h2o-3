@@ -1,6 +1,8 @@
 package hex.tree;
 
 import java.util.Arrays;
+import java.util.Random;
+
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
@@ -17,7 +19,7 @@ import water.util.SB;
 //        1 bit  (128) right leaf type flag (0: subtree, 1: small cat, 2: big cat, 3: float)
 //    left, right: tree | prediction
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
-class CompressedTree extends Keyed {
+public class CompressedTree extends Keyed {
   final byte [] _bits;
   final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
@@ -81,6 +83,13 @@ class CompressedTree extends Keyed {
   }
 
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
+
+  public Random rngForChunk( int cidx ) {
+    Random rand = new Random(_seed);
+    for( int i=0; i<cidx; i++ ) rand.nextLong();
+    long seed = rand.nextLong();
+    return new Random(seed);
+  }
 
   @Override protected long checksum_impl() { throw water.H2O.fail(); }
 

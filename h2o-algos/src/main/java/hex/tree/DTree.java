@@ -61,6 +61,10 @@ public class DTree extends Iced {
 
   public final int len() { return _len; }
 
+  // Public stats about tree
+  public int leaves;
+  public int depth;
+
   // --------------------------------------------------------------------------
   // Abstract node flavor
   public static abstract class Node extends Iced {
@@ -90,6 +94,7 @@ public class DTree extends Iced {
     abstract protected int size();
 
     public final int nid() { return _nid; }
+    public final int pid() { return _pid; }
   }
 
   // --------------------------------------------------------------------------
@@ -389,6 +394,8 @@ public class DTree extends Iced {
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
 
+    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
+
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
       int col = _split._col;
@@ -504,6 +511,8 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    public final double pred() { return _pred; }
+    public final void pred(double pred) { _pred = pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }

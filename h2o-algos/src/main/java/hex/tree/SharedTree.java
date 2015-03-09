@@ -318,8 +318,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
   protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  // Out-of-bag trees counter - only one since it is shared via k-trees
+  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
+  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
+  protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
+
+  protected double[] data_row( Chunk chks[], int row, double[] data) {
+    assert data.length == _ncols;
+    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
+    return data;
+  }
 
   // Builder-specific decision node
   abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );

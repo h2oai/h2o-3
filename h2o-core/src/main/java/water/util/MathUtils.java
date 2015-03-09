@@ -1,5 +1,7 @@
 package water.util;
 
+import java.util.Arrays;
+
 public class MathUtils {
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
@@ -38,6 +40,19 @@ public class MathUtils {
     if (n <= 0) throw new IllegalArgumentException();
     return 31 - Integer.numberOfLeadingZeros(n);
   }
+
+  public static float[] div(float[] nums, float n) {
+    assert !Float.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+    for (int i=0; i<nums.length; i++) nums[i] /= n;
+    return nums;
+  }
+
+  public static float sum(final float[] from) {
+    float result = 0;
+    for (float d: from) result += d;
+    return result;
+  }
+
   public static float sumSquares(final float[] a) {
     return sumSquares(a, 0, a.length);
   }

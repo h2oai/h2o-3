@@ -52,7 +52,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public int _ntrees;
 
     /** More indepth tree stats */
-    final TreeStats _treeStats;
+    final public TreeStats _treeStats;
 
     /** Trees get big, so store each one seperately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
