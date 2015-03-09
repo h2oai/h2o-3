@@ -46,14 +46,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             if( best==0 || ds[i] > ds[best] )
               best = i;
           }
-        }              
+        }
+        if( best == 0 ) return; // prediction not in top K
         if( ds[best] < p ) {
           p = ds[best]; tie=0;
         } else {
           assert ds[best]==p;
           tie++;
         }
-        if( best==iact+1 ) { hits[k]++; break; }
+        if( best==iact+1 ) { hits[k]++; return; }
       }
     }
   }

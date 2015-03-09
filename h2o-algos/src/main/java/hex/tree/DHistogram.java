@@ -208,7 +208,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       double mean = mean(b);
       if( mean != m )
         if( Double.isNaN(m) ) m=mean;
-        else if(Math.abs(m - mean) > 1e-6) return false;
+        else if(Math.abs(m - mean) > 1e-4) return false;
     }
     return true;
   }
