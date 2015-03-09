@@ -31,6 +31,34 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
+  public static void updateHits(int iact, float[] ds, long[] hits ) {
+    int pred = (int)ds[0];
+    if( iact == pred ) hits[0]++; // Top prediction is correct?
+    else {                  // Else need to find how far down the correct guy is
+      float p = ds[pred+1]; // Prediction value which failed
+      int tie=0;
+      for( int k=1; k<hits.length; k++ ) {
+        // Find largest prediction less than 'p', or for ties, the tie'th
+        int best = 0;
+        int tiebreak=0;
+        for( int i=1; i<ds.length; i++ ) {
+          if( i != pred+1 && (ds[i] < p || (ds[i]==p && tie < tiebreak)) ) {
+            if( best==0 || ds[i] > ds[best] )
+              best = i;
+          }
+        }              
+        if( ds[best] < p ) {
+          p = ds[best]; tie=0;
+        } else {
+          assert ds[best]==p;
+          tie++;
+        }
+        if( best==iact+1 ) { hits[k]++; break; }
+      }
+    }
+  }
+
+
   public static class MetricBuilderMultinomial extends MetricBuilderSupervised {
     long[/*nclasses*/][/*nclasses*/] _cm;
     long[/*K*/] _hits;            // the number of hits for hitratio, length: K
@@ -63,32 +91,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _count++;
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) {
-        if( iact == (int)ds[0] ) _hits[0]++; // Top prediction is correct?
-        else {                  // Else need to find how far down the correct guy is
-          float p = ds[(int)ds[0]]; // Prediction value which failed
-          int tie=0;
-          for( int k=1; k<_K; k++ ) {
-            // Find largest prediction less than 'p', or for ties, the tie'th
-            int best = 0;
-            int tiebreak=0;
-            for( int i=1; i<ds.length; i++ ) {
-              if( ds[i] <= p ) {
-                if( best==0 || ds[i] > ds[best] || 
-                    (ds[i] == ds[best] && tie < tiebreak) )
-                  best = i;
-              }
-            }              
-            if( ds[best] < p ) {
-              p = ds[best]; tie=0;
-            } else {
-              assert ds[best]==p;
-              tie++;
-            }
-            if( best==iact+1 ) { _hits[k]++; break; }
-          }
-        }
-      }
+      if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
       return ds;                // Flow coding
     }
