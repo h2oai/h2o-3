@@ -16,12 +16,6 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
     @API(help="The Gini score for this run.", direction=API.Direction.OUTPUT)
     public double Gini;
 
-    @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 thresholdsAndMetricScores;
-
-    @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 maxCriteriaAndMetricScores;
-
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
     public float[] hr;
 
@@ -91,7 +85,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     col++;
                 }
             }
-            this.thresholdsAndMetricScores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
+            this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
 
 
             // Fill TwoDimTable criteriaByThresholdAndScore
@@ -147,7 +141,7 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     col++;
                 }
             }
-            this.maxCriteriaAndMetricScores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
+            this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
         }
         return this;
     }

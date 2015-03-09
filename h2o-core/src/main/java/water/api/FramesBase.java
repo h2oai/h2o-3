@@ -13,10 +13,10 @@ abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends 
   public String column;
 
   @API(help="Row offset to display", direction=API.Direction.INOUT)
-  public long offset;
+  public long row_offset;
 
   @API(help="Number of rows to display", direction=API.Direction.INOUT)
-  public int len;
+  public int row_count;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
@@ -27,6 +27,9 @@ abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends 
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
   ModelSchema[] compatible_models;
+
+  @API(help="Domains", direction=API.Direction.OUTPUT)
+  String[][] domain;
 
   // Non-version-specific filling into the impl
   @Override public I fillImpl(I f) {

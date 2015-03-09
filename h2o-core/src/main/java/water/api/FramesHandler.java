@@ -158,6 +158,17 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public FramesV3 columnDomain(int version, FramesV3 s) {
+    Frame frame = getFromDKV("key", s.key.key());
+    Vec vec = frame.vec(s.column);
+    if (vec == null)
+      throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
+    s.domain = new String[1][];
+    s.domain[0] = vec.domain();
+    return s;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.key.key()); // safe
     Vec vec = frame.vec(s.column);
@@ -186,7 +197,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2(frame, s.offset, s.len).fillFromImpl(frame);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV2(frame, s.row_offset, s.row_count).fillFromImpl(frame);  // TODO: Refactor with FrameBase
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.

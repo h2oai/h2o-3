@@ -259,6 +259,9 @@ public class KMeansTest extends TestUtil {
 
 
   @Test public void testPOJO() {
+    // Ignore test if the compiler failed to load
+    Assume.assumeTrue(water.util.JCodeGen.canCompile());
+
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {

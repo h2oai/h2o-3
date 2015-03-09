@@ -257,6 +257,16 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
             if ("__meta".equals(name) || "__http_status".equals(name))
               continue;
+            if ("Gini".equals(name)) // proper name
+              continue;
+
+            if (name.endsWith("AUC")) // trainAUC, validAUC
+              continue;
+
+            // TODO: remove after we move these into a TwoDimTable:
+            if ("F0point5".equals(name) || "F0point5_for_criteria".equals(name) || "F1_for_criteria".equals(name) || "F2_for_criteria".equals(name))
+              continue;
+
             if (name.startsWith("_"))
               Log.warn("Found schema field which violates the naming convention; name starts with underscore: " + meta.name + "." + name);
             if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase())) // allow AUC but not residualDeviance
@@ -609,7 +619,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /**
-   * For a given version and Iced class return the appropriate Schema class, if any.
+   * For a given version and Iced class return the appropriate Schema class, if any.f
    * @see #schemaClass(int, java.lang.String)
    */
   public static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {

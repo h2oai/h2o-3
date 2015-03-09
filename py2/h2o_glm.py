@@ -6,7 +6,7 @@ import h2o_nodes
 from tabulate import tabulate
 
 # recursive walk an object check that it has valid numbers only (no "" or nan or inf
-def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
+def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4, allowNaN=False):
     """Represent instance of a class as JSON.
     Arguments:
     obj -- any object
@@ -31,9 +31,9 @@ def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
                     raise Exception("%s %s %s is not a valid float" % (hierarchy, obj, type(obj)))
                 # hack for now
                 number = 0.0
-            if math.isnan(number):
+            if not allowNaN and math.isnan(number):
                 raise Exception("%s %s is a NaN" % (hierarchy, obj))
-            if math.isinf(number):
+            if not allowNaN and math.isinf(number):
                 raise Exception("%s %s is a Inf" % (hierarchy, obj))
             return number
 
@@ -61,7 +61,7 @@ def check_obj_has_good_numbers(obj, hierarchy="", curr_depth=0, max_depth=4):
 def simpleCheckGLM(self, model, parameters, 
     labelList, labelListUsed, allowFailWarning=False, allowZeroCoeff=False,
     prettyPrint=False, noPrint=False, 
-    maxExpectedIterations=None, doNormalized=False):
+    maxExpectedIterations=None, doNormalized=False, allowNaN=False):
 
     warnings = ''
     rank = model.rank
@@ -69,7 +69,7 @@ def simpleCheckGLM(self, model, parameters,
     residual_deviance = model.residual_deviance
 
     threshold = model.threshold
-    check_obj_has_good_numbers(threshold, 'threshold')
+    check_obj_has_good_numbers(threshold, 'threshold', allowNaN=allowNaN)
 
     auc = model.auc
     # NaN if not logistic
@@ -84,16 +84,16 @@ def simpleCheckGLM(self, model, parameters,
     coefficients_magnitude = model.coefficients_magnitude
 
     null_deviance = model.null_deviance
-    check_obj_has_good_numbers(null_deviance, 'model.null_deviance')
+    check_obj_has_good_numbers(null_deviance, 'model.null_deviance', allowNaN=allowNaN)
 
     null_degrees_of_freedom = model.null_degrees_of_freedom
-    check_obj_has_good_numbers(null_degrees_of_freedom, 'model.null_degrees_of_freedom')
+    check_obj_has_good_numbers(null_degrees_of_freedom, 'model.null_degrees_of_freedom', allowNaN=allowNaN)
 
     domains = model.domains
 
     # when is is this okay to be NaN?
     aic = model.aic
-    check_obj_has_good_numbers(aic, 'model.aic')
+    check_obj_has_good_numbers(aic, 'model.aic', allowNaN=allowNaN)
 
     names = model.names
 
@@ -103,10 +103,11 @@ def simpleCheckGLM(self, model, parameters,
     temp = model.coefficients_table.data[1]
     assert len(coeffs_names)==len(temp), "%s %s" % (len(coeffs_names), len(temp))
 
-    check_obj_has_good_numbers(temp, 'model.coeffs')
-    print "temp", temp[0:10]
-    print "temp[5489:5500]", temp[5489:5500]
-    coeffs = map(lambda x : float(x) if x != "" else 0,  temp)
+    # we need coefficients to be floats or empty
+    check_obj_has_good_numbers(temp, 'model.coeffs', allowNaN=False)
+    # print "temp", temp[0:10]
+    # print "temp[5489:5500]", temp[5489:5500]
+    coeffs = map(lambda x : float(x) if str(x) != "" else 0,  temp)
 
     intercept = coeffs[-1] 
     interceptName = coeffs_names[-1]
@@ -254,11 +255,11 @@ def simpleCheckGLMScore(self, glmScore, family='gaussian', allowFailWarning=Fals
             print "aic is missing from the glm json response"
             err = True
 
-    if math.isnan(validation['err']):
+    if not allowNaN and math.isnan(validation['err']):
         print "Why is this err = 'nan'?? %6s %s" % ("err:\t", validation['err'])
         err = True
 
-    if math.isnan(validation['resDev']):
+    if not allowNaN and math.isnan(validation['resDev']):
         print "Why is this resDev = 'nan'?? %6s %s" % ("resDev:\t", validation['resDev'])
         err = True
 
@@ -266,7 +267,7 @@ def simpleCheckGLMScore(self, glmScore, family='gaussian', allowFailWarning=Fals
         raise Exception ("How am I supposed to tell that any of these errors should be ignored?")
 
     # legal?
-    if math.isnan(validation['nullDev']):
+    if not allowNaN and math.isnan(validation['nullDev']):
         ## emsg = "Why is this nullDev = 'nan'?? %6s %s" % ("nullDev:\t", validation['nullDev'])
         ## raise Exception(emsg)
         pass

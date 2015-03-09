@@ -186,13 +186,14 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__IMPORT         <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
 
 #' Parse Endpoints
-.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?srcs=["nfs://asdfsdf...", "nfs://..."]
-.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?srcs=["nfs://path/to/data"]&hex=KEYNAME&pType=CSV&sep=44&ncols=5&checkHeader=0&singleQuotes=false&columnNames=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
+.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
+.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_key=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 
 #' Inspect/Summary Endpoints
 .h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
 .h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
 .h2o.__COL_SUMMARY <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/")
+.h2o.__COL_DOMAIN  <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/")
 
 #' Frame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame.json"

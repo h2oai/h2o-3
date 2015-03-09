@@ -9,7 +9,7 @@ public class ExampleTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   @Test public void testIris() {
-    ExampleModel kmm = null;
+    ExampleModel emm = null;
     Frame fr = null;
     try {
       long start = System.currentTimeMillis();
@@ -23,12 +23,12 @@ public class ExampleTest extends TestUtil {
       parms._response_column = "class";
 
       Example job = new Example(parms).trainModel();
-      kmm = job.get();
+      emm = job.get();
       job.remove();
 
     } finally {
       if( fr  != null ) fr .remove();
-      if( kmm != null ) kmm.delete();
+      if( emm != null ) emm.delete();
     }
   }
 }
