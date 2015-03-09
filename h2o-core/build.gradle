@@ -9,8 +9,8 @@ dependencies {
   compile "gov.nist.math:jama:1.0.3"
   compile "org.apache.commons:commons-math3:3.3"
   compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
-  compile "com.brsanthu:google-analytics-java:1.1.1"
-  compile "org.slf4j:slf4j-nop:1.7.5"
+  //compile "com.brsanthu:google-analytics-java:1.1.1"
+  //compile "org.slf4j:slf4j-nop:1.7.5"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
