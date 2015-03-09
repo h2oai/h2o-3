@@ -1,12 +1,13 @@
 package water.init;
 
+import water.util.Log;
+
 import java.io.*;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.ArrayList;
-import water.util.Log;
+import java.util.Arrays;
 
 
 /** Self-jar file MD5 hash, to help make sure clusters are made from the same jar. */
@@ -14,8 +15,8 @@ public abstract class JarHash {
   static final String JARPATH; // Path to self-jar, or NULL if we cannot find it
   static public final byte[] JARHASH; // MD5 hash of self-jar, or 0xFF's if we cannot figure it out
 
-  static { 
-    JARPATH = cl_init_jarpath(); 
+  static {
+    JARPATH = cl_init_jarpath();
     JARHASH = cl_init_md5(JARPATH);
   }
 
@@ -58,7 +59,7 @@ public abstract class JarHash {
 
 
   private static final ArrayList<File> RESOURCE_FILES = new ArrayList<>();
-  
+
   public static void registerResourceRoot(File f) {
     if (f.exists()) {
       RESOURCE_FILES.add(f);
@@ -72,24 +73,25 @@ public abstract class JarHash {
       // If -Dwebdev=1 is set in VM args, we're in front end dev mode, so skip the class loader.
       // This is to allow the front end scripts/styles/templates to be loaded from the build
       //  directory during development.
-      if (System.getProperty("webdev") == null) {
-        // Jar file mode.
-        ClassLoader cl = ClassLoader.getSystemClassLoader();
-        InputStream is = loadResource(uri, cl);
-        if (is == null && (cl=Thread.currentThread().getContextClassLoader())!=null) {
-            is = loadResource(uri, cl);
-        }
-        if (is == null && (cl=JarHash.class.getClassLoader())!=null) {
-          is = loadResource(uri, cl);
-        }
-        if (is != null) return is;
-        // That failed, so try all registered locations
-      }
+
+      // Try all registered locations
       for( File f : RESOURCE_FILES ) {
         File f2 = new File(f,uri);
         if( f2.exists() )
           return new FileInputStream(f2);
       }
+
+      // Fall through to jar file mode.
+      ClassLoader cl = ClassLoader.getSystemClassLoader();
+      InputStream is = loadResource(uri, cl);
+      if (is == null && (cl=Thread.currentThread().getContextClassLoader())!=null) {
+        is = loadResource(uri, cl);
+      }
+      if (is == null && (cl=JarHash.class.getClassLoader())!=null) {
+        is = loadResource(uri, cl);
+      }
+      if (is != null) return is;
+
     } catch (FileNotFoundException ignore) {}
 
     Log.warn("Resource not found: " + uri);
