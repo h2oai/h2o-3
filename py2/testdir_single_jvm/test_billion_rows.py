@@ -5,6 +5,7 @@ import h2o_cmd, h2o_glm
 import h2o_browse as h2b
 import h2o_import as h2i
 import time, random
+from h2o_test import OutputObj
 
 class Basic(unittest.TestCase):
     def tearDown(self):
