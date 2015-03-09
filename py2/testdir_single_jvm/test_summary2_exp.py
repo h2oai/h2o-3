@@ -55,7 +55,8 @@ class Basic(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         global SEED
-        SEED = h2o.setup_random_seed()
+        # use the failing seed for now
+        SEED = h2o.setup_random_seed(seed=6119134012054500977)
         h2o.init()
 
     @classmethod
@@ -66,7 +67,7 @@ class Basic(unittest.TestCase):
         LAMBD = random.uniform(0.005, 0.5)
         tryList = [
             # co.label, (min, 25th, 50th, 75th, max)
-# parse setup error
+            # parse setup error ? supposedly fixed now
             # (1,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
             (5,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
             (10,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
@@ -136,7 +137,7 @@ class Basic(unittest.TestCase):
                     col=scipyCol,
                     datatype='float',
                     quantile=0.5 if DO_MEDIAN else 0.99,
-                    h2oSummary2=co.pctiles[4 if DO_MEDIAN else 9],
+                    h2oSummary2=co.pctiles[5 if DO_MEDIAN else 9],
 
                     # h2oQuantilesApprox=qresult_single,
                     # h2oQuantilesExact=qresult,
