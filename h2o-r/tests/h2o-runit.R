@@ -101,7 +101,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/kmeans.R", "/deeplearning.R", "/locate.R")
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/kmeans.R", "/deeplearning.R", "/naivebayes.R", "/locate.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
@@ -111,7 +111,7 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/utilsR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 
@@ -150,4 +150,3 @@ if (exists("TEST_ROOT_DIR")) {
 # Clean up any temporary variables to avoid polluting the user's workspace.
 options(echo=.origEchoValue)
 rm(list=c(".origEchoValue"))
-
