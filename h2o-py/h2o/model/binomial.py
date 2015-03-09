@@ -31,8 +31,8 @@ class H2OBinomialModelMetrics(object):
     print "Overall AUC (independent of criterion): " + str(self._auc_data.AUC)
     print "Overall Gini (independent of criterion): " + str(self._auc_data.Gini)
     print
-    # print self._auc_data. thresholdsAndMetricScores
-    print self._auc_data.maxCriteriaAndMetricScores
+    # print self._auc_data. thresholds_and_metric_scores
+    print self._auc_data.max_criteria_and_metric_scores
     # print self._auc_data.confusion_matrices
 
   def auc(self):
@@ -75,28 +75,28 @@ class H2OBinomialModelMetrics(object):
     return self.metric(metric="max_per_class_error", thresholds=thresholds)
 
   def metric(self, metric='accuracy', thresholds=None):
-    available_metrics = self._metric_json['thresholdsAndMetricScores'].col_header[1:]
+    available_metrics = self._metric_json['thresholds_and_metric_scores'].col_header[1:]
     if(metric not in available_metrics):
       raise ValueError("metric parameter must be one of: " + ", ".join(available_metrics))
 
-    metric_col = self._metric_json['thresholdsAndMetricScores'].col_header.index(metric)
+    metric_col = self._metric_json['thresholds_and_metric_scores'].col_header.index(metric)
     thresh_and_metrics = []
     if(thresholds is not None):
       if not isinstance(thresholds,list):
         raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
 
-      for e in self._metric_json['thresholdsAndMetricScores'].cell_values:
+      for e in self._metric_json['thresholds_and_metric_scores'].cell_values:
           if float(e[0]) in thresholds:
             thresh_and_metrics.append([float(e[0]),e[metric_col]])
     else:
-      for e in self._metric_json['thresholdsAndMetricScores'].cell_values:
+      for e in self._metric_json['thresholds_and_metric_scores'].cell_values:
         thresh_and_metrics.append([float(e[0]),e[metric_col]])
 
     return thresh_and_metrics
 
   def confusion_matrices(self, thresholds=None):
     cms = ConfusionMatrix.read_cms(self._metric_json['confusion_matrices'])
-    available_thresholds = [float(e[0]) for e in self._metric_json['thresholdsAndMetricScores'].cell_values]
+    available_thresholds = [float(e[0]) for e in self._metric_json['thresholds_and_metric_scores'].cell_values]
     threshs_and_cms = zip(available_thresholds,cms)
 
     result =[]

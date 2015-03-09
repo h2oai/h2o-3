@@ -59,8 +59,8 @@ def parse_setup(rawkey):
 
   # So the st00pid H2O backend only accepts things that are quoted (nasty Java)
   if isinstance(rawkey, unicode): rawkey = [rawkey]
-  j = H2OConnection.post_json(url_suffix="ParseSetup", srcs=[_quoted(key) for key in rawkey])
-  if not j['isValid']:
+  j = H2OConnection.post_json(url_suffix="ParseSetup", source_keys=[_quoted(key) for key in rawkey])
+  if not j['is_valid']:
     raise ValueError("ParseSetup not Valid", j)
   return j
 
@@ -75,35 +75,40 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
   :return: A new parsed object  
   """
   # Parse parameters (None values provided by setup)
-  p = { 'delete_on_done' : True,
+  p = { 'destination_key' : h2o_name,
+        'parse_type' : None,
+        'separator' : None,
+        'single_quotes' : None,
+        'check_header'  : None,
+        'number_columns' : None,
+        'chunk_size'    : None,
+        'delete_on_done' : True,
         'blocking' : True,
-        'removeFrame' : True,
-        'hex' : h2o_name,
-        'ncols' : None,
-        'sep' : None,
-        'pType' : None,
-        'singleQuotes' : None,
-        'checkHeader'  : None,
-        'chunkSize'    : None
+        'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
     first_line_is_header = 0
 
-  if setup["columnNames"]:
-    setup["columnNames"] = [_quoted(name) for name in setup["columnNames"]]
-    p["columnNames"] = None
+  if setup["column_names"]:
+    setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
+    p["column_names"] = None
 
-  if setup["columnTypes"]:
-    setup["columnTypes"] = [_quoted(name) for name in setup["columnTypes"]]
-    p["columnTypes"] = None
+  if setup["column_types"]:
+    setup["column_types"] = [_quoted(name) for name in setup["column_types"]]
+    p["column_types"] = None
+
+  if setup["na_strings"]:
+    setup["na_strings"] = [_quoted(name) for name in setup["na_strings"]]
+    p["na_strings"] = None
+
 
   # update the parse parameters with the parse_setup values
   p.update({k: v for k, v in setup.iteritems() if k in p})
 
-  p["checkHeader"] = first_line_is_header
+  p["check_header"] = first_line_is_header
 
   # Extract only 'name' from each src in the array of srcs
-  p['srcs'] = [_quoted(src['name']) for src in setup['srcs']]
+  p['source_keys'] = [_quoted(src['name']) for src in setup['source_keys']]
 
   # Request blocking parse
   j = H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
