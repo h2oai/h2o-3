@@ -419,7 +419,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Find the column with the best split (lowest score).  Unlike RF, GBM
     // scores on all columns and selects splits on all columns.
     @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
-      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
+      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Float.MAX_VALUE,Float.MAX_VALUE,Float.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;

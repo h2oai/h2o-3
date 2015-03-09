@@ -98,13 +98,13 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     }
 
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
-    double sums0[] = MemoryManager.malloc8d(nbins+1);
-    double ssqs0[] = MemoryManager.malloc8d(nbins+1);
-    long     ns0[] = MemoryManager.malloc8 (nbins+1);
+    float sums0[] = MemoryManager.malloc4f(nbins+1);
+    float ssqs0[] = MemoryManager.malloc4f(nbins+1);
+    long    ns0[] = MemoryManager.malloc8 (nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      double m0 = sums0[b-1],  m1 = sums[b-1];
-      double s0 = ssqs0[b-1],  s1 = ssqs[b-1];
-      long   k0 = ns0  [b-1],  k1 = bins[b-1];
+      float m0 = sums0[b-1],  m1 = sums[b-1];
+      float s0 = ssqs0[b-1],  s1 = ssqs[b-1];
+      long  k0 = ns0  [b-1],  k1 = bins[b-1];
       if( k0==0 && k1==0 ) continue;
       sums0[b] = m0+m1;
       ssqs0[b] = s0+s1;
@@ -119,13 +119,13 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins] == 0 ) { assert isConstantResponse(); return null; }
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
-    double sums1[] = MemoryManager.malloc8d(nbins+1);
-    double ssqs1[] = MemoryManager.malloc8d(nbins+1);
-    long     ns1[] = MemoryManager.malloc8 (nbins+1);
+    float sums1[] = MemoryManager.malloc4f(nbins+1);
+    float ssqs1[] = MemoryManager.malloc4f(nbins+1);
+    long    ns1[] = MemoryManager.malloc8 (nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      double m0 = sums1[b+1],  m1 = sums[b];
-      double s0 = ssqs1[b+1],  s1 = ssqs[b];
-      long   k0 = ns1  [b+1],  k1 = bins[b];
+      float m0 = sums1[b+1],  m1 = sums[b];
+      float s0 = ssqs1[b+1],  s1 = ssqs[b];
+      long  k0 = ns1  [b+1],  k1 = bins[b];
       if( k0==0 && k1==0 ) continue;
       sums1[b] = m0+m1;
       ssqs1[b] = s0+s1;
@@ -139,9 +139,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // but both splits could work for any integral datatype.  Do the less-than
     // splits first.
     int best=0;                         // The no-split
-    double best_se0=Double.MAX_VALUE;   // Best squared error
-    double best_se1=Double.MAX_VALUE;   // Best squared error
-    byte equal=0;                // Ranged check
+    float best_se0=Float.MAX_VALUE;     // Best squared error
+    float best_se1=Float.MAX_VALUE;     // Best squared error
+    byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( bins[b] == 0 ) continue; // Ignore empty splits
       if( ns0[b] < min_rows ) continue;
@@ -152,8 +152,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       //                    = ssqs - N*mean^2
       //                    = ssqs - N*(sum/N)(sum/N)
       //                    = ssqs - sum^2/N
-      double se0 = ssqs0[b] - sums0[b]*sums0[b]/ns0[b];
-      double se1 = ssqs1[b] - sums1[b]*sums1[b]/ns1[b];
+      float se0 = ssqs0[b] - sums0[b]*sums0[b]/ns0[b];
+      float se1 = ssqs1[b] - sums1[b]*sums1[b]/ns1[b];
       if( (se0+se1 < best_se0+best_se1) || // Strictly less error?
           // Or tied MSE, then pick split towards middle bins
           (se0+se1 == best_se0+best_se1 &&
@@ -170,10 +170,10 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         if( bins[b] < min_rows ) continue; // Ignore too small splits
         long N =         ns0[b  ] + ns1[b+1];
         if( N < min_rows ) continue; // Ignore too small splits
-        double sums2 = sums0[b  ]+sums1[b+1];
-        double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
-        double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'
-        double sx =    ssqs [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
+        float sums2 = sums0[b  ]+sums1[b+1];
+        float ssqs2 = ssqs0[b  ]+ssqs1[b+1];
+        float si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'
+        float sx =    ssqs [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -197,12 +197,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     }
 
     if( best==0 ) return null;  // No place to split
-    double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
+    float se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
-    double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
-    double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
+    long  n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    long  n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
+    float p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
+    float p1 = equal == 0 ? sums1[best] :  sums[best]              ;
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
