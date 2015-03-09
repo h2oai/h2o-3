@@ -78,6 +78,19 @@ Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
+##Making a clean build
+
+Making a clean build is strongly recommended if: 
+
+- the gradle build fails
+- there have been many changes in the last pull
+- source files have been renamed or deleted
+
+If you try to create a gradle build using `./gradlew build` and any of the conditions listed above apply, the build is likely to fail. 
+
+Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. 
+While using `./gradlew clean` is not required, it helps to prevent errors due to missing or outdated files during the build process. However, due to the increased time required for this method, we recommend using `./gradlew clean` only for integrating recent changes or troubleshooting failed builds.  
+
 ### For all Platforms:
 
 ##### Install required python packages (using `sudo` if necessary)
