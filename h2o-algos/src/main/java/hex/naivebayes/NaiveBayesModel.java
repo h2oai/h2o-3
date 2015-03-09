@@ -45,9 +45,9 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
   // TODO: Constant response shouldn't be regression. Need to override getModelCategory()
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
-      default: throw H2O.unimpl();
+    case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+    case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain.length,domain);
+    default: throw H2O.unimpl();
     }
   }
 
