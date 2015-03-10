@@ -19,8 +19,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
-import com.brsanthu.googleanalytics.EventHit;
+//import com.brsanthu.googleanalytics.GoogleAnalytics;
+//import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -351,8 +351,8 @@ final public class H2O {
   }
 
   //Google analytics performance measurement
-  public static GoogleAnalytics GA;
-  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
+//  public static GoogleAnalytics GA;
+//  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -1056,16 +1056,15 @@ final public class H2O {
     if( ARGS.help ) { printHelp(); exit(0); }
 
     // Register with GA
-    if((new File(".h2o_no_collect")).exists()
+/*    if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out ) {
-      GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
-      GA.getConfig().setEnabled(false);
+      GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
-      GA = null;
+      GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
     }
-
+*/
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
 
@@ -1129,11 +1128,11 @@ final public class H2O {
         Thread.sleep (sleepMillis);
       }
       catch (Exception ignore) {};
-      if (H2O.SELF == H2O.CLOUD._memary[0]) {
+/*      if (H2O.SELF == H2O.CLOUD._memary[0]) {
         if (ARGS.ga_hadoop_ver != null)
           H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
         H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
-      }
+      } */
     }
   }
 }
