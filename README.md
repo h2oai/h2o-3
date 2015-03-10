@@ -119,11 +119,13 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 4. Install Node.js, npm, and bower
+The CLASSPATH variable also needs to be set to the lib subfolder of the JDK: 
 
-Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. After installing Node.js, install bower using:
+    CLASSPATH=/<path>/<to>/<jdk>/lib
 
-    npm install -g bower
+##### Step 4. Install Node.js
+
+Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. 
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
@@ -175,7 +177,7 @@ Download and update h2o-dev source codes:
 ##### Step 9. Run the top-level gradle build:
 
     cd h2o-dev
-    gradlew.bat build
+    gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
@@ -190,15 +192,13 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 2. Install Node.js, npm, and bower:
+##### Step 2. Install Node.js:
 
 Using Homebrew:
 
     brew install node
 
-Otherwise, install from the [NodeJS website](http://nodejs.org/download/). After you have installed Node.js, install bower using
-
-    npm install -g bower
+Otherwise, install from the [NodeJS website](http://nodejs.org/download/). 
 
 ##### Step 3. Install R and the required packages:
 
@@ -282,7 +282,7 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
     wget http://npmjs.org/install.sh
     sudo apt-get install curl
     sudo sh install.sh
-    npm install -g bower
+   
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
