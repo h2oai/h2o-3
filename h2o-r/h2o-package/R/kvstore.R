@@ -192,8 +192,7 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   parameters <- list()
   lapply(json$parameters, function(param) {
-    if (!is.null(param$actual_value))
-    {
+    if (!is.null(param$actual_value)) {
       name <- param$name
       # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
       if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
@@ -201,6 +200,11 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
         mapping <- .type.map[param$type,]
         type    <- mapping[1L, 1L]
         scalar  <- mapping[1L, 2L]
+
+        if (type == "numeric" && value == "Infinity")
+          value <- Inf
+        else if (type == "numeric" && value == "-Infinity")
+          value <- -Inf
 
         # Prase frame information to a key
         if (type == "H2OFrame")
