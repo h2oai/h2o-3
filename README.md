@@ -119,6 +119,10 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
+The CLASSPATH variable also needs to be set to the lib subfolder of the JDK: 
+
+    CLASSPATH=/<path>/<to>/<jdk>/lib
+
 ##### Step 4. Install Node.js, npm, and bower
 
 Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. After installing Node.js, install bower using:
@@ -175,7 +179,7 @@ Download and update h2o-dev source codes:
 ##### Step 9. Run the top-level gradle build:
 
     cd h2o-dev
-    gradlew.bat build
+    gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
