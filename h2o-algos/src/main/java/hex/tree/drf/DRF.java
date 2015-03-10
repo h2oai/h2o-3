@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.ModelUtils;
+import water.util.RandomUtils;
 import water.util.Timer;
 
 import java.util.Arrays;
@@ -62,7 +63,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     // Initialize local variables
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0)) throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
     if (DEBUG_DETERMINISTIC && _parms._seed == -1) _parms._seed = 0x1321e74a0192470cL; // fixed version of seed
-    else if (_parms._seed == -1) _actual_seed = new Random().nextLong(); else _actual_seed = _parms._seed;
+    else if (_parms._seed == -1) _actual_seed = RandomUtils.getDeterRNG(0xd280524ad7fe0602L).nextLong(); else _actual_seed = _parms._seed;
     if (_parms._sample_rate==1f && _valid!=null)
       Log.warn("Sample rate is 100% and no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
     if (!_parms._convert_to_enum && _parms._do_grpsplit) {
@@ -85,7 +86,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     DRFTree( Frame fr, int ncols, char nbins, char nclass, int min_rows, int mtrys, long seed ) {
       super(fr._names, ncols, nbins, nclass, min_rows, seed);
       _mtrys = mtrys;
-      _rand = new Random(seed);
+      _rand = createRNG(seed);
       _seeds = new long[fr.vecs()[0].nChunks()];
       for( int i=0; i<_seeds.length; i++ )
         _seeds[i] = _rand.nextLong();
@@ -93,7 +94,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     // Return a deterministic chunk-local RNG.  Can be kinda expensive.
     public Random rngForChunk( int cidx ) {
       long seed = _seeds[cidx];
-      return new Random(seed);
+      return createRNG(seed);
     }
   }
 
@@ -167,7 +168,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
 
       // The RNG used to pick split columns
-      Random rand = new Random(_actual_seed);
+      Random rand = createRNG(_actual_seed);
       // To be deterministic get random numbers for previous trees and
       // put random generator to the same state
       for (int i=0; i<_ntreesFromCheckpoint; i++) rand.nextLong();
@@ -192,6 +193,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
         // Check latest predictions
         tstats.updateBy(ktrees);
+        _model._output.addKTrees(ktrees);
       }
       doScoringAndSaveModel(true, _valid==null, _parms._build_tree_one_node);
     }
@@ -410,12 +412,11 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
       DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
-      for( int i=0; i<hs.length; i++ ) {
-        if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
-        DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
+      for( int i=0; i<u._scoreCols.length; i++ ) {
+        int col = u._scoreCols[i];
+        DTree.Split s = hs[col].scoreMSE(col, _tree._min_rows);
         if( s == null ) continue;
-        if( best == null || s.se() < best.se() )
-          best = s;
+        if( s.se() < best.se() ) best = s;
         if( s.se() <= 0 ) break; // No point in looking further!
       }
       return best;

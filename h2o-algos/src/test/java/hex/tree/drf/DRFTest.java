@@ -4,9 +4,13 @@ package hex.tree.drf;
 import org.junit.*;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
+
+import java.util.Arrays;
 
 public class DRFTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -25,9 +29,9 @@ public class DRFTest extends TestUtil {
           "./smalldata/iris/iris.csv","iris.hex",
           new PrepData() { @Override int prep(Frame fr) { return fr.numCols()-1; } },
           1,
-          a( a(12, 0,  0),
-             a(0, 14,  1),
-             a(0, 1, 15)),
+          a( a(25, 0,  0),
+             a(0, 17,  1),
+             a(1, 2, 15)),
           s("Iris-setosa","Iris-versicolor","Iris-virginica") );
 
   }
@@ -38,9 +42,9 @@ public class DRFTest extends TestUtil {
           "./smalldata/iris/iris.csv","iris.hex",
           new PrepData() { @Override int prep(Frame fr) { return fr.numCols()-1; } },
           5,
-          a( a(27, 0,  0),
-             a(0, 25,  2),
-             a(0,  5, 24)),
+          a( a(41, 0,  0),
+             a(0, 39,  3),
+             a(0,  4, 41)),
           s("Iris-setosa","Iris-versicolor","Iris-virginica") );
   }
 
@@ -48,7 +52,10 @@ public class DRFTest extends TestUtil {
     // cars ntree=1
     basicDRFTestOOBE(
         "./smalldata/junit/cars.csv","cars.hex",
-        new PrepData() { @Override int prep(Frame fr) { DKV.remove(fr.remove("name")._key); return fr.find("cylinders"); } },
+        new PrepData() { @Override int prep(Frame fr) {
+          fr.remove("name").remove();
+          DKV.put(fr._key, fr);
+          return fr.find("cylinders"); } },
         1,
         a( a(0,  0, 0, 0, 0),
            a(0, 62, 0, 7, 0),
@@ -61,7 +68,10 @@ public class DRFTest extends TestUtil {
   @Test public void testClassCars5() throws Throwable {
     basicDRFTestOOBE(
         "./smalldata/junit/cars.csv","cars.hex",
-        new PrepData() { @Override int prep(Frame fr) { DKV.remove(fr.remove("name")._key); return fr.find("cylinders"); } },
+        new PrepData() { @Override int prep(Frame fr) {
+          fr.remove("name").remove();
+          DKV.put(fr._key, fr);
+          return fr.find("cylinders"); } },
         5,
         a( a(3,   0, 0,  0,   0),
            a(0, 173, 2,  9,   0),
@@ -71,24 +81,29 @@ public class DRFTest extends TestUtil {
         s("3", "4", "5", "6", "8"));
   }
 
-  @Ignore @Test public void testConstantCols() throws Throwable {
+  @Test public void testConstantCols() throws Throwable {
     try {
       basicDRFTestOOBE(
         "./smalldata/poker/poker100","poker.hex",
         new PrepData() { @Override int prep(Frame fr) {
-          for (int i=0; i<7;i++) DKV.remove(fr.remove(3)._key);
+          for (int i=0; i<7;i++) {
+            fr.remove(3).remove();
+            DKV.put(fr._key, fr);
+          }
           return 3;
         } },
         1,
         null,
         null);
       Assert.fail();
-    } catch( IllegalArgumentException iae ) { /*pass*/ }
+    } catch( IllegalArgumentException iae ) {
+    /*pass*/
+    }
   }
 
   @Ignore @Test public void testBadData() throws Throwable {
     basicDRFTestOOBE(
-        "./smalldata/test/drf_infinitys.csv","infinitys.hex",
+        "./smalldata/junit/drf_infinities.csv","infinitys.hex",
         new PrepData() { @Override int prep(Frame fr) { return fr.find("DateofBirth"); } },
         1,
         a( a(6, 0),
@@ -101,7 +116,9 @@ public class DRFTest extends TestUtil {
     basicDRFTestOOBE(
         "./smalldata/kaggle/creditsample-training.csv.gz","credit.hex",
         new PrepData() { @Override int prep(Frame fr) {
-          DKV.remove(fr.remove("MonthlyIncome")._key); return fr.find("SeriousDlqin2yrs");
+          fr.remove("MonthlyIncome").remove();
+          DKV.put(fr._key, fr);
+          return fr.find("SeriousDlqin2yrs");
           } },
         1,
         a( a(46294, 202),
@@ -110,17 +127,18 @@ public class DRFTest extends TestUtil {
 
   }
 
-  //@Ignore("We need to have proper regression test.")
-  //@Test
+  @Test
   public void testCreditProstate1() throws Throwable {
     basicDRFTestOOBE(
         "./smalldata/logreg/prostate.csv","prostate.hex",
         new PrepData() { @Override int prep(Frame fr) {
-          DKV.remove(fr.remove("ID")._key); return fr.find("CAPSULE");
+          fr.remove("ID").remove();
+          DKV.put(fr._key, fr);
+          return fr.find("CAPSULE");
           } },
         1,
-        a( a(46294, 202),
-           a( 3187, 107)),
+        a( a(0, 81),
+           a(0, 53)),
         s("0", "1"));
 
   }
@@ -131,20 +149,15 @@ public class DRFTest extends TestUtil {
         "./smalldata/airlines/allyears2k_headers.zip","airlines.hex",
         new PrepData() {
           @Override int prep(Frame fr) {
-            DKV.remove(fr.remove("DepTime")._key);
-            DKV.remove(fr.remove("ArrTime")._key);
-            DKV.remove(fr.remove("ActualElapsedTime")._key);
-            DKV.remove(fr.remove("AirTime")._key);
-            DKV.remove(fr.remove("ArrDelay")._key);
-            DKV.remove(fr.remove("DepDelay")._key);
-            DKV.remove(fr.remove("Cancelled")._key);
-            DKV.remove(fr.remove("CancellationCode")._key);
-            DKV.remove(fr.remove("CarrierDelay")._key);
-            DKV.remove(fr.remove("WeatherDelay")._key);
-            DKV.remove(fr.remove("NASDelay")._key);
-            DKV.remove(fr.remove("SecurityDelay")._key);
-            DKV.remove(fr.remove("LateAircraftDelay")._key);
-            DKV.remove(fr.remove("IsArrDelayed")._key);
+            for (String s : new String[]{
+                    "DepTime", "ArrTime", "ActualElapsedTime",
+                    "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+                    "CancellationCode", "CarrierDelay", "WeatherDelay",
+                    "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+            }) {
+                    fr.remove(s).remove();
+            }
+            DKV.put(fr._key, fr);
             return fr.find("IsDepDelayed"); }
         },
         50,
@@ -169,9 +182,8 @@ public class DRFTest extends TestUtil {
 
   public void basicDRFTestOOBE(String fnametrain, String hexnametrain, PrepData prep, int ntree, long[][] expCM, String[] expRespDom) throws Throwable { basicDRF(fnametrain, hexnametrain, null, null, prep, ntree, expCM, expRespDom, 10/*max_depth*/, 20/*nbins*/, 0/*optflag*/); }
   public void basicDRF(String fnametrain, String hexnametrain, String fnametest, String hexnametest, PrepData prep, int ntree, long[][] expCM, String[] expRespDom, int max_depth, int nbins, int optflags) throws Throwable {
+    Scope.enter();
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
-    Key destTrain = Key.make(hexnametrain);
-    Key destTest  = hexnametest!=null?Key.make(hexnametest):null;
     Frame frTest = null, pred = null;
     Frame frTrain = null;
     DRFModel model = null;
@@ -197,24 +209,34 @@ public class DRFTest extends TestUtil {
         job = new DRF(drf);
         // Get the model
         model = job.trainModel().get();
+        Log.info(model._output);
       } finally {
         if (job != null) job.remove();
       }
+      Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
 
-      // And compare CMs
-//      assertCM(expCM, model.cms[model.cms.length-1]._arr);
-//      Assert.assertEquals("Number of trees differs!", ntree, model.errs.length-1);
-//      String[] cmDom = model._domains[model._domains.length-1];
-//      Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
+      hex.ModelMetrics mm;
+      if (fnametest != null) {
+        frTest = parse_test_file(fnametest);
+        pred = model.score(frTest);
+        mm = hex.ModelMetrics.getFromDKV(model, frTest);
+        // Check test set CM
+      } else {
+        mm = hex.ModelMetrics.getFromDKV(model, frTrain);
+      }
+      Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " +Arrays.deepToString(mm.cm().confusion_matrix),
+              Arrays.deepEquals(mm.cm().confusion_matrix, expCM));
 
-      frTest = fnametest!=null ? parse_test_file(fnametest) : null;
-      pred = model.score(frTest);
+      Assert.assertEquals("Number of trees differs!", ntree, model._output._ntrees);
+      String[] cmDom = model._output._domains[model._output._domains.length-1];
+      Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
 
     } finally {
       if (frTrain!=null) frTrain.remove();
       if (frTest!=null) frTest.remove();
       if( model != null ) model.delete(); // Remove the model
       if( pred != null ) pred.delete();
+      Scope.exit();
     }
   }
 }

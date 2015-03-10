@@ -10,6 +10,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
@@ -427,5 +428,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       double bias = train.mean()-test.mean();
       return stddev*stddev+bias*bias;
     }
+  }
+
+  // Helper to unify use of M-T RNG
+  public static Random createRNG(long seed) {
+    return new RandomUtils.MersenneTwisterRNG(new int[] { (int)(seed>>32L),(int)seed });
   }
 }

@@ -258,6 +258,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
     }
+
+    private void printTwoDimTables(StringBuilder sb, Object o) {
+      for (Field f : Weaver.getWovenFields(o.getClass())) {
+        Class<?> c = f.getType();
+        if (c.isAssignableFrom(TwoDimTable.class)) {
+          try {
+            TwoDimTable t = (TwoDimTable) f.get(this);
+            f.setAccessible(true);
+            sb.append(t.toString());
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+    @Override public String toString() {
+      StringBuilder sb = new StringBuilder();
+      printTwoDimTables(sb, this);
+      return sb.toString();
+    }
   } // Output
 
   public O _output; // TODO: move things around so that this can be protected

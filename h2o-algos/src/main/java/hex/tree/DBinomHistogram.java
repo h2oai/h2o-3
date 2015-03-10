@@ -60,7 +60,6 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     // Store indices from sort to determine group split later
     Integer idx[] = new Integer[nbins];
     for(int b = 0; b < nbins; b++) idx[b] = b;
-
     // Sort predictor levels in ascending order of mean response within each bin
     if(_isInt == 2 && _step == 1.0f && nbins >= 4) {
       final Double[] means = new Double[nbins];
@@ -69,14 +68,13 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
         @Override public int compare(Integer o1, Integer o2) { return means[o1].compareTo(means[o2]); }
       });
     }
-    assert(_sums != null);
 
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
     long sums0[] = MemoryManager.malloc8(nbins+1);
     long   ns0[] = MemoryManager.malloc8(nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      long m0 = sums0[b-1],  m1 = _sums[b-1];
-      long k0 = ns0  [b-1],  k1 = _bins[b-1];
+      long m0 = sums0[b-1],  m1 = _sums[idx[b-1]];
+      long k0 = ns0  [b-1],  k1 = _bins[idx[b-1]];
       if( k0==0 && k1==0 ) continue;
       sums0[b] = m0+m1;
       ns0  [b] = k0+k1;
@@ -91,8 +89,8 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     long sums1[] = MemoryManager.malloc8(nbins+1);
     long   ns1[] = MemoryManager.malloc8(nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      long m0 = sums1[b+1],  m1 = _sums[b];
-      long k0 = ns1  [b+1],  k1 = _bins[b];
+      long m0 = sums1[b+1],  m1 = _sums[idx[b]];
+      long k0 = ns1  [b+1],  k1 = _bins[idx[b]];
       if( k0==0 && k1==0 ) continue;
       sums1[b] = m0+m1;
       ns1  [b] = k0+k1;
@@ -109,7 +107,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     double best_se1=Double.MAX_VALUE;   // Best squared error
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( _bins[b] == 0 ) continue; // Ignore empty splits
+      if( _bins[idx[b]] == 0 ) continue; // Ignore empty splits
       if( ns0[b] < min_rows ) continue;
       if( ns1[b] < min_rows ) break; // ns1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
@@ -135,13 +133,13 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
         _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[b] < min_rows ) continue; // Ignore too small splits
+        if( _bins[idx[b]] < min_rows ) continue; // Ignore too small splits
         long N =        ns0[b  ] + ns1[b+1];
         if( N < min_rows ) continue; // Ignore too small splits
         double sums = sums0[b  ]+sums1[b+1];
-        double sumb = _sums[b  ];
+        double sumb = _sums[idx[b]  ];
         double si = sums - sums*sums/   N    ; // Left+right, excluding 'b'
-        double sx = sumb - sumb*sumb/_bins[b]; // Just 'b'
+        double sx = sumb - sumb*sumb/_bins[idx[b]]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -153,9 +151,9 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     assert best > 0 : "Must actually pick a split "+best;
     double se = sums1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] : _bins[best]              ;
+    long   n1 = equal == 0 ?   ns1[best] : _bins[idx[best]]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
-    double p1 = equal == 0 ? sums1[best] : _sums[best]              ;
+    double p1 = equal == 0 ? sums1[best] : _sums[idx[best]]              ;
 
     // For categorical predictors, set bits for levels grouped to right of split
     IcedBitSet bs = null;

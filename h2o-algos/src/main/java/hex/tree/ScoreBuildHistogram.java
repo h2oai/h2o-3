@@ -78,12 +78,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           if( hs[j] != null )        // Tracking this column?
             hs[j].init();
       }
-      for (DHistogram h : hs) {
-        assert h._bins != null;
-        if (h instanceof DBinomHistogram) {
-          assert ((DBinomHistogram)h)._sums != null;
-        }
-      }
     }
   }
 
