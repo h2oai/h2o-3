@@ -11,7 +11,7 @@ import water.fvec.Frame;
 public class KMeansV2 extends ClusteringModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
   public static final class KMeansParametersV2 extends ClusteringModelParametersSchema<KMeansParameters, KMeansParametersV2> {
-    static public String[] own_fields = new String[] { "user_points", "k", "max_iterations", "standardize", "seed", "init" };
+    static public String[] own_fields = new String[] { "user_points", "max_iterations", "standardize", "seed", "init" };
 
     // Input fields
     @API(help = "User-specified points", required = false)

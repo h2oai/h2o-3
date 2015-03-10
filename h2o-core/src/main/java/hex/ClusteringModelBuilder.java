@@ -16,7 +16,7 @@ abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P
    *  heavy-weight prep needs to wait for the trainModel() call. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._k < 1 || _parms._k > 10000000 ) error("_k", "k must be between 1 and 1e7");
+    if( _parms._k < 1 || _parms._k > 1e7 ) error("_k", "k must be between 1 and 1e7");
     if( _train != null && _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
   }
 }
