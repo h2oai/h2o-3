@@ -98,19 +98,19 @@ public class DTree extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
-    final float _se;            // Squared error without a split
-    final float _se0, _se1;     // Squared error of each subsplit
-    final long    _n0,  _n1;    // Rows in each final split
-    final double  _p0,  _p1;    // Predicted value for each split
+    final double _se;           // Squared error without a split
+    final double _se0, _se1;    // Squared error of each subsplit
+    final long   _n0,  _n1;     // Rows in each final split
+    final double _p0,  _p1;     // Predicted value for each split
 
-    public Split( int col, int bin, IcedBitSet bs, byte equal, float se, float se0, float se1, long n0, long n1, double p0, double p1 ) {
+    public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, long n0, long n1, double p0, double p1 ) {
       _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
-      assert se > se0+se1 || se==Float.MAX_VALUE; // No point in splitting unless error goes down
+      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
     }
-    public final float pre_split_se() { return _se; }
-    public final float se() { return _se0+_se1; }
+    public final double pre_split_se() { return _se; }
+    public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
 

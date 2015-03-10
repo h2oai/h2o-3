@@ -127,26 +127,26 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
         # have to put quotes around the individual list items
-        srcs = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+        source_keys = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
 
     else:
         # what if None here
-        srcs = "['" + key + "']" # quotes required on key
+        source_keys = "['" + key + "']" # quotes required on key
 
-    params_dict['srcs'] = srcs
+    params_dict['source_keys'] = source_keys
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
 
     # columnTypeDict not used here
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
-    # Call ParseSetup?srcs=[keys] . . .
+    # Call ParseSetup?source_keys=[keys] . . .
 
     # if benchmarkLogging:
     #     cloudPerfH2O.get_log_save(initOnly=True)
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
-    params_setup = {'srcs': srcs}
+    params_setup = {'source_keys': source_keys}
     setup_result = self.do_json_request(jsonRequest="2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
@@ -154,9 +154,9 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # this should match what we gave as input?
     if setup_result['source_keys']:
         # should these be quoted?
-        srcsStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
+        source_keysStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
     else:
-        srcsStr = None
+        source_keysStr = None
     
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
@@ -198,7 +198,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
 
     parse_params = {
-        'source_keys': srcsStr,
+        'source_keys': source_keysStr,
         'destination_key': setup_result['destination_key'],
         'parse_type': setup_result['parse_type'],
         'separator': setup_result['separator'],
@@ -225,7 +225,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
-    print "parse srcs is length:", len(parse_params['source_keys'])
+    print "parse source_keys is length:", len(parse_params['source_keys'])
     # This can be null now? parseSetup doesn't return default colnames?
     # print "parse column_names is length:", len(parse_params['column_names'])
 
@@ -281,8 +281,8 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
 
     params_dict = {
         'find_compatible_models': 0,
-        'offset': 0, # is offset working yet?
-        'len': 5,
+        'row_offset': 0, # is offset working yet?
+        'row_count': 5,
     }
     '''
     Return a single Frame or all of the Frames in the h2o cluster.  The
