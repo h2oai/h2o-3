@@ -88,7 +88,8 @@ Making a clean build is strongly recommended if:
 
 If you try to create a gradle build using `./gradlew build` and any of the conditions listed above apply, the build is likely to fail. 
 
-Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. 
+Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. We strongly recommend using `./gradlew clean` after every `git pull`. 
+
 While using `./gradlew clean` is not required, it helps to prevent errors due to missing or outdated files during the build process. However, due to the increased time required for this method, we recommend using `./gradlew clean` only for integrating recent changes or troubleshooting failed builds.  
 
 ### For all Platforms:
