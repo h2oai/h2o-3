@@ -7,7 +7,6 @@ import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ParseSetupHandler;
 import water.util.GetLogsFromNode;
 import water.util.Log;
 import water.util.RString;
@@ -23,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+//import com.brsanthu.googleanalytics.AppViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -453,7 +453,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String method, String uri, String pattern, Properties parms) {
+  void maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
@@ -468,6 +468,13 @@ public class RequestServer extends NanoHTTPD {
 
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
+
+/*    if (H2O.GA != null) {
+      if (header.getProperty("user-agent") != null)
+        H2O.GA.postAsync(new AppViewHit(uri).customDimention(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
+      else
+        H2O.GA.postAsync(new AppViewHit(uri));
+    }*/
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -547,7 +554,7 @@ public class RequestServer extends NanoHTTPD {
     try {
       // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
       if (method.equals("GET") && uri.endsWith("/Logs/download")) {
-        maybeLogRequest(method, uri, "", parms);
+        maybeLogRequest(method, uri, "", parms, header);
         return downloadLogs();
       }
       if (method.equals("GET")) {
@@ -576,7 +583,7 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms);
+        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
     }

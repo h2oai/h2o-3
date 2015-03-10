@@ -83,8 +83,7 @@ public class KMeansModel extends Model<KMeansModel,KMeansModel.KMeansParameters,
     // Two class statics to support prediction
     JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
     JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
-    // Predict function body
+    // Predict function body: main work function is a utility in GenModel class.
     bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
-    
   }
 }

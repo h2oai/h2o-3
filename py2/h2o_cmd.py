@@ -77,9 +77,6 @@ def infoFromInspect(inspect):
     # it it index[0] or key '0' in a dictionary?
     frame = inspect['frames'][0]
 
-    if frame['isText']:
-        raise Exception("infoFromInspect only for parsed frames?: %s " % frame['isText'])
-
     # need more info about this dataset for debug
     columns = frame['columns']
     key_name = frame['key']['name']
@@ -88,11 +85,38 @@ def infoFromInspect(inspect):
     labelList = []
     typeList = []
     for i, colDict in enumerate(columns): # columns is a list
+        if 'missing' not in colDict:
+            # debug
+            for k in colDict:
+                print "colDict key: %s" % k
+
+            # data
+            # histogram_base
+            # domain
+            # type
+            # string_data
+            # label
+            # percentiles
+            # precision
+            # mins
+            # maxs
+            # mean
+            # histogram_bins
+            # histogram_stride
+            # zero_count
+            # missing_count
+            # positive_infinity_count
+            # negative_infinity_count
+            # sigma
+            # __meta
+
+
         mins = colDict['mins']
         maxs = colDict['maxs']
-        missing = colDict['missing']
+        missing = colDict['missing_count']
         label = colDict['label']
         stype = colDict['type']
+
         missingList.append(missing)
         labelList.append(label)
         typeList.append(stype)
@@ -108,9 +132,7 @@ def infoFromInspect(inspect):
     # no type per col in inspect2
     numCols = len(frame['columns'])
     numRows = frame['rows']
-    byteSize = frame['byteSize']
-
-    print "\n%s numRows: %s, numCols: %s, byteSize: %s" % (key_name, numRows, numCols, byteSize)
+    print "\n%s numRows: %s, numCols: %s" % (key_name, numRows, numCols)
     return missingList, labelList, numRows, numCols
 
 #************************************************************************
@@ -330,7 +352,6 @@ class SummaryObj(OutputObj):
 
         assert checksum !=0 and checksum is not None
         assert rows!=0 and rows is not None
-        assert not frame['isText']
 
         # FIX! why is frame['key'] = None here?
         # assert frame['key'] == key, "%s %s" % (frame['key'], key)

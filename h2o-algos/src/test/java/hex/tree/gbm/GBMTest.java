@@ -240,6 +240,9 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
+      // Build a POJO, validate same results
+      //Assert.assertTrue(gbm.testJavaScoring(fr,fr2));
+
       Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
       //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
       return gbm._output;
@@ -312,6 +315,9 @@ public class GBMTest extends TestUtil {
       pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
       pred.remove("Angaus").remove();    // No response column during scoring
       res = gbm.score(pred);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred,res));
 
     } finally {
       parms._train.remove();
@@ -394,6 +400,10 @@ public class GBMTest extends TestUtil {
 
       hex.ModelMetricsMultinomial mm = hex.ModelMetricsMultinomial.getFromDKV(gbm,parms.valid());
       Assert.assertTrue(mm.r2() > 0.5);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(v,res));
+
       res.remove();
 
     } finally {
@@ -543,4 +553,31 @@ public class GBMTest extends TestUtil {
     }
   }
 
+
+  // Test uses big data and is too slow for a pre-push
+  @Test @Ignore public void testMNIST() {
+    Frame tfr=null, vfr=null;
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      vfr = new Frame(tfr);
+      DKV.put(vfr);
+
+      // Same parms for all
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = "C785";
+      parms._ntrees = 100;
+      parms._max_depth = 10;
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      job.remove();
+      gbm.delete();
+    } finally {
+      if (tfr  != null) tfr.remove();
+      if (vfr  != null) vfr.remove();
+    }
+  }
 }

@@ -29,7 +29,7 @@ class Basic(unittest.TestCase):
         # FIX! do I need to force enum for classification? what if I do regression after this?
         columnTypeDict = {54: 'Enum'}
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, columnTypeDict=columnTypeDict,
-            schema='local', chunkSize=4194304, hex_key=train_key, timeoutSecs=timeoutSecs)
+            schema='local', chunk_size=4194304, hex_key=train_key, timeoutSecs=timeoutSecs)
 
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -98,8 +98,8 @@ class Basic(unittest.TestCase):
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
-            # if p.get('do_classification', None):
-            #   print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
+            if p.get('do_classification', None):
+                print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             vis = OutputObj(model.variableImportances, 'vis')
 
@@ -116,7 +116,6 @@ class Basic(unittest.TestCase):
             # print "\nscaledImportance (10)\n", tabulate(scaledImportance, headers=names)
             # print "\npercentage (10)\n", tabulate(percentage, headers=names)
 
-
             print "will say Regression or Classification. no Multinomial?"
             print "model.model_category", model.model_category
             assert model.model_category=='Multinomial', model.model_category
@@ -126,7 +125,7 @@ class Basic(unittest.TestCase):
             print "model.mse_train:", model.mse_train
 
 
-            if 1==0:
+            if 1==1:
                 print ""
                 for i,c in enumerate(cmms.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)

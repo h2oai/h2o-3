@@ -28,7 +28,7 @@ class Basic(unittest.TestCase):
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -104,7 +104,7 @@ class Basic(unittest.TestCase):
         hex_key = "prostate.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)

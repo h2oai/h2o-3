@@ -2316,13 +2316,15 @@ class ASTVar extends ASTUniPrefixOp {
           // Build output vecs for var-cov matrix
           Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
           Vec[] vecs = new Vec[covars.length];
+          Futures fs = new Futures();
           for (int i = 0; i < covars.length; i++) {
             AppendableVec v = new AppendableVec(keys[i]);
             NewChunk c = new NewChunk(v, 0);
             for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
-            c.close(0, null);
-            vecs[i] = v.close(null);
+            c.close(0, fs);
+            vecs[i] = v.close(fs);
           }
+          fs.blockForPending();
           env.poppush(3, new ValFrame(new Frame(colnames, vecs)));
         }
       }

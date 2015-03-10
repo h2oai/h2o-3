@@ -27,7 +27,9 @@ class Basic(unittest.TestCase):
             csvPathname = importFolderPath + "/" + csvFilename
 
             model_key = 'GBMModelKey'
-            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey, timeoutSecs=timeoutSecs)
+            # IsDepDelayed might already be enum, but just to be sure
+            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey, 
+                columnTypeDict={'IsDepDelayed': 'Enum'}, timeoutSecs=timeoutSecs)
 
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -72,7 +74,8 @@ class Basic(unittest.TestCase):
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
-            print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
+            if parameters.get('do_classification', None):
+                print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mmResultShort = mmResult['model_metrics'][0]

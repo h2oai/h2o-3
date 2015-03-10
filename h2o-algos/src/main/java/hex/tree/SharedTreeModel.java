@@ -1,13 +1,8 @@
 package hex.tree;
 
 import hex.*;
-import water.DKV;
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.util.ArrayUtils;
-import water.util.ModelUtils;
-import water.util.TwoDimTable;
+import water.*;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -37,7 +32,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -64,7 +59,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_valid[/*_ntrees+1*/];
 
     /** Variable Importance */
-    public TwoDimTable _variableImportances;
+    public TwoDimTable _variable_importances;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);
@@ -95,10 +90,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       fs.blockForPending();
     }
 
-    public String toStringTree( int tnum, int knum ) {
-      return _treeKeys[tnum][knum].get().toString(this);
-    }
-
+    public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
+    public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
@@ -129,4 +122,47 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
         if( k != null ) k.remove(fs);
     return super.remove_impl(fs);
   }
+
+  // Override in subclasses to provide some top-level model-specific goodness
+  @Override protected SB toJavaInit(SB sb, SB fileContext) {
+    sb.nl();
+    sb.ip("public boolean isSupervised() { return true; }").nl();
+    sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
+    sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
+    sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
+    return sb;
+  }
+  @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
+    final int nclass = _output.nclasses();
+    body.ip("java.util.Arrays.fill(preds,0f);").nl();
+    body.ip("float[] fdata = hex.genmodel.GenModel.SharedTree_fclean(data);").nl();
+    String mname = JCodeGen.toJavaId(_key.toString());
+
+    // One forest-per-GBM-tree, with a real-tree-per-class
+    for( int t=0; t < _output._treeKeys.length; t++ ) {
+      toJavaForestName(body,mname,t).p(".score0(fdata,preds);").nl();
+      file.nl();
+      toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
+      file.ip("public static void score0(float[] fdata, float[] preds) {").nl().ii(1);
+      for( int c=0; c<nclass; c++ )
+        if( !(c==1 && nclass==2) ) // Binomial optimization
+          toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),mname,t,c).p(".score0(fdata);").nl();
+      file.di(1).ip("}").nl(); // end of function
+      file.di(1).ip("}").nl(); // end of forest class
+
+      // Generate the pre-tree classes afterwards
+      for( int c=0; c<nclass; c++ ) {
+        if( !(c==1 && nclass==2) ) { // Binomial optimization
+          toJavaTreeName(file.ip("class "),mname,t,c).p(" {").nl().ii(1);
+          CompressedTree ct = _output.ctree(t,c);
+          new TreeJCodeGen(this,ct, file).generate();
+          file.di(1).ip("}").nl(); // close the class
+        }
+      }
+    }
+    toJavaUnifyPreds(body,file);
+  }
+  abstract protected void toJavaUnifyPreds( SB body, SB file );
+  private SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
+  private SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
 }

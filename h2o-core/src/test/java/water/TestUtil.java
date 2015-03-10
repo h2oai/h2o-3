@@ -212,20 +212,7 @@ public class TestUtil extends Iced {
 
   // ==== Comparing Results ====
 
-  /** Compare 2 doubles within a tolerance
-   *  @param a double 
-   *  @param b double
-   *  @param abseps - Absolute allowed tolerance
-   *  @param releps - Relative allowed tolerance
-   *  @return true if equal within tolerances  */
-  protected boolean compare(double a, double b, double abseps, double releps) {
-    return
-      Double.compare(a, b) == 0 || // check for equality
-      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
-      Math.abs(a - b) <= abseps; // check for small absolute error
-  }
-
-  /** Compare 2 doubles within a tolerance
+  /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
    *  @return true if equal  */

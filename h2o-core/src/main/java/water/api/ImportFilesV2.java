@@ -30,7 +30,7 @@ class ImportFilesV2 extends Schema<Iced,ImportFilesV2> {
     if( keys.length == 0 )
       ab.putStr("path",path);
     else
-      ab.href("path",path,water.parser.ParseSetupV2.link(keys));
+      ab.href("path",path, ParseSetupV2.link(keys));
     ab.putAStr("files",files);
     ab.putAStr( "keys", keys);
     ab.putAStr("fails",fails);
