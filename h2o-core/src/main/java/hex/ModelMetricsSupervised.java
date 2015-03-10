@@ -23,20 +23,17 @@ public class ModelMetricsSupervised extends ModelMetrics {
     protected final String[] _domain;
     protected final int _nclasses;
 
-    public MetricBuilderSupervised(String[] domain) {
-      _domain = domain;
-      _nclasses = (domain==null ? 1 : domain.length);
+    public MetricBuilderSupervised(int nclasses, String[] domain) {
+      assert domain==null || domain.length >= nclasses; // Domain can be larger than the number of classes, if the score set includes "junk" levels
+      _nclasses = nclasses;
+      _domain = domain; 
       _work = new float[_nclasses+1];
     }
 
-    @Override
-    public float[] perRow(float[] ds, float[] yact, Model m) {
+    @Override public float[] perRow(float[] ds, float[] yact, Model m) {
       throw H2O.unimpl("Subclasses must implement perRow.");
     }
 
-    @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
-      return null;
-    }
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) { return null; }
   }
 }

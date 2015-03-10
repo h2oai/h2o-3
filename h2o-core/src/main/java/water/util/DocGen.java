@@ -102,6 +102,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
     public HTML putAAA8 (String name, long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
+    public HTML putAAA8d(String name, double [][][]dsss) { return dsss==null?f(name,"null"):f0(name).array(dsss).f1(); }
 
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();
@@ -233,6 +234,15 @@ public abstract class DocGen<T extends DocGen> {
       for( int i=0; i<lsss.length; ++i ) {
         p("<div>");
         if( lsss[i] != null ) array(lsss[i]);
+        p("</div>");
+      }
+      return arrayTail();
+    }
+    public HTML array( double[][][] dsss ) {
+      arrayHead();
+      for( int i=0; i<dsss.length; ++i ) {
+        p("<div>");
+        if( dsss[i] != null ) array(dsss[i]);
         p("</div>");
       }
       return arrayTail();

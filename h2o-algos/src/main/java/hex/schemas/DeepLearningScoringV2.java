@@ -1,7 +1,5 @@
 package hex.schemas;
 
-import hex.HitRatio;
-import hex.VarImp;
 import water.api.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningScoring;
 

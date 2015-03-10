@@ -11,7 +11,7 @@ import water.util.TwoDimTable;
 
 public class ConfusionMatrix extends Iced {
   public TwoDimTable table;
-  public long[][] confusion_matrix; // [actual][predicted]
+  public final long[][] confusion_matrix; // [actual][predicted]
   public final double[] prediction_error_by_class;
   public double prediction_error;
   public String[] domain;

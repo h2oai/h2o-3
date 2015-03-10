@@ -128,7 +128,7 @@
       scalar  <- mapping[1L, 2L]
       if (is.na(type))
         stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) { # Scalar == TRUE
+      if (scalar) { # scalar == TRUE
         if (!inherits(params[[i$name]], type))
           e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
@@ -137,7 +137,18 @@
             e <- paste0(e, " \"", fact, "\",")
           e <- paste(e, "but got", params[[i$name]])
         }
+        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
+          params[[i$name]] <<- "Infinity"
+        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
+          params[[i$name]] <<- "-Infinity"
       } else {      # scalar == FALSE
+        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (params[[i$name]][n] == Inf) 
+              params[[i$name]][n] <<- "Infinity"
+            else
+              params[[i$name]][n] <<- "-Infinity"
         if (!inherits(params[[i$name]], type))
           e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if (type == "character")
@@ -383,18 +394,18 @@ h2o.metric <- function(object, metric, thresholds) {
       t <- as.character(thresholds)
       t[t=="0"] <- "0.0"
       t[t=="1"] <- "1.0"
-      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
-        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      if(!all(t %in% rownames(object@metrics$thresholds_and_metric_scores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholds_and_metric_scores), collapse=', ')))
       }
       else {
-        output <- object@metrics$thresholdsAndMetricScores[t, metric]
+        output <- object@metrics$thresholds_and_metric_scores[t, metric]
         names(output) <- t
         output
       }
     }
     else {
-      output <- object@metrics$thresholdsAndMetricScores[, metric]
-      names(output) <- rownames(object@metrics$thresholdsAndMetricScores)
+      output <- object@metrics$thresholds_and_metric_scores[, metric]
+      names(output) <- rownames(object@metrics$thresholds_and_metric_scores)
       output
     }
   }
@@ -405,13 +416,13 @@ h2o.metric <- function(object, metric, thresholds) {
 
 h2o.confusionMatrices <- function(object, thresholds) {
   if(is(object, "H2OBinomialMetrics")){
-    names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholdsAndMetricScores)
+    names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholds_and_metric_scores)
     if(!missing(thresholds)) {
       t <- as.character(thresholds)
       t[t=="0"] <- "0.0"
       t[t=="1"] <- "1.0"
-      if(!all(t %in% rownames(object@metrics$thresholdsAndMetricScores))) {
-        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholdsAndMetricScores), collapse=', ')))
+      if(!all(t %in% rownames(object@metrics$thresholds_and_metric_scores))) {
+        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholds_and_metric_scores), collapse=', ')))
       }
       else {
         object@metrics$confusion_matrices[t]
@@ -431,7 +442,7 @@ plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
   if(!type %in% c("roc")) stop("type must be 'roc'")
   if(type == "roc") {
     xaxis = "False Positive Rate"; yaxis = "True Positive Rate"
-    plot(1 - object@metrics$thresholdsAndMetricScores$specificity, object@metrics$thresholdsAndMetricScores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
+    plot(1 - object@metrics$thresholds_and_metric_scores$specificity, object@metrics$thresholds_and_metric_scores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
 }

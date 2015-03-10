@@ -4,6 +4,8 @@ import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
+import water.util.SB;
+import water.H2O;
 
 import java.util.Arrays;
 
@@ -44,32 +46,42 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       double fx = p[1] + _output._initialPrediction;
       p[2] = 1.0f/(float)(1f+Math.exp(-fx));
       p[1] = 1f-p[2];
-      p[0] = water.util.ModelUtils.getPrediction(p, data);
+      p[0] = hex.genmodel.GenModel.getPrediction(p, data);
       return p;
     }
-    if( _output.nclasses()>1 ) { // classification
-      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-        p[1] += _output._initialPrediction;
-        p[2] = - p[1];
-      }
-      // Because we call Math.exp, we have to be numerically stable or else
-      // we get Infinities, and then shortly NaN's.  Rescale the data so the
-      // largest value is +/-1 and the other values are smaller.
-      // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-      float maxval=Float.NEGATIVE_INFINITY;
-      float dsum=0;
-      // Find a max
-      for( int k=1; k<p.length; k++) maxval = Math.max(maxval,p[k]);
-      assert !Float.isInfinite(maxval) : "Something is wrong with GBM trees since returned prediction is " + Arrays.toString(p);
-      for(int k=1; k<p.length;k++)
-        dsum+=(p[k]=(float)Math.exp(p[k]-maxval));
-      ArrayUtils.div(p,dsum);
-      p[0] = water.util.ModelUtils.getPrediction(p, data);
-    } else { // regression
+    if( _output.nclasses()==1 ) {
       // Prediction starts from the mean response, and adds predicted residuals
       preds[0] += _output._initialPrediction;
+      return p;
     }
+    if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+      p[1] += _output._initialPrediction;
+      p[2] = - p[1];
+    }
+    hex.genmodel.GenModel.SharedTree_rescale(data,p);
     return p;
   }
 
+  @Override protected void toJavaUnifyPreds(SB body, SB file) {
+    // Preds are filled in from the trees, but need to be adjusted according to
+    // the loss function.
+    if( _parms._loss == GBMParameters.Family.bernoulli ) {
+      //double fx = p[1] + _output._initialPrediction;
+      //p[2] = 1.0f/(float)(1f+Math.exp(-fx));
+      //p[1] = 1f-p[2];
+      //p[0] = water.util.ModelUtils.getPrediction(p, data);
+      //return p;
+      throw H2O.unimpl();
+    }
+    if( _output.nclasses() == 1 ) { // Regression
+      // Prediction starts from the mean response, and adds predicted residuals
+      body.ip("preds[0] += ").p(_output._initialPrediction).p(";");
+      return;
+    }
+    if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+      body.ip("preds[1] += ").p(_output._initialPrediction).p(";").nl();
+      body.ip("preds[2] = - preds[1];").nl();
+    }
+    body.ip("hex.genmodel.GenModel.SharedTree_rescale(data,preds);").nl();
+  }
 }

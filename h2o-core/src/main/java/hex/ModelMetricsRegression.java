@@ -24,7 +24,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
   public static class MetricBuilderRegression extends MetricBuilderSupervised {
     public MetricBuilderRegression() {
-      super(null); //this will make _work = new float[2];
+      super(1,null); //this will make _work = new float[2];
     }
 
     // ds[0] has the prediction and ds[1] is ignored

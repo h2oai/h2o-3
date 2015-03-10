@@ -116,7 +116,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
-    if( ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins] == 0 ) { assert isConstantResponse(); return null; }
+    double var = ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins];
+    if( var == 0 ) { assert isConstantResponse(); return null; }
+    // If variance is really small, then the predictions (which are all at
+    // single-precision resolution), will be all the same and the tree split
+    // will be in vain.
+    if( ((float)var) == 0f ) return null; 
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double sums1[] = MemoryManager.malloc8d(nbins+1);
@@ -141,7 +146,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     int best=0;                         // The no-split
     double best_se0=Double.MAX_VALUE;   // Best squared error
     double best_se1=Double.MAX_VALUE;   // Best squared error
-    byte equal=0;                // Ranged check
+    byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( bins[b] == 0 ) continue; // Ignore empty splits
       if( ns0[b] < min_rows ) continue;
@@ -199,8 +204,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     if( best==0 ) return null;  // No place to split
     double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
+    long  n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    long  n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);

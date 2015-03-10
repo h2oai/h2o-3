@@ -14,8 +14,8 @@ class AUCData(object):
     self.Gini = raw_auc["Gini"]
     self.confusion_matrices = ConfusionMatrix.read_cms(raw_auc["confusion_matrices"])
     # Two Dim Table
-    self. thresholdsAndMetricScores = raw_auc[ "thresholdsAndMetricScores"]
-    self.maxCriteriaAndMetricScores = raw_auc["maxCriteriaAndMetricScores"]
+    self. thresholds_and_metric_scores = raw_auc[ "thresholds_and_metric_scores"]
+    self.max_criteria_and_metric_scores = raw_auc["max_criteria_and_metric_scores"]
 
 
 class ThresholdCriterion(object):

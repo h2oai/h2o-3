@@ -13,10 +13,10 @@ abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends 
   public String column;
 
   @API(help="Row offset to display", direction=API.Direction.INOUT)
-  public long offset;
+  public long row_offset;
 
   @API(help="Number of rows to display", direction=API.Direction.INOUT)
-  public int len;
+  public int row_count;
 
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;

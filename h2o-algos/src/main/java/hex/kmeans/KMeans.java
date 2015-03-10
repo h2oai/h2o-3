@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.ClusteringModelBuilder;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.KMeansV2;
@@ -23,11 +24,10 @@ import java.util.Random;
  * http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf<br>
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
-public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override
-  public Model.ModelCategory[] can_build() {
+public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  @Override public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-      Model.ModelCategory.Clustering
+            Model.ModelCategory.Clustering
     };
   }
 
@@ -42,6 +42,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   final private double TOLERANCE = 1e-6;
 
   // Called from an http request
+  public KMeans(Key dest, String desc, KMeansModel.KMeansParameters parms) { super(dest, desc, parms); init(false); }
   public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }
@@ -60,10 +61,8 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
    *  categorical columns. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._k < 1 || _parms._k > 10000000 ) error("_k", "k must be between 1 and 1e7");
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1000000) error("_max_iterations", " max_iterations must be between 0 and 1e6");
-    if( _train == null ) return; // Nothing more to check
-    if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
+    if( _train == null ) return;
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       if( _parms._user_points.get().numCols() != _train.numCols() ) {
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");

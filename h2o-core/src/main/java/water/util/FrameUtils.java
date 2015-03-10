@@ -86,9 +86,8 @@ public class FrameUtils {
      * Driver for MissingInserter
      */
     class MissingInserterDriver extends H2O.H2OCountedCompleter {
-      final MissingInserter _mi;
       final Frame _frame;
-      MissingInserterDriver(MissingInserter mi, Frame frame) {_mi = mi; _frame = frame; }
+      MissingInserterDriver(Frame frame) {_frame = frame; }
       @Override
       protected void compute2() {
         new MRTask() {
@@ -96,8 +95,8 @@ public class FrameUtils {
             final Random rng = new Random();
             for (int c = 0; c < cs.length; c++) {
               for (int r = 0; r < cs[c]._len; r++) {
-                rng.setSeed(_mi._seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-                if (rng.nextDouble() < _mi._fraction) cs[c].setNA(r);
+                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+                if (rng.nextDouble() < _fraction) cs[c].setNA(r);
               }
             }
             update(1);
@@ -107,8 +106,8 @@ public class FrameUtils {
       }
 
       @Override
-      public void onCompletion(CountedCompleter caller) {
-        _mi.done();
+      public void onCompletion(CountedCompleter caller){
+        done();
       }
 
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
@@ -123,7 +122,7 @@ public class FrameUtils {
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
       try {
         final Frame frame = DKV.getGet(_dataset);
-        MissingInserterDriver mid = new MissingInserterDriver(this, frame);
+        MissingInserterDriver mid = new MissingInserterDriver(frame);
         int work = frame.vecs()[0].nChunks();
         start(mid, work);
       } catch (Throwable t) {

@@ -111,6 +111,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     //overwrite a fraction with N/A
     FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._dest, _createFrame.seed, _createFrame.missing_fraction);
     mi.execImpl();
+    mi.get();
     mi.remove();
 
     tryComplete();

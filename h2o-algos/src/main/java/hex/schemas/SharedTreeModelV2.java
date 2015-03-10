@@ -19,7 +19,7 @@ public abstract class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
     @API(help="Mean Square Error")
     public double mse;           // Total MSE, variance
     @API(help="Variable Importances")
-    public TwoDimTableV1 variableImportances;
+    public TwoDimTableV1 variable_importances;
 
   } // SharedTreeModelOutputV2
 }

@@ -11,14 +11,12 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ModelUtils;
-import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
 /**
  * Created by tomasnykodym on 8/27/14.
- * TODO: should be a subclass of SupervisedModel.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
