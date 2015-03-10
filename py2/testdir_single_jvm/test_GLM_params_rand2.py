@@ -119,9 +119,9 @@ class Basic(unittest.TestCase):
                 bHack = hex_key
 
             co = h2o_cmd.runSummary(key=binomial_key, column=54)
-            print "binomial_key summary:", co.label, co.type, co.missing, co.domain, sum(co.bins)
+            print "binomial_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
             co = h2o_cmd.runSummary(key=hex_key, column=54)
-            print "hex_key summary:", co.label, co.type, co.missing, co.domain, sum(co.bins)
+            print "hex_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
             # fix stupid params
             fixList = ['alpha', 'lambda']

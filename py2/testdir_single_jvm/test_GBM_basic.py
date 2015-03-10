@@ -101,7 +101,7 @@ class Basic(unittest.TestCase):
             if p.get('do_classification', None):
                 print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
-            vis = OutputObj(model.variableImportances, 'vis')
+            vis = OutputObj(model.variable_importances, 'vis')
 
             # just the first 10
             visDataChopped = [v[0:9] for v in vis.data]
@@ -127,7 +127,7 @@ class Basic(unittest.TestCase):
 
             if 1==1:
                 print ""
-                for i,c in enumerate(cmms.cm):
+                for i,c in enumerate(cmm.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)
                 print ""
 

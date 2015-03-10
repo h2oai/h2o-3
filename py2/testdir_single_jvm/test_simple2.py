@@ -32,14 +32,12 @@ class Basic(unittest.TestCase):
         frames_result = h2o.n0.frames(key=k)
 
         frame = frames_result['frames'][0]
-        byteSize = frame['byteSize']
         rows = frame['rows']
         columns = frame['columns']
         for c in columns:
             label = c['label']
-            missing = c['missing']
+            missing = c['missing_count']
             stype = c['type']
-            zeros = c['zeros']
             domain = c['domain']
 
         # print dump_json(frame)
