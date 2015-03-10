@@ -3,21 +3,19 @@ package hex.schemas;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
 import water.api.API;
+import water.api.ClusteringModelParametersSchema;
 import water.api.KeyV1;
 import water.api.ModelParametersSchema;
 import water.fvec.Frame;
 
-public class KMeansV2 extends ModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
+public class KMeansV2 extends ClusteringModelBuilderSchema<KMeans,KMeansV2,KMeansV2.KMeansParametersV2> {
 
-  public static final class KMeansParametersV2 extends ModelParametersSchema<KMeansParameters, KMeansParametersV2> {
+  public static final class KMeansParametersV2 extends ClusteringModelParametersSchema<KMeansParameters, KMeansParametersV2> {
     static public String[] own_fields = new String[] { "user_points", "k", "max_iterations", "standardize", "seed", "init" };
 
     // Input fields
     @API(help = "User-specified points", required = false)
     public KeyV1.FrameKeyV1 user_points;
-
-    @API(help = "Number of clusters", required = true)
-    public int k;
 
     @API(help="Maximum training iterations")
     public int max_iterations;        // Max iterations
