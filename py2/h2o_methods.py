@@ -61,7 +61,7 @@ def check_params_update_kwargs(params_dict, kw, function, print_params, ignoreNo
     for k,v in kw.iteritems():
         if k in params_dict:
             if v or not ignoreNone:
-                # what if a type conversion happens here? (checkHeader = -1 overwriting an existing value?)
+                # what if a type conversion happens here?
                 params_dict[k] = v
         else:
             raise Exception("illegal parameter '%s' with value '%s' in %s" % (k, v, function))

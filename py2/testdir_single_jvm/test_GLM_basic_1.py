@@ -27,7 +27,7 @@ class Basic(unittest.TestCase):
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -90,12 +90,12 @@ class Basic(unittest.TestCase):
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
-            mcms = OutputObj({'data': cmm.maxCriteriaAndMetricScores.data}, 'mcms')
+            mcms = OutputObj({'data': cmm.max_criteria_and_metric_scores.data}, 'mcms')
             m1 = mcms.data[1:]
             h0 = mcms.data[0]
             print "\nmcms", tabulate(m1, headers=h0)
 
-            thms = OutputObj(cmm.thresholdsAndMetricScores, 'thms')
+            thms = OutputObj(cmm.thresholds_and_metric_scores, 'thms')
             cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
 
             if 1==0:

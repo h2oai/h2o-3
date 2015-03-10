@@ -113,7 +113,7 @@ class Basic(unittest.TestCase):
 
             print "\nCreating random", csvPathname
             write_syn_dataset(csvPathname, rowCount, colCount, SEED=SEEDPERFILE)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', checkHeader=0,
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', check_header=0,
                 hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
             print "parseResult:", dump_json(parseResult)
 
