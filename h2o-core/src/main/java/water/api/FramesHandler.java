@@ -197,7 +197,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2(frame, s.offset, s.len).fillFromImpl(frame);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV2(frame, s.row_offset, s.row_count).fillFromImpl(frame);  // TODO: Refactor with FrameBase
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.

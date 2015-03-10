@@ -19,8 +19,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import com.brsanthu.googleanalytics.GoogleAnalytics;
-import com.brsanthu.googleanalytics.EventHit;
+//import com.brsanthu.googleanalytics.GoogleAnalytics;
+//import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -176,7 +176,7 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
-    /** --ga_hadoop_ver; Version string for hadoop */
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
     public String ga_hadoop_ver = null;
 
     /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
@@ -324,6 +324,13 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.aws_credentials = args[i];
       }
+      else if (s.matches("ga_hadoop_ver")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.ga_hadoop_ver = args[i];
+      }
+      else if (s.matches("ga_opt_out")) {
+        ARGS.ga_opt_out = true;
+      }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
         ARGS.log_level = args[i];
@@ -344,8 +351,8 @@ final public class H2O {
   }
 
   //Google analytics performance measurement
-  public static GoogleAnalytics GA;
-  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
+//  public static GoogleAnalytics GA;
+//  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -1049,14 +1056,15 @@ final public class H2O {
     if( ARGS.help ) { printHelp(); exit(0); }
 
     // Register with GA
-    GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
-    if((new File(".h2o_no_collect")).exists()
+/*    if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out ) {
-      GA.getConfig().setEnabled(false);
+      GA = null;
       Log.info("Opted out of sending usage metrics.");
+    } else {
+      GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
     }
-
+*/
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
 
@@ -1120,11 +1128,11 @@ final public class H2O {
         Thread.sleep (sleepMillis);
       }
       catch (Exception ignore) {};
-      if (H2O.SELF == H2O.CLOUD._memary[0]) {
+/*      if (H2O.SELF == H2O.CLOUD._memary[0]) {
         if (ARGS.ga_hadoop_ver != null)
           H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
         H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
-      }
+      } */
     }
   }
 }

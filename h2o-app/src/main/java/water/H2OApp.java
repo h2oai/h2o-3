@@ -6,6 +6,7 @@ import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.example.Example;
 import hex.glm.GLM;
+import hex.naivebayes.NaiveBayes;
 import hex.pca.PCA;
 import hex.grep.Grep;
 import hex.kmeans.KMeans;
@@ -55,6 +56,10 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("pca", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/pca/parameters", PCABuilderHandler.class, "validate_parameters",                               "Validate a set of PCA model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("naivebayes", NaiveBayes.class);
+    H2O.registerPOST("/3/ModelBuilders/naivebayes", NaiveBayesBuilderHandler.class, "train",                                          "Train a Naive Bayes model on the specified Frame.");
+    H2O.registerPOST("/3/ModelBuilders/naivebayes/parameters", NaiveBayesBuilderHandler.class, "validate_parameters",                 "Validate a set of Naive Bayes model builder parameters.");
 
     ModelBuilder.registerModelBuilder("word2vec", Word2Vec.class);
     H2O.registerPOST("/3/ModelBuilders/word2vec", Word2VecBuilderHandler.class, "train",                                              "Train a Word2Vec model on the specified Frame.");

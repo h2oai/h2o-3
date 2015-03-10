@@ -17,27 +17,29 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   srcs <- .collapse.char(srcs)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, srcs = srcs, method = "POST")
-  ncols <- parseSetup$ncols
-  col.names <- parseSetup$columnNames
-  col.types <- parseSetup$columnTypes
-  parsedSrcs <- sapply(parseSetup$srcs, function(asrc) asrc$name)
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, source_keys = srcs, method = "POST")
+  ncols <- parseSetup$number_columns
+  col.names <- parseSetup$column_names
+  col.types <- parseSetup$column_types
+  na.strings <- parseSetup$na_strings
+  parsedSrcs <- sapply(parseSetup$source_keys, function(asrc) asrc$name)
 
   linkToGC <- !nzchar(key)
   if (linkToGC)
-    key <- .key.make(data@conn, parseSetup$hexName)
+    key <- .key.make(data@conn, parseSetup$destination_key)
   parse.params <- list(
-        srcs = .collapse.char(parsedSrcs),
-        hex  = key,
-        columnNames = .collapse.char(col.names),
-        sep = parseSetup$sep,
-        pType = parseSetup$pType,
-        ncols = ncols,
-        checkHeader = parseSetup$checkHeader,
-        singleQuotes = parseSetup$singleQuotes,
-        delete_on_done = TRUE,
-        chunkSize = parseSetup$chunkSize,
-        columnTypes = .collapse.char(col.types) 
+        source_keys = .collapse.char(parsedSrcs),
+        destination_key  = key,
+        separator = parseSetup$separator,
+        parse_type = parseSetup$parse_type,
+        single_quotes = parseSetup$single_quotes,
+        check_header = parseSetup$check_header,
+        number_columns = ncols,
+        column_names = .collapse.char(col.names),
+        column_types = .collapse.char(col.types), 
+        na_strings = .collapse.char(na.strings),
+        chunk_size = parseSetup$chunk_size,
+        delete_on_done = TRUE
         )
 
   # Perform the parse

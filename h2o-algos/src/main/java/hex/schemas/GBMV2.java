@@ -11,13 +11,8 @@ public class GBMV2 extends SharedTreeV2<GBM,GBMV2,GBMV2.GBMParametersV2> {
 
   public static final class GBMParametersV2 extends SharedTreeParametersV2<GBMParameters, GBMParametersV2> {
     static public String[] own_fields = new String[] {
-        "ntrees",
-        "max_depth",
-        "min_rows",
-        "nbins",
         "learn_rate",
         "loss",
-        "seed"
     };
 
     // Input fields

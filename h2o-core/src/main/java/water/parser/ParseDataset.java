@@ -14,8 +14,6 @@ import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.parser.Parser.ColType;
-import water.parser.Parser.ColTypeInfo;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
@@ -97,12 +95,12 @@ public final class ParseDataset extends Job<Frame> {
     Vec update;
     Iced ice;
     Futures fs = new Futures();
-    Log.info("Parse chunk size " + setup._chunkSize);
+    Log.info("Parse chunk size " + setup._chunk_size);
     for( int i = 0; i < keys.length; ++i ) {
       ice = DKV.getGet(keys[i]);
       update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
       if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update).setChunkSize(setup._chunkSize);
+        ((FileVec) update).setChunkSize(setup._chunk_size);
         DKV.put(update._key, update, fs);
         fs.blockForPending();
         // also update Frame to invalidate local caches
@@ -166,11 +164,11 @@ public final class ParseDataset extends Job<Frame> {
   // --------------------------------------------------------------------------
   // Top-level parser driver
   private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
-    assert setup._ncols > 0;
-    if( setup._columnNames != null && 
-        ( (setup._columnNames.length == 0) ||
-          (setup._columnNames.length == 1 && setup._columnNames[0].isEmpty())) )
-      setup._columnNames = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
+    assert setup._number_columns > 0;
+    if( setup._column_names != null &&
+        ( (setup._column_names.length == 0) ||
+          (setup._column_names.length == 1 && setup._column_names[0].isEmpty())) )
+      setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
@@ -219,7 +217,7 @@ public final class ParseDataset extends Job<Frame> {
         }
         emaps[nodeId] = new EnumMapping(emap);
       }
-      fr = new Frame(job.dest(), setup._columnNames != null?setup._columnNames:genericColumnNames(setup._ncols),AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._column_names != null?setup._column_names :genericColumnNames(setup._number_columns),AppendableVec.closeAll(avs));
       // Some cols with enums lose their enum status (because they have more
       // number chunks than enum chunks); these no longer need (or want) enum
       // updating.
@@ -241,7 +239,7 @@ public final class ParseDataset extends Job<Frame> {
       new EnumUpdateTask(ds, emaps, mfpt._chunk2Enum).doAll(evecs);
 
     } else {                    // No enums case
-      fr = new Frame(job.dest(), setup._columnNames,AppendableVec.closeAll(avs));
+      fr = new Frame(job.dest(), setup._column_names,AppendableVec.closeAll(avs));
     }
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
@@ -440,7 +438,7 @@ public final class ParseDataset extends Job<Frame> {
     int _reservedKeys;
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key job_key, Key[] fkeys, boolean delete_on_done ) {
       _vg = vg; _gblSetup = setup;
-      _vecIdStart = _vg.reserveKeys(_reservedKeys = _gblSetup._pType == ParserType.SVMLight ? 100000000 : setup._ncols);
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _gblSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
       _delete_on_done = delete_on_done;
       _job_key = job_key;
 
@@ -528,13 +526,13 @@ public final class ParseDataset extends Job<Frame> {
     }
 
     private FVecDataOut makeDout(ParseSetup localSetup, int chunkOff, int nchunks) {
-      AppendableVec [] avs = new AppendableVec[localSetup._ncols];
+      AppendableVec [] avs = new AppendableVec[localSetup._number_columns];
       long [] espc = MemoryManager.malloc8(nchunks);
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, chunkOff);
-      return localSetup._pType == ParserType.SVMLight
-        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._ncols), _gblSetup._chunkSize, avs)
-        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._ncols), localSetup._ctypes, _gblSetup._chunkSize, avs);
+      return localSetup._parse_type == ParserType.SVMLight
+        ?new SVMLightFVecDataOut(_vg, _vecIdStart,chunkOff,enums(_eKey,localSetup._number_columns), _gblSetup._chunk_size, avs)
+        :new FVecDataOut(_vg, chunkOff, enums(_eKey,localSetup._number_columns), localSetup._column_types, _gblSetup._chunk_size, avs);
     }
 
     // Called once per file
@@ -545,13 +543,13 @@ public final class ParseDataset extends Job<Frame> {
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-      byte[] bits = ZipUtil.unzipBytes(zips,cpr, _gblSetup._chunkSize);
+      byte[] bits = ZipUtil.unzipBytes(zips,cpr, _gblSetup._chunk_size);
       ParseSetup localSetup = _gblSetup.guessSetup(bits, 0/*guess header in each file*/);
 
-      localSetup._chunkSize = _gblSetup._chunkSize;
+      localSetup._chunk_size = _gblSetup._chunk_size;
 
       //check local setup info
-      if( !localSetup._isValid ) {
+      if( !localSetup._is_valid) {
         _errors = localSetup._errors;
         chunksAreLocal(vec,chunkStartIdx,key);
         return;
@@ -564,20 +562,20 @@ public final class ParseDataset extends Job<Frame> {
 
       // Allow dup headers, if they are equals-ignoring-case
       boolean has_hdr = false;
-      if (_gblSetup._checkHeader == 1 && localSetup._checkHeader == 1) has_hdr = true;
+      if (_gblSetup._check_header == 1 && localSetup._check_header == 1) has_hdr = true;
       if( has_hdr ) {           // Both have headers?
-        for( int i = 0; has_hdr && i < localSetup._columnNames.length; ++i )
-          has_hdr = localSetup._columnNames[i].equalsIgnoreCase(_gblSetup._columnNames[i]);
+        for( int i = 0; has_hdr && i < localSetup._column_names.length; ++i )
+          has_hdr = localSetup._column_names[i].equalsIgnoreCase(_gblSetup._column_names[i]);
         if( !has_hdr )          // Headers not compatible?
           // Then treat as no-headers, i.e., parse it as a normal row
-          localSetup._checkHeader = -1;
+          localSetup._check_header = -1;
       }
 
       // Parse the file
       try {
         switch( cpr ) {
         case NONE:
-          if( localSetup._pType._parallelParseSupported ) {
+          if( localSetup._parse_type._parallelParseSupported ) {
             DParse dp = new DParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks());
             addToPendingCount(1);
             dp.setCompleter(this);
@@ -641,7 +639,7 @@ public final class ParseDataset extends Job<Frame> {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser();
       // assume 2x inflation rate
-      if( localSetup._pType._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
+      if( localSetup._parse_type._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
       else                                            p.streamParse   (is, dout);
       // Parse all internal "chunks", until we drain the zip-stream dry.  Not
       // real chunks, just flipping between 32K buffers.  Fills up the single
@@ -683,23 +681,23 @@ public final class ParseDataset extends Job<Frame> {
         _espc = MemoryManager.malloc8(_nchunks);
       }
       @Override public void map( Chunk in ) {
-        AppendableVec [] avs = new AppendableVec[_setup._ncols];
+        AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _startChunkIdx);
-        Categorical [] enums = enums(_eKey,_setup._ncols);
+        Categorical [] enums = enums(_eKey,_setup._number_columns);
         // Break out the input & output vectors before the parse loop
         FVecDataIn din = new FVecDataIn(in);
         FVecDataOut dout;
         Parser p;
-        switch(_setup._pType) {
+        switch(_setup._parse_type) {
         case ARFF:
         case CSV:
           p = new CsvParser(_setup);
-          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, _setup._ctypes, _setup._chunkSize, avs); //TODO: use _setup._domains instead of enums
+          dout = new FVecDataOut(_vg,_startChunkIdx + in.cidx(), enums, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of enums
           break;
         case SVMLight:
           p = new SVMLightParser(_setup);
-          dout = new SVMLightFVecDataOut(_vg, _vecIdStart, in.cidx() + _startChunkIdx, enums, _setup._chunkSize, avs);
+          dout = new SVMLightFVecDataOut(_vg, _vecIdStart, in.cidx() + _startChunkIdx, enums, _setup._chunk_size, avs);
           break;
         default:
           throw H2O.unimpl();
@@ -743,7 +741,7 @@ public final class ParseDataset extends Job<Frame> {
     // Find & remove all partially built output chunks & vecs
     private Futures onExceptionCleanup(Futures fs) {
       int nchunks = _chunk2Enum.length;
-      int ncols = _gblSetup._ncols;
+      int ncols = _gblSetup._number_columns;
       for( int i = 0; i < ncols; ++i ) {
         Key vkey = _vg.vecKey(_vecIdStart + i);
         Keyed.remove(vkey,fs);
@@ -763,7 +761,7 @@ public final class ParseDataset extends Job<Frame> {
     protected transient NewChunk [] _nvs;
     protected AppendableVec []_vecs;
     protected final Categorical [] _enums;
-    protected transient ColTypeInfo [] _ctypes;
+    protected transient byte[] _ctypes;
     long _nLines;
     int _nCols;
     int _col = -1;
@@ -775,20 +773,9 @@ public final class ParseDataset extends Job<Frame> {
 
     public int nChunks(){return _nChunks;}
 
-    static final byte UCOL = 0; // unknown col type
-    static final byte NCOL = 1; // numeric col type
-    static final byte ECOL = 2; // enum    col type
-    static final byte TCOL = 3; // time    col type
-    static final byte ICOL = 4; // UUID    col type
-    static final byte SCOL = 5; // String  col type
-
-
-    public FVecDataOut(VectorGroup vg, int cidx, Categorical [] enums, ColTypeInfo [] ctypes, int chunkSize, AppendableVec [] avs){
+    public FVecDataOut(VectorGroup vg, int cidx, Categorical [] enums, byte[] ctypes, int chunkSize, AppendableVec [] avs){
       if (ctypes != null) _ctypes = ctypes;
-      else {
-        _ctypes = new ColTypeInfo[avs.length];
-        for (int i=0; i < _ctypes.length;i++) _ctypes[i] = new ColTypeInfo();
-      }
+      else _ctypes = new byte[avs.length];
       _vecs = avs;
       _nvs = new NewChunk[avs.length];
       for(int i = 0; i < avs.length; ++i)
@@ -819,7 +806,7 @@ public final class ParseDataset extends Job<Frame> {
             dout.enumCol2StrCol(i);
           else if (!_vecs[i].isString() && dout._vecs[i].isString()) {
             enumCol2StrCol(i);
-            _ctypes[i]._type = ColType.STR;
+            _ctypes[i] = Vec.T_STR;
           }
 
           _vecs[i].reduce(dout._vecs[i]);
@@ -877,32 +864,32 @@ public final class ParseDataset extends Job<Frame> {
     @Override public void addNumCol(int colIdx, long number, int exp) {
       if( colIdx < _nCols ) {
         _nvs[_col = colIdx].addNum(number, exp);
-        if(_ctypes[colIdx]._type == ColType.UNKNOWN ) _ctypes[colIdx]._type = ColType.NUM;
+        if(_ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
       }
     }
 
     @Override public final void addInvalidCol(int colIdx) {
       if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
     }
-    @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx]._type == ColType.ENUM || _ctypes[colIdx]._type == ColType.STR);}
+    @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_ENUM || _ctypes[colIdx] == Vec.T_STR);}
 
     @Override public void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _nvs.length){
-        if(_ctypes[colIdx]._type == ColType.NUM){ // support enforced types
+        if(_ctypes[colIdx] == Vec.T_NUM){ // support enforced types
           addInvalidCol(colIdx);
           return;
         }
-        if(_ctypes[colIdx]._type == ColType.UNKNOWN && ParseTime.attemptTimeParse(str) > 0)
-          _ctypes[colIdx]._type = ColType.TIME;
-        if( _ctypes[colIdx]._type == ColType.UNKNOWN ) { // Attempt UUID parse
+        if(_ctypes[colIdx] == Vec.T_BAD && ParseTime.attemptTimeParse(str) > 0)
+          _ctypes[colIdx] = Vec.T_TIME;
+        if( _ctypes[colIdx] == Vec.T_BAD ) { // Attempt UUID parse
           int old = str.get_off();
           ParseTime.attemptUUIDParse0(str);
           ParseTime.attemptUUIDParse1(str);
-          if( str.get_off() != -1 ) _ctypes[colIdx]._type = ColType.UUID;
+          if( str.get_off() != -1 ) _ctypes[colIdx] = Vec.T_UUID;
           str.setOff(old);
         }
 
-        if( _ctypes[colIdx]._type == ColType.TIME ) {
+        if( _ctypes[colIdx] == Vec.T_TIME ) {
           long l = ParseTime.attemptTimeParse(str);
           if( l == Long.MIN_VALUE ) addInvalidCol(colIdx);
           else {
@@ -911,20 +898,20 @@ public final class ParseDataset extends Job<Frame> {
             addNumCol(colIdx, l, 0);               // Record time in msec
             _nvs[_col]._timCnt[time_pat]++; // Count histo of time parse patterns
           }
-        } else if( _ctypes[colIdx]._type == ColType.UUID ) { // UUID column?  Only allow UUID parses
+        } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
           long lo = ParseTime.attemptUUIDParse0(str);
           long hi = ParseTime.attemptUUIDParse1(str);
           if( str.get_off() == -1 )  { lo = C16Chunk._LO_NA; hi = C16Chunk._HI_NA; }
           if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
-        } else if( _ctypes[colIdx]._type == ColType.STR ) {
+        } else if( _ctypes[colIdx] == Vec.T_STR ) {
           _nvs[_col = colIdx].addStr(str);
         } else {
           if(!_enums[colIdx].isMapFull()) {
             int id = _enums[_col = colIdx].addKey(str);
-            if (_ctypes[colIdx]._type == ColType.UNKNOWN && id > 1) _ctypes[colIdx]._type = ColType.ENUM;
+            if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;
             _nvs[colIdx].addEnum(id);
           } else { // maxed out enum map, convert col to string chunk
-            _ctypes[_col = colIdx]._type = ColType.STR;
+            _ctypes[_col = colIdx] = Vec.T_STR;
             enumCol2StrCol(colIdx);
             _nvs[colIdx].addStr(str);
           }

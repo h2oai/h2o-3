@@ -7,8 +7,7 @@ test.pca.arrests <- function(conn) {
   arrests.hex <- h2o.uploadFile(conn, locate("smalldata/pca_test/USArrests.csv"))
   arrests.sum <- summary(arrests.hex)
   print(arrests.sum)
-  arrests.data <- read.csv(locate("smalldata/pca_test/USArrests.csv"), header = TRUE)
-  
+
   for(i in 1:4) {
     Log.info(paste("H2O PCA with ", i, " dimensions:\n", sep = ""))
     Log.info(paste("Using these columns: ", colnames(arrests.hex)))

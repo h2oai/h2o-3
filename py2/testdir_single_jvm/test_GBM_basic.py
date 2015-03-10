@@ -29,7 +29,7 @@ class Basic(unittest.TestCase):
         # FIX! do I need to force enum for classification? what if I do regression after this?
         columnTypeDict = {54: 'Enum'}
         parseResult = h2i.import_parse(bucket=bucket, path=csvPathname, columnTypeDict=columnTypeDict,
-            schema='local', chunkSize=4194304, hex_key=train_key, timeoutSecs=timeoutSecs)
+            schema='local', chunk_size=4194304, hex_key=train_key, timeoutSecs=timeoutSecs)
 
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -125,7 +125,7 @@ class Basic(unittest.TestCase):
             print "model.mse_train:", model.mse_train
 
 
-            if 1==0:
+            if 1==1:
                 print ""
                 for i,c in enumerate(cmms.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)

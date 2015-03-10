@@ -87,6 +87,11 @@ allprojects {
     apply from: "$rootDir/gradle/artifacts.gradle"
 }
 
+// Compute applyFindbugsPlugin property
+// Gradle by default interpret boolean properties setup in config file as strings.
+// Hence we need here string toBoolean call
+def applyFindbugsPlugin = rootProject.hasProperty("runFindbugs") ? rootProject.runFindbugs.toBoolean() : false
+
 // 
 // Common configuration for all subprojects
 //
@@ -121,8 +126,12 @@ subprojects {
 
     // Configure Java projects
     if (project in javaProjects) {
-       apply from: "$rootDir/gradle/java.gradle"
-       apply from: "$rootDir/gradle/cp.gradle"
+        apply from: "$rootDir/gradle/java.gradle"
+        apply from: "$rootDir/gradle/cp.gradle"
+        // Include Findbugs only if the property is specified
+        if (applyFindbugsPlugin) {
+            apply from: "$rootDir/gradle/findbugs.gradle"
+        }
     }
 
     // Configure Scala projects

@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import static hex.ModelMetrics.calcVarImp;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV2;
@@ -15,10 +14,13 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
+import static hex.ModelMetrics.calcVarImp;
 import static java.lang.Double.isNaN;
-import water.util.Timer;
 
 /**
  * The Deep Learning model
@@ -641,11 +643,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Key[] weights;
     Key[] biases;
     DeepLearningScoring errors;
-    TwoDimTable modelSummary;
-    TwoDimTable scoringHistory;
-    TwoDimTable variableImportances;
-    ModelMetrics trainMetrics;
-    ModelMetrics validMetrics;
+    TwoDimTable model_summary;
+    TwoDimTable scoring_history;
+    TwoDimTable variable_importances;
+    ModelMetrics train_metrics;
+    ModelMetrics valid_metrics;
     double run_time;
 
     @Override public ModelCategory getModelCategory() {
@@ -696,7 +698,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
       default: throw H2O.unimpl();
@@ -1525,8 +1527,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output.scoringHistory = createScoringHistoryTable(errors);
-    _output.variableImportances = calcVarImp(last_scored().variable_importances);
+    _output.scoring_history = createScoringHistoryTable(errors);
+    _output.variable_importances = calcVarImp(last_scored().variable_importances);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1554,8 +1556,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms._n_folds;
       _output.errors = last_scored();
-      _output.scoringHistory = createScoringHistoryTable(errors);
-      _output.variableImportances = calcVarImp(last_scored().variable_importances);
+      _output.scoring_history = createScoringHistoryTable(errors);
+      _output.variable_importances = calcVarImp(last_scored().variable_importances);
     }
     makeWeightsBiases(destKey);
     run_time = 0;
@@ -1666,7 +1668,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
-          _output.trainMetrics = mm1;
+          _output.train_metrics = mm1;
           _output.run_time = run_time;
 
           if (ftest != null) {
@@ -1687,7 +1689,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
-              _output.validMetrics = mm2;
+              _output.valid_metrics = mm2;
             }
           }
         }
@@ -1718,9 +1720,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           model_info.get_biases(i).toFrame(_output.biases[i]);
         }
         Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
-        _output.scoringHistory = createScoringHistoryTable(errors);
-        _output.variableImportances = calcVarImp(last_scored().variable_importances);
-        _output.modelSummary = model_info.createSummaryTable();
+        _output.scoring_history = createScoringHistoryTable(errors);
+        _output.variable_importances = calcVarImp(last_scored().variable_importances);
+        _output.model_summary = model_info.createSummaryTable();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
@@ -1802,9 +1804,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     StringBuilder sb = new StringBuilder();
     sb.append(model_info.toString());
     //sb.append(last_scored().toString());
-    sb.append(_output.scoringHistory.toString());
-    if (_output.variableImportances != null) {
-      for (String s : Arrays.asList(_output.variableImportances.toString().split("\n")).subList(0, 12))
+    sb.append(_output.scoring_history.toString());
+    if (_output.variable_importances != null) {
+      for (String s : Arrays.asList(_output.variable_importances.toString().split("\n")).subList(0, 12))
         sb.append(s).append("\n");
     }
     return sb.toString();
@@ -1877,7 +1879,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[i + 1] = out[i];
         if (Float.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
-      preds[0] = ModelUtils.getPrediction(preds, data);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
       if (model_info().data_info()._normRespMul != null)
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);

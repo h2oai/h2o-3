@@ -81,7 +81,7 @@ class Basic(unittest.TestCase):
             write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE)
 
             parseResult = h2i.import_parse(path=csvPathname, schema='local', hex_key=hex_key,
-                timeoutSecs=timeoutSecs, doSummary=False, columnNames=None, intermediateResults=DO_INTERMEDIATE_RESULTS)
+                timeoutSecs=timeoutSecs, doSummary=False, column_names=None, intermediateResults=DO_INTERMEDIATE_RESULTS)
             pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=rowCount, expectedNumCols=colCount)
             print pA.numRows
             print pA.numCols

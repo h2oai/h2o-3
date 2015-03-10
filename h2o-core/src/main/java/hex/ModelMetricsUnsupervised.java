@@ -8,9 +8,5 @@ public class ModelMetricsUnsupervised extends ModelMetrics {
   }
 
   public static abstract class MetricBuilderUnsupervised extends MetricBuilder {
-    abstract public float[] perRow( float[] dataRow, float[] preds, Model m );
-
-    // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    abstract public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma);
   }
 }

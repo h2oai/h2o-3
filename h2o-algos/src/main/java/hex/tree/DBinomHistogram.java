@@ -103,8 +103,8 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     // but both splits could work for any integral datatype.  Do the less-than
     // splits first.
     int best=0;                         // The no-split
-    double best_se0=Double.MAX_VALUE;   // Best squared error
-    double best_se1=Double.MAX_VALUE;   // Best squared error
+    double best_se0=Float.MAX_VALUE;   // Best squared error
+    double best_se1=Float.MAX_VALUE;   // Best squared error
     byte equal=0;                // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( _bins[idx[b]] == 0 ) continue; // Ignore empty splits
@@ -149,7 +149,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
 
     if( best==0 ) return null;  // No place to split
     assert best > 0 : "Must actually pick a split "+best;
-    double se = sums1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
+    float se = sums1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
     long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
     long   n1 = equal == 0 ?   ns1[best] : _bins[idx[best]]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
@@ -163,7 +163,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       //Integer idx[] = new Integer[nbins];
       //for(int b = 0; b < nbins; b++) idx[b] = b;
       //// Sort predictor levels in ascending order of mean response within each bin
-      //final Double[] means = new Double[nbins];
+      //final Float[] means = new Float[nbins];
       //for(int b = 0; b < nbins; b++) means[b] = mean(b);
       //Arrays.sort(idx, new Comparator<Integer>() {
       //    @Override public int compare(Integer o1, Integer o2) { return means[o1].compareTo(means[o2]); }

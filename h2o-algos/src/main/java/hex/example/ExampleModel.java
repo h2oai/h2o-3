@@ -3,10 +3,8 @@ package hex.example;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.SupervisedModel;
-import hex.schemas.ExampleModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 
 public class ExampleModel extends SupervisedModel<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 

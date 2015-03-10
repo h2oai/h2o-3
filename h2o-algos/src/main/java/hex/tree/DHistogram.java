@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -208,8 +209,8 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       if( var(b) > 1e-6 ) return false;
       double mean = mean(b);
       if( mean != m )
-        if( Double.isNaN(m) ) m=mean;
-        else if(Math.abs(m - mean) > 1e-6) return false;
+        if( Double.isNaN(m) ) m=mean; // Capture mean of first non-empty bin
+        else if( !MathUtils.compare(m,mean,1e-6,1e-6) ) return false;
     }
     return true;
   }

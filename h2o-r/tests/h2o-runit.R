@@ -39,8 +39,15 @@ function(pathStub, root.parent = NULL) {
 #' Clean a path up: change \ -> /; remove starting './'; split
 clean<-
 function(p) {
-  p <- gsub("[\\]", "/", p)
-  p <- unlist(strsplit(p, '/'))
+
+  if (.Platform$file.sep == "/") {
+    p <- gsub("[\\]", .Platform$file.sep, p)
+    p <- unlist(strsplit(p, .Platform$file.sep))
+  } else {
+    p <- gsub("/", "\\\\", p)  # is this right?
+    p <- unlist(strsplit(p, "\\\\"))
+  }
+
   p
 }
 
@@ -67,14 +74,14 @@ function(cur.dir, root, root.parent = NULL) {
     if (basename(cur.dir) == root) return(normalizePath(cur.dir))
 
     # next check if root is in cur.dir somewhere
-    if (root %in% dir(cur.dir)) return(normalizePath(paste(cur.dir, "/", root, sep = "")))
+    if (root %in% dir(cur.dir)) return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is the parent
-    if (parent.name == root) return(normalizePath(paste(parent.dir, "/", root, sep = "")))
+    if (parent.name == root) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is h2o-dev, check the children here (and fail if `root` not found)
     if (parent.name == PROJECT.ROOT) {
-      if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, "/", root, sep = "")))
+      if (root %in% dir(parent.dir)) return(normalizePath(paste(parent.dir, .Platform$file.sep, root, sep = "")))
       else stop(paste("Could not find the dataset bucket: ", root, sep = "" ))
     }
 
@@ -85,7 +92,7 @@ function(cur.dir, root, root.parent = NULL) {
     if (basename(cur.dir) == root && parent.name == root.parent) return(normalizePath(cur.dir))
 
     # next check if root is in cur.dir somewhere (if so, then cur.dir is the parent!)
-    if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) return(normalizePath(paste(cur.dir, "/", root, sep = "")))
+    if (root %in% dir(cur.dir) && root.parent == basename(cur.dir)) return(normalizePath(paste(cur.dir, .Platform$file.sep, root, sep = "")))
 
     # the root is the parent
     if (parent.name == root && basename(dirname(parent.dir)) == root.parent) return(path.compute(parent.dir, root, root.parent)) #return(normalizePath(paste(parent.dir, "/", root, sep = "")))
@@ -101,7 +108,7 @@ function(cur.dir, root, root.parent = NULL) {
 #'
 src <-
 function(ROOT.PATH) {
-  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/kmeans.R", "/deeplearning.R", "/locate.R")
+  to_src <- c("/classes.R", "/connection.R", "/constants.R", "/logging.R", "/communication.R", "/kvstore.R", "/exec.R", "/ops.R", "/frame.R", "/ast.R", "/astfun.R", "/import.R", "/parse.R", "/export.R", "/models.R", "/edicts.R", "/gbm.R","/glm.R", "/kmeans.R", "/deeplearning.R", "/naivebayes.R", "/locate.R")
   require(rjson); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
@@ -111,7 +118,7 @@ function(ROOT.PATH) {
 #'
 src.utils<-
 function(ROOT.PATH) {
-  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/utilsR.R")
+  to_src <- c("/h2oR.R", "/setupR.R", "/pcaR.R", "/glmR.R", "/gbmR.R", "/kmeansR.R", "/naivebayesR.R", "/utilsR.R")
   invisible(lapply(to_src,function(x){source(paste(ROOT.PATH, x, sep = ""))}))
 }
 
@@ -124,7 +131,7 @@ src(root.path)   # uncomment to source R code directly  (overrides package load)
 #The master seed is set by the runnerSetup.R script.
 #It serves as a way to reproduce all of the tests
 master_seed_dir <- locate("tests", "h2o-r")
-ms <- paste(master_seed_dir, "/master_seed", sep = "")
+ms <- paste(master_seed_dir, .Platform$file.sep, "master_seed", sep = "")
 seed <- NULL
 if (file.exists(ms))  {
     MASTER_SEED <<- TRUE
@@ -150,4 +157,3 @@ if (exists("TEST_ROOT_DIR")) {
 # Clean up any temporary variables to avoid polluting the user's workspace.
 options(echo=.origEchoValue)
 rm(list=c(".origEchoValue"))
-

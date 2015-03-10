@@ -165,7 +165,7 @@ class Basic(unittest.TestCase):
 
             # just parse to make sure it's good
             parseResult = h2i.import_parse(path=csvPathname, 
-                checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
+                check_header=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
             cA = h2o_test.OutputObj(iA.columns[0], "inspect_column")
