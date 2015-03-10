@@ -14,7 +14,7 @@ class Basic(unittest.TestCase):
         global SEED
         SEED = h2o.setup_random_seed()
 
-        h2o.init(1)
+        h2o.init(3)
 
     @classmethod
     def tearDownClass(cls):
