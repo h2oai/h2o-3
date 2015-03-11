@@ -190,6 +190,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         Timer kb_timer = new Timer();
         ktrees = buildNextKTrees(_train,_mtry,_parms._sample_rate,rand,tid);
         Log.info((tid+1) + ". tree was built " + kb_timer.toString());
+        DRF.this.update(1);
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
 
         // Check latest predictions
