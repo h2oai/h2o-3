@@ -1,7 +1,6 @@
 package hex.optimization;
 
 import hex.DataInfo;
-import hex.glm.GLM;
 import hex.glm.GLM.GLMGradientSolver;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -64,7 +63,7 @@ public class L_BFGS_Test  extends TestUtil {
     int fails = 0;
     L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
     L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
-    assertTrue("LBFGS failed to solve Rosenbrock function optimization",r.ginfo._objVal <  1e-4);
+    assertTrue("LBFGS failed to solve Rosenbrock function optimization",r.ginfo._likelihood <  1e-4);
   }
 
   @Test
@@ -87,7 +86,7 @@ public class L_BFGS_Test  extends TestUtil {
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       beta[beta.length-1] = glmp.link(source.vec("CAPSULE").mean());
       L_BFGS.Result r = lbfgs.solve(solver, beta);
-      assertEquals(378.34, 2 * r.ginfo._objVal * source.numRows(), 1e-1);
+      assertEquals(378.34, 2 * r.ginfo._likelihood * source.numRows(), 1e-1);
     } finally {
       if(dinfo != null)
         DKV.remove(dinfo._key);
@@ -122,8 +121,8 @@ public class L_BFGS_Test  extends TestUtil {
       L_BFGS.Result r3 = lbfgs.solve(solver, beta.clone());
       assertEquals(r1.iter,20);
       assertEquals (r1.iter + r2.iter,r3.iter); // should be equal? got mismatch by 1
-      assertEquals(r2.ginfo._objVal,r3.ginfo._objVal,1e-8);
-      assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r3.coefs,true) + r3.ginfo._objVal, 1e-4, 5e-4);
+      assertEquals(r2.ginfo._likelihood,r3.ginfo._likelihood,1e-8);
+      assertEquals( .5 * glmp._lambda[0] * ArrayUtils.l2norm(r3.coefs,true) + r3.ginfo._likelihood, 1e-4, 5e-4);
       assertTrue("iter# expected < 100, got " + r3.iter, r3.iter < 100);
     } finally {
       if(dinfo != null)
