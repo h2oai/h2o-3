@@ -59,33 +59,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _ncols = _train.numCols()-1;
 
     if (_response == null) return;
-
-    // Initialize response based on given loss function.
-    // Regression: initially predict the response mean
-    // Binomial: just class 0 (class 1 in the exact inverse prediction)
-    // Multinomial: Class distribution which is not a single value.
-
-    // However there is this weird tension on the initial value for
-    // classification: If you guess 0's (no class is favored over another),
-    // then with your first GBM tree you'll typically move towards the correct
-    // answer a little bit (assuming you have decent predictors) - and
-    // immediately the Confusion Matrix shows good results which gradually
-    // improve... BUT the Means Squared Error will suck for unbalanced sets,
-    // even as the CM is good.  That's because we want the predictions for the
-    // common class to be large and positive, and the rare class to be negative
-    // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metric is typically negative (usually it's
-    // between 0 and 1).
-
-    // If instead you guess the mean (reversed through the loss function), then
-    // the zero-tree GBM model reports an MSE equal to the response variance -
-    // and an initial R^2 of zero.  More trees gradually improves the R^2 as
-    // expected.  However, all the minority classes have large guesses in the
-    // wrong direction, and it takes a long time (lotsa trees) to correct that
-    // - so your CM sucks for a long time.
-    double mean = _response.mean();
-    _initialPrediction = _nclass == 1 ? mean
-      : (_nclass==2 ? -0.5*Math.log(mean/(1.0-mean))/*0.0*/ : 0.0/*not a single value*/);
   }
 
   // --------------------------------------------------------------------------
@@ -169,13 +142,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Tag out rows missing the response column
         new ExcludeNAResponse().doAll(fr);
-
-        // Set initial predictions (computed in init())
-        final double init = _initialPrediction;
-        if( init != 0.0 )       // Only non-zero for regression or bernoulli
-          new MRTask() {
-            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-          }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols+1];

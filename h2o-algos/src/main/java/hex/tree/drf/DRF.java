@@ -148,6 +148,17 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     }
 
     @Override protected void buildModel() {
+      // Start with class distribution as null-model
+      // FIXME: Test/Investigate this
+//      if( _nclass >= 2 ) {
+//        for( int c=0; c<_nclass; c++ ) {
+//          final double init = _model._output._priorClassDist[c];
+//          new MRTask() {
+//            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
+//          }.doAll(vec_tree(_train,c));
+//        }
+//      }
+
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
               ( _parms._convert_to_enum ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,#cols> but it is " + _mtry);
@@ -355,6 +366,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
               double prediction = ((LeafNode)tree.node(leafnid)).pred(); // Prediction for this k-class and this row
               if (importance) rpred[1+k] = (float) prediction; // for both regression and classification
+              assert(ct.atd(row) >= 0);
               ct.set(row, (float) (ct.atd(row) + prediction));
               // For this tree this row is out-of-bag - i.e., a tree voted for this row
               oobt.set(row, _nclass > 1 ? 1 : oobt.atd(row) + 1); // for regression track number of trees, for classification boolean flag is enough
@@ -485,7 +497,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // turns the results into a probability distribution.
   @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
     float sum=0;
-    for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
+    for( int k=0; k<_nclass; k++ ) // Sum across of likelihoods
       sum+=(fs[k+1]=(float)chk_tree(chks,k).atd(row));
     if (_nclass == 1) sum /= (float)chk_oobt(chks).atd(row); // for regression average per trees voted for this row (only trees which have row in "out-of-bag"
     return sum;

@@ -144,7 +144,7 @@ public class DRFTest extends TestUtil {
   }
 
 
-  @Ignore  //DBinomHistogram scoreMSE unimpl
+  @Ignore // Binomial POJO is wrong
   @Test public void testAirlines() throws Throwable {
     basicDRFTestOOBE(
         "./smalldata/airlines/allyears2k_headers.zip","airlines.hex",
@@ -162,8 +162,8 @@ public class DRFTest extends TestUtil {
             return fr.find("IsDepDelayed"); }
         },
         50,
-        a( a(13987, 6900),
-           a( 6147,16944)),
+        a( a(8676, 12211),
+           a(2915, 20176)),
         s("NO", "YES"));
   }
 
