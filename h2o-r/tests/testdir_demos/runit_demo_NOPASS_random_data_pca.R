@@ -27,10 +27,12 @@ col_grid <- rep(NA,length(cols))
 row_grid <- rep(NA,length(rows)) 
 names <- c() 
 
-for(i in 1:length(rows)){ # changing number of rows 
+for(i in 1:length(rows)){ # changing number of rows
   nrows <- rows[i] 
   row_grid[i] <- nrows 
   for(j in 1:length(cols) ){ # changing number of columns 
+    print(paste('Rows:', rows[i]))
+    print(paste('Cols:', cols[j]))
     ncols <- cols[j] 
     col_grid[j] <- ncols 
     names <- c(names, nrows * ncols) # set the name to be the problem size 
@@ -42,14 +44,14 @@ for(i in 1:length(rows)){ # changing number of rows
     
     create_frm_time[i,j] = as.numeric(sst[3]) 
     mem <- h2o.ls(conn) 
-    frm_size[i,j] <- as.numeric(mem[2]) 
+    frm_size[i,j] <- as.numeric(mem[1,1]) 
     head(myframe) 
     #str(myframe) 
    
     #warmup
-    myframe.pca<-h2o.prcomp(data=myframe)
+    myframe.pca<-h2o.prcomp(training_frame=myframe, k = 3)
 
-    aat <- system.time(myframe.pca<-h2o.prcomp(data=myframe))
+    aat <- system.time(myframe.pca<-h2o.prcomp(training_frame=myframe, k=3))
     algo_run_time[i,j] <- aat[3] 
 
     #Run R's  PCA on same data

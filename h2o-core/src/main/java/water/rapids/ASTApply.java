@@ -132,7 +132,7 @@ public class ASTApply extends ASTOp {
       fr2 = mrt.doAll(outlen,fr).outputFrame(names, null);
     }
     else if (_margin != 1 && _margin != 2) throw new IllegalArgumentException("MARGIN limited to 1 (rows) or 2 (cols)");
-    env.subRef(fr);
+    env.addRef(fr);
     env.pushAry(fr2);
   }
 }

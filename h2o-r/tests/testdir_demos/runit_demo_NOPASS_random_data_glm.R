@@ -29,6 +29,8 @@ for(i in 1:length(rows)){ # changing number of rows
   nrows <- rows[i] 
   row_grid[i] <- nrows 
   for(j in 1:length(cols) ){ # changing number of columns 
+    print(paste("Rows:", rows[i]))
+    print(paste("Cols:", cols[j]))
     ncols <- cols[j] 
     col_grid[j] <- ncols 
     names <- c(names, nrows * ncols) # set the name to be the problem size 

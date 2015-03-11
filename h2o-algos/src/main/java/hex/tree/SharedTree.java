@@ -177,7 +177,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
 
         // Variable importance: squared-error-improvement-per-variable-per-split
-        _improvPerVar = new float[_ncols+1];
+        _improvPerVar = new float[_ncols];
 
         // Sub-class tree-model-builder specific build code
         buildModel();

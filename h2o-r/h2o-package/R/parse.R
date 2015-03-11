@@ -49,7 +49,7 @@ h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
   # Poll on job
   .h2o.__waitOnJob(data@conn, res$job$key$name)
   # Return a new H2OFrame object
-  h2o.getFrame(key=hex, linkToGC=linkToGC)
+  h2o.getFrame(data@conn,key=hex, linkToGC=linkToGC)
 }
 
 #'
