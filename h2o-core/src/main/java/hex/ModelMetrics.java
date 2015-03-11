@@ -89,7 +89,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     double total = 0;
     double max = rel_imp[sorted_idx[0]];
-    String[] sorted_names = new String[coef_names.length];
+    String[] sorted_names = new String[rel_imp.length];
     double[][] sorted_imp = new double[rel_imp.length][3];
 
     // First pass to sum up relative importance measures
