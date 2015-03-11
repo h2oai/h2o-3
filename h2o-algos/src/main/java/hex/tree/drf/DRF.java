@@ -222,8 +222,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       long rseed = rand.nextLong();
       // Initially setup as-if an empty-split had just happened
       for( int k=0; k<_nclass; k++ ) {
-        assert (_distribution!=null && classification) || (_distribution==null && !classification);
-        if( _distribution == null || _distribution[k] != 0 ) { // Ignore missing classes
+        if( _distribution[k] != 0 ) { // Ignore missing classes
           // The Boolean Optimization cannot be applied here for RF !
           // This optimization assumes the 2nd tree of a 2-class system is the
           // inverse of the first.  This is false for DRF (and true for GBM) -
