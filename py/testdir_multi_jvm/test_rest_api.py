@@ -191,6 +191,10 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         if k is 'training_frame':
             continue
 
+        # TODO: skipping do_classification because it's not coming back correctly, and we're killing it anyway
+        if k is 'do_classification':
+            continue
+
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
@@ -335,11 +339,6 @@ class ModelSpec(dict):
         assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
-        if dataset['model_category'] == 'Binomial' or dataset['model_category'] == 'Multinomial':
-			dataset_params['do_classification'] = True
-			# TODO: Replace with as.factor of response_column
-		elif dataset['model_category'] == 'Clustering':
-            pass
 
         return ModelSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), dataset['model_category'])
     
@@ -692,7 +691,7 @@ assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number o
 models_to_build = [
     ModelSpec.for_dataset('kmeans_prostate', 'kmeans', datasets['prostate_clustering'], { 'k': 2 } ),
 
-    ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], { } ),
+    ModelSpec.for_dataset('glm_prostate_regression', 'glm', datasets['prostate_regression'], {'family': 'gaussian'} ),
 
     ModelSpec.for_dataset('glm_prostate_binomial', 'glm', datasets['prostate_binomial'], {'family': 'binomial'} ),
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
@@ -703,10 +702,10 @@ models_to_build = [
     ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10] } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
 
-    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5 } ),
-    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5 } ),
-    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5 } ),
-    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5 } ),
+    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'family': 'gaussian' } ),
+    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
 ]
 
 built_models = {}
