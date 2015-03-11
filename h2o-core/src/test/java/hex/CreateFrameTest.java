@@ -13,8 +13,8 @@ public class CreateFrameTest extends TestUtil {
 
   @Test public void basicTest() {
     CreateFrame cf = new CreateFrame();
-    cf.rows = 1000;
-    cf.cols = 100;
+    cf.rows = 100;
+    cf.cols = 10;
     cf.categorical_fraction = 0.1;
     cf.integer_fraction = 1 - cf.categorical_fraction;
     cf.binary_fraction = 0;
@@ -26,8 +26,8 @@ public class CreateFrameTest extends TestUtil {
     cf.execImpl();
     cf.get();
     Frame frame = DKV.getGet(cf.dest());
-    Assert.assertTrue(frame.numCols() == 101);
-    Assert.assertTrue(frame.numRows() == 1000);
+    Assert.assertTrue(frame.numCols() == 11);
+    Assert.assertTrue(frame.numRows() == 100);
     // Tries to print a frame
     frame.toString();
     frame.delete();
@@ -35,8 +35,8 @@ public class CreateFrameTest extends TestUtil {
 
   @Test public void binaryTest() {
     CreateFrame cf = new CreateFrame();
-    cf.rows = 100;
-    cf.cols = 1000;
+    cf.rows = 10;
+    cf.cols = 100;
     cf.categorical_fraction = 0;
     cf.integer_fraction = 0;
     cf.binary_fraction = 1;
@@ -49,8 +49,8 @@ public class CreateFrameTest extends TestUtil {
     cf.execImpl();
     cf.get();
     Frame frame = DKV.getGet(cf.dest());
-    Assert.assertTrue(frame.numCols() == 1001);
-    Assert.assertTrue(frame.numRows() == 100);
+    Assert.assertTrue(frame.numCols() == 101);
+    Assert.assertTrue(frame.numRows() == 10);
     // Print a fame
     frame.toString();
     frame.delete();
