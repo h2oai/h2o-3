@@ -1,4 +1,7 @@
 # Getting Started with H2O Flow
+
+This guide will walk you through how to use H2O-dev's web UI, H2O Flow. 
+
 ---
 
 <a name="GetHelp"></a> 

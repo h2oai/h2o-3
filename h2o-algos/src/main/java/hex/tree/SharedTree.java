@@ -330,7 +330,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   transient long _timeLastScoreStart, _timeLastScoreEnd, _firstScore;
-  protected void doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+  protected double doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+    double training_r2 = Double.NaN; // Training R^2 value, if computed
     long now = System.currentTimeMillis();
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
@@ -347,17 +348,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // for scoring) and then update it with resulting error
       _model.update(_key);  updated = true;
 
-      _timeLastScoreStart = now;
-      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
-      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       Log.info("============================================================== ");
-      // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
-      out._mse_train[out._ntrees] = _parms._valid == null ? mm._mse : Double.NaN;
-      out._mse_valid[out._ntrees] = _parms._valid == null ? Double.NaN : mm._mse;
-      if( out._ntrees > 0 )
+      _timeLastScoreStart = now;
+      // Score on training data
+      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms.train(), _parms._response_column);
+      out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
+      training_r2 = mm.r2();
+      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
+      // Score again on validation data
+      if( _parms._valid != null ) {
+        Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
+        out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
+        Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
+      }
+      int i=out._ntrees-1;
+      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
+      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
+
+      if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
-      Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
       ConfusionMatrix cm = (mm instanceof ModelMetricsBinomial) ? ((ModelMetricsBinomial)mm)._cm :
         ((mm instanceof ModelMetricsMultinomial) ? ((ModelMetricsMultinomial)mm)._cm : null);
       if( cm != null ) {
@@ -369,6 +381,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_key);
+    return training_r2;
   }
 
   // helper for debugging
