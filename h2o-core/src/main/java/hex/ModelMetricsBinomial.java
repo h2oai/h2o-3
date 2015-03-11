@@ -61,7 +61,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       // Compute error
       float sum = 0;          // Check for sane class distribution
       for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
-      assert Math.abs(sum-1.0f) < 1e-6;
+//      assert Math.abs(sum-1.0f) < 1e-6;
       float err = 1.0f-ds[iact+1];  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
