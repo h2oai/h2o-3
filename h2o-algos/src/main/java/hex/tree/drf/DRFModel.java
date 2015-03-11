@@ -1,14 +1,11 @@
 package hex.tree.drf;
 
+import static hex.genmodel.GenModel.getPrediction;
 import hex.tree.SharedTreeModel;
-import hex.tree.drf.DRF;
 import water.Key;
 import water.fvec.Chunk;
-import water.util.ArrayUtils;
 import water.util.MathUtils;
-import water.util.ModelUtils;
-
-import java.util.Arrays;
+import water.util.SB;
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
@@ -36,44 +33,30 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     return score0(tmp,preds);
   }
 
-
   @Override protected float[] score0(double data[], float preds[]) {
-    float[] p = super.score0(data, preds);
+    super.score0(data, preds);
     int N = _parms._ntrees;
-    if (p.length==1) { if (N>0) MathUtils.div(p, N); } // regression - compute avg over all trees
-    else { // classification
-      float s = MathUtils.sum(p);
-      if (s>0) MathUtils.div(p, s); // unify over all classes
-      p[0] = ModelUtils.getPrediction(p, data);
+    if (_output.nclasses() == 1) { // regression - compute avg over all trees
+      preds[0] /= N;
+      return preds;
     }
-    return p;
+    else { // classification
+      float sum = MathUtils.sum(preds);
+      if (sum>0) MathUtils.div(preds, sum);
+      preds[0] = getPrediction(preds, data);
+    }
+    return preds;
   }
 
-//  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-//    float[] p = super.score0(data, preds);
-//    if( _output.nclasses()>1 ) { // classification
-//      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-//        p[1] += _output._initialPrediction;
-//        p[2] = - p[1];
-//      }
-//      // Because we call Math.exp, we have to be numerically stable or else
-//      // we get Infinities, and then shortly NaN's.  Rescale the data so the
-//      // largest value is +/-1 and the other values are smaller.
-//      // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-//      float maxval=Float.NEGATIVE_INFINITY;
-//      float dsum=0;
-//      // Find a max
-//      for( int k=1; k<p.length; k++) maxval = Math.max(maxval,p[k]);
-//      assert !Float.isInfinite(maxval) : "Something is wrong with DRF trees since returned prediction is " + Arrays.toString(p);
-//      for(int k=1; k<p.length;k++)
-//        dsum+=(p[k]=(float)Math.exp(p[k]-maxval));
-//      ArrayUtils.div(p,dsum);
-//      p[0] = water.util.ModelUtils.getPrediction(p, data);
-//    } else { // regression
-//      // Prediction starts from the mean response, and adds predicted residuals
-//      preds[0] += _output._initialPrediction;
-//    }
-//    return p;
-//  }
+  @Override protected void toJavaUnifyPreds(SB body, SB file) {
+    if (_output.nclasses() == 1) { // Regression
+      body.ip("preds[0] /= NTREES;").nl();
+    } else { // Classification
+      body.ip("float sum = 0;").nl();
+      body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
+      body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+    }
+  }
 
 }

@@ -1,6 +1,7 @@
 package hex.tree.drf;
 
 import hex.Model;
+import static hex.genmodel.GenModel.getPrediction;
 import hex.schemas.DRFV2;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -365,7 +366,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
               if (_parms._convert_to_enum) {
-                int treePred = ModelUtils.getPrediction(rpred, data_row(chks, row, rowdata));
+                int treePred = getPrediction(rpred, data_row(chks, row, rowdata));
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression

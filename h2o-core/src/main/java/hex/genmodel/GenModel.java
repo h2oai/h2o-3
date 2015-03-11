@@ -175,7 +175,7 @@ public abstract class GenModel {
   // we get Infinities, and then shortly NaN's.  Rescale the data so the
   // largest value is +/-1 and the other values are smaller.
   // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-  public static void SharedTree_rescale( double[] data, float[] preds ) {
+  public static void GBM_rescale(double[] data, float[] preds) {
     // Find a max
     float maxval=Float.NEGATIVE_INFINITY;
     for( int k=1; k<preds.length; k++) maxval = Math.max(maxval,preds[k]);

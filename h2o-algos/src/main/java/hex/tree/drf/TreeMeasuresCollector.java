@@ -4,6 +4,7 @@ package hex.tree.drf;
 import java.util.Arrays;
 import java.util.Random;
 
+import static hex.genmodel.GenModel.getPrediction;
 import hex.tree.CompressedTree;
 import static hex.tree.DTreeScorer.scoreTree;
 import water.Iced;
@@ -108,7 +109,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         score0(data, preds, _trees[tidx]);
         // - derive a prediction
         if (_classification) {
-          int pred = ModelUtils.getPrediction(preds, data);
+          int pred = getPrediction(preds, data);
           int actu = (int) cresp.at8(row);
           // assert preds[pred] > 0 : "There should be a vote for at least one class.";
           // - collect only correct votes
