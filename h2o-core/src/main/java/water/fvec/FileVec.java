@@ -14,19 +14,32 @@ public abstract class FileVec extends ByteVec {
    *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
    *  costs, lower increases fine-grained parallelism. */
   public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
-  public final int _log2ChkSize;
-  public       int _chunkSize;
+  public int _log2ChkSize = DFLT_LOG2_CHUNK_SIZE;
+  public int _chunkSize = DFLT_CHUNK_SIZE;
 
-  protected FileVec(Key key, long len, byte be) { this(key,len,be,DFLT_CHUNK_SIZE); }
-  protected FileVec(Key key, long len, byte be, int chunkSize) {
+  protected FileVec(Key key, long len, byte be) {
     super(key,null);
     _len = len;
     _be = be;
+  }
 
+  /**
+   * Chunk size must be positive, 1G or less, and a power of two.
+   * Any values that aren't a power of two will be reduced to the
+   * first power of two lower than the provided chunkSize.
+   * <p>
+   * Since, optimal chunk size is not known during FileVec instantiation,
+   * setter is required to both set it, and keep it in sync with
+   * _log2ChkSize.
+   * </p>
+   * @param chunkSize requested chunk size to be used when parsing
+   * @return actual _chunkSize setting
+   */
+  public int setChunkSize(int chunkSize) {
     if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
     if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
     _log2ChkSize = water.util.MathUtils.log2(chunkSize);
-    _chunkSize = 1 << _log2ChkSize;
+    return _chunkSize = 1 << _log2ChkSize;
   }
 
   @Override public long length() { return _len; }
@@ -89,7 +102,7 @@ public abstract class FileVec extends ByteVec {
    * Calculates safe and hopefully optimal chunk sizes.  Four cases
    * exist.
    * <p>
-   * very small data < 128K per proc - uses default chunk size and
+   * very small data < 256K per proc - uses default chunk size and
    * all data will be in one chunk
    * <p>
    * small data - data is partitioned into chunks that at least
@@ -113,14 +126,15 @@ public abstract class FileVec extends ByteVec {
     int chunkSize = (int) (localParseSize /
             (Runtime.getRuntime().availableProcessors() * 4));
 
-    // Super small data check - less than 32K/thread
-    if (chunkSize <= (1 << 15)) {
+    // Super small data check - less than 64K/thread
+    if (chunkSize <= (1 << 16)) {
       return DFLT_CHUNK_SIZE;
     }
 
     // Small data check
     chunkSize = 1 << MathUtils.log2(chunkSize); //closest power of 2
-    if (chunkSize < DFLT_CHUNK_SIZE) {
+    if (chunkSize < DFLT_CHUNK_SIZE
+            && (localParseSize/chunkSize)*numCols < (1 << 21)) { // ignore if col cnt is high
       return chunkSize;
     }
 
@@ -133,4 +147,25 @@ public abstract class FileVec extends ByteVec {
     } else return DFLT_CHUNK_SIZE;
   }
 
+  /**
+   * Removes a chunk from the DKV.
+   * <p>
+   * Peaking into a file before the chunkSize has been calculated
+   * will cause the first chunk of the file to be DFLT_CHUNK_SIZE.
+   * If this side-effect is not reversed then when
+   * _chunkSize differs from the default value, parsing will either
+   * double read sections (_chunkSize < DFLT_CHUNK_SIZE) or skip
+   * data (_chunkSize > DFLT_CHUNK_SIZE).
+   * This method reverses this side-effect.
+   * </p>
+   * @param cidx
+   */
+  public void clearCachedChunk(int cidx) {
+    Key cckey = chunkKey(cidx);
+    if (DKV.get(cckey) != null) {
+      Futures fs = new Futures();
+      DKV.remove(cckey, fs);
+      fs.blockForPending();
+    }
+  }
 }

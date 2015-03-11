@@ -96,14 +96,14 @@ def validate_model_builder_result(result, original_params, model_name):
         print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
         error = True
 
-    if 'validation_error_count' in result and result['validation_error_count'] > 0:
+    elif result['__http_response']['status_code'] != requests.codes.ok:
+        error = True
+        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
+
+    elif 'validation_error_count' in result and result['validation_error_count'] > 0:
         # error case
         print 'FAIL: Parameters validation error for model: ', model_name
         error = True
-
-    if result['__http_response']['status_code'] != requests.codes.ok:
-        error = True
-        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
 
     if error:
         print 'Input parameters: '
@@ -164,6 +164,19 @@ def validate_frame_exists(frame_name, frames=None):
     return frames_dict[frame_name]
 
 
+def validate_job_exists(job_name, jobs=None):
+    '''
+    Validate that a given job key is found in the jobs list.
+    '''
+    if jobs is None:
+        result = a_node.jobs()
+        jobs = result['jobs']
+
+    jobs_dict = list_to_dict(jobs, 'key/name')
+    assert job_name in jobs_dict, "FAIL: Failed to find " + job_name + " in jobs list: " + repr(jobs_dict.keys())
+    return jobs_dict[job_name]
+
+
 def validate_actual_parameters(input_parameters, actual_parameters, training_frame, validation_frame):
     '''
     Validate that the returned parameters list for a model build contains all the values we passed in as input.
@@ -222,7 +235,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     # TODO: training_frame, validation_frame
 
 
-def validate_predictions(result, model_name, frame_key, expected_rows):
+def validate_predictions(result, model_name, frame_key, expected_rows, destination_key=None):
     '''
     Validate a /Predictions result.
     '''
@@ -237,8 +250,8 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'name' in mm['predictions']['key'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " does not contain a key name."
     
     predictions_key = mm['predictions']['key']['name']
-    result = a_node.frames(key=predictions_key, find_compatible_models=True, len=5)
-    frames = result['frames']
+    f = a_node.frames(key=predictions_key, find_compatible_models=True, row_count=5)
+    frames = f['frames']
     frames_dict = h2o_util.list_to_dict(frames, 'key/name')
     assert predictions_key in frames_dict, "FAIL: Failed to find predictions key" + predictions_key + " in Frames list."
     
@@ -250,6 +263,11 @@ def validate_predictions(result, model_name, frame_key, expected_rows):
     assert 'predict' == predictions['columns'][0]['label'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " column 0 is not 'predict'."
     assert expected_rows == predictions['rows'], "FAIL: Predictions for scoring: " + model_name + " on: " + frame_key + " has an unexpected number of rows."
 
+    assert 'destination_key' in result, "FAIL: failed to find 'destination_key' in predict result:" + h2o_util.dump_json(result)
+    assert 'name' in result['destination_key'], "FAIL: failed to find name in 'destination_key' in predict result:" + h2o_util.dump_json(result)
+
+    if destination_key is not None:
+        assert destination_key == result['destination_key']['name'], "FAIL: bad value for 'destination_key' in predict result; expected: " + destination_key + ", got: " + result['destination_key']['name']
 
 def cleanup(a_node, models=None, frames=None):
     '''
@@ -276,7 +294,7 @@ def cleanup(a_node, models=None, frames=None):
     if frames is not None:
         for frame in frames:
             a_node.delete_frame(frame)
-            ms = a_node.frames(len=5)
+            ms = a_node.frames(row_count=5)
 
             found = False;
             for m in ms['frames']:
@@ -384,10 +402,10 @@ class DatasetSpec(dict):
             print "import_result: "
             pp.pprint(import_result)
             print "frames: "
-            pp.pprint(a_node.frames(key=import_result['keys'][0], len=5))
+            pp.pprint(a_node.frames(key=import_result['keys'][0], row_count=5))
 
-        frames = a_node.frames(key=import_result['keys'][0], len=5)['frames']
-        assert frames[0]['isText'], "FAIL: Raw imported Frame is not isText: " + repr(frames[0])
+        frames = a_node.frames(key=import_result['keys'][0], row_count=5)['frames']
+        assert frames[0]['is_text'], "FAIL: Raw imported Frame is not is_text: " + repr(frames[0])
         parse_result = a_node.parse(key=import_result['keys'][0], dest_key=self['dest_key']) # TODO: handle multiple files
         key = parse_result['frames'][0]['key']['name']
         assert key == self['dest_key'], 'FAIL: Imported frame key is wrong; expected: ' + self['dest_key'] + ', got: ' + key
@@ -407,7 +425,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'word2vec', 'quantile', 'grep']
+algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'pca', 'naivebayes', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params
@@ -425,7 +443,7 @@ if h2o.H2O.verbose:
     print 'ModelsV92: '
     pp.pprint(models)
 
-frames = a_node.frames(len=5)
+frames = a_node.frames(row_count=5)
 if h2o.H2O.verbose:
     print 'Frames: '
     pp.pprint(frames)
@@ -584,7 +602,7 @@ for dataset_spec in datasets_to_import:
 
 ################################################
 # Test /Frames for prostate.csv
-frames = a_node.frames(len=5)['frames']
+frames = a_node.frames(row_count=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 
 # TODO: remove:
@@ -596,21 +614,20 @@ if h2o.H2O.verbose:
     print "frames_dict: "
     pp.pprint(frames_dict)
 
-# TODO: test len and offset (they aren't working yet)
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find " + 'prostate_binomial' + " in Frames list."
-assert not frames_dict['prostate_binomial']['isText'], "FAIL: Parsed Frame is isText"
+assert not frames_dict['prostate_binomial']['is_text'], "FAIL: Parsed Frame is is_text"
 
 
 # Test /Frames/{key} for prostate.csv
-frames = a_node.frames(key='prostate_binomial', len=5)['frames']
+frames = a_node.frames(key='prostate_binomial', row_count=5)['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'CAPSULE' in columns_dict, "FAIL: Failed to find CAPSULE in Frames/prostate.hex."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 
 # Test /Frames/{key}/columns for prostate.csv
@@ -618,25 +635,25 @@ frames = a_node.columns(key='prostate_binomial')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'ID' in columns_dict, "FAIL: Failed to find ID in Frames/prostate.hex/columns."
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label} for prostate.csv
 frames = a_node.column(key='prostate_binomial', column='AGE')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns."
-assert 'bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
-h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['bins']))
-assert None is columns_dict['AGE']['bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
+assert 'histogram_bins' in columns_dict['AGE'], "FAIL: Failed to find bins in Frames/prostate.hex/columns/AGE."
+h2o.H2O.verboseprint('bins: ' + repr(columns_dict['AGE']['histogram_bins']))
+assert None is columns_dict['AGE']['histogram_bins'], "FAIL: Failed to clear bins field." # should be cleared except for /summary
 
 # Test /Frames/{key}/columns/{label}/summary for prostate.csv
 frames = a_node.summary(key='prostate_binomial', column='AGE')['frames']
 columns_dict = h2o_util.list_to_dict(frames[0]['columns'], 'label')
 assert 'AGE' in columns_dict, "FAIL: Failed to find AGE in Frames/prostate.hex/columns/AGE/summary."
 col = columns_dict['AGE']
-h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing', 'zeros', 'pinfs', 'ninfs', 'mins', 'maxs', 'mean', 'sigma', 'type', 'data', 'precision', 'bins', 'base', 'stride', 'pctiles'])
-h2o_util.assertKeysExist(col, '', ['domain', 'str_data'])
+h2o_util.assertKeysExistAndNonNull(col, '', ['label', 'missing_count', 'zero_count', 'positive_infinity_count', 'negative_infinity_count', 'mins', 'maxs', 'mean', 'sigma', 'type', 'data', 'precision', 'histogram_bins', 'histogram_base', 'histogram_stride', 'percentiles'])
+h2o_util.assertKeysExist(col, '', ['domain', 'string_data'])
 assert col['mins'][0] == 43, 'FAIL: Failed to find 43 as the first min for AGE.'
 assert col['maxs'][0] == 79, 'FAIL: Failed to find 79 as the first max for AGE.'
 assert col['mean'] == 66.03947368421052, 'FAIL: Failed to find 66.03947368421052 as the mean for AGE.'
@@ -644,10 +661,34 @@ assert col['sigma'] == 6.527071269173308, 'FAIL: Failed to find 6.52707126917330
 assert col['type'] == 'int', 'FAIL: Failed to find int as the type for AGE.'
 assert col['data'][0] == 65, 'FAIL: Failed to find 65 as the first data for AGE.'
 assert col['precision'] == -1, 'FAIL: Failed to find -1 as the precision for AGE.'
-assert col['bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
-assert col['base'] == 43, 'FAIL: Failed to find 43 as the base for AGE.'
-assert col['stride'] == 1, 'FAIL: Failed to find 1 as the stride for AGE.'
-assert col['pctiles'][0] == 50.5, 'FAIL: Failed to find 50.5 as the first pctile for AGE.'
+assert col['histogram_bins'][0] == 1, 'FAIL: Failed to find 1 as the first bin for AGE.'
+assert col['histogram_base'] == 43, 'FAIL: Failed to find 43 as the histogram_base for AGE.'
+assert col['histogram_stride'] == 1, 'FAIL: Failed to find 1 as the histogram_stride for AGE.'
+assert col['percentiles'][0] == 43, 'FAIL: Failed to find 43 as the first percentile for AGE. '+str(col['percentiles'][0])
+
+# Test /SplitFrame for prostate.csv
+if verbose: print 'Testing SplitFrame with named dest_keys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], dest_keys=['bigger', 'smaller'])
+frames = a_node.frames()['frames']
+validate_frame_exists('bigger', frames)
+validate_frame_exists('smaller', frames)
+bigger = a_node.frames(key='bigger')['frames'][0]
+smaller = a_node.frames(key='smaller')['frames'][0]
+assert bigger['rows'] == 304, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 304; got: ' + bigger['rows']
+assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
+# TODO: validate_job_exists(splits['key']['name'])
+
+if verbose: print 'Testing SplitFrame with generated dest_keys. . .'
+splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
+frames = a_node.frames()['frames']
+validate_frame_exists(splits['dest_keys'][0]['name'], frames)
+validate_frame_exists(splits['dest_keys'][1]['name'], frames)
+
+first = a_node.frames(key=splits['dest_keys'][0]['name'])['frames'][0]
+second = a_node.frames(key=splits['dest_keys'][1]['name'])['frames'][0]
+assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + first['rows']
+assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
+# TODO: validate_job_exists(splits['key']['name'])
 
 
 ####################################################################################################
@@ -682,6 +723,7 @@ for model_spec in models_to_build:
 #######################################
 # Test default parameters validation for each model builder
 #
+if verbose: print 'Testing ModelBuilder default parameters. . .'
 model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
 
 # Do we know about all of them?
@@ -791,7 +833,7 @@ for mm in mms['model_metrics']:
     assert 'model' in mm, "FAIL: mm does not contain a model element: " + repr(mm)
     assert 'name' in mm['model'], "FAIL: mm[model] isn't a key with a name: " + repr(mm)
     assert 'type' in mm['model'], "FAIL: mm[model] does not contain a type: " + repr(mm)
-    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm)
+    assert 'Key<Model>' == mm['model']['type'], "FAIL: mm[model] type is not Key<Model>: " + repr(mm['model']['type'])
 
     assert 'frame' in mm, "FAIL: mm does not contain a frame element: " + repr(mm)
     assert 'name' in mm['frame'], "FAIL: mm[frame] does not contain a name: " + repr(mm)
@@ -804,10 +846,18 @@ for mm in mms['model_metrics']:
         found_mm = True
 assert found_mm, "FAIL: Failed to find ModelMetrics object for model: " + 'deeplearning_prostate_binomial' + " and frame: " + 'prostate_binomial'
 
+# test delete_model_metrics
+mms = a_node.model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+assert len(mms['model_metrics']) == 1, "FAIL: expected 1 ModelMetrics, found: " + str(len(mms['model_metrics']))
+a_node.delete_model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+mms = a_node.model_metrics('deeplearning_prostate_binomial', 'prostate_binomial')
+assert len(mms['model_metrics']) == 0, "FAIL: expected 0 ModelMetrics, found: " + str(len(mms['model_metrics']))
+
+
 ###################################
 # Predict and check ModelMetrics for 'deeplearning_prostate_binomial'
 p = a_node.predict(model='deeplearning_prostate_binomial', frame='prostate_binomial', destination_key='deeplearning_prostate_binomial_predictions')
-validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380)
+validate_predictions(p, 'deeplearning_prostate_binomial', 'prostate_binomial', 380, destination_key='deeplearning_prostate_binomial_predictions')
 validate_frame_exists('deeplearning_prostate_binomial_predictions')
 h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(p))
 
@@ -835,6 +885,12 @@ p = a_node.predict(model='kmeans_prostate', frame='prostate_binomial')
 validate_predictions(p, 'kmeans_prostate', 'prostate_binomial', 380)
 h2o.H2O.verboseprint("Predictions for scoring: ", 'kmeans_prostate', " on: ", 'prostate_binomial', ":  ", repr(p))
 
+###################################
+# Predict with reversed keys (should get an H2OErrorV1):
+# TODO: this works, but I'm not handling 500s yet in the automated test:
+# p = a_node.predict(frame='kmeans_prostate', model='prostate_binomial')
+# print repr(p)
+
 ######################################################################
 # Now look for kmeans_prostate_model_name using the one-model API and find_compatible_frames, and check it
 model = a_node.models(key='kmeans_prostate', find_compatible_frames=True)
@@ -847,7 +903,7 @@ assert 'prostate_binomial' in model['models'][0]['compatible_frames'], "FAIL: Fa
 
 ######################################################################
 # Now look for 'prostate_binomial' using the one-frame API and find_compatible_models, and check it
-result = a_node.frames(key='prostate_binomial', find_compatible_models=True, len=5)
+result = a_node.frames(key='prostate_binomial', find_compatible_models=True, row_count=5)
 frames = result['frames']
 frames_dict = h2o_util.list_to_dict(frames, 'key/name')
 assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find prostate.hex in Frames list."

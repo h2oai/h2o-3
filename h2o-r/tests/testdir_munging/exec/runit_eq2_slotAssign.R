@@ -11,7 +11,7 @@ source('../../h2o-runit.R')
 #setupRandomSeed(1689636624)
 
 test.column.assignment <- function(conn) {
-
+  set.seed(1841604082)
   hex <- as.h2o(conn, iris)
 
   colsToSelect <- 1 #sample(ncol(hex), 1)
@@ -21,14 +21,29 @@ test.column.assignment <- function(conn) {
   numToReplace <- sample(nrow(hex),1)
   rowsToReplace <- sample(nrow(hex), numToReplace)
 
+  print("")
+  print("")
+  print("Rows to replace: ")
+  print(rowsToReplace)
+  print("Num to replace: ")
+  print(numToReplace)
+  print("")
+  print("")
+
   hexOriginal <- data.frame(col = as.data.frame(hex)[rowsToReplace,col])
   #Log.info(paste("Original Column: ", col, sep = ""))
   print(head(hexOriginal))
 
-  replacement <- rnorm(rowsToReplace)
+  replacement <- rnorm(numToReplace)
   Log.info("Replacing rows for column selected")
 
   replacement <- as.h2o(conn, replacement)
+
+  print("Wuz replacement one? ")
+  print("")
+  print(replacement)
+  print("")
+  print("")
 
   print(rowsToReplace)
   print(paste("Column selected: ", col))

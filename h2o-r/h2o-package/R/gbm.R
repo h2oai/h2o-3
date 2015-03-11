@@ -16,7 +16,6 @@
 #' @param min_rows \code{Defaults to 10} Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate \code{Defaults to 0.1} An \code{interger} from \code{0.0} to \code{1.0}
 #' @param nbins \code{Defaults to 20} Number of bins to use in building histogram.
-#' @param group_split  #TODO NEED TO FINISH
 #' @param variable_importance #TODO: NEED TO FINISH
 #' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
@@ -49,12 +48,12 @@ h2o.gbm <- function(x, y, training_frame, ...,
                     min_rows = 10,
                     learn_rate = 0.1,
                     nbins = 20,
-                    group_split = TRUE,
                     variable_importance = FALSE,
-                    validation_frame = FALSE,
+                    validation_frame = NULL,
                     balance_classes = FALSE,
                     max_after_balance_size = 1,
-                    seed)
+                    seed,
+                    score_each_iteration)
 {
   dots <- list(...)
   
@@ -80,6 +79,14 @@ h2o.gbm <- function(x, y, training_frame, ...,
              error = function(err) {
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
+
+  if (!is.null(validation_frame)) {
+    if (!inherits(validation_frame, "H2OFrame"))
+        tryCatch(validation_frame <- h2o.getFrame(validation_frame),
+                 error = function(err) {
+                   stop("argument \"validation_frame\" must be a valid H2OFrame or key")
+                 })
+  }
 
   #required map for params with different names, assuming it will change in the RESTAPI end
   .gbm.map <- c("x" = "ignored_columns",
@@ -109,12 +116,10 @@ h2o.gbm.cv <- function(x, y, training_frame, nfolds = 2,
            min_rows = 10,
            learn_rate = 0.1,
            nbins = 20,
-           group_split,
            variable_importance = FALSE,
            balance_classes = FALSE,
            max_after_balance_size = 1,
            seed
-           # group_split
            )
 {
   env <- parent.frame()

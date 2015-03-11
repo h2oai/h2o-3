@@ -386,8 +386,7 @@ public class h2odriver extends Configured implements Tool {
     System.err.printf(
             "\n" +
                     "Usage: h2odriver\n" +
-                    "          -libjars <.../h2o.jar>\n" +
-                    "          [other generic Hadoop ToolRunner options]\n" +
+                    "          [generic Hadoop ToolRunner options]\n" +
                     "          [-h | -help]\n" +
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
@@ -441,9 +440,8 @@ public class h2odriver extends Configured implements Tool {
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
-                    "          hadoop jar h2odriver_HHH.jar water.hadoop.h2odriver -jt <yourjobtracker>:<yourport> -libjars h2o.jar -mapperXmx 1g -nodes 1 -output hdfsOutputDir\n" +
-                    "          hadoop jar h2odriver_HHH.jar water.hadoop.h2odriver -jt <yourjobtracker>:<yourport> -libjars h2o.jar -mapperXmx 1g -nodes 1 -notify notify.txt -disown -output hdfsOutputDir\n" +
-                    "          (Choose the proper h2odriver (_HHH) for your version of hadoop.\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDir\n" +
+                    "          hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -notify notify.txt -disown -output hdfsOutputDir\n" +
                     "\n" +
                     "Exit value:\n" +
                     "          0 means the cluster exited successfully with an orderly Shutdown.\n" +
@@ -818,6 +816,22 @@ public class h2odriver extends Configured implements Tool {
     // matter since the server socket has been closed.
   }
 
+  private String calcHadoopVersion() {
+    try {
+      Process p = new ProcessBuilder("hadoop", "version").start();
+      p.waitFor();
+      BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      String line = br.readLine();
+      if (line == null) {
+        line = "(unknown)";
+      }
+      return line;
+    }
+    catch (Exception e) {
+      return "(unknown)";
+    }
+  }
+
   private int run2(String[] args) throws Exception {
     // Parse arguments.
     // ----------------
@@ -937,6 +951,11 @@ public class h2odriver extends Configured implements Tool {
     }
     if (licenseData != null) {
         conf.set(h2omapper.H2O_LICENSE_DATA_KEY, licenseData);
+    }
+    String hadoopVersion = calcHadoopVersion();
+    conf.set(h2omapper.H2O_HADOOP_VERSION, hadoopVersion);
+    if((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home")+"/.h2o_no_collect")).exists()) {
+      conf.set(h2omapper.H2O_GA_OPTOUT, "-ga_opt_out");
     }
 
     // Set up job stuff.

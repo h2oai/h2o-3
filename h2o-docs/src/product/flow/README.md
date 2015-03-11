@@ -54,7 +54,9 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
  
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
-- **MD**: Markdown
+- **MD**: Markdown 
+   
+   **Note**: Markdown formatting is not applied until you run the cell by clicking the **Run** button or clicking the **Run** menu and selecting **Run**. 
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -73,6 +75,10 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
 **NOTE**: If there is an error in the cell, the flag is red. 
 
  ![Cell error](images/Flow_redflag.png)
+ 
+ If the cell is executing commands, the flag is teal. The flag returns to yellow when the task is complete. 
+ 
+ ![Cell executing](images/Flow_cellmode_runningflag.png)
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -105,8 +111,9 @@ Now that you are familiar with the cell modes, let's import some data.
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
-- http://docs.h2o.ai/resources/publicdata.html
-- http://data.h2o.ai
+- <a href="http://docs.h2o.ai/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
 
 There are multiple ways to import data in H2O flow:
 
@@ -161,9 +168,21 @@ Select any necessary additional options:
 - **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
-A preview of the data displays in the "Data Preview" section. After making your selections, click the **Parse** button. 
-
+A preview of the data displays in the "Data Preview" section. 
  ![Flow - Parse options](images/Flow_parse_setup.png)
+
+**Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
+  - Unknown
+  - Numeric
+  - Enum
+  - Time
+  - UUID
+  - String
+  - Invalid
+
+
+After making your selections, click the **Parse** button. 
+
 
 After you click the **Parse** button, the code for the current job displays. 
 
@@ -229,18 +248,21 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 
 <a name="Kmeans"></a>
 - **kmeans**: Create a K-Means model
+**Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
 - **glm**: Create a Generalized Linear model
 
 <a name="grep"></a>
 - **grep**: Perform a global search for a specified character string and display the results (global regular expression)
+**Note**: For a grep model, the selected training frame must contain one vector of raw text. 
  
 <a name="w2v"></a>
-- **word2vec**: Create a word-to-vector model for text-based data
+- **word2vec**: Create a word-to-vector model for text-based data. 
+**Note**: For a word2vec model, the training frame must contain string columns. 
 
-<a name="sf"></a>
-- **splitframe**: Split a data frame
+<a name="pca"></a> 
+- **pca**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
 <a name="GBM"></a>
 - **gbm**: Create a Gradient Boosted model
@@ -262,9 +284,16 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignored_columns**: (Optional) Click the plus sign next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **Add all** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **Clear all** button. 
 
+- **DropNA20Cols**: (Optional)Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
+
+- **User_points**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
+**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+
+- **Transform**: [(PCA)](#pca) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+
 - **Score\_each\_iteration**: (Optional) Score the validation set after each iteration of the model-building process. If you select this option, the model-building time increases. 
 
-- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are [0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99]. 
+- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are 0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999. 
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL)) Select the column to use as the independent variable.
 
@@ -290,13 +319,16 @@ The available options vary depending on the selected model. If an option is only
 
 - **Variable_importance**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **Group_split**: [(GBM)](#GBM) Check this checkbox to perform group-splitting categoricals. This option is selected by default. 
+- **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. The K-Means default is 0. For PCA, specify the rank of matrix approximation. The PCA default is 1.  
 
-- **K**: [(K-Means)](#Kmeans) Specify the number of clusters. The default is 0.
+- **Gamma**: [(PCA)](#pca) Specify the regularization weight for PCA. The default is 0. 
 
-- **Max_iters**: [(K-Means)](#Kmeans) Specify the number of training iterations. The default is 1000. 
+- **Max_iterations**: [(K-Means)](#Kmeans), [(PCA)](#pca) Specify the number of training iterations. The default is 1000.
 
-- **Init**: [(K-Means)](#Kmeans) Select the initialization mode (Furthest, PlusPlus, or None).
+- **Max_iters**: [(GLM)](#GLM) Specify the number of training iterations. The default is 50.  
+
+- **Init**: [(K-Means)](#Kmeans), [(PCA)](#pca) Select the initialization mode For K-Means, the options are Furthest, PlusPlus, or None. For PCA, the options are PlusPlus, User, or None. 
+**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, Tweedie, or none).
 
@@ -310,7 +342,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Expert_mode**: [(DL)](#DL) Check this checkbox to enable "expert mode" and configure additional options. This option is not selected by default.
 
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). The default option is Rectifier. 
 
@@ -325,6 +357,8 @@ The available options vary depending on the selected model. If an option is only
 - **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
+
+- **Beta_eps**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -589,10 +623,10 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 
 ---
 
-<a name"SaveFlow"></a>
+<a name="SaveFlow"></a>
 ##Saving Flows
 
-You can save your flow for later reuse. To save your flow, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
+You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
 
  ![Renaming Flows](images/Flow_rename.png)
@@ -607,6 +641,35 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
  
  **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
+
+###Duplicating Flows
+
+To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+
+
+###Exporting Flows
+
+After saving a flow as a notebook, click the **Flow** menu, then select **Export**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as *<filename>*.flow, where *<filename>* is the name specified when the flow was saved. 
+
+**Caution**: You must have an active internet connection to export flows. 
+
+###Loading Flows
+
+To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow. 
+
+ ![Confirm Replace Flow](images/Flow_confirmreplace.png)
+
+After clicking **Load Notebook**, the saved flow is loaded. 
+
+To load an exported flow, click the **Flow** menu and select **Open...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
+
+ ![Open Flow](images/Flow_Open.png)
+
+**Notes**: 
+- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
+- If the current notebook has the same name as the selected file, a pop-up confirmation appears to confirm that the current notebook should be overwritten. 
+
+---
 
 <a name="Troubleshooting"></a>
 ##Troubleshooting 
@@ -623,8 +686,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
 - H2O version
-- Cluster size
-- Number of unavailable nodes
+- Number of used and available nodes
 - When the cluster was created
 
  ![Cluster Status](images/Flow_CloudStatus.png)
@@ -701,5 +763,10 @@ To view a timeline of events in Flow, click the **Admin** menu, then click **Tim
 
 To obtain the most recent information, click the **Refresh** button.  
 
+---
+
+###Shutting Down H2O
+
+To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
 

@@ -13,31 +13,40 @@ import java.util.Arrays;
 public class ParseV2 extends Schema<Iced, ParseV2> {
   // Input fields
   @API(help="Final hex key name",required=true)
-  FrameKeyV1 hex;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
+  FrameKeyV1 destination_key;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
 
   @API(help="Source keys",required=true)
-  FrameKeyV1[] srcs;
+  FrameKeyV1[] source_keys;
 
-  @API(help="Parser Type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
-  ParserType pType;
+  @API(help="Parser type", values = {"AUTO", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
+  ParserType parse_type;
 
-  @API(help="separator")
-  byte sep;
+  @API(help="Field separator")
+  byte separator;
 
-  @API(help="ncols")
-  int ncols;
+  @API(help="Single Quotes")
+  boolean single_quotes;
 
   @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header")
-  int checkHeader;
+  int check_header;
 
-  @API(help="single Quotes")
-  boolean singleQuotes;
+  @API(help="Number of columns")
+  int number_columns;
 
-  @API(help="Column Names")
-  String[] columnNames;
+  @API(help="Column names")
+  String[] column_names;
+
+  @API(help="Value types for columns")
+  String[] column_types;
 
   @API(help="Domains for categorical columns")
   String[][] domains;
+
+  @API(help="NA strings for columns")
+  String[] na_strings;
+
+  @API(help="Size of individual parse tasks", direction=API.Direction.INPUT)
+  int chunk_size;
 
   @API(help="Delete input key after parse")
   boolean delete_on_done;
@@ -45,11 +54,11 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
   @API(help="Block until the parse completes (as opposed to returning early and requiring polling")
   boolean blocking;
 
-  @API(help="Remove Frame after blocking parse, and return array of Vecs")
-  boolean removeFrame;
+  @API(help="Remove frame after blocking parse, and return array of Vecs")
+  boolean remove_frame;
 
   // Output fields
-  @API(help="Parse Job", direction=API.Direction.OUTPUT)
+  @API(help="Parse job", direction=API.Direction.OUTPUT)
   JobV2 job;
 
   // Zero if blocking==false; row-count if blocking==true
@@ -58,7 +67,7 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
 
   // Only not-null if blocking==true and removeFrame=true
   @API(help="Vec keys", direction=API.Direction.OUTPUT)
-  VecKeyV1[] vecKeys;
+  VecKeyV1[] vec_keys;
 
 
   //==========================
@@ -71,14 +80,14 @@ public class ParseV2 extends Schema<Iced, ParseV2> {
 
   // Helper so ParseSetup can link to Parse
   public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames) {
-    return "Parse?srcs="+Arrays.toString(srcs)+
-      "&hex="+hexName+
-      "&pType="+pType+
-      "&sep="+sep+
-      "&ncols="+ncols+
-      "&checkHeader="+checkHeader+
-      "&singleQuotes="+singleQuotes+
-      "&columnNames="+Arrays.toString(columnNames)+
+    return "Parse?source_keys="+Arrays.toString(srcs)+
+      "&destination_key="+hexName+
+      "&parse_type="+pType+
+      "&separator="+sep+
+      "&number_columns="+ncols+
+      "&check_header="+checkHeader+
+      "&single_quotes="+singleQuotes+
+      "&column_names="+Arrays.toString(columnNames)+
       "";
   }
 }

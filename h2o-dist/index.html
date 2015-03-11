@@ -192,6 +192,8 @@
         var pyPanel = document.getElementById('quickstart-py');
         var hadoopTab = document.getElementById('quickstart-hadoop-tab');
         var hadoopPanel = document.getElementById('quickstart-hadoop');
+        var mavenTab = document.getElementById('quickstart-maven-tab');
+        var mavenPanel = document.getElementById('quickstart-maven');
         var showZipTab = function() {
           zipPanel.style.display = 'block';
           zipTab.className = 'active';
@@ -201,45 +203,68 @@
           pyTab.className = '';
           hadoopPanel.style.display = 'none';
           hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
         };
         var showRTab = function() {
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
           rPanel.style.display = 'block';
           rTab.className = 'active';
           pyPanel.style.display = 'none';
           pyTab.className = '';
-          zipPanel.style.display = 'none';
-          zipTab.className = '';
           hadoopPanel.style.display = 'none';
           hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
         };
         var showPyTab = function() {
-            pyPanel.style.display = 'block';
-            pyTab.className = 'active';
-            rPanel.style.display = 'none';
-            rTab.className = '';
-            zipPanel.style.display = 'none';
-            zipTab.className = '';
-            hadoopPanel.style.display = 'none';
-            hadoopTab.className = '';
-        };
-        var showHadoopTab = function(){
-          hadoopPanel.style.display = 'block';
-          hadoopTab.className = 'active';
-          rPanel.style.display = 'none';
-          rTab.className = '';
           zipPanel.style.display = 'none';
           zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'block';
+          pyTab.className = 'active';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+        };
+        var showHadoopTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'block';
+          hadoopTab.className = 'active';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+        };
+        var showMavenTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'block';
+          mavenTab.className = 'active';
         };
         zipTab.onclick = showZipTab;
         rTab.onclick = showRTab;
         pyTab.onclick= showPyTab;
         hadoopTab.onclick = showHadoopTab;
+        mavenTab.onclick = showMavenTab;
         var hash = window.location.hash;
         if(hash && hash.indexOf('#R') == 0) {
           showRTab();
         }
         if (hash && hash.indexOf('#Python') == 0) {
-            showPyTab();
+          showPyTab();
         }
       }
       <!-- DOM 0 style without jquery -->
@@ -254,7 +279,7 @@
         trackLink('doc-h2o-algos-javadoc', 'Documentation', 'H2O Algos Javadoc');
 
         initializeTabs();
-       }
+      }
     </script>
   </head>
   <body>
@@ -277,9 +302,8 @@
           &nbsp; <span id="quickstart-zip-tab" class="active">Download and Run</span>
           <span id = "quickstart-r-tab">Install in R</span>
           <span id = "quickstart-py-tab">Install in Python</span>
-<!--
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
--->
+          <span id = "quickstart-maven-tab">Use from Maven</span>
         </div>
         <div id="panels">
           <div id="quickstart-zip">
@@ -301,14 +325,19 @@
             <div id="quickstart-py" style="display:none">
                 <h2>Use H<sub>2</sub>O directly from Python</h2>
 
+                <p>1. Prerequisite:    Python 2.7</p>
+                <p>2. Install dependencies:</p>
+                <p class="terminal">
+                    pip install requests<br/>
+                    pip install tabulate
+                </p>
                 <p>At the command line, copy and paste these commands one line at a time:
                 <p class="terminal">
                     <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
-                    pip uninstall h2o
+                    pip uninstall h2o<br/>
                     <br/>
                     <em># Next, use pip to install this version of the  H<sub>2</sub>O Python module.</em><br/>
-                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_WHEEL_FILE_NAME
-                    <br/>
+                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_WHEEL_FILE_NAME<br/>
             </div>
 
             <div id="quickstart-r" style="display:none">
@@ -340,18 +369,20 @@
             </div>
 
           <div id="quickstart-hadoop" style="display:none">
-            <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps.</h2>
-            <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
+            <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
+            <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
             <p class="terminal">
-                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-SUBST_PROJECT_VERSION.zip
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-cdh5.2.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-hdp2.1.zip<br/>
+                wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-dev-SUBST_PROJECT_VERSION-mapr4.0.1.zip<br/>
             </p>
             <p>2. Unpack the zip file and launch a 1g instance of H<sub>2</sub>O: </p>
             <p class="terminal">
-                unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
-                cd h2o-SUBST_PROJECT_VERSION/hadoop<br/>
-                hadoop jar h2odriver_hdp2.1.jar water.hadoop.h2odriver -libjars ../h2o.jar -mapperXmx 1g -nodes 1 -output hdfsOutputDirName<br/>
+                unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
+                cd h2o-SUBST_PROJECT_VERSION-*<br/>
+                hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName<br/>
             </p>
-            <p>3. Point your browser to any of the H2O nodes launched. The IP addresses of the nodes will be available in the output:</p>
+            <p>3. Point your browser to one of the H2O nodes (i.e. "H2O node ... reports H2O cluster size" in the output below):</p>
             <p class="terminal">
                 Determining driver host interface for mapper->driver callback...<br/>
                 [Possible callback IP address: 172.16.2.181]<br/>
@@ -364,20 +395,42 @@
                 <em>H2O node 172.16.2.184:54321 reports H2O cluster size 1 </em><br/>
                 H2O cluster (1 nodes) is up<br/>
                 Blocking until the H2O cluster shuts down...<br/>
-
             </p>
           </div>
+
+          <div id="quickstart-maven" style="display:none">
+              <h2>Gradle-style specification for Maven artifacts</h2>
+
+              <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
+              <p class="terminal">
+def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
+</br>
+repositories {</br>
+&nbsp;maven {</br>
+&nbsp;&nbsp;url "<script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/maven/repo/"</br>
+&nbsp;}</br>
+}</br>
+</br>
+dependencies {</br>
+&nbsp;compile "ai.h2o:h2o-core:${h2oProjectVersion}"</br>
+&nbsp;compile "ai.h2o:h2o-algos:${h2oProjectVersion}"</br>
+&nbsp;compile "ai.h2o:h2o-web:${h2oProjectVersion}"</br>
+&nbsp;compile "ai.h2o:h2o-app:${h2oProjectVersion}"</br>
+}</br>
+          </div>
+
         </div>
         <div id="documentation">
           <h2>User Documentation</h2>
           <ul>
             <li><a id="doc-flow" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/README.md">Flow (Web UI) User Documentation</a></li>
             <li><a id="doc-r-pdf" href="docs-website/h2o-r/h2o_package.pdf">R User Documentation</a></li>
-              <li><a id="doc-py"     href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
+            <li><a id="doc-py" href="docs-website/h2o-py/docs/index.html">Python User Documentation</a></li>
             <li><a id="doc-hadoop" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/README.md">Hadoop Documentation (Coming soon!)</a></li>
           </ul>
           <h2>Developer Documentation</h2>
           <ul>
+            <li><a id="doc-readme" href="https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/README.md">Github README</a></li>
             <li><a id="doc-rest" href="docs-website/REST/endpoints/markdown/toc.md">REST API Documentation (Google Chrome MarkView extension recommended)</a></li>
             <li><a id="doc-h2o-core-javadoc" href="docs-website/h2o-core/javadoc/index.html">H2O Core Java Developer Documentation (Javadoc)</a></li>
             <li><a id="doc-h2o-algos-javadoc" href="docs-website/h2o-algos/javadoc/index.html">H2O Algos Java Developer Documentation (Javadoc)</a></li>

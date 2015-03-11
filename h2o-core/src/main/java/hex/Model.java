@@ -1,15 +1,16 @@
 package hex;
 
-import water.*;
-import water.api.ModelSchema;
-import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.MathUtils;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+
+import org.joda.time.DateTime;
+
+import water.*;
+import water.fvec.*;
+import water.util.*;
+import hex.genmodel.GenModel;
 
 /**
  * A Model models reality (hopefully).
@@ -19,6 +20,11 @@ import java.util.Comparator;
  * be adapted.
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
+
+  public abstract interface DeepFeatures {
+    public Frame scoreAutoEncoder(Frame frame, Key destination_key);
+    public Frame scoreDeepFeatures(Frame frame, final int layer);
+  }
 
   /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
   public static enum ModelCategory {
@@ -31,7 +37,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     DimReduction
   }
 
-  public boolean isSupervised() { return false; }
+  public final boolean isSupervised() { return _output.isSupervised(); }
 
   /** Model-specific parameter class.  Each model sub-class contains an
    *  instance of one of these containing its builder parameters, with
@@ -205,14 +211,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  ModelBuilder. */
     public Job.JobState _state;
 
-    /** The start time in mS since the epoch for model training, again this
-     *  comes from the Job which needs to split from ModelBuilder.  */
-    public long _training_start_time = 0L;
-
-    /** The duration in mS for model training, again this comes from the Job
-     *  which needs to split from ModelBuilder.  */
-    public long _training_duration_in_ms = 0L;
-
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec
@@ -226,15 +224,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _domains= b._train.domains();
     }
 
-    /** The names of all the columns, including the response column (which comes last). */
-    public String[] allNames() { return _names; }
+    public boolean isSupervised() { return false; }
     /** The name of the response column (which is always the last column). */
-    public String responseName() { return   _names[  _names.length-1]; }
+    public String responseName() { return (getModelCategory() == ModelCategory.Regression || isClassifier()) ?  _names[  _names.length-1] : null; }
     /** The names of the levels for an enum (categorical) response column. */
-    public String[] classNames() { return _domains[_domains.length-1]; }
+    public String[] classNames() { assert isSupervised(); return _domains[_domains.length-1]; }
     /** Is this model a classification model? (v. a regression or clustering model) */
-    public boolean isClassifier() { return classNames() != null ; }
+    public boolean isClassifier() { return isSupervised() && classNames() != null ; }
     public int nclasses() {
+      assert isSupervised();
       String cns[] = classNames();
       return cns==null ? 1 : cns.length;
     }
@@ -247,9 +245,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     // TODO: Needs to be Atomic update, not just synchronized
-    protected synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
-      for( int i=0; i<_model_metrics.length; i++ ) // Dup removal
-        if( _model_metrics[i]==mm._key ) return mm;
+    public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
+      for( Key key : _model_metrics ) // Dup removal
+        if( key==mm._key ) return mm;
       _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
       _model_metrics[_model_metrics.length - 1] = mm._key;
       return mm;                // Flow coding
@@ -267,13 +265,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
 
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
-
-  /**
-   * Externally visible default schema
-   * TODO: this is in the wrong layer: the internals should not know anything about the schemas!!!
-   * This puts a reverse edge into the dependency graph.
-   */
-  public abstract ModelSchema schema();
 
   /** Full constructor */
   public Model( Key selfKey, P parms, O output) {
@@ -348,7 +339,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for( int i=0; i<names.length; i++ ) {
       Vec vec = test.vec(names[i]); // Search in the given validation set
       // If the training set is missing in the validation set, complain and
-      // fill in with NAs.
+      // fill in with NAs.  If this is the response column for supervised
+      // learners, it is still made.
       if( vec == null ) {
         msgs.add("Validation set is missing training column "+names[i]);
         if( expensive ) {
@@ -356,15 +348,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec.setDomain(domains[i]);
         }
       }
-      if( vec != null ) {       // I have a column with a matching name
-        if( domains[i] != null ) { // Result needs to be an enum
-          EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
-          String[] ds = evec.domain();
-          assert ds!=null && ds.length >= domains[i].length;
-          if( ds.length > domains[i].length )
-            msgs.add("Validation column "+names[i]+" has levels not trained on: "+Arrays.toString(Arrays.copyOfRange(ds,domains[i].length,ds.length)));
-          if( expensive ) { vec = evec; good++; } // Keep it
-          else { evec.remove(); vec = null; } // No leaking if not-expensive
+      if( vec != null ) {          // I have a column with a matching name
+        if( domains[i] != null ) { // Model expects an enum
+          if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same enum
+            EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            String[] ds = evec.domain();
+            assert ds != null && ds.length >= domains[i].length;
+            if (ds.length > domains[i].length)
+              msgs.add("Validation column " + names[i] + " has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
+            if (expensive) { vec = evec;  good++; } // Keep it
+            else { evec.remove(); vec = null; } // No leaking if not-expensive
+          } else {
+            good++;
+          }
         } else if( vec.isEnum() ) {
           throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
@@ -409,7 +405,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    Vec actual = _output.isClassifier() ? fr.vec(_output.responseName()) : null;
     adaptTestForTrain(adaptFr,true);   // Adapt
     Frame output = scoreImpl(fr,adaptFr, destination_key); // Score
 
@@ -420,8 +415,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
     if( _output.isClassifier() ) {
-      assert(mdomain != null); // label must be enum
-
+//      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ModelCategory model_cat = this._output.getModelCategory();
       ConfusionMatrix cm = mm.cm();
@@ -431,15 +425,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
       if (cm.domain != null) { //don't print table for regression
-        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
+//        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
           water.util.Log.info(cm.table.toString(1));
       }
 
-      String sdomain[] = actual.domain(); // Scored/test domain; can be null
-      if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain,sdomain) )
-        output.replace(0,new EnumWrappedVec(actual.group().addVec(),actual.get_espc(),sdomain,predicted._key));
+      Vec actual = fr.vec(_output.responseName());
+      if( actual != null ) {  // Predict does not have an actual, scoring does
+        String sdomain[] = actual.domain(); // Scored/test domain; can be null
+        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+          output.replace(0, new EnumWrappedVec(actual.group().addVec(), actual.get_espc(), sdomain, predicted._key));
+      }
     }
 
     // Remove temp keys.  TODO: Really should use Scope but Scope does not
@@ -457,7 +454,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  already adapted to the Model's domain, so the output is also.  Also
    *  computes the metrics for this frame.
    *
-   * @param adaptFrm
+   * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
   protected Frame scoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
@@ -478,6 +475,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     DKV.put(res);
     return res;
   }
+
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
@@ -532,4 +530,178 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }
+
+  // ==========================================================================
+  /** Return a String which is a valid Java program representing a class that
+   *  implements the Model.  The Java is of the form:
+   *  <pre>
+   *    class UUIDxxxxModel {
+   *      public static final String NAMES[] = { ....column names... }
+   *      public static final String DOMAINS[][] = { ....domain names... }
+   *      // Pass in data in a double[], pre-aligned to the Model's requirements.
+   *      // Jam predictions into the preds[] array; preds[0] is reserved for the
+   *      // main prediction (class for classifiers or value for regression),
+   *      // and remaining columns hold a probability distribution for classifiers.
+   *      float[] predict( double data[], float preds[] );
+   *      double[] map( HashMap &lt; String,Double &gt; row, double data[] );
+   *      // Does the mapping lookup for every row, no allocation
+   *      float[] predict( HashMap &lt; String,Double &gt; row, double data[], float preds[] );
+   *      // Allocates a double[] for every row
+   *      float[] predict( HashMap &lt; String,Double &gt; row, float preds[] );
+   *      // Allocates a double[] and a float[] for every row
+   *      float[] predict( HashMap &lt; String,Double &gt; row );
+   *    }
+   *  </pre>
+   */
+  public final String toJava() { return toJava(new SB()).toString(); }
+  public SB toJava( SB sb ) {
+    SB fileContext = new SB();  // preserve file context
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    // HEADER
+    sb.p("// AUTOGENERATED BY H2O at ").p(new DateTime().toString()).nl();
+    sb.p("// ").p(H2O.ABV.projectVersion()).nl();
+    sb.p("//").nl();
+    sb.p("// Standalone prediction code with sample test data for ").p(this.getClass().getSimpleName()).p(" named ").p(modelName).nl();
+    sb.p("//").nl();
+    sb.p("// How to download, compile and execute:").nl();
+    sb.p("//     mkdir tmpdir").nl();
+    sb.p("//     cd tmpdir").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/h2o-model.jar > h2o-model.jar").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/2/").p(this.getClass().getSimpleName()).p("View.java?_modelKey=").pobj(_key).p(" > ").p(modelName).p(".java").nl();
+    sb.p("//     javac -cp h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
+    sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
+    sb.p("//").nl();
+    sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    sb.p("import java.util.Map;").nl();
+    sb.p("import hex.genmodel.GenModel;").nl();
+    sb.nl();
+    sb.p("public class ").p(modelName).p(" extends GenModel {").nl().ii(1);
+    toJavaInit(sb, fileContext).nl();
+    toJavaNAMES(sb);
+    toJavaNCLASSES(sb);
+    toJavaDOMAINS(sb, fileContext);
+    toJavaPROB(sb);
+    toJavaSuper(modelName,sb); //
+    toJavaPredict(sb, fileContext);
+    sb.p("}").nl().di(1);
+    sb.p(fileContext).nl(); // Append file
+    return sb;
+  }
+  /** Generate implementation for super class. */
+  protected SB toJavaSuper( String modelName, SB sb ) {
+    return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
+  }
+  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
+  protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
+  private SB toJavaDOMAINS( SB sb, SB fileContext ) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    sb.nl();
+    sb.ip("// Column domains. The last array contains domain of response column.").nl();
+    sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
+    for (int i=0; i<_output._domains.length; i++) {
+      String[] dom = _output._domains[i];
+      String colInfoClazz = modelName+"_ColInfo_"+i;
+      sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
+      sb.p(colInfoClazz).p(".VALUES");
+      if (i!=_output._domains.length-1) sb.p(',');
+      sb.nl();
+      fileContext.ip("// The class representing column ").p(_output._names[i]).nl();
+      JCodeGen.toClassWithArray(fileContext, null, colInfoClazz, dom);
+    }
+    return sb.ip("};").nl();
+  }
+  protected SB toJavaPROB( SB sb) { return sb; }
+  // Override in subclasses to provide some top-level model-specific goodness
+  protected SB toJavaInit(SB sb, SB fileContext) { return sb; }
+  // Override in subclasses to provide some inside 'predict' call goodness
+  // Method returns code which should be appended into generated top level class after
+  // predict method.
+  protected void toJavaPredictBody(SB body, SB cls, SB file) {
+    throw new IllegalArgumentException("This model type does not support conversion to Java");
+  }
+  // Wrapper around the main predict call, including the signature and return value
+  private SB toJavaPredict(SB ccsb, SB file) { // ccsb = classContext
+    ccsb.nl();
+    ccsb.ip("// Pass in data in a double[], pre-aligned to the Model's requirements.").nl();
+    ccsb.ip("// Jam predictions into the preds[] array; preds[0] is reserved for the").nl();
+    ccsb.ip("// main prediction (class for classifiers or value for regression),").nl();
+    ccsb.ip("// and remaining columns hold a probability distribution for classifiers.").nl();
+    ccsb.ip("public final float[] score0( double[] data, float[] preds ) {").nl();
+    SB classCtxSb = new SB().ii(1);
+    toJavaPredictBody(ccsb.ii(1), classCtxSb, file);
+    ccsb.ip("return preds;").nl();
+    ccsb.di(1).ip("}").nl();
+    ccsb.p(classCtxSb);
+    return ccsb;
+  }
+
+  // Convenience method for testing: build Java, convert it to a class &
+  // execute it: compare the results of the new class's (JIT'd) scoring with
+  // the built-in (interpreted) scoring on this dataset.  Returns true if all
+  // is well, false is there are any mismatches.  Throws if there is any error
+  // (typically an AssertionError or unable to compile the POJO).
+  public boolean testJavaScoring( Frame data, Frame model_predictions ) {
+    assert data.numRows()==model_predictions.numRows();
+    Frame fr = null;
+    try {
+      fr = new Frame(data);
+      String[] warns = adaptTestForTrain(fr,true);
+      if( warns.length > 0 )
+        System.err.println(Arrays.toString(warns));
+      
+      // Output is in the model's domain, but needs to be mapped to the scored
+      // dataset's domain.
+      int[] omap = null;
+      if( _output.isClassifier() ) {
+        Vec actual = fr.vec(_output.responseName());
+        String sdomain[] = actual.domain(); // Scored/test domain; can be null
+        String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
+        if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+          EnumWrappedVec ewv = new EnumWrappedVec(mdomain,sdomain);
+          omap = ewv.enum_map(); // Map from model-domain to scoring-domain
+          ewv.remove();
+        }
+      }
+
+      String modelName = JCodeGen.toJavaId(_key.toString());
+      String java_text = toJava();
+      //System.out.println(java_text);
+      GenModel genmodel;
+      try { 
+        Class clz = JCodeGen.compile(modelName,java_text);
+        genmodel = (GenModel)clz.newInstance();
+      } catch( Exception e ) { throw H2O.fail("Internal POJO compilation failed",e); }
+
+      Vec[] dvecs = fr.vecs();
+      Vec[] pvecs = model_predictions.vecs();
+    
+      double features  [] = MemoryManager.malloc8d(genmodel._names.length);
+      float predictions[] = MemoryManager.malloc4f(genmodel.nclasses()+1);
+
+      // Compare predictions, counting mis-predicts
+      int miss = 0;
+      for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+        for( int col=0; col<features.length; col++ ) // Build feature set
+          features[col] = dvecs[col].at(row);
+        genmodel.score0(features,predictions);            // POJO predictions
+        for( int col=0; col<predictions.length; col++ ) { // Compare predictions
+          double d = pvecs[col].at(row);                  // Load internal scoring predictions
+          if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
+          if( predictions[col] != d ) {                   // Compare predictions
+            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
+            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+          }
+        }
+      }
+      return miss==0;
+    } finally {
+      // Remove temp keys.  TODO: Really should use Scope but Scope does not
+      // currently allow nested-key-keepers.
+      Vec[] vecs = fr.vecs();
+      for( int i=0; i<vecs.length; i++ )
+        if( data.find(vecs[i]) != -1 ) // Exists in the original frame?
+          vecs[i] = null;              // Do not delete it
+      fr.delete();
+    }
+  }
 }

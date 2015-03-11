@@ -2,6 +2,7 @@ package water.util;
 
 import water.AutoBuffer;
 import water.Iced;
+import water.IcedWrapper;
 
 import java.util.Arrays;
 
@@ -17,7 +18,8 @@ public class TwoDimTable extends Iced {
   private String[]   colHeaders;
   private String[]   colTypes;
   private String[]   colFormats;
-  private String[][] cellValues;
+  private IcedWrapper[][] cellValues;
+  private String     colHeaderForRowHeaders;
 
   //public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN (0x7ff8000000000000)
   public static final double emptyDouble = Double.MIN_VALUE*2; //Some unlikely value
@@ -38,11 +40,13 @@ public class TwoDimTable extends Iced {
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
    * @param colFormats C-dim array with printf format strings for each column
+   * @param colHeaderForRowHeaders column header for row headers
    */
   public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-                     String[] colFormats) {
+                     String[] colFormats, String colHeaderForRowHeaders) {
     if (tableHeader == null)
       tableHeader = "";
+    this.colHeaderForRowHeaders = colHeaderForRowHeaders;
 
     if (rowHeaders == null)
       throw new IllegalArgumentException("rowHeaders is null");
@@ -90,9 +94,7 @@ public class TwoDimTable extends Iced {
     this.colHeaders = colHeaders;
     this.colTypes = colTypes;
     this.colFormats = colFormats;
-    this.cellValues = new String[rowDim][colDim];
-    for (String[] vec : this.cellValues)
-      Arrays.fill(vec, "");
+    this.cellValues = new IcedWrapper[rowDim][colDim];
   }
 
   /**
@@ -102,12 +104,13 @@ public class TwoDimTable extends Iced {
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
    * @param colFormats C-dim array with printf format strings for each column
+   * @param colHeaderForRowHeaders column header for row headers
    * @param strCellValues String[R][C] array for string cell values, can be null (can provide String[R][], for example)
    * @param dblCellValues double[R][C] array for double cell values, can be empty (marked with emptyDouble - happens when initialized with double[R][])
    */
   public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
-                     String[] colFormats, String[][] strCellValues, double[][] dblCellValues) {
-    this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats);
+                     String[] colFormats, String colHeaderForRowHeaders, String[][] strCellValues, double[][] dblCellValues) {
+    this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     assert (isEmpty(emptyDouble));
     assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
@@ -148,10 +151,16 @@ public class TwoDimTable extends Iced {
       switch (colTypes[c]) {
         case "double":
         case "float":
-        case "integer":
-        case "long":
           for (int r = 0; r < rowDim; ++r)
             set(r, c, dblCellValues[r][c]);
+          break;
+        case "integer":
+          for (int r = 0; r < rowDim; ++r)
+            set(r, c, (int) dblCellValues[r][c]);
+          break;
+        case "long":
+          for (int r = 0; r < rowDim; ++r)
+            set(r, c, (long) dblCellValues[r][c]);
           break;
         default:
           for (int r = 0; r < rowDim; ++r)
@@ -164,31 +173,10 @@ public class TwoDimTable extends Iced {
    * Accessor for table cells
    * @param row a row index
    * @param col a column index
-   * @return Object (either String or Double)
+   * @return Object (either String or Double or Float or Integer or Long)
    */
   public Object get(final int row, final int col) {
-    Object cell = cellValues[row][col];
-    if (cell.equals(""))
-      cell = null;
-    else {
-      switch (colTypes[col]) {
-        case "double":
-          cell = new Double((String) cell);
-          break;
-        case "float":
-          cell = new Float((String) cell);
-          break;
-        case "integer":
-          cell = new Integer((String) cell);
-          break;
-        case "long":
-          cell = new Long((String) cell);
-          break;
-        default:
-          break;
-      }
-    }
-    return cell;
+    return cellValues[row][col] == null ? null : cellValues[row][col].get();
   }
 
   public String getTableHeader() {
@@ -199,9 +187,9 @@ public class TwoDimTable extends Iced {
     return rowHeaders;
   }
 
-  public String[] getColHeaders() {
-    return colHeaders;
-  }
+  public String[] getColHeaders() { return colHeaders; }
+
+  public String getColHeaderForRowHeaders() { return colHeaderForRowHeaders; }
 
   public String[] getColTypes() {
     return colTypes;
@@ -211,7 +199,7 @@ public class TwoDimTable extends Iced {
     return colFormats;
   }
 
-  public String[][] getCellValues() {
+  public IcedWrapper[][] getCellValues() {
     return cellValues;
   }
 
@@ -235,77 +223,21 @@ public class TwoDimTable extends Iced {
    * Setter for table cells
    * @param row a row index
    * @param col a column index
-   * @param s String value
+   * @param o Object value
    */
-  public void set(final int row, final int col, final String s) {
-    if (s == null)
-      cellValues[row][col] = "";
+  public void set(final int row, final int col, final Object o) {
+    if (o == null) cellValues[row][col] = null;
+
+    if (colTypes[col].equals("double"))
+      cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
+    else if (colTypes[col].equals("float"))
+      cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
+    else if (colTypes[col].equals("integer"))
+      cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
+    else if (colTypes[col].equals("long"))
+      cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
     else
-      cellValues[row][col] = s;
-  }
-
-  /**
-   * Setter for table cells
-   * @param row a row index
-   * @param col a column index
-   * @param d double value
-   */
-  public void set(final int row, final int col, final double d) {
-    if (isEmpty(d))
-      cellValues[row][col] = "";
-    else {
-      switch (colTypes[col]) {
-        case "double":
-        case "float":
-          cellValues[row][col] = Double.toHexString(d);
-          break;
-        case "long":
-        case "int":
-          cellValues[row][col] = Long.toString((long)d);
-          break;
-        default:
-          cellValues[row][col] = Double.toString(d);
-          break;
-      }
-    }
-  }
-
-  /**
-   * Setter for table cells
-   * @param row a row index
-   * @param col a column index
-   * @param f float value
-   */
-  public void set(final int row, final int col, final float f) {
-    switch (colTypes[col]) {
-      case "double":
-      case "float":
-        cellValues[row][col] = Float.toHexString(f);
-        break;
-      default:
-        cellValues[row][col] = Float.toString(f);
-        break;
-    }
-  }
-
-  /**
-   * Setter for table cells
-   * @param row a row index
-   * @param col a column index
-   * @param i integer value
-   */
-  public void set(final int row, final int col, final int i) {
-    cellValues[row][col] = Integer.toString(i);
-  }
-
-  /**
-   * Setter for table cells
-   * @param row a row index
-   * @param col a column index
-   * @param l long value
-   */
-  public void set(final int row, final int col, final long l) {
-    cellValues[row][col] = Long.toString(l);
+      cellValues[row][col] = new IcedWrapper(o);
   }
 
   /**
@@ -332,6 +264,7 @@ public class TwoDimTable extends Iced {
     for (String[] row: cellStrings)
       Arrays.fill(row, "");
 
+    cellStrings[0][0] = colHeaderForRowHeaders != null ? colHeaderForRowHeaders : "";
     for (int r = 0; r < rowDim; ++r)
       cellStrings[r+1][0] = rowHeaders[r];
     for (int c = 0; c < colDim; ++c)
@@ -342,35 +275,28 @@ public class TwoDimTable extends Iced {
       switch (colTypes[c]) {
         case "double":
           for (int r = 0; r < rowDim; ++r) {
-            final String cell = cellValues[r][c];
-            if (!cell.equals(""))
-              cellStrings[r + 1][c + 1] = String.format(formatString, new Double(cell));
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Double)cellValues[r][c].get());
           }
           break;
         case "float":
           for (int r = 0; r < rowDim; ++r) {
-            final String cell = cellValues[r][c];
-            if (!cell.equals(""))
-              cellStrings[r + 1][c + 1] = String.format(formatString, new Float(cell));
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
           }
           break;
         case "integer":
           for (int r = 0; r < rowDim; ++r) {
-            final String cell = cellValues[r][c];
-            if (!cell.equals(""))
-              cellStrings[r + 1][c + 1] = String.format(formatString, new Integer(cell));
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
           }
           break;
         case "long":
           for (int r = 0; r < rowDim; ++r) {
-            final String cell = cellValues[r][c];
-            if (!cell.equals(""))
-              cellStrings[r + 1][c + 1] = String.format(formatString, new Long(cell));
+            cellStrings[r + 1][c + 1] = cellValues[r][c] == null || cellValues[r][c].get() == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
           }
           break;
         default:
           for (int r = 0; r < rowDim; ++r)
-            cellStrings[r+1][c+1] = cellValues[r][c];
+            if (cellValues[r][c] != null && cellValues[r][c].get() != null)
+              cellStrings[r+1][c+1] = String.format(formatString, cellValues[r][c]);
           break;
       }
     }
@@ -392,7 +318,7 @@ public class TwoDimTable extends Iced {
       for (int c = 1; c <= colDim; ++c) {
         len = colLen[c];
         if (len > 0)
-          sb.append(String.format("%" + (len + pad) + "s", cellStrings[r][c]));
+          sb.append(String.format("%" + (len + pad) + "s", cellStrings[r][c].equals("null") ? "" : cellStrings[r][c]));
       }
       sb.append("\n");
     }

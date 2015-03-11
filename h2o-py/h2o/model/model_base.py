@@ -3,11 +3,11 @@ This module implements the base model class.  All model things inherit from this
 """
 
 import h2o
-import tabulate
 from . import H2OFrame
 from . import H2OVec
 from . import H2OTwoDimTable
 from . import H2OConnection
+
 
 class ModelBase(object):
   def __init__(self, dest_key, model_json, metrics_class):
@@ -31,14 +31,14 @@ class ModelBase(object):
     prediction_frame_key = j["model_metrics"][0]["predictions"]["key"]["name"]
     # get the actual frame meta dta
     pred_frame_meta = h2o.frame(prediction_frame_key)["frames"][0]
-    # collect the veckeys
-    veckeys = pred_frame_meta["veckeys"]
+    # collect the vec_keys
+    vec_keys = pred_frame_meta["vec_keys"]
     # get the number of rows
     rows = pred_frame_meta["rows"]
     # get the column names
     cols = [col["label"] for col in pred_frame_meta["columns"]]
     # create a set of H2OVec objects
-    vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
+    vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
     # toast the cbound frame
     h2o.remove(test_data_key)
     # return a new H2OFrame object
@@ -84,7 +84,9 @@ class ModelBase(object):
     print
     print "Model Details:"
     print
-    print tabulate.tabulate(val, headers=["Description", "Value"])
-    print
     for v in two_dim_tables:
       v.show()
+
+  # Delete from cluster as model goes out of scope
+  def __del__(self):
+    h2o.remove(self._key)

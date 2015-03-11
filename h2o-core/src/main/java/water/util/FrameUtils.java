@@ -4,33 +4,46 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
-import water.Key;
-import water.MRTask;
+import hex.FrameSplitter;
+import jsr166y.CountedCompleter;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.persist.Persist;
 
 public class FrameUtils {
-  /** Parse given file into the form of frame represented by the given key.
+
+
+  /** Parse given file(s) into the form of single frame represented by the given key.
    *
    * @param okey  destination key for parsed frame
-   * @param file  file to parse
+   * @param files  files to parse
    * @return a new frame
    */
-  public static Frame parseFrame(Key okey, File file) throws IOException {
-    if( !file.exists() )
-      throw new FileNotFoundException("File not found " + file);
-    if(okey == null) okey = Key.make(file.getName());
-    NFSFileVec nfs = NFSFileVec.make(file);
-    return ParseDataset.parse(okey, nfs._key);
+  public static Frame parseFrame(Key okey, File ...files) throws IOException {
+    if (files == null || files.length == 0) {
+      throw new IllegalArgumentException("List of files is empty!");
+    }
+    for (File f : files) {
+      if (!f.exists())
+        throw new FileNotFoundException("File not found " + f);
+    }
+    // Create output key if it is not given
+    if(okey == null) okey = Key.make(files[0].getName());
+    Key[] inKeys = new Key[files.length];
+    for (int i=0; i<files.length; i++) inKeys[i] =  NFSFileVec.make(files[i])._key;
+    return ParseDataset.parse(okey, inKeys);
   }
 
-  public static Frame parseFrame(Key okey, URI uri) throws IOException {
-    Key ikey = Persist.anyURIToKey(uri);
-    if(okey == null) okey = Key.make(uri.toString());
-    return ParseDataset.parse(okey, ikey);
+  public static Frame parseFrame(Key okey, URI ...uris) throws IOException {
+    if (uris == null || uris.length == 0) {
+      throw new IllegalArgumentException("List of uris is empty!");
+    }
+    Key[] inKeys = new Key[uris.length];
+    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
+    if(okey == null) okey = Key.make(uris[0].toString());
+    return ParseDataset.parse(okey, inKeys);
   }
 
   /**
@@ -59,19 +72,82 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter extends MRTask<MissingInserter> {
+  public static class MissingInserter extends Job<Frame> {
+    final Key _dataset;
+    final double _fraction;
     final long _seed;
-    final double _frac;
-    public MissingInserter(long seed, double frac){ _seed = seed; _frac = frac; }
 
-    @Override public void map (Chunk[]cs){
-      final Random rng = new Random();
-      for (int c = 0; c < cs.length; c++) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-          if (rng.nextDouble() < _frac) cs[c].setNA(r);
+    public MissingInserter(Key frame, long seed, double frac){
+      super(frame, "MissingValueInserter");
+      _dataset = frame; _seed = seed; _fraction = frac;
+    }
+
+    /**
+     * Driver for MissingInserter
+     */
+    class MissingInserterDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      MissingInserterDriver(Frame frame) {_frame = frame; }
+      @Override
+      protected void compute2() {
+        new MRTask() {
+          @Override public void map (Chunk[]cs){
+            final Random rng = new Random();
+            for (int c = 0; c < cs.length; c++) {
+              for (int r = 0; r < cs[c]._len; r++) {
+                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+                if (rng.nextDouble() < _fraction) cs[c].setNA(r);
+              }
+            }
+            update(1);
+          }
+        }.doAll(_frame);
+        tryComplete();
+      }
+
+      @Override
+      public void onCompletion(CountedCompleter caller){
+        done();
+      }
+
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
+        failed(ex);
+        return true;
+      }
+    }
+
+    public void execImpl() {
+      if (DKV.get(_dataset) == null)
+        throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
+      if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
+      try {
+        final Frame frame = DKV.getGet(_dataset);
+        MissingInserterDriver mid = new MissingInserterDriver(frame);
+        int work = frame.vecs()[0].nChunks();
+        start(mid, work);
+      } catch (Throwable t) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          failed(t);
+          throw t;
         }
       }
     }
+  }
+
+  /**
+   * compute fraction of sparse chunks in this array.
+   * @param chks
+   * @return
+   */
+  public static double sparseRatio(Chunk [] chks) {
+    int cnt = 0;
+    double reg = 1.0/chks.length;
+    for(Chunk c :chks)
+      if(c.isSparse())
+        ++cnt;
+    return cnt * reg;
   }
 }

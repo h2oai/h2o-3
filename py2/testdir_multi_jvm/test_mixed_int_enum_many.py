@@ -1,9 +1,10 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_browse as h2b
 
 
-ENABLE_ASSERTS = False
+ENABLE_ASSERTS = True
 ROWS = 1000000
 COLS = 2
 
@@ -99,7 +100,7 @@ class Basic(unittest.TestCase):
 
             print "Creating random", csvPathname
             expectedNaCnt = write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE, enumChoices, intChoices)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', checkHeader=0,
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', check_header=0,
                 hex_key=hex_key, timeoutSecs=10, doSummary=False)
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
             print "numRows:", numRows, "numCols:", numCols
@@ -114,8 +115,8 @@ class Basic(unittest.TestCase):
                 summaryResult = h2o_cmd.runSummary(key=hex_key, column="C" + str(i+1))
                 h2o.verboseprint("summaryResult:", h2o.dump_json(summaryResult))
 
-                columns = summaryResult['frames'][0]['columns']
-                co = Column(columns[0])
+                # columns = summaryResult['frames'][0]['columns']
+                co = Column(summaryResult)
                 # how are enums binned. Stride of 1? (what about domain values)
                 coList = [
                     co.base,
@@ -178,7 +179,7 @@ class Basic(unittest.TestCase):
                 assert co.zeros <= numRows, "Can't have more zeros than rows %s %s" % (co.zeros, numRows)
 
                 if ENABLE_ASSERTS and resultIsEnum:
-                    self.assertEqual(co.type, 'Enum', "trial %s: Expecting type to be Enum for %s col colname %s" % (trial, i, colname))
+                    self.assertEqual(co.type, 'enum', "Expecting co.type %s to be 'enum' for %s co label  %s" % (co.type, i, co.label))
 
                 if ENABLE_ASSERTS and resultIsEnum:
                     # not always there

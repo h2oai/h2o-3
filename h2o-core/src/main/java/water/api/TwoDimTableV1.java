@@ -1,7 +1,9 @@
 package water.api;
 
+import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.IcedWrapper;
 import water.util.TwoDimTable;
 
 /**
@@ -34,7 +36,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
   public int rowcount;
 
   @API(help="Table Data (col-major)", direction=API.Direction.OUTPUT)
-  public String[][] data;
+  public IcedWrapper[][] data;
 
   /**
    * Fill a TwoDimTable Schema from a TwoDimTable
@@ -48,7 +50,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     rowcount = rows;
     columns = new ColumnSpecsV1[cols];
     columns[0] = new ColumnSpecsV1();
-    columns[0].name = "";
+    columns[0].name = t.getColHeaderForRowHeaders();
     columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
     columns[0].format = "%s";
     columns[0].description = null;
@@ -59,15 +61,16 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
       columns[c].format = t.getColFormats()[c-1];
       columns[c].description = null; //TODO: Add description
     }
-    data = new String[cols][rows];
-    data[0] = new String[t.getRowDim()];
+    data = new IcedWrapper[cols][rows];
+    data[0] = new IcedWrapper[t.getRowDim()];
     for (int r=0; r<t.getRowDim(); ++r) {
-      data[0][r] = t.getRowHeaders()[r];
+      data[0][r] = new IcedWrapper(t.getRowHeaders()[r]);
     }
+    IcedWrapper[][]cellValues = t.getCellValues();
     for (int c=1; c<cols; ++c) {
-      data[c] = new String[rows];
+      data[c] = new IcedWrapper[rows];
       for (int r=0; r<rows; ++r) {
-        data[c][r] = t.get(r,c-1) != null ? t.get(r,c-1).toString() : null; // don't use String.format(): client is supposed to format
+        data[c][r] = cellValues[r][c-1];
       }
     }
     return this;
@@ -83,9 +86,10 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     assert(rows == rowcount);
     final int cols = data.length+1;
     String tableHeader = name;
+    String colHeaderForRowHeaders = columns[0].name;
     String[] rowHeaders = new String[rows];
     for (int r=0; r<rows; ++r) {
-      rowHeaders[r] = data[0][r];
+      rowHeaders[r] = (String)data[0][r].get();
     }
     String[] colHeaders = new String[cols];
     colHeaders[0] = "";
@@ -108,19 +112,19 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
       for (int c=0; c<data.length; ++c) {
         try {
           if (columns[c].format == "string") {
-            strCellValues[r][c] = data[c][r];
+            strCellValues[r][c] = (String)data[c][r].get();
           }
           else if (columns[c].format == "double") {
-            dblCellValues[r][c] = Double.parseDouble(data[c][r]);
+            dblCellValues[r][c] = (Double)data[c][r].get();
           }
           else if (columns[c].format == "float") {
-            dblCellValues[r][c] = Float.parseFloat(data[c][r]);
+            dblCellValues[r][c] = (Float)data[c][r].get();
           }
           else if (columns[c].format == "integer") {
-            dblCellValues[r][c] = Integer.parseInt(data[c][r]);
+            dblCellValues[r][c] = (Integer)data[c][r].get();
           }
           else if (columns[c].format == "long") {
-            dblCellValues[r][c] = Long.parseLong(data[c][r]);
+            dblCellValues[r][c] = (Long)data[c][r].get();
           }
           else throw H2O.unimpl();
         } catch (ClassCastException e) {
@@ -128,6 +132,40 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
         }
       }
     }
-    return new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, strCellValues, dblCellValues);
+    return new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders, strCellValues, dblCellValues);
+  }
+
+  @Override
+  public AutoBuffer writeJSON_impl(AutoBuffer ab) {
+    ab.put1(',');
+    ab.putJSONStr("name",name);
+    ab.put1(',');
+    ab.putJSONStr("columns").put1(':');
+    ab.put1('[');
+    for (int i=0; i< columns.length; ++i) {
+      columns[i].writeJSON(ab);
+      if (i < columns.length - 1) ab.put1(',');
+    }
+    ab.put1(']');
+    ab.put1(',');
+    ab.putJSON4("rowcount", rowcount);
+    ab.put1(',');
+    ab.putJSONStr("data").put1(':');
+    ab.put1('[');
+    for (int i=0; i<data.length; ++i) {
+      ab.put1('[');
+      for (int j=0; j<data[i].length; ++j) {
+        if (data[i][j] == null || data[i][j].get() == null) {
+          ab.putJNULL();
+        } else {
+          data[i][j].writeUnwrappedJSON(ab);
+        }
+        if (j < data[i].length-1) ab.put1(',');
+      }
+      ab.put1(']');
+      if (i < data.length-1) ab.put1(',');
+    }
+    ab.put1(']');
+    return ab;
   }
 }

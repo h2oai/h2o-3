@@ -155,6 +155,7 @@ class H2O(object):
     '''
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
+#    @profile
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
@@ -267,13 +268,16 @@ class H2O(object):
                 log_rest("r is None")
             else:
                 log_rest("HTTP status code: " + str(r.status_code))
-                if hasattr(r, 'text'):
-                    if r.text is None:
-                        log_rest("r.text is None")
+                # The following accesses to r.text were taking most of the runtime:
+                log_text = False
+                if log_text:
+                    if hasattr(r, 'text'):
+                        if r.text is None:
+                            log_rest("r.text is None")
+                        else:
+                            log_rest(r.text)
                     else:
-                        log_rest(r.text)
-                else:
-                    log_rest("r does not have attr text")
+                        log_rest("r does not have attr text")
         except Exception, e:
             # Paranoid exception catch.  
             # Ignore logging exceptions in the case that the above error checking isn't sufficient.
@@ -419,6 +423,18 @@ class H2O(object):
 
 
     ''' 
+    Split a Frame.
+    '''
+    def split_frame(self, timeoutSecs=180, **kwargs):
+        a = self.__do_json_request('2/SplitFrame.json', cmd="post",
+            timeout=timeoutSecs,
+            postData=kwargs
+        )
+        H2O.verboseprint("\nsplit_frame result:", h2o_util.dump_json(a))
+        return a
+
+
+    ''' 
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
@@ -439,7 +455,7 @@ class H2O(object):
               noise=None, benchmarkLogging=None, noPoll=False, **kwargs):
 
         #
-        # Call ParseSetup?srcs=[keys] . . .
+        # Call ParseSetup?source_keys=[keys] . . .
         #
 
         if benchmarkLogging:
@@ -447,26 +463,29 @@ class H2O(object):
 
         # TODO: multiple keys
         parse_setup_params = {
-            'srcs': '["' + key + '"]'  # NOTE: quote key names
+            'source_keys': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
         setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
-        # and then Parse?srcs=<keys list> and params from the ParseSetup result
-        # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
+        # and then Parse?source_keys=<keys list> and params from the ParseSetup result
+        # Parse?source_keys=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_key=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
 
         parse_params = {
-            'srcs': '["' + setup_result['srcs'][0]['name'] + '"]', # TODO: cons up the whole list
-            'hex': dest_key if dest_key else setup_result['hexName'],
-            'pType': setup_result['pType'],
-            'sep': setup_result['sep'],
-            'ncols': setup_result['ncols'],
-            'checkHeader': setup_result['checkHeader'],
-            'singleQuotes': setup_result['singleQuotes'],
-            'columnNames': setup_result['columnNames'], # gets stringified inside __do_json_request()
+            'source_keys': '["' + setup_result['source_keys'][0]['name'] + '"]', # TODO: cons up the whole list
+            'destination_key': dest_key if dest_key else setup_result['destination_key'],
+            'parse_type': setup_result['parse_type'],
+            'separator': setup_result['separator'],
+            'single_quotes': setup_result['single_quotes'],
+            'check_header': setup_result['check_header'],
+            'number_columns': setup_result['number_columns'],
+            'column_names': setup_result['column_names'], # gets stringified inside __do_json_request()
+            'column_types': setup_result['column_types'], # gets stringified inside __do_json_request()
+	    'na_strings': setup_result['na_strings'],
+            'chunk_size': setup_result['chunk_size'],
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
@@ -502,8 +521,8 @@ class H2O(object):
     def frames(self, key=None, timeoutSecs=10, **kwargs):
         params_dict = {
             'find_compatible_models': 0,
-            'offset': 0,
-            'len': 100     # TODO: len and offset are not working yet
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
@@ -520,8 +539,8 @@ class H2O(object):
     '''
     def columns(self, key, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
@@ -535,8 +554,8 @@ class H2O(object):
     '''
     def column(self, key, column, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
@@ -550,8 +569,8 @@ class H2O(object):
     '''
     def summary(self, key, column, timeoutSecs=10, **kwargs):
         params_dict = { 
-            'offset': 0,
-            'len': 100
+            'row_offset': 0,
+            'row_count': 100
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         
@@ -719,8 +738,24 @@ class H2O(object):
     '''
     ModelMetrics list. 
     '''
-    def model_metrics(self, timeoutSecs=60, **kwargs):
-        result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+    def model_metrics(self, model=None, frame=None, timeoutSecs=60, **kwargs):
+        if model is None and frame is None:
+            result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+        elif model is not None and frame is not None:
+            result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='get', timeout=timeoutSecs)
+        else:
+            raise ValueError("model_metrics can't yet handle the filter case")
+        return result
+
+
+    '''
+    Delete ModelMetrics. 
+    '''
+    def delete_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
+        assert model is not None, 'FAIL: "model" parameter is null'
+        assert frame is not None, 'FAIL: "frame" parameter is null'
+
+        result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='delete', timeout=timeoutSecs)
 
         return result
 
@@ -734,7 +769,7 @@ class H2O(object):
     When find_compatible_frames is implemented then the top level 
     dict will also contain a "frames" list.
     '''
-    def models(self, api_version=3, key=None, timeoutSecs=10, **kwargs):
+    def models(self, api_version=3, key=None, timeoutSecs=20, **kwargs):
         params_dict = {
             'find_compatible_frames': False
         }

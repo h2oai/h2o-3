@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.*;
 
 import water.*;
+import water.fvec.Vec;
 
 /** A collection of utility classes for parsing.
  *
@@ -53,53 +54,19 @@ public abstract class Parser extends Iced {
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
+  public final static int STRING_DOMINANCE_RATIO = 4;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
-
-  public enum ColType {
-    UNKNOWN, NUM, ENUM, TIME, UUID, STR, INVALID
-  }
-
-  public static class ColTypeInfo extends Iced{
-    ColType _type = ColType.UNKNOWN;
-    ValueString _naStr = new ValueString("");
-    boolean _strongGuess = false;
-
-    public void merge(ColTypeInfo tinfo){
-      if(_type == ColType.UNKNOWN || !_strongGuess && tinfo._strongGuess){ // copy over stuff from the other
-        _type = tinfo._type;
-        _naStr = tinfo._naStr;
-        _strongGuess = tinfo._strongGuess;
-      } else if(tinfo._type != ColType.UNKNOWN && !_strongGuess){
-        tinfo._type = ColType.INVALID;
-      } // else just keep mine
-    }
-
-    public String toString() {
-      switch (_type) {
-        case UNKNOWN:  return "Unknown";
-        case NUM:  return "Numeric";
-        case ENUM:  return "Enum";
-        case TIME:  return "Time";
-        case UUID:  return "UUID";
-        case STR:  return "String";
-        case INVALID: return "Invalid";
-        default:    throw new RuntimeException("Undefined column type used.");
-      }
-    }
-
-  }
-
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
-  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
+  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
   DataOut streamParse( final InputStream is, final DataOut dout) throws IOException {
-    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     while( is.available() > 0 )
@@ -113,7 +80,7 @@ public abstract class Parser extends Iced {
   // parse local chunks; distribute chunks later.
   DataOut streamParseZip( final InputStream is, final StreamDataOut dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
-    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamDataOut nextChunk = dout;
@@ -224,44 +191,116 @@ public abstract class Parser extends Iced {
    *  previewing the first few lines &amp; columns of a file.
    */
   protected static class InspectDataOut extends Iced implements DataOut {
+    protected final static int MAX_PREVIEW_COLS  = 100;
+    protected final static int MAX_PREVIEW_LINES = 10;
     protected int _nlines;
     protected int _ncols;
     protected int _invalidLines;
     private   String []   _colNames;
-    protected String [][] _data = new String[MAX_PREVIEW_LINES][MAX_PREVIEW_COLS];
-    protected final static int MAX_PREVIEW_COLS  = 100;
-    protected final static int MAX_PREVIEW_LINES = 50;
+    protected String [][] _data = new String[MAX_PREVIEW_LINES][];
+    protected boolean _dataIsColPreview = false;
+    transient private HashSet<String> [] _domains;
+    int [] _nnums;
+    int [] _nstrings;
+    int [] _ndates;
+    int [] _nUUID;
+    int [] _nzeros;
+    int [] _nempty;
     transient ArrayList<String> _errors;
-    protected InspectDataOut() {
-     for(int i = 0; i < MAX_PREVIEW_LINES;++i)
-       Arrays.fill(_data[i],"NA");
-    }
+
+    protected InspectDataOut() {}
+    protected InspectDataOut(int ncols) { setColumnCount(ncols); }
+
     String[] colNames() { return _colNames; }
+
     @Override public void setColumnNames(String[] names) {
       _colNames = names;
       _data[0] = names;
       ++_nlines;
-      _ncols = names.length;
+      setColumnCount(names.length);
+    }
+    private void setColumnCount(int n) {
+      // initialize
+      if (_ncols == 0 && n > 0) {
+        _ncols = n;
+        _nzeros = new int[n];
+        _nstrings = new int[n];
+        _nUUID = new int[n];
+        _ndates = new int[n];
+        _nnums = new int[n];
+        _nempty = new int[n];
+        _domains = new HashSet[n];
+        for(int i = 0; i < n; ++i)
+          _domains[i] = new HashSet<String>();
+        for(int i =0; i < MAX_PREVIEW_LINES; i++)
+          _data[i] = new String[n];
+      } /*else if (n > _ncols) { // resize
+        _nzeros = Arrays.copyOf(_nzeros, n);
+        _nstrings = Arrays.copyOf(_nstrings, n);
+        _nUUID = Arrays.copyOf(_nUUID, n);
+        _ndates = Arrays.copyOf(_ndates, n);
+        _nnums = Arrays.copyOf(_nnums, n);
+        _nempty = Arrays.copyOf(_nempty, n);
+        _domains = Arrays.copyOf(_domains, n);
+        for (int i=_ncols; i < n; i++)
+          _domains[i] = new HashSet<String>();
+        for(int i =0; i < MAX_PREVIEW_LINES; i++)
+          _data[i] = Arrays.copyOf(_data[i], n);
+        _ncols = n;
+      }*/
     }
     @Override public void newLine() { ++_nlines; }
     @Override public boolean isString(int colIdx) { return false; }
     @Override public void addNumCol(int colIdx, long number, int exp) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = Double.toString(number*water.util.PrettyPrint.pow10(exp));
+      if(colIdx < _ncols) {
+        if (number == 0)
+          ++_nzeros[colIdx];
+        else
+          ++_nnums[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = Double.toString(number * water.util.PrettyPrint.pow10(exp));
+      }
     }
     @Override public void addNumCol(int colIdx, double d) {
-      _ncols = Math.max(_ncols,colIdx);
-      if(_nlines < MAX_PREVIEW_LINES && colIdx < MAX_PREVIEW_COLS)
-        _data[_nlines][colIdx] = Double.toString(d);
+      if(colIdx < _ncols) {
+        if (d == 0)
+          ++_nzeros[colIdx];
+        else
+          ++_nnums[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = Double.toString(d);
+      }
     }
     @Override public void addInvalidCol(int colIdx) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = "NA";
+      if(colIdx < _ncols) {
+        ++_nempty[colIdx];
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = "NA";
+      }
     }
     @Override public void addStrCol(int colIdx, ValueString str) {
-      if(colIdx < _ncols && _nlines < MAX_PREVIEW_LINES)
-        _data[_nlines][colIdx] = str.toString();
+      if(colIdx < _ncols) {
+        // Check for time
+        if (ParseTime.isDateTime(str)) {
+          ++_ndates[colIdx];
+          return;
+        }
+
+        //Check for UUID
+        if(ParseTime.isUUID(str)) {
+          ++_nUUID[colIdx];
+          return;
+        }
+
+        //Add string to domains list for later determining string, NA, or enum
+        ++_nstrings[colIdx];
+        _domains[colIdx].add(str.toString());
+
+        if (_nlines < MAX_PREVIEW_LINES)
+            _data[_nlines][colIdx] = str.toString();
+      }
     }
+
     @Override public void rollbackLine() {--_nlines;}
     @Override public void invalidLine(String err) {
       ++_invalidLines;
@@ -270,5 +309,74 @@ public abstract class Parser extends Iced {
         _errors.add("Error at line: " + _nlines + ", reason: " + err);
     }
     String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
+
+    public byte[] guessTypes() {
+      byte[] types = new byte[_ncols];
+      for(int i = 0; i < _ncols; ++i) {
+        int nonemptyLines = _nlines-_nempty[i];
+
+        //Very redundant tests, but clearer and not speed critical
+        
+        // is it clearly numeric?
+        if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
+                && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
+                && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among enums, ignore
+          types[i] = Vec.T_NUM;
+          continue;
+        }
+
+        // with NA, but likely numeric
+        if (_domains[i].size() <= 1
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
+          types[i] = Vec.T_NUM;
+          continue;
+        }
+
+        // Datetime
+        if (_ndates[i] > _nUUID[i]
+                && _ndates[i] > (_nnums[i] + _nzeros[i])
+                && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          types[i] = Vec.T_TIME;
+          continue;
+        }
+
+        // UUID
+        if (_nUUID[i] > _ndates[i]
+                && _nUUID[i] > (_nnums[i] + _nzeros[i])
+                && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          types[i] = Vec.T_UUID;
+          continue;
+        }
+
+        // Strings, almost no dups
+        if (_nstrings[i] > _ndates[i]
+                && _nstrings[i] > _nUUID[i]
+                && _nstrings[i] > (_nnums[i] + _nzeros[i])
+                && _domains[i].size() >= 0.95 * _nstrings[i]) {
+          types[i] = Vec.T_STR;
+          continue;
+        }
+
+        // Enum or string?
+        // Enum with 0s for NAs
+        if(_nzeros[i] > 0
+                && ((_nzeros[i] + _nstrings[i]) == _nlines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
+          //FIXME set NA string to "0"
+          types[i] = Vec.T_ENUM;
+          continue;
+        }
+        // Enum mixed with numbers
+        if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
+          types[i] = Vec.T_ENUM;
+          continue;
+        }
+
+        // All guesses failed
+        types[i] = Vec.T_BAD;
+      }
+      return types;
+    }
   }
 }

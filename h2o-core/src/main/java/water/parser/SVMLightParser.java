@@ -2,6 +2,7 @@ package water.parser;
 
 import java.io.*;
 import java.util.Arrays;
+import water.fvec.Vec;
 import water.util.PrettyPrint;
 
 class SVMLightParser extends Parser {
@@ -26,12 +27,12 @@ class SVMLightParser extends Parser {
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetup(true, 0, 0, null, ParserType.SVMLight, ParseSetup.AUTO_SEP, -1, false, null,null,null,0, null));
+    SVMLightParser p = new SVMLightParser(new ParseSetup(true, 0, 0, null, ParserType.SVMLight, ParseSetup.AUTO_SEP, false,0,-1,null,null,null,null,null));
     SVMLightInspectDataOut dout = new SVMLightInspectDataOut();
     try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, 0, dout.errors(), ParserType.SVMLight, ParseSetup.AUTO_SEP, dout._ncols,
-                                 false,null,null,dout._data,-1/*never a header on SVM light*/, null);
+                                 dout._invalidLines, 0, dout.errors(), ParserType.SVMLight, ParseSetup.AUTO_SEP,
+                                 false,-1,dout._ncols,null,dout.guessTypes(),null,null,dout._data,-1/*never a header on SVM light*/);
   }
 
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
@@ -337,18 +338,29 @@ class SVMLightParser extends Parser {
   // Fill with zeros not NAs, and grow columns on-demand.
   private static class SVMLightInspectDataOut extends InspectDataOut {
     public SVMLightInspectDataOut() {
+      for (int i = 0; i < MAX_PREVIEW_LINES;++i)
+        _data[i] = new String[MAX_PREVIEW_COLS];
       for (String[] a_data : _data) Arrays.fill(a_data, "0");
     }
+
     // Expand columns on-demand
     @Override public void addNumCol(int colIdx, long number, int exp) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = Double.toString(number*PrettyPrint.pow10(exp));
     }
+
     @Override public void addNumCol(int colIdx, double d) {
       _ncols = Math.max(_ncols,colIdx);
       if(colIdx < MAX_PREVIEW_COLS && _nlines < MAX_PREVIEW_LINES)
         _data[_nlines][colIdx] = Double.toString(d);
+    }
+
+    public byte[] guessTypes() {
+      byte [] types = new byte[_ncols];
+      for(int i = 0; i < _ncols; ++i)
+        types[i] = Vec.T_NUM;
+      return types;
     }
   }
 }

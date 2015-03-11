@@ -33,6 +33,10 @@ trap cleanup SIGTERM SIGINT
 #   build/resources/main - Main resources (e.g. page.html)
 JVM="nice java -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../lib/*"
 
+# Runner
+# Default JUnit runner is org.junit.runner.JUnitCore
+JUNIT_RUNNER="water.junit.H2OTestRunner"
+
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
@@ -49,6 +53,6 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-scala junit tests...
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 cleanup

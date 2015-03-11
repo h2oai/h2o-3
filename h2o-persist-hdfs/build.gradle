@@ -1,0 +1,6 @@
+description = "H2O Persist HDFS"
+
+dependencies {
+  compile project(":h2o-core")
+  compile("org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0")
+}

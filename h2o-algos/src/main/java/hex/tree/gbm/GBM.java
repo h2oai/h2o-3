@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.Model;
-import hex.VarImp;
 import hex.schemas.GBMV2;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -9,7 +8,6 @@ import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
 import water.*;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.Timer;
@@ -38,7 +36,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     return start(new GBMDriver(), _parms._ntrees/*work for progress bar*/);
   }
 
-  //FIXME: GBM uses the training frame as validation... bad practice.
   @Override public Vec vresponse() { return super.vresponse() == null ? response() : super.vresponse(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -49,42 +46,39 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *
    *  Validate the learning rate and loss family. */
   @Override public void init(boolean expensive) {
-    if( _parms._loss == GBMModel.GBMParameters.Family.AUTO ) { // Guess the loss by examining the response column
-      if (null != _response && _response.isInt()) {
-        long[] domain = new Vec.CollectDomain().doAll(_response).domain();
-      }
-      super.init(expensive);
-    }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli || _parms._loss == GBMModel.GBMParameters.Family.multinomial) {
-      super.init(true);
-      if(_parms._loss == GBMModel.GBMParameters.Family.bernoulli) {
-        if (_nclass != 2) {
-          error("_loss", "Bernoulli requires the response to be a 2-class categorical");
-        }
+    super.init(expensive);
+
+    switch( _parms._loss ) {
+    case AUTO:
+      _parms._convert_to_enum = couldBeBool(_response);
+    case bernoulli:
+      if( _parms._convert_to_enum && _nclass != 2 && !couldBeBool(_response) )
+        error("_loss", "Binomial requires the response to be a 2-class categorical");
+      else if( _response != null ) {
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         double mean = _response.mean();
         _initialPrediction = Math.log(mean / (1.0f - mean));
       }
+      _parms._convert_to_enum = true;
+      break;
+      case multinomial:
+        _parms._convert_to_enum = true;
+        break;
+      case gaussian:
+        if( _nclass != 1 ) error("_loss", "Gaussian requires the response to be numeric");
+        _parms._convert_to_enum = false;
+        break;
+      default:
+        error("_loss","Loss must be specified");
     }
-    else if(_parms._loss == GBMModel.GBMParameters.Family.gaussian){
-      super.init(expensive);
-      if( _nclass != 1 ) {
-        error("_loss","Gaussian requires the response to be numeric");
-      }
-    }
-    else {
-      error("_loss","Loss must be specified");
-    }
-
+    
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
+  private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   // ----------------------
   private class GBMDriver extends Driver {
-
-    /** Sum of variable empirical improvement in squared-error. The value is not scaled! */
-    private transient float[/*nfeatures*/] _improvPerVar;
 
     @Override protected void buildModel() {
       // For GBM multinomial, initial predictions are class-distributions
@@ -98,9 +92,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //  }
       //  throw H2O.unimpl("untested");
       //}
-
-      // Initialize gbm-specific data structures
-      if( _parms._variable_importance ) _improvPerVar = new float[_nclass];
 
       // Reconstruct the working tree state from the checkpoint
       if( _parms._checkpoint ) {
@@ -214,7 +205,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.  From ESL2, page 387.  Step 2b ii, iii.
     private void buildNextKTrees() {
-
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -428,13 +418,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Find the column with the best split (lowest score).  Unlike RF, GBM
     // scores on all columns and selects splits on all columns.
     @Override public DTree.Split bestCol( UndecidedNode u, DHistogram[] hs ) {
-      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
+      DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
       for( int i=0; i<hs.length; i++ ) {
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
         DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
         if( s == null ) continue;
-        if( best == null || s.se() < best.se() ) best = s;
+        if( best == null || s.se() < best.se() )
+          best = s;
         if( s.se() <= 0 ) break; // No point in looking further!
       }
       return best;
@@ -461,8 +452,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
     @Override protected int size() { return 4; }
   }
-
-  @Override protected VarImp doVarImpCalc(boolean scale) { throw H2O.unimpl(); }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum

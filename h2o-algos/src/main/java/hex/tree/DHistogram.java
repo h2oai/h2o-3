@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -70,6 +71,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
       old = _maxIn;
   }
 
+  private static int MAX_FACTOR_BINS=1024; // Allow more bins for factors
   public DHistogram( String name, final int nbins, final byte isInt, final float min, final float maxEx, long nelems ) {
     assert nelems > 0;
     assert nbins >= 1;
@@ -81,19 +83,18 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     _min2 =  Float.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Float.MAX_VALUE;
     // See if we can show there are fewer unique elements than nbins.
-    // Common for e.g. boolean columns, or near leaves.
+    // Common for e.g. boolean columns, or near leaves.  Allow more
+    // than the usual nbins for factors and ints
     int xbins = nbins;
-    float step;
-    if( isInt>0 && maxEx-min <= nbins ) {
+    if( isInt>0 && maxEx-min <= Math.max(nbins,(isInt==2?MAX_FACTOR_BINS:nbins)) ) {
       assert ((long)min)==min;                // No overflow
       xbins = (char)((long)maxEx-(long)min);  // Shrink bins
       assert xbins > 1;                       // Caller ensures enough range to bother
-      step = 1.0f;                            // Fixed stepsize
+      _step = 1.0f;                           // Fixed stepsize
     } else {
-      step = (maxEx-min)/nbins; // Step size for linear interpolation
-      assert step > 0;
+      _step = nbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
+      assert _step > 0 && !Float.isInfinite(_step);
     }
-    _step = 1.0f/step; // Use multiply instead of division during frequent binning math
     _nbin = (char)xbins;
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
@@ -204,11 +205,11 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     double m = Double.NaN;
     for( int b=0; b<_bins.length; b++ ) {
       if( _bins[b] == 0 ) continue;
-      if( var(b) > 1e-14 ) return false;
+      if( var(b) > 1e-6 ) return false;
       double mean = mean(b);
       if( mean != m )
-        if( Double.isNaN(m) ) m=mean;
-        else if(Math.abs(m - mean) > 1e-6) return false;
+        if( Double.isNaN(m) ) m=mean; // Capture mean of first non-empty bin
+        else if( !MathUtils.compare(m,mean,1e-6,1e-6) ) return false;
     }
     return true;
   }

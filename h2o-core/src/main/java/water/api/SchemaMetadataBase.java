@@ -40,6 +40,9 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     @API(help="Type for this field is itself a Schema.", direction=API.Direction.OUTPUT)
     public boolean is_schema;
 
+    @API(help="Schema name for this field, if it is_schema.")
+    public String schema_name;
+
     @API(help="Value for this field", direction=API.Direction.OUTPUT)
     public Iced value;
 

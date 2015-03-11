@@ -2,10 +2,8 @@ package water.fvec;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import water.*;
 import water.parser.ValueString;
-import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -274,10 +272,11 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {
-    if (_names!=null)
-      for( int i=0; i<_names.length; i++ )
-        if( name.equals(_names[i]) )
-          return i;
+    if( name == null ) return -1;
+    assert _names != null;
+    for( int i=0; i<_names.length; i++ )
+      if( name.equals(_names[i]) )
+        return i;
     return -1;
   }
 
@@ -334,6 +333,33 @@ public class Frame extends Lockable<Frame> {
     return ds;
   }
 
+  /** All the column means.
+   *  @return the mean of each column */
+  public double[] means() {
+    Vec[] vecs = vecs();
+    double[] means = new double[vecs.length];
+    for( int i = 0; i < vecs.length; i++ )
+      means[i] = vecs[i].mean();
+    return means;
+  }
+
+  /** One over the standard deviation of each column.
+   *  @return Reciprocal the standard deviation of each column */
+  public double[] mults() {
+    Vec[] vecs = vecs();
+    double[] mults = new double[vecs.length];
+    for( int i = 0; i < vecs.length; i++ ) {
+      double sigma = vecs[i].sigma();
+      mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
+    }
+    return mults;
+  }
+
+  private static boolean standardize(double sigma) {
+    // TODO unify handling of constant columns
+    return sigma > 1e-6;
+  }
+
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
@@ -386,6 +412,31 @@ public class Frame extends Lockable<Frame> {
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
   public Frame add( Frame fr ) { add(fr._names,fr.vecs()); return this; }
+
+  /** Insert a named column as the first column */
+  public Frame prepend( String name, Vec vec ) {
+    if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
+    if( _vecs.length != 0 ) {
+      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec()._espc,vec._espc) )
+        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+      if( numRows() != vec.length() )
+        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+    }
+    final int len = _names != null ? _names.length : 0;
+    String[] _names2 = new String[len+1];
+    Vec[]    _vecs2  = new Vec   [len+1];
+    Key[]    _keys2  = new Key   [len+1];
+    _names2[0] = name;
+    _vecs2 [0] = vec ;
+    _keys2 [0] = vec._key;
+    System.arraycopy(_names, 0, _names2, 1, len);
+    System.arraycopy(_vecs,  0, _vecs2,  1, len);
+    System.arraycopy(_keys,  0, _keys2,  1, len);
+    _names = _names2;
+    _vecs  = _vecs2;
+    _keys  = _keys2;
+    return this;
+  }
 
   /** Swap two Vecs in-place; useful for sorting columns by some criteria */
   public void swap( int lo, int hi ) {
@@ -440,7 +491,7 @@ public class Frame extends Lockable<Frame> {
         cnames[ccv] = names[i];
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
-    return new Frame[] { new Frame(names,vecs), ccv>0 ?  new Frame(Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
+    return new Frame[] { new Frame(Key.make("subframe"+Key.make().toString()), names,vecs), ccv>0 ?  new Frame(Key.make("subframe"+Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
   }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once
@@ -474,10 +525,10 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Create a subframe from given interval of columns.
-   *  @param startIdx index of first column (inclusiAST
+   *  @param startIdx  index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
-  Frame subframe(int startIdx, int endIdx) {
+  public Frame subframe(int startIdx, int endIdx) {
     return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
@@ -840,56 +891,63 @@ public class Frame extends Lockable<Frame> {
 
   // Convert len rows starting at off to a 2-d ascii table
   public String toString( long off, int len ) {
+    if( off > numRows() ) off = numRows();
+    if( off+len > numRows() ) len = (int)(numRows()-off);
 
-    String[] rowHeaders = new String[len+4];
+    String[] rowHeaders = new String[len+5];
     rowHeaders[0] = "min";
     rowHeaders[1] = "mean";
     rowHeaders[2] = "stddev";
     rowHeaders[3] = "max";
-    for( int i=0; i<len; i++ ) rowHeaders[i+4]=""+(off+i);
+    rowHeaders[4] = "missing";
+    for( int i=0; i<len; i++ ) rowHeaders[i+5]=""+(off+i);
 
     final int ncols = numCols();
     final Vec[] vecs = vecs();
     String[] coltypes = new String[ncols];
-    String[][] strCells = new String[len+4][ncols];
-    double[][] dblCells = new double[len+4][ncols];
+    String[][] strCells = new String[len+5][ncols];
+    double[][] dblCells = new double[len+5][ncols];
     for( int i=0; i<ncols; i++ ) {
       Vec vec = vecs[i];
       dblCells[0][i] = vec.min();
       dblCells[1][i] = vec.mean();
       dblCells[2][i] = vec.sigma();
       dblCells[3][i] = vec.max();
+      dblCells[4][i] = vec.naCnt();
       switch( vec.get_type() ) {
-      case Vec.T_STR : {
+      case Vec.T_BAD:
+        coltypes[i] = "string";
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = null; dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        break;
+      case Vec.T_STR :
         coltypes[i] = "string"; 
         ValueString vstr = new ValueString();
-        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.atStr(vstr,off+j).toString(); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(vstr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      }
-      case Vec.T_ENUM: {
+      case Vec.T_ENUM:
         coltypes[i] = "string"; 
-        for( int j=0; j<len; j++ ) { strCells[j+4][i] = vec.factor(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      }
       case Vec.T_TIME:
       case Vec.T_TIME+1:
-      case Vec.T_TIME+2: {
+      case Vec.T_TIME+2:
         coltypes[i] = "string"; 
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+4][i] = fmt.print(vec.at8(off+j)); dblCells[j+4][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
-      }
-      case Vec.T_NUM: {
+      case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 
-        for( int j=0; j<len; j++ ) { dblCells[j+4][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+4][i] = null; }
+        for( int j=0; j<len; j++ ) { dblCells[j+5][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+5][i] = null; }
         break;
-      }
       case Vec.T_UUID:
-      default: throw H2O.unimpl();
+        throw H2O.unimpl();
+      default:
+        System.err.println("bad vector type during debug print: "+vec.get_type());
+        throw H2O.fail();
       }
     }
 
-    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null,strCells,dblCells).toString();
+    return new TwoDimTable("Frame "+_key+" with "+numRows()+" rows and "+numCols()+" cols",rowHeaders,_names,coltypes,null, "", strCells, dblCells).toString();
   }
 
 
@@ -958,7 +1016,7 @@ public class Frame extends Lockable<Frame> {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length-1];
       for(int i = 0; i < pred._len; ++i) {
-        if(pred.atd(i) != 0) {
+        if( pred.atd(i) != 0 && !pred.isNA(i) ) {
           for( int j = 0; j < chks.length - 1; j++ ) {
             Chunk chk = chks[j];
             if( chk._vec.isUUID() ) nchks[j].addUUID(chk, i);

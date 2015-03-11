@@ -6,7 +6,7 @@
 #'  H2O Methods:
 #'  ------------
 #'
-#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.cut, h2o.table
+#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
 #'
 #'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
 #'  ------------
@@ -94,7 +94,6 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
                             binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
-  .key.validate(key)
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
@@ -112,28 +111,83 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
 
   .cframe.map <- c("key" = "dest")
-  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent)
+  parms <- lapply(as.list(match.call(expand.dots = FALSE)[-1L]), eval.parent, 2)  # depth must be 2 in order to pop out of the lapply scope...
   parms$conn <- NULL
+  if(missing(key) || !is.character(key) || !nzchar(key)) 
+    parms$key = .key.make(conn, prefix = "frame")
+  .key.validate(parms$key)
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.cframe.map) ) i <- .cframe.map[[i]]; i })
 
   res <- .h2o.__remoteSend(conn, .h2o.__CREATE_FRAME, method = "POST", .params = parms)
-  h2o.getFrame(res$dest$name, conn)
+
+  job_key  <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(conn, job_key)
+  h2o.getFrame(dest_key, conn)
 }
 
-h2o.splitFrame <- function(data, ratios = 0.75) {
+#' Inserting Missing Values to an H2O DataFrame
+#' 
+#' @section WARNING: This will modify the original dataset. Unless this is intended, 
+#' this function should only be called on a subset of the original.
+h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(data)
+  if (delete) {
+    temp_key <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
+  }
+
+  parms = list()
+  
+  parms$dataset <- data@key
+  parms$fraction <- fraction
+  if(!missing(seed))
+    parms$seed <- seed
+  
+  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
+  # .h2o.__waitOnJob(data@conn, json$key$name)
+  # TODO: uncomment once job key progress is functional
+  res <- json$dataset$name
+
+  ## No gc because insertMissingValues modifies the frame in spot
+
+  h2o.getFrame(res)
+}
+
+h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {n
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
-    stop("`ratios` must be between 0 and 1 exclusive")
-  if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+  # if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
+  #   stop("`ratios` must be between 0 and 1 exclusive")
+  # if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
 
-  res <- .h2o.__remoteSend(data@conn, method="GET", "SplitFrame.json", training_frame = data@key, ratios = .collapse(ratios))
-  .h2o.__waitOnJob(data@conn, res$job$key$name)
+  params <- list()
+  params$dataset <- data@key
+  params$ratios <- .collapse(ratios)
+  if (!missing(destination_keys))
+    params$destKeys <- .collapse(destination_keys)
 
-  model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
-  splits <- lapply(model.view$models[[1L]]$output$splits,
-                   function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
-  names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
-  splits
+  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
+  # .h2o.__waitOnJob(data@conn, res$key$name)
+
+  splitKeys <- res$destKeys
+  splits <- list()
+  splits <- lapply(splitKeys, function(split) h2o.getFrame(split$name))
+  
+  
+  # if (missing(destination_keys))
+  #   splits <- lapply(0:length(ratios), function(x) {
+  #     name <- paste0(data@key, "_part", x)
+  #     h2o.getFrame(name, conn)
+  #   }) else 
+  #   splits <- lapply(destination_keys, function(x) { h2o.getFrame(x, conn) })
+
+  # splits
+  # model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
+  # splits <- lapply(model.view$models[[1L]]$output$splits,
+  #                  function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
+  # names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
+  # splits
 }
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
@@ -194,6 +248,9 @@ h2o.table <- function(x, y = NULL) {
   .h2o.nary_frame_op("table", x, y)
 }
 
+setMethod("median", "H2OFrame", function(x, na.rm = TRUE) {
+  .h2o.nary_frame_op("median", x, na.rm)
+})
 
 #' Cut H2O Numeric Data to Factor
 #'
@@ -697,6 +754,27 @@ setMethod("length", "H2OFrame", function(x) {
 })
 
 #'
+#' Return the levels from the column requested column.
+#'
+#' @name h2o.levels
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param i The index of the column whose domain is to be returned.
+#' @seealso \code{\link[base]{levels}} for the base R method.
+#' @examples
+#' localH2O <- h2o.init()
+#' iris.hex <- as.h2o(localH2O, iris)
+#' h2o.levels(iris.hex, 5)  # returns "setosa"     "versicolor" "virginica"
+NULL
+
+h2o.levels <- function(x, i) {
+  col_idx <- i
+  if (col_idx <= 0) col_idx <- 1
+  if (col_idx >= ncol(x)) col_idx <- ncol(x)
+  res <- .h2o.__remoteSend(x@conn, .h2o.__COL_DOMAIN(x@key, colnames(x)[col_idx]), method="GET")
+  res$domain[[1]]
+}
+
+#'
 #' Returns the Dimensions of a Parsed H2O Data Object.
 #'
 #' Returns the number of rows and columns for an \linkS4class{H2OFrame} object.
@@ -777,12 +855,6 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
 #' calling scope).
 #' @name LazyEval
 NULL
-
-#setMethod("levels", "H2OFrame", function(x) {
-#  if(ncol(x) != 1) return(NULL)
-#  res = .h2o.__remoteSend(x@conn, .h2o.__HACK_LEVELS2, source = x@key, max_ncols = .Machine$integer.max)
-#  res$levels[[1]]
-#})
 
 #'
 #' Is H2O Data Frame column a enum
@@ -872,23 +944,23 @@ setMethod("summary", "H2OFrame", function(object, ...) {
         if(is.null(col$mins) || length(col$mins) == 0) col$mins = NaN
         if(is.null(col$maxs) || length(col$maxs) == 0) col$maxs = NaN
         if(is.null(col$mean)) col$mean = NaN
-        if(is.null(col$pctiles))
+        if(is.null(col$percentiles))
           params <- format(rep(signif(as.numeric(col$mean), digits), 6), digits = 4)
         else
-          params = format(signif(as.numeric(c(min(col$mins), col$pctiles[3], col$pctiles[5], col$mean, col$pctile[7], max(col$maxs))), digits), digits = 4)
+          params = format(signif(as.numeric(c(min(col$mins), col$percentiles[3], col$percentiles[5], col$mean, col$pctile[7], max(col$maxs))), digits), digits = 4)
         c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
           paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
           paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "))
       } else {
-        top.ix <- sort.int(col$bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
+        top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
         if(is.null(col$domain)) domains <- top.ix[1:6] else domains <- col$domain[top.ix]
-        counts <- col$bins[top.ix]
+        counts <- col$histogram_bins[top.ix]
         
         # TODO: Make sure "NA's" isn't a legal domain level.
-        if(!is.null(col$missing) && col$missing > 0) {
+        if(!is.null(col$missing_count) && col$missing_count > 0) {
           idx <- ifelse(any(is.na(top.ix)), which(is.na(top.ix))[1], 6)
           domains[idx] <- "NA's"
-          counts[idx] <- col$missing
+          counts[idx] <- col$missing_count
         }
         
         width <- c(max(nchar(domains)), max(nchar(counts)))
@@ -1256,7 +1328,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   # as column names.  This is a bit complicated
   if(is.character(.variables)) {
     vars <- match(.variables, colnames(.data))
-    if (is.na(vars))
+    if (any(is.na(vars)))
       stop('No column named ', .variables, ' in ', substitute(.data), '.')
   } else if(is(.variables, 'H2Oquoted')) {
     vars <- match(.variables, colnames(.data))

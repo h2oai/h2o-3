@@ -1,4 +1,5 @@
-import h2o, h2o_cmd, h2o_jobs, h2o_print as h2p
+import h2o2 as h2o
+import h2o_cmd, h2o_jobs, h2o_print as h2p
 import getpass, time, re, os, fnmatch
 import h2o_args, h2o_util, h2o_nodes, h2o_print as h2p
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors
@@ -393,6 +394,7 @@ def parse_only(node=None, pattern=None, hex_key=None, importKeyList=None,
         raise Exception("Didn't find %s in key list %s or Frames result" % (pattern, importKeyList))
 
     start = time.time()
+    # put quotes on all keys
     parseResult = node.parse(key=matchingList, hex_key=hex_key,
         timeoutSecs=timeoutSecs, retryDelaySecs=retryDelaySecs, 
         initialDelaySecs=initialDelaySecs, pollTimeoutSecs=pollTimeoutSecs, noise=noise,
@@ -546,7 +548,9 @@ def delete_keys_at_all_nodes(node=None, pattern=None, timeoutSecs=120):
     print "Just using remove_all_keys and saying 0 removed"
     print "WARNING: pattern is ignored"
     if 1==1:
-        h2o.n0.remove_all_keys()
+        # can this be called when the cloud didn't get built?
+        if h2o.n0:
+            h2o.n0.remove_all_keys()
         return 0
     else:
         print "Going to delete all keys one at a time (slower than 'remove all keys')"

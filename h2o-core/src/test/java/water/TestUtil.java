@@ -195,6 +195,7 @@ public class TestUtil extends Iced {
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
+  public static String[][] ar (String[] ...a) { return a; }
   public static long  []   ar (long   ...a)   { return a; }
   public static long[][]   ar (long[] ...a)   { return a; }
   public static int   []   ari(int    ...a)   { return a; }
@@ -202,24 +203,16 @@ public class TestUtil extends Iced {
   public static float []   arf(float  ...a)   { return a; }
   public static double[]   ard(double ...a)   { return a; }
   public static double[][] ard(double[] ...a) { return a; }
-
+  public static double[][] ear (double ...a) {
+    double[][] r = new double[a.length][1];
+    for (int i=0; i<a.length;i++) r[i][0] = a[i];
+    return r;
+  }
+  public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
 
-  /** Compare 2 doubles within a tolerance
-   *  @param a double 
-   *  @param b double
-   *  @param abseps - Absolute allowed tolerance
-   *  @param releps - Relative allowed tolerance
-   *  @return true if equal within tolerances  */
-  protected boolean compare(double a, double b, double abseps, double releps) {
-    return
-      Double.compare(a, b) == 0 || // check for equality
-      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
-      Math.abs(a - b) <= abseps; // check for small absolute error
-  }
-
-  /** Compare 2 doubles within a tolerance
+  /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
    *  @return true if equal  */
@@ -232,6 +225,14 @@ public class TestUtil extends Iced {
     // Else do it the slow hard way
     return !(new Cmp2(fr2).doAll(fr1)._unequal);
   }
+
+  public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
+    assertEquals(expecteds.length(), actuals.length());
+    for(int i = 0; i < expecteds.length(); i++) {
+      assertEquals(expecteds.at8(i), actuals.at8(i), delta);
+    }
+  }
+
   // Fast compatible Frames
   private static class Cmp1 extends MRTask<Cmp1> {
     boolean _unequal;

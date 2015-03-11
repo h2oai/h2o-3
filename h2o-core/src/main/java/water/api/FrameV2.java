@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
+import water.util.FrameUtils;
 import water.util.PrettyPrint;
 
 // TODO: need a base (versionless) class!
@@ -17,10 +18,10 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public FrameKeyV1 key;
 
   @API(help="Row offset to display",direction=API.Direction.INPUT)
-  public long off;
+  public long row_offset;
 
   @API(help="Number of rows to display",direction=API.Direction.INOUT)
-  public int len;
+  public int row_count;
 
   // Output fields
   @API(help="checksum", direction=API.Direction.OUTPUT)
@@ -30,13 +31,13 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public long rows;
 
   @API(help="Total data size in bytes", direction=API.Direction.OUTPUT)
-  public long byteSize;
+  public long byte_size;
 
   @API(help="Raw unparsed text", direction=API.Direction.OUTPUT)
-  public boolean isText;
+  public boolean is_text;
 
   @API(help="Default percentiles, from 0 to 1", direction=API.Direction.OUTPUT)
-  public double[] default_pctiles;
+  public double[] default_percentiles;
 
   @API(help="Columns", direction=API.Direction.OUTPUT)
   public ColV2[] columns;
@@ -45,7 +46,10 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public String[] compatible_models;
 
   @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
-  public VecKeyV1[] veckeys;
+  public VecKeyV1[] vec_keys;
+
+  @API(help="Chunk summary", direction=API.Direction.OUTPUT)
+  public TwoDimTableV1 chunk_summary;
 
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
@@ -58,7 +62,6 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
 
     @API(help="List of fields which specify columns that must contain this column", direction= API.Direction.INOUT)
     public String[] is_member_of_frames;
-
   }
 
   public static class ColV2 extends Schema<Vec, ColV2> {
@@ -69,16 +72,16 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     public String label;
 
     @API(help="missing", direction=API.Direction.OUTPUT)
-    public long missing;
+    public long missing_count;
 
     @API(help="zeros", direction=API.Direction.OUTPUT)
-    public long zeros;
+    public long zero_count;
 
     @API(help="positive infinities", direction=API.Direction.OUTPUT)
-    public long pinfs;
+    public long positive_infinity_count;
 
     @API(help="negative infinities", direction=API.Direction.OUTPUT)
-    public long ninfs;
+    public long negative_infinity_count;
 
     @API(help="mins", direction=API.Direction.OUTPUT)
     public double[] mins;
@@ -102,31 +105,31 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     public double[] data;
 
     @API(help="string data", direction=API.Direction.OUTPUT)
-    public String[] str_data;
+    public String[] string_data;
 
     @API(help="decimal precision, -1 for all digits", direction=API.Direction.OUTPUT)
     public byte precision;
 
     @API(help="Histogram bins; null if not computed", direction=API.Direction.OUTPUT)
-    public long[] bins;
+    public long[] histogram_bins;
 
     @API(help="Start of histogram bin zero", direction=API.Direction.OUTPUT)
-    public double base;
+    public double histogram_base;
 
     @API(help="Stride per bin", direction=API.Direction.OUTPUT)
-    public double stride;
+    public double histogram_stride;
 
     @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
-    public double[] pctiles;
+    public double[] percentiles;
 
     transient Vec _vec;
 
     ColV2(String name, Vec vec, long off, int len) {
       label=name;
-      missing = vec.naCnt();
-      zeros = vec.length()-vec.nzCnt()-missing;
-      pinfs = vec.pinfs();
-      ninfs = vec.ninfs();
+      missing_count = vec.naCnt();
+      zero_count = vec.length()-vec.nzCnt()- missing_count;
+      positive_infinity_count = vec.pinfs();
+      negative_infinity_count = vec.ninfs();
       mins  = vec.mins();
       maxs  = vec.maxs();
       mean  = vec.mean();
@@ -135,21 +138,21 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
       if( vec.isUUID() ) {
-        str_data = new String[len];
+        string_data = new String[len];
         for (int i = 0; i < len; i++)
-          str_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
+          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
         data = null;
       } else if ( vec.isString() ) {
-        str_data = new String[len];
+        string_data = new String[len];
         ValueString vstr = new ValueString();
         for (int i = 0; i < len; i++)
-          str_data[i] = vec.isNA(off + i) ? null : vec.atStr(vstr,off + i).toString();
+          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(vstr,off + i).toString();
         data = null;
       } else {
         data = MemoryManager.malloc8d(len);
         for( int i=0; i<len; i++ )
           data[i] = vec.at(off+i);
-        str_data = null;
+        string_data = null;
       }
       _vec = vec;               // Better HTML display, not in the JSON
       if (len > 0)  // len == 0 is presumed to be a header file
@@ -157,14 +160,14 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
 
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      bins  = vec.lazy_bins();
-      base  = bins==null ? 0 : vec.base();
-      stride= bins==null ? 0 : vec.stride();
-      pctiles=bins==null ? null : vec.pctiles();
+      histogram_bins = vec.lazy_bins();
+      histogram_base = histogram_bins ==null ? 0 : vec.base();
+      histogram_stride = histogram_bins ==null ? 0 : vec.stride();
+      percentiles = histogram_bins ==null ? null : vec.pctiles();
     }
 
     public void clearBinsField() {
-      this.bins = null;
+      this.histogram_bins = null;
     }
   }
 
@@ -186,23 +189,24 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     if( len2==0 ) len2=100;     // Default length if zero passed
     key = new FrameKeyV1(fr._key);
     _fr = fr;
-    off = off2-1;
+    row_offset = off2-1;
     rows = fr.numRows();
-    len = (int)Math.min(len2,rows);
-    byteSize = fr.byteSize();
+    row_count = (int)Math.min(len2,rows);
+    byte_size = fr.byteSize();
     columns = new ColV2[fr.numCols()];
     Key[] keys = fr.keys();
     if(keys != null && keys.length > 0) {
-      veckeys = new VecKeyV1[keys.length];
+      vec_keys = new VecKeyV1[keys.length];
       for (int i = 0; i < keys.length; i++)
-        veckeys[i] = new VecKeyV1(keys[i]);
+        vec_keys[i] = new VecKeyV1(keys[i]);
     }
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV2(fr._names[i],vecs[i],off,len);
-    isText = fr.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_pctiles = Vec.PERCENTILES;
+      columns[i] = new ColV2(fr._names[i],vecs[i], row_offset, row_count);
+    is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
+    default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
+    chunk_summary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(fr).toTwoDimTable());
   }
 
   //==========================
@@ -213,27 +217,28 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     this._fr = f;
     this.key = new FrameKeyV1(f._key);
     this.checksum = _fr.checksum();
-    off = 0;
+    row_offset = 0;
     rows = _fr.numRows();
     // TODO: pass in offset and column from Inspect page
     // if( h instanceof InspectHandler ) { off = ((InspectHandler)h)._off;  len = ((InspectHandler)h)._len; }
-    if( off == 0 ) off = 1;     // 1-based row-numbering from REST, so default offset is 1
-    if( len == 0 ) len = 100;
-    off = off-1;                // 0-based row-numbering
-    len = (int)Math.min(len,rows);
-    byteSize = _fr.byteSize();
+    if( row_offset == 0 ) row_offset = 1;     // 1-based row-numbering from REST, so default offset is 1
+    if( row_count == 0 ) row_count = 100;
+    row_offset = row_offset -1;                // 0-based row-numbering
+    row_count = (int)Math.min(row_count,rows);
+    byte_size = _fr.byteSize();
     columns = new ColV2[_fr.numCols()];
     Key[] keys = _fr.keys();
     if(keys != null && keys.length > 0) {
-      veckeys = new VecKeyV1[keys.length];
+      vec_keys = new VecKeyV1[keys.length];
       for (int i = 0; i < keys.length; i++)
-        veckeys[i] = new VecKeyV1(keys[i]);
+        vec_keys[i] = new VecKeyV1(keys[i]);
     }
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV2(_fr._names[i],vecs[i],off,len);
-    isText = f.numCols()==1 && vecs[0] instanceof ByteVec;
-    default_pctiles = Vec.PERCENTILES;
+      columns[i] = new ColV2(_fr._names[i],vecs[i], row_offset, row_count);
+    is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
+    default_percentiles = Vec.PERCENTILES;
+    chunk_summary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());
     return this;
   }
 
@@ -257,20 +262,20 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     // Rollup data
     final long nrows = _fr.numRows();
     formatRow(ab,"","type" ,new ColOp() { String op(ColV2 c) { return c.type; } } );
-    formatRow(ab,"","min"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mins[0]); } } );
-    formatRow(ab,"","max"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.maxs[0]); } } );
-    formatRow(ab,"","mean" ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.mean   ); } } );
-    formatRow(ab,"","sigma",new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing==nrows ? Double.NaN : c.sigma  ); } } );
+    formatRow(ab,"","min"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mins[0]); } } );
+    formatRow(ab,"","max"  ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.maxs[0]); } } );
+    formatRow(ab,"","mean" ,new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.mean   ); } } );
+    formatRow(ab,"","sigma",new ColOp() { String op(ColV2 c) { return rollUpStr(c, c.missing_count ==nrows ? Double.NaN : c.sigma  ); } } );
 
     // Optional rows: missing elements, zeros, positive & negative infinities, levels
-    for( ColV2 c : columns ) if( c.missing > 0 )
-        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV2 c) { return c.missing== 0 ?"":Long.toString(c.missing      );}}); break; }
-    for( ColV2 c : columns ) if( c.zeros   > 0 )
-        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV2 c) { return c.zeros  == 0 ?"":Long.toString(c.zeros        );}}); break; }
-    for( ColV2 c : columns ) if( c.pinfs   > 0 )
-        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV2 c) { return c.pinfs  == 0 ?"":Long.toString(c.pinfs        );}}); break; }
-    for( ColV2 c : columns ) if( c.ninfs   > 0 )
-        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV2 c) { return c.ninfs  == 0 ?"":Long.toString(c.ninfs        );}}); break; }
+    for( ColV2 c : columns ) if( c.missing_count > 0 )
+        { formatRow(ab,"class='warning'","missing",new ColOp() { String op(ColV2 c) { return c.missing_count == 0 ?"":Long.toString(c.missing_count);}}); break; }
+    for( ColV2 c : columns ) if( c.zero_count > 0 )
+        { formatRow(ab,"class='warning'","zeros"  ,new ColOp() { String op(ColV2 c) { return c.zero_count == 0 ?"":Long.toString(c.zero_count);}}); break; }
+    for( ColV2 c : columns ) if( c.positive_infinity_count > 0 )
+        { formatRow(ab,"class='warning'","+infins",new ColOp() { String op(ColV2 c) { return c.positive_infinity_count == 0 ?"":Long.toString(c.positive_infinity_count);}}); break; }
+    for( ColV2 c : columns ) if( c.negative_infinity_count > 0 )
+        { formatRow(ab,"class='warning'","-infins",new ColOp() { String op(ColV2 c) { return c.negative_infinity_count == 0 ?"":Long.toString(c.negative_infinity_count);}}); break; }
     for( ColV2 c : columns ) if( c.domain!=null)
         { formatRow(ab,"class='warning'","levels" ,new ColOp() { String op(ColV2 c) { return c.domain==null?"":Long.toString(c.domain.length);}}); break; }
 
@@ -278,9 +283,9 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     final int len = columns.length > 0 ? columns[0].data.length : 0;
     for( int i=0; i<len; i++ ) {
       final int row = i;
-      formatRow(ab,"",Long.toString(off+row+1),new ColOp() {
+      formatRow(ab,"",Long.toString(row_offset +row+1),new ColOp() {
           String op(ColV2 c) {
-            return formatCell(c.data==null?0:c.data[row],c.str_data==null?null:c.str_data[row],c,0); }
+            return formatCell(c.data==null?0:c.data[row],c.string_data ==null?null:c.string_data[row],c,0); }
         } );
     }
 
@@ -313,7 +318,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     long l = (long)d;
     if( (double)l == d ) return Long.toString(l);
     if( precision > 0 ) return x2(d,PrettyPrint.pow10(-precision));
-    Chunk chk = c._vec.chunkForRow(off);
+    Chunk chk = c._vec.chunkForRow(row_offset);
     Class Cc = chk.getClass();
     if( Cc == C1SChunk.class ) return x2(d,((C1SChunk)chk).scale());
     if( Cc == C2SChunk.class ) return x2(d,((C2SChunk)chk).scale());

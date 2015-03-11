@@ -44,8 +44,8 @@ public class IcedBitSet extends Iced {
   public boolean contains(int idx) {
     if(idx < 0) throw new IndexOutOfBoundsException("idx < 0: " + idx);
     idx -= _bitoff;
-    if(idx < 0 || idx >= _nbits) return false;
-    return (_val[_byteoff+(idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
+    return (idx >= 0) && (idx < _nbits) &&
+        (_val[_byteoff+(idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
   }
   public void set(int idx) {
     idx -= _bitoff;
@@ -70,50 +70,21 @@ public class IcedBitSet extends Iced {
     return nbits;
   }
 
-  public int nextSetBit(int idx) {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
-    if(idx < 0 || idx >= _nbits)
-      throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
-    int idx_next = idx >> 3;
-    byte bt_next = (byte)(_val[idx_next] & ((byte)0xff << idx));
-
-    while(bt_next == 0) {
-      if(++idx_next >= _val.length) return -1;
-      bt_next = _val[idx_next];
-    }
-    return (idx_next << 3) + Integer.numberOfTrailingZeros(bt_next);
-  }
-
-  public int nextClearBit(int idx) {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
-    if(idx < 0 || idx >= _nbits)
-      throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
-    int idx_next = idx >> 3;
-    byte bt_next = (byte)(~_val[idx_next] & ((byte)0xff << idx));
-
-    // Mask out leftmost bits not in use
-    if(idx_next == _val.length-1 && (_nbits & 7) > 0)
-      bt_next &= ~((byte)0xff << (_nbits & 7));
-
-    while(bt_next == 0) {
-      if(++idx_next >= _val.length) return -1;
-      bt_next = (byte)(~_val[idx_next]);
-      if(idx_next == _val.length-1 && (_nbits & 7) > 0)
-        bt_next &= ~((byte)0xff << (_nbits & 7));
-    }
-    return (idx_next << 3) + Integer.numberOfTrailingZeros(bt_next);
-  }
-
   public int size() { return _nbits; }
   private static int bytes(int nbits) { return ((nbits-1) >> 3) + 1; }
-  public int numBytes() { return bytes(_nbits); };
-  public int max() { return _bitoff+_nbits; }
+  public int numBytes() { return bytes(_nbits); }
+  public int max() { return _bitoff+_nbits; } // 1 larger than the largest bit allowed
 
   // Smaller compression format: just exactly 4 bytes
+  public void compress2( AutoBuffer ab ) {
+    assert max() < 32;          // Expect a larger format
+    assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
+    assert _val.length==4;
+    ab.putA1(_val,4);
+  }
   public void fill2( byte[] bits, AutoBuffer ab ) {
-    throw H2O.unimpl();
+    fill(bits,ab.position(),32,0);
+    ab.skip(4);            // Skip inline bitset
   }
 
   // Larger compression format: dump down bytes into the AutoBuffer.
@@ -134,27 +105,30 @@ public class IcedBitSet extends Iced {
     ab.skip(nbytes);            // Skip inline bitset
   }
 
-  @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("{");
-    if (_bitoff>0) sb.append("...").append(_bitoff).append(" 0-bits... ");
+  @Override public String toString() { return toString(new SB()).toString(); }
+  public SB toString(SB sb) {
+    sb.p("{");
+    if( _bitoff>0 ) sb.p("...").p(_bitoff).p(" 0-bits... ");
 
     int bytes = bytes(_nbits);
     for(int i = 0; i < bytes; i++) {
-      if (i>0) sb.append(' ');
-      sb.append(String.format("%8s", Integer.toBinaryString(0xFF & _val[i])).replace(' ', '0'));
+      if( i>0 ) sb.p(' ');
+      for( int j=0; j<8; j++ )
+        sb.p((_val[i]>>j)&1);
     }
+    return sb.p("}");
+  }
+  public String toStrArray() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{").append(_val[_byteoff]);
+    int bytes = bytes(_nbits);
+    for(int i = 1; i < bytes; i++)
+      sb.append(", ").append(_val[_byteoff+i]);
     sb.append("}");
     return sb.toString();
   }
-  public String toStrArray() {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
-    StringBuilder sb = new StringBuilder();
-    sb.append("{").append(_val[0]);
-    int bytes = bytes(_nbits);
-    for(int i = 1; i < bytes; i++)
-      sb.append(", ").append(_val[i]);
-    sb.append("}");
-    return sb.toString();
+
+  public SB toJava( SB sb, String varname, int col, String colname ) {
+    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", (int) data[").p(col).p(" /* ").p(colname).p(" */").p("])");
   }
 }

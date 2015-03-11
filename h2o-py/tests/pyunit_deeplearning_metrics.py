@@ -1,10 +1,11 @@
 import sys
+sys.path.insert(1, "..")
 import h2o
 
 
 def deep_learning_metrics_test(ip, port):
   h2o.init(ip, port)               # connect to existing cluster
-  df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
+  df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
   del df['ID']                               # remove ID
   df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
@@ -30,11 +31,10 @@ def deep_learning_metrics_test(ip, port):
                         hidden = [10, 10, 10])
   print "Binomial Model Metrics: "
   print
+  dl.show()
+  # print dl._model_json
   dl.model_performance(test).show()
 
 
 if __name__ == "__main__":
-  args = sys.argv
-  print args
-  if len(args) > 1:  deep_learning_metrics_test(args[1],int(args[2]))
-  else:              deep_learning_metrics_test("localhost",54321)
+  h2o.run_test(sys.argv, deep_learning_metrics_test)

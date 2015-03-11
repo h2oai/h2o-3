@@ -2,17 +2,14 @@ package hex;
 
 import water.Key;
 import water.fvec.Chunk;
-import water.util.MRUtils;
-import water.util.ModelUtils;
+import water.util.*;
 
 /** Supervised Model
  *  There is a response column used in training.
  */
-public abstract class SupervisedModel<M extends Model<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
+public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends Model<M,P,O> {
 
   public SupervisedModel( Key selfKey, P parms, O output ) { super(selfKey,parms,output);  }
-
-  @Override public boolean isSupervised() { return true; }
 
   /** Supervised Model Parameters includes a response column, and whether or
    *  not rebalancing classes is desirable.  Also includes a bunch of cheap
@@ -20,6 +17,12 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
   public abstract static class SupervisedParameters extends Model.Parameters {
     /** Supervised models have an expected response they get to train with! */
     public String _response_column; // response column name
+
+    /** Convert the response column to an enum (forcing a classification
+     *  instead of a regression) as needed.  The default is false, which means
+     *  "do nothing" - accept the response column as-is and that alone drives
+     *  the decision to do a classification vs regression. */
+    public boolean _convert_to_enum = false;
 
     /** Should all classes be over/under-sampled to balance the class
      *  distribution? */
@@ -43,7 +46,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     public int _max_hit_ratio_k = 10;
   }
 
-  /** Output from all Supervised Models, includes class distribtion
+  /** Output from all Supervised Models, includes class distribution
    */
   public abstract static class SupervisedOutput extends Model.Output {
     // Includes the class distribution for all supervised models
@@ -69,7 +72,7 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
       _domains= b._train.domains();
 
       // Compute class distribution, handy for most builders
-      if( b.isClassifier() ) {
+      if( b.isClassifier() && b.isSupervised()) {
         MRUtils.ClassDist cdmt = new MRUtils.ClassDist(b._nclass).doAll(b._response);
         _distribution   = cdmt.dist();
         _priorClassDist = cdmt.rel_dist();
@@ -82,6 +85,8 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
 
     /** @return Returns number of input features */
     @Override public int nfeatures() { return _names.length - 1; }
+
+    @Override public boolean isSupervised() { return true; }
 
     /** @return number of classes; illegal to call before setting distribution */
     public int nclasses() { return _distribution.length; }
@@ -107,10 +112,27 @@ public abstract class SupervisedModel<M extends Model<M,P,O>, P extends Supervis
     if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {
       ModelUtils.correctProbabilities(scored,_output._priorClassDist, _output._modelClassDist);
       //set label based on corrected probabilities (max value wins, with deterministic tie-breaking)
-      scored[0] = ModelUtils.getPrediction(scored, tmp);
+      scored[0] = hex.genmodel.GenModel.getPrediction(scored, tmp);
     }
     return scored;
   }
 
+  @Override protected SB toJavaPROB( SB sb) {
+    JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
+    JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
+    return sb;
+  }
+  /** Fill preds[0] based on already filled and unified preds[1,..NCLASSES]. */
+  protected void toJavaFillPreds0(SB bodySb) {
+    // Pick max index as a prediction
+    if (_output.isClassifier()) {
+      if (_output._priorClassDist!=null && _output._modelClassDist!=null) {
+        bodySb.i().p("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      }
+      bodySb.i().p("preds[0] = water.util.ModelUtils.getPrediction(preds,data);").nl();
+    } else {
+      bodySb.i().p("preds[0] = preds[1];").nl();
+    }
+  }
 }
 

@@ -1,7 +1,8 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
 from h2o_test import find_file, dump_json, verboseprint
 
 DO_INTERMEDIATE_RESULTS = False
@@ -20,8 +21,8 @@ class Basic(unittest.TestCase):
 
     def test_simple2(self):
         # h2o-dev doesn't take ../.. type paths? make find_file return absolute path
-        # import_result = h2o.n0.import_files(path=find_file("smalldata/logreg/prostate.csv"))
-        csvPathname = find_file("bigdata/laptop/poker-hand-testing.data")
+        # csvPathname = find_file("bigdata/laptop/poker-hand-testing.data")
+        csvPathname = find_file("smalldata/logreg/prostate.csv")
         import_result = h2o.n0.import_files(path=csvPathname)
         # print dump_json(import_result)
 
@@ -60,8 +61,10 @@ class Basic(unittest.TestCase):
         frame = parse_result['frames'][0]
         hex_key = frame['key']['name']
 
-        colCount = 11
-        rowCount = 1000000
+        colCount = 9
+        rowCount = 380
+        # colCount = 11
+        # rowCount = 1000000
         start = time.time()
         inspect = h2o_cmd.runInspect(None, hex_key)
         print "Inspect:", hex_key, "took", time.time() - start, "seconds"

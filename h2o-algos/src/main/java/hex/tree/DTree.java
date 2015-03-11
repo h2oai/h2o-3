@@ -98,15 +98,18 @@ public class DTree extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
+    final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
-    final long    _n0,  _n1;    // Rows in each final split
-    final double  _p0,  _p1;    // Predicted value for each split
+    final long   _n0,  _n1;     // Rows in each final split
+    final double _p0,  _p1;     // Predicted value for each split
 
-    public Split( int col, int bin, IcedBitSet bs, byte equal, double se0, double se1, long n0, long n1, double p0, double p1 ) {
-      _col = col;  _bin = bin;  _bs = bs;  _equal = equal;
+    public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, long n0, long n1, double p0, double p1 ) {
+      _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
+      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
     }
+    public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
     public final int   bin() { return _bin; }
@@ -199,9 +202,10 @@ public class DTree extends Iced {
           default: throw H2O.fail();
           }
         }
-        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
-        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         if( min >  maxEx ) continue; // Happens for all-NA subsplits
+        if( MathUtils.equalsWithinOneSmallUlp(min, maxEx) ) continue; // This column will not split again
+        if( Float.isInfinite(adj_nbins/(maxEx-min)) ) continue;
+        if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && n > 1 : ""+min+"<"+maxEx+" n="+n;
         nhists[j] = DHistogram.make(h._name,adj_nbins,h._isInt,min,maxEx,n,h.isBinom());
         cnt++;                    // At least some chance of splitting
@@ -469,19 +473,9 @@ public class DTree extends Iced {
       ab.put2((short)_split._col);
 
       // Save split-at-value or group
-      if(_split._equal == 0 || _split._equal == 1)
-        ab.put4f(_splat);
-      else if(_split._equal == 2) {
-        /* byte[] ary = MemoryManager.malloc1(4);
-        for(int i = 0; i < 4; i++)
-          ary[i] = _split._bs._val[i];
-        ab.putA1(ary, 4); */
-        //ab.putA1(_split._bs._val, 4);
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      } else {
-        assert _split._equal == 3;
-        _split._bs.compress3(ab);
-      }
+      if(_split._equal == 0 || _split._equal == 1) ab.put4f(_splat);
+      else if(_split._equal == 2) _split._bs.compress2(ab);
+      else _split._bs.compress3(ab);
 
       Node left = _tree.node(_nids[0]);
       if( (_nodeType&48) == 0 ) { // Size bits are optional for left leaves !
@@ -578,108 +572,4 @@ public class DTree extends Iced {
       p("  }").nl().
   nl();
 
-  static class TreeJCodeGen extends TreeVisitor<RuntimeException> {
-    public static final int MAX_NODES = (1 << 12) / 4; // limit for a number decision nodes
-    final byte  _bits[]  = new byte [100];
-    final float _fs  []  = new float[100];
-    final SB    _sbs []  = new SB   [100];
-    final int   _nodesCnt[] = new int  [100];
-    final SharedTreeModel _tm;
-    SB _sb;
-    SB _csb;
-    SB _grpsplit;
-
-    int _subtrees = 0;
-    int _grpcnt = 0;
-
-    public TreeJCodeGen(SharedTreeModel tm, CompressedTree ct, SB sb) {
-      super(ct);
-      _tm = tm;
-      _sb = sb;
-      _csb = new SB();
-      _grpsplit = new SB();
-    }
-
-    // code preamble
-    protected void preamble(SB sb, int subtree) throws RuntimeException {
-      String subt = subtree>0?String.valueOf(subtree):"";
-      sb.i().p("static final ").p(SharedTreeModel.PRED_TYPE).p(" predict").p(subt).p("(double[] data) {").nl().ii(1); // predict method for one tree
-      sb.i().p(SharedTreeModel.PRED_TYPE).p(" pred = ");
-    }
-
-    // close the code
-    protected void closure(SB sb) throws RuntimeException {
-      sb.p(";").nl();
-      sb.i(1).p("return pred;").nl().di(1);
-      sb.i().p("}").nl();
-      // sb.p(_grpsplit).di(1);
-    }
-
-    @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
-      if(equal == 2 || equal == 3 && gcmp != null) {
-        _grpsplit.i(1).p("// ").p(gcmp.toString()).nl();
-        _grpsplit.i(1).p("public static final byte[] GRPSPLIT").p(_grpcnt).p(" = new byte[] ").p(gcmp.toStrArray()).p(";").nl();
-      }
-
-      if( _depth > 0 ) {
-        int b = _bits[_depth-1];
-        assert b > 0 : Arrays.toString(_bits)+"\n"+_sb.toString();
-        if( b==1         ) _bits[_depth-1]=3;
-        if( b==1 || b==2 ) _sb.p('\n').i(_depth).p("?");
-        if( b==2         ) _sb.p(' ').pj(_fs[_depth-1]); // Dump the leaf containing float value
-        if( b==2 || b==3 ) _sb.p('\n').i(_depth).p(":");
-      }
-      if (_nodes>MAX_NODES) {
-        _sb.p("predict").p(_subtrees).p("(data)");
-        _nodesCnt[_depth] = _nodes;
-        _sbs[_depth] = _sb;
-        _sb = new SB();
-        _nodes = 0;
-        preamble(_sb, _subtrees);
-        _subtrees++;
-      }
-      // All NAs are going always to the left
-      _sb.p(" (Double.isNaN(data[").p(col).p("]) || ");
-      if(equal == 0 || equal == 1) {
-        String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
-        _sb.p("(float) data[").p(col).p(" /* ").p(_tm._output._names[col]).p(" */").p("] ").p(equal == 1 ? "!= " : scmp).pj(fcmp); // then left and then right (left is !=)
-      } else {
-        //_sb.p("!water.genmodel.GeneratedModel.grpContains(GRPSPLIT").p(_grpcnt).p(", ").p(gcmp._offset).p(", (int) data[").p(col).p(" /* ").p(_tm._names[col]).p(" */").p("])");
-        _grpcnt++;
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      }
-      assert _bits[_depth]==0;
-      _bits[_depth]=1;
-    }
-    @Override protected void leaf( float pred  ) {
-      assert _depth==0 || _bits[_depth-1] > 0 : Arrays.toString(_bits); // it can be degenerated tree
-      if( _depth==0) { // it is de-generated tree
-        _sb.pj(pred);
-      } else if( _bits[_depth-1] == 1 ) { // No prior leaf; just memorize this leaf
-        _bits[_depth-1]=2; _fs[_depth-1]=pred;
-      } else {          // Else==2 (prior leaf) or 3 (prior tree)
-        if( _bits[_depth-1] == 2 ) _sb.p(" ? ").pj(_fs[_depth-1]).p(" ");
-        else                       _sb.p('\n').i(_depth);
-        _sb.p(": ").pj(pred);
-      }
-    }
-    @Override protected void post( int col, float fcmp, int equal ) {
-      _sb.p(')');
-      _bits[_depth]=0;
-      if (_sbs[_depth]!=null) {
-        closure(_sb);
-        _csb.p(_sb);
-        _sb = _sbs[_depth];
-        _nodes = _nodesCnt[_depth];
-        _sbs[_depth] = null;
-      }
-    }
-    public void generate() {
-      preamble(_sb, _subtrees++);   // TODO: Need to pass along group split BitSet
-      visit();
-      closure(_sb);
-      _sb.p(_grpsplit).di(1);
-      _sb.p(_csb);
-    }
-  }
 }

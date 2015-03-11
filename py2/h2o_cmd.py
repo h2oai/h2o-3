@@ -11,7 +11,7 @@ def runStoreView(node=None, **kwargs):
 
     print "\nStoreView:"
     # FIX! are there keys other than frames and models
-    a = node.frames()
+    a = node.frames(**kwargs)
     # print "storeview frames:", dump_json(a)
     frameList = [af['key']['name'] for af in a['frames']]
 
@@ -77,9 +77,6 @@ def infoFromInspect(inspect):
     # it it index[0] or key '0' in a dictionary?
     frame = inspect['frames'][0]
 
-    if frame['isText']:
-        raise Exception("infoFromInspect only for parsed frames?: %s " % frame['isText'])
-
     # need more info about this dataset for debug
     columns = frame['columns']
     key_name = frame['key']['name']
@@ -88,11 +85,38 @@ def infoFromInspect(inspect):
     labelList = []
     typeList = []
     for i, colDict in enumerate(columns): # columns is a list
+        if 'missing' not in colDict:
+            # debug
+            for k in colDict:
+                print "colDict key: %s" % k
+
+            # data
+            # histogram_base
+            # domain
+            # type
+            # string_data
+            # label
+            # percentiles
+            # precision
+            # mins
+            # maxs
+            # mean
+            # histogram_bins
+            # histogram_stride
+            # zero_count
+            # missing_count
+            # positive_infinity_count
+            # negative_infinity_count
+            # sigma
+            # __meta
+
+
         mins = colDict['mins']
         maxs = colDict['maxs']
-        missing = colDict['missing']
+        missing = colDict['missing_count']
         label = colDict['label']
         stype = colDict['type']
+
         missingList.append(missing)
         labelList.append(label)
         typeList.append(stype)
@@ -108,9 +132,7 @@ def infoFromInspect(inspect):
     # no type per col in inspect2
     numCols = len(frame['columns'])
     numRows = frame['rows']
-    byteSize = frame['byteSize']
-
-    print "\n%s numRows: %s, numCols: %s, byteSize: %s" % (key_name, numRows, numCols, byteSize)
+    print "\n%s numRows: %s, numCols: %s" % (key_name, numRows, numCols)
     return missingList, labelList, numRows, numCols
 
 #************************************************************************
@@ -127,6 +149,8 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
     labelList = i.labelList
     numRows = i.numRows
     numCols = i.numCols
+    print "labelList:", labelList
+    assert labelList is not None
 
     # doesn't take indices? only column labels?
     # return first column, unless specified
@@ -143,7 +167,9 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
         colIndexToDo = [column]
     elif isinstance(column, basestring):
         colNameToDo = [column]
-        colIndexToDo = [labelList.index[column]]
+        if column not in labelList:
+            raise Exception("% not in labellist: %s" % (column, labellist))
+        colIndexToDo = [labelList.index(column)]
     else:
         raise Exception("wrong type %s for column %s" % (type(column), column))
 
@@ -170,12 +196,13 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
             # what is precision. -1?
             print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
 
-            print "FIX! hacking the co.pctiles because it's short by two"
-            
-            if co.pctiles:
-                pctiles = [0] + co.pctiles + [0]
-            else:
-                pctiles = None
+            # print "FIX! hacking the co.pctiles because it's short by two"
+            # if co.pctiles:
+            #     pctiles = [0] + co.pctiles + [0]
+            # else:
+            #     pctiles = None
+            pctiles = co.pctiles
+            assert len(co.pctiles) == len(co.default_pctiles)
 
             # the thresholds h2o used, should match what we expected
                 # expected = [0] * 5
@@ -187,11 +214,11 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
 
             if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
                 msg='min is not approx. expected')
-            if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
+            if expected[1]: h2o_util.assertApproxEqual(pctiles[2], expected[1], tol=maxDelta, 
                 msg='25th percentile is not approx. expected')
-            if expected[2]: h2o_util.assertApproxEqual(pctiles[5], expected[2], tol=maxDelta, 
+            if expected[2]: h2o_util.assertApproxEqual(pctiles[4], expected[2], tol=maxDelta, 
                 msg='50th percentile (median) is not approx. expected')
-            if expected[3]: h2o_util.assertApproxEqual(pctiles[7], expected[3], tol=maxDelta, 
+            if expected[3]: h2o_util.assertApproxEqual(pctiles[6], expected[3], tol=maxDelta, 
                 msg='75th percentile is not approx. expected')
             if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
                 msg='max is not approx. expected')
@@ -225,7 +252,7 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
             if pt is None:
                 compareActual = mn, [None] * 3, mx
             else:
-                compareActual = mn, pt[3], pt[5], pt[7], mx
+                compareActual = mn, pt[2], pt[4], pt[6], mx
 
             h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
             h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
@@ -316,13 +343,15 @@ class SummaryObj(OutputObj):
         checksum = frame['checksum']
         rows = frame['rows']
 
-        assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s" % \
-            (colIndex, len(frame['columns']))
-        coJson = frame['columns'][colIndex]
+        # assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s. " % \
+        #     (colIndex, len(frame['columns']))
+        # coJson = frame['columns'][colIndex]
+
+        # is it always 0 now? the one I asked for ?
+        coJson = frame['columns'][0]
 
         assert checksum !=0 and checksum is not None
         assert rows!=0 and rows is not None
-        assert not frame['isText']
 
         # FIX! why is frame['key'] = None here?
         # assert frame['key'] == key, "%s %s" % (frame['key'], key)

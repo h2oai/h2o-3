@@ -16,12 +16,6 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
     @API(help="The Gini score for this run.", direction=API.Direction.OUTPUT)
     public double Gini;
 
-    @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 thresholdsAndMetricScores;
-
-    @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 maxCriteriaAndMetricScores;
-
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
     public float[] hr;
 
@@ -52,9 +46,8 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     thresholds,
                     metrics,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"});
-            int row = 0;
-            for(String threshold : thresholds){
+                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
+            for(int row = 0; row<thresholds.length; ++row) {
                 int col = 0;
                 for(String metric : metrics) {
                     switch(metric) {
@@ -89,11 +82,10 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                             thresholdsByMetrics.set(row, col, modelMetrics._aucdata.max_per_class_error[row]);
                             break;
                     }
-                    col = col + 1;
+                    col++;
                 }
-                row = row + 1;
             }
-            this.thresholdsAndMetricScores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
+            this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
 
 
             // Fill TwoDimTable criteriaByThresholdAndScore
@@ -106,11 +98,9 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                     criteria,
                     columnNames,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"});
-            row = 0;
-            for(String criterion : criteria){
-                int col = 0;
-                for(String colName : columnNames){
+                    new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
+            for(int row=0; row<criteria.length; ++row) {
+                for(int col=0; col<columnNames.length;++col) {
                     if(col==0){
                         criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.threshold_for_criteria[row]);
                     }
@@ -148,11 +138,10 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
                                 break;
                         }
                     }
-                    col = col + 1;
+                    col++;
                 }
-                row = row + 1;
             }
-            this.maxCriteriaAndMetricScores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
+            this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
         }
         return this;
     }

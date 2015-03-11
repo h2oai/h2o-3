@@ -13,10 +13,10 @@ def jobs(self, job_key=None, timeoutSecs=10, **kwargs):
     Fetch all the jobs or a single job from the /Jobs endpoint.
     '''
     params_dict = {
-        'job_key': job_key
+        # 'job_key': job_key
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'jobs', True)
-    result = self.do_json_request('2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Jobs.json', timeout=timeoutSecs, params=params_dict)
     return result
 
 
@@ -33,7 +33,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
     start_time = time.time()
     pollCount = 0
     while True:
-        result = self.do_json_request('2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+        result = self.do_json_request('3/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
         # print 'Job: ', dump_json(result)
 
         if key:
@@ -57,6 +57,7 @@ def poll_job(self, job_key, timeoutSecs=10, retryDelaySecs=0.5, key=None, **kwar
             h2o_sandbox.check_sandbox_for_errors()
             return result
 
+        # what about 'CREATED'
         # FIX! what are the other legal polling statuses that we should check for?
 
         if not h2o_args.no_timeout and (time.time() - start_time > timeoutSecs):
@@ -91,7 +92,7 @@ def import_files(self, path, timeoutSecs=180):
 # key is required
 # FIX! for now h2o doesn't support regex here. just key or list of keys
 # FIX! default turn off intermediateResults until NPE is fixed.
-def parse(self, key, hex_key=None,
+def parse(self, key, hex_key=None, columnTypeDict=None,
           timeoutSecs=300, retryDelaySecs=0.2, initialDelaySecs=None, pollTimeoutSecs=180,
           noise=None, benchmarkLogging=None, noPoll=False, intermediateResults=False, **kwargs):
     '''
@@ -99,14 +100,18 @@ def parse(self, key, hex_key=None,
     '''
     # these should override what parse setup gets below
     params_dict = {
-        'srcs': None,
-        'hex': hex_key, 
-        'pType': None, # This is a list?
-        'sep': None,
-        'ncols': None,
-        'checkHeader': None, # how is this used
-        'singleQuotes': None,
-        'columnNames': None, # list?
+        'source_keys': None,
+        'destination_key': hex_key, 
+        'parse_type': None, # file type 
+        'separator': None,
+        'single_quotes': None,
+        'check_header': None, # forces first line to be seen as column names 
+        'number_columns': None,
+        'column_names': None, # a list
+        'column_types': None, # a list. or can use columnTypeDict param (see below)
+	'na_strings' : None, # a list
+        'chunk_size': None,
+        # are these two no longer supported?
         'delete_on_done': None,
         'blocking': None,
     }
@@ -121,59 +126,96 @@ def parse(self, key, hex_key=None,
         # len 1 is ok here. 0 not. what if None or [None] here
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
-        srcs = "[" + ",".join(key) + "]"
+        # have to put quotes around the individual list items
+        source_keys = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+
     else:
         # what if None here
-        srcs = "[" + key + "]"
+        source_keys = "['" + key + "']" # quotes required on key
 
-    params_dict['srcs'] = srcs
+    params_dict['source_keys'] = source_keys
 
     # merge kwargs into params_dict
     # =None overwrites params_dict
-    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
 
-    # Call ParseSetup?srcs=[keys] . . .
+    # columnTypeDict not used here
+    h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse before setup merge', print_params=False)
+    # Call ParseSetup?source_keys=[keys] . . .
 
     # if benchmarkLogging:
     #     cloudPerfH2O.get_log_save(initOnly=True)
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
-    params_setup = {'srcs': srcs}
+    params_setup = {'source_keys': source_keys}
     setup_result = self.do_json_request(jsonRequest="2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
-    # and then Parse?srcs=<keys list> and params from the ParseSetup result
-    # Parse?srcs=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&hex=prostate.hex&pType=CSV&sep=44&ncols=9&checkHeader=0&singleQuotes=false&columnNames=[ID,%20CAPSULE,%20AGE,%20RACE,%20DPROS,%20DCAPS,%20PSA,%20VOL,%20GLEASON]
-
-    if setup_result['srcs']:
-        setupSrcs = "[" + ",".join([src['name'] for src in setup_result['srcs'] ]) + "]"
+    # this should match what we gave as input?
+    if setup_result['source_keys']:
+        # should these be quoted?
+        source_keysStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
     else:
-        setupSrcs = None
+        source_keysStr = None
     
     # I suppose we need a way for parameters to parse() to override these
-    if setup_result['columnNames']:
-        ascii_column_names = "[" + ",".join(setup_result['columnNames']) + "]"
+    # should it be an array or a dict?
+    if setup_result['column_names']:
+        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['column_names'])) + "]"
     else:
-        ascii_column_names = None
+        columnNamesStr = None
+
+    columnTypes = setup_result['column_types']
+    assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
+
+    if setup_result['na_strings']:
+        naStrings = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['na_strings'])) + "]"
+    else:
+        naStrings = None
+
+    # dict parameter to update columnTypeDict?
+    # but we don't pass columnNames like this?
+    ct = setup_result['column_types']
+    if columnTypeDict: 
+        for k,v in columnTypeDict.iteritems():
+            if isinstance(k, int):
+                # if a column index
+                if k>=0 and k<len(ct):
+                    ct[k] = v
+                else:
+                    raise Exception("bad col index %s in columnTypeDict param %s" % (k, columnTypeDict))
+            # if a column name
+            elif isinstance(k, basestring):
+                # find the index
+                if k not in columnNames:
+                    raise Exception("bad col name %s in columnTypeDict param %s. columnNames: %s" % (k, columnTypeDict, columnNames))
+                ci = columnNames.index(k)
+                ct[ci] = v
+            else:
+                raise Exception("%s %s should be int or string" % (k, type(k)))
+
+    columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
 
 
     parse_params = {
-        'srcs': setupSrcs,
-        'hex': setup_result['hexName'],
-        'pType': setup_result['pType'],
-        'sep': setup_result['sep'],
-        'ncols': setup_result['ncols'],
-        'checkHeader': setup_result['checkHeader'],
-        'singleQuotes': setup_result['singleQuotes'],
-        'columnNames': ascii_column_names,
-        # how come these aren't in setup_result?
+        'source_keys': source_keysStr,
+        'destination_key': setup_result['destination_key'],
+        'parse_type': setup_result['parse_type'],
+        'separator': setup_result['separator'],
+        'single_quotes': setup_result['single_quotes'],
+        'check_header': setup_result['check_header'],
+        'number_columns': setup_result['number_columns'],
+        'column_names': columnNamesStr,
+        'column_types': columnTypesStr,
+        'na_strings': naStrings, 
+        'chunk_size': setup_result['chunk_size'],
+        # No longer supported? how come these aren't in setup_result?
         'delete_on_done': params_dict['delete_on_done'],
         'blocking': params_dict['blocking'],
     }
     # HACK: if there are too many column names..don't print! it is crazy output
     # just check the output of parse setup. Don't worry about columnNames passed as params here. 
-    tooManyColNamesToPrint = setup_result['columnNames'] and len(setup_result['columnNames']) > 2000
+    tooManyColNamesToPrint = setup_result['column_names'] and len(setup_result['column_names']) > 2000
     if tooManyColNamesToPrint:
         h2p.yellow_print("Not printing the parameters to Parse because the columnNames are too lengthy.") 
         h2p.yellow_print("See sandbox/commands.log")
@@ -183,15 +225,16 @@ def parse(self, key, hex_key=None,
     h2o_methods.check_params_update_kwargs(parse_params, params_dict, 'parse after merge into parse setup', 
         print_params=not tooManyColNamesToPrint, ignoreNone=True)
 
-    print "parse srcs is length:", len(parse_params['srcs'])
-    print "parse columnNames is length:", len(parse_params['columnNames'])
+    print "parse source_keys is length:", len(parse_params['source_keys'])
+    # This can be null now? parseSetup doesn't return default colnames?
+    # print "parse column_names is length:", len(parse_params['column_names'])
 
     # none of the kwargs passed to here!
     parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['key']['name']
-    hex_key = parse_params['hex']
+    hex_key = parse_params['destination_key']
 
     # TODO: dislike having different shapes for noPoll and poll
     if noPoll:
@@ -238,8 +281,8 @@ def frames(self, key=None, timeoutSecs=10, **kwargs):
 
     params_dict = {
         'find_compatible_models': 0,
-        'offset': 0, # is offset working yet?
-        'len': 5,
+        'row_offset': 0, # is offset working yet?
+        'row_count': 5,
     }
     '''
     Return a single Frame or all of the Frames in the h2o cluster.  The
@@ -299,8 +342,8 @@ def summary(self, key, column="C1", timeoutSecs=10, **kwargs):
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
     params_dict = { 
-        'offset': 0,
-        'len': 100
+        # 'offset': 0,
+        # 'len': 100
     }
     h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'summary', True)
     
@@ -434,11 +477,14 @@ def build_model(self, algo, training_frame, parameters, destination_key=None,
     if noPoll:
         result = result1
     elif 'validation_error_count' in result1:
-        h2p.yellow_print("parameter error in model_builders")
+        h2p.yellow_print("parameter error in model_builders: %s")
         # parameters validation failure
         # TODO: add schema_type and schema_version into all the schemas to make this clean to check
         result = result1
         # don't bother printing a time message
+    elif 'exception_msg' in result1:
+        h2p.yellow_print("exception msg in model_builders: %s" % result1['exception_msg'])
+        result = result1
     else:
         job_result = result1['jobs'][0]
         job_key = job_result['key']['name']
@@ -596,3 +642,23 @@ def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
     parameters = { }
     result = self.do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
     return result
+
+
+def schemas(self, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the list of REST API schemas.
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+
+    return result
+
+def schema(self, schemaname, timeoutSecs=60, **kwargs):
+    '''
+    Fetch the metadata for the given named REST API schema (e.g., FrameV2).
+    '''
+    parameters = { }
+    result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+
+    return result
+

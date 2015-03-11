@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
-import water.persist.Persist;
+import water.persist.PersistManager;
 
 /** Log for H2O. 
  *
@@ -31,11 +31,12 @@ abstract public class Log {
   static final int TRACE= 5;
   static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   static int _level=INFO;
+  static boolean _quiet = false;
 
   // Common pre-header
   private static String _preHeader;
 
-  public static void init( String slvl ) {
+  public static void init( String slvl, boolean quiet ) {
     if( slvl != null ) {
       slvl = slvl.toLowerCase();
       if( slvl.startsWith("fatal") ) _level = FATAL;
@@ -45,6 +46,7 @@ abstract public class Log {
       if( slvl.startsWith("debug") ) _level = DEBUG;
       if( slvl.startsWith("trace") ) _level = TRACE;
     }
+    _quiet = quiet;
   }
   
   public static void trace( Object... objs ) { write(TRACE,objs); }
@@ -95,7 +97,7 @@ abstract public class Log {
     write0(sb, hdr, s);
 
     // stdout first - in case log4j dies failing to init or write something
-    if( stdout ) System.out.println(sb);
+    if(stdout && !_quiet) System.out.println(sb);
 
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
@@ -166,13 +168,24 @@ abstract public class Log {
     return logFileName;
   }
 
-  private static String DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER = "-2-debug.log";
-
   /**
    * @return This is what shows up in the Web UI when clicking on show log file.  File name only.
    */
-  public static String getLogFileName() throws Exception {
-    return getLogFileNameStem() + DEFAULT_LOG_FILE_TO_SHOW_IN_BROWSER;
+  public static String getLogFileName(String level) throws Exception {
+    String f;
+    switch (level) {
+      case "trace": f = "-1-trace.log"; break;
+      case "debug": f = "-2-debug.log"; break;
+      case "info":  f = "-3-info.log"; break;
+      case "warn":  f = "-4-warn.log"; break;
+      case "error": f = "-5-error.log"; break;
+      case "fatal": f = "-6-fatal.log"; break;
+      case "httpd": f = "-httpd.log"; break;
+      default:
+        throw new Exception("Unknown level");
+    }
+
+    return getLogFileNameStem() + f;
   }
 
   private static void setLog4jProperties(String logDirParent, java.util.Properties p) throws Exception {
@@ -266,7 +279,7 @@ abstract public class Log {
     // Use ice folder if local, or default
     if (windowsPath)
       dir = new File(H2O.ICE_ROOT.toString());
-    else if( H2O.ICE_ROOT.getScheme() == null || Persist.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+    else if( H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
       dir = new File(H2O.ICE_ROOT.getPath());
     else
       dir = new File(H2O.DEFAULT_ICE_ROOT());
@@ -378,4 +391,7 @@ abstract public class Log {
       POST(n, els[i].toString());
     }
   }
+
+  public static void setQuiet(boolean q) { _quiet = q; }
+  public static boolean getQuiet() { return _quiet; }
 }

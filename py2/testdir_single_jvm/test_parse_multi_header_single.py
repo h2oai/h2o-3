@@ -1,6 +1,7 @@
 import unittest, time, sys, random, os, pprint as pp
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util
 import h2o_browse as h2b
 from h2o_test import dump_json, verboseprint
 
@@ -123,7 +124,7 @@ class Basic(unittest.TestCase):
 
             # does h2o-dev take a regex? or do we need to glob
             parseResult = h2i.parse_only(pattern='*'+rowxcol+'*',
-                hex_key=hex_key, timeoutSecs=timeoutSecs, checkHeader="1") # header_from_file=header
+                hex_key=hex_key, timeoutSecs=timeoutSecs, check_header="1") # header_from_file=header
 
             pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=totalDataRows, expectedNumCols=totalCols)
             print pA.numRows
@@ -137,7 +138,7 @@ class Basic(unittest.TestCase):
             if DO_RF:
                 # put in an ignore param, that will fail unless headers were parsed correctly
                 if HEADER:
-                    kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1, 'ignored_cols_by_name': 'ID,CAPSULE'}
+                    kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1, 'ignored_columns': "['ID','CAPSULE']"}
                 else:
                     kwargs = {'sample_rate': 0.75, 'max_depth': 25, 'ntrees': 1}
 

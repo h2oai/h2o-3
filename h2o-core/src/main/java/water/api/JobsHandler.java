@@ -23,7 +23,7 @@ public class JobsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema fetch(int version, JobsV2 s) {
-    Key key = s.key.key.key();
+    Key key = s.key.key();
     Value val = DKV.get(key);
     if( null == val ) throw new IllegalArgumentException("Job is missing");
     Iced ice = val.get();
@@ -33,13 +33,14 @@ public class JobsHandler extends Handler {
     jobs._jobs = new Job[1];
     jobs._jobs[0] = (Job) ice;
     s.jobs = new JobV2[0]; // Give PojoUtils.copyProperties the destination type.
-    return s.fillFromImpl(jobs);
+    s.fillFromImpl(jobs);
+    return s;
   }
 
   public Schema cancel(int version, JobsV2 c) {
-    Job j = DKV.getGet(c.key.key.key());
+    Job j = DKV.getGet(c.key.key());
     if (j == null) {
-      throw new IllegalArgumentException("No job with key " + c.key.key.key());
+      throw new IllegalArgumentException("No job with key " + c.key.key());
     }
     j.cancel();
     return c;

@@ -57,11 +57,11 @@ class Expr(object):
 
     assert self._is_valid(), str(self._name) + str(self._data)
 
-    self._left = left.get_expr() if isinstance(left, frame.H2OVec) else left
-    self._rite = rite.get_expr() if isinstance(rite, frame.H2OVec) else rite
+    self._left = left._expr if isinstance(left, frame.H2OVec) else left
+    self._rite = rite._expr if isinstance(rite, frame.H2OVec) else rite
 
-    assert self._left is None or self._is_valid(self._left), self.debug()
-    assert self._rite is None or self._is_valid(self._rite), self.debug()
+    assert self._left is None or self._left._is_valid(), self._left.debug()
+    assert self._rite is None or self._rite._is_valid(), self._rite.debug()
 
     # Compute length eagerly
     if self.is_remote():   # Length must be provided for remote data
@@ -104,9 +104,7 @@ class Expr(object):
 
   def is_slice(self): return isinstance(self._data, slice)
 
-  def _is_valid(self, obj=None):
-    if obj:  # not None'ness depends on short-circuiting `or`; see python docs
-      return isinstance(obj, Expr) or isinstance(self._data, unicode)
+  def _is_valid(self):
     return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
 
   def __len__(self):
@@ -120,11 +118,11 @@ class Expr(object):
     """
     :return: The structure of this object without evaluating.
     """
-    return ("([" + self._name + "] = " +
+    return ("(" + self._name + " <== " +
             str(self._left._name if isinstance(self._left, Expr) else self._left) +
             " " + self._op + " " +
             str(self._rite._name if isinstance(self._rite, Expr) else self._rite) +
-            " = " + str(type(self._data)) + ")")
+            " ==> " + str(type(self._data)) + ")")
 
   def show(self, noprint=False):
     """
@@ -142,6 +140,9 @@ class Expr(object):
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
         data = j['frames'][0]['columns'][0]['data'][0:10]
+      elif isinstance(self._data, int):
+        print self._data
+        return
       else:
         data = [self._data]
       header = self._vecname + " (first " + str(len(data)) + " row(s))"
@@ -204,7 +205,7 @@ class Expr(object):
     if __CMD__ is None:
       h2o.remove(self._data)
     else:
-      s = " (del %" + self._data + " #0)"
+      s = " (del '" + self._data + "' #0)"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s
@@ -242,9 +243,8 @@ class Expr(object):
       self._data = j['head'] if j['num_rows'] else j['scalar']
     return self._data
 
-  def _do_child(self, left=True):
-    child = self._left if left else self._rite
-    assert child is None or isinstance(child, Expr)
+  def _do_child(self, child):
+    assert child is None or isinstance(child, Expr), " expected None or Expr but found: %r" % child
     global __CMD__
     if child:
       if child.is_pending():
@@ -252,14 +252,14 @@ class Expr(object):
       elif isinstance(child._data, (int, float)):
         __CMD__ += "#" + str(child._data)
       elif isinstance(child._data, unicode):
-        __CMD__ += "%" + str(child._data)
+        __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
         __CMD__ += \
             "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
             + ")"
         child._data = None  # trigger GC now
       else:
-          pass
+        pass
     __CMD__ += " "
     return child
 
@@ -287,87 +287,90 @@ class Expr(object):
     if py_tmp:
         self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
         __CMD__ += "(= !" + self._data + " "
-    __CMD__ += "(" + self._op + " "
+    if self._op != ",":           # Comma ops curry in-place (just gather args)
+      __CMD__ += "(" + self._op + " "
 
-    left = self._do_child(True)   # down the left
-    rite = self._do_child(False)  # down the right
+    left = self._do_child(self._left)  # down the left
+    rite = self._do_child(self._rite)  # down the right
 
-    try:
+    # eventually will need to create dedicated objects each overriding a "set_data" method
+    # live with this "switch" for now
 
-      # eventually will need to create dedicated objects each overriding a "set_data" method
-      # live with this "switch" for now
+    # Do not try/catch NotImplementedError - it blows the original stack trace
+    # so then you can't see what's not implemented
 
-      if self._op in ["+", "&", "-", "*", "/", "==", "<", ">="]:   # in self.BINARY_INFIX_OPS:
-        #   num op num
-        #   num op []
-        if isinstance(left._data, (int, float)):
-          if isinstance(rite._data, (int, float)):   self._data = eval("left " + self._op + " rite")
-          elif rite.is_local():                      self._data = eval("[left "+ self._op + " x for x in rite._data]")
-          else:                                      pass
+    if self._op in ["+", "&", "-", "*", "/", "==", "<", ">", ">=", "<="]:   # in self.BINARY_INFIX_OPS:
+      #   num op num
+      #   num op []
+      if isinstance(left._data, (int, float)):
+        if isinstance(rite._data, (int, float)):   self._data = eval("left " + self._op + " rite")
+        elif rite.is_local():                      self._data = eval("[left "+ self._op + " x for x in rite._data]")
+        else:                                      pass
 
-        #   [] op num
-        elif isinstance(rite._data, (int, float)):
-          if left.is_local():   self._data = eval("[x" + self._op + " rite for x in left._data]")
-          else:                 pass
-
-        #   [] op []
-        else:
-          if left.is_local() and rite.is_local():             self._data = eval("[x " + self._op + " y for x, y in zip(left._data, rite._data)]")
-          elif (left.is_remote() or left._data is None) and \
-                  (rite.is_remote() or rite._data is None):      pass
-          else:                                               raise NotImplementedError
-
-      elif self._op == "[":
-
-        #   [] = []
-        if left.is_local():    self._data = left._data[rite._data]
-        #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
-        else:                  __CMD__ += ' "null"'
-
-      elif self._op == "=":
-
-        if left.is_local():   raise NotImplementedError
-        else:
-          if rite is None: __CMD__ += "#NaN"
-
-      elif self._op == "floor":
-        if left.is_local():   self._data = [floor(x) for x in left._data]
+      #   [] op num
+      elif isinstance(rite._data, (int, float)):
+        if left.is_local():   self._data = eval("[x" + self._op + " rite for x in left._data]")
         else:                 pass
 
-      elif self._op == "month":
-        if left.is_local():   raise NotImplementedError
-        else:                 pass
-
-      elif self._op == "dayOfWeek":
-        if left.is_local():   raise NotImplementedError
-        else:                 pass
-
-      elif self._op == "mean":
-        if left.is_local():   self._data = sum(left._data) / len(left._data)
-        else:                  __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
-
-      elif self._op in ["as.factor", "h2o.runif"]:
-        if left.is_local():   self._data = map(str, left._data)
-        else:                 pass
-
-      elif self._op == "quantile":
-        if left.is_local():   raise NotImplementedError
-        else:
-          rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
-          __CMD__ += rapids_series + " %FALSE #7"
-
+      #   [] op []
       else:
-        raise NotImplementedError(self._op)
+        if left.is_local() and rite.is_local():             self._data = eval("[x " + self._op + " y for x, y in zip(left._data, rite._data)]")
+        elif (left.is_remote() or left._data is None) and \
+                (rite.is_remote() or rite._data is None):      pass
+        else:                                               raise NotImplementedError
 
-    # need to wipe the shared state!
-    except NotImplementedError :
-      global __TMPS__
-      __CMD__ = None
-      __TMPS__ = None
-      raise NotImplementedError  # re raise
+    elif self._op == "[":
+
+      #   [] = []
+      if left.is_local():    self._data = left._data[rite._data]
+      #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
+      else:                  __CMD__ += ' "null"'
+
+    elif self._op == "=":
+
+      if left.is_local():   raise NotImplementedError
+      else:
+        if rite is None: __CMD__ += "#NaN"
+
+    elif self._op == "floor":
+      if left.is_local():   self._data = [floor(x) for x in left._data]
+      else:                 pass
+
+    elif self._op == "month":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "dayOfWeek":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == "mean":
+      if left.is_local():   self._data = sum(left._data) / len(left._data)
+      else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
+
+    elif self._op in ["as.factor", "h2o.runif", "is.na"]:
+      if left.is_local():   self._data = map(str, left._data)
+      else:                 pass
+
+    elif self._op == "quantile":
+      if left.is_local():   raise NotImplementedError
+      else:
+        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
+        __CMD__ += rapids_series + " %FALSE #7"
+
+    elif self._op == "mktime":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
+
+    elif self._op == ",":
+      pass
+
+    else:
+      raise NotImplementedError(self._op)
 
     # End of expression... wrap up parens
-    __CMD__ += ")"
+    if self._op != ",":
+      __CMD__ += ")"
     if py_tmp:
       __CMD__ += ")"
 
@@ -377,7 +380,9 @@ class Expr(object):
 
     # Keep LHS alive
     if assign_vec:
-      if assign_vec._op != "rawdata":  # Need to roll-up nested exprs
-        raise NotImplementedError
+      #if assign_vec._op != "rawdata":  # Need to roll-up nested exprs
+      #  print assign_vec.debug()
+      #  print assign_vec._data,assign_vec._left,assign_vec._rite
+      #  raise NotImplementedError
       self._left = assign_vec
       self._data = assign_vec._data

@@ -2,8 +2,10 @@ package hex.schemas;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
+import water.DKV;
 import water.api.API;
 import water.api.API.Level;
 import water.api.SupervisedModelParametersSchema;
@@ -17,6 +19,8 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
   public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
     static public String[] own_fields = new String[] {
       "solver",
+      "max_iter",
+      "beta_eps",
       "standardize",
       "family",
       "link",
@@ -28,7 +32,6 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
       "lambda_search",
       "nlambdas",
       "lambda_min_ratio",
-      "higher_accuracy",
       "use_all_factor_levels",
       "n_folds"
     };
@@ -40,7 +43,13 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @API(help = "Standardize numeric columns to have zero mean and unit variance.")
     public boolean standardize;
 
-    @API(help = "Family.", values={ "gaussian", "binomial", "poisson", "gamma", "tweedie" })
+    @API(help = "Maximum number of iterations. ")
+    public int max_iter = 50;
+
+    @API(help="beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
+    public double beta_eps;
+
+    @API(help = "Family.", values={ "gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}) // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
     @API(help = "", level= Level.secondary, values={ "family_default", "identity", "logit", "log", "inverse", "tweedie" })
@@ -70,19 +79,16 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @API(help="min lambda used in lambda search, specified as a ratio of lambda_max",level=Level.expert)
     public double lambda_min_ratio;
 
-    @API(help="use line search (slower speed, to be used if glm does not converge otherwise)",level=Level.secondary)
-    public boolean higher_accuracy;
-
     @API(help="By default, first factor level is skipped from the possible set of predictors. Set this flag if you want use all of the levels. Needs sufficient regularization to solve!",level=Level.secondary)
     public boolean use_all_factor_levels;
 
     @API(help = "validation folds")
     public int n_folds;
+
+    @Override public GLMParameters fillImpl(GLMParameters impl) {
+      super.fillImpl(impl);
+      impl._convert_to_enum = (family == Family.binomial);
+      return impl;
+    }
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // Return a URL to invoke GLM on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/GLM?training_frame="+fr._key; }
 }

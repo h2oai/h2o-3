@@ -1,5 +1,6 @@
 package hex;
 
+import water.H2O;
 import water.fvec.Frame;
 
 public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
@@ -19,12 +20,12 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
     }
 
     @Override public float[] perRow( float ds[], float yact[], Model m) {
-      return null; //FIXME
+      throw H2O.unimpl();
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      return null; //FIXME
+    public ModelMetrics makeModelMetrics( Model m, Frame f, double mse) {
+      return m._output.addModelMetrics(new ModelMetricsAutoEncoder(m, f, mse));
     }
   }
 }

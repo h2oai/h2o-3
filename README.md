@@ -42,42 +42,105 @@ Users will use JSON/REST-api via H2O.R through connects the Analytics Engine int
 
 Using H2O Dev Artifacts
 --------------------------------
-Find H2O Dev on Maven Central via http://search.maven.org/#search%7Cga%7C1%7Cai.h2o
+Every nightly build publishes R, python, java and scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
+
+Here is an example snippet of a gradle build file using h2o-dev as a dependency.  Replace x, y, z, and nnnn with valid numbers.
+
+```
+// h2o-dev dependency information
+def h2oBranch = 'master'
+def h2oBuildNumber = 'nnnn'
+def h2oProjectVersion = "x.y.z.${h2oBuildNumber}"
+
+repositories {
+  // h2o-dev dependencies
+  maven {
+    url "https://s3.amazonaws.com/h2o-release/h2o-dev/${h2oBranch}/${h2oBuildNumber}/maven/repo/"
+  }
+}
+
+dependencies {
+  compile "ai.h2o:h2o-core:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-algos:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-web:${h2oProjectVersion}"
+  compile "ai.h2o:h2o-app:${h2oProjectVersion}"
+}
+```
+
+See the latest H2O Dev [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-dev/master/latest.html) for information about installing nightly build artifacts.
+
+See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) for a working example of how to use java artifacts with gradle.
+
+> Note: Stable H2O Dev artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may lag substantially behind H2O Dev Bleeding Edge nightly builds.
 
 Building H2O Dev
 --------------------------------
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
-### Common Setup for all Platforms
+##Making a clean build
 
-##### Step 1. Install required python packages
+Making a clean build is strongly recommended if: 
 
-	(possibly sudo)
-	pip install grip
-	pip install tabulate
+- the gradle build fails
+- there have been many changes in the last pull
+- source files have been renamed or deleted
 
-### Setup on Windows
+If you try to create a gradle build using `./gradlew build` and any of the conditions listed above apply, the build is likely to fail. 
 
-##### Step 1. Install JDK
+Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. We strongly recommend using `./gradlew clean` after every `git pull`. 
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. Check to make sure the command prompt is detecting the correct Java version by running:
+While using `./gradlew clean` is not required, it helps to prevent errors due to missing or outdated files during the build process. However, due to the increased time required for this method, we recommend using `./gradlew clean` only for integrating recent changes or troubleshooting failed builds.  
+
+### For all Platforms:
+
+##### Install required python packages (using `sudo` if necessary)
+
+    `pip install grip`
+    `pip install tabulate`
+    `pip install wheel`
+
+### For Windows
+
+##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
+  
+  `C:\Python27\;C:\Python27\Scripts\`
+
+###### Step 2: Install required Python packages:
+
+    `pip install grip`
+    `pip install tabulate`
+    `pip install wheel`
+
+##### Step 3: Install JDK
+
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
-##### Step 2. Install Node.js, npm, and bower
+The CLASSPATH variable also needs to be set to the lib subfolder of the JDK: 
 
-Install [Node.js](http://nodejs.org/download/) and add installed directory `C:\Program Files\nodejs` that should include node.exe and npm.cmd to PATH if it isn't already prepended. After you have installed Node.js, install bower using
+    CLASSPATH=/<path>/<to>/<jdk>/lib
 
-    npm install -g bower
+##### Step 4. Install Node.js
 
-##### Step 3a. Install R, the required packages, and Rtools
+Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. 
+
+##### Step 5. Install R, the required packages, and Rtools:
+
+To install these packages from within an R session, enter:
+
+    R> install.packages("RCurl")
+    R> install.packages("rjson")
+    R> install.packages("statmod")
+    R> install.packages(c("devtools", "roxygen2", "testthat"))
 
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.
 
-Install the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
+To manually install packages, download the releases of the following R packages: [bitops](http://cran.r-project.org/package=bitops), [devtools](http://cran.r-project.org/package=devtools), [digest](http://cran.r-project.org/package=digest), [Rcpp](http://cran.r-project.org/package=Rcpp), [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [roxygen2](http://cran.r-project.org/package=roxygen2), [statmod](http://cran.r-project.org/package=statmod), [stringr](http://cran.r-project.org/package=stringr), and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
     R CMD INSTALL bitops_x.x-x.zip
@@ -91,34 +154,19 @@ Install the following R packages: [bitops](http://cran.r-project.org/package=bit
     R CMD INSTALL roxygen2_x.x.x.zip
     R CMD INSTALL devtools_x.x.x.zip
 
-You may alternatively install these packages from within an R session:
 
-    R> install.packages("RCurl")
-    R> install.packages("rjson")
-    R> install.packages("statmod")
-    R> install.packages(c("devtools", "roxygen2", "testthat"))
+Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
+**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
-Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which are a collection of command line tools to facilitate R development on Windows.
+##### Step 6. Install [Cygwin](https://cygwin.com/setup-x86_64.exe)
+**NOTE**: During installation of Cygwin, deselect the Python packages to avoid a conflict with the Python.org package. 
 
-##### Step 3b. Install pip (Upgrade pip) and the wheel module
+###### Step 6b. Validate Cygwin
+If Cygwin is already installed, remove the Python packages or ensure that Native Python is before Cygwin in the PATH variable. 
 
-The version of Python that we test is 2.7; other versions may work, but they are untested.
+##### Step 7. Update or validate the Windows PATH variable to include R, Java JDK, Cygwin. 
 
-To install pip, please follow the directions here:
-
-https://pip.pypa.io/en/latest/installing.html
-
-If you already have pip installed, then please ensure that it is upgraded:
-  
-    pip install --upgrade pip
-    
-After this, you'll need to grab the wheel module:
-
-    pip install wheel --upgrade
-    
-This will auto-update your wheel module if you already have it installed, or just perform an install of the latest version.
-
-##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 8. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
 If you don't already have a Git client, please install one.  The default one can be found here http://git-scm.com/downloads .  Make sure that during the install command prompt support is turned on.
 
@@ -126,35 +174,33 @@ Download and update h2o-dev source codes:
 
     git clone https://github.com/h2oai/h2o-dev
 
-##### Step 5. Run the top-level gradle build:
+##### Step 9. Run the top-level gradle build:
 
     cd h2o-dev
-    gradlew.bat build
+    gradlew build
 
-> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
+
 
 ### Setup on OS X
 
-If you don't have [Homebrew](http://brew.sh/) install, please consider it.  It makes package management for OS X easy.
+If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It makes package management for OS X easy.
 
 ##### Step 1. Install JDK
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Check to make sure the command prompt is detecting the correct Java version by running:
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
-##### Step 2. Install Node.js, npm, and bower
+##### Step 2. Install Node.js:
 
 Using Homebrew:
 
     brew install node
 
-Otherwise install from the [NodeJS website](http://nodejs.org/download/). After you have installed Node.js, install
-bower using
+Otherwise, install from the [NodeJS website](http://nodejs.org/download/). 
 
-    npm install -g bower
-
-##### Step 3. Install R and the required packages
+##### Step 3. Install R and the required packages:
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
@@ -172,7 +218,7 @@ Install the following R packages: [RCurl](http://cran.r-project.org/package=RCur
     R CMD INSTALL roxygen2_x.x.x.tgz
     R CMD INSTALL devtools_x.x.x.tgz
 
-You may alternatively install these packages from within an R session:
+To install these packages from within an R session:
 
     R> install.packages("RCurl")
     R> install.packages("rjson")
@@ -181,7 +227,7 @@ You may alternatively install these packages from within an R session:
 
 ##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
-OS X should have come with Git installed, so just download and update h2o-dev source codes:
+OS X should have with Git installed. To download and update h2o-dev source codes:
 
     git clone https://github.com/h2oai/h2o-dev
 
@@ -190,25 +236,25 @@ OS X should have come with Git installed, so just download and update h2o-dev so
     cd h2o-dev
     ./gradlew build
 
-> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
 ### Setup on Ubuntu 14.04
 
-##### Step 1. Install Node.js, npm, and bower
+##### Step 1. Install Node.js, npm, and bower:
 
     sudo apt-get install npm
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     npm install -g bower
 
-##### Step 2. Install JDK
+##### Step 2. Install JDK:
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). Check to make sure the command prompt is detecting the correct Java version by running:
+Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
 ##### Step 3. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
-If you don't already have a Git client,
+If you don't already have a Git client:
 
     sudo apt-get install git
 
@@ -221,105 +267,64 @@ Download and update h2o-dev source codes:
     cd h2o-dev
     ./gradlew build
 
-> If you encounter errors run again with --stacktrace for more instructions on missing dependencies.
+> If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
-> Make sure that you are not running as root since `bower` will reject such a run
+> Make sure that you are not running as root, since `bower` will reject such a run.
 
 ### Setup on Ubuntu 13.10
 
 ##### Step 1. Install Node.js, npm, and bower
 
-On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so we use a fresh install from the npm website.
+On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default npm (v1.2.18) is too old, so use a fresh install from the npm website:
 
     sudo apt-get install node
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     wget http://npmjs.org/install.sh
     sudo apt-get install curl
     sudo sh install.sh
-    npm install -g bower
+   
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
 ### Setting up your preferred build environment
 
-For users of Intellij's IDEA, project files can be generated with:
+For users of Intellij's IDEA, generate project files with:
 
     ./gradlew idea
 
-For users of Eclipse, project files can be generated with:
+For users of Eclipse, generate project files with:
 
     ./gradlew eclipse
 
-Launching H2O on Hadoop from your workspace
--------------------------------------------
-Note: This capability is new to h2o-dev and still under development!
 
-### First, choose the version of Hadoop you want to build for
+H2O on Hadoop
+-------------
 
-Right now, h2o-dev can only build for one version of Hadoop at a time.  This is specified in **_h2o-dev/build.gradle_** by the line below.
+To build H2O with Hadoop support, do the following from the top-level h2o-dev directory:
 
-	hadoopVersion = '2.5.0-cdh5.2.0'
+    (export BUILD_HADOOP=1; ./gradlew build -x test)
+    ./gradlew dist
 
-The default version is set to CDH5.2 but this also works for HDP2.1 (the example below is launching on hdp2.1).
 
-### Second, do a standard build (if you haven't already)
+This will create a directory called 'target' and generate zip files there.    
 
-	(In top-level h2o-dev directory)
-	./gradlew build
 
-### Third, do the Hadoop launch
+### Adding support for a new version of Hadoop
 
-After building, you now have the pieces to run H2O on Hadoop.  Copy the h2o-hadoop.jar and h2o.jar files to an appropriate Hadoop enabled host.  The following command shows an example of running in place, assuming you did your build on a Hadoop enabled host.
+In the h2o-hadoop directory each hadoop version has a build directory for the driver and an assembly directory for the fatjar.
 
-	(In top-level h2o-dev directory)
-	hadoop jar h2o-hadoop/build/libs/h2o-hadoop.jar water.hadoop.h2odriver -libjars build/h2o.jar -n 3 -mapperXmx 4g -output hdfsOutputDirectory
+You need to:
 
-This example creates a cluster with three nodes where each node has a 4g Java heap.
+1.  Add a new driver directory and assembly directorie (each with a build.gradle file) in h2o-hadoop
+2.  Add these new projects to h2o-dev/settings.gradle
+3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
+4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
-**_Note: For best results, we recommend you give your cluster enough memory to avoid swapping data to disk. (Of course, this depends on the size of your data!)_**
 
-Output from the above command:
-
-```
-Determining driver host interface for mapper->driver callback...
-    [Possible callback IP address: 172.16.2.181]
-    [Possible callback IP address: 127.0.0.1]
-Using mapper->driver callback IP address and port: 172.16.2.181:44948
-(You can override these with -driverif and -driverport.)
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.child.java.opts is deprecated. Instead, use mapreduce.map.java.opts
-Memory Settings:
-    mapred.child.java.opts:      -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
-    mapred.map.child.java.opts:  -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
-    Extra memory percent:        10
-    mapreduce.map.memory.mb:     4505
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.used.genericoptionsparser is deprecated. Instead, use mapreduce.client.genericoptionsparser.used
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.tasks.speculative.execution is deprecated. Instead, use mapreduce.map.speculative
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.max.attempts is deprecated. Instead, use mapreduce.map.maxattempts
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.job.reuse.jvm.num.tasks is deprecated. Instead, use mapreduce.job.jvm.numtasks
-14/10/26 22:59:08 INFO client.RMProxy: Connecting to ResourceManager at mr-0xd7.0xdata.loc/172.16.2.187:8050
-14/10/26 22:59:09 INFO mapreduce.JobSubmitter: number of splits:3
-14/10/26 22:59:09 INFO mapreduce.JobSubmitter: Submitting tokens for job: job_1413598290344_0035
-14/10/26 22:59:09 INFO impl.YarnClientImpl: Submitted application application_1413598290344_0035
-14/10/26 22:59:09 INFO mapreduce.Job: The url to track the job: http://mr-0xd7.0xdata.loc:8088/proxy/application_1413598290344_0035/
-Job name 'H2O_3581' submitted
-JobTracker job ID is 'job_1413598290344_0035'
-For YARN users, logs command is 'yarn logs -applicationId application_1413598290344_0035'
-Waiting for H2O cluster to come up...
-H2O node 172.16.2.184:54321 reports H2O cluster size 1
-H2O node 172.16.2.185:54321 reports H2O cluster size 1
-H2O node 172.16.2.181:54321 reports H2O cluster size 1
-H2O node 172.16.2.181:54321 reports H2O cluster size 3
-H2O cluster (3 nodes) is up
-(Note: Use the -disown option to exit the driver after cluster formation)
-(Press Ctrl-C to kill the cluster)
-Blocking until the H2O cluster shuts down...
-H2O node 172.16.2.185:54321 reports H2O cluster size 3
-H2O node 172.16.2.184:54321 reports H2O cluster size 3
-```
 
 Sparkling Water
 ---------------------------------
-Sparkling Water combines two open source technologies: Apache Spark and H2O - a machine learning engine.  It makes H2O’s library of Advanced Algorithms including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest accessible from Spark workflows. Spark users are provided with the options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
+Sparkling Water combines two open source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest, accessible from Spark workflows. Spark users are provided with options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
 
 ### Prerequisites
 
@@ -328,7 +333,7 @@ Spark 1.1 for older versions
 
 ### Sparkling Water on Hadoop
 
-Compatiable Hadoop Distribution: CDH4, CDH5, and HDP2.1.
+Compatiable Hadoop Distributions: CDH4, CDH5, and HDP2.1.
 
 #### Install on Hadoop
 
@@ -396,16 +401,21 @@ Ray Peck
 Prithvi Prabhu
 Patrick Aboyoun
 Brandon Hill
-Radu Munteanu
 Jeff Gambera
 Ariel Rao
 Viraj Parmar
 Kendall Harris
-Anna Chavez
 Anand Avati
-Joel Horwitz
 Jessica Lanford
 Yan Zou
+Alex Tellez
+Allison Washburn
+Amy Wang
+Erik Eckstrand
+James Dean
+Neeraja Madabhusi
+Sebastian Vidrio
+
 ```
 
 Advisors
@@ -424,7 +434,6 @@ Systems, Data, FileSystems and Hadoop
 Doug Lea
 Chris Pouliot
 Dhruba Borthakur
-Charles Zedlewski
 ```
 
 Investors
@@ -437,4 +446,5 @@ Anand Rajaraman
 Ash Bhardwaj
 Rakesh Mathur
 Michael Marks
+Egbert Bierman
 ```

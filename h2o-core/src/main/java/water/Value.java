@@ -4,13 +4,10 @@ import jsr166y.ForkJoinPool;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingSetInt;
-import water.persist.Persist;
 import water.util.Log;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
@@ -63,7 +60,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // In any case, they will cause issues with both GC (giant pause times on
   // many collectors) and I/O (long term blocking of TCP I/O channels to
   // service a single request, causing starvation of other requests).
-  private static final int MAX = 64*1024*1024;
+  private static final int MAX = 256*1024*1024;
 
   /** Size of the serialized wad of bits.  Values are wads of bits; known small
    *  enough to 'chunk' politely on disk, or fit in a Java heap (larger Vecs
@@ -208,7 +205,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Store complete Values to disk */
   void storePersist() throws IOException {
     if( isPersisted() ) return;
-    Persist.I[backend()].store(this);
+    H2O.getPM().store(backend(), this);
   }
 
   /** Remove dead Values from disk */
@@ -217,13 +214,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     //  free_mem();
     if( !isPersisted() || !onICE() ) return; // Never hit disk?
     clrdsk();  // Not persisted now
-    Persist.I[backend()].delete(this);
+    H2O.getPM().delete(backend(), this);
   }
   /** Load some or all of completely persisted Values */
   byte[] loadPersist() {
     assert isPersisted();
     try { 
-      return Persist.I[backend()].load(this);
+      return H2O.getPM().load(backend(), this);
     } catch( IOException ioe ) {
       throw Log.throwErr(ioe);
     }
@@ -279,6 +276,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Check if the Value's POJO is a {@link Job} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Job} subtype. */
   public boolean isJob()      { return _type != TypeMap.PRIM_B && TypeMap.theFreezable(_type) instanceof Job; }
+
+  public Class<? extends Freezable> theFreezableClass() { return TypeMap.theFreezable(this._type).getClass(); }
 
   // --------------------------------------------------------------------------
 

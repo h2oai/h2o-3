@@ -42,11 +42,21 @@ JVM="nice java -ea -Xmx2g -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/li
 JUNIT_TESTS_BOOT="hex.AAA_PreCloudLock"
 JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
 
+# Runner
+# Default JUnit runner is org.junit.runner.JUnitCore
+JUNIT_RUNNER="water.junit.H2OTestRunner"
+
 # find all java in the src/test directory
 # Cut the "./water/MRThrow.java" down to "water/MRThrow.java"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG > $OUTDIR/tests.txt
+
+# On this h2o-algos testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# If sorted, the result of the cd/grep varies by machine. 
+# If randomness is desired, replace sort with the unix 'shuf'
+# Use /usr/bin/sort because of cygwin on windows. 
+# Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort > $OUTDIR/tests.txt
 
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$
@@ -58,6 +68,8 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT 1> $OUTDIR/out.4 
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-algos junit tests...
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT org.junit.runner.JUnitCore $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+
+grep EXECUTION $OUTDIR/out.0 | cut "-d " -f23,20 | awk '{print $2 " " $1}'| sort -gr | head -n 10 >> $OUTDIR/out.0
 
 cleanup

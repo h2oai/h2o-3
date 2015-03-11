@@ -1,7 +1,8 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import dump_json
 
 class Basic(unittest.TestCase):
@@ -10,7 +11,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init()
+        h2o.init(delete_keys_at_teardown=True)
 
     @classmethod
     def tearDownClass(cls):

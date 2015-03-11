@@ -67,7 +67,9 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "sparse",
         "col_major",
         "average_activation",
-        "sparsity_beta"
+        "sparsity_beta",
+        "max_categorical_features",
+        "reproducible"
     };
 
 
@@ -506,10 +508,4 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
     @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean reproducible;
   }
-
-  //==========================
-  // Custom adapters go here
-
-  // Return a URL to invoke DeepLearning on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/DeepLearning?training_frame="+fr._key; }
 }

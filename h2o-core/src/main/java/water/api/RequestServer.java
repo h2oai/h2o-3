@@ -1,12 +1,12 @@
 package water.api;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
+import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.parser.ParseSetupHandler;
 import water.util.GetLogsFromNode;
 import water.util.Log;
 import water.util.RString;
@@ -17,10 +17,12 @@ import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+//import com.brsanthu.googleanalytics.AppViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -91,7 +93,9 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
-    addToNavbar(register("/2/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Something something something."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/2/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Create a synthetic H2O Frame."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/2/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Split a H2O Frame."),"/SplitFrame",  "Split Frame",   "Data");
+    addToNavbar(register("/2/MissingInserter" ,"POST",MissingInserterHandler.class,"run","Insert missing values."),"/MissingInserter",  "Insert Missing Values",   "Data");
     addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
@@ -104,6 +108,7 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/2/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/2/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/2/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
+    addToNavbar(register("/2/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
     addToNavbar(register("/2/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
     addToNavbar(register("/2/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 
@@ -145,6 +150,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"key", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
+    register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"key", "column"},
+            "Return the domains for the specified column. \"null\" if the column is not an Enum.");
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)"        ,"GET"   ,FramesHandler.class, "column",                             new String[] {"key", "column"},
       "Return the specified column from a Frame.");
     register("/3/Frames/(?<key>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns",                            new String[] {"key"},
@@ -177,10 +184,14 @@ public class RequestServer extends NanoHTTPD {
     // TODO: filtering isn't working for these first four; we get all results:
     register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"model", "frame"},
       "Return the saved scoring metrics for the specified Model and Frame.");
+    register("/3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"model", "frame"},
+            "Return the saved scoring metrics for the specified Model and Frame.");
     register("/3/ModelMetrics/models/(?<model>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"model"},
       "Return the saved scoring metrics for the specified Model.");
     register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"GET"   ,ModelMetricsHandler.class, "fetch", new String[] {"frame", "model"},
       "Return the saved scoring metrics for the specified Model and Frame.");
+    register("/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)"    ,"DELETE",ModelMetricsHandler.class, "delete", new String[] {"frame", "model"},
+            "Return the saved scoring metrics for the specified Model and Frame.");
     register("/3/ModelMetrics/frames/(?<frame>.*)"                        ,"GET"   ,ModelMetricsHandler.class, "fetch",  new String[] {"frame"},
       "Return the saved scoring metrics for the specified Frame.");
     register("/3/ModelMetrics"                                            ,"GET"   ,ModelMetricsHandler.class, "fetch",
@@ -212,7 +223,6 @@ public class RequestServer extends NanoHTTPD {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    register("/3/Logs/nodes/(?<nodeidx>.*)/files/default",     "GET", LogsHandler.class, "fetch", new String[] {"nodeidx"},         "Get default log file for a node.");
     register("/3/Logs/nodes/(?<nodeidx>.*)/files/(?<name>.*)", "GET", LogsHandler.class, "fetch", new String[] {"nodeidx", "name"}, "Get named log file for a node.");
 
 
@@ -238,7 +248,7 @@ public class RequestServer extends NanoHTTPD {
    * @deprecated All routes should have doc methods.
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, null, new String[]{}, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, null, new String[]{}, summary, HandlerFactory.DEFAULT);
   }
 
   @Deprecated
@@ -246,7 +256,7 @@ public class RequestServer extends NanoHTTPD {
    * @deprecated All routes should have doc methods.
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String[] path_params, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, null, path_params, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, null, path_params, summary, HandlerFactory.DEFAULT);
   }
 
 
@@ -265,7 +275,7 @@ public class RequestServer extends NanoHTTPD {
    * @return the Route for this request
    */
   public static Route register(String uri_pattern, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary) {
-    return register(uri_pattern, http_method, handler_class, handler_method, doc_method, new String[]{}, summary);
+    return register(uri_pattern, http_method, handler_class, handler_method, doc_method, new String[]{}, summary, HandlerFactory.DEFAULT);
   }
 
   /**
@@ -285,6 +295,27 @@ public class RequestServer extends NanoHTTPD {
    * @return the Route for this request
    */
   public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary) {
+    return register(uri_pattern_raw, http_method, handler_class, handler_method, doc_method, path_params, summary, HandlerFactory.DEFAULT);
+  }
+
+  /**
+   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
+   * <p>
+   * URIs which match this pattern will have their parameters collected from the path and from the query params
+   *
+   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
+   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
+   * @param handler_class class which contains the handler method
+   * @param handler_method name of the handler method
+   * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
+   * @param path_params list of parameter names to extract from the uri_pattern; they are matched by name from the named pattern capture group
+   * @param summary short help string which summarizes the functionality of this endpoint
+   * @param handler_factory factory to create instance of handler
+   * @see Route
+   * @see water.api.RequestServer
+   * @return the Route for this request
+   */
+  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String[] path_params, String summary, HandlerFactory handler_factory) {
     assert uri_pattern_raw.startsWith("/");
 
     // Search handler_class and all its superclasses for the method.
@@ -330,7 +361,7 @@ public class RequestServer extends NanoHTTPD {
 
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
     Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
-    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params);
+    Route route = new Route(http_method, uri_pattern_raw, uri_pattern, summary, handler_class, meth, doc_meth, path_params, handler_factory);
     _routes.put(uri_pattern, route);
     return route;
   }
@@ -375,7 +406,7 @@ public class RequestServer extends NanoHTTPD {
     for (int i = version; i > route_version && i >= Route.MIN_VERSION; i--) {
       String fallback_route_uri = "/" + i + "/" + route_m.group(2);
       Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
-      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params);
+      Route generated = new Route(fallback._http_method, fallback_route_uri, fallback_route_pattern, fallback._summary, fallback._handler_class, fallback._handler_method, fallback._doc_method, fallback._path_params, fallback._handler_factory);
       _fallbacks.put(fallback_route_pattern, generated);
     }
 
@@ -388,6 +419,7 @@ public class RequestServer extends NanoHTTPD {
   // seperate thread (I'm guessing here) so the startup process does not hang
   // if the various web-port accesses causes Nano to hang on startup.
   public static Runnable start() {
+    Schema.registerAllSchemasIfNecessary();
     Runnable run=new Runnable() {
         @Override public void run()  {
           while( true ) {
@@ -421,18 +453,28 @@ public class RequestServer extends NanoHTTPD {
   }
 
     // Log all requests except the overly common ones
-  void maybeLogRequest(String method, String uri, String versioned_path, String pattern, Properties parms) {
+  void maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
     if (uri.endsWith(".css")) return;
     if (uri.endsWith(".js")) return;
     if (uri.endsWith(".png")) return;
     if (uri.endsWith(".ico")) return;
-    if (uri.startsWith("/Typeahead")) return;
-    if (uri.startsWith("/Cloud")) return;
-    if (uri.contains("Progress")) return;
-    if (uri.contains("WaterMeterCpuTicks")) return;
+
+    if (uri.contains("/Cloud")) return;
+    if (uri.contains("/Jobs") && method.equals("GET")) return;
+    if (uri.contains("/Log")) return;
+    if (uri.contains("/Progress")) return;
+    if (uri.contains("/Typeahead")) return;
+    if (uri.contains("/WaterMeterCpuTicks")) return;
 
     String paddedMethod = String.format("%-6s", method);
-    Log.info("Method: " + paddedMethod, ", Path: " + versioned_path + ", route: " + pattern + ", parms: " + parms);
+    Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
+
+/*    if (H2O.GA != null) {
+      if (header.getProperty("user-agent") != null)
+        H2O.GA.postAsync(new AppViewHit(uri).customDimention(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
+      else
+        H2O.GA.postAsync(new AppViewHit(uri));
+    }*/
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -506,21 +548,28 @@ public class RequestServer extends NanoHTTPD {
       versioned_path = "/" + version + path;
     }
 
-    alwaysLogRequest(versioned_path, method, parms);
-
-    // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
-    if (uri.endsWith("/Logs/download")) {
-      maybeLogRequest(method, path, versioned_path, "", parms);
-      return downloadLogs();
-    }
+    alwaysLogRequest(uri, method, parms);
 
     // Load resources, or dispatch on handled requests
     try {
+      // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
+      if (method.equals("GET") && uri.endsWith("/Logs/download")) {
+        maybeLogRequest(method, uri, "", parms, header);
+        return downloadLogs();
+      }
+      if (method.equals("GET")) {
+        Pattern p2 = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
+        Matcher m2 = p2.matcher(uri);
+        boolean b2 = m2.matches();
+        if (b2) {
+          String categoryName = m2.group(1);
+          String keyName = m2.group(2);
+          return downloadNps(categoryName, keyName);
+        }
+      }
+
       // Find handler for url
       Route route = lookup(method, versioned_path);
-
-      if (route != null && route._handler_class != CloudHandler.class && route._handler_class != TutorialsHandler.class && route._handler_class != TypeaheadHandler.class)
-        Schema.registerAllSchemasIfNecessary();
 
       // if the request is not known, treat as resource request, or 404 if not found
       if( route == null) {
@@ -534,7 +583,7 @@ public class RequestServer extends NanoHTTPD {
         return wrapDownloadData(HTTP_OK, handle(type, route, version, parms));
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        maybeLogRequest(method, path, versioned_path, route._url_pattern.pattern(), parms);
+        maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
     }
@@ -573,8 +622,10 @@ public class RequestServer extends NanoHTTPD {
     case json:
     case xml: {
       Class<Handler> clz = (Class<Handler>)route._handler_class;
+      HandlerFactory handlerFactory = route._handler_factory;
       // TODO: Handler no longer has state, so we can create single instances and put them in the Routes
-      Handler h = clz.newInstance();
+      // NOTE: even there will be shared single instance, we need to support different creation strategies
+      Handler h = handlerFactory.create(clz);
       return h.handle(version,route,parms); // Can throw any Exception the handler throws
     }
     case query:
@@ -838,6 +889,21 @@ public class RequestServer extends NanoHTTPD {
     NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK,NanoHTTPD.MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
     res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
     res.addHeader("Content-Disposition", "attachment; filename="+outputFileStem + ".zip");
+    return res;
+  }
+
+
+  // ---------------------------------------------------------------------
+  // Download NPS support
+  // ---------------------------------------------------------------------
+
+  private Response downloadNps(String categoryName, String keyName) {
+    NodePersistentStorage nps = H2O.getNPS();
+    AtomicLong length = new AtomicLong();
+    InputStream is = nps.get(categoryName, keyName, length);
+    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_DEFAULT_BINARY, is);
+    res.addHeader("Content-Length", Long.toString(length.get()));
+    res.addHeader("Content-Disposition", "attachment; filename="+keyName + ".flow");
     return res;
   }
 }

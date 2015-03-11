@@ -1,6 +1,7 @@
 import unittest, random, sys, time, codecs
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i
 
 
 print 'not using NUL, (0x0), or " at start of line since they cause add/deletes of row count'
@@ -230,7 +231,7 @@ class Basic(unittest.TestCase):
                 # why are we saving this?
                 lastcolsHistory.append(lastcols)
 
-                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, checkHeader=0,
+                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, check_header=0,
                     timeoutSecs=60, sep=colSepInt, doSummary=DO_SUMMARY)
                 
                 inspect = h2o_cmd.runInspect(key=hex_key)

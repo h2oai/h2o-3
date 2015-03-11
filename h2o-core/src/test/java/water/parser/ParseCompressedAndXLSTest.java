@@ -5,6 +5,7 @@ import org.junit.*;
 import java.io.File;
 
 import water.*;
+import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
@@ -44,37 +45,25 @@ public class ParseCompressedAndXLSTest extends TestUtil {
     }
   }
 
-  @Test public void testMixedCSVXLS(){
-    Frame k1 = null;
-    try {
-      NFSFileVec nfs1 = NFSFileVec.make(find_test_file("smalldata/junit/iris.csv"));
-      NFSFileVec nfs2 = NFSFileVec.make(find_test_file("smalldata/junit/iris.xls"));
-      k1 = ParseDataset.parse(Key.make(), nfs1._key, nfs2._key);
-      assertEquals(  5,k1.numCols());
-      assertEquals(150,k1.numRows());
-    } finally {
-      if( k1 != null ) k1.delete();
-    }
-  }
-
   @Test public void  testXLSBadArgs(){
     Frame k1 = null;
     try {
       File f = find_test_file("smalldata/airlines/AirlinesTest.csv.zip");
       NFSFileVec nfs = NFSFileVec.make(f);
+      byte[] ctypes = new byte[12];
+      for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
       ParseSetup setup = new ParseSetup( true, // is valid
                                          0,    // invalidLines
                                          1,    // headerlines
                                          null, // errors
                                          ParserType.XLS,
                                          (byte)52, // sep; ascii '4'
-                                         12,       // ncols
-                                         true,     // singleQuotes 
-                                         new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
-                                         null, 
-                                         null, 
+                                         true,     // singleQuotes
                                          -1, // check header
-                                         null);
+                                         12,       // ncols
+                                         new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
+                                         ctypes,
+                                         null, null, null);
       k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
       assertEquals( 0,k1.numCols());
       assertEquals( 0,k1.numRows());
@@ -83,6 +72,4 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       if( k1 != null ) k1.delete();
     }
   }
-
-
 }

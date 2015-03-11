@@ -97,9 +97,9 @@ public class NewChunk extends Chunk {
   }
 
   // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk C ) {
-    this(C._vec, C._vec.elem2ChunkIdx(C._start));
-    _start = C._start;
+  public NewChunk( Chunk c ) {
+    this(c._vec, c.cidx());
+    _start = c._start;
   }
 
   // Pre-sized newchunks.
@@ -148,8 +148,12 @@ public class NewChunk extends Chunk {
           c.addUUID(_ls[_lId], Double.doubleToRawLongBits(_ds[_lId]));
         } else if (_ss != null) {
           int sidx = _is[_lId];
-          int slen = _lId+1 < _is.length ? _is[_lId+1]-sidx : _sslen - sidx;
-          ValueString vstr = new ValueString().set(_ss, sidx, slen);
+          int nextNotNAIdx = _lId+1;
+          // Find next not-NA value (_is[idx] != -1)
+          while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
+          int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]-sidx : _sslen - sidx;
+          // null-ValueString represents NA value
+          ValueString vstr = sidx == -1 ? null : new ValueString().set(_ss, sidx, slen);
           c.addStr(vstr);
         } else
           c.addNum(_ds[_lId]);
@@ -325,7 +329,7 @@ public class NewChunk extends Chunk {
         set_sparseLen(sparseLen() + 1);
         append_ss(str);
       } else if (_id == null) {
-        _is[sparseLen()] = -1;
+        _is[sparseLen()] = CStrChunk.NA;
         set_sparseLen(sparseLen() + 1);
       }
     }
@@ -1205,4 +1209,10 @@ public class NewChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._len="+ sparseLen(); }
+
+  // We have to explicitly override cidx implementation since we hide _cidx field with new version
+  @Override
+  public int cidx() {
+    return _cidx;
+  }
 }

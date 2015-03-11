@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
@@ -57,7 +58,7 @@ public class RapidsTest extends TestUtil {
     tree = "(| %a.hex %a.hex)";
     checkTree(tree);
   }
-
+  
   @Test public void test6() {
 //    Checking `hex[,1]`
     String tree = "([ %a.hex \"null\" #1)";
@@ -97,5 +98,30 @@ public class RapidsTest extends TestUtil {
     }
     fr.delete();
     r.delete();
+  }
+
+  @Test public void testMerge() {
+    Frame l=null,r=null,f=null;
+    try {
+      l = frame("name" ,vec(ar("Cliff","Arno","Tomas","Spencer"),ari(0,1,2,3)));
+      l.    add("age"  ,vec(ar(">dirt" ,"middle","middle","young'n"),ari(0,1,2,3)));
+      l = new Frame(l);
+      DKV.put(l);
+      System.out.println(l);
+      r = frame("name" ,vec(ar("Arno","Tomas","Michael","Cliff"),ari(0,1,2,3)));
+      r.    add("skill",vec(ar("science","linearmath","sparkling","hacker"),ari(0,1,2,3)));
+      r = new Frame(r);
+      DKV.put(r);
+      System.out.println(r);
+      String x = String.format("(merge %%%s %%%s #1 #0 )",l._key,r._key);
+      Env env = Exec.exec(x);
+      System.out.println(env.toString());
+      f = env.popAry();
+      System.out.println(f);
+    } finally {
+      if( f != null ) f.delete();
+      if( r != null ) r.delete();
+      if( l != null ) l.delete();
+    }
   }
 }

@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelMetrics;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -13,6 +14,8 @@ class ModelMetricsHandler extends Handler {
     public Frame _frame;
     public ModelMetrics[] _model_metrics;
     public String _destination_key;
+    public boolean _reconstruction_error;
+    public int _deep_features_hidden_layer = -1;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -38,6 +41,16 @@ class ModelMetricsHandler extends Handler {
       return this;              // Flow coding
     }
 
+    // Delete the metrics that match model and/or frame
+    ModelMetricsList delete() {
+      ModelMetricsList matches = fetch();
+
+      for (ModelMetrics mm : matches._model_metrics)
+        DKV.remove(mm._key);
+
+      return matches;
+    }
+
     /** Return all the models matching the model&frame filters */
     public Schema list(int version, ModelMetricsList m) {
       return this.schema(version).fillFromImpl(m.fetch());
@@ -59,22 +72,31 @@ class ModelMetricsHandler extends Handler {
   public static final class ModelMetricsListSchemaV3 extends Schema<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = false)
-    public String model;
+    public KeyV1.ModelKeyV1 model;
 
     @API(help = "Key of Frame of interest (optional)", json = false)
-    public String frame;
+    public KeyV1.FrameKeyV1 frame;
 
-    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = false, required = false)
-    public String destination_key;
+    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)
+    public KeyV1.FrameKeyV1 destination_key;
+
+    @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
+    public boolean reconstruction_error;
+
+    @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false, required = false)
+    public int deep_features_hidden_layer;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBase[] model_metrics;
 
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
-      mml._model = DKV.getGet(this.model);
-      mml._frame = DKV.getGet(this.frame);
-      mml._destination_key = this.destination_key;
+      // TODO: check for type!
+      mml._model = (null == this.model || null == this.model.key() ? null : this.model.key().get());
+      mml._frame = (null == this.frame || null == this.frame.key() ? null : this.frame.key().get());
+      mml._destination_key = (null == this.destination_key || null == this.destination_key.key() ? null : this.destination_key.key().toString());
+      mml._reconstruction_error = this.reconstruction_error;
+      mml._deep_features_hidden_layer = this.deep_features_hidden_layer;
 
       if (null != model_metrics) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -89,9 +111,11 @@ class ModelMetricsHandler extends Handler {
       // PojoUtils.copyProperties(this, m, PojoUtils.FieldNaming.CONSISTENT);
 
       // Shouldn't need to do this manually. . .
-      this.model = (null == mml._model ? null : mml._model._key.toString());
-      this.frame = (null == mml._frame ? null : mml._frame._key.toString());
-      this.destination_key = mml._destination_key;
+      this.model = (mml._model == null ? null : new KeyV1.ModelKeyV1(mml._model._key));
+      this.frame = (mml._frame == null ? null : new KeyV1.FrameKeyV1(mml._frame._key));
+      this.destination_key = (mml._destination_key == null ? null : new KeyV1.FrameKeyV1(Key.make(mml._destination_key)));
+      this.reconstruction_error = mml._reconstruction_error;
+      this.deep_features_hidden_layer = mml._deep_features_hidden_layer;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
@@ -130,6 +154,14 @@ class ModelMetricsHandler extends Handler {
     return s;
   }
 
+  /** Delete one or more ModelMetrics. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelMetricsListSchemaV3 delete(int version, ModelMetricsListSchemaV3 s) {
+    ModelMetricsList m = s.createAndFillImpl();
+    s.fillFromImpl(m.delete());
+    return s;
+  }
+
   /**
    * Score a frame with the given model and return just the metrics.
    */
@@ -137,7 +169,8 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
     // NOTE: ModelMetrics are now always being created by model.score. . .
     ModelMetricsList parms = s.createAndFillImpl();
-    parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    Frame fr = parms._model.score(parms._frame, parms._destination_key); // throw away predictions
+    DKV.remove(fr._key);
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -159,10 +192,33 @@ class ModelMetricsHandler extends Handler {
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // No caching for predict()
     ModelMetricsList parms = s.createAndFillImpl();
-    if (null == parms._destination_key)
-      parms._destination_key = "predictions_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
 
-    Frame predictions = parms._model.score(parms._frame, parms._destination_key);
+    Frame predictions;
+    if (!s.reconstruction_error && s.deep_features_hidden_layer < 0 ) {
+      if (null == parms._destination_key)
+        parms._destination_key = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+      predictions = parms._model.score(parms._frame, parms._destination_key);
+    } else {
+      if (Model.DeepFeatures.class.isAssignableFrom(parms._model.getClass())) {
+        if (s.reconstruction_error) {
+          if (s.deep_features_hidden_layer >= 0)
+            throw new H2OIllegalArgumentException("Can only compute either reconstruction error OR deep features.", "");
+          if (null == parms._destination_key)
+            parms._destination_key = "reconstruction_error" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+          predictions = ((Model.DeepFeatures) parms._model).scoreAutoEncoder(parms._frame, Key.make(parms._destination_key));
+        } else {
+          if (s.deep_features_hidden_layer < 0)
+            throw new H2OIllegalArgumentException("Deep features hidden layer index must be >= 0.", "");
+          if (null == parms._destination_key)
+            parms._destination_key = "deep_features" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+          predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer);
+        }
+        predictions = new Frame(Key.make(parms._destination_key), predictions.names(), predictions.vecs());
+        DKV.put(predictions._key, predictions);
+      }
+      else throw new H2OIllegalArgumentException("Requires a Deep Learning model.", "Model must implement specific methods.");
+    }
+
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
     // TODO: for now only binary predictors write an MM object.
@@ -170,11 +226,13 @@ class ModelMetricsHandler extends Handler {
     if (null == mm)
       mm = new ModelMetricsListSchemaV3();
 
+    mm.destination_key = new KeyV1.FrameKeyV1(predictions._key);
+
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
+    } else {
+      mm.model_metrics[0].predictions = new FrameV2(predictions, 0, 100); // TODO: Should call schema(version)
     }
-
-    mm.model_metrics[0].predictions = new FrameV2(predictions, 0, 100); // TODO: Should call schema(version)
     return mm;
   }
 

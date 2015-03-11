@@ -1,7 +1,8 @@
 #!/usr/bin/python
 import unittest, time, sys, datetime
 sys.path.extend(['.','..','py','../h2o/py','../../h2o/py'])
-import h2o, h2o_hosts
+import h2o2 as h2o
+import h2o_hosts, h2o_args
 import h2o_print as h2p
 
 beginning = time.time()
@@ -25,9 +26,13 @@ class Basic(unittest.TestCase):
         if (localhost):
             # h2o.nodes[0].delete_keys_at_teardown should cause the testdir_release
             # tests to delete keys after each test completion (not cloud teardown, don't care then)
-            h2o.init(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
+            # h2o.init(3, create_json=True, java_heap_GB=4, delete_keys_at_teardown=True)
+            # RemoveAll.json doesn't work?
+            h2o.init(3, create_json=True, java_heap_GB=4)
         else:
-            h2o.init(create_json=True, delete_keys_at_teardown=True)
+            # RemoveAll.json doesn't work?
+            # h2o.init(create_json=True, delete_keys_at_teardown=True)
+            h2o.init(create_json=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -69,12 +74,13 @@ class Basic(unittest.TestCase):
             totalTime += incrTime
             # good to touch all the nodes to see if they're still responsive
             # give them up to 120 secs to respond (each individually)
-            h2o.verify_cloud_size(timeoutSecs=120)
+
+            ### h2o.verify_cloud_size(timeoutSecs=120)
             if CHECK_WHILE_SLEEPING:        
                 print "Checking sandbox log files"
                 h2o.check_sandbox_for_errors(cloudShutdownIsError=True)
             else:
-                print str(datetime.datetime.now()), h2o.python_cmd_line, "still here", totalTime, maxTime, incrTime
+                print str(datetime.datetime.now()), h2o_args.python_cmd_line, "still here", totalTime, maxTime, incrTime
 
         # don't do this, as the cloud may be hung?
         if 1==0:

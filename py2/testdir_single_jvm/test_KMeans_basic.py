@@ -1,6 +1,7 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_kmeans, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_kmeans
 # test
@@ -21,13 +22,13 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def no_test_kmeans_benign(self):
+    def notest_kmeans_benign(self):
         importFolderPath = "logreg"
         csvFilename = "benign.csv"
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -57,7 +58,6 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': None,
-                'score_each_iteration': False,
                 'k': 4,
                 'max_iterations': 50,
                 'standardize': False,
@@ -104,7 +104,7 @@ class Basic(unittest.TestCase):
         hex_key = "prostate.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -136,8 +136,7 @@ class Basic(unittest.TestCase):
             kmeansSeed = 7037878434240420762
             parameters = {
                 'validation_frame': parse_key,
-                'ignored_columns': '[ID]',
-                'score_each_iteration': False,
+                'ignored_columns': "['ID']",
                 'k': 3,
                 'max_iterations': 500,
                 'standardize': False,

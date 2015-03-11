@@ -28,13 +28,14 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._autoencoder = true;
     p._response_column = train.names()[train.names().length-1];
     p._seed = seed;
-    p._hidden = new int[]{100, 50, 20};
+    p._hidden = new int[]{10, 5, 3};
     p._adaptive_rate = true;
 //    String[] n = train.names();
 //    p._ignored_columns = new String[]{n[0],n[1],n[2],n[3],n[6],n[7],n[8],n[10]}; //Optional: ignore all categoricals
 //    p._ignored_columns = new String[]{train.names()[4], train.names()[5], train.names()[9]}; //Optional: ignore all numericals
     p._l1 = 1e-4;
     p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+    p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
     p._loss = DeepLearningModel.DeepLearningParameters.Loss.MeanSquare;
     p._epochs = 2;
@@ -61,7 +62,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
 
     // Training data
     // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
-    final Frame l2 = mymodel.scoreAutoEncoder(train);
+    final Frame l2 = mymodel.scoreAutoEncoder(train, Key.make());
     final Vec l2vec = l2.anyVec();
     sb.append("Actual   mean reconstruction error: " + l2vec.mean() + "\n");
 
@@ -77,11 +78,26 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     }
     Log.info(sb.toString());
 
-    Assert.assertEquals(mymodel.mse(), l2vec.mean(), 1e-8);
+    Assert.assertEquals(mymodel.mse(), l2vec.mean(), 1e-8*mymodel.mse());
 
     // Create reconstruction
     Log.info("Creating full reconstruction.");
     final Frame recon_train = mymodel.score(train);
+
+    Frame df1 = mymodel.scoreDeepFeatures(train, 0);
+    Assert.assertTrue(df1.numCols() == 10);
+    Assert.assertTrue(df1.numRows() == train.numRows());
+    df1.delete();
+
+    Frame df2 = mymodel.scoreDeepFeatures(train, 1);
+    Assert.assertTrue(df2.numCols() == 5);
+    Assert.assertTrue(df2.numRows() == train.numRows());
+    df2.delete();
+
+    Frame df3 = mymodel.scoreDeepFeatures(train, 2);
+    Assert.assertTrue(df3.numCols() == 3);
+    Assert.assertTrue(df3.numRows() == train.numRows());
+    df3.delete();
 
     // cleanup
     recon_train.delete();

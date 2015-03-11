@@ -47,7 +47,8 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          // TODO: Need to convert response column to enum
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toEnum())._key); // Convert response to categorical
+          DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;
           p._train_samples_per_iteration = 0; //sync once per period
@@ -90,7 +91,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           }
           pred.delete();
           mymodel.delete();
-          mymodel.delete_best_model();
         }
       }
     }

@@ -1,6 +1,7 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 
 
@@ -26,7 +27,7 @@ class Basic(unittest.TestCase):
         csvPathname = importFolderPath + "/" + csvFilename
 
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
-            checkHeader=1, timeoutSecs=180, doSummary=False)
+            check_header=1, timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
         parse_key = pA.parse_key

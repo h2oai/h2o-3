@@ -2,12 +2,12 @@ package hex.tree.gbm;
 
 import hex.ConfusionMatrix;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -239,6 +239,9 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
 
+      // Build a POJO, validate same results
+      //Assert.assertTrue(gbm.testJavaScoring(fr,fr2));
+
       Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
       //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
       return gbm._output;
@@ -282,11 +285,47 @@ public class GBMTest extends TestUtil {
       double auc = mm._aucdata.AUC();
       Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
       ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(296, 97), ar(22, 85)), cmf1.confusion_matrix);
+      Assert.assertArrayEquals(ar(ar(336, 57), ar(36, 71)), cmf1.confusion_matrix);
     } finally {
       parms._train.remove();
       parms._valid.remove();
       if( gbm != null ) gbm.delete();
+    }
+  }
+
+  // Predict with no actual, after training
+  @Test public void testGBMPredict() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");
+      Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);   // Convert response 'Angaus' to categorical
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "Angaus"; // Train on the outcome
+
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      job.remove();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      pred.remove("Angaus").remove();    // No response column during scoring
+      res = gbm.score(pred);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred,res));
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+      Scope.exit();
     }
   }
 
@@ -363,6 +402,10 @@ public class GBMTest extends TestUtil {
 
       hex.ModelMetricsMultinomial mm = hex.ModelMetricsMultinomial.getFromDKV(gbm,parms.valid());
       Assert.assertTrue(mm.r2() > 0.5);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(v,res));
+
       res.remove();
 
     } finally {
@@ -395,6 +438,7 @@ public class GBMTest extends TestUtil {
       try { Thread.sleep(50); } catch( Exception ignore ) { }
 
       try {
+        Log.info("Trying illegal frame delete.");
         fr.delete();            // Attempted delete while model-build is active
         Assert.fail("Should toss IAE instead of reaching here");
       } catch( IllegalArgumentException ignore ) {
@@ -402,6 +446,7 @@ public class GBMTest extends TestUtil {
         assertTrue( de.getMessage().contains("java.lang.IllegalArgumentException") );
       }
 
+      Log.info("Getting model");
       GBMModel model = gbm.get();
       Assert.assertTrue(gbm._state == Job.JobState.DONE); //HEX-1817
       if( model != null ) model.delete();
@@ -421,7 +466,7 @@ public class GBMTest extends TestUtil {
   }
 
   @Test public void testModelMSEEqualityOnProstateGaussian() {
-    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("CAPSULE"); } };
+    final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return ~fr.find("CAPSULE"); } };
     double[] mseWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Family.gaussian)._mse_train;
     double[] mseWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Family.gaussian)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
@@ -440,10 +485,101 @@ public class GBMTest extends TestUtil {
     double[] mseWithVal    = basicGBM("./smalldata/junit/titanic_alt.csv", titanicPrep, true , Family.bernoulli)._mse_valid;
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", mseWithoutVal, mseWithVal, 0.0001);
   }
-
   @Test public void testBigCat() {
     final PrepData prep = new PrepData() { @Override int prep(Frame fr) { return fr.find("y"); } };
-    basicGBM("./smalldata/gbm_test/50_cattest_test.csv", prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/50_cattest_test.csv" , prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/50_cattest_train.csv", prep, false, Family.AUTO);
+    basicGBM("./smalldata/gbm_test/swpreds_1000x3.csv" , prep, false, Family.AUTO);
   }
 
+  // Test uses big data and is too slow for a pre-push
+  @Test @Ignore public void testKDDTrees() {
+    Frame tfr=null, vfr=null;
+    String[] cols = new String[] {"DOB", "LASTGIFT", "TARGET_D"};
+    try {
+      // Load data, hack frames
+      Frame inF1 = parse_test_file("bigdata/laptop/usecases/cup98LRN_z.csv");
+      Frame inF2 = parse_test_file("bigdata/laptop/usecases/cup98VAL_z.csv");
+      tfr = inF1.subframe(cols); // Just the columns to train on
+      vfr = inF2.subframe(cols);
+      inF1.remove(cols).remove(); // Toss all the rest away
+      inF2.remove(cols).remove();
+      tfr.replace(0, tfr.vec("DOB").toEnum());     // Convert 'DOB' to enum
+      vfr.replace(0, vfr.vec("DOB").toEnum());
+      DKV.put(tfr);
+      DKV.put(vfr);
+
+      // Same parms for all
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = "TARGET_D";
+      parms._ntrees = 3;
+      // Build a first model; all remaining models should be equal
+      GBM job1 = new GBM(parms);
+      GBMModel gbm1 = job1.trainModel().get();
+      job1.remove();
+      // Validation MSE should be equal
+      double[] firstMSE = gbm1._output._mse_valid;
+
+      // Build 10 more models, checking for equality
+      for( int i=0; i<10; i++ ) {
+        GBM job2 = new GBM(parms);
+        GBMModel gbm2 = job2.trainModel().get();
+        job2.remove();
+        double[] seconMSE = gbm2._output._mse_valid;
+        // Check that MSE's from both models are equal
+        int j;
+        for( j=0; j<firstMSE.length; j++ )
+          if( Math.abs(firstMSE[j]-seconMSE[j]) > 0.0001 )
+            break;              // Not Equals Enough
+        // Report on unequal
+        if( j < firstMSE.length ) {
+          System.out.println("=== =============== ===");
+          System.out.println("=== ORIGINAL  MODEL ===");
+          for( int t=0; t<parms._ntrees; t++ )
+            System.out.println(gbm1._output.toStringTree(t,0));
+          System.out.println("=== DIFFERENT MODEL ===");
+          for( int t=0; t<parms._ntrees; t++ )
+            System.out.println(gbm2._output.toStringTree(t,0));
+          System.out.println("=== =============== ===");
+          Assert.assertArrayEquals("GBM should have the exact same MSEs for identical parameters", firstMSE, seconMSE, 0.0001);
+        }
+        gbm2.delete();
+      }
+      gbm1.delete();
+
+    } finally {
+      if (tfr  != null) tfr.remove();
+      if (vfr  != null) vfr.remove();
+    }
+  }
+
+
+  // Test uses big data and is too slow for a pre-push
+  @Test @Ignore public void testMNIST() {
+    Frame tfr=null, vfr=null;
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      vfr = new Frame(tfr);
+      DKV.put(vfr);
+
+      // Same parms for all
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = "C785";
+      parms._ntrees = 100;
+      parms._max_depth = 10;
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      job.remove();
+      gbm.delete();
+    } finally {
+      if (tfr  != null) tfr.remove();
+      if (vfr  != null) vfr.remove();
+    }
+  }
 }

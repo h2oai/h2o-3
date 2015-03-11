@@ -1,6 +1,7 @@
 import unittest, random, sys, time, codecs
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_args
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_args
 
 DEBUG = False
 UTF8 = False
@@ -327,7 +328,7 @@ class Basic(unittest.TestCase):
                 # why are we saving this?
                 lastcolsHistory.append(lastcols)
 
-                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, checkHeader=0,
+                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, check_header=0,
                     timeoutSecs=30, sep=colSepInt, doSummary=DO_SUMMARY)
                 parseResultA = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key)
                 # optional. only needed to extract parse_key?

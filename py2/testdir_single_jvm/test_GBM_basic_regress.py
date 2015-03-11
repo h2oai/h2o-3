@@ -1,6 +1,7 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i
 from h2o_test import dump_json, verboseprint, OutputObj
 
 class Basic(unittest.TestCase):
@@ -53,7 +54,7 @@ class Basic(unittest.TestCase):
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
-            'variable_importance': False,
+            # 'variable_importance': False,
             # 'seed': 
         }
 

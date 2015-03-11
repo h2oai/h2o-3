@@ -113,6 +113,8 @@ public abstract class Chunk extends Iced implements Cloneable {
   transient long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
+  /** Global index of this chunk filled during chunk load */
+  transient int _cidx = -1;
 
   /** Number of rows in this Chunk; publically a read-only field.  Odd API
    *  design choice: public, not-final, read-only, NO-ACCESSOR.
@@ -475,7 +477,10 @@ public abstract class Chunk extends Iced implements Cloneable {
   }
 
   /** @return Chunk index */
-  public int cidx() { return _vec.elem2ChunkIdx(_start); }
+  public int cidx() {
+    assert _cidx != -1 : "Chunk idx was not properly loaded!";
+    return _cidx;
+  }
 
   /** Chunk-specific readers.  Not a public API */ 
   abstract double   atd_impl(int idx);
@@ -493,7 +498,7 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
-  public int nextNZ(int rid){return rid+1;}
+  public int nextNZ(int rid){ return rid + 1;}
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
@@ -547,6 +552,8 @@ public abstract class Chunk extends Iced implements Cloneable {
     if( _chk2 != null ) s += _chk2.byteSize();
     return s;
   }
+
+
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */

@@ -1,12 +1,13 @@
-import h2o
 import sys
+sys.path.insert(1, "..")
+import h2o
 
 
 def user(ip, port):
     # Connect to a pre-existing cluster
     h2o.init(ip=ip, port=port)
 
-    a = h2o.import_frame(path="smalldata/iris/iris_wheader.csv")[0:4]
+    a = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     a.head()
 
     print a[0].name()  # Column header
@@ -39,7 +40,7 @@ def user(ip, port):
     except ValueError, ex:
         pass  # Expected error
 
-    b = h2o.import_frame(path="smalldata/iris/iris_wheader.csv")[0:4]
+    b = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
     d = c + c + sum(a)
     e = c + a + 1
@@ -68,12 +69,4 @@ def user(ip, port):
     #sliced.show()
 
 if __name__ == "__main__":
-    args = sys.argv
-    print args
-    if len(args) > 1:
-        ip = args[1]
-        port = int(args[2])
-    else:
-        ip = "localhost"
-        port = 54321
-    user(ip, port)
+    h2o.run_test(sys.argv, user)

@@ -6,6 +6,7 @@ import water.util.Log;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 public class NodePersistentStorage {
@@ -42,21 +43,21 @@ public class NodePersistentStorage {
 
   private void validateCategoryName(String categoryName) {
     if (categoryName == null) {
-      throw new RuntimeException("NodePersistentStorage category not specified");
+      throw new IllegalArgumentException("NodePersistentStorage category not specified");
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9]+", categoryName)) {
-      throw new RuntimeException("NodePersistentStorage illegal category");
+      throw new IllegalArgumentException("NodePersistentStorage illegal category");
     }
   }
 
   private void validateKeyName(String keyName) {
     if (keyName == null) {
-      throw new RuntimeException("NodePersistentStorage name not specified");
+      throw new IllegalArgumentException("NodePersistentStorage name not specified");
     }
 
-    if (! Pattern.matches("[\\-a-zA-Z0-9]+", keyName)) {
-      throw new RuntimeException("NodePersistentStorage illegal name");
+    if (! Pattern.matches("[\\-a-zA-Z0-9_ \\(\\)]+", keyName)) {
+      throw new IllegalArgumentException("NodePersistentStorage illegal name");
     }
   }
 
@@ -188,6 +189,43 @@ public class NodePersistentStorage {
       }
 
       return stringBuilder.toString();
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("Not found");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public long get_length(String categoryName, String keyName) {
+    validateCategoryName(categoryName);
+    validateKeyName(keyName);
+
+    String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
+    File f = new File(fileName);
+    if (! f.exists()) {
+      throw new IllegalArgumentException("Not found");
+    }
+
+    return f.length();
+  }
+
+  public InputStream get(String categoryName, String keyName, AtomicLong length) {
+    validateCategoryName(categoryName);
+    validateKeyName(keyName);
+
+    try {
+      String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
+      File f = new File(fileName);
+      if (length != null) {
+        length.set(f.length());
+      }
+
+      return new FileInputStream(f);
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("Not found");
     }
     catch (Exception e) {
       throw new RuntimeException(e);

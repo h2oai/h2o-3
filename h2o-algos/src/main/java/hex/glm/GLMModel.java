@@ -1,34 +1,81 @@
 package hex.glm;
 
 import hex.*;
-import hex.FrameTask.DataInfo;
+import hex.ModelMetrics.MetricBuilder;
+import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.schemas.GLMModelV2;
 import water.*;
 import water.DTask.DKeyTask;
 import water.H2O.H2OCountedCompleter;
-import water.api.ModelSchema;
 import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
-
 /**
  * Created by tomasnykodym on 8/27/14.
- * TODO: should be a subclass of SupervisedModel.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
     super(selfKey, parms, output);
     _ymu = ymu;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
+    _defaultThresholds = thresholds;
   }
 
+  float [] _defaultThresholds;
+
+  public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
+    double _resDev;
+    double _nullDev;
+
+    public GLMMetricsBuilderBinomial(String[] domain, float[] thresholds) {
+      super(domain == null?new String[]{"0","1"}:domain, thresholds);
+    }
+
+    private int rank(double [] beta) {
+      int res = 0;
+      for(double d:beta)
+        if(d != 0) ++res;
+      return res;
+    }
+
+
+    @Override
+    public float[] perRow(float[] ds, float[] yact, Model m) {
+      float [] res = super.perRow(ds,yact,m);
+      GLMModel gm = (GLMModel)m;
+      assert gm._parms._family == Family.binomial;
+      _resDev += gm._parms.deviance(yact[0], ds[2]);
+      _nullDev += gm._parms.deviance(yact[0],(float)gm._ymu);
+      return res;
+    }
+
+    @Override public void reduce( MetricBuilder mb ) {
+      super.reduce(mb);
+      GLMMetricsBuilderBinomial mg = (GLMMetricsBuilderBinomial)mb;
+      _resDev += mg._resDev;
+      _nullDev += mg._nullDev;
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+      GLMModel gm = (GLMModel)m;
+      assert gm._parms._family == Family.binomial;
+      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
+      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
+      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
+      double mse = _sumsqe / _count;
+      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, aucdata, sigma, mse, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
+      return m._output.addModelMetrics(res);
+    }
+  }
   public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
     final double _lambda;
     public GLMModel _res;
@@ -50,15 +97,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial: return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Binomial: return new GLMMetricsBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
       case Regression: return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
-  }
-
-  @Override
-  public ModelSchema schema() {
-    return new GLMModelV2();
   }
 
   public double [] beta(){ return _output._global_beta;}
@@ -71,10 +113,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(chks[i].atd(row_in_chunk) != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(chks[i].atd(row_in_chunk)-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)chks[i].atd(row_in_chunk)];
     }
@@ -102,10 +144,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   protected float[] score0(double[] data, float[] preds) {
     double eta = 0.0;
     final double [] b = beta();
-    if(!_parms._use_all_factor_levels){ // skip level 0 of all factors
+    if(!_parms._use_all_factor_levels){ // good level 0 of all factors
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i) if(data[i] != 0)
         eta += b[_dinfo._catOffsets[i] + (int)(data[i]-1)];
-    } else { // do not skip any levels!
+    } else { // do not good any levels!
       for(int i = 0; i < _dinfo._catOffsets.length-1; ++i)
         eta += b[_dinfo._catOffsets[i] + (int)data[i]];
     }
@@ -143,13 +185,25 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
     public double _lambda_min_ratio = -1; // special
-    public boolean _higher_accuracy = false;
     public boolean _use_all_factor_levels = false;
+    public double _beta_epsilon = 1e-4;
+    public int _max_iter = 50;
     public int _n_folds;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public void validate(GLM glm) {
+      if(_family == Family.binomial) {
+        Frame frame = DKV.getGet(_train);
+        if (frame != null) {
+          Vec response = frame.vec(_response_column);
+          if (response != null) {
+            if (response.min() != 0 || response.max() != 1) {
+              glm.error("_response_column", "Illegal response for family binomial, must be binary, got min = " + response.min() + ", max = " + response.max() + ")");
+            }
+          }
+        }
+      }
       if (_solver == Solver.L_BFGS) {
         glm.hide("_alpha", "L1 penalty is currently only available for ADMM solver.");
         glm.hide("_higher_accuracy","only available for ADMM");
@@ -173,6 +227,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       this._alpha = alpha;
       _tweedie_link_power = Double.NaN;
       _tweedie_variance_power = Double.NaN;
+      if( f==Family.binomial ) _convert_to_enum = true;
       _link = l;
       // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
       if(_link != Link.family_default) { // check we have compatible link
@@ -231,7 +286,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public double [] nullModelBeta(FrameTask.DataInfo dinfo, double ymu){
+    public double [] nullModelBeta(DataInfo dinfo, double ymu){
       double [] res = MemoryManager.malloc8d(dinfo.fullN() + 1);
       res[res.length-1] = link(ymu);
       return res;
@@ -269,11 +324,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       }
     }
 
-    public final double deviance(double yr, double ym){
+    public final double deviance(double yr, double eta, double ym){
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
         case binomial:
+//          if(yr == ym) return 0;
+//          return 2*( -yr * eta - Math.log(1 - ym));
           return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
         case poisson:
           if( yr == 0 ) return 2 * ym;
@@ -292,6 +349,59 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           throw new RuntimeException("unknown family " + _family);
       }
     }
+    public final double deviance(float yr, float ym){
+      switch(_family){
+        case gaussian:
+          return (yr - ym) * (yr - ym);
+        case binomial:
+//          if(yr == ym) return 0;
+//          return 2*( -yr * eta - Math.log(1 - ym));
+          return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
+        case poisson:
+          if( yr == 0 ) return 2 * ym;
+          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
+        case gamma:
+          if( yr == 0 ) return -2;
+          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
+        case tweedie:
+          // Theory of Dispersion Models: Jorgensen
+          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+          double one_minus_p = 1 - _tweedie_variance_power;
+          double two_minus_p = 2 - _tweedie_variance_power;
+          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
+    }
+
+    public final double likelihood(double yr, double eta, double ym){
+      switch(_family){
+        case gaussian:
+          return .5 * (yr - ym) * (yr - ym);
+        case binomial:
+          return .5*deviance(yr,eta,ym);
+//          if(yr == ym) return 0;
+//          double res = -yr * eta - Math.log(1 - ym);
+//          return res;
+        case poisson:
+          if( yr == 0 ) return 2 * ym;
+          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
+        case gamma:
+          if( yr == 0 ) return -2;
+          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
+        case tweedie:
+          // Theory of Dispersion Models: Jorgensen
+          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+          double one_minus_p = 1 - _tweedie_variance_power;
+          double two_minus_p = 2 - _tweedie_variance_power;
+          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
+    }
+
 
     public final double link(double x) {
       switch(_link) {
@@ -315,7 +425,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public final double linkDeriv(double x) {
       switch(_link) {
         case logit:
-          return 1 / (x * (1 - x));
+          double div = (x * (1 - x));
+          if(div == 0) return 1e9; // avoid numerical instability
+          return 1.0 / div;
         case identity:
           return 1;
         case log:
@@ -439,23 +551,27 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       @Override
       public GLMModel atomic(GLMModel old) {
         if(old == null)return old; // job could've been cancelled!
+        if(val != null)old._defaultThresholds = val.thresholds;
         if(old._output._submodels == null){
+          old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};
         } else {
           int id = old._output.submodelIdForLambda(lambda);
           if (id < 0) {
             id = -id - 1;
-            old._output._submodels = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
-            for (int i = old._output._submodels.length - 1; i > id; --i)
-              old._output._submodels[i] = old._output._submodels[i - 1];
-          } else if (old._output._submodels[id].iteration > sm.iteration)
-            return old;
-          else
-            old._output._submodels = old._output._submodels.clone();
-          old._output._submodels[id] = sm;
-          old._run_time = Math.max(old._run_time,sm.run_time);
+            Submodel [] sms = Arrays.copyOf(old._output._submodels, old._output._submodels.length + 1);
+            for (int i = sms.length-1; i > id; --i)
+              sms[i] = sms[i - 1];
+            sms[id] = sm;
+            old._output = (GLMOutput)old._output.clone();
+            old._output._submodels = sms;
+          } else {
+            if (old._output._submodels[id].iteration < sm.iteration)
+              old._output._submodels[id] = sm;
+          }
         }
         old._output.pickBestModel(false);
+        old._run_time = Math.max(old._run_time,sm.run_time);
         return old;
       }
     }.fork(modelKey);
@@ -501,8 +617,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
               coefficient_names,
               new String []{"Coefficients", "Norm Coefficients"},
               colTypes,
-              colFormat
-      );
+              colFormat,
+              "Column");
       _binomial = binomial;
     }
 

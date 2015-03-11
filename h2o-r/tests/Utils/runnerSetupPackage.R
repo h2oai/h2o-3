@@ -14,7 +14,7 @@ function(p) {
 # what packages did the h2o_master_DEV_test need?
 packages <- c("R.utils", "R.oo", "R.methodsS3", "RCurl", "rjson", "statmod", "testthat", "bitops", "tools", "LiblineaR",
               "gdata", "caTools", "ROCR", "digest", "penalized", "rgl", "randomForest", "expm", "Matrix", "glmnet",
-              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust")
+              "survival", "gbm", "lattice", "RUnit", "plyr", "devtools", "roxygen2", "flexclust", "klaR")
 
 invisible(lapply(packages, usePackage))
 
@@ -29,7 +29,11 @@ if (! failed) {
 }
 
 h2o_r_package_file <- NULL
-dir_to_search = normalizePath("../../R/src/contrib")
+raw_dir_to_search = "../../R/src/contrib"
+if (! file.exists(raw_dir_to_search)) {
+    stop("R build directory does not exist, you probably need to do a gradle build")
+}
+dir_to_search = normalizePath(raw_dir_to_search)
 files = dir(dir_to_search, pattern="h2o.*.gz")
 for (i in 1:length(files)) {
     f = files[i]

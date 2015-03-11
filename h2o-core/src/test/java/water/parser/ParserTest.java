@@ -204,6 +204,51 @@ public class ParserTest extends TestUtil {
     }
   }
 
+  @Test public void testSingleEntryDatasets() {
+    String[] numericDataset = new String[]{"10.9533122476"};
+    Key k1 = makeByteVec(numericDataset);
+    Key r1 = Key.make();
+    ParseDataset.parse(r1, k1);
+    Frame fr1 = DKV.get(r1).get();
+    Assert.assertTrue(fr1.vecs()[0].isNumeric());
+    Assert.assertTrue(fr1.numCols()  == 1);
+    Assert.assertTrue(fr1.numRows()  == 1);
+    fr1.delete();
+
+    String[] dateDataset = new String[]{"3-Jan-06"};
+    Key k2 = makeByteVec(dateDataset);
+    Key r2 = Key.make();
+    ParseDataset.parse(r2, k2);
+    Frame fr2 = DKV.get(r2).get();
+    Assert.assertTrue(fr2.vecs()[0].isTime());
+    Assert.assertTrue(fr2.numCols()  == 1);
+    Assert.assertTrue(fr2.numRows()  == 1);
+    fr2.delete();
+
+    String[] UUIDDataset = new String[]{"9ff4ed3a-6b00-4130-9aca-2ed897305fd1"};
+    Key k3 = makeByteVec(UUIDDataset);
+    Key r3 = Key.make();
+    ParseDataset.parse(r3, k3);
+    Frame fr3 = DKV.get(r3).get();
+    Assert.assertTrue(fr3.numCols()  == 1);
+    Assert.assertTrue(fr3.numRows()  == 1);
+    Assert.assertTrue(fr3.vecs()[0].isUUID());
+    fr3.delete();
+
+    String[] enumDataset = new String[]{"Foo-bar"};
+    Key k4 = makeByteVec(enumDataset);
+    Key r4 = Key.make();
+    ParseDataset.parse(r4, k4);
+    Frame fr4 = DKV.get(r4).get();
+    Assert.assertTrue(fr4.numCols()  == 1);
+    Assert.assertTrue(fr4.numRows()  == 1);
+    Assert.assertTrue(fr4.vecs()[0].isEnum());
+    String[] dom = fr4.vecs()[0].domain();
+    Assert.assertTrue(dom.length == 1);
+    Assert.assertEquals("Foo-bar", dom[0]);
+    fr4.delete();
+  }
+
   @Test public void testNumberFormats(){
     String [] data = {"+.6e102|+.7e102|+.8e102\n.6e102|.7e102|.8e102\n"};
     double[][] expDouble = new double[][] {
@@ -346,7 +391,9 @@ public class ParserTest extends TestUtil {
     fr.delete();
   }
 
-  @Test public void testStrings() {
+  // TODO Update, originally tested enum to string conversion
+  // TODO now just tests missing values among strings
+@Test public void testStrings() {
     Frame fr = null;
     try {
       fr = parse_test_file("smalldata/junit/string_test.csv");
@@ -363,7 +410,7 @@ public class ParserTest extends TestUtil {
       Assert.assertTrue(vecs[2].isString());
       Assert.assertTrue(vecs[3].isString());
       Assert.assertTrue(vecs[4].isString());
-      Assert.assertTrue(vecs[5].isEnum());
+      Assert.assertTrue(vecs[5].isString());
       Assert.assertTrue(vecs[6].isString());
 
       //checks column counts - expects MAX_ENUM == 65000
@@ -680,7 +727,6 @@ public class ParserTest extends TestUtil {
             "smalldata/./covtype/covtype.20k.data",
             "smalldata/./iris/iris.csv",
             "smalldata/./iris/iris_wheader.csv",
-            "smalldata/./junit/40k_categoricals.csv.gz",
             "smalldata/./junit/benign.xls",
             "smalldata/./junit/bestbuy_train_10k.csv.gz",
             "smalldata/./junit/cars.csv",

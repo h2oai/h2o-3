@@ -22,7 +22,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   // NOTE:
   // Parameters must be ordered for the UI
   ////////////////////////////////////////
-  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns" };
+  static public String[] own_fields = new String[] { "destination_key", "training_frame", "validation_frame", "ignored_columns", "dropNA20Cols" };
 
   /** List of fields in the order in which we want them serialized.  This is the order they will be presented in the UI.  */
   private transient String[] __fields_cache = null;
@@ -35,6 +35,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       try {
         for (Class<? extends ModelParametersSchema> clz = this_clz; ; clz = (Class<? extends ModelParametersSchema>) clz.getSuperclass()) {
           String[] fields = (String[]) clz.getField("own_fields").get(clz);
+
           String[] tmp = new String[fields.length + __fields_cache.length];
           System.arraycopy(fields, 0, tmp, 0, fields.length);
           System.arraycopy(__fields_cache, 0, tmp, fields.length, __fields_cache.length);
@@ -55,7 +56,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
+  @API(help="Destination key for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
   public ModelKeyV1 destination_key;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
@@ -66,6 +67,9 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
 
   @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
   public String[] ignored_columns;         // column names to ignore for training
+
+  @API(help="Drop columns with more than 20% missing values", direction=API.Direction.INOUT)
+  public boolean dropNA20Cols; // Drop columns with more than 20% missing values
 
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
@@ -118,10 +122,12 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
     // Version&Schema-specific filling from the implementation object
     public S fillFromImpl(ValidationMessage vm) {
       PojoUtils.copyProperties(this, vm, PojoUtils.FieldNaming.CONSISTENT);
-      if (this.field_name.startsWith("_"))
-        this.field_name = this.field_name.substring(1);
-      else
-        Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      if (this.field_name != null) {
+        if (this.field_name.startsWith("_"))
+          this.field_name = this.field_name.substring(1);
+        else
+          Log.warn("Expected all ValidationMessage field_name values to have leading underscores; ignoring: " + field_name);
+      }
       return (S)this;
     }
   }
@@ -140,7 +146,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       // Turn param.is_mutually_exclusive_with into a List which we will walk over twice
       List<String> me = new ArrayList<String>();
       me.add(name);
-      me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
+      // Note: this can happen if this field doesn't have an @API annotation, in which case we got an earlier WARN
+      if (null != param.is_mutually_exclusive_with) me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
 
       // Make a new Set which contains ourselves, fields we have already been connected to,
       // and fields *they* have already been connected to.

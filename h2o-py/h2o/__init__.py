@@ -1,4 +1,3 @@
-# __version__ = "0.0.4a1"
 # encoding: utf-8
 # module h2o
 # from (h2o)
@@ -127,7 +126,11 @@ with lazy expressions to compute the column means for all columns in the H2OFram
   >>> colmeans                                                     # print the results
   [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
 
-Lazy expressions will be discussed in detail in the coming sections.
+Lazy expressions will be discussed in detail in the coming sections, but their primary
+purpose is to cut down on the chatter between the client (a.k.a this python interface) and
+H2O. Lazy expressions are
+`Katamari'd <http://www.urbandictionary.com/define.php?term=Katamari>`_ together and only
+ever evaluated when some piece of output is requested (e.g. print-to-screen).
 
 The set of operations on an H2OFrame is described in a chapter devoted to this object, but
 suffice it to say that this set of operations closely resembles those that may be
@@ -148,10 +151,9 @@ snippet::
 
 After this operation, `vol` has been permanently mutated in place (it is not a copy!).
 
-
 H2OVec
 ++++++
-An H2OVec is...
+An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
 
 Expr
 ++++
@@ -161,11 +163,29 @@ Expr
 Models
 ++++++
 
+The model-building experience with this module is unique, and is not the same experience
+for those coming from a background in scikit-learn.
+
+Rather than have each model define its own class, each model will belong to one of the following
+categories:
+
+    * Regression
+    * Binomial
+    * Multinomial
+    * Clustering
+
+This is not an entirely representative list of model categories (e.g., what about Time Series,
+and Grid Search, or PCA?); but it represents the core set of underlying model categories
+that form the foundation and current state of modeling in H2O.
+
+
 * No explicit model objects -- have model categories
 * How to create new models
 * train and validation data
 * parameter specification
-
+* categoricals are dealt with internally (no need to one-hot expand them!)
+* what about categoricals in my response?
+* what about an integral response column that I want to do classification on
 * See more on the chapter on Models
 
 Metrics
@@ -175,11 +195,11 @@ Metrics
 * See more in the chapter on Metrics
 
 """
-__version__ = "0.0.0a5"
+__version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
 from model import *
 from frame import H2OFrame
 from frame import H2OVec
 from two_dim_table import H2OTwoDimTable
-#
+
 __all__ = ["H2OFrame", "H2OConnection", "H2OVec", "H2OTwoDimTable"]

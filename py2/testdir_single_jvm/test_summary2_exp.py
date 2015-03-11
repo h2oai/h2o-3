@@ -1,6 +1,7 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p, h2o_summ
 from h2o_test import OutputObj
 
 print "Same as test_summary2_uniform.py but with exponential distribution on the data"
@@ -54,7 +55,8 @@ class Basic(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         global SEED
-        SEED = h2o.setup_random_seed()
+        # use the failing seed for now
+        SEED = h2o.setup_random_seed(seed=6119134012054500977)
         h2o.init()
 
     @classmethod
@@ -65,15 +67,15 @@ class Basic(unittest.TestCase):
         LAMBD = random.uniform(0.005, 0.5)
         tryList = [
             # co.label, (min, 25th, 50th, 75th, max)
-# parse setup error
-#            (1,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
+            # parse setup error ? supposedly fixed now
+            # (1,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
             (5,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
-#            (10,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
-#            (100,    1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
-#            (1000,   1, 'x.hex', -5000, 0,        ['C1', None, None, None, None, None]),
-#            (10000,  1, 'x.hex', -100000, 100000, ['C1', None, None, None, None, None]),
-#            (100000, 1, 'x.hex', -1, 1,           ['C1', None, None, None, None, None]),
-#            (1000000, 1, 'A.hex', 1, 100,          ['C1', None, None, None, None, None]),
+            (10,     1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
+            (100,    1, 'x.hex', 1, 20000,        ['C1', None, None, None, None, None]),
+            (1000,   1, 'x.hex', -5000, 0,        ['C1', None, None, None, None, None]),
+            (10000,  1, 'x.hex', -100000, 100000, ['C1', None, None, None, None, None]),
+            (100000, 1, 'x.hex', -1, 1,           ['C1', None, None, None, None, None]),
+            (1000000, 1, 'A.hex', 1, 100,          ['C1', None, None, None, None, None]),
         ]
 
         timeoutSecs = 10
@@ -115,14 +117,6 @@ class Basic(unittest.TestCase):
             co = h2o_cmd.runSummary(key=hex_key, column=0, expected=expected[1:], maxDelta=maxErr)
             print co.label, co.type, co.missing, co.domain, sum(co.bins)
 
-            # default_pctiles
-            # isText
-            # rows
-            # off
-            # key
-            # checksum
-
-            # touch all that should be there
             coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
                 co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
@@ -142,8 +136,9 @@ class Basic(unittest.TestCase):
                     skipHeader=False,
                     col=scipyCol,
                     datatype='float',
-                    quantile=0.5 if DO_MEDIAN else 0.999,
-                    h2oSummary2=co.pctiles[5 if DO_MEDIAN else 10],
+                    quantile=0.5 if DO_MEDIAN else 0.99,
+                    h2oSummary2=co.pctiles[5 if DO_MEDIAN else 9],
+
                     # h2oQuantilesApprox=qresult_single,
                     # h2oQuantilesExact=qresult,
                     h2oSummary2MaxErr=maxErr,

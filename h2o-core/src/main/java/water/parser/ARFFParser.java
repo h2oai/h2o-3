@@ -1,6 +1,7 @@
 package water.parser;
 
 import java.util.ArrayList;
+import water.fvec.Vec;
 
 class ARFFParser extends CsvParser {
   private static final int FIRST_ROW_IS_HEADER = 1;
@@ -9,7 +10,7 @@ class ARFFParser extends CsvParser {
   ARFFParser(ParseSetup ps) { super(ps); }
 
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames ) {
+  static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
     checkHeader = FIRST_ROW_IS_NOT_HEADER;   // ARFF file by definition has no header as the first row of the data file.
 
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
@@ -22,7 +23,7 @@ class ARFFParser extends CsvParser {
     String[] labels;
     String[][] domains;
     String[] headerlines = new String[0];
-    ColTypeInfo[] ctypes;
+    byte[] ctypes;
 
     // header section
     {
@@ -50,7 +51,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (header.size() == 0)
-        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, null, null, checkHeader, null);
+        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, false, checkHeader, 0, null);
       headerlines = header.toArray(headerlines);
 
       // process header
@@ -59,37 +60,36 @@ class ARFFParser extends CsvParser {
       data = new String[ncols][];
       labels = new String[ncols];
       domains = new String[ncols][];
-      ctypes = new ColTypeInfo[ncols];
-      for (int i=0; i < ctypes.length; i++) ctypes[i] = new ColTypeInfo();
+      ctypes = new byte[ncols];
       for (int i=0; i<ncols; ++i) {
         data[i] = headerlines[i].split("\\s+");
         if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
-          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
         } else {
           if (data[i].length != 3 ) {
-            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
           }
           labels[i] = data[i][1];
           String type = data[i][2];
           domains[i] = null;
           if (type.equalsIgnoreCase("NUMERIC") || type.equalsIgnoreCase("REAL") || type.equalsIgnoreCase("INTEGER") || type.equalsIgnoreCase("INT")) {
-            ctypes[i]._type = ColType.NUM;
+            ctypes[i] = Vec.T_NUM;
             continue;
           }
           else if (type.equalsIgnoreCase("DATE") || type.equalsIgnoreCase("TIME")) {
-            ctypes[i]._type = ColType.TIME;
+            ctypes[i] = Vec.T_TIME;
             continue;
           }
           else if (type.equalsIgnoreCase("ENUM")) {
-            ctypes[i]._type = ColType.ENUM;
+            ctypes[i] = Vec.T_ENUM;
             continue;
           }
           else if (type.equalsIgnoreCase("STRING")) {
-            ctypes[i]._type = ColType.STR;
+            ctypes[i] = Vec.T_STR;
             continue;
           }
           else if (type.equalsIgnoreCase("UUID")) { //extension of ARFF
-            ctypes[i]._type = ColType.UUID;
+            ctypes[i] = Vec.T_UUID;
             continue;
           }
           else if (type.equalsIgnoreCase("RELATIONAL")) {
@@ -99,13 +99,13 @@ class ARFFParser extends CsvParser {
             domains[i] = data[i][2].replaceAll("[{}]", "").split(",");
             if (domains[i][0].length() > 0) {
               // case of {A,B,C} (valid list of factors)
-              ctypes[i]._type = ColType.ENUM;
+              ctypes[i] = Vec.T_ENUM;
               continue;
             }
           }
 
           // only get here if data is invalid ARFF
-          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF,AUTO_SEP,ncols,singleQuotes,null,null,data,checkHeader, null);
+          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
         }
       }
     }
@@ -129,7 +129,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (datablock.size() == 0)
-        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, 0, false, null, null, null, checkHeader, null);
+        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, false, checkHeader, 0, null);
       datalines = datablock.toArray(datalines);
 
       // process data section
@@ -142,7 +142,7 @@ class ARFFParser extends CsvParser {
           if (datalines[0].split(",").length > 2) sep = (byte) ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else
-            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, ncols, singleQuotes, null, null, data, checkHeader, null);
+            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, singleQuotes, checkHeader, ncols, data);
         }
         data[0] = determineTokens(datalines[0], sep, single_quote);
         ncols = (ncols > 0) ? ncols : data[0].length;
@@ -166,7 +166,7 @@ class ARFFParser extends CsvParser {
     }
 
     // Return the final setup
-    return new ParseSetup( true, 0, headerlines.length, null, ParserType.ARFF, sep, ncols, singleQuotes, labels, domains, data, checkHeader, ctypes);
+    return new ParseSetup( true, 0, headerlines.length, null, ParserType.ARFF, sep, singleQuotes, checkHeader, ncols, labels, ctypes, domains, naStrings, data);
   }
 
 }

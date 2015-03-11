@@ -80,7 +80,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       idxs = MemoryManager.malloc4(nbins+1); // Reverse index
       for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
       final double[] avgs = MemoryManager.malloc8d(nbins+1);
-      for( int i=0; i<nbins; i++ ) avgs[i] = _sums[i]/_bins[i]; // Average response
+      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
       avgs[nbins] = Double.MAX_VALUE;
       ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() { 
           @Override public int compare( int x, int y ) { return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0); }
@@ -116,7 +116,12 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
-    if( ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins] == 0 ) { assert isConstantResponse(); return null; }
+    double var = ssqs0[nbins]*tot - sums0[nbins]*sums0[nbins];
+    if( var == 0 ) { assert isConstantResponse(); return null; }
+    // If variance is really small, then the predictions (which are all at
+    // single-precision resolution), will be all the same and the tree split
+    // will be in vain.
+    if( ((float)var) == 0f ) return null; 
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
     double sums1[] = MemoryManager.malloc8d(nbins+1);
@@ -141,7 +146,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     int best=0;                         // The no-split
     double best_se0=Double.MAX_VALUE;   // Best squared error
     double best_se1=Double.MAX_VALUE;   // Best squared error
-    byte equal=0;                // Ranged check
+    byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( bins[b] == 0 ) continue; // Ignore empty splits
       if( ns0[b] < min_rows ) continue;
@@ -163,9 +168,9 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       }
     }
 
-    // If the min==max, we can also try an equality-based split
+    // If the bin covers a single value, we can also try an equality-based split
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
-        _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
+        _maxEx-_min > 2 && idxs==null ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
         if( bins[b] < min_rows ) continue; // Ignore too small splits
         long N =         ns0[b  ] + ns1[b+1];
@@ -197,11 +202,13 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     }
 
     if( best==0 ) return null;  // No place to split
-    long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
+    double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
+    if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    long  n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    long  n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
     double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
-    return new DTree.Split(col,best,bs,equal,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
+    return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
   @Override public long byteSize0() {

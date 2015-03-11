@@ -10,10 +10,18 @@ source('../h2o-runit.R')
 options(echo=TRUE)
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+
+# RStudio interactive mode
+if (! exists("myIP")) {
+  library(h2o)
+  myIP = "localhost"
+  myPort = 54321
+}
+
+conn <- h2o.init(ip=myIP, port=myPort, startH2O=FALSE)
 
 #uploading data file to h2o
-air <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+air <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
 #Constructing validation and train sets by sampling (20/80)
 #creating a column as tall as airlines(nrow(air))
@@ -25,28 +33,46 @@ myX <- c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
 myY <- "IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = air.train, ntrees = 10, max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
+air.gbm <- h2o.gbm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   loss = "bernoulli", ntrees = 100, max_depth = 3, learn_rate = 0.01)
 print(air.gbm@model)
+print(air.gbm@model$variableImportances[1:10,])
+
+#glm
+air.glm <- h2o.glm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid,
+                   family = "binomial", do_classification=TRUE)
+print(air.glm@model)
+print(air.glm@model$coefficients_magnitude[1:10,])
 
 #uploading test file to h2o
-air.test <- h2o.importFile(conn, path=locate("smalldata/airlines/AirlinesTest.csv.zip"))
+air.test <- h2o.importFile(conn, path=h2o:::.h2o.locate("smalldata/airlines/AirlinesTest.csv.zip"))
 
 #predicting & performance on test file
-pred <- predict(air.gbm, air.test)
-head(pred)
-perf <- h2o.performance(air.gbm, air.test)
-print(perf)
+pred.gbm <- predict(air.gbm, air.test)
+head(pred.gbm)
+perf.gbm <- h2o.performance(air.gbm, air.test)
+print(perf.gbm)
+
+pred.glm <- predict(air.glm, air.test)
+head(pred.glm)
+perf.glm <- h2o.performance(air.glm, air.test)
+print(perf.glm)
 
 #Building confusion matrix for test set
-CM <- h2o.confusionMatrices(perf, 0.5)
-print(CM)
+CM.gbm <- h2o.confusionMatrices(perf.gbm, 0.5)
+print(CM.gbm)
+CM.glm <- h2o.confusionMatrices(perf.glm, 0.5)
+print(CM.glm)
 
 #Plot ROC for test set
-h2o.precision(perf)
-h2o.accuracy(perf)
-h2o.auc(perf)
-plot(perf,type="roc")
+h2o.precision(perf.gbm)
+h2o.accuracy(perf.gbm)
+h2o.auc(perf.gbm)
+plot(perf.gbm,type="roc")
+
+h2o.precision(perf.glm)
+h2o.accuracy(perf.glm)
+h2o.auc(perf.glm)
+plot(perf.glm,type="roc")
 
 PASS_BANNER()
-
-

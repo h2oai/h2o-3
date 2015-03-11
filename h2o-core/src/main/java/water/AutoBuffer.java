@@ -291,6 +291,7 @@ public final class AutoBuffer {
   }
   static BBPool BBP_SML = new BBPool( 2*1024); // Bytebuffer "common small size", for UDP
   static BBPool BBP_BIG = new BBPool(64*1024); // Bytebuffer "common  big  size", for TCP
+  public static int TCP_BUF_SIZ = BBP_BIG.size();
 
   private int bbFree() {
     if( _bb != null && _bb.isDirect() ) BBPool.FREE(_bb);
@@ -876,6 +877,15 @@ public final class AutoBuffer {
 
   // -----------------------------------------------
   // Utility functions to read & write arrays
+
+  public boolean[] getAZ() {
+    int len = getInt();
+    if (len == -1) return null;
+    boolean[] r = new boolean[len];
+    for (int i=0;i<len;++i) r[i] = getZ();
+    return r;
+  }
+
   public byte[] getA1( ) {
     //_arys++;
     int len = getInt();
@@ -1071,6 +1081,17 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) ary[i] = getAA8();
     return ary;
   }
+  public double[][][] getAAA8d( ) {
+    //_arys++;
+    long xy = getZA();
+    if( xy == -1 ) return null;
+    int x=(int)(xy>>32);         // Leading nulls
+    int y=(int)xy;               // Middle non-zeros
+    int z = y==0 ? 0 : getInt(); // Trailing nulls
+    double[][][] ary  = new double[x+y+z][][];
+    for( int i=x; i<x+y; i++ ) ary[i] = getAA8d();
+    return ary;
+  }
 
   public String getStr( ) {
     int len = getInt();
@@ -1080,6 +1101,13 @@ public final class AutoBuffer {
   public Enum getEnum(Enum[] values ) {
     int idx = get1();
     return idx == -1 ? null : values[idx];
+  }
+
+  public AutoBuffer putAZ( boolean[] ary ) {
+    if( ary == null ) return putInt(-1);
+    putInt(ary.length);
+    for (boolean anAry : ary) putZ(anAry);
+    return this;
   }
 
   public AutoBuffer putA1( byte[] ary ) {
@@ -1274,6 +1302,15 @@ public final class AutoBuffer {
     for( int i=x; i<x+y; i++ ) putAA8(ary[i]);
     return this;
   }
+  public AutoBuffer putAAA8d( double[][][] ary ) {
+    //_arys++;
+    long xy = putZA(ary);
+    if( xy == -1 ) return this;
+    int x=(int)(xy>>32);
+    int y=(int)xy;
+    for( int i=x; i<x+y; i++ ) putAA8d(ary[i]);
+    return this;
+  }
   // Put a String as bytes (not chars!)
   public AutoBuffer putStr( String s ) {
     if( s==null ) return putInt(-1);
@@ -1436,6 +1473,8 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAASer (String name, Object[][] ooo   ) { return putJSONStr(name).put1(':').putJNULL(); }
   @SuppressWarnings("unused")  public AutoBuffer putJSONAAASer(String name, Object[][][] oooo) { return putJSONStr(name).put1(':').putJNULL(); }
 
+  public AutoBuffer putJSONAZ( String name, boolean[] f) { return putJSONStr(name).put1(':').putJSONAZ(f); }
+
   public AutoBuffer putJSON(Freezable ice) { return ice == null ? putJNULL() : ice.writeJSON(this); }
   public AutoBuffer putJSONA( Freezable fs[]  ) {
     if( fs == null ) return putJNULL();
@@ -1460,6 +1499,17 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public AutoBuffer putJSONAA( String name, Freezable f[][]){ return putJSONStr(name).put1(':').putJSONAA(f); }
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJStr("" + value); }
+
+  private AutoBuffer putJSONAZ(boolean [] b) {
+    if (b == null) return putJNULL();
+    put1('[');
+    for( int i = 0; i < b.length; ++i) {
+      if (i > 0) put1(',');
+      putJStr(""+b[i]);
+    }
+    return put1(']');
+  }
+
 
   // Most simple integers
   private AutoBuffer putJInt( int i ) {
@@ -1615,6 +1665,14 @@ public final class AutoBuffer {
     return d==Double.POSITIVE_INFINITY?putJSONStr(JSON_POS_INF):(d==Double.NEGATIVE_INFINITY?putJSONStr(JSON_NEG_INF):(Double.isNaN(d)?putJSONStr(JSON_NAN):putJStr(Double.toString(d))));
   }
   public AutoBuffer putJSON8d( String name, double d ) { return putJSONStr(name).put1(':').putJSON8d(d); }
+  public AutoBuffer putJSONA8d( String name, double[] a ) {
+    return putJSONStr(name).put1(':').putJSONA8d(a);
+  }
+  public AutoBuffer putJSONAA8d( String name, double[][] a) {
+    return putJSONStr(name).put1(':').putJSONAA8d(a);
+  }
+  public AutoBuffer putJSONAAA8d( String name, double[][][] a) { return putJSONStr(name).put1(':').putJSONAAA8d(a); }
+
   public AutoBuffer putJSONA8d( double[] a ) {
     if( a == null ) return putJNULL();
     put1('[');
@@ -1624,17 +1682,22 @@ public final class AutoBuffer {
     }
     return put1(']');
   }
-  public AutoBuffer putJSONA8d( String name, double[] a ) {
-    putJSONStr(name).put1(':');
-    return putJSONA8d(a);
-  }
-  public AutoBuffer putJSONAA8d( String name, double[][] a ) {
-    putJSONStr(name).put1(':');
+
+  public AutoBuffer putJSONAA8d( double[][] a ) {
     if( a == null ) return putJNULL();
     put1('[');
     for( int i=0; i<a.length; i++ ) {
       if( i>0 ) put1(',');
       putJSONA8d(a[i]);
+    }
+    return put1(']');
+  }
+  AutoBuffer putJSONAAA8d( double ary[][][] ) {
+    if( ary == null ) return putJNULL();
+    put1('[');
+    for( int i=0; i<ary.length; i++ ) {
+      if( i>0 ) put1(',');
+      putJSONAA8d(ary[i]);
     }
     return put1(']');
   }

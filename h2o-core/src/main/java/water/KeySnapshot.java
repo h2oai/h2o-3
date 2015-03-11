@@ -49,7 +49,7 @@ public class KeySnapshot {
       _type = v.type();
       if(v.isFrame()) {
         Frame f = v.get();
-        _rawData = (f.vecs().length == 1 && (f.anyVec() instanceof ByteVec));
+        _rawData = (f.numCols() == 1 && (f.anyVec() instanceof ByteVec));
       } else _rawData = false;
       _sz = v._max;
       _backEnd = v.backend();

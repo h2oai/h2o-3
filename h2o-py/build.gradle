@@ -19,6 +19,34 @@ def getOS() {
 
 def getOsSpecificCommandLine(args) { return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args }
 
+def bv = new H2OBuildVersion(rootDir, version)
+
+ext {
+    PROJECT_VERSION = bv.getProjectVersion()
+    T               = getProjectDir().toString()
+}
+
+task setProjectVersion << {
+    File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
+    print INIT.path
+    def txt=""
+    txt = INIT.text
+    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION)
+    INIT.write(txt)
+}
+
+task resetProjectVersion << {
+    File INIT = new File([T, "h2o", "__init__.py"].join(File.separator))
+    print INIT.path
+    def txt=""
+    txt = INIT.text
+    txt = txt.replaceAll(PROJECT_VERSION, "SUBST_PROJECT_VERSION")
+    INIT.write(txt)
+}
+
+task upgradeOrInstallTabulate(type: Exec) {
+    commandLine getOsSpecificCommandLine(["pip", "install", "tabulate", "--user", "--upgrade"])
+}
 
 task upgradeOrInstallWheel(type: Exec) {
     commandLine getOsSpecificCommandLine(["pip", "install", "wheel", "--user", "--upgrade"])
@@ -39,6 +67,9 @@ task cleaner << {
 
 clean.dependsOn cleaner
 upgradeOrInstallWheel.dependsOn cleaner
-buildDist.dependsOn upgradeOrInstallWheel
-task build_python(dependsOn: buildDist)
+// buildDist.dependsOn upgradeOrInstallTabulate
+// buildDist.dependsOn upgradeOrInstallWheel
+buildDist.dependsOn setProjectVersion
+resetProjectVersion.dependsOn buildDist
+task build_python(dependsOn: resetProjectVersion)
 build.dependsOn build_python

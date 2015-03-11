@@ -1,20 +1,8 @@
 package water.api;
 
-//import com.amazonaws.services.s3.AmazonS3;
-//import com.amazonaws.services.s3.model.ObjectListing;
-//import com.amazonaws.services.s3.model.S3ObjectSummary;
-//import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.Path;
-import water.exceptions.H2ONotFoundArgumentException;
-import water.persist.PersistHdfs;
-import water.util.FileIntegrityChecker;
-import water.util.Log;
+import water.H2O;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * The handler provides import capabilities.
@@ -27,43 +15,20 @@ public class ImportFilesHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ImportFilesV2 importFiles(int version, ImportFilesV2 importFiles) {
-    assert importFiles.path != null;
-    String path = importFiles.path.toLowerCase();
-    if (path.startsWith("hdfs://") )
-      return serveHDFS(version, importFiles);
-    else if (path.startsWith("s3n://" ))
-      return serveHDFS(version, importFiles);
-    //else if( p2.startsWith("maprfs:/") ) serveHdfs();
-    //else if( p2.startsWith("s3://"   ) ) serveS3();
-    //else if( p2.startsWith("http://" ) ) serveHttp();
-    //else if( p2.startsWith("https://") ) serveHttp();
-    else
-      return serveLocalDisk(version, importFiles);
+    ArrayList<String> files = new ArrayList();
+    ArrayList<String> keys = new ArrayList();
+    ArrayList<String> fails = new ArrayList();
+    ArrayList<String> dels = new ArrayList();
+
+    H2O.getPM().importFiles(importFiles.path, files, keys, fails, dels);
+
+    importFiles.files = files.toArray(new String[files.size()]);
+    importFiles.keys = keys.toArray(new String[keys.size()]);
+    importFiles.fails = fails.toArray(new String[fails.size()]);
+    importFiles.dels = dels.toArray(new String[dels.size()]);
+    return importFiles;
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  private ImportFilesV2 serveHDFS(int version, ImportFilesV2 importFiles)  {
-    // Fix for S3N kind of URL
-    if (isBareS3NBucketWithoutTrailingSlash(importFiles.path)) {
-      importFiles.path += "/";
-    }
-    Log.info("ImportHDFS processing (" + importFiles.path + ")");
-    // List of processed files
-    ArrayList<String> succ = new ArrayList<String>();
-    ArrayList<String> fail = new ArrayList<String>();
-    try {
-      // Recursively import given file/folder
-      PersistHdfs.addFolder(new Path(importFiles.path), succ, fail);
-      // Save results into schema holder
-      importFiles.keys = succ.toArray(new String[succ.size()]);
-      importFiles.files = importFiles.keys;
-      importFiles.fails = fail.toArray(new String[fail.size()]);
-      // write barrier was here : DKV.write_barrier();
-      return importFiles;
-    } catch (IOException e) {
-      throw new HDFSIOException(importFiles.path, PersistHdfs.CONF.toString(), e);
-    }
-  }
 //
 //
 //  private void serveS3(){
@@ -97,23 +62,6 @@ public class ImportFilesHandler extends Handler {
 //    files = keys;
 //    fails = fail.toArray(new String[fail.size()]);
 //  }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  private ImportFilesV2 serveLocalDisk(int version, ImportFilesV2 importFiles) {
-    File f = new File(importFiles.path);
-    if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + importFiles.path + " does not exist",
-                                                             "File " + importFiles.path + " does not exist");
-    ArrayList<String> afiles = new ArrayList();
-    ArrayList<String> akeys  = new ArrayList();
-    ArrayList<String> afails = new ArrayList();
-    ArrayList<String> adels  = new ArrayList();
-    FileIntegrityChecker.check(f).syncDirectory(afiles,akeys,afails,adels);
-    importFiles.files = afiles.toArray(new String[afiles.size()]);
-    importFiles.keys  = akeys .toArray(new String[akeys .size()]);
-    importFiles.fails = afails.toArray(new String[afails.size()]);
-    importFiles.dels  = adels .toArray(new String[adels .size()]);
-    return importFiles;
-  }
 
 //  private void serveHttp() {
 //    try {
@@ -169,11 +117,4 @@ public class ImportFilesHandler extends Handler {
 //  }
 //  private String parseLink(String k, String txt) { return Parse2.link(k, txt); }
 //  String parse() { return "Parse2.query"; }
-  private boolean isBareS3NBucketWithoutTrailingSlash(String s) {
-    Pattern p = Pattern.compile("s3n://[^/]*");
-    Matcher m = p.matcher(s);
-    boolean b = m.matches();
-    return b;
-  }
 }
-

@@ -158,7 +158,7 @@ import java.util.concurrent.Future;
  *
  * @author Cliff Click
  */
-public class Vec extends Keyed {
+public class Vec extends Keyed<Vec> {
   /** Element-start per chunk.  Always zero for chunk 0.  One more entry than
    *  chunks, so the last entry is the total number of rows.  This field is
    *  dead/ignored in subclasses that are guaranteed to have fixed-sized chunks
@@ -190,6 +190,7 @@ public class Vec extends Keyed {
   public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
   public static final byte T_TIMELAST= (byte)(T_TIME+ParseTime.TIME_PARSE.length);
   byte _type;                   // Vec Type
+  public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
 
   /** True if this is an Categorical column.  All enum columns are also {@link #isInt}, but
    *  not vice-versa.
@@ -219,17 +220,17 @@ public class Vec extends Keyed {
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array). */
-  public Vec( Key key, long espc[]) { this(key, espc, null, T_NUM); }
+  public Vec( Key<Vec> key, long espc[]) { this(key, espc, null, T_NUM); }
 
   /** Build a numeric-type or enum-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); enum Vecs need to pass the
    *  domain. */
-  Vec( Key key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
+  Vec( Key<Vec> key, long espc[], String[] domain) { this(key,espc,domain, (domain==null?T_NUM:T_ENUM)); }
 
   /** Main default constructor; the caller understands Chunk layout (via the
    *  {@code espc} array), plus enum/factor the {@code domain} (or null for
    *  non-enums), and the Vec type. */
-  public Vec( Key key, long espc[], String[] domain, byte type ) {
+  public Vec( Key<Vec> key, long espc[], String[] domain, byte type ) {
     super(key);
     assert key._kb[0]==Key.VEC;
     assert domain==null || type==T_ENUM;
@@ -262,9 +263,9 @@ public class Vec extends Keyed {
 
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
-    // vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-ditribution)
-    if (VectorGroup.sameGroup(this,v) && (_espc == v._espc || Arrays.equals(_espc,v._espc))) return true;
-    return (Arrays.equals(_espc,v._espc) && length() < 1e5);
+    // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
+    return (_espc == v._espc || Arrays.equals(_espc, v._espc)) &&
+            (VectorGroup.sameGroup(this, v) || length() < 1e5);
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -275,6 +276,12 @@ public class Vec extends Keyed {
   public long[] get_espc() { return _espc; }
   /** Get the column type. */
   public byte get_type() { return _type; }
+  public String get_type_str() { return TYPE_STR[_type]; }
+
+  public boolean isBinary(){
+    RollupStats rs = rollupStats();
+    return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
+  }
   
   // ======= Create zero/constant Vecs ======
 
@@ -344,7 +351,7 @@ public class Vec extends Keyed {
     return v0;
   }
 
-  public static Vec makeVec(double [] vals, Key vecKey){
+  public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     long [] espc = new long[2];
     espc[1] = vals.length;
     Vec v = new Vec(vecKey,espc);
@@ -387,7 +394,7 @@ public class Vec extends Keyed {
   // Make a bunch of compatible zero Vectors
   public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();
-    Key[] keys = group().addVecs(n);
+    Key<Vec>[] keys = group().addVecs(n);
     final Vec[] vs = new Vec[keys.length];
     for(int i = 0; i < vs.length; ++i)
       vs[i] = new Vec(keys[i],_espc, 
@@ -450,7 +457,7 @@ public class Vec extends Keyed {
     Vec randVec = makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
-        Random rng = new Random(seed*c.cidx());
+        Random rng = new Random(seed*(c.cidx()+1));
         for(int i = 0; i < c._len; ++i)
           c.set(i, rng.nextFloat());
       }
@@ -503,10 +510,10 @@ public class Vec extends Keyed {
    *  @return true if the Vec is all integers */
   public boolean isInt(){return rollupStats()._isInt; }
   /** Size of compressed vector data. */
-  long byteSize(){return rollupStats()._size; }
+  public long byteSize(){return rollupStats()._size; }
 
   /** Default Histogram bins. */
-  public static final double PERCENTILES[] = {0.01,0.10,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.90,0.99};
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.25,1.0/3.0,0.50,2.0/3.0,0.75,0.9,0.99,0.999};
   /** A simple and cheap histogram of the Vec, useful for getting a broad
    *  overview of the data.  Each bin is row-counts for the bin's range.  The
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
@@ -646,7 +653,7 @@ public class Vec extends Keyed {
 
   private boolean checkMissing(int cidx, Value val) {
     if( val != null ) return true;
-    System.out.println("Error: Missing chunk "+cidx+" for "+_key);
+    Log.err("Error: Missing chunk "+cidx+" for "+_key);
     return false;
   }
 
@@ -660,14 +667,14 @@ public class Vec extends Keyed {
 
   /** Make a new random Key that fits the requirements for a Vec key. 
    *  @return A new random Vec Key */
-  public static Key newKey(){return newKey(Key.make());}
+  public static Key<Vec> newKey(){return newKey(Key.make());}
 
   /** Internally used to help build Vec and Chunk Keys; public to help
    *  PersistNFS build file mappings.  Not intended as a public field. */
   public static final int KEY_PREFIX_LEN = 4+4+1+1;
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
-  static Key newKey(Key k) {
+  static Key<Vec> newKey(Key k) {
     byte [] kb = k._kb;
     byte [] bits = MemoryManager.malloc1(kb.length+KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
@@ -675,7 +682,7 @@ public class Vec extends Keyed {
     UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
     UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
     System.arraycopy(kb, 0, bits, 4+4+1+1, kb.length);
-    return Key.make(bits);
+    return (Key<Vec>)Key.make(bits);
   }
 
   /** Make a Vector-group key.  */
@@ -706,10 +713,13 @@ public class Vec extends Keyed {
     Chunk c = dvec.get();               // Chunk data to compression wrapper
     long cstart = c._start;             // Read once, since racily filled in
     Vec v = c._vec;
-    if( cstart == start && v != null) return c;     // Already filled-in
-    assert cstart == -1 || v == null;       // Was not filled in (everybody racily writes the same start value)
+    int tcidx = c._cidx;
+    if( cstart == start && v != null && tcidx == cidx)
+      return c;                       // Already filled-in
+    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
     c._vec = this;             // Fields not filled in by unpacking from Value
     c._start = start;          // Fields not filled in by unpacking from Value
+    c._cidx = cidx;
     return c;
   }
 
@@ -904,10 +914,12 @@ public class Vec extends Keyed {
   public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    int min, max;
     // Right now, limited to small dense integers.
-    if( min() < 0 || max() > 1000000 )
+    if( (min=(int)min()) < 0 || (max=(int)max()) > 1000000 )
       throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
-    long[] domain= new CollectDomain().doAll(this).domain();
+    // try to do the fast domain collection
+    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
     return adaptTo(ArrayUtils.toString(domain));
@@ -980,6 +992,42 @@ public class Vec extends Keyed {
     }
   }
 
+  // >11x faster than CollectDomain
+  /** (Optimized for positive ints) Collect numeric domain of given vector
+   *  A map-reduce task to collect up the unique values of an integer vector
+   *  and returned as the domain for the vector.
+   * */
+  public static class CollectDomainFast extends MRTask<CollectDomainFast> {
+    private final int _s;
+    private boolean[] _u;
+    private long[] _d;
+    CollectDomainFast(int s) { _s=s; }
+    @Override protected void setupLocal() { _u=MemoryManager.mallocZ(_s+1); }
+    @Override public void map(Chunk ys) {
+      for( int row=0; row< ys._len; row++ )
+        if( !ys.isNA(row) )
+          _u[(int)ys.at8(row)]=true;
+    }
+    @Override public void reduce(CollectDomainFast mrt) { if( _u != mrt._u ) ArrayUtils.or(_u, mrt._u);}
+    @Override protected void postGlobal() {
+      int c=0;
+      for (boolean b : _u) if(b) c++;
+      _d=MemoryManager.malloc8(c);
+      int id=0;
+      for (int i = 0; i < _u.length;++i)
+        if (_u[i])
+          _d[id++]=i;
+      Arrays.sort(_d);
+    }
+
+    /** Returns exact numeric domain of given vector computed by this task.
+     * The domain is always sorted. Hence:
+     *    domain()[0] - minimal domain value
+     *    domain()[domain().length-1] - maximal domain value
+     */
+    public long[] domain() { return _d; }
+  }
+
   /** Class representing the group of vectors.
    *
    *  Vectors from the same group have same distribution of chunks among nodes.
@@ -1039,11 +1087,11 @@ public class Vec extends Keyed {
     }
     /** Returns Vec Key from Vec id# 
      *  @return Vec Key from Vec id# */
-    public Key vecKey(int vecId) {
+    public Key<Vec> vecKey(int vecId) {
       byte [] bits = _key._kb.clone();
       bits[0] = Key.VEC;
       UnsafeUtils.set4(bits,2,vecId);//
-      return Key.make(bits);
+      return (Key<Vec>)Key.make(bits);
     }
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */
@@ -1077,20 +1125,20 @@ public class Vec extends Keyed {
     private static class ReturnKeysTsk extends TAtomic<VectorGroup>{
       final int _newCnt;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
       final int _oldCnt;
-      private ReturnKeysTsk(Key key, int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
+      private ReturnKeysTsk(int oldCnt, int newCnt){_newCnt = newCnt; _oldCnt = oldCnt;}
       @Override public VectorGroup atomic(VectorGroup old) {
         return (old._len == _oldCnt)? new VectorGroup(_key, _newCnt):old;
       }
     }
-    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(_key,oldCnt,newCnt).fork(_key);}
+    public Future tryReturnKeys(final int oldCnt, int newCnt) { return new ReturnKeysTsk(oldCnt,newCnt).fork(_key);}
 
 
     /** Gets the next n keys of this group.
      *  @param n number of keys to make
      *  @return arrays of unique keys belonging to this group.  */
-    public Key[] addVecs(final int n) {
+    public Key<Vec>[] addVecs(final int n) {
       int nn = reserveKeys(n);
-      Key[] res = new Key[n];
+      Key<Vec>[] res = (Key<Vec>[])new Key[n];
       for( int i = 0; i < n; ++i )
         res[i] = vecKey(i + nn);
       return res;
@@ -1098,7 +1146,7 @@ public class Vec extends Keyed {
     /** Shortcut for {@code addVecs(1)}.
      *  @see #addVecs(int)
      *  @return a new Vec Key in this group   */
-    public Key addVec() { return addVecs(1)[0]; }
+    public Key<Vec> addVec() { return addVecs(1)[0]; }
 
     /** Pretty print the VectorGroup
      *  @return String representation of a VectorGroup */
@@ -1117,5 +1165,4 @@ public class Vec extends Keyed {
       return _key.hashCode();
     }
   }
-
 }

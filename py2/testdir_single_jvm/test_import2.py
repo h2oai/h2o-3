@@ -2,7 +2,8 @@ import unittest, sys
 sys.path.extend(['.','..','../..','py'])
 import string
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
 
 expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 551128, 327648, 544044, 577981, 
@@ -106,9 +107,11 @@ class Basic(unittest.TestCase):
 
             colLength = 1 if DO_TEST_BAD_COL_LENGTH else 55
             expectedColumnNames = map(lambda x: basename + "_" + str(x+1), range(colLength))
-            columnNames = "[" + ",".join(expectedColumnNames) + "]"
+            # need to quote each column name in the string passed 
+            column_names = "[" + ",".join(map((lambda x: "'" + x + "'"), expectedColumnNames)) + "]"
+
             kwargs = {
-                'columnNames': columnNames,
+                'column_names': column_names,
                 'intermediateResults': False,
             }
             print kwargs

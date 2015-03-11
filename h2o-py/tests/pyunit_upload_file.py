@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1, "..")
 import h2o
 
 
@@ -70,12 +71,4 @@ def upload_file(ip, port):
     # py_numpy_ary_to_h2o.describe()
 
 if __name__ == "__main__":
-    args = sys.argv
-    print args
-    if len(args) > 1:
-        ip = args[1]
-        port = int(args[2])
-    else:
-        ip = "localhost"
-        port = 54321
-    upload_file(ip, port)
+  h2o.run_test(sys.argv, upload_file)

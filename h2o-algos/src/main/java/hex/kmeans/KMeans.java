@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.ClusteringModelBuilder;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.KMeansV2;
@@ -7,6 +8,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -22,11 +24,10 @@ import java.util.Random;
  * http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf<br>
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
-public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override
-  public Model.ModelCategory[] can_build() {
+public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  @Override public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
-      Model.ModelCategory.Clustering,
+            Model.ModelCategory.Clustering
     };
   }
 
@@ -41,6 +42,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   final private double TOLERANCE = 1e-6;
 
   // Called from an http request
+  public KMeans(Key dest, String desc, KMeansModel.KMeansParameters parms) { super(dest, desc, parms); init(false); }
   public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(false); }
 
   public ModelBuilderSchema schema() { return new KMeansV2(); }
@@ -59,20 +61,17 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
    *  categorical columns. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._k < 1 || _parms._k > 10000000 ) error("_k", "k must be between 1 and 1e7");
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1000000) error("_max_iterations", " max_iterations must be between 0 and 1e6");
-    if( _train == null ) return; // Nothing more to check
-    if( _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
+    if( _train == null ) return;
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       if( _parms._user_points.get().numCols() != _train.numCols() ) {
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
 
-    for( Vec v : _train.vecs() ) {
-      // if (v.isEnum()) _ncats++;
-      if(v.isEnum()) error("_train","Columns cannot have categorical values");
-    }
+    new CheckCols() {
+      @Override protected boolean filter(Vec v) { return v.isEnum(); }
+    }.doIt(_train, "Columns cannot have categorical values: ", expensive);
 
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
@@ -86,25 +85,26 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     _ncats = ncats;
   }
 
+  abstract class CheckCols {
+    abstract protected boolean filter(Vec v);
+    void doIt( Frame f, String msg, boolean expensive ) {
+      boolean any=false;
+      for( int i = 0; i < f.vecs().length; i++ ) {
+        if( filter(f.vecs()[i]) ) {
+          if( any ) msg += ", "; // Log cols with errors
+          any = true;
+          msg += f._names[i];
+        }
+      }
+      if( any ) {
+        error("_train", msg);
+        if (expensive) Log.info(msg);
+      }
+    }
+  }
+
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
-
-    // means are used to impute NAs
-    double[] prepMeans( final Vec[] vecs) {
-      final double[] means = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) means[i] = vecs[i].mean();
-      return means;
-    }
-    // mults & means for standardization
-    double[] prepMults( final Vec[] vecs) {
-      if( !_parms._standardize ) return null;
-      double[] mults = new double[vecs.length];
-      for( int i = 0; i < vecs.length; i++ ) {
-        double sigma = vecs[i].sigma();
-        mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
-      }
-      return mults;
-    }
 
     // Initialize cluster centers
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
@@ -202,8 +202,10 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
       String[] colTypes = new String[_train.numCols()];
+      String[] colFormats = new String[_train.numCols()];
       Arrays.fill(colTypes, "double");
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, null, new String[_parms._k][], model._output._centers_raw);
+      Arrays.fill(colFormats, "%5f");
+      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
       double ssq = 0;       // sum squared error
@@ -235,7 +237,7 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
       if( oldCenters==null ) return false; // No prior iteration, not stopping
       double average_change = 0;
       for( int clu=0; clu<_parms._k; clu++ )
-        average_change += distance(oldCenters[clu],newCenters[clu],_ncats);
+        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_ncats);
       average_change /= _parms._k;  // Average change per cluster
       if( average_change < TOLERANCE ) return true;
 
@@ -258,10 +260,11 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
         //
         model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
-        // means are used to impute NAs
-        final double[] means = prepMeans(vecs);
         // mults & means for standardization
-        final double[] mults = prepMults(vecs);
+        final double[] means = _train.means();  // means are used to impute NAs
+        final double[] mults = _parms._standardize ? _train.mults() : null;
+        model._output._normSub = means;
+        model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
         double[][] centers = initial_centers(model,vecs,means,mults);
         if( centers==null ) return; // Stopped/cancelled during center-finding
@@ -517,43 +520,12 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     return closest(centers, point, ncats, cd, centers.length);
   }
 
-  private static double distance(double[] center, double[] point, int ncats) {
-    double sqr = 0;             // Sum of dimensional distances
-    int pts = point.length;     // Count of valid points
-
-    // Categorical columns first.  Only equals/unequals matters (i.e., distance is either 0 or 1).
-    for(int column = 0; column < ncats; column++) {
-        double d = point[column];
-      if( Double.isNaN(d) ) pts--;
-      else if( d != center[column] )
-        sqr += 1.0;           // Manhattan distance
-    }
-    // Numeric column distance
-    for( int column = ncats; column < center.length; column++ ) {
-      double d = point[column];
-      if( Double.isNaN(d) ) pts--; // Do not count
-      else {
-        double delta = d - center[column];
-        sqr += delta * delta;
-      }
-    }
-    // Scale distance by ratio of valid dimensions to all dimensions - since
-    // we did not add any error term for the missing point, the sum of errors
-    // is small - ratio up "as if" the missing error term is equal to the
-    // average of other error terms.  Same math another way:
-    //   double avg_dist = sqr / pts; // average distance per feature/column/dimension
-    //   sqr = sqr * point.length;    // Total dist is average*#dimensions
-    if( 0 < pts && pts < point.length )
-      sqr *= point.length / pts;
-    return sqr;
-  }
-
   /** Return both nearest of N cluster center/centroids, and the square-distance. */
   private static ClusterDist closest(double[][] centers, double[] point, int ncats, ClusterDist cd, int count) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < count; cluster++ ) {
-      double sqr = distance(centers[cluster],point,ncats);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[cluster],point,ncats);
       if( sqr < minSqr ) {      // Record nearest cluster
         min = cluster;
         minSqr = sqr;
@@ -562,20 +534,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
     cd._cluster = min;          // Record nearest cluster
     cd._dist = minSqr;          // Record square-distance
     return cd;                  // Return for flow-coding
-  }
-
-  // For KMeansModel scoring; just the closest cluster center
-  static int closest(double[][] centers, double[] point, int ncats) {
-    int min = -1;
-    double minSqr = Double.MAX_VALUE;
-    for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = distance(centers[cluster],point,ncats);
-      if( sqr < minSqr ) {      // Record nearest cluster center
-        min = cluster;
-        minSqr = sqr;
-      }
-    }
-    return min;
   }
 
   // KMeans++ re-clustering
@@ -624,11 +582,6 @@ public class KMeans extends ModelBuilder<KMeansModel,KMeansModel.KMeansParameter
   private void randomRow(Vec[] vecs, Random rand, double[] center, double[] means, double[] mults) {
     long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
     data(center, vecs, row, means, mults);
-  }
-
-  private static boolean standardize(double sigma) {
-    // TODO unify handling of constant columns
-    return sigma > 1e-6;
   }
 
   // Pick most common cat level for each cluster_centers' cat columns

@@ -43,7 +43,8 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
-      project(':h2o-scala')
+      project(':h2o-scala'),
+      project(':h2o-persist-hdfs')
     ]
 
     javaProjects = [
@@ -51,6 +52,7 @@ ext {
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
+      project(':h2o-persist-hdfs'),
       project(':h2o-test-integ')
     ]
 
@@ -66,24 +68,10 @@ ext {
       project(':h2o-py')
     ]
 
-    // Supported Hadoop versions used at compile time
-    // and assembled into resulting jar
-    hadoopVersions = [
-      /* CDH3     */ '0.20.2-cdh3u6',
-      /* CDH4.3   */ '2.0.0-cdh4.3.0',
-      /* CDH4.3   */ '2.0.0-cdh4.7.0',
-      /* CDH5.1   */ '2.3.0-cdh5.1.3',
-      /* CDH5.2   */ '2.5.0-cdh5.2.0',
-      /* HDP2.0.6 */ '2.2.0.2.0.6.0-102',
-      /* HDP2.1.3 */ '2.4.0.2.1.3.0-563',
-      /* HDP2.1.5 */ '2.4.0.2.1.5.0-695'
-    ]
-
     //
     // Versions of libraries shared cross all projects
     //
     junitVersion  = '4.11'
-    hadoopVersion = '2.5.0-cdh5.2.0'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
 }
@@ -99,6 +87,11 @@ allprojects {
     apply from: "$rootDir/gradle/artifacts.gradle"
 }
 
+// Compute applyFindbugsPlugin property
+// Gradle by default interpret boolean properties setup in config file as strings.
+// Hence we need here string toBoolean call
+def applyFindbugsPlugin = rootProject.hasProperty("runFindbugs") ? rootProject.runFindbugs.toBoolean() : false
+
 // 
 // Common configuration for all subprojects
 //
@@ -108,13 +101,14 @@ subprojects {
 
     repositories {
         mavenCentral()
-        // Cloudera dependencies
         maven {
           url "https://repository.cloudera.com/artifactory/cloudera-repos/"
         }
-        // Hortonworks dependencies
         maven {
           url "http://repo.hortonworks.com/content/repositories/releases/"
+        }
+        maven {
+          url "http://repository.mapr.com/maven/"
         }
         // mavenLocal()
     }
@@ -132,8 +126,12 @@ subprojects {
 
     // Configure Java projects
     if (project in javaProjects) {
-       apply from: "$rootDir/gradle/java.gradle"
-       apply from: "$rootDir/gradle/cp.gradle"
+        apply from: "$rootDir/gradle/java.gradle"
+        apply from: "$rootDir/gradle/cp.gradle"
+        // Include Findbugs only if the property is specified
+        if (applyFindbugsPlugin) {
+            apply from: "$rootDir/gradle/findbugs.gradle"
+        }
     }
 
     // Configure Scala projects
@@ -152,7 +150,7 @@ subprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.0'
+  gradleVersion = '2.2.1'
 }
 
 //
@@ -193,13 +191,31 @@ task buildH2oDevDist(type: Exec) {
     group='Dist'
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
     def projectVersion = bv.getProjectVersion()
+    def branchName = bv.getBranch()
+    def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
     environment['PROJECT_VERSION'] = projectVersion
+    environment['BRANCH_NAME'] = branchName
+    environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
     commandLine './make-dist.sh'
 }
 
 task dist(dependsOn: buildH2oDevDist) 
+
+//
+// Additional clean tasks to get squeaky clean.
+//
+task cleanH2oDistTmp(type: Delete) {
+    delete "$rootDir/h2o-dist/tmp"
+}
+
+task cleanTarget(type: Delete) {
+    delete "$rootDir/target"
+}
+
+clean.dependsOn cleanH2oDistTmp
+clean.dependsOn cleanTarget
 
 //
 // Import project development profiles

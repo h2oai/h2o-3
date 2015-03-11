@@ -1,5 +1,6 @@
 import time, sys
-import h2o, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_browse as h2b
 import h2o_nodes, h2o_args
 from h2o_test import dump_json, check_sandbox_for_errors, verboseprint
 
@@ -19,7 +20,8 @@ def pollStatsWhileBusy(timeoutSecs=300, pollTimeoutSecs=15, retryDelaySecs=5):
         a = h2o_nodes.nodes[0].jobs(timeoutSecs=60)
         busy = False
         for j in a['jobs']:
-            if j['end_time']=='' and not (j['cancelled'] or (j['result'].get('val', None)=='CANCELLED')):
+            msec = j.get('msec', None)
+            if j['status']!='DONE':
                 busy = True
                 verboseprint("Still busy")
                 break
@@ -113,28 +115,39 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
         jobs = a['jobs']
         busy = 0
         for j in jobs:
-            cancelled = j['cancelled'] or (j['result'].get('val', None)=='CANCELLED')
+            cancelled = j['status']=='CANCELLED'
             description = j['description']
-            destination_key = j['destination_key']
-            end_time = j['end_time']
             key = j['key']
+            jobKey = key['name']
+            jobKeyType = key['type']
+
+#          "key": {
+#            "URL": "/3/Jobs.json/$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2", 
+#            "__meta": {
+#              "schema_name": "JobKeyV1", 
+#              "schema_type": "Key<Job>", 
+#              "schema_version": 1
+#            }, 
+#            "name": "$0301c0a8002232d4ffffffff$_95036c2ef3f74468c63861fd826149c2", 
+#            "type": "Key<Job>"
+#    
             progress = j['progress']
+            progress_msg = j['progress_msg']
+
             # has exception and val?
-            result = j['result']
             start_time = j['start_time']
+            end_time = j.get('end_time', None)
+            dest = j['dest']
+            description = j['description']
+            msec = j.get('msec', None)
 
             # for now, don't ignore any exceptions
-            if 'exception' in result and result['exception']:
+
+            # FIX! what do exceptions look like now?
+            if 'exception' in j and j['exception']:
                 check_sandbox_for_errors()
                 msg = "ERROR: pollWaitJobs found a job with a exception result when it shouldn't have:\n %s" % dump_json(j)
                 raise Exception(msg)
-
-            if result:
-                # ignore if 'val' is 'OK'
-                if 'val' in result and result['val'] == 'OK':
-                    pass
-                else:
-                    print "non-empty result: %s for %s" % (result, key)
 
             if errorIfCancelled and cancelled:
                 check_sandbox_for_errors()
@@ -143,23 +156,23 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
                 
             ### verboseprint(j)
             # don't include cancelled jobs here
-            elif end_time=='' and not cancelled:
+            elif j['status']!='DONE':
                 if not pattern: 
                     # always print progress if busy job (no pattern used
-                    print "time:", time.strftime("%I:%M:%S"), "progress:",  progress, destination_key
+                    print "time:", time.strftime("%I:%M:%S"), "progress:",  progress, dest
                     verboseprint("description:", description, "end_time:", end_time)
                     busy +=1
                     verboseprint("pollWaitJobs: found a busy job, now: %s" % busy)
                 else:
-                    if (pattern in key) or (pattern in destination_key) or (pattern in description):
+                    if (pattern in key) or (pattern in dest) or (pattern in description):
                         ## print "description:", description, "end_time:", end_time
                         busy += 1
                         verboseprint("pollWaitJobs: found a pattern-matched busy job, now %s" % busy)
                         # always print progress if pattern is used and matches
-                        print "time:", time.strftime("%I:%M:%S"), "progress:",  progress, destination_key
+                        print "time:", time.strftime("%I:%M:%S"), "progress:",  progress, dest
                     # we only want to print the warning message once
                     elif key not in ignoredJobs:
-                        jobMsg = "%s %s %s" % (key, description, destination_key)
+                        jobMsg = "%s %s %s" % (key, description, dest)
                         verboseprint(" %s job in progress but we're ignoring it. Doesn't match pattern." % jobMsg)
                         # I guess "key" is supposed to be unique over all time for a job id?
                         ignoredJobs.add(key)
@@ -195,8 +208,8 @@ def pollWaitJobs(pattern=None, errorIfCancelled=False, timeoutSecs=60, pollTimeo
     patternKeys = []
     for j in jobs:
         # save the destination keys in progress that match pattern (for returning)
-        if pattern and pattern in j['destination_key']:
-            patternKeys.append(j['destination_key'])
+        if pattern and pattern in j['dest']:
+            patternKeys.append(j['dest'])
 
     return patternKeys
 

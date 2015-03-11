@@ -1,6 +1,7 @@
 package hex.coxph;
 
-import hex.FrameTask.DataInfo;
+
+import hex.DataInfo;
 import hex.ModelMetrics;
 import hex.ModelMetricsRegression;
 import hex.SupervisedModel;

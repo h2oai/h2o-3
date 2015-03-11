@@ -1,5 +1,7 @@
 package water.util;
 
+import water.MemoryManager;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
@@ -44,10 +46,12 @@ public class ArrayUtils {
       sum += x[i]*x[i];
     return sum;
   }
-  public static double l1norm(double [] x){
+  public static double l1norm(double [] x){ return l1norm(x,false);}
+  public static double l1norm(double [] x, boolean skipLast){
     double sum = 0;
-    for(double d:x)
-      sum += d >= 0?d:-d;
+    int last = x.length -(skipLast?1:0);
+    for(int i = 0; i < last; ++i)
+      sum += x[i] >= 0?x[i]:-x[i];
     return sum;
   }
   public static double l2norm(double [] x, boolean skipLast){
@@ -89,6 +93,11 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
   }
+  public static boolean[] or(boolean[] a, boolean[] b) {
+    if (b==null)return a;
+    for (int i = 0; i < a.length; i++) a[i] |= b[i];
+    return a;
+  }
 
   public static double[][] deepClone(double [][] ary){
     double [][] res = ary.clone();
@@ -100,6 +109,13 @@ public class ArrayUtils {
   public static double[] add(double[] a, double[] b) {
     if( a==null ) return b;
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
+    return a;
+  }
+
+  public static double[] wadd(double[] a, double[] b, double w) {
+    if( a==null ) return b;
+    for(int i = 0; i < a.length; i++ )
+      a[i] += w*b[i];
     return a;
   }
 
@@ -159,6 +175,28 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+
+  public static double[][] transpose(double[][] ary) {
+    if(ary == null) return null;
+    double[][] res = new double[ary[0].length][ary.length];
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
+  public static double [][] generateLineSearchVecs(double [] srcVec, double [] gradient, int n, final double step) {
+    double [][] res = new double[n][];
+    double x = step;
+    for(int i = 0; i < res.length; ++i) {
+      res[i] = MemoryManager.malloc8d(srcVec.length);
+      for(int j = 0; j < res[i].length; ++j)
+        res[i][j] = srcVec[j] + gradient[j] * x;
+      x *= step;
+    }
+    return res;
   }
 
   // Convert array of primitives to an array of Strings.
@@ -267,6 +305,12 @@ public class ArrayUtils {
   }
   public static float minValue(float[] from) {
     float result = from[0];
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]<result) result = from[i];
+    return result;
+  }
+  public static double minValue(double[] from) {
+    double result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]<result) result = from[i];
     return result;
@@ -586,6 +630,17 @@ public class ArrayUtils {
     return nary;
   }
 
+  static public double[] copyAndFillOf(double[] original, int newLength, double padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    double[] newArray = new double[newLength];
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+  }
+
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;
@@ -619,10 +674,42 @@ public class ArrayUtils {
   // Painful simple O(n^2) insertion sort, suitable for small arrays only.
   public interface IntComparator { public int compare(int a, int b); }
   public static void sort(final int[] data, final IntComparator comparator) {
-    for( int i = 0; i < data.length + 0; i++ ) {
-      for( int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j-- ) {
-        int tmp = data[j];   data[j] = data[j-1];   data[j-1] = tmp;
+    for (int i = 0; i < data.length + 0; i++) {
+      for (int j = i; j > 0 && comparator.compare(data[j - 1], data[j]) > 0; j--) {
+        int tmp = data[j];
+        data[j] = data[j - 1];
+        data[j - 1] = tmp;
       }
     }
+  }
+  public static double [] subtract (double [] a, double [] b) {
+    double [] c = MemoryManager.malloc8d(a.length);
+    subtract(a,b,c);
+    return c;
+  }
+  public static void subtract (double [] a, double [] b, double [] c) {
+    for(int i = 0; i < a.length; ++i)
+      c[i] = a[i] - b[i];
+  }
+
+  /** Flatenize given array.
+   *
+   * Example: [[1,2], [3,null], [4]] -> [1,2,3,null,4]
+   * @param arr array of arrays
+   * @param <T> any type
+   * @return flattened array, if input was null return null, if input was empty return null
+   */
+  public static <T> T[] flat(T[][] arr) {
+    if (arr == null) return null;
+    if (arr.length == 0) return null;
+    int tlen = 0;
+    for (T[] t : arr) tlen += t.length;
+    T[] result = Arrays.copyOf(arr[0], tlen);
+    int j = arr[0].length;
+    for (int i = 1; i < arr.length; i++) {
+      System.arraycopy(arr[i], 0, result, j, arr[i].length);
+      j += arr[i].length;
+    }
+    return result;
   }
 }
