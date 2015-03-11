@@ -10,8 +10,7 @@ For more details on the math behind H2O's implementation of GLM, refer to <a hre
 **Note**: GLM in H2O-Dev may provide slightly different coefficient values when applying an L1 penalty in comparison with H2O1.
 
 ###Using GLM
-The variable of interest relates to predictions or
-inferences about a rate, an event, or a continuous measurement. Questions are about how a set of environmental conditions influence the dependent variable.
+Use GLM when the variable of interest relates to predictions or inferences about a rate, an event, or a continuous measurement or for questions about how a set of environmental conditions influence the dependent variable.
 
 Here are some examples:
 
@@ -52,7 +51,7 @@ Now, parse the imported data:
 
 0. From the drop-down **Parser** list, select the file type of the data set (Auto, XLS, CSV, or SVMLight). 
 0. If the data uses a separator, select it from the drop-down **Separator** list. 
-0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. You can also select the **Auto** radio button to have H2O automatically determine if the first row of the dataset contains column names or data. 
+0. If the data uses a column header as the first row, select the **First row contains column names** radio button. If the first row contains data, select the **First row contains data** radio button. To have H2O automatically determine if the first row of the dataset contains column names or data, select the **Auto** radio button. 
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after parsing, check the **Delete on done** checkbox. 
 
@@ -98,11 +97,6 @@ To view more details, click the **Inspect** button.
 
  ![GLM - Inspecting Results](../images/GLM_Inspect.png)
  
- To view the normalized coefficient magnitudes, click the **Normalized Coefficient Magnitudes** link. 
- 
-  ![GLM - Normalized Coefficient Magnitudes](../images/GLM_NormCoeff.png)
-  
-  
 To view the best lambda values, click the **Best Lambda** link. 
 
   ![GLM - Best Lambda](../images/GLM_Inspect_BestLambda.png)
