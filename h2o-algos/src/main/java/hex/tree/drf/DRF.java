@@ -60,21 +60,20 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
    */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-
     // Initialize local variables
-    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0)) throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
+    if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
+      throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
     if (DEBUG_DETERMINISTIC && _parms._seed == -1) _parms._seed = 0x1321e74a0192470cL; // fixed version of seed
-    else if (_parms._seed == -1) _actual_seed = RandomUtils.getDeterRNG(0xd280524ad7fe0602L).nextLong(); else _actual_seed = _parms._seed;
-    if (_parms._sample_rate==1f && _valid!=null)
-      Log.warn("Sample rate is 100% and no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
-    if (!_parms._convert_to_enum && _parms._do_grpsplit) {
-      Log.info("Group splitting not supported for DRF regression. Forcing group splitting to false.");
-      _parms._do_grpsplit = false;
+    else if (_parms._seed == -1) _actual_seed = RandomUtils.getDeterRNG(0xd280524ad7fe0602L).nextLong();
+    else _actual_seed = _parms._seed;
+    if (_parms._sample_rate == 1f && _valid != null) {
+      error("_sample_rate", "Sample rate is 100% {nd no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
     }
-
-
-
-
+    if (expensive) { //_convert_to_enum is only set to user-given value if expensive=true
+      if (!_parms._convert_to_enum && _parms._do_grpsplit) {
+        error("_do_grpsplit", "Group splitting not supported for DRF regression.");
+      }
+    }
   }
 
   // A standard DTree with a few more bits.  Support for sampling during
