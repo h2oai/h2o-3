@@ -85,12 +85,12 @@ task installBowerPackages(type: Exec) {
   }
 }
 
-task buildClientWithGulp(type: Copy) {
+task copyFlowToWebRoot(type: Copy) {
   from 'lib/h2o-flow/build'
   into 'src/main/resources/www/flow'
 }
 
-task cleanClientWithGulp(type: Delete) {
+task deleteFlowFromWebRoot(type: Delete) {
   delete 'src/main/resources/www/flow'
 }
 
@@ -101,11 +101,16 @@ task copyExampleFlows(type: Copy) {
   into exampleFlowsOutputDir
 }
 
+task compileHelpFiles(type: Exec) {
+  commandLine = getOsSpecificCommandLine([ 'node', 'make-help.js', "$rootDir/h2o-docs/src/product/flow/README.md", "$rootDir/h2o-web/src/main/resources/www/flow/help" ])
+}
+
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
-buildClientWithGulp.dependsOn installBowerPackages
-processResources.dependsOn buildClientWithGulp
-clean.dependsOn cleanClientWithGulp
+copyFlowToWebRoot.dependsOn installBowerPackages
+processResources.dependsOn copyFlowToWebRoot
+clean.dependsOn deleteFlowFromWebRoot
 
 processResources.dependsOn copyExampleFlows
+processResources.dependsOn compileHelpFiles
 
