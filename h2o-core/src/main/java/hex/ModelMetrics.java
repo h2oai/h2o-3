@@ -76,7 +76,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       for(int i = 0; i < coef_names.length; i++)
         coef_names[i] = "C" + String.valueOf(i+1);
     }
-    assert rel_imp.length == coef_names.length;
 
     // Sort in descending order by relative importance
     Integer[] sorted_idx = new Integer[rel_imp.length];
