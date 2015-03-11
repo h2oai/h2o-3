@@ -105,8 +105,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for( int tid=0; tid<_parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms._checkpoint ) // do not make initial scoring if model already exist
-          doScoringAndSaveModel(false, false, false);
+        if( tid!=0 || !_parms._checkpoint ) { // do not make initial scoring if model already exist
+          double training_r2 = doScoringAndSaveModel(false, false, false);
+          if( training_r2 >= 0.999999 )
+            return;             // Stop when approaching round-off error
+        }
 
         // ESL2, page 387
         // Step 2a: Compute prediction (prob distribution) from prior tree results:
