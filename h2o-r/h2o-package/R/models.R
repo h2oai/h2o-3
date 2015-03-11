@@ -88,10 +88,11 @@
   cf_matrix
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
-  .key.validate(params$key)
-  params$training_frame <- get("training_frame", parent.frame())
 
+
+
+.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, envir) {
+  .key.validate(params$key)  
   #---------- Force evaluate temporary ASTs ----------#
   delete_train <- !.is.eval(params$training_frame)
   if (delete_train) {
@@ -188,20 +189,19 @@
   }
 
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
-
   job_key  <- res$job[[1L]]$key$name
   dest_key <- res$jobs[[1L]]$dest$name
-  .h2o.__waitOnJob(conn, job_key)
-
-  model <- h2o.getModel(dest_key, conn)
-
   if (delete_train)
     h2o.rm(temp_train_key)
   if (!is.null(params$validation_frame))
     if (delete_valid)
-      h2o.rm(temp_valid_key)
+      h2o.rm(temp_valid_key)  
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
+}
 
-  model
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
+  params$training_frame <- get("training_frame", parent.frame())
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))      
 }
 
 predict.H2OModel <- function(object, newdata, ...) {
