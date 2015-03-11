@@ -686,7 +686,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       String java_text = toJava();
-      System.out.println(java_text);
+//      System.out.println(java_text);
       GenModel genmodel;
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
@@ -705,7 +705,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for( int col=0; col<features.length; col++ ) // Build feature set
           features[col] = dvecs[col].at(row);
         genmodel.score0(features,predictions);            // POJO predictions
-        for( int col=0; col<predictions.length; col++ ) { // Compare predictions
+        for( int col=0; col<pvecs.length; col++ ) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions

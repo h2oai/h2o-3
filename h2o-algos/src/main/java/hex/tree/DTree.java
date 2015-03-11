@@ -61,10 +61,6 @@ public class DTree extends Iced {
 
   public final int len() { return _len; }
 
-  // Public stats about tree
-  public int leaves;
-  public int depth;
-
   // --------------------------------------------------------------------------
   // Abstract node flavor
   public static abstract class Node extends Iced {

@@ -310,9 +310,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // if it is necessary.
   void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
     float sum = score1(chks, fs, row);
-    if( isClassifier() && !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-    if( _model._output._priorClassDist!=null && _model._output._modelClassDist!=null )
+    if( isClassifier()) {
+      if( !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+    }
   }
 
   // --------------------------------------------------------------------------

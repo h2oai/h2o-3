@@ -12,7 +12,6 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     int _mtries = -1;
     float _sample_rate = 2f/3f;
-    boolean _do_grpsplit = true;
     public boolean _build_tree_one_node = false;
     public DRFParameters() {
       super();
@@ -57,7 +56,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
 
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     if (_output.nclasses() == 1) { // Regression
-      body.ip("preds[0] /= NTREES;").nl();
+      body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
       body.ip("float sum = 0;").nl();
       body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();

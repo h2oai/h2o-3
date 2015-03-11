@@ -13,10 +13,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
-import water.util.ModelUtils;
-import water.util.RandomUtils;
-import water.util.Timer;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -68,11 +65,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     else _actual_seed = _parms._seed;
     if (_parms._sample_rate == 1f && _valid != null) {
       error("_sample_rate", "Sample rate is 100% {nd no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
-    }
-    if (expensive) { //_convert_to_enum is only set to user-given value if expensive=true
-      if (!_parms._convert_to_enum && _parms._do_grpsplit) {
-        error("_do_grpsplit", "Group splitting not supported for DRF regression.");
-      }
     }
   }
 
@@ -187,7 +179,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       int tid;
       DTree[] ktrees = null;
       // Prepare tree statistics
-      TreeStats tstats = _model._output._treeStats!=null ? _model._output._treeStats : new TreeStats();
       // Build trees until we hit the limit
       for( tid=0; tid<_parms._ntrees; tid++) { // Building tid-tree
         if (tid!=0 || !_parms._checkpoint) { // do not make initial scoring if model already exist
@@ -204,7 +195,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         if( !isRunning() ) return; // If canceled during building, do not bulkscore
 
         // Check latest predictions
-        tstats.updateBy(ktrees);
         _model._output.addKTrees(ktrees);
       }
       doScoringAndSaveModel(true, _valid==null, _parms._build_tree_one_node);
@@ -315,7 +305,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Collect leaves stats
       for (int i=0; i<ktrees.length; i++)
         if( ktrees[i] != null )
-          ktrees[i].leaves = ktrees[i].len() - leafs[i];
+          ktrees[i]._leaves = ktrees[i].len() - leafs[i];
       // DEBUG: Print the generated K trees
       //printGenerateTrees(ktrees);
 
@@ -496,10 +486,15 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
-    float sum=0;
-    for( int k=0; k<_nclass; k++ ) // Sum across of likelihoods
-      sum+=(fs[k+1]=(float)chk_tree(chks,k).atd(row));
-    if (_nclass == 1) sum /= (float)chk_oobt(chks).atd(row); // for regression average per trees voted for this row (only trees which have row in "out-of-bag"
+    float sum = 0;
+    if (_nclass > 1) { //classification
+      for (int k = 0; k < _nclass; k++)
+        sum += (fs[k+1] = (float) chk_tree(chks, k).atd(row));
+    } else { //regression
+      // average per trees voted for this row (only trees which have row in "out-of-bag"
+      sum += (fs[0] = (float) chk_tree(chks, 0).atd(row) / (float)chk_oobt(chks).atd(row) );
+      fs[1] = 0;
+    }
     return sum;
   }
 
