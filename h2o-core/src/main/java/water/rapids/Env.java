@@ -179,7 +179,8 @@ public class Env extends Iced {
   public void clean() {
     if (_trash == null) return;
     for (ValFrame f : _trash)
-      if (!f._g) cleanup(f._fr);
+      if (!f._g)
+        cleanup(f._fr);
     _trash.clear();
   }
 
@@ -230,6 +231,7 @@ public class Env extends Iced {
     boolean delete;
 
     if (_refcnt.get(v) == null) return false;
+    if (_locked.contains(v._key)) return false;
     int cnt = _refcnt.get(v)._val - 1;
     if( cnt > 0 ) {
       _refcnt.put(v, new IcedInt(cnt));
@@ -340,6 +342,7 @@ public class Env extends Iced {
       if (isAry()) {
         if(peekAry()._key != null && peekAry()._key == _local._frames.get(k)._key) continue;
       }
+      if ( _locked.contains(Key.make(k))) continue;
       Frame f = _local._frames.get(k);
       for (Vec v : f.vecs()) delete &= subRef(v);
       if(delete) f.delete();
@@ -653,6 +656,8 @@ public class Env extends Iced {
   }
 
   int getType(String name, boolean search_global) {
+    if (name == null || name.equals(""))
+      throw new IllegalArgumentException("Tried to lookup on a missing name. Are there free floating `%` in your AST?");
     int res = NULL;
 
     // Check the local_frames first
@@ -664,7 +669,7 @@ public class Env extends Iced {
     if (res == NULL && _local != null) res = _local.typeOf(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
-    if (res == NULL && search_global) res = _global.typeOf(name);
+    if (res == NULL && search_global && _global != null) res = _global.typeOf(name);
 
     // Still didn't find it? Try the KV store next, if we haven't already
     if (res == NULL && search_global) res = kvLookup(name);
