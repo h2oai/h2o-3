@@ -315,12 +315,34 @@ def rapids(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     }
 
     check_params_update_kwargs(params_dict, kwargs, 'rapids', True)
-    if 1==1:
-        result = self.do_json_request('1/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
-    else:
-        result = self.do_json_request('1/Rapids.json', timeout=timeoutSecs, params=params_dict)
+    result = self.do_json_request('3/Rapids.json', cmd='post', timeout=timeoutSecs, postData=params_dict)
 
     verboseprint("rapids result:", dump_json(result))
+
+    # FIX! maybe add something for ignoring conditionally?
+    if 'exception' in result and result['exception'] and not ignoreH2oError:
+        exception = result['exception']
+        raise Exception('rapids with kwargs:\n%s\ngot exception:\n"%s"\n' % (dump_json(kwargs), exception))
+
+    h2o_sandbox.check_sandbox_for_errors()
+    return result
+
+#******************************************************************************************8
+def rapids_iseval(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
+    # FIX! assume both of these are strings for now, not lists
+    if 'ast_key' in kwargs and kwargs['ast_key'] is not None:
+        assert isinstance(kwargs['ast_key'], basestring), "only string assumed? %s" % kwargs['ast_key']
+
+    # currently runExec only does one or the other
+    params_dict = {
+        'ast_key': None,
+    }
+
+    check_params_update_kwargs(params_dict, kwargs, 'rapids_iseval', True)
+    # doesn't like 'put' here?
+    # doesn't like empty key
+    result = self.do_json_request('3/Rapids.json/isEval', cmd='get', timeout=timeoutSecs, postData=params_dict)
+    verboseprint("rapids_iseval result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?
     if 'exception' in result and result['exception'] and not ignoreH2oError:
@@ -362,6 +384,7 @@ H2O.h2o_log_msg = h2o_log_msg
 H2O.inspect = inspect
 H2O.quantiles = quantiles
 H2O.rapids = rapids
+H2O.rapids_iseval = rapids_iseval
 H2O.unlock = unlock
 H2O.typeahead = typeahead
 H2O.get_timeline = get_timeline

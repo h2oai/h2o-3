@@ -409,7 +409,7 @@ class Xbase(object):
                     # what if self.scalar is NaN
                     if math.isnan(float(self.scalar)):
                         print "Rapids returned scalar result that's NaN. Using -1 instead: %s" % self.scalar
-                        execExpr2 = '(= !%s (c {#-1}))' % self.frame
+                        execExpr2 = '(= !%s (c {#-1 #-1}))' % self.frame
                     else:
                         execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
 
