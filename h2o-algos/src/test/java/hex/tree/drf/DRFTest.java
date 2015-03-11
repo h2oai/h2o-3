@@ -192,6 +192,7 @@ public class DRFTest extends TestUtil {
     try {
       frTrain = parse_test_file(fnametrain);
       unifyFrame(drf, frTrain, prep);
+      DKV.put(frTrain._key, frTrain);
       // Configure DRF
       drf._train = frTrain._key;
       drf._response_column = ((Frame)DKV.getGet(drf._train)).lastVecName();
