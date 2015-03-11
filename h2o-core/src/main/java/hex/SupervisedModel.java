@@ -46,7 +46,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public int _max_hit_ratio_k = 10;
   }
 
-  /** Output from all Supervised Models, includes class distribtion
+  /** Output from all Supervised Models, includes class distribution
    */
   public abstract static class SupervisedOutput extends Model.Output {
     // Includes the class distribution for all supervised models
@@ -117,7 +117,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     return scored;
   }
 
-  protected SB toJavaPROB( SB sb) {
+  @Override protected SB toJavaPROB( SB sb) {
     JCodeGen.toStaticVar(sb, "PRIOR_CLASS_DISTRIB", _output._priorClassDist, "Prior class distribution");
     JCodeGen.toStaticVar(sb, "MODEL_CLASS_DISTRIB", _output._modelClassDist, "Class distribution used for model building");
     return sb;

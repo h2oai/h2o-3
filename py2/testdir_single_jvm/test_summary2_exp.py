@@ -115,14 +115,6 @@ class Basic(unittest.TestCase):
             # column 0 not used here
             assert len(expected) == 6
             co = h2o_cmd.runSummary(key=hex_key, column=0, expected=expected[1:], maxDelta=maxErr)
-            print co.label, co.type, co.missing, co.domain, sum(co.bins)
-
-            coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
-                co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
-
-            for k,v in co:
-                print k, v
-
             trial += 1
             h2o.nodes[0].remove_all_keys()
 
@@ -137,7 +129,7 @@ class Basic(unittest.TestCase):
                     col=scipyCol,
                     datatype='float',
                     quantile=0.5 if DO_MEDIAN else 0.99,
-                    h2oSummary2=co.pctiles[5 if DO_MEDIAN else 9],
+                    h2oSummary2=co.percentiles[5 if DO_MEDIAN else 9],
 
                     # h2oQuantilesApprox=qresult_single,
                     # h2oQuantilesExact=qresult,

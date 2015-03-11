@@ -17,14 +17,13 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
         label = c['label']
         stype = c['type']
-        missing = c['missing']
-        zeros = c['zeros']
+        missing = c['missing_count']
+        zeros = c['zero_count']
         domain = c['domain']
         print "column: %s label: %s type: %s missing: %s zeros: %s domain: %s" %\
             (i,label,stype,missing,zeros,domain)
@@ -62,31 +61,23 @@ class Basic(unittest.TestCase):
                 importFolderPath = "standard"
                 hex_key = 'covtype.hex'
                 csvPathname = importFolderPath + "/" + csvFilename
-                chunkSize = 2**trial
-                print "Trial %s. Trying chunkSize %s (power of 2)" % (trial, chunkSize)
+                chunk_size = 2**trial
+                print "Trial %s. Trying chunk_size %s (power of 2)" % (trial, chunk_size)
 
                 parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='local', 
                     timeoutSecs=timeoutSecs, hex_key=hex_key,
-                    chunkSize=chunkSize, doSummary=False)
+                    chunk_size=chunk_size, doSummary=False)
                 pA = h2o_cmd.ParseObj(parseResult)
                 iA = h2o_cmd.InspectObj(pA.parse_key)
                 print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
                 for i in range(1):
-                    print "Summary on column", i
-                    # hack. where is col 1
                     co = h2o_cmd.runSummary(key=hex_key, column=i)
-                    coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
-                        co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-                    for k,v in co:
-                        print k, v
-
-                # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
                 k = parseResult['frames'][0]['key']['name']
                 # print "parseResult:", dump_json(parseResult)
                 a_node = h2o.nodes[0]
-                frames_result = a_node.frames(key=k, len=5)
+                frames_result = a_node.frames(key=k, row_count=5)
                 # print "frames_result from the first parseResult key", dump_json(frames_result)
                 
                 parseKeyIndexedCheck(frames_result, multiplyExpected)

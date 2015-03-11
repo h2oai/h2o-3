@@ -6,42 +6,6 @@ from h2o_test import verboseprint, dump_json, OutputObj
 from tabulate import tabulate
 from h2o_xl import Key, Assign
 
-def define_params():
-    paramDict = {
-        # FIX! when is this needed? redundant for binomial?
-        'do_classification': [True, False, None],
-        'balance_classes': [True, False, None],
-        'class_sampling_factors': [0.1, 0.2, None],
-        'max_after_balance_size': [100.0, 1000.0, None],
-        # 'solver': ['ADMM', 'L_BFGS', None],
-        'solver': ['L_BFGS', None],
-        'max_iter': [1, 3, 15, None],
-        'dropNA20Cols': [None, 0, 1],
-        'standardize': [None, 0, 1],
-        'tweedie_variance_power': [None, 0, 1],
-        'tweedie_link_power': [None, 0, 1],
-        'prior1': [0, 0.5, 1, None],
-
-        'nlambdas': [None, 1,2,5], # number of lambdas to be used in a search
-        'lambda_min_ratio': [None, .1, 0.9], # ratio of lambda max. Evidently can't take 1 ?
-        'lambda': [0, 1e-8, 1e-4, 1e-3],
-        'lambda_search': [None, 0, 1], # FIX! what if lambda is set when lambda_search=1
-
-        'use_all_factor_levels': [None, 0, 1],
-        'beta_eps': [None, 0.0001],
-        'alpha': [0,0.2,0.4],
-        'family': ['family_default', 'gaussian', 'binomial', 'poisson', 'logit', 'log', 'inverse', 'tweedie', None],
-        'link': [None],
-        'ignored_cols': [1,'C1','1,2','C1,C2'],
-        'n_folds': [0,1],
-        'standardize': [None, 0,1],
-        # 'intercept': [None, 0, 1],
-        # 'non_negative': [None, 0,1], # require coefficents to be non-negative
-        # 'variable_importances': [None, 0, 1],
-        }
-
-    return paramDict
-
 class Basic(unittest.TestCase):
     def tearDown(self):
         h2o.check_sandbox_for_errors()
@@ -57,7 +21,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_GLM_params_rand2(self):
+    def test_GLM_error1(self):
         importFolderPath = "covtype"
         csvFilename = "covtype.20k.data"
         hex_key = "covtype20k.hex"
@@ -96,38 +60,31 @@ class Basic(unittest.TestCase):
         labelListUsed = list(labelList)
         numColsUsed = numCols
 
-        paramDict = define_params()
         for trial in range(5):
-            # family [u'gaussian', u'binomial', u'poisson', u'gamma', u'tweedie']
-            # link [u'family_default', u'identity', u'logit', u'log', u'inverse', u'tweedie']
-            # can we do classification with probabilities?
-            # are only lambda and alpha grid searchable?
-
-            # params is mutable. This is default.
             parameters = {
-                'response_column': 'C54',
-                'alpha': 0.1,
-                # 'lambda': 1e-4, 
-                'lambda': 0,
-                'n_folds': 1,
+                'response_column': 'C54', 
+                'standardize': 0, 
+                'family': 'log', 
+                'solver': 'L_BFGS', 
+                'beta_eps': None, 
+                'tweedie_variance_power': 0, 
+                'lambda_min_ratio': 0.9, 
+                'ignored_cols': 'C1', 
+                'link': None, 
+                'balance_classes': None, 
+                'n_folds': 0, 
+                'alpha': '[0]', 
+                'do_classification': True, 
+                'lambda_search': None, 
+                'lambda': '[0]'
             }
-            h2o_glm.pickRandGlmParams(paramDict, parameters)
 
-            if 'family' not in parameters or parameters['family']=='binomial':
-                bHack = binomial_key
-            else:
-                bHack = hex_key
+            bHack = hex_key
 
             co = h2o_cmd.runSummary(key=binomial_key, column=54)
             print "binomial_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
             co = h2o_cmd.runSummary(key=hex_key, column=54)
             print "hex_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
-
-            # fix stupid params
-            fixList = ['alpha', 'lambda']
-            for f in fixList:
-                if f in parameters:
-                    parameters[f] = "[%s]" % parameters[f]
 
             model_key = 'rand_glm.hex'
             bmResult = h2o.n0.build_model(
