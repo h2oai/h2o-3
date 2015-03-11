@@ -45,6 +45,14 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
     if simple_type == 'enum':
         return simple_type
 
+    # Polymorphic fields can either be a scalar, a Schema, or an array of either of these:
+    if simple_type == 'Polymorphic':
+        return 'Polymorphic'
+
+    # IcedWrapper fields can either be a scalar or an array of either of scalars:
+    if simple_type == 'IcedWrapper':
+        return 'Polymorphic'
+
     raise Exception('Unexpectedly found a ' + simple_type + ' field: ' + name + ' in pojo: ' + pojo_name)
 
 
@@ -97,7 +105,7 @@ a_node = h2o.H2O(args.host, args.port)
 endpoints_result = a_node.endpoints()
 endpoints = endpoints_result['routes']
 
-print 'creating the endpoint bindings. . .'
+print 'creating the endpoint bindings in {}. . .'.format(args.dest)
 if h2o.H2O.verbose:
     print 'Endpoints: '
     pp.pprint(endpoints)
@@ -125,7 +133,7 @@ for schema in all_schemas:
     schema_name = schema['name']
     pojo_name = schema_name + 'Proxy';
 
-    save_full = args.dest + os.sep + 'POJOs/' + pojo_name + '.java'
+    save_full = args.dest + os.sep + 'water/bindings/pojos/' + pojo_name + '.java'
     save_dir = os.path.dirname(save_full)
 
     # create dirs without race:

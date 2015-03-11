@@ -2,11 +2,9 @@ package water.util;
 
 import water.H2O;
 import water.Iced;
+import water.exceptions.H2OIllegalArgumentException;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 
 public class ReflectionUtils {
   /**
@@ -61,6 +59,40 @@ public class ReflectionUtils {
   public static Class findMethodOutputClass(Method method) {
     Class clz = method.getReturnType();
     return clz;
+  }
+
+  /**
+   * Reflection helper which returns the actual class for a field which has a parameterized type.
+   * E.g., DeepLearningV2's "parameters" class is in parter ModelBuilderSchema, and is parameterized
+   * by type parameter P.
+   */
+  public static Class findActualFieldClass(Class clz, Field f) {
+    // schema.getClass().getGenericSuperclass() instanceof ParameterizedType
+    Type generic_type = f.getGenericType();
+    if (! (generic_type instanceof TypeVariable))
+      return f.getType();
+
+    // field is a parameterized type
+    // ((TypeVariable)schema.getClass().getField("parameters").getGenericType())
+    TypeVariable[] tvs = clz.getSuperclass().getTypeParameters();
+    TypeVariable tv = (TypeVariable)generic_type;
+    String type_param_name = tv.getName();
+
+    int which_tv = -1;
+    for(int i = 0; i < tvs.length; i++)
+      if (type_param_name.equals(tvs[i].getName()))
+        which_tv = i;
+
+    if (-1 == which_tv) {
+      String dev_msg = "Failed to find type parameter: " + type_param_name + " for class: " + clz;
+      throw new H2OIllegalArgumentException("Internal error: type parameter failure.", dev_msg);
+    }
+
+    ParameterizedType generic_super = (ParameterizedType)clz.getGenericSuperclass();
+
+    // NOTE: only handles a single level of parameterization right now:
+    Class field_clz = (Class)generic_super.getActualTypeArguments()[which_tv];
+    return field_clz;
   }
 }
 

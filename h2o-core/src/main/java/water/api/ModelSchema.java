@@ -51,9 +51,6 @@ abstract public class ModelSchema<M extends Model<M, P, O>,
     super();
   }
 
-  /* Key-only constructor, for the times we only want to return the key. */
-  ModelSchema( ModelKeyV1 key ) { this.key = key; }
-
   public ModelSchema(M m) {
     this();
     PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);

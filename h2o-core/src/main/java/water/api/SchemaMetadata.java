@@ -6,6 +6,7 @@ import water.IcedWrapper;
 import water.Weaver;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
+import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -155,13 +156,14 @@ public final class SchemaMetadata extends Iced {
         this.value = consValue(o);
 
         boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.type = consType(schema, f.getType(), f.getName());
         this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
+
+        this.type = consType(schema, ReflectionUtils.findActualFieldClass(schema.getClass(), f), f.getName());
 
         // Note, this has to work when the field is null.  In addition, if the field's type is a base class we want to see if we have a versioned schema for its Iced type and, if so, use it.
         if (this.is_schema) {
-          // First, get the class of the field:
-          Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : (Class<? extends Schema>)f.getType();
+          // First, get the class of the field: NOTE: this gets the actual type for genericized fields, but not for arrays of genericized fields
+          Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
 
           // Now see if we have a versioned schema for its Iced type:
           Class<? extends Schema>  versioned_schema_class = Schema.schemaClass(schema.getSchemaVersion(), Schema.getImplClass(schema_class));
