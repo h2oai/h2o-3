@@ -112,5 +112,7 @@ processResources.dependsOn copyFlowToWebRoot
 clean.dependsOn deleteFlowFromWebRoot
 
 processResources.dependsOn copyExampleFlows
+
+compileHelpFiles.dependsOn installNpmPackages
 processResources.dependsOn compileHelpFiles
 
