@@ -14,6 +14,13 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     float _sample_rate = 2f/3f;
     boolean _do_grpsplit = true;
     public boolean _build_tree_one_node = false;
+    public DRFParameters() {
+      super();
+      // Set DRF-specific defaults (that differ from SharedTreeModel's defaults)
+      _ntrees = 50;
+      _max_depth = 20;
+      _min_rows = 1;
+    }
   }
 
   public static class DRFOutput extends SharedTreeModel.SharedTreeOutput {

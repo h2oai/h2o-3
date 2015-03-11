@@ -11,13 +11,8 @@ public class DRFV2 extends SharedTreeV2<DRF,DRFV2,DRFV2.DRFParametersV2> {
 
   public static final class DRFParametersV2 extends SharedTreeParametersV2<DRFParameters, DRFParametersV2> {
     static public String[] own_fields = new String[] {
-        "ntrees",
-        "max_depth",
-        "min_rows",
-        "nbins",
         "mtries",
         "sample_rate",
-        "seed",
         "do_grpsplit",
         "build_tree_one_node"
     };
