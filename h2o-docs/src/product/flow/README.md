@@ -1,8 +1,8 @@
-#Getting Started with H2O Flow
+# Getting Started with H2O Flow
 ---
 
 <a name="GetHelp"></a> 
-##Getting Help 
+# Getting Help 
 ---
 
 First, let's go over the basics. Type `h` to view a list of helpful shortcuts. 
@@ -28,7 +28,7 @@ Before getting started with H2O Flow, make sure you understand the different cel
 ---
 
 <a name="Cell"></a>
-##Understanding Cell Modes
+# Understanding Cell Modes
 
 There are two modes for cells: edit and command. In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
@@ -89,7 +89,7 @@ Now that you are familiar with the cell modes, let's import some data.
 ---
 
 <a name="ImportData"></a>
-##Importing Data
+# Importing Data
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
@@ -126,7 +126,7 @@ Ok, now that you've imported your data, let's move on to the next step: parsing.
 ---
 
 <a name="ParseData"></a>
-##Parsing Data
+# Parsing Data
 
 After you have imported your data, parse the data.
 
@@ -175,11 +175,11 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 --- 
  
 <a name="ViewJobs"></a>
-##Viewing Jobs
+# Viewing Jobs
 
 Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference. 
 
-###Viewing Recent Jobs
+## Viewing Recent Jobs
 
 To view all recent jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
@@ -191,7 +191,7 @@ The following information displays:
 - Description of the type of job (for example, `GLM` or `Parse`)
 - Status (`RUNNING` or `DONE`)
 
-###Viewing Specific Jobs
+## Viewing Specific Jobs
 
 To view a specific job, click the **Destination Key** link. 
 
@@ -214,7 +214,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 ---
 
 <a name="BuildModel"></a>
-##Building Models
+# Building Models
 
 To build a model: 
 
@@ -468,7 +468,7 @@ The available options vary depending on the selected model. If an option is only
 ---
 
 <a name="ViewModel"></a>
-###Viewing Models
+## Viewing Models
 
 Click the **Assist Me!** button, then click the **getModels** link, or enter `getModels` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays. 
 
@@ -489,7 +489,7 @@ To learn how to make predictions, continue to the next section.
 ---
 
 <a name="Predict"></a>
-##Making Predictions
+# Making Predictions
 
 After creating your model, click the destination key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
@@ -499,7 +499,7 @@ Select the model to use in the prediction from the drop-down **Model:** menu and
 ---
  
 <a name="ViewPredict"></a>
-###Viewing Predictions
+## Viewing Predictions
 
 Click the **Assist Me!** button, then click the **getPredictions** link, or enter `getPredictions` in the cell in CS mode and press **Ctrl+Enter**. A list of the stored predictions displays. 
 To view a prediction, click the **View** button to the right of the model name. 
@@ -509,7 +509,7 @@ To view a prediction, click the **View** button to the right of the model name.
 ---
 
 <a name="ViewFrame"></a>
-##Viewing Frames
+# Viewing Frames
 
 To view a specific frame, click the "Destination Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
@@ -553,7 +553,7 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 
 
-###Plotting Frames
+## Plotting Frames
 
 To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
 
@@ -577,7 +577,7 @@ Select one of the above options from the drop-down **Color** menu to display the
 
 <a name="Clips"></a>
 
-##Using Clips
+# Using Clips
 
 Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot). 
  ![Paperclip icon](images/Flow_clips_paperclip.png)
@@ -597,7 +597,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 ---
 
 <a name="Outline"></a>
-##Viewing Outlines
+# Viewing Outlines
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. To jump to a specific cell, click the cell description. 
 
@@ -606,7 +606,7 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 ---
 
 <a name="SaveFlow"></a>
-##Saving Flows
+# Saving Flows
 
 You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
@@ -624,18 +624,18 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
  **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
 
-###Duplicating Flows
+## Duplicating Flows
 
 To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
 
 
-###Exporting Flows
+## Exporting Flows
 
 After saving a flow as a notebook, click the **Flow** menu, then select **Export**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as *<filename>*.flow, where *<filename>* is the name specified when the flow was saved. 
 
 **Caution**: You must have an active internet connection to export flows. 
 
-###Loading Flows
+## Loading Flows
 
 To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow. 
 
@@ -654,13 +654,13 @@ To load an exported flow, click the **Flow** menu and select **Open...**. In the
 ---
 
 <a name="Troubleshooting"></a>
-##Troubleshooting 
+# Troubleshooting 
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
 **NOTE**: To view the current version, click the **Help** menu, then click **About**. 
 
-###Viewing Cluster Status
+## Viewing Cluster Status
 
 Click the **Admin** menu, then select **Cluster Status**. A summary of the status of the cluster (also known as a cloud) displays, which includes the same information: 
 
@@ -690,13 +690,13 @@ To view more information, click the **Show Advanced** button.
 
 ---
 
-###Viewing CPU Status (Water Meter)
+## Viewing CPU Status (Water Meter)
 
 To view the current CPU usage, click the **Admin** menu, then click **Water Meter (CPU Meter)**. A new window opens, displaying the current CPU use statistics. 
 
 ---
 
-###Viewing Logs
+## Viewing Logs
 To view the logs for troubleshooting, click the **Admin** menu, then click **Inspect Log**. 
 
  ![Inspect Log](images/Flow_viewLog.png)
@@ -705,13 +705,13 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 
 ---
 
-###Downloading Logs
+## Downloading Logs
 
 To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to support@h2o.ai for issue resolution. 
 
 ---
 
-###Accessing the Profiler
+## Accessing the Profiler
 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
@@ -721,7 +721,7 @@ To view the profiler information for a specific node, select it from the drop-do
 
 ---
 
-###Viewing Stack Trace Information
+## Viewing Stack Trace Information
 
 To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
 
@@ -730,7 +730,7 @@ To view the stack trace information, click the **Admin** menu, then click **Stac
 To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
 
 
-###Viewing the Timeline
+## Viewing the Timeline
 
 To view a timeline of events in Flow, click the **Admin** menu, then click **Timeline**. The following information displays for each event: 
 
@@ -747,7 +747,7 @@ To obtain the most recent information, click the **Refresh** button.
 
 ---
 
-###Shutting Down H2O
+## Shutting Down H2O
 
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 
