@@ -1,24 +1,6 @@
 #Getting Started with H2O Flow
 ---
 
-This tutorial will show you how to: 
-
-- [get help](#GetHelp)
-- [understand cell modes](#Cells)
-- [import data](#ImportData)
-- [parse data](#ParseData)
-- [view jobs](#ViewJobs)
-- [build a model](#BuildModel)
-- [view a model](#ViewModels)
-- [make a prediction](#Predict)
-- [view predictions](#ViewPredict)
-- [view a frame](#ViewFrames)
-- [use clips](#Clips)
-- [view an outline of your flow](#Outline)
-- [save a flow](#SaveFlows)
-- [troubleshoot issues](#Troubleshooting)
-
-
 <a name="GetHelp"></a> 
 ##Getting Help 
 ---
