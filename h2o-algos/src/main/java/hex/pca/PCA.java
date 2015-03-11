@@ -2,7 +2,7 @@ package hex.pca;
 
 import hex.DataInfo;
 import hex.DataInfo.Row;
-import hex.glm.LSMSolver.ADMMSolver.NonSPDMatrixException;
+
 import hex.gram.Gram;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
@@ -13,6 +13,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.PCAV2;
 import hex.gram.Gram.GramTask;
 import hex.FrameTask;
+import hex.gram.Gram.NonSPDMatrixException;
 
 import water.*;
 import water.fvec.Chunk;
@@ -192,7 +193,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       chol = new CholeskyDecomposition(new Matrix(gram));
     }
     if(!chol.isSPD())
-      throw new NonSPDMatrixException(gram);
+      throw new NonSPDMatrixException();
     return chol;
   }
 
@@ -260,7 +261,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         gram.cholesky(chol);
       }
       if(!chol.isSPD())
-        throw new NonSPDMatrixException(gram);
+        throw new NonSPDMatrixException();
       return chol;
     }
     Cholesky regularizedCholesky(Gram gram) {

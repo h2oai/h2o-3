@@ -571,7 +571,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   keepRunning <- TRUE
   while (keepRunning) {
     myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-    rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+    rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
     jsonObject <- .h2o.fromJSON(rawResponse)
     jobs <- jsonObject$jobs
     if (length(jobs) > 1) {

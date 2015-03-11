@@ -4,12 +4,12 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
-import hex.FrameSplitter;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 
 public class FrameUtils {
@@ -44,6 +44,57 @@ public class FrameUtils {
     for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
     if(okey == null) okey = Key.make(uris[0].toString());
     return ParseDataset.parse(okey, inKeys);
+  }
+
+  private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
+    final int N;
+    public double [] res;
+    public Vec2ArryTsk(int N){this.N = N;}
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc8d(N);
+    }
+    @Override public void map(Chunk c){
+      final int off = (int)c.start();
+      for(int i = 0; i < c._len; i = c.nextNZ(i))
+        res[off+i] = c.atd(i);
+    }
+    @Override public void reduce(Vec2ArryTsk other){
+      if(res != other.res) {
+        for(int i = 0; i < res.length; ++i) {
+          assert res[i] == 0 || other.res[i] == 0;
+          res[i] += other.res[i]; // assuming only one nonzero
+        }
+      }
+    }
+  }
+  public static double [] asDoubles(Vec v){
+    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    return new Vec2ArryTsk((int)v.length()).doAll(v).res;
+  }
+  private static class Vec2IntArryTsk extends MRTask<Vec2IntArryTsk> {
+    final int N;
+    public int [] res;
+    public Vec2IntArryTsk(int N){this.N = N;}
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc4(N);
+    }
+    @Override public void map(Chunk c){
+      final int off = (int)c.start();
+      for(int i = 0; i < c._len; i = c.nextNZ(i))
+        res[off+i] = (int)c.at8(i);
+    }
+    @Override public void reduce(Vec2IntArryTsk other){
+      if(res != other.res) {
+        for(int i = 0; i < res.length; ++i) {
+          assert res[i] == 0 || other.res[i] == 0;
+          res[i] += other.res[i]; // assuming only one nonzero
+        }
+      }
+    }
+  }
+  public static int [] asInts(Vec v){
+    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    return new Vec2IntArryTsk((int)v.length()).doAll(v).res;
   }
 
   /**

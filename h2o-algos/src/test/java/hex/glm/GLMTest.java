@@ -230,9 +230,9 @@ public class GLMTest  extends TestUtil {
         for(int j = 0; j < b.length; ++j) {
           b[j] += step * pk[j];
         }
-        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, 1, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
-        assertEquals("objective values differ at step " + i + ": " + step, glmt._objVal, glst._objVals[i], 1e-8);
-        System.out.println("step = " + step + ", obj = " + glmt._objVal + ", " + glst._objVals[i]);
+        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
+        assertEquals("objective values differ at step " + i + ": " + step, glmt._likelihood, glst._likelihoods[i], 1e-8);
+        System.out.println("step = " + step + ", obj = " + glmt._likelihood + ", " + glst._likelihoods[i]);
         step *= stepDec;
       }
     } finally {
@@ -470,6 +470,51 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
+
+//  @Test public void testProximal() {
+//    glmnet's result:
+//    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
+//    res2$beta[,58]
+//    AGE        RACE          DPROS       PSA         VOL         GLEASON
+//    -0.00616326 -0.50000000  0.50000000  0.03628192 -0.01249324  0.50000000 //    res2$a0[100]
+//    res2$a0[58]
+//    s57
+//    -4.155864
+//    lambda = 0.001108, null dev =  512.2888, res dev = 379.7597
+//    Key parsed = Key.make("prostate_parsed");
+//    Key modelKey = Key.make("prostate_model");
+//    GLMModel model = null;
+//    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv", new String[]{"ID"}, "CAPSULE");
+//    Key k = Key.make("rebalanced");
+//    H2O.submitTask(new RebalanceDataSet(fr, k, 64)).join();
+//    fr.delete();
+//    fr = DKV.get(k).get();
+//    fr.remove("ID");
+//    Key betaConsKey = Key.make("beta_constraints");
+//
+//    //String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
+//    //double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
+//    // [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
+//    FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
+//    Frame betaConstraints = ParseDataset2.parse(parsed, new Key[]{betaConsKey});
+//    try {
+//      // H2O differs on intercept and race, same residual deviance though
+//      GLM2.Source src = new GLM2.Source((Frame)fr.clone(), fr.vec("CAPSULE"), false, true);
+//      new GLM2("GLM offset test on prostate.", Key.make(), modelKey, src, Family.binomial).setNonNegative(false).setRegularization(new double[]{0},new double[]{0.000}).setBetaConstraints(betaConstraints).setHighAccuracy().doInit().fork().get(); //.setHighAccuracy().doInit().fork().get();
+//      model = DKV.get(modelKey).get();
+//      fr.add("CAPSULE", fr.remove("CAPSULE"));
+//      DataInfo dinfo = new DataInfo(fr, 1, true, false, TransformType.NONE, DataInfo.TransformType.NONE);
+//      GLMIterationTask glmt = new GLMTask.GLMIterationTask(0,null, dinfo, new GLMParams(Family.binomial),false, true, true, model.beta(), 0, 1.0/380, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
+//      double [] beta = model.beta();
+//      double [] grad = glmt.gradient(0,0);
+//      for(int i = 0; i < beta.length; ++i)
+//        Assert.assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-8);
+//      // now standardized
+//    } finally {
+//      fr.delete();
+//      if(model != null)model.delete();
+//    }
+//  }
   // test categorical autoexpansions, run on airlines which has several categorical columns,
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test public void testAirlines() {
