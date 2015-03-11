@@ -106,6 +106,9 @@ public abstract class GenModel {
 
   // Utility to do bitset lookup
   public static boolean bitSetContains(byte[] bits, int bitoff, int num ) {
+    if (Integer.MIN_VALUE == num) { //Missing value got cast'ed to Integer.MIN_VALUE via (int)-Float.MAX_VALUE in GenModel.*_fclean
+      num = 0; // all missing values are treated the same as the first enum level //FIXME
+    }
     assert num >= 0;
     num -= bitoff;
     return (num >= 0) && (num < (bits.length<<3)) &&
