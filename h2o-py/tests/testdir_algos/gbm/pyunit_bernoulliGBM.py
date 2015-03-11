@@ -5,8 +5,6 @@ import h2o
 import numpy as np
 from sklearn import ensemble
 from sklearn.metrics import roc_auc_score
-this_file_dir = os.path.dirname(os.path.realpath(__file__))
-h2o_home_dir = this_file_dir + "/../../../../"
 
 def bernoulliGBM(ip,port):
   # Connect to h2o
