@@ -214,7 +214,7 @@ class RollupStats extends Iced {
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
-    @Override public void postGlobal() {  _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1));}
+    @Override public void postGlobal() { if( _rs == null ) _rs = new RollupStats(0); else _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
