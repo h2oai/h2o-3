@@ -1,9 +1,7 @@
 package hex.tree;
 
-import java.util.*;
-
-import water.H2O;
 import water.MemoryManager;
+import water.util.ArrayUtils;
 import water.util.IcedBitSet;
 
 /**
@@ -57,40 +55,69 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     final int nbins = nbins();
     assert nbins > 1;
 
-    // Store indices from sort to determine group split later
-    Integer idx[] = new Integer[nbins];
-    for(int b = 0; b < nbins; b++) idx[b] = b;
-    // Sort predictor levels in ascending order of mean response within each bin
-    if(_isInt == 2 && _step == 1.0f && nbins >= 4) {
-      final Double[] means = new Double[nbins];
-      for(int b = 0; b < nbins; b++) means[b] = mean(b);
-      Arrays.sort(idx, new Comparator<Integer>() {
-        @Override public int compare(Integer o1, Integer o2) { return means[o1].compareTo(means[o2]); }
+    // Histogram arrays used for splitting, these are either the original bins
+    // (for an ordered predictor), or sorted by the mean response (for an
+    // unordered predictor, i.e. categorical predictor).
+    int[] sums = _sums;
+    int  [] bins = _bins;
+    int idxs[] = null;          // and a reverse index mapping
+
+    // For categorical (unordered) predictors, sort the bins by average
+    // prediction then look for an optimal split.  Currently limited to enums
+    // where we're one-per-bin.  No point for 3 or fewer bins as all possible
+    // combinations (just 3) are tested without needing to sort.
+    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
+      // Sort the index by average response
+      idxs = MemoryManager.malloc4(nbins+1); // Reverse index
+      for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
+      final double[] avgs = MemoryManager.malloc8d(nbins+1);
+      for( int i=0; i<nbins; i++ ) avgs[i] = _bins[i]==0 ? 0 : _sums[i]/_bins[i]; // Average response
+      avgs[nbins] = Double.MAX_VALUE;
+      ArrayUtils.sort(idxs, new ArrayUtils.IntComparator() {
+        @Override
+        public int compare(int x, int y) {
+          return avgs[x] < avgs[y] ? -1 : (avgs[x] > avgs[y] ? 1 : 0);
+        }
       });
+      // Fill with sorted data.  Makes a copy, so the original data remains in
+      // its original order.
+      sums = MemoryManager.malloc4(nbins);
+      bins = MemoryManager.malloc4 (nbins);
+      for( int i=0; i<nbins; i++ ) {
+        sums[i] = _sums[idxs[i]];
+        bins[i] = _bins[idxs[i]];
+      }
     }
 
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
-    long sums0[] = MemoryManager.malloc8(nbins+1);
-    long   ns0[] = MemoryManager.malloc8(nbins+1);
+    double sums0[] = MemoryManager.malloc8d(nbins+1);
+    long     ns0[] = MemoryManager.malloc8 (nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      long m0 = sums0[b-1],  m1 = _sums[idx[b-1]];
-      long k0 = ns0  [b-1],  k1 = _bins[idx[b-1]];
+      double m0 = sums0[b-1],  m1 = sums[b-1];
+      long   k0 = ns0  [b-1],  k1 = bins[b-1];
       if( k0==0 && k1==0 ) continue;
       sums0[b] = m0+m1;
       ns0  [b] = k0+k1;
     }
     long tot = ns0[nbins];
+    // Is any split possible with at least min_obs?
+    if( tot < 2*min_rows ) return null;
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
-    if( sums0[nbins] == 0 || sums0[nbins] == tot ) { assert isConstantResponse(); return null; }
+    double var = sums0[nbins]*(tot - sums0[nbins]);
+    if( var == 0 ) { assert isConstantResponse(); return null; }
+    // If variance is really small, then the predictions (which are all at
+    // single-precision resolution), will be all the same and the tree split
+    // will be in vain.
+    if( ((float)var) == 0f ) return null;
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
-    long sums1[] = MemoryManager.malloc8(nbins+1);
-    long   ns1[] = MemoryManager.malloc8(nbins+1);
+    double sums1[] = MemoryManager.malloc8d(nbins+1);
+    long     ns1[] = MemoryManager.malloc8 (nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      long m0 = sums1[b+1],  m1 = _sums[idx[b]];
-      long k0 = ns1  [b+1],  k1 = _bins[idx[b]];
+      double m0 = sums1[b+1],  m1 = sums[b];
+      long   k0 = ns1  [b+1],  k1 = bins[b];
       if( k0==0 && k1==0 ) continue;
       sums1[b] = m0+m1;
       ns1  [b] = k0+k1;
@@ -103,11 +130,11 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
     // but both splits could work for any integral datatype.  Do the less-than
     // splits first.
     int best=0;                         // The no-split
-    double best_se0=Float.MAX_VALUE;   // Best squared error
-    double best_se1=Float.MAX_VALUE;   // Best squared error
-    byte equal=0;                // Ranged check
+    double best_se0=Double.MAX_VALUE;   // Best squared error
+    double best_se1=Double.MAX_VALUE;   // Best squared error
+    byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
-      if( _bins[idx[b]] == 0 ) continue; // Ignore empty splits
+      if( bins[b] == 0 ) continue; // Ignore empty splits
       if( ns0[b] < min_rows ) continue;
       if( ns1[b] < min_rows ) break; // ns1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
@@ -116,30 +143,27 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       //                    = ssqs - N*mean^2
       //                    = ssqs - N*(sum/N)(sum/N)
       //                    = ssqs - sum^2/N
-      // For binomial, ssqs == sum, so further reduces:
-      //                    = sum  - sum^2/N
-      double se0 = sums0[b];  se0 -= se0*se0/ns0[b];
-      double se1 = sums1[b];  se1 -= se1*se1/ns1[b];
+      double se0 = sums0[b]*(1. - sums0[b]/ns0[b]);
+      double se1 = sums1[b]*(1. - sums1[b]/ns1[b]);
       if( (se0+se1 < best_se0+best_se1) || // Strictly less error?
-          // Or tied MSE, then pick split towards middle bins
-          (se0+se1 == best_se0+best_se1 &&
-           Math.abs(b -(nbins>>1)) < Math.abs(best-(nbins>>1))) ) {
+              // Or tied MSE, then pick split towards middle bins
+              (se0+se1 == best_se0+best_se1 &&
+                      Math.abs(b -(nbins>>1)) < Math.abs(best-(nbins>>1))) ) {
         best_se0 = se0;   best_se1 = se1;
         best = b;
       }
     }
 
-    // If the min==max, we can also try an equality-based split
+    // If the bin covers a single value, we can also try an equality-based split
     if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
-        _maxEx-_min > 2 ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
+            _maxEx-_min > 2 && idxs==null ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
       for( int b=1; b<=nbins-1; b++ ) {
-        if( _bins[idx[b]] < min_rows ) continue; // Ignore too small splits
-        long N =        ns0[b  ] + ns1[b+1];
+        if( bins[b] < min_rows ) continue; // Ignore too small splits
+        long N =         ns0[b  ] + ns1[b+1];
         if( N < min_rows ) continue; // Ignore too small splits
-        double sums = sums0[b  ]+sums1[b+1];
-        double sumb = _sums[idx[b]  ];
-        double si = sums - sums*sums/   N    ; // Left+right, excluding 'b'
-        double sx = sumb - sumb*sumb/_bins[idx[b]]; // Just 'b'
+        double sums2 = sums0[b  ]+sums1[b+1];
+        double si =    sums2*(1.- sums2/N) ; // Left+right, excluding 'b'
+        double sx =    sums [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -147,45 +171,28 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       }
     }
 
-    if( best==0 ) return null;  // No place to split
-    assert best > 0 : "Must actually pick a split "+best;
-    float se = sums1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
-    long   n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
-    long   n1 = equal == 0 ?   ns1[best] : _bins[idx[best]]              ;
-    double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
-    double p1 = equal == 0 ? sums1[best] : _sums[idx[best]]              ;
-
-    // For categorical predictors, set bits for levels grouped to right of split
-    IcedBitSet bs = null;
-    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
-      throw H2O.unimpl();
-      //// Store indices from sort to determine group split later
-      //Integer idx[] = new Integer[nbins];
-      //for(int b = 0; b < nbins; b++) idx[b] = b;
-      //// Sort predictor levels in ascending order of mean response within each bin
-      //final Float[] means = new Float[nbins];
-      //for(int b = 0; b < nbins; b++) means[b] = mean(b);
-      //Arrays.sort(idx, new Comparator<Integer>() {
-      //    @Override public int compare(Integer o1, Integer o2) { return means[o1].compareTo(means[o2]); }
-      //  });
-      //
-      //// Small cats: always use 4B to store and prepend offset # of zeros at front
-      //// Big cats: save offset and store only nbins # of bits that are left after trimming
-      //int offset = (int)_min;
-      //if(_maxEx <= 32) {
-      //  equal = 2;
-      //  bs = new IcedBitSet(32);
-      //  for(int i = best; i < nbins; i++)
-      //    bs.set(idx[i] + offset);
-      //  throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      //} else {
-      //  equal = 3;
-      //  bs = new IcedBitSet(nbins, offset);
-      //  for(int i = best; i < nbins; i++)
-      //    bs.set(idx[i]);
-      //  throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      //}
+    // For categorical (unordered) predictors, we sorted the bins by average
+    // prediction then found the optimal split on sorted bins
+    IcedBitSet bs = null;       // In case we need an arbitrary bitset
+    if( idxs != null ) {        // We sorted bins; need to build a bitset
+      int min=Integer.MAX_VALUE;// Compute lower bound and span for bitset
+      int max=Integer.MIN_VALUE;
+      for( int i=0; i<best; i++ ) {
+        min=Math.min(min,idxs[i]);
+        max=Math.max(max,idxs[i]);
+      }
+      bs = new IcedBitSet(max-min+1,min);
+      for( int i=0; i<best; i++ ) bs.set(idxs[i]);
+      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
+
+    if( best==0 ) return null;  // No place to split
+    double se = sums1[0]*(1 - sums1[0]/ns1[0]); // Squared Error with no split
+    if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    long  n0 = equal == 0 ?   ns0[best] :   ns0[best]+  ns1[best+1];
+    long  n1 = equal == 0 ?   ns1[best] :  bins[best]              ;
+    double p0 = equal == 0 ? sums0[best] : sums0[best]+sums1[best+1];
+    double p1 = equal == 0 ? sums1[best] :  sums[best]              ;
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
