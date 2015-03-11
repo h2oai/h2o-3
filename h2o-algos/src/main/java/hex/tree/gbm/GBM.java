@@ -71,9 +71,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // expected.  However, all the minority classes have large guesses in the
     // wrong direction, and it takes a long time (lotsa trees) to correct that
     // - so your CM sucks for a long time.
-    double mean = _response.mean();
-    _initialPrediction = _nclass == 1 ? mean
-            : (_nclass==2 ? -0.5*Math.log(mean/(1.0-mean))/*0.0*/ : 0.0/*not a single value*/);
+    double mean = 0;
+    if (expensive) {
+      mean = _response.mean();
+      _initialPrediction = _nclass == 1 ? mean
+              : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
+    }
 
     switch( _parms._loss ) {
     case AUTO:               // Guess the loss by examining the response column
@@ -483,8 +486,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fs[2] = 1f-fs[1];
       return fs[1]+fs[2];
     }
-    if( _nclass == 1 )          // Classification?
-      return fs[0]=(float)chk_tree(chks,0).atd(row); // Regression.
+    if( _nclass == 1 ) // Regression
+      return fs[0]=(float)chk_tree(chks,0).atd(row);
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree
