@@ -20,7 +20,7 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
         kwargs = {'ast': execExpr} 
 
     start = time.time()
-    if resultKey:
+    if resultKey is not None:
         # doesn't like no key 
         node.rapids_iseval(ast_key=resultKey)
 

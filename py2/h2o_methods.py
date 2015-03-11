@@ -341,7 +341,7 @@ def rapids_iseval(self, timeoutSecs=120, ignoreH2oError=False, **kwargs):
     check_params_update_kwargs(params_dict, kwargs, 'rapids_iseval', True)
     # doesn't like 'put' here?
     # doesn't like empty key
-    result = self.do_json_request('3/Rapids.json/isEval', cmd='get', timeout=timeoutSecs, postData=params_dict)
+    result = self.do_json_request('3/Rapids.json/isEval', cmd='get', timeout=timeoutSecs, params=params_dict)
     verboseprint("rapids_iseval result:", dump_json(result))
 
     # FIX! maybe add something for ignoring conditionally?
