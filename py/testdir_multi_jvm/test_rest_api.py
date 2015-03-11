@@ -191,10 +191,6 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
         if k is 'training_frame':
             continue
 
-        # TODO: skipping do_classification because it's not coming back correctly, and we're killing it anyway
-        if k is 'do_classification':
-            continue
-
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in actual parameters list."
 
@@ -339,12 +335,11 @@ class ModelSpec(dict):
         assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
-        if dataset['model_category'] == 'Binomial' or dataset['model_category'] == 'Multinomial': 
-            dataset_params['do_classification'] = True
-        elif dataset['model_category'] == 'Clustering':
+        if dataset['model_category'] == 'Binomial' or dataset['model_category'] == 'Multinomial':
+			dataset_params['do_classification'] = True
+			# TODO: Replace with as.factor of response_column
+		elif dataset['model_category'] == 'Clustering':
             pass
-        else:
-            dataset_params['do_classification'] = False
 
         return ModelSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), dataset['model_category'])
     

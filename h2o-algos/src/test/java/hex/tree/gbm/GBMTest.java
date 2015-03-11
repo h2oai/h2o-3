@@ -260,9 +260,12 @@ public class GBMTest extends TestUtil {
     GBMModel gbm = null;
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     try {
-      parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv" )._key;
+      Scope.enter();
+      parms._valid = parse_test_file("smalldata/gbm_test/ecology_eval.csv")._key;
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
+      int ci = train.find("Angaus");    // Convert response to categorical
+      Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -290,6 +293,7 @@ public class GBMTest extends TestUtil {
       parms._train.remove();
       parms._valid.remove();
       if( gbm != null ) gbm.delete();
+      Scope.exit();
     }
   }
 

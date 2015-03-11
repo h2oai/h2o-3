@@ -8,16 +8,13 @@ import water.api.FrameV2.ColSpecifierV2;
  */
 abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.SupervisedParameters, S extends SupervisedModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
 
-  static public String[] own_fields = new String[]{"response_column", "do_classification", "balance_classes", "class_sampling_factors", "max_after_balance_size"};
+  static public String[] own_fields = new String[]{"response_column", "balance_classes", "class_sampling_factors", "max_after_balance_size"};
 
   // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
   // column names are related to training_frame.
-  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
+  @API(help = "Response column", is_member_of_frames = {"training_frame", "convert_to_enum", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT)
   public ColSpecifierV2 response_column;
-
-  @API(help="Convert the response column to an enum (forcing a classification instead of a regression) if needed.", direction=API.Direction.OUTPUT)
-  public boolean convert_to_enum;
 
   /*Imbalanced Classes*/
   /**
