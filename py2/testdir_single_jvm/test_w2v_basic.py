@@ -176,15 +176,15 @@ class Basic(unittest.TestCase):
             labelList = iA.labelList
 
             for i in range(colCount):
-                print cA.type, cA.missing
-                self.assertEqual(0, cA.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing))
+                print cA.type, cA.missing_count
+                self.assertEqual(0, cA.missing_count, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing_count))
                 self.assertEqual('string', cA.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, cA.type))
 
             if DO_SUMMARY:
                 for i in range(colCount):
                     co = h2o_cmd.runSummary(key=parse_key, column=i)
                     print co.label, co.type, co.missing, co.domain, sum(co.bins)
-                    self.assertEqual(0, co.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing))
+                    self.assertEqual(0, co.missing_count, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing_count))
                     self.assertEqual('String', co.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, co.type))
 
 

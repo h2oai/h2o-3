@@ -213,26 +213,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
       }
-    }
-
-    public GLMParameters(){
-      this(Family.gaussian, Link.family_default);
-      assert _link == Link.family_default;
-    }
-    public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
-      this._family = f;
-      this._lambda = lambda;
-      this._alpha = alpha;
-      _tweedie_link_power = Double.NaN;
-      _tweedie_variance_power = Double.NaN;
-      if( f==Family.binomial ) _convert_to_enum = true;
-      _link = l;
-      // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
       if(_link != Link.family_default) { // check we have compatible link
-        // TODO: refactor these checks into sanityCheckParameters():
-        this._link = l;
         switch (_family) {
           case gaussian:
             if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
@@ -258,6 +239,22 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             H2O.fail();
         }
       }
+    }
+
+    public GLMParameters(){
+      this(Family.gaussian, Link.family_default);
+      assert _link == Link.family_default;
+    }
+    public GLMParameters(Family f){this(f,f.defaultLink);}
+    public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
+      this._family = f;
+      this._lambda = lambda;
+      this._alpha = alpha;
+      _tweedie_link_power = Double.NaN;
+      _tweedie_variance_power = Double.NaN;
+      if( f==Family.binomial ) _convert_to_enum = true;
+      _link = l;
     }
     public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){
       this._lambda = lambda;

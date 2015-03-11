@@ -16,14 +16,13 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
         label = c['label']
         stype = c['type']
-        missing = c['missing']
-        zeros = c['zeros']
+        missing = c['missing_count']
+        zeros = c['zero_count']
         domain = c['domain']
         print "column: %s label: %s type: %s missing: %s zeros: %s domain: %s" %\
             (i,label,stype,missing,zeros,domain)
@@ -57,7 +56,7 @@ class Basic(unittest.TestCase):
             importFolderPath = "/mnt/0xcustomer-datasets/c1"
             csvPathname = importFolderPath + "/" + csvFilename
             parseResult  = h2i.import_parse(path=csvPathname, schema='local',
-                timeoutSecs=timeoutSecs, hex_key=hex_key, chunkSize=4194304/2, doSummary=False)
+                timeoutSecs=timeoutSecs, hex_key=hex_key, chunk_size=4194304/2, doSummary=False)
 
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=150*multiplyExpected, 
@@ -67,18 +66,9 @@ class Basic(unittest.TestCase):
             for i in range(0):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
-                coList = [
-                    co.base, len(co.bins), len(co.data), 
-                    co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
-                    co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, 
-                    co.str_data, co.stride, co.type, co.zeros
-                    ]
-
-                for k,v in co:
-                    print k, v
 
             k = parseResult['frames'][0]['key']['name']
-            frames_result = h2o.nodes[0].frames(key=k, len=5)
+            frames_result = h2o.nodes[0].frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
             parseKeyIndexedCheck(frames_result, multiplyExpected)
 
