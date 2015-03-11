@@ -105,6 +105,11 @@ task compileHelpFiles(type: Exec) {
   commandLine = getOsSpecificCommandLine([ 'node', 'make-help.js', "$rootDir/h2o-docs/src/product/flow/README.md", "$rootDir/h2o-web/src/main/resources/www/flow/help" ])
 }
 
+task copyHelpImages(type: Copy) {
+  from "$rootDir/h2o-docs/src/product/flow/images"
+  into "$rootDir/h2o-web/src/main/resources/www/flow/help/images"
+}
+
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
 copyFlowToWebRoot.dependsOn installBowerPackages
@@ -115,4 +120,5 @@ processResources.dependsOn copyExampleFlows
 
 compileHelpFiles.dependsOn installNpmPackages
 processResources.dependsOn compileHelpFiles
+processResources.dependsOn copyHelpImages
 
