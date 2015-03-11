@@ -143,7 +143,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_w2v_basic_1(self):
+    def test_w2v_basic(self):
         global SYNDATASETS_DIR
         SYNDATASETS_DIR = h2o.make_syn_dir()
         n = 500000
