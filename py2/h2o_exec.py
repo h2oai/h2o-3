@@ -20,6 +20,10 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
         kwargs = {'ast': execExpr} 
 
     start = time.time()
+    if resultKey:
+        # doesn't like no key 
+        node.rapids_iseval(ast_key=resultKey)
+
     resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
     verboseprint('exec took', time.time() - start, 'seconds')
     # print "exec:", dump_json(resultExec)
