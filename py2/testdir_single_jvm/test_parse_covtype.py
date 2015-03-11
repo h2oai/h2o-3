@@ -20,14 +20,13 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
         label = c['label']
         stype = c['type']
-        missing = c['missing']
-        zeros = c['zeros']
+        missing = c['missing_count']
+        zeros = c['zero_count']
         domain = c['domain']
         print "column: %s label: %s type: %s missing: %s zeros: %s domain: %s" %\
             (i,label,stype,missing,zeros,domain)
@@ -70,10 +69,10 @@ class Basic(unittest.TestCase):
             hex_key = importResult['keys'][0]
 
             if CAUSE_FAIL:
-                frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
+                frames_result = a_node.frames(key=k, row_count=5, timeoutSecs=timeoutSecs)
             # print "frames_result from the first importResult key", dump_json(frames_result)
 
-            parseResult = a_node.parse(key=hex_key, timeoutSecs=timeoutSecs, chunkSize=4194304*4)
+            parseResult = a_node.parse(key=hex_key, timeoutSecs=timeoutSecs, chunk_size=4194304*4)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key, expectedNumRows=581012*multiplyExpected, 
                 expectedNumCols=55, expectedMissinglist=[])
@@ -82,22 +81,10 @@ class Basic(unittest.TestCase):
             for i in range(0):
                 print "Summary on column", i
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
-                coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
-                    co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-                for k,v in co:
-                    print k, v
-
-
-            # illegal
-            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=3000000)
-            # fail
-            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
-            # fail
-            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs)
             k = parseResult['frames'][0]['key']['name']
             # print "parseResult:", dump_json(parseResult)
-            frames_result = a_node.frames(key=k, len=5)
+            frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
             
             parseKeyIndexedCheck(frames_result, multiplyExpected)

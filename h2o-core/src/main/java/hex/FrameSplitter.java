@@ -191,7 +191,7 @@ public class FrameSplitter extends H2OCountedCompleter {
       long pnrows = 0;
       for (int p=0; p<_partIdx; p++) pnrows += partSizes[p];
       long[] espc = anyInVec._espc;
-      while (_pcidx < espc.length-1 && (pnrows -= (espc[_pcidx+1]-espc[_pcidx])) > 0 ) _pcidx++;
+      while (_pcidx < espc.length-1 && (pnrows -= (espc[_pcidx+1]-espc[_pcidx])) >= 0 ) _pcidx++;
       assert pnrows <= 0;
       _psrow = (int) (pnrows + espc[_pcidx+1]-espc[_pcidx]);
     }

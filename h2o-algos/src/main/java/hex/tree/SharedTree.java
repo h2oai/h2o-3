@@ -144,7 +144,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         new ExcludeNAResponse().doAll(fr);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
-        _improvPerVar = new float[_ncols+1];
+        _improvPerVar = new float[_ncols];
 
         // Sub-class tree-model-builder specific build code
         buildModel();

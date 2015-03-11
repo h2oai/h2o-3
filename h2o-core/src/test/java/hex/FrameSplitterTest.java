@@ -57,7 +57,7 @@ public class FrameSplitterTest extends TestUtil {
     testScenario(fname, chunkLayout, data);
   }
 
-  @Test @Ignore
+  @Test
   public void splitStringFramePUBDEV468() {
     // NAs at the end of chunks
     String fname = "test4.hex";

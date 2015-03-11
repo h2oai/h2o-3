@@ -88,25 +88,12 @@
   cf_matrix
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
-  .key.validate(params$key)
-  params$training_frame <- get("training_frame", parent.frame())
 
-  #---------- Force evaluate temporary ASTs ----------#
-  delete_train <- !.is.eval(params$training_frame)
-  if (delete_train) {
-    temp_train_key <- params$training_frame@key
-    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, key = temp_train_key)
-  }
-  if (!is.null(params$validation_frame)){
-    params$validation_frame <- get("validation_frame", parent.frame())
-    delete_valid <- !.is.eval(params$validation_frame)
-    if (delete_valid) {
-      temp_valid_key <- params$validation_frame@key
-      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
-    }
-  }
 
+
+.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, envir) {
+  .key.validate(params$key)  
+  #---------- Force evaluate temporary ASTs ----------#  
   ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   params <- lapply(as.list(params), function(i) {
@@ -128,7 +115,7 @@
       scalar  <- mapping[1L, 2L]
       if (is.na(type))
         stop("Cannot find type ", i$type, " in .type.map")
-      if (scalar) { # Scalar == TRUE
+      if (scalar) { # scalar == TRUE
         if (!inherits(params[[i$name]], type))
           e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
@@ -137,7 +124,18 @@
             e <- paste0(e, " \"", fact, "\",")
           e <- paste(e, "but got", params[[i$name]])
         }
+        if (inherits(params[[i$name]], 'numeric') && params[[i$name]] ==  Inf)
+          params[[i$name]] <<- "Infinity"
+        else if (inherits(params[[i$name]], 'numeric') && params[[i$name]] == -Inf)
+          params[[i$name]] <<- "-Infinity"
       } else {      # scalar == FALSE
+        k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (params[[i$name]][n] == Inf) 
+              params[[i$name]][n] <<- "Infinity"
+            else
+              params[[i$name]][n] <<- "-Infinity"
         if (!inherits(params[[i$name]], type))
           e <- paste0("vector of ", i$name, " must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if (type == "character")
@@ -177,20 +175,34 @@
   }
 
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
-
   job_key  <- res$job[[1L]]$key$name
   dest_key <- res$jobs[[1L]]$dest$name
-  .h2o.__waitOnJob(conn, job_key)
+  
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
+}
 
-  model <- h2o.getModel(dest_key, conn)
-
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) { 
+ params$training_frame <- get("training_frame", parent.frame())
+ delete_train <- !.is.eval(params$training_frame)
+ if (delete_train) {
+    temp_train_key <- params$training_frame@key
+    .h2o.eval.frame(conn = conn, ast = params$training_frame@mutable$ast, key = temp_train_key)
+ }
+ if (!is.null(params$validation_frame)){
+    params$validation_frame <- get("validation_frame", parent.frame())
+    delete_valid <- !.is.eval(params$validation_frame)
+    if (delete_valid) {
+      temp_valid_key <- params$validation_frame@key
+      .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
+    }
+  }
+  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))      
   if (delete_train)
     h2o.rm(temp_train_key)
   if (!is.null(params$validation_frame))
     if (delete_valid)
-      h2o.rm(temp_valid_key)
-
-  model
+      h2o.rm(temp_valid_key)  
+  m 
 }
 
 predict.H2OModel <- function(object, newdata, ...) {

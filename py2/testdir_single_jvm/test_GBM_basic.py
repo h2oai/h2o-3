@@ -41,15 +41,6 @@ class Basic(unittest.TestCase):
         labelListUsed = list(labelList)
         numColsUsed = numCols
 
-        if 1==0:
-            co = h2o_cmd.runSummary(key=parse_key)
-            coList = [ co.base, len(co.bins), len(co.data), co.domain,
-                co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
-                co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
-            for c in coList:
-                print c
-
-
         # run through a couple of parameter sets
         parameters = []
         parameters.append({
@@ -101,7 +92,7 @@ class Basic(unittest.TestCase):
             if p.get('do_classification', None):
                 print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
-            vis = OutputObj(model.variableImportances, 'vis')
+            vis = OutputObj(model.variable_importances, 'vis')
 
             # just the first 10
             visDataChopped = [v[0:9] for v in vis.data]
@@ -127,7 +118,7 @@ class Basic(unittest.TestCase):
 
             if 1==1:
                 print ""
-                for i,c in enumerate(cmms.cm):
+                for i,c in enumerate(cmm.cm):
                     print "\ncmms.cm[%s]" % i, tabulate(c)
                 print ""
 

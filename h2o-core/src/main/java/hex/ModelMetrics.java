@@ -77,7 +77,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       for(int i = 0; i < coef_names.length; i++)
         coef_names[i] = "C" + String.valueOf(i+1);
     }
-    assert rel_imp.length == coef_names.length;
 
     // Sort in descending order by relative importance
     Integer[] sorted_idx = new Integer[rel_imp.length];
@@ -90,7 +89,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     double total = 0;
     double max = rel_imp[sorted_idx[0]];
-    String[] sorted_names = new String[coef_names.length];
+    String[] sorted_names = new String[rel_imp.length];
     double[][] sorted_imp = new double[rel_imp.length][3];
 
     // First pass to sum up relative importance measures
