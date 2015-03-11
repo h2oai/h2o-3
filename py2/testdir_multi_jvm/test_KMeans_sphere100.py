@@ -166,12 +166,13 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': None,
-                'score_each_iteration': False,
                 'k': CLUSTERS,
                 'max_iterations': 50,
                 'standardize': False,
                 # 'seed': kmeansSeed,
-                'init': 'Furthest',
+                'init': 'Furthest', # [u'Random', u'PlusPlus', u'Furthest', u'User']
+                # 'dropNA20Cols': False,
+                # 'user_points': userPointsKey
             }
 
             timeoutSecs = 100
