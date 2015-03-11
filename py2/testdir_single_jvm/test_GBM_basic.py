@@ -41,15 +41,6 @@ class Basic(unittest.TestCase):
         labelListUsed = list(labelList)
         numColsUsed = numCols
 
-        if 1==0:
-            co = h2o_cmd.runSummary(key=parse_key)
-            coList = [ co.base, len(co.bins), len(co.data), co.domain,
-                co.label, co.maxs, co.mean, co.mins, co.missing, co.ninfs, co.pctiles,
-                co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
-            for c in coList:
-                print c
-
-
         # run through a couple of parameter sets
         parameters = []
         parameters.append({

@@ -329,7 +329,7 @@ class Basic(unittest.TestCase):
                 lastcolsHistory.append(lastcols)
 
                 parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, check_header=0,
-                    timeoutSecs=30, sep=colSepInt, doSummary=DO_SUMMARY)
+                    timeoutSecs=30, separator=colSepInt, doSummary=DO_SUMMARY)
                 parseResultA = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key)
                 # optional. only needed to extract parse_key?
                 pA = h2o_cmd.ParseObj(parseResultA, expectedNumRows=rowCount, expectedNumCols=colCount)
