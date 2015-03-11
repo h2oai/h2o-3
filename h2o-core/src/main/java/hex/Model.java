@@ -686,7 +686,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       String java_text = toJava();
-      //System.out.println(java_text);
+      System.out.println(java_text);
       GenModel genmodel;
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);

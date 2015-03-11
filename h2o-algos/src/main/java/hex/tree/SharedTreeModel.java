@@ -132,6 +132,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
     return sb;
   }
+  protected boolean binomialOpt() { return false; }
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0f);").nl();
@@ -145,14 +146,14 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
       file.ip("public static void score0(float[] fdata, float[] preds) {").nl().ii(1);
       for( int c=0; c<nclass; c++ )
-        if( !(c==1 && nclass==2) ) // Binomial optimization
+        if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
           toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),mname,t,c).p(".score0(fdata);").nl();
       file.di(1).ip("}").nl(); // end of function
       file.di(1).ip("}").nl(); // end of forest class
 
       // Generate the pre-tree classes afterwards
       for( int c=0; c<nclass; c++ ) {
-        if( !(c==1 && nclass==2) ) { // Binomial optimization
+        if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
           toJavaTreeName(file.ip("class "),mname,t,c).p(" {").nl().ii(1);
           CompressedTree ct = _output.ctree(t,c);
           new TreeJCodeGen(this,ct, file).generate();
@@ -163,6 +164,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     toJavaUnifyPreds(body,file);
   }
   abstract protected void toJavaUnifyPreds( SB body, SB file );
-  private SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
-  private SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
+  protected SB toJavaTreeName( final SB sb, String mname, int t, int c ) { return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c); }
+  protected SB toJavaForestName( final SB sb, String mname, int t ) { return sb.p(mname).p("_Forest_").p(t); }
 }

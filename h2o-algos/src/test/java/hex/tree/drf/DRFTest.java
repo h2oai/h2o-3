@@ -127,7 +127,6 @@ public class DRFTest extends TestUtil {
 
   }
 
-  @Ignore // Binomial POJO is wrong
   @Test public void testCreditProstate1() throws Throwable {
     basicDRFTestOOBE(
         "./smalldata/logreg/prostate.csv","prostate.hex",
@@ -144,7 +143,6 @@ public class DRFTest extends TestUtil {
   }
 
 
-  @Ignore // Binomial POJO is wrong
   @Test public void testAirlines() throws Throwable {
     basicDRFTestOOBE(
         "./smalldata/airlines/allyears2k_headers.zip","airlines.hex",
@@ -161,9 +159,9 @@ public class DRFTest extends TestUtil {
             DKV.put(fr._key, fr);
             return fr.find("IsDepDelayed"); }
         },
-        50,
-        a( a(8676, 12211),
-           a(2915, 20176)),
+        7,
+        a( a(4396, 15269),
+           a(1740, 19993)),
         s("NO", "YES"));
   }
 

@@ -59,6 +59,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     return preds;
   }
 
+  @Override protected boolean binomialOpt() { return true; }
+
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
