@@ -13,7 +13,7 @@ import water.util.Log;
 import java.util.Arrays;
 
 public class DRFTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
@@ -66,7 +66,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("name").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("cylinders");
               }
             },
@@ -86,7 +85,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("name").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("cylinders");
               }
             },
@@ -108,7 +106,6 @@ public class DRFTest extends TestUtil {
                 int prep(Frame fr) {
                   for (int i = 0; i < 7; i++) {
                     fr.remove(3).remove();
-                    DKV.put(fr._key, fr);
                   }
                   return 3;
                 }
@@ -145,7 +142,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("MonthlyIncome").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("SeriousDlqin2yrs");
               }
             },
@@ -163,7 +159,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("ID").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("CAPSULE");
               }
             },
@@ -181,7 +176,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("ID").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("AGE");
               }
             },
@@ -198,7 +192,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("ID").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("AGE");
               }
             },
@@ -215,7 +208,6 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 fr.remove("ID").remove();
-                DKV.put(fr._key, fr);
                 return fr.find("AGE");
               }
             },
@@ -239,13 +231,14 @@ public class DRFTest extends TestUtil {
                 }) {
                   fr.remove(s).remove();
                 }
-                DKV.put(fr._key, fr);
                 return fr.find("IsDepDelayed");
               }
             },
             7,
-            a(a(4396, 15269),
-                    a(1740, 19993)),
+            a(a(4051, 15612), //for 5-node
+              a(1397, 20322)),
+//            a(a(4396, 15269), //for 1-node
+//              a(1740, 19993)),
             s("NO", "YES"));
   }
 
