@@ -49,9 +49,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     super.init(expensive);
 
     switch( _parms._loss ) {
-    case AUTO:
-      // _parms._convert_to_enum = couldBeBool(_response);
-      break;
     case bernoulli:
       if( _parms._convert_to_enum && _nclass != 2 && !couldBeBool(_response) )
         error("_loss", "Binomial requires the response to be a 2-class categorical");

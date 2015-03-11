@@ -39,7 +39,6 @@ print(air.gbm@model)
 print(air.gbm@model$variableImportances[1:10,])
 
 #glm
-air.train[,myY] <- as.factor(air.train[,myY])
 air.glm <- h2o.glm(x = myX, y = myY, training_frame = air.train, validation_frame = air.valid, family = "binomial")
 print(air.glm@model)
 print(air.glm@model$coefficients_magnitude[1:10,])

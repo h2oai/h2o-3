@@ -49,7 +49,7 @@ myX = c("Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", 
 myY="IsDepDelayed"
 
 #gbm
-air.gbm <- h2o.gbm(x = myX, y = myY, loss = "AUTO", training_frame = air.train, ntrees = 10, 
+air.gbm <- h2o.gbm(x = myX, y = myY, loss = "AUTO", training_frame = air.train, ntrees = 10, loss = "multinomial", 
                    max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid, variable_importance = F)
 print(air.gbm@model)
 air.gbm@model$auc

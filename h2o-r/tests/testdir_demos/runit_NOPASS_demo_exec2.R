@@ -76,7 +76,7 @@ test.exec2.demo <- function(conn) {
   
   myY <- "CAPSULE"; myX = setdiff(colnames(prostate.train), c(myY, "ID"))
   Log.info(paste("Run GBM with y = CAPSULE, x =", paste(myX, collapse = ",")))
-  prostate.gbm <- h2o.gbm(x = myX, y = myY, training_frame = prostate.train, validation_frame = prostate.test)
+  prostate.gbm <- h2o.gbm(x = myX, y = myY, training_frame = prostate.train, validation_frame = prostate.test, loss = "bernoulli")
   print(prostate.gbm)
   
   Log.info("Generate GBM predictions on test set")

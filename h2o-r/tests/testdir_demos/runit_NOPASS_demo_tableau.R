@@ -1,7 +1,7 @@
 ##
-# Test out the h2o.gbm R demo
+# Test out the h2o.glm R demo
 # It imports a dataset, parses it, and prints a summary
-# Then, it runs h2o.gbm on a subset of the dataset
+# Then, it runs h2o.glm on a subset of the dataset
 ##
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))

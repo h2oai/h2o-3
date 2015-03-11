@@ -126,7 +126,7 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._nbins = 20;          // default
       
       // GBMModel.Parameters
-      gbm_parms._loss = GBMModel.GBMParameters.Family.AUTO; // default
+      gbm_parms._loss = GBMModel.GBMParameters.Family.gaussian; // default
       gbm_parms._learn_rate = 0.1f;   // default
 
       // Train model; block for results

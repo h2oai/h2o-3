@@ -18,8 +18,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  <p>TODO: Replace with drop-down that displays different distributions
      *  depending on cont/cat response
      */
-    public enum Family {  AUTO, bernoulli, multinomial, gaussian  }
-    public Family _loss = Family.AUTO;
+    public enum Family {  bernoulli, multinomial, gaussian  }
+    public Family _loss = Family.gaussian;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
   }
 
