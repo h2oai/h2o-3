@@ -126,7 +126,7 @@ class Basic(unittest.TestCase):
 
             k = parse_result['frames'][0]['key']['name']
             # print "parse_result:", dump_json(parse_result)
-            frames_result = a_node.frames(key=k, len=5)
+            frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parse_result key", dump_json(frames_result)
             
             # we doubled the keyList, from what was in tryList

@@ -27,8 +27,6 @@ class Basic(unittest.TestCase):
         # print dump_json(import_result)
 
         k = import_result['keys'][0]
-        # frames_result = h2o.n0.frames(key=k[0], len=5)
-
         frames_result = h2o.n0.frames(key=k)
 
         frame = frames_result['frames'][0]
