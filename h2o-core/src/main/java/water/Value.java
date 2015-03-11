@@ -257,10 +257,10 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
 
   /** Check if the Value's POJO is a {@link Key} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Key} subtype. */
-  public boolean isKey()      { return _type == TypeMap.KEY; }
+  public boolean isKey()      { return _type != TypeMap.PRIM_B  && TypeMap.theFreezable(_type) instanceof Key; }
   /** Check if the Value's POJO is a {@link Frame} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Frame} subtype. */
-  public boolean isFrame()    { return _type == TypeMap.FRAME; }
+  public boolean isFrame()    { return _type != TypeMap.PRIM_B  && TypeMap.theFreezable(_type) instanceof Frame; }
   /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
