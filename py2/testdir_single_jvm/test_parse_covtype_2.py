@@ -17,7 +17,6 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):

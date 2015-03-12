@@ -30,9 +30,9 @@ def define_params():
         'use_all_factor_levels': [None, 0, 1],
         'beta_eps': [None, 0.0001],
         'alpha': [0,0.2,0.4],
-        'family': ['family_default', 'gaussian', 'binomial', 'poisson', 'logit', 'log', 'inverse', 'tweedie', None],
-        'link': [None],
-        'ignored_cols': [1,'C1','1,2','C1,C2'],
+        'family': ['family_default', 'gaussian', 'binomial', 'poisson', None],
+        'link': ['logit', 'log', 'inverse', 'tweedie', None],
+        'ignored_columns': [1,'C1','1,2','C1,C2'],
         'n_folds': [0,1],
         'standardize': [None, 0,1],
         # 'intercept': [None, 0, 1],
@@ -105,7 +105,7 @@ class Basic(unittest.TestCase):
 
             # params is mutable. This is default.
             parameters = {
-                'response_column': 'C54',
+                'response_column': 'C55',
                 'alpha': 0.1,
                 # 'lambda': 1e-4, 
                 'lambda': 0,
@@ -124,7 +124,7 @@ class Basic(unittest.TestCase):
             print "hex_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
             # fix stupid params
-            fixList = ['alpha', 'lambda']
+            fixList = ['alpha', 'lambda', 'ignored_columns']
             for f in fixList:
                 if f in parameters:
                     parameters[f] = "[%s]" % parameters[f]

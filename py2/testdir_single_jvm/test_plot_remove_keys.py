@@ -67,10 +67,9 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(pA.parse_key)
             parseElapsed = pA.python_elapsed
             parse_key = pA.parse_key
-            byteSize = pA.byteSize
             numRows = iA.numRows
             numCols = iA.numCols
-            print parse_key, parseElapsed, byteSize, numRows, numCols
+            print parse_key, parseElapsed, numRows, numCols
 
             labelList = iA.labelList
             node = h2o.nodes[0]
@@ -82,7 +81,7 @@ class Basic(unittest.TestCase):
             print "Deleting", hex_key, "took", removeElapsed, "seconds"
 
             # xList.append(ntrees)
-            xList.append(byteSize)
+            xList.append(numRows)
             eList.append(parseElapsed)
             fList.append(removeElapsed)
 

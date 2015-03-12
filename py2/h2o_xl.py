@@ -29,7 +29,7 @@ def checkAst(expected):
 
 # we init to 1 row/col. (-1) can't figure how how to init to no rows in a single expression
 def astForInit(frame):
-    return '(= !%s (cbind (c {#-1})))' % frame
+    return '(= !%s (c {#-1}))' % frame
     # will this work?
     # return '(= !%s "null")' % frame
 
@@ -405,15 +405,17 @@ class Xbase(object):
                         print "Rapids returned scalar result that's NaN. Using -1 instead: %s" % self.scalar
                         execExpr2 = astForInit(self.frame)
                     else:
-                        execExpr2 = "(= !%s (cbind (c {#%s})))" % (self.frame, int(self.scalar))
+                        execExpr2 = "(= !%s (c {#%s}))" % (self.frame, int(self.scalar))
+                
 
                 self.numRows = 1
                 self.numCols = 1
 
                 execResult2, result2 = h2e.exec_expr(execExpr=execExpr2)
-                assert execResult2['key'] is not None, dump_json(execResult2)
-                assert self.numRows==execResult2['num_rows'], "%s %s" % (self.numRows, execResult2['num_rows'])
-                assert self.numCols==execResult2['num_cols'], "%s %s" % (self.numCols, execResult2['num_cols'])
+                # NEW: don't care if the key is null here. the lhs key is always created. We can inspect it if we know the name
+                # assert execResult2['key'] is not None, dump_json(execResult2)
+                # assert self.numRows==execResult2['num_rows'], "%s %s" % (self.numRows, execResult2['num_rows'])
+                # assert self.numCols==execResult2['num_cols'], "%s %s" % (self.numCols, execResult2['num_cols'])
 
                 Xbase.keyWriteHistoryList.append(execExpr2)
                 returnResult = self.scalar
