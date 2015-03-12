@@ -17,8 +17,8 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       super();
       // Set DRF-specific defaults (that differ from SharedTreeModel's defaults)
       _ntrees = 50;
-      _max_depth = 20;
-      _min_rows = 1;
+      _max_depth = 20; //reasonable compromise between speed and accuracy
+      _min_rows = 10; //less overfitting than with 1
     }
   }
 
