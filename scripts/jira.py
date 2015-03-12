@@ -6,9 +6,6 @@ import requests
 import urllib
 import re
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 g_user = None
 g_pass = None
