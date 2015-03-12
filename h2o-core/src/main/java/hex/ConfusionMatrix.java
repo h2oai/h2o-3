@@ -248,11 +248,7 @@ public class ConfusionMatrix extends Iced {
   }
 
   public String toASCII() {
-    if (table == null && domain != null) {
-      table = toTable();
-      return table.toString();
-    }
-    return "";
+    return (table=toTable()) != null ? table.toString() : "";
   }
 
   /**

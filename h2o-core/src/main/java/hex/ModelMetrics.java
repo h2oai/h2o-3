@@ -47,6 +47,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
+  public double mse() { return _mse; }
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUCData auc() { return null; }

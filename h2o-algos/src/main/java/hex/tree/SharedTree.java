@@ -10,6 +10,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
@@ -58,33 +59,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _ncols = _train.numCols()-1;
 
     if (_response == null) return;
-
-    // Initialize response based on given loss function.
-    // Regression: initially predict the response mean
-    // Binomial: just class 0 (class 1 in the exact inverse prediction)
-    // Multinomial: Class distribution which is not a single value.
-
-    // However there is this weird tension on the initial value for
-    // classification: If you guess 0's (no class is favored over another),
-    // then with your first GBM tree you'll typically move towards the correct
-    // answer a little bit (assuming you have decent predictors) - and
-    // immediately the Confusion Matrix shows good results which gradually
-    // improve... BUT the Means Squared Error will suck for unbalanced sets,
-    // even as the CM is good.  That's because we want the predictions for the
-    // common class to be large and positive, and the rare class to be negative
-    // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metric is typically negative (usually it's
-    // between 0 and 1).
-
-    // If instead you guess the mean (reversed through the loss function), then
-    // the zero-tree GBM model reports an MSE equal to the response variance -
-    // and an initial R^2 of zero.  More trees gradually improves the R^2 as
-    // expected.  However, all the minority classes have large guesses in the
-    // wrong direction, and it takes a long time (lotsa trees) to correct that
-    // - so your CM sucks for a long time.
-    double mean = _response.mean();
-    _initialPrediction = _nclass == 1 ? mean
-      : (_nclass==2 ? -0.5*Math.log(mean/(1.0-mean))/*0.0*/ : 0.0/*not a single value*/);
   }
 
   // --------------------------------------------------------------------------
@@ -168,13 +142,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Tag out rows missing the response column
         new ExcludeNAResponse().doAll(fr);
-
-        // Set initial predictions (computed in init())
-        final double init = _initialPrediction;
-        if( init != 0.0 )       // Only non-zero for regression or bernoulli
-          new MRTask() {
-            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-          }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -318,8 +285,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
   protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  // Out-of-bag trees counter - only one since it is shared via k-trees
+  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
+  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
+  protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
+
+  protected double[] data_row( Chunk chks[], int row, double[] data) {
+    assert data.length == _ncols;
+    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
+    return data;
+  }
 
   // Builder-specific decision node
   abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
@@ -333,9 +310,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // if it is necessary.
   void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
     float sum = score1(chks, fs, row);
-    if( isClassifier() && !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-    if( _model._output._priorClassDist!=null && _model._output._modelClassDist!=null )
+    if( isClassifier()) {
+      if( !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -386,9 +364,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
         Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
       }
-      int i=out._ntrees-1;
-      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
-      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
+//      int i=out._ntrees-1;
+//      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
+//      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
@@ -432,4 +410,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  // Helper to unify use of M-T RNG
+  public static Random createRNG(long seed) {
+    return new RandomUtils.MersenneTwisterRNG(new int[] { (int)(seed>>32L),(int)seed });
+  }
 }

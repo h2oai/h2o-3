@@ -90,6 +90,7 @@ public class DTree extends Iced {
     abstract protected int size();
 
     public final int nid() { return _nid; }
+    public final int pid() { return _pid; }
   }
 
   // --------------------------------------------------------------------------
@@ -375,19 +376,21 @@ public class DTree extends Iced {
     // Bin #.
     public int bin( Chunk chks[], int row ) {
       float d = (float)chks[_split._col].atd(row); // Value to split on for this row
-      if( Float.isNaN(d) )               // Missing data?
-        return 0;                        // NAs always to bin 0
+//      if( Float.isNaN(d) )               // Missing data?
+//        return 0;                        // NAs always to bin 0
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.
       if(_split._equal == 0)
-        return d < _splat ? 0 : 1;
+        return d >= _splat ? 1 : 0; //NaN goes to 0
       else if(_split._equal == 1)
-        return d != _splat ? 0 : 1;
+        return d == _splat ? 1 : 0; //NaN goes to 0
       else
         return _split._bs.contains((int)d) ? 1 : 0;
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
+
+    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
 
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
@@ -504,6 +507,8 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    public final double pred() { return _pred; }
+    public final void pred(double pred) { _pred = pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }
