@@ -57,8 +57,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if( _train != null )
       _ncols = _train.numCols()-1;
-
-    if (_response == null) return;
   }
 
   // --------------------------------------------------------------------------
@@ -184,7 +182,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Nearly all leaves will split one more level.  This loop nest is
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
-    H2OCountedCompleter sb1ts[] = new H2OCountedCompleter[_nclass];
+    ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
     Vec vecs[] = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
@@ -197,7 +195,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
       fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -205,13 +203,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       sb1ts[k].join();
-      if( ((ScoreBuildOneTree)sb1ts[k])._did_split ) did_split=true;
+      if( sb1ts[k]._did_split ) did_split=true;
     }
     // The layer is done.
     return did_split ? hcs : null;
   }
 
-  private class ScoreBuildOneTree extends H2OCountedCompleter {
+  private static class ScoreBuildOneTree extends H2OCountedCompleter {
+    final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Number of histogram bins
     final DTree _tree;
@@ -223,7 +222,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     
     boolean _did_split;
-    ScoreBuildOneTree( int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar ) {
+    ScoreBuildOneTree( SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar ) {
+      _st   = st;
       _k    = k;
       _nbins= nbins;
       _tree = tree;
@@ -243,7 +243,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k,_ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -255,7 +255,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.UndecidedNode udn = _tree.undecided(leaf);
         //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = makeDecided(udn,sbh._hcs[leaf-leafk]);
+        DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
         //System.out.println("--> Decided node: " + dn +
         //                   "  > Split: " + dn._split + " L/R:" + dn._split.rowsLeft()+" + "+dn._split.rowsRight());
         if( dn._split.col() == -1 ) udn.do_not_split();
@@ -289,7 +289,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
   protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
-  protected final Vec vec_resp( Frame fr, int t) { return fr.vecs()[_ncols]; }
+  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[_ncols]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
@@ -364,9 +364,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
         Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
       }
-//      int i=out._ntrees-1;
-//      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
-//      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
@@ -412,6 +409,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper to unify use of M-T RNG
   public static Random createRNG(long seed) {
-    return new RandomUtils.MersenneTwisterRNG(new int[] { (int)(seed>>32L),(int)seed });
+    return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
   }
 }
