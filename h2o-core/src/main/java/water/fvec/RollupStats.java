@@ -119,31 +119,49 @@ class RollupStats extends Iced {
 
 
     // Walk the non-zeros
-    for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-      if( c.isNA(i) ) {
-        _naCnt++;
-      } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        long lo = c.at16l(i), hi = c.at16h(i);
-        if (lo != 0 || hi != 0) _nzCnt++;
-        l = lo ^ 37*hi;
-      } else if( isString ) { // String columns do not compute min/max/mean/sigma
-        _nzCnt++;
-        l = c.atStr(vs, i).hashCode();
-      } else {                  // All other columns have useful rollups
-        double d = c.atd(i);
-        l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
-        if( d == Double.POSITIVE_INFINITY) _pinfs++;
-        else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
+    if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        if( c.isNA(i) ) _naCnt++;
         else {
-          if( d != 0 ) _nzCnt++;
-          min(d);  max(d);
-          _mean += d;
-          _rows++;
-          if( _isInt && ((long)d) != d ) _isInt = false;
+          long lo = c.at16l(i), hi = c.at16h(i);
+          if (lo != 0 || hi != 0) _nzCnt++;
+          l = lo ^ 37*hi;
         }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
       }
-      if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-        checksum ^= (17 * (start+i)) ^ 23*l;
+
+    } else if( isString ) { // String columns do not compute min/max/mean/sigma
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        if( c.isNA(i) ) _naCnt++;
+        else {
+          _nzCnt++;
+          l = c.atStr(vs, i).hashCode();
+        }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
+      }
+
+    } else {                    // Numeric
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        double d = c.atd(i);
+        if( Double.isNaN(d) ) _naCnt++;
+        else {                  // All other columns have useful rollups
+          l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
+          if( d == Double.POSITIVE_INFINITY ) _pinfs++;
+          else if( d == Double.NEGATIVE_INFINITY ) _ninfs++;
+          else {
+            if( d != 0 ) _nzCnt++;
+            min(d);  max(d);
+            _mean += d;
+            _rows++;
+            if( _isInt && ((long)d) != d ) _isInt = false;
+          }
+        }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
+      }
+
     }
     _checksum = checksum;
 
@@ -160,18 +178,19 @@ class RollupStats extends Iced {
       Arrays.fill(_maxs,Double.NaN);
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
-      _mean = _mean / _rows;
+      final double mean = _mean = _mean / _rows;
       // Handle all zero rows
       int zeros = c._len - c.sparseLen();
-      _sigma += _mean*_mean*zeros;
+      double sigma = mean*mean*zeros;
       // Handle all non-zero rows
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.atd(i);
         if( !Double.isNaN(d) ) {
-          d -= _mean;
-          _sigma += d*d;
+          d -= mean;
+          sigma += d*d;
         }
       }
+      _sigma = sigma;
     }
     return this;
   }
