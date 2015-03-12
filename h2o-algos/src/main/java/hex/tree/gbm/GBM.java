@@ -393,7 +393,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               nid = tree.node(nid)._pid;                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
             if( dn._split._col == -1 )                    // Unable to decide?
-              dn = tree.decided(nid = dn._pid); // Then take parent's decision
+              dn = tree.decided(dn._pid);  // Then take parent's decision
             int leafnid = dn.ns(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len;
             assert tree.node(leafnid) instanceof LeafNode;
@@ -451,7 +451,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( hs[i]==null || hs[i].nbins() <= 1 ) continue;
         DTree.Split s = hs[i].scoreMSE(i,_tree._min_rows);
         if( s == null ) continue;
-        if( best == null || s.se() < best.se() )
+        if( s.se() < best.se() )
           best = s;
         if( s.se() <= 0 ) break; // No point in looking further!
       }
