@@ -59,7 +59,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
       String[][] domains = dinfo._adaptedFrame.domains();
       double[] apriori = new double[tsk._nrescat];
-      double[][][] pcond = new double[dinfo._adaptedFrame.numCols()-1][][];
+      double[][][] pcond = new double[tsk._npreds][][];
       for(int i = 0; i < pcond.length; i++) {
         int ncnt = domains[i] == null ? 2 : domains[i].length;
         pcond[i] = new double[tsk._nrescat][ncnt];
@@ -84,11 +84,11 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int i = 0; i < pcond[0].length; i++) {
           int cidx = dinfo._cats + col;
           double num = tsk._rescnt[i];
-          double pmean = (double)tsk._jntcnt[cidx][i][0]/num;
+          double pmean = (double)tsk._jntsum[col][i][0]/num;
 
           pcond[cidx][i][0] = pmean;
-          // double pvar = tsk._jntcnt[cidx][i][1]/num - pmean * pmean;
-          double pvar = tsk._jntcnt[cidx][i][1]/(num - 1) - pmean * pmean * num/(num - 1);
+          // double pvar = tsk._jntsum[col][i][1]/num - pmean * pmean;
+          double pvar = tsk._jntsum[col][i][1]/(num - 1) - pmean * pmean * num/(num - 1);
           pcond[cidx][i][1] = Math.sqrt(pvar);
         }
       }
@@ -176,32 +176,37 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     final String[][] _domains;  // Domains of the training frame
     final int _nrescat;         // Number of levels for the response y
     final int _npreds;          // Number of predictors in the training frame
-    final int[/*npreds*/] _njntstat;  // For categorical predictors, number of levels. For real predictors, 2 (mean and std dev).
 
     public int _nobs;                     // Number of rows counted in calculation
     public int[/*nrescat*/] _rescnt;      // Count of each level in the response
     public int[/*npreds*/][/*nrescat*/][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
-                                                    // For each numeric predictor, sum of entries for every response level
+    public double[/*npreds*/][/*nrescat*/][] _jntsum; // For each numeric predictor, sum and squared sum of entries for every response level
 
     public NBTask(DataInfo dinfo, int nres) {
       _dinfo = dinfo;
       _nrescat = nres;
       _domains = dinfo._adaptedFrame.domains();
       _npreds = dinfo._adaptedFrame.numCols()-1;
-
       assert _npreds == dinfo._nums + dinfo._cats;
       assert _nrescat == _domains[_npreds].length;       // Response in last vec of adapted frame
-      _njntstat = new int[_npreds];
-      for(int i = 0; i < _npreds; i++)
-        _njntstat[i] = _domains[i] == null ? 2 : _domains[i].length;
     }
 
     @Override public void map(Chunk[] chks) {
       _nobs = 0;
       _rescnt = new int[_nrescat];
-      _jntcnt = new int[_npreds][][];
-      for(int i = 0; i < _jntcnt.length; i++) {
-        _jntcnt[i] = new int[_nrescat][_njntstat[i]];
+
+      if(_dinfo._cats > 0) {
+        _jntcnt = new int[_dinfo._cats][][];
+        for (int i = 0; i < _dinfo._cats; i++) {
+          _jntcnt[i] = new int[_nrescat][_domains[i].length];
+        }
+      }
+
+      if(_dinfo._nums > 0) {
+        _jntsum = new double[_dinfo._nums][][];
+        for (int i = 0; i < _dinfo._nums; i++) {
+          _jntsum[i] = new double[_nrescat][2];
+        }
       }
 
       Chunk res = chks[_npreds];    // Response at the end
@@ -223,8 +228,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int col = 0; col < _dinfo._nums; col++) {
           int cidx = _dinfo._cats + col;
           double x = chks[cidx].atd(row);
-          _jntcnt[cidx][rlevel][0] += x;
-          _jntcnt[cidx][rlevel][1] += x*x;
+          _jntsum[col][rlevel][0] += x;
+          _jntsum[col][rlevel][1] += x*x;
         }
         _rescnt[rlevel]++;
         _nobs++;
@@ -234,8 +239,14 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     @Override public void reduce(NBTask nt) {
       _nobs += nt._nobs;
       ArrayUtils.add(_rescnt, nt._rescnt);
-      for(int col = 0; col < _jntcnt.length; col++)
-        ArrayUtils.add(_jntcnt[col], nt._jntcnt[col]);
+      if(null != _jntcnt) {
+        for (int col = 0; col < _jntcnt.length; col++)
+          ArrayUtils.add(_jntcnt[col], nt._jntcnt[col]);
+      }
+      if(null != _jntsum) {
+        for (int col = 0; col < _jntsum.length; col++)
+          ArrayUtils.add(_jntsum[col], nt._jntsum[col]);
+      }
     }
   }
 }
