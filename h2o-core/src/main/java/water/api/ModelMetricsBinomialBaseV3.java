@@ -22,9 +22,6 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
     @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
     public TwoDimTableV1 max_criteria_and_metric_scores;
 
-    @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
-    public HitRatioBase hr;
-
     @Override
     public S fillFromImpl(I modelMetrics) {
         super.fillFromImpl(modelMetrics);

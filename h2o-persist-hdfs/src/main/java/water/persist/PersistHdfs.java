@@ -265,8 +265,8 @@ public final class PersistHdfs extends Persist {
     {
       // Filter out partials which are known to print out useless stack traces.
       String s = filter.toLowerCase();
-      if (s == "hdfs:") return array;
-      if (s == "maprfs:") return array;
+      if ("hdfs:".equals(s)) return array;
+      if ("maprfs:".equals(s)) return array;
     }
     try {
       Path p = new Path(filter);

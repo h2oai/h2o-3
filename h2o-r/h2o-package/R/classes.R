@@ -61,6 +61,10 @@ setClass("H2OConnection",
          prototype(ip      = NA_character_,
                    port    = NA_integer_,
                    mutable = new("H2OConnectionMutableState")))
+
+
+
+
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
@@ -344,3 +348,9 @@ setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
 setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
+
+setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
+h2o.getFutureModel <- function(object) {
+  .h2o.__waitOnJob(object@h2o, object@job_key)
+  h2o.getModel(object@destination_key, object@h2o)
+}

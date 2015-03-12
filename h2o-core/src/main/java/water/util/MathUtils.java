@@ -1,5 +1,7 @@
 package water.util;
 
+import java.util.Arrays;
+
 public class MathUtils {
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
@@ -38,6 +40,19 @@ public class MathUtils {
     if (n <= 0) throw new IllegalArgumentException();
     return 31 - Integer.numberOfLeadingZeros(n);
   }
+
+  public static float[] div(float[] nums, float n) {
+    assert !Float.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+    for (int i=0; i<nums.length; i++) nums[i] /= n;
+    return nums;
+  }
+
+  public static float sum(final float[] from) {
+    float result = 0;
+    for (float d: from) result += d;
+    return result;
+  }
+
   public static float sumSquares(final float[] a) {
     return sumSquares(a, 0, a.length);
   }
@@ -104,6 +119,19 @@ public class MathUtils {
     double small_ulp = Math.min(ulp_a, ulp_b);
     double absdiff_a_b = Math.abs(a - b); // subtraction order does not matter, due to IEEE 754 spec
     return absdiff_a_b <= small_ulp;
+  }
+
+  /** Compare 2 doubles within a tolerance
+   *  @param a double 
+   *  @param b double
+   *  @param abseps - Absolute allowed tolerance
+   *  @param releps - Relative allowed tolerance
+   *  @return true if equal within tolerances  */
+  public static boolean compare(double a, double b, double abseps, double releps) {
+    return
+      Double.compare(a, b) == 0 || // check for equality
+      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
+      Math.abs(a - b) <= abseps; // check for small absolute error
   }
 
   // some common Vec ops

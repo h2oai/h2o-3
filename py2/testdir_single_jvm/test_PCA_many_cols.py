@@ -2,6 +2,7 @@ import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
 import h2o2 as h2o
 import h2o_cmd, h2o_import as h2i, h2o_jobs as h2j
+from h2o_test import OutputObj
 
 DO_PCA_SCORE = True
 
@@ -88,8 +89,9 @@ class Basic(unittest.TestCase):
             # PCA(tolerance iterate)****************************************
             for tolerance in [i/10.0 for i in range(11)]:
                 parameters = {
-                    'tolerance': tolerance,
-                    'standardize': 1,
+                    # 'tolerance': tolerance,
+                    # 'standardize': 1,
+                    'k': 1,
                 }
                 model_key = 'pca.hex'
                 bmResult = h2o.n0.build_model(

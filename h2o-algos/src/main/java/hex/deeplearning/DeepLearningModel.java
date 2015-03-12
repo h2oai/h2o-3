@@ -698,7 +698,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
       default: throw H2O.unimpl();
@@ -1879,7 +1879,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[i + 1] = out[i];
         if (Float.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
-      preds[0] = ModelUtils.getPrediction(preds, data);
+      preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
       if (model_info().data_info()._normRespMul != null)
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);

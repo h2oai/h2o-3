@@ -41,7 +41,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_train", "Training data must have at least 2 features (incl. response).");
 
     if (!isSupervised()) {
-      hide(_parms._response_column, "Ignored for unsupervised methods.");
+      hide("_response_column", "Ignored for unsupervised methods.");
       _response = null;
       _response_key = null;
       _vresponse = null;
@@ -53,6 +53,9 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column parameter not set.");
       return;
     }
+
+    if( !_parms._balance_classes )
+      hide("_max_after_balance_size", "Only used with balanced classes");
 
     // put response to the end (if not already), and convert to an enum
     int ridx = _train.find(_parms._response_column);

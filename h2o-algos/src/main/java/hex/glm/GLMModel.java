@@ -11,14 +11,12 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ModelUtils;
-import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
 /**
  * Created by tomasnykodym on 8/27/14.
- * TODO: should be a subclass of SupervisedModel.
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
@@ -191,6 +189,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _beta_epsilon = 1e-4;
     public int _max_iter = 50;
     public int _n_folds;
+
+    public Key<Frame> _beta_constraint = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
@@ -215,26 +215,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
       }
-    }
-
-    public GLMParameters(){
-      this(Family.gaussian, Link.family_default);
-      assert _link == Link.family_default;
-    }
-    public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
-      this._family = f;
-      this._lambda = lambda;
-      this._alpha = alpha;
-      _tweedie_link_power = Double.NaN;
-      _tweedie_variance_power = Double.NaN;
-      if( f==Family.binomial ) _convert_to_enum = true;
-      _link = l;
-      // TODO: move these checks into GLM.init(boolean) so the front end gets proper validation_messages
       if(_link != Link.family_default) { // check we have compatible link
-        // TODO: refactor these checks into sanityCheckParameters():
-        this._link = l;
         switch (_family) {
           case gaussian:
             if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
@@ -260,6 +241,22 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             H2O.fail();
         }
       }
+    }
+
+    public GLMParameters(){
+      this(Family.gaussian, Link.family_default);
+      assert _link == Link.family_default;
+    }
+    public GLMParameters(Family f){this(f,f.defaultLink);}
+    public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
+      this._family = f;
+      this._lambda = lambda;
+      this._alpha = alpha;
+      _tweedie_link_power = Double.NaN;
+      _tweedie_variance_power = Double.NaN;
+      if( f==Family.binomial ) _convert_to_enum = true;
+      _link = l;
     }
     public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){
       this._lambda = lambda;
@@ -382,8 +379,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
         case binomial:
-          return .5*deviance(yr,eta,ym);
-//          if(yr == ym) return 0;
+          if(yr == ym) return 0;
+          return Math.log(1 + Math.exp((1 - 2*yr) * eta));
+//
 //          double res = -yr * eta - Math.log(1 - ym);
 //          return res;
         case poisson:

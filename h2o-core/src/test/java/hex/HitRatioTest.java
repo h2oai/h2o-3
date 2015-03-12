@@ -13,21 +13,21 @@ public class HitRatioTest {
   @Test
   public void testHits() {
     long[] hits = new long[4];
-    int actual_label = 3; int[] pred_labels = {0,3,2,1}; updateHits(hits, actual_label, pred_labels);
+    int actual_label = 3; float[] pred_dist = {0,.4f,.1f,.2f,.3f}; updateHits(actual_label, pred_dist, hits);
     Assert.assertTrue(hits[0] == 0);
     Assert.assertTrue(hits[1] == 1);
-    Assert.assertTrue(hits[2] == 1);
-    Assert.assertTrue(hits[3] == 1);
-    actual_label = 0; pred_labels = new int[]{1,2,3,0}; updateHits(hits, actual_label, pred_labels);
+    Assert.assertTrue(hits[2] == 0);
+    Assert.assertTrue(hits[3] == 0);
+    actual_label = 0; pred_dist = new float[]{3,.3f,.2f,.1f,.4f}; updateHits(actual_label, pred_dist, hits);
     Assert.assertTrue(hits[0] == 0+0);
-    Assert.assertTrue(hits[1] == 1+0);
-    Assert.assertTrue(hits[2] == 1+0);
-    Assert.assertTrue(hits[3] == 1+1);
-    actual_label = 1; pred_labels = new int[]{0,3,1,2}; updateHits(hits, actual_label, pred_labels);
+    Assert.assertTrue(hits[1] == 1+1);
+    Assert.assertTrue(hits[2] == 0+0);
+    Assert.assertTrue(hits[3] == 0+0);
+    actual_label = 1; pred_dist = new float[]{0,.4f,.1f,.3f,.2f}; updateHits(actual_label, pred_dist, hits);
     Assert.assertTrue(hits[0] == 0+0+0);
-    Assert.assertTrue(hits[1] == 1+0+0);
-    Assert.assertTrue(hits[2] == 1+0+1);
-    Assert.assertTrue(hits[3] == 1+1+1);
+    Assert.assertTrue(hits[1] == 1+1+0);
+    Assert.assertTrue(hits[2] == 0+0+0);
+    Assert.assertTrue(hits[3] == 0+0+1);
   }
 
 

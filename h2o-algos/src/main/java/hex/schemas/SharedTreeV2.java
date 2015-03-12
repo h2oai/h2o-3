@@ -23,7 +23,7 @@ public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<
     @API(help="Build a histogram of this many bins, then split at the best point")
     public int nbins;
 
-    @API(help = "RNG Seed for balancing classes", level = API.Level.expert)
+    @API(help = "Seed for pseudo random number generator (if applicable)", level = API.Level.expert)
     public long seed;
 
     @API(help="More in-depth tree stats", direction=API.Direction.OUTPUT)

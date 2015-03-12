@@ -132,7 +132,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job start(final H2OCountedCompleter fjtask, long work) {
+  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
     DKV.put(_progressKey = Key.make(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";

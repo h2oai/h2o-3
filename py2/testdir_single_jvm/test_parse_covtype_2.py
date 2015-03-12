@@ -17,7 +17,6 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
@@ -63,36 +62,20 @@ class Basic(unittest.TestCase):
             csvPathname = importFolderPath + "/" + csvFilename
             parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname, schema='local', 
                 timeoutSecs=timeoutSecs, hex_key=hex_key,
-                chunkSize=4194304*2, doSummary=False)
+                chunk_size=4194304*2, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
-
-            # illegal
-            # chunkSize=3000000
-            # fail
-            # chunkSize=4194304/2
-            # fail
 
             iA = h2o_cmd.InspectObj(pA.parse_key)
             print iA.missingList, iA.labelList, iA.numRows, iA.numCols
 
             for i in range(1):
                 print "Summary on column", i
-                # hack. where is col 1
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
-                coList = [co.base, len(co.bins), len(co.data), co.domain, co.label, co.maxs, co.mean, co.mins, co.missing,
-                    co.ninfs, co.pctiles, co.pinfs, co.precision, co.sigma, co.str_data, co.stride, co.type, co.zeros]
 
-                for k,v in co:
-                    print k, v
-
-            # fail
-            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs, chunkSize=4194304/2)
-            # fail
-            # parseResult = a_node.parse(key=k, timeoutSecs=timeoutSecs)
             k = parseResult['frames'][0]['key']['name']
             # print "parseResult:", dump_json(parseResult)
             a_node = h2o.nodes[0]
-            frames_result = a_node.frames(key=k, len=5)
+            frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parseResult key", dump_json(frames_result)
             
             parseKeyIndexedCheck(frames_result, multiplyExpected)

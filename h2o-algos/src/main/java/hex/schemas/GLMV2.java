@@ -6,8 +6,10 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import water.DKV;
+import water.Key;
 import water.api.API;
 import water.api.API.Level;
+import water.api.KeyV1.FrameKeyV1;
 import water.api.SupervisedModelParametersSchema;
 import water.fvec.Frame;
 
@@ -84,6 +86,9 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
 
     @API(help = "validation folds")
     public int n_folds;
+
+    @API(help="beta constraints", direction=API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
+    public FrameKeyV1 beta_constraint;
 
     @Override
     public GLMParametersV2 fillFromImpl(GLMParameters impl) {

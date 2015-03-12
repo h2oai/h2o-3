@@ -207,6 +207,7 @@ def glm(x,y,validation_x=None,validation_y=None,**kwargs):
   """
   Build a Generalized Linear Model (kwargs are the same arguments that you can find in FLOW)
   """
+  kwargs = dict([(k, kwargs[k]) if k != "Lambda" else ("lambda", kwargs[k]) for k in kwargs])
   return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"glm",kwargs)
 
 def kmeans(x,validation_x=None,**kwargs):
@@ -214,6 +215,12 @@ def kmeans(x,validation_x=None,**kwargs):
   Build a KMeans model (kwargs are the same arguments that you can find in FLOW)
   """
   return h2o_model_builder.unsupervised_model_build(x,validation_x,"kmeans",kwargs)
+
+def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
+  """
+  Build a Random Forest Model (kwargs are the same arguments that you can find in FLOW)
+  """
+  return h2o_model_builder.supervised_model_build(x,y,validation_x,validation_y,"drf",kwargs)
 
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)

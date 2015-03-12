@@ -135,7 +135,10 @@ initList = [
         '= !x ^ #1 ^ #1 (^ #1 #1)',
         '= !x / #1 / #1 (/ #1 #1)',
         '= !x ** #1 ** #1 (** #1 #1)',
-        '= !x % #1 % #1 (% #1 #1)',
+
+        # what is modulo now?
+        # '= !x % #1 % #1 (% #1 #1)',
+
         # '= !x %/% #1 %/% #1 %/% #1 #1', # unimplemented
         # '= !x %% #1 %% #1 %% #1 #1', # unimplemented
 
@@ -153,7 +156,8 @@ initList = [
         '= !x _ ^ #1 ^ #1 (^ #1 _ #1)',
         '= !x _ / #1 / #1 (/ #1 _ #1)',
         '= !x _ ** #1 ** #1 (** #1 _ #1)',
-        '= !x _ % #1 % #1 (% #1 _ #1)',
+        # what is modulo now?
+        # '= !x _ % #1 % #1 (% #1 _ #1)',
 
 
         # can have space between ( and function
@@ -272,7 +276,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, base_port=54333)
+        h2o.init(1, java_heap_GB=12, base_port=54333)
 
     @classmethod
     def tearDownClass(cls):

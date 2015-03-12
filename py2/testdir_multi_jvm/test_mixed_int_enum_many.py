@@ -100,7 +100,7 @@ class Basic(unittest.TestCase):
 
             print "Creating random", csvPathname
             expectedNaCnt = write_syn_dataset(csvPathname, rowCount, colCount, SEEDPERFILE, enumChoices, intChoices)
-            parseResult = h2i.import_parse(path=csvPathname, schema='put', checkHeader=0,
+            parseResult = h2i.import_parse(path=csvPathname, schema='put', check_header=0,
                 hex_key=hex_key, timeoutSecs=10, doSummary=False)
             numRows, numCols, parse_key = h2o_cmd.infoFromParse(parseResult)
             print "numRows:", numRows, "numCols:", numCols

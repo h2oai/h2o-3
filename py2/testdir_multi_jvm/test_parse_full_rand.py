@@ -231,8 +231,8 @@ class Basic(unittest.TestCase):
                 # why are we saving this?
                 lastcolsHistory.append(lastcols)
 
-                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, checkHeader=0,
-                    timeoutSecs=60, sep=colSepInt, doSummary=DO_SUMMARY)
+                parseResult = h2i.import_parse(path=csvPathname, schema='put', hex_key=hex_key, check_header=0,
+                    timeoutSecs=60, separator=colSepInt, doSummary=DO_SUMMARY)
                 
                 inspect = h2o_cmd.runInspect(key=hex_key)
                 missingList, labelList, numRows, numCols = h2o_cmd.infoFromInspect(inspect)

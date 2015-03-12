@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import com.brsanthu.googleanalytics.AppViewHit;
+//import com.brsanthu.googleanalytics.AppViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -469,10 +469,12 @@ public class RequestServer extends NanoHTTPD {
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
 
-    if(header.getProperty("user-agent") != null)
-      H2O.GA.postAsync(new AppViewHit(uri).customDimention(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
-    else
-      H2O.GA.postAsync(new AppViewHit(uri));
+/*    if (H2O.GA != null) {
+      if (header.getProperty("user-agent") != null)
+        H2O.GA.postAsync(new AppViewHit(uri).customDimention(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
+      else
+        H2O.GA.postAsync(new AppViewHit(uri));
+    }*/
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {

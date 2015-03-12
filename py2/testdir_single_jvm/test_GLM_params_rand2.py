@@ -30,9 +30,9 @@ def define_params():
         'use_all_factor_levels': [None, 0, 1],
         'beta_eps': [None, 0.0001],
         'alpha': [0,0.2,0.4],
-        'family': ['family_default', 'gaussian', 'binomial', 'poisson', 'logit', 'log', 'inverse', 'tweedie', None],
-        'link': [None],
-        'ignored_cols': [1,'C1','1,2','C1,C2'],
+        'family': ['family_default', 'gaussian', 'binomial', 'poisson', None],
+        'link': ['logit', 'log', 'inverse', 'tweedie', None],
+        'ignored_columns': [1,'C1','1,2','C1,C2'],
         'n_folds': [0,1],
         'standardize': [None, 0,1],
         # 'intercept': [None, 0, 1],
@@ -66,13 +66,13 @@ class Basic(unittest.TestCase):
         csvPathname = importFolderPath + "/" + csvFilename
 
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key,
-            checkHeader=1, timeoutSecs=180, doSummary=False)
+            check_header=1, timeoutSecs=180, doSummary=False)
 
         ## columnTypeDict = {54: 'Enum'}
         columnTypeDict = None
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=binomial_key, 
             columnTypeDict=columnTypeDict,
-            checkHeader=1, timeoutSecs=180, doSummary=False)
+            check_header=1, timeoutSecs=180, doSummary=False)
 
         # don't have to make it enum, if 0/1 (can't operate on enums like this)
         # make 1-7 go to 0-6. 0 isn't there.
@@ -105,7 +105,7 @@ class Basic(unittest.TestCase):
 
             # params is mutable. This is default.
             parameters = {
-                'response_column': 'C54',
+                'response_column': 'C55',
                 'alpha': 0.1,
                 # 'lambda': 1e-4, 
                 'lambda': 0,
@@ -119,12 +119,12 @@ class Basic(unittest.TestCase):
                 bHack = hex_key
 
             co = h2o_cmd.runSummary(key=binomial_key, column=54)
-            print "binomial_key summary:", co.label, co.type, co.missing, co.domain, sum(co.bins)
+            print "binomial_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
             co = h2o_cmd.runSummary(key=hex_key, column=54)
-            print "hex_key summary:", co.label, co.type, co.missing, co.domain, sum(co.bins)
+            print "hex_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
             # fix stupid params
-            fixList = ['alpha', 'lambda']
+            fixList = ['alpha', 'lambda', 'ignored_columns']
             for f in fixList:
                 if f in parameters:
                     parameters[f] = "[%s]" % parameters[f]
@@ -148,13 +148,13 @@ class Basic(unittest.TestCase):
             # FIX! when is this legal
             doClassification = False
             if doClassification:
-                mcms = OutputObj({'data': cmm.maxCriteriaAndMetricScores.data}, 'mcms')
+                mcms = OutputObj({'data': cmm.max_criteria_and_metric_scores.data}, 'mcms')
                 m1 = mcms.data[1:]
                 h0 = mcms.data[0]
                 print "\nmcms", tabulate(m1, headers=h0)
 
             if doClassification:
-                thms = OutputObj(cmm.thresholdsAndMetricScores, 'thms')
+                thms = OutputObj(cmm.thresholds_and_metric_scores, 'thms')
                 cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
 
                 if 1==0:

@@ -124,7 +124,7 @@ class Basic(unittest.TestCase):
 
             # does h2o-dev take a regex? or do we need to glob
             parseResult = h2i.parse_only(pattern='*'+rowxcol+'*',
-                hex_key=hex_key, timeoutSecs=timeoutSecs, checkHeader="1") # header_from_file=header
+                hex_key=hex_key, timeoutSecs=timeoutSecs, check_header="1") # header_from_file=header
 
             pA = h2o_cmd.ParseObj(parseResult, expectedNumRows=totalDataRows, expectedNumCols=totalCols)
             print pA.numRows
