@@ -33,15 +33,18 @@ myX = 1:4
 myY = 5
 
 # GBM Model
-iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex)
+iris.gbm <- h2o.gbm(myX, myY, training_frame = iris.hex, loss = 'multinomial')
 print(iris.gbm)
 
-# GLM Model 
+# GLM Model
 iris.glm <- h2o.glm(myX, myY, training_frame = iris.hex, family = "gaussian")
 print(iris.glm)
 
 # DL Model
 iris.dl  <- h2o.deeplearning(myX, myY, training_frame = iris.hex, epochs=1, hidden=c(50,50))
 print(iris.dl)
+
+# DRF Model
+iris.drf <- h2o.randomforest(myX, myY, training_frame = iris.hex)
 
 PASS_BANNER()
