@@ -65,12 +65,11 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
     if( _parms._loss == GBMParameters.Family.bernoulli ) {
-      //double fx = p[1] + _output._initialPrediction;
-      //p[2] = 1.0f/(float)(1f+Math.exp(-fx));
-      //p[1] = 1f-p[2];
-      //p[0] = water.util.ModelUtils.getPrediction(p, data);
-      //return p;
-      throw H2O.unimpl();
+      body.ip("double fx = preds[1] + ").p(_output._initialPrediction).p(";").nl();
+      body.ip("preds[2] = 1.0f/(float)(1f+Math.exp(-fx));").nl();
+      body.ip("preds[1] = 1f-preds[2];").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
+      return;
     }
     if( _output.nclasses() == 1 ) { // Regression
       // Prediction starts from the mean response, and adds predicted residuals
