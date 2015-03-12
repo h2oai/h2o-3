@@ -14,6 +14,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.getGet(_vresponse_key)) : _vresponse; }
 
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
+
   public final boolean isClassifier() { return _parms._convert_to_enum || _nclass > 1; }
   public boolean isSupervised() { return true; }
 
@@ -71,7 +72,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       if (_response.isConst())
         error("_response_column", "Response column is constant!");
       if (_parms._convert_to_enum && expensive) { // Expensive; only do it on demand
-        _response  =  _response.toEnum();
+        _response = _response.toEnum();
         if (_vresponse != null) _vresponse = _vresponse.toEnum();
       }
       _train.add(_parms._response_column, _response);

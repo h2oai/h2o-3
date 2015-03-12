@@ -30,7 +30,6 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._seed = seed;
     p._hidden = new int[]{10, 5, 3};
     p._adaptive_rate = true;
-    p._convert_to_enum = false;
 //    String[] n = train.names();
 //    p._ignored_columns = new String[]{n[0],n[1],n[2],n[3],n[6],n[7],n[8],n[10]}; //Optional: ignore all categoricals
 //    p._ignored_columns = new String[]{train.names()[4], train.names()[5], train.names()[9]}; //Optional: ignore all numericals
