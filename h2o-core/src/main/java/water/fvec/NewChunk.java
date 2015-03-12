@@ -741,22 +741,19 @@ public class NewChunk extends Chunk {
     // If the data was set8 as doubles, we do a quick check to see if it's
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
-      int i=0;
-      boolean isConstant = true;
-      boolean isInteger = true;
-      if ( sparse ) {
-        isConstant = sparseLen() == 0;
-        for( ; i< sparseLen(); i++ ) {
-          if (!Double.isNaN(_ds[i])) isInteger &= (double) (long) _ds[i] == _ds[i];
-        }
-      } else {
-        assert(_ds.length >= _len);
-        for( ; i< _len; i++ ) {
-          if (!Double.isNaN(_ds[i])) isInteger &= (double) (long) _ds[i] == _ds[i];
-          isConstant &= _ds[i] == _ds[0];
-        }
-        assert(sparseLen() == _len);
-      }
+      int i;
+      for (i=0; i < sparseLen(); ++i)
+        if (!Double.isNaN(_ds[i]) && (double) (long) _ds[i] != _ds[i])
+          break;
+      boolean isInteger = i == sparseLen();
+
+      boolean isConstant = (sparse && sparseLen() ==0);
+      if (!isConstant) //not yet declared constant - check every entry
+      for (i=0; i < sparseLen(); ++i)
+        if (_ds[i] != _ds[0])
+          break;
+      isConstant = i == sparseLen();
+
       if (!isInteger) {
         if (isConstant) return new C0DChunk(_ds[0], _len);
         if (sparse) return new CXDChunk(_len, sparseLen(), 8, bufD(8));
