@@ -75,7 +75,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
         double stddev = Math.max(_output._pcond_raw[col][rlevel][1], _parms._min_sdev); // more stable for almost constant data
         double mean = _output._pcond_raw[col][rlevel][0];
         double x = data[col];
-        num *= Math.exp(-((x-mean)*(x-mean)/(2.*stddev*stddev)))/stddev/Math.sqrt(2.*Math.PI); // faster
+        num *= Math.exp(-((x-mean)*(x-mean)/(2.*stddev*stddev)))/(stddev*Math.sqrt(2.*Math.PI)); // faster
         // num *= new NormalDistribution(mean, stddev).density(data[col]); //slower
       }
 
