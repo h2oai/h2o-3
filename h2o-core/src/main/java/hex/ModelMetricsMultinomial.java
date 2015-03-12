@@ -107,7 +107,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       float[] hr = new float[_K];
-      double mse = 0;
+      double mse = Double.NaN;
       if (_count != 0) {
         if (_hits != null) {
           for (int i = 0; i < hr.length; i++) {
