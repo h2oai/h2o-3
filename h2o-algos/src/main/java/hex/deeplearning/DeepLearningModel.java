@@ -740,8 +740,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public float[] valid_hitratio; // "Hit ratio on validation data"
 
     // regression
-    public double train_mse = Double.POSITIVE_INFINITY;
-    public double valid_mse = Double.POSITIVE_INFINITY;
+    public double train_mse = Double.NaN;
+    public double valid_mse = Double.NaN;
     public double train_r2 = Double.NaN;
     public double valid_r2 = Double.NaN;
 
