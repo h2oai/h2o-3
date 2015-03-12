@@ -364,9 +364,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
         Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
       }
-      int i=out._ntrees-1;
-      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
-      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
+//      int i=out._ntrees-1;
+//      while( i >= 0 && Double.isNaN(out._mse_train[i]) ) i--;
+//      assert i < 0 || out._mse_train[i] > mm._mse : "MSE should monotonically decrease";
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
