@@ -4,11 +4,65 @@ import sys
 import os
 import requests
 import urllib
+import re
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 g_user = None
 g_pass = None
 g_sprint = None
+
+
+class Person:
+    def __init__(self, name):
+        self.name = name
+        self.resolved_list = []
+        self.resolved_story_points = 0
+        self.unresolved_list = []
+        self.unresolved_story_points = 0
+
+    def add(self, issue):
+        story_points = issue[u'fields'][u'customfield_10004']
+        if story_points is None:
+            story_points = 0
+        else:
+            story_points = float(story_points)
+        resolution = issue[u'fields'][u'resolution']
+        if resolution is None:
+            self.unresolved_story_points += story_points
+        else:
+            self.resolved_story_points += story_points
+
+    def emit(self):
+        print("{}: {} {}").format(self.name, self.resolved_story_points, self.unresolved_story_points)
+
+
+class PeopleManager:
+    def __init__(self):
+        self.people_map = {}
+
+    def add(self, issue):
+        assignee = issue[u'fields'][u'assignee']
+        if (assignee is None):
+            print("ERROR: assignee is none for issue: " + str(issue))
+            sys.exit(1)
+        assignee_name = issue[u'fields'][u'assignee'][u'name']
+        person = self.find(assignee_name)
+        person.add(issue)
+
+    def find(self, name):
+        if name not in self.people_map:
+            person = Person(name)
+            self.people_map[name] = person
+        person = self.people_map[name]
+        return person
+
+    def emit(self):
+        for key in sorted(self.people_map.keys()):
+            person = self.people_map[key]
+            person.emit()
 
 
 def usage():
@@ -23,6 +77,27 @@ def unknown_arg(s):
     print("ERROR: Unknown argument: " + s)
     print("")
     usage()
+
+
+def parse_config_file():
+    global g_user
+    global g_pass
+    global g_sprint
+    home = os.path.expanduser("~")
+    config_file = os.path.join(home, ".h2o_jira")
+    if (os.path.exists(config_file)):
+        with open(config_file) as f:
+            for line in f:
+                match_groups = re.search(r"\s*(\S+)\s*=\s*([\S\s]+)\s*", line.rstrip())
+                if (match_groups is not None):
+                    key = match_groups.group(1)
+                    value = match_groups.group(2)
+                    if (key == "user"):
+                        g_user = value
+                    elif (key == "pass"):
+                        g_pass = value
+                    elif (key == "sprint"):
+                        g_sprint = value
 
 
 def parse_args(argv):
@@ -57,12 +132,15 @@ def parse_args(argv):
         i += 1
 
     if (g_user is None):
+        print "ERROR: user is not specified"
         usage()
 
     if (g_pass is None):
+        print "ERROR: pass is not specified"
         usage()
 
     if (g_sprint is None):
+        print "ERROR: sprint is not specified"
         usage()
 
 
@@ -75,6 +153,7 @@ def main(argv):
     global g_script_name
 
     g_script_name = os.path.basename(argv[0])
+    parse_config_file()
     parse_args(argv)
 
     url = 'https://0xdata.atlassian.net/rest/api/2/search?jql=sprint="' + urllib.quote(g_sprint) + '"&maxResults=1000'
@@ -84,24 +163,11 @@ def main(argv):
         sys.exit(1)
     j = r.json()
     issues = j[u'issues']
-    story_points_map = {}
+    pm = PeopleManager()
     for issue in issues:
-        name = issue[u'fields'][u'assignee'][u'name']
-        story_points = issue[u'fields'][u'customfield_10004']
-        if story_points is None:
-            story_points = 0
-        else:
-            story_points = float(story_points)
-        if name in story_points_map:
-            n = story_points_map[name]
-            story_points_map[name] = n + story_points
-        else:
-            story_points_map[name] = story_points
+        pm.add(issue)
 
-    for key in sorted(story_points_map.keys()):
-        value = story_points_map[key]
-        print("{}: {}").format(key, value)
-
+    pm.emit()
 
 if __name__ == "__main__":
     main(sys.argv)
