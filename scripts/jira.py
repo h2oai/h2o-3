@@ -35,8 +35,24 @@ class Person:
         else:
             self.resolved_story_points += story_points
 
+    def _printbar(self, label, value, char):
+        bars_per_day = 4
+        sys.stdout.write(label + ":  ")
+        num_bars = int(value * bars_per_day)
+        i = 0
+        while (num_bars > 0):
+            if (i % bars_per_day == 0):
+                sys.stdout.write(" ")
+            sys.stdout.write(char)
+            num_bars -= 1
+            i += 1
+        sys.stdout.write("\n")
+
     def emit(self):
-        print("{}: {} {}").format(self.name, self.resolved_story_points, self.unresolved_story_points)
+        print("")
+        print("-----" + self.name + "-----")
+        self._printbar("  resolved", self.resolved_story_points, "R")
+        self._printbar("unresolved", self.unresolved_story_points, "U")
 
 
 class PeopleManager:
@@ -168,6 +184,7 @@ def main(argv):
         pm.add(issue)
 
     pm.emit()
+    print("")
 
 if __name__ == "__main__":
     main(sys.argv)
