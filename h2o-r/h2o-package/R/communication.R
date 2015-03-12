@@ -327,7 +327,12 @@
           ((nrow <- length(x)) > 1L) &&
           all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
           (length(ncol <- unique(unlist(lapply(x, length)))) == 1L)) {
-        x <- lapply(x, function(y) { if(identical(y, "NaN")) NA_real_ else y })
+        x <- lapply(x, function(y) {
+          if (identical(y, "NaN")) NA_real_ 
+          else if (identical(y, "Infinity")) Inf
+          else if (identical(y, "-Infinity")) -Inf
+          else y
+          })
         x <- matrix(unlist(x), nrow = nrow, ncol = ncol, byrow = TRUE)
       } else
         x <- lapply(x, processMatrices)
@@ -566,7 +571,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   keepRunning <- TRUE
   while (keepRunning) {
     myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-    rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+    rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
     jsonObject <- .h2o.fromJSON(rawResponse)
     jobs <- jsonObject$jobs
     if (length(jobs) > 1) {

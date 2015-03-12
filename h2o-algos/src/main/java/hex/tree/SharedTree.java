@@ -10,6 +10,7 @@ import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
@@ -56,35 +57,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if( _train != null )
       _ncols = _train.numCols()-1;
-
-    if (_response == null) return;
-
-    // Initialize response based on given loss function.
-    // Regression: initially predict the response mean
-    // Binomial: just class 0 (class 1 in the exact inverse prediction)
-    // Multinomial: Class distribution which is not a single value.
-
-    // However there is this weird tension on the initial value for
-    // classification: If you guess 0's (no class is favored over another),
-    // then with your first GBM tree you'll typically move towards the correct
-    // answer a little bit (assuming you have decent predictors) - and
-    // immediately the Confusion Matrix shows good results which gradually
-    // improve... BUT the Means Squared Error will suck for unbalanced sets,
-    // even as the CM is good.  That's because we want the predictions for the
-    // common class to be large and positive, and the rare class to be negative
-    // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metric is typically negative (usually it's
-    // between 0 and 1).
-
-    // If instead you guess the mean (reversed through the loss function), then
-    // the zero-tree GBM model reports an MSE equal to the response variance -
-    // and an initial R^2 of zero.  More trees gradually improves the R^2 as
-    // expected.  However, all the minority classes have large guesses in the
-    // wrong direction, and it takes a long time (lotsa trees) to correct that
-    // - so your CM sucks for a long time.
-    double mean = _response.mean();
-    _initialPrediction = _nclass == 1 ? mean
-      : (_nclass==2 ? -0.5*Math.log(mean/(1.0-mean))/*0.0*/ : 0.0/*not a single value*/);
   }
 
   // --------------------------------------------------------------------------
@@ -169,15 +141,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Tag out rows missing the response column
         new ExcludeNAResponse().doAll(fr);
 
-        // Set initial predictions (computed in init())
-        final double init = _initialPrediction;
-        if( init != 0.0 )       // Only non-zero for regression or bernoulli
-          new MRTask() {
-            @Override public void map(Chunk tree) { for( int i=0; i<tree._len; i++ ) tree.set(i, init); }
-          }.doAll(vec_tree(_train,0)); // Only setting tree-column 0
-
         // Variable importance: squared-error-improvement-per-variable-per-split
-        _improvPerVar = new float[_ncols+1];
+        _improvPerVar = new float[_ncols];
 
         // Sub-class tree-model-builder specific build code
         buildModel();
@@ -217,7 +182,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Nearly all leaves will split one more level.  This loop nest is
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
-    H2OCountedCompleter sb1ts[] = new H2OCountedCompleter[_nclass];
+    ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
     Vec vecs[] = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
@@ -230,7 +195,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
       fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -238,13 +203,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       sb1ts[k].join();
-      if( ((ScoreBuildOneTree)sb1ts[k])._did_split ) did_split=true;
+      if( sb1ts[k]._did_split ) did_split=true;
     }
     // The layer is done.
     return did_split ? hcs : null;
   }
 
-  private class ScoreBuildOneTree extends H2OCountedCompleter {
+  private static class ScoreBuildOneTree extends H2OCountedCompleter {
+    final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Number of histogram bins
     final DTree _tree;
@@ -256,7 +222,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     
     boolean _did_split;
-    ScoreBuildOneTree( int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar ) {
+    ScoreBuildOneTree( SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar ) {
+      _st   = st;
       _k    = k;
       _nbins= nbins;
       _tree = tree;
@@ -276,7 +243,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k,_ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins,_tree, _leafs[_k],_hcs[_k],_subset).dfork(0,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -288,7 +255,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.UndecidedNode udn = _tree.undecided(leaf);
         //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = makeDecided(udn,sbh._hcs[leaf-leafk]);
+        DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
         //System.out.println("--> Decided node: " + dn +
         //                   "  > Split: " + dn._split + " L/R:" + dn._split.rowsLeft()+" + "+dn._split.rowsRight());
         if( dn._split.col() == -1 ) udn.do_not_split();
@@ -318,8 +285,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
   protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  // Out-of-bag trees counter - only one since it is shared via k-trees
+  protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
+  protected final Vec vec_nids( Frame fr, int t) { return fr.vecs()[_ncols+1+_nclass+_nclass+t]; }
+  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[_ncols]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
+
+  protected double[] data_row( Chunk chks[], int row, double[] data) {
+    assert data.length == _ncols;
+    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
+    return data;
+  }
 
   // Builder-specific decision node
   abstract protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] );
@@ -333,9 +310,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // if it is necessary.
   void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
     float sum = score1(chks, fs, row);
-    if( isClassifier() && !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
-    if( _model._output._priorClassDist!=null && _model._output._modelClassDist!=null )
+    if( isClassifier()) {
+      if( !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -352,7 +330,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   transient long _timeLastScoreStart, _timeLastScoreEnd, _firstScore;
-  protected void doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+  protected double doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
+    double training_r2 = Double.NaN; // Training R^2 value, if computed
     long now = System.currentTimeMillis();
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
@@ -369,17 +348,25 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // for scoring) and then update it with resulting error
       _model.update(_key);  updated = true;
 
-      _timeLastScoreStart = now;
-      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(_parms._valid == null ? train() : valid(), build_tree_one_node);
-      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms._valid==null ? _parms.train() : _parms.valid(), _parms._response_column);
       Log.info("============================================================== ");
-      // Store score results in the model output
       SharedTreeModel.SharedTreeOutput out = _model._output;
-      out._mse_train[out._ntrees] = _parms._valid == null ? mm._mse : Double.NaN;
-      out._mse_valid[out._ntrees] = _parms._valid == null ? Double.NaN : mm._mse;
-      if( out._ntrees > 0 )
+      _timeLastScoreStart = now;
+      // Score on training data
+      Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
+      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms.train(), _parms._response_column);
+      out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
+      training_r2 = mm.r2();
+      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
+      // Score again on validation data
+      if( _parms._valid != null ) {
+        Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
+        ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
+        out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
+        Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
+      }
+
+      if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
-      Log.info("r2 is "+mm.r2()+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
       ConfusionMatrix cm = (mm instanceof ModelMetricsBinomial) ? ((ModelMetricsBinomial)mm)._cm :
         ((mm instanceof ModelMetricsMultinomial) ? ((ModelMetricsMultinomial)mm)._cm : null);
       if( cm != null ) {
@@ -391,6 +378,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_key);
+    return training_r2;
   }
 
   // helper for debugging
@@ -419,4 +407,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
   }
 
+  // Helper to unify use of M-T RNG
+  public static Random createRNG(long seed) {
+    return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
+  }
 }

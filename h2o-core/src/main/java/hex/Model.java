@@ -258,6 +258,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
     }
+
+    private void printTwoDimTables(StringBuilder sb, Object o) {
+      for (Field f : Weaver.getWovenFields(o.getClass())) {
+        Class<?> c = f.getType();
+        if (c.isAssignableFrom(TwoDimTable.class)) {
+          try {
+            TwoDimTable t = (TwoDimTable) f.get(this);
+            f.setAccessible(true);
+            if (t != null) sb.append(t.toString());
+          } catch (IllegalAccessException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+    @Override public String toString() {
+      StringBuilder sb = new StringBuilder();
+      printTwoDimTables(sb, this);
+      return sb.toString();
+    }
   } // Output
 
   public O _output; // TODO: move things around so that this can be protected
@@ -665,7 +686,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       String java_text = toJava();
-      //System.out.println(java_text);
+//      System.out.println(java_text);
       GenModel genmodel;
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
@@ -684,7 +705,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for( int col=0; col<features.length; col++ ) // Build feature set
           features[col] = dvecs[col].at(row);
         genmodel.score0(features,predictions);            // POJO predictions
-        for( int col=0; col<predictions.length; col++ ) { // Compare predictions
+        for( int col=0; col<pvecs.length; col++ ) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions

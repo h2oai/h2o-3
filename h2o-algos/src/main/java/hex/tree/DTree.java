@@ -90,6 +90,7 @@ public class DTree extends Iced {
     abstract protected int size();
 
     public final int nid() { return _nid; }
+    public final int pid() { return _pid; }
   }
 
   // --------------------------------------------------------------------------
@@ -375,19 +376,21 @@ public class DTree extends Iced {
     // Bin #.
     public int bin( Chunk chks[], int row ) {
       float d = (float)chks[_split._col].atd(row); // Value to split on for this row
-      if( Float.isNaN(d) )               // Missing data?
-        return 0;                        // NAs always to bin 0
+//      if( Float.isNaN(d) )               // Missing data?
+//        return 0;                        // NAs always to bin 0
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.
       if(_split._equal == 0)
-        return d < _splat ? 0 : 1;
+        return d >= _splat ? 1 : 0; //NaN goes to 0
       else if(_split._equal == 1)
-        return d != _splat ? 0 : 1;
+        return d == _splat ? 1 : 0; //NaN goes to 0
       else
         return _split._bs.contains((int)d) ? 1 : 0;
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
+
+    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
 
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
@@ -504,6 +507,8 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    public final double pred() { return _pred; }
+    public final void pred(double pred) { _pred = pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }
@@ -519,57 +524,4 @@ public class DTree extends Iced {
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
   }
-
-  private static final SB TO_JAVA_BENCH_FUNC = new SB().
-      nl().
-      p("  /**").nl().
-      p("   * Run a predict() benchmark with the generated model and some synthetic test data.").nl().
-      p("   *").nl().
-      p("   * @param iters number of iterations to run; each iteration predicts on every sample (i.e. row) in the test data").nl().
-      p("   * @param data test data to predict on").nl().
-      p("   * @param preds output predictions").nl().
-      p("   * @param ntrees number of trees").nl().
-      p("   */").nl().
-      p("  public void bench(int iters, double[][] data, float[] preds, int ntrees) {").nl().
-      p("    System.out.println(\"Iterations: \" + iters);").nl().
-      p("    System.out.println(\"Data rows : \" + data.length);").nl().
-      p("    System.out.println(\"Trees     : \" + ntrees + \"x\" + (preds.length-1));").nl().
-      nl().
-      p("    long startMillis;").nl().
-      p("    long endMillis;").nl().
-      p("    long deltaMillis;").nl().
-      p("    double deltaSeconds;").nl().
-      p("    double samplesPredicted;").nl().
-      p("    double samplesPredictedPerSecond;").nl().
-      p("    System.out.println(\"Starting timing phase of \"+iters+\" iterations...\");").nl().
-      nl().
-      p("    startMillis = System.currentTimeMillis();").nl().
-      p("    for (int i=0; i<iters; i++) {").nl().
-      p("      // Uncomment the nanoTime logic for per-iteration prediction times.").nl().
-      p("      // long startTime = System.nanoTime();").nl().
-      nl().
-      p("      for (double[] row : data) {").nl().
-      p("        predict(row, preds);").nl().
-      p("        // System.out.println(java.util.Arrays.toString(preds) + \" : \" + (DOMAINS[DOMAINS.length-1]!=null?(DOMAINS[DOMAINS.length-1][(int)preds[0]]+\"~\"+DOMAINS[DOMAINS.length-1][(int)row[row.length-1]]):(preds[0] + \" ~ \" + row[row.length-1])) );").nl().
-      p("      }").nl().
-      nl().
-      p("      // long ttime = System.nanoTime()-startTime;").nl().
-      p("      // System.out.println(i+\". iteration took \" + (ttime) + \"ns: scoring time per row: \" + ttime/data.length +\"ns, scoring time per row and tree: \" + ttime/data.length/ntrees + \"ns\");").nl().
-      nl().
-      p("      if ((i % 1000) == 0) {").nl().
-      p("        System.out.println(\"finished \"+i+\" iterations (of \"+iters+\")...\");").nl().
-      p("      }").nl().
-      p("    }").nl().
-      p("    endMillis = System.currentTimeMillis();").nl().
-      nl().
-      p("    deltaMillis = endMillis - startMillis;").nl().
-      p("    deltaSeconds = (double)deltaMillis / 1000.0;").nl().
-      p("    samplesPredicted = data.length * iters;").nl().
-      p("    samplesPredictedPerSecond = samplesPredicted / deltaSeconds;").nl().
-      p("    System.out.println(\"finished in \"+deltaSeconds+\" seconds.\");").nl().
-      p("    System.out.println(\"samplesPredicted: \" + samplesPredicted);").nl().
-      p("    System.out.println(\"samplesPredictedPerSecond: \" + samplesPredictedPerSecond);").nl().
-      p("  }").nl().
-  nl();
-
 }

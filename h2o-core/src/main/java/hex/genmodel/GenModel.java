@@ -106,6 +106,9 @@ public abstract class GenModel {
 
   // Utility to do bitset lookup
   public static boolean bitSetContains(byte[] bits, int bitoff, int num ) {
+    if (Integer.MIN_VALUE == num) { //Missing value got cast'ed to Integer.MIN_VALUE via (int)-Float.MAX_VALUE in GenModel.*_fclean
+      num = 0; // all missing values are treated the same as the first enum level //FIXME
+    }
     assert num >= 0;
     num -= bitoff;
     return (num >= 0) && (num < (bits.length<<3)) &&
@@ -175,7 +178,7 @@ public abstract class GenModel {
   // we get Infinities, and then shortly NaN's.  Rescale the data so the
   // largest value is +/-1 and the other values are smaller.
   // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-  public static void SharedTree_rescale( double[] data, float[] preds ) {
+  public static void GBM_rescale(double[] data, float[] preds) {
     // Find a max
     float maxval=Float.NEGATIVE_INFINITY;
     for( int k=1; k<preds.length; k++) maxval = Math.max(maxval,preds[k]);

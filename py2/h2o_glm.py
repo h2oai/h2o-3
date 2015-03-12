@@ -107,7 +107,9 @@ def simpleCheckGLM(self, model, parameters,
     check_obj_has_good_numbers(temp, 'model.coeffs', allowNaN=False)
     # print "temp", temp[0:10]
     # print "temp[5489:5500]", temp[5489:5500]
-    coeffs = map(lambda x : float(x) if str(x) != "" else 0,  temp)
+
+    # UPDATE: None (null json) is legal for coeffs
+    coeffs = map(lambda x : float(x) if (x is not None and str(x) != "") else 0,  temp)
 
     intercept = coeffs[-1] 
     interceptName = coeffs_names[-1]

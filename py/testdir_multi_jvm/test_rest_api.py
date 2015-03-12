@@ -419,7 +419,7 @@ a_node = h2o.H2O(host, port)
 
 #########
 # Config:
-algos = ['example', 'kmeans', 'deeplearning', 'glm', 'gbm', 'pca', 'naivebayes', 'word2vec', 'quantile', 'grep']
+algos = ['example', 'kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'word2vec', 'quantile', 'grep']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 }
                                  } # additional params to add to the default params

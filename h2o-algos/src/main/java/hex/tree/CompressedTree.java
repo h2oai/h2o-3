@@ -1,6 +1,8 @@
 package hex.tree;
 
 import java.util.Arrays;
+import java.util.Random;
+
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
@@ -17,7 +19,7 @@ import water.util.SB;
 //        1 bit  (128) right leaf type flag (0: subtree, 1: small cat, 2: big cat, 3: float)
 //    left, right: tree | prediction
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
-class CompressedTree extends Keyed {
+public class CompressedTree extends Keyed {
   final byte [] _bits;
   final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
@@ -68,19 +70,26 @@ class CompressedTree extends Keyed {
       //   - Double.NaN <  3.7f => return false => BUT left branch has to be selected (i.e., ab.position())
       //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
       double d = row[colId];
-      if( !Double.isNaN(d) ) {  // NaNs always go to bin 0
+//      if( !Double.isNaN(d) ) {  // NaNs always go to bin 0
         if( ( equal==0 && ((float)d) >= splitVal) ||
             ( equal==1 && ((float)d) == splitVal) ||
-            ( (equal==2 || equal==3) && ibs.contains((int)d) )) {
+            ( (equal==2 || equal==3) && ibs.contains((int)d) )) { //if Double.isNaN(d), then (int)d == 0, which means that NA is treated like enum level 0
           ab.skip(skip);        // Skip to the right subtree
           lmask = rmask;        // And set the leaf bits into common place
-        }
+//        }
       } /* else Double.isNaN() is true => use left branch */
       if( (lmask&16)==16 ) return scoreLeaf(ab);
     }
   }
 
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
+
+  public Random rngForChunk( int cidx ) {
+    Random rand = new Random(_seed);
+    for( int i=0; i<cidx; i++ ) rand.nextLong();
+    long seed = rand.nextLong();
+    return new Random(seed);
+  }
 
   @Override protected long checksum_impl() { throw water.H2O.fail(); }
 

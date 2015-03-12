@@ -155,7 +155,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
   h2o.getFrame(res)
 }
 
-h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {n
+h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   # if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
   #   stop("`ratios` must be between 0 and 1 exclusive")
@@ -170,7 +170,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {n
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
   # .h2o.__waitOnJob(data@conn, res$key$name)
 
-  splitKeys <- res$destKeys
+  splitKeys <- res$dest_keys
   splits <- list()
   splits <- lapply(splitKeys, function(split) h2o.getFrame(split$name))
   
@@ -1493,9 +1493,9 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
     if (.is.op(substitute(FUN))) {
       fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
     } else {
-      fun_name <- as.character(FUN)
-      fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(FUN, fun_name)
+      fun_name <- as.character(myfun)
+      fun <- match.fun(myfun)
+      fun.ast <- .fun.to.ast(fun, fun_name)
       a <- invisible(.h2o.post.function(fun.ast))
       if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
     }

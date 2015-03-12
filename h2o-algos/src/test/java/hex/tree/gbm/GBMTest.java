@@ -177,7 +177,7 @@ public class GBMTest extends TestUtil {
       fr2 = gbm.score(fr);
 
       // Build a POJO, validate same results
-      //Assert.assertTrue(gbm.testJavaScoring(fr,fr2));
+      Assert.assertTrue(gbm.testJavaScoring(fr,fr2));
 
       Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
       //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817

@@ -82,7 +82,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       // Compute error
       float sum = 0;          // Check for sane class distribution
       for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
-      assert Math.abs(sum-1.0f) < 1e-6;
+//      assert Math.abs(sum-1.0f) < 1e-6;
       float err = iact+1 < ds.length ? 1.0f-ds[iact+1] : 1.0f;  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
@@ -107,8 +107,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
       float[] hr = new float[_K];
-      for(int i = 0; i < hr.length; i++) hr[i] = _hits[i] / _count;
-      final double mse = _sumsqe / _count;
+      double mse = 0;
+      if (_count != 0) {
+        if (_hits != null) {
+          for (int i = 0; i < hr.length; i++) {
+            hr[i] = _hits[i] / _count;
+          }
+        }
+        mse = _sumsqe / _count;
+      }
       return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
     }
   }

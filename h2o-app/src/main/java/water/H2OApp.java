@@ -11,6 +11,7 @@ import hex.pca.PCA;
 import hex.grep.Grep;
 import hex.kmeans.KMeans;
 import hex.quantile.Quantile;
+import hex.tree.drf.DRF;
 import hex.tree.gbm.GBM;
 import hex.word2vec.Word2Vec;
 
@@ -40,6 +41,10 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("gbm", GBM.class);
     H2O.registerPOST("/3/ModelBuilders/gbm", GBMBuilderHandler.class, "train",                                                        "Train a GBM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/gbm/parameters", GBMBuilderHandler.class, "validate_parameters",                               "Validate a set of GBM model builder parameters.");
+
+    ModelBuilder.registerModelBuilder("drf", DRF.class);
+    H2O.registerPOST("/3/ModelBuilders/drf", DRFBuilderHandler.class, "train",                                                        "Train a DRF model on the specified Frame.");
+    H2O.registerPOST("/3/ModelBuilders/drf/parameters", DRFBuilderHandler.class, "validate_parameters",                               "Validate a set of DRF model builder parameters.");
 
     ModelBuilder.registerModelBuilder("kmeans", KMeans.class);
     H2O.registerPOST("/3/ModelBuilders/kmeans", KMeansBuilderHandler.class, "train",                                                  "Train a KMeans model on the specified Frame.");

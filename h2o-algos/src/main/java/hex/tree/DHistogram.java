@@ -170,7 +170,8 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
   static public float find_maxEx(float maxIn, int isInt ) {
     float ulp = Math.ulp(maxIn);
     if( isInt > 0 && 1 > ulp ) ulp = 1;
-    return maxIn+ulp;
+    float res = maxIn+ulp;
+    return Float.isInfinite(res) ? maxIn : res;
   }
 
   // Compute a "score" for a column; lower score "wins" (is a better split).
