@@ -43,6 +43,7 @@ public class DeepLearningMissingTest extends TestUtil {
       for (double missing_fraction : new double[]{0, 0.1, 0.25, 0.5, 0.75, 0.99}) {
 
         try {
+          Scope.enter();
           NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
           Log.info("FrameSplitting");
@@ -73,7 +74,6 @@ public class DeepLearningMissingTest extends TestUtil {
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
           p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
-          p._convert_to_enum = true;
           p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
@@ -82,6 +82,15 @@ public class DeepLearningMissingTest extends TestUtil {
           p._destination_key = Key.make();
           p._reproducible = true;
           p._seed = seed;
+
+          // Convert response to categorical
+          int ri = train.numCols()-1;
+          int ci = test.find(p._response_column);
+          Scope.track(train.replace(ri, train.vecs()[ri].toEnum())._key);
+          Scope.track(test .replace(ci, test.vecs()[ci].toEnum())._key);
+          DKV.put(train);
+          DKV.put(test);
+
           DeepLearning dl = new DeepLearning(p);
           try {
             Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
@@ -99,7 +108,7 @@ public class DeepLearningMissingTest extends TestUtil {
           Log.info("Missing " + missing_fraction * 100 + "% -> Err: " + err);
           map.put(missing_fraction, err);
           sumerr += err;
-
+          Scope.exit();
         } catch(Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);

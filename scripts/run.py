@@ -640,6 +640,15 @@ class Test:
         if (self.pid <= 0):
             self.cancelled = True
 
+    def terminate_if_started(self):
+        """
+        Terminate a running test.  (Due to a signal.)
+
+        @return: none
+        """
+        if (self.pid > 0):
+            self.terminate()
+
     def terminate(self):
         """
         Terminate a running test.  (Due to a signal.)
@@ -648,7 +657,7 @@ class Test:
         """
         self.terminated = True
         if (self.pid > 0):
-            print("Killing Test with PID {}".format(self.pid))
+            print("Killing Test {} with PID {}".format(os.path.join(self.test_short_dir, self.test_name), self.pid))
             try:
                 self.child.terminate()
             except OSError:
@@ -701,11 +710,29 @@ class Test:
         a = re.compile("NOPASS")
         return a.search(self.test_name) and not nopass
 
+    def get_nofeature(self, nopass):
+        """
+        Some tests are known not to fail and even if they don't pass we don't want
+        to fail the overall regression PASS/FAIL status.
+
+        @return: True if the test has been marked as NOFEATURE, False otherwise.
+        """
+        a = re.compile("NOFEATURE")
+        return a.search(self.test_name) and not nopass
+
     def get_completed(self):
         """
         @return: True if the test completed (pass or fail), False otherwise.
         """
         return (self.returncode > Test.test_did_not_complete())
+
+    def get_terminated(self):
+        """
+        For a test to be terminated it must have started and had a PID.
+
+        @return: True if the test was terminated, False otherwise.
+        """
+        return self.terminated
 
     def get_output_dir_file_name(self):
         """
@@ -790,6 +817,7 @@ class TestRunner:
         self._create_output_dir()
         self._create_failed_output_dir()
         self.nopass_counter = 0
+        self.nofeature_counter = 0
 
         if (use_cloud):
             node_num = 0
@@ -900,6 +928,7 @@ class TestRunner:
                 is_medium = False
                 is_large = False
                 is_nopass = False
+                is_nofeature = False
 
                 if (re.match(".*large.*", f)):
                     is_large = True
@@ -911,6 +940,9 @@ class TestRunner:
                 if (re.match(".*NOPASS.*", f)):
                     is_nopass = True
 
+                if (re.match(".*NOFEATURE.*", f)):
+                    is_nofeature = True
+
                 if (is_small and not run_small):
                     continue
                 if (is_medium and not run_medium):
@@ -921,8 +953,12 @@ class TestRunner:
                     # skip all NOPASS tests for regular runs but still count the number of NOPASS tests
                     self.nopass_counter += 1
                     continue
-                if (nopass and not is_nopass):
-                    # if g_nopass flag is set, then ONLY run the NOPASS tests (skip all other tests)
+                if (is_nofeature and not nopass):
+                    # skip all NOFEATURE tests for regular runs but still count the number of NOFEATURE tests
+                    self.nofeature_counter += 1
+                    continue
+                if (nopass and not is_nopass and not is_nofeature):
+                    # if g_nopass flag is set, then ONLY run the NOPASS and NOFEATURE tests (skip all other tests)
                     continue
 
                 if (test_group is not None):
@@ -1120,11 +1156,12 @@ class TestRunner:
         """
         passed = 0
         nopass_but_tolerate = 0
+        nofeature_but_tolerate = 0
         failed = 0
         notrun = 0
         total = 0
         true_fail_list = []
-        notrun_list = []
+        terminated_list = []
         for test in self.tests:
             if (test.get_passed()):
                 passed += 1
@@ -1132,16 +1169,21 @@ class TestRunner:
                 if (test.get_nopass(nopass)):
                     nopass_but_tolerate += 1
 
+                if (test.get_nofeature(nopass)):
+                    nofeature_but_tolerate += 1
+
                 if (test.get_completed()):
                     failed += 1
-                    if (not test.get_nopass(nopass)):
-                        true_fail_list.append(test.test_name)
+                    if (not test.get_nopass(nopass) and not test.get_nofeature(nopass)):
+                        true_fail_list.append(test.get_test_name())
                 else:
                     notrun += 1
-                    notrun_list.append(test.test_name)
+
+                if (test.get_terminated()):
+                    terminated_list.append(test.get_test_name())
             total += 1
 
-        if ((passed + nopass_but_tolerate) == total):
+        if ((passed + nopass_but_tolerate + nofeature_but_tolerate) == total):
             self.regression_passed = True
         else:
             self.regression_passed = False
@@ -1156,23 +1198,25 @@ class TestRunner:
         self._log("")
         self._log("----------------------------------------------------------------------")
         self._log("")
-        self._log("Total tests:          " + str(total))
-        self._log("Passed:               " + str(passed))
-        self._log("Did not pass:         " + str(failed))
-        self._log("Did not complete:     " + str(notrun))
-        self._log("Tolerated NOPASS:     " + str(nopass_but_tolerate))
-        self._log("NOPASS tests skipped: " + str(self.nopass_counter))
+        self._log("Total tests:             " + str(total))
+        self._log("Passed:                  " + str(passed))
+        self._log("Did not pass:            " + str(failed))
+        self._log("Did not complete:        " + str(notrun))
+        self._log("Tolerated NOPASS:        " + str(nopass_but_tolerate))
+        self._log("Tolerated NOFEATURE:     " + str(nofeature_but_tolerate))
+        self._log("NOPASS tests skipped:    " + str(self.nopass_counter))
+        self._log("NOFEATURE tests skipped: " + str(self.nofeature_counter))
         self._log("")
-        self._log("Total time:           %.2f sec" % delta_seconds)
+        self._log("Total time:              %.2f sec" % delta_seconds)
         if (run > 0):
-            self._log("Time/completed test:  %.2f sec" % (delta_seconds / run))
+            self._log("Time/completed test:     %.2f sec" % (delta_seconds / run))
         else:
-            self._log("Time/completed test:  N/A")
+            self._log("Time/completed test:     N/A")
         self._log("")
-        if failed:
-            self._log("True fail list:       " + ", ".join(true_fail_list))
-        if notrun:
-            self._log("notrun (hung?) list:  " + ", ".join(notrun_list))
+        if (len(true_fail_list) > 0):
+            self._log("True fail list:          " + ", ".join(true_fail_list))
+        if (len(terminated_list) > 0):
+            self._log("Terminated list:         " + ", ".join(terminated_list))
         self._log("")
 
     def terminate(self):
@@ -1187,7 +1231,7 @@ class TestRunner:
             test.cancel()
 
         for test in self.tests:
-            test.terminate()
+            test.terminate_if_started()
 
         for cloud in self.clouds:
             cloud.terminate()
@@ -1270,7 +1314,6 @@ class TestRunner:
         test.start(ip, port)
 
     def _wait_for_one_test_to_complete(self):
-        waits = 0
         while (True):
             for test in self.tests_running:
                 if (self.terminated):
@@ -1281,17 +1324,6 @@ class TestRunner:
             if (self.terminated):
                 return
             time.sleep(1)
-            waits += 1
-            # If a test hangs, it's difficult to tell which test is hung
-            # print out a summary while waiting, every once in a while (minute?)
-            # increase to 2 minutes so you don't see intermediate report during build (test_rest_api.py)
-            if (waits % 120) == 0:
-                print ""
-                print "Showing nopass=False summary so far." 
-                print "We've been waiting a minute or so for another test to complete."
-                # I don't know how to get this g_nopass in here...force it false for now
-                # want to use the instance's nopass? but doesn't exist as self.nopass
-                self.report_summary(nopass=False)
 
     def _report_test_result(self, test, nopass):
         port = test.get_port()
@@ -1308,7 +1340,7 @@ class TestRunner:
             f.write(test.get_test_dir_file_name() + "\n")
             f.close()
             # Copy failed test output into directory failed
-            if not test.get_nopass(nopass):
+            if not test.get_nopass(nopass) and not test.get_nofeature(nopass):
                 shutil.copy(test.get_output_dir_file_name(), self.failed_output_dir)
 
     def _log(self, s):
@@ -1453,7 +1485,7 @@ def usage():
     print("")
     print("    --jvm.xmx     Configure size of launched JVM running H2O. E.g. '--jvm.xmx 3g'")
     print("")
-    print("    --nopass      Run the NOPASS tests only and do not ignore any failures.")
+    print("    --nopass      Run the NOPASS and NOFEATURE tests only and do not ignore any failures.")
     print("")
     print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
     print("")

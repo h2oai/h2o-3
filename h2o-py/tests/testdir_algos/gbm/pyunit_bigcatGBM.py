@@ -14,7 +14,7 @@ def bigcatGBM(ip,port):
   
   # Train H2O GBM Model:
   #Log.info("H2O GBM with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  model = h2o.gbm(x=bigcat[["X"]], y = bigcat["y"], ntrees=1, max_depth=1, nbins=100)
+  model = h2o.gbm(x=bigcat[["X"]], y = bigcat["y"], loss="bernoulli", ntrees=1, max_depth=1, nbins=100)
   model.show()
   performance = model.model_performance(bigcat)
   performance.show()

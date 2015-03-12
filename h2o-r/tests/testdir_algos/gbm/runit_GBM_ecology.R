@@ -16,7 +16,7 @@ test.GBM.ecology <- function(conn) {
   Log.info("==============================")
   Log.info("R GBM Params: ")
   Log.info("Formula: Angaus ~ ., data = ecology.data[,-1]")
-  Log.info("distribution =  gaussian")
+  Log.info("distribution = gaussian")
   Log.info("ntrees = 100")
   Log.info("interaction.depth = 5")
   Log.info("n.minobsinnode = 10")
@@ -50,7 +50,7 @@ test.GBM.ecology <- function(conn) {
                 max_depth = 5,
                  min_rows = 10,
                learn_rate = 0.1,
-               loss="gaussian")
+                     loss = "gaussian")
 
   print(ecology.h2o)
   

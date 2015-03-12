@@ -29,7 +29,7 @@ test.hex_1908 <- function(conn) {
   Log.info("Build GLM model with nfold = 5")
   airlines_xval.glm = h2o.glm(y = myY, x = myX, training_frame = airlines.hex, family = "binomial", n_folds = 5, alpha = 0.5)
   Log.info("Build GBM model with nfold = 3")
-  airlines_xval.gbm = h2o.gbm(y = myY, x = myX, training_frame = airlines.hex, n_folds = 3)
+  airlines_xval.gbm = h2o.gbm(y = myY, x = myX, training_frame = airlines.hex, n_folds = 3, loss = "multinomial")
   
   # Predict on models and save results in R
   Log.info("Scoring on models and saving predictions to R")

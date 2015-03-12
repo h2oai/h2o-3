@@ -48,7 +48,6 @@ public class NewChunk extends Chunk {
   @Override public boolean isSparse() { return sparse(); }
 
   public int _sslen;                   // Next offset into _ss for placing next String
-  public final int sslen() { return _sslen; }
 
   public int _sparseLen;
   int set_sparseLen(int l) { return this._sparseLen = l; }
@@ -1198,8 +1197,8 @@ public class NewChunk extends Chunk {
 
     if( _is[i] == CStrChunk.NA ) return null;
 
-    int len;
-    for( len = 0; _ss[_is[i] + len] != 0; len++ ) ;
+    int len = 0;
+    while( _ss[_is[i] + len] != 0 ) len++;
     return vstr.set(_ss, _is[i], len);
   }
   @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }

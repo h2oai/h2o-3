@@ -47,7 +47,7 @@ myX <- c("Year", "Month", "DayofMonth", "DayOfWeek", "CRSDepTime", "CRSArrTime",
 myY <- "IsDepDelayed"
 
 air.gbm <- h2o.gbm(training_frame = air.train, validation_frame = air.valid,
-                  x = myX, y = myY,
+                  x = myX, y = myY, loss = "multinomial", 
                   ntrees = c(5, 10), max_depth = c(3, 5),
                   variable_importance = TRUE)
 
