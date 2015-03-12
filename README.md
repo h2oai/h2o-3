@@ -315,7 +315,7 @@ In the h2o-hadoop directory each hadoop version has a build directory for the dr
 
 You need to:
 
-1.  Add a new driver directory and assembly directorie (each with a build.gradle file) in h2o-hadoop
+1.  Add a new driver directory and assembly directory (each with a build.gradle file) in h2o-hadoop
 2.  Add these new projects to h2o-dev/settings.gradle
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
