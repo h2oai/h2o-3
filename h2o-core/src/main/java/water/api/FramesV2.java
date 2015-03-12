@@ -8,13 +8,6 @@ import water.fvec.Frame;
 import water.util.IcedHashMap;
 
 class FramesV2 extends FramesBase<Frames, FramesV2> {
-  // Input fields
-  @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  FrameKeyV1 key; // TODO: this should NOT appear in the output
-
-  @API(help="Name of column of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
-  String column; // TODO: this should NOT appear in the output
-
   // Output fields
   @API(help="Map of (string representation of) key to Frame summary.", direction=API.Direction.OUTPUT)
   IcedHashMap<String, FrameSummaryV2> frames;

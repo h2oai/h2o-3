@@ -8,12 +8,11 @@ import water.fvec.Frame;
 import water.util.PojoUtils;
 
 /**
- * Base Schema for individual instances of ModelMetrics objects.
+ * Base Schema for individual instances of ModelMetrics objects.  Note: this class should not be used directly.
  */
-public abstract class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends Schema<I, S> {
+public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends Schema<I, S> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
-  // public KeyV1<Key<Model>> model;
   public ModelKeyV1 model;
 
   @API(help="The checksum for the model used for this scoring run.", direction=API.Direction.INOUT)

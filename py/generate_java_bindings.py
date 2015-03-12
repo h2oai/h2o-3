@@ -47,11 +47,11 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
 
     # Polymorphic fields can either be a scalar, a Schema, or an array of either of these:
     if simple_type == 'Polymorphic':
-        return 'Polymorphic'
+        return 'Object' # TODO: Polymorphic class?
 
     # IcedWrapper fields can either be a scalar or an array of either of scalars:
     if simple_type == 'IcedWrapper':
-        return 'Polymorphic'
+        return 'Object' # TODO: Polymorphic class?
 
     raise Exception('Unexpectedly found a ' + simple_type + ' field: ' + name + ' in pojo: ' + pojo_name)
 
@@ -67,6 +67,7 @@ def generate_pojo(schema, pojo_name):
     pojo.append("")
     pojo.append("public class " + pojo_name + " extends Object {")
 
+    first = True
     for field in schema['fields']:
         help = field['help']
         type = field['type']

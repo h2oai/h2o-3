@@ -2,7 +2,6 @@ package water.util;
 
 import water.H2O;
 import water.Iced;
-import water.exceptions.H2OIllegalArgumentException;
 
 import java.lang.reflect.*;
 
@@ -84,8 +83,10 @@ public class ReflectionUtils {
         which_tv = i;
 
     if (-1 == which_tv) {
-      String dev_msg = "Failed to find type parameter: " + type_param_name + " for class: " + clz;
-      throw new H2OIllegalArgumentException("Internal error: type parameter failure.", dev_msg);
+      // We topped out in the type heirarchy, so just use the type from f.
+      // E.g., this happens when getting the metadata for the parameters field of ModelSchema.
+      // It has no generic parent, so we need to use the base class.
+        return f.getType();
     }
 
     ParameterizedType generic_super = (ParameterizedType)clz.getGenericSuperclass();

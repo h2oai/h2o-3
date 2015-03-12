@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
+import water.H2O;
 import water.api.KeyV1.ModelKeyV1;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
@@ -17,7 +18,7 @@ import water.util.PojoUtils;
  * </ul>
  *
  */
-abstract public class ModelSchema<M extends Model<M, P, O>,
+public class ModelSchema<M extends Model<M, P, O>,
                                   S extends ModelSchema<M, S, P, PS, O, OS>,
                                   P extends Model.Parameters,
                                   PS extends ModelParametersSchema<P, PS>,
@@ -63,10 +64,10 @@ abstract public class ModelSchema<M extends Model<M, P, O>,
   // TODO: I think we can implement the following two here, using reflection on the type parameters.
 
   /** Factory method to create the model-specific parameters schema. */
-  abstract public PS createParametersSchema();
+  public PS createParametersSchema() { throw H2O.fail("createParametersSchema() must be implemented in class: " + this.getClass()); }
 
   /** Factory method to create the model-specific output schema. */
-  abstract public OS createOutputSchema();
+  public OS createOutputSchema() { throw H2O.fail("createOutputSchema() must be implemented in class: " + this.getClass()); }
 
   // Version&Schema-specific filling from the impl
   @Override public S fillFromImpl( M m ) {

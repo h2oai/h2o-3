@@ -23,32 +23,39 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
   @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
   public EventV2 [] events;
 
-  public abstract static class EventV2<I, S extends EventV2<I, S>> extends Schema<Iced, S> {
+  public static class EventV2<I, S extends EventV2<I, S>> extends Schema<Iced, S> {
     @API(help="Time when the event was recorded. Format is hh:mm:ss:ms")
     private final String date;
+
     @API(help="Time in nanos")
     private final long nanos;
-    enum EventType {heartbeat, network_msg, io}
-    @API(help="type of recorded event")
+
+    enum EventType {unknown, heartbeat, network_msg, io}
+    @API(help="type of recorded event", values = {"unknown", "heartbeat", "network_msg", "io"})
     private final EventType type;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss:SSS"); // SDF is not thread-safe :-(
+
+    @SuppressWarnings("unused")
+    public EventV2() { date = null; nanos = -1; type = EventType.unknown; }
     private EventV2(EventType type, long millis, long nanos){
       this.type = type;
-      this.date = sdf.format(new Date(millis));
+      this.date = new SimpleDateFormat("HH:mm:ss:SSS").format(new Date(millis));
       this.nanos = nanos;
     }
-    protected abstract String who();
-    protected abstract String ioType();
-    protected abstract String event();
-    public    abstract String bytes();
+
+    protected String who() { throw H2O.unimpl(); };
+    protected String ioType() { throw H2O.unimpl(); };
+    protected String event() { throw H2O.unimpl(); };
+    public    String bytes() { throw H2O.unimpl(); };
   } // Event
 
   private static class HeartBeatEvent extends EventV2<Iced, HeartBeatEvent> {
     @API(help = "number of sent heartbeats")
     final int sends;
+
     @API(help = "number of received heartbeats")
     final int recvs;
 
+    public HeartBeatEvent() { super(); sends = -1; recvs = -1; }
     private HeartBeatEvent(int sends, int recvs, long lastMs, long lastNs){
       super(EventType.heartbeat,lastMs,lastNs);
       this.sends = sends;
@@ -64,11 +71,11 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
 
   public static class NetworkEvent extends EventV2<Iced, NetworkEvent> {
     @API(help="Boolean flag distinguishing between sends (true) and receives(false)")
-    public final boolean isSend;
+    public final boolean is_send;
     @API(help="network protocol (UDP/TCP)")
     private final String protocol;
-    @API(help="UDP type(exec,ack, ackack,...")
-    private final String msgType; // udp
+    @API(help="UDP type (exec,ack, ackack,...")
+    private final String msg_type; // udp
     @API(help="Sending node")
     public final String from;
     @API(help="Receiving node")
@@ -76,18 +83,19 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
     @API(help="Pretty print of the first few bytes of the msg payload. Contains class name for tasks.")
     private final String data;
 
-    private NetworkEvent(long ms, long ns,boolean isSend,String protocol, String msgType, String from, String to, String data){
+    public NetworkEvent() { super(); is_send = false; protocol = "unknown"; msg_type = "unknown"; from = "unknown"; to = "unknown"; data = "unknown"; }
+    private NetworkEvent(long ms, long ns, boolean is_send, String protocol, String msg_type, String from, String to, String data){
       super(EventType.network_msg,ms,ns);
-      this.isSend = isSend;
+      this.is_send = is_send;
       this.protocol = protocol;
-      this.msgType = msgType;
+      this.msg_type = msg_type;
       this.from = from;
       this.to = to;
       this.data = data;
     }
     @Override protected String who() { return from + " -> " + to;}
     @Override protected String ioType() {return protocol;}
-    @Override protected String event() {return msgType;}
+    @Override protected String event() {return msg_type;}
     @Override public    String bytes() {return data;}
     @Override public    String toString() {
       return "NetworkMsg(" + from + " -> " + to + ", protocol = '" + protocol +  "', data = '" + data + "')";
@@ -96,22 +104,24 @@ public class TimelineV2 extends Schema<Timeline,TimelineV2> {
 
   private static class IOEvent extends EventV2<Iced, IOEvent> {
     @API(help="flavor of the recorded io (ice/hdfs/...)")
-    private final String ioFlavor;
+    private final String io_flavor;
     @API(help="node where this io event happened")
     private final String node;
     @API(help="data info")
     private final String data;
-    private IOEvent(long ms, long ns, String node, String ioFlavor, String data){
+
+    public IOEvent() { this(-1, -1, "unknown", "unknown", "unknown"); }
+    private IOEvent(long ms, long ns, String node, String io_flavor, String data){
       super(EventType.io,ms,ns);
-      this.ioFlavor = ioFlavor;
+      this.io_flavor = io_flavor;
       this.node = node;
       this.data = data;
     }
     @Override protected String who(){return node;}
-    @Override protected String ioType() {return ioFlavor;}
+    @Override protected String ioType() {return io_flavor;}
     @Override protected String event() {return "i_o";}
     @Override public    String bytes() { return data;}
-    @Override public    String toString() { return "I_O('" + ioFlavor + "')"; }
+    @Override public    String toString() { return "I_O('" + io_flavor + "')"; }
   } // IOEvent
 
   @Override public TimelineV2 fillFromImpl(Timeline timeline) {

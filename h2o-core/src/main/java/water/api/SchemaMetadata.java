@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
@@ -150,8 +151,9 @@ public final class SchemaMetadata extends Iced {
     public FieldMetadata(Schema schema, Field f) {
       super();
       try {
-        this.name = f.getName();
         f.setAccessible(true); // handle private and protected fields
+
+        this.name = f.getName();
         Object o = f.get(schema);
         this.value = consValue(o);
 
@@ -197,7 +199,7 @@ public final class SchemaMetadata extends Iced {
         }
       }
       catch (Exception e) {
-        throw H2O.fail("Caught exception accessing field: " + f + " for schema object: " + this + ": " + e.toString());
+        throw H2O.fail("Caught exception accessing field: " + f + " for schema object: " + schema + ": " + e.toString());
       }
     } // FieldMetadata(Schema, Field)
 
@@ -264,11 +266,14 @@ public final class SchemaMetadata extends Iced {
           return "Schema.Meta";
         } else {
           // Special cases: polymorphic metadata fields that can contain scalars, Schemas (any Iced, actually), or arrays of these:
-          if (schema instanceof ModelParameterSchemaV2 && ("default_value".equals(field_name) || "actual_value".equals(field_name))) {
+          if (schema instanceof ModelParameterSchemaV2 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
             return "Polymorphic";
-          } if (schema instanceof FieldMetadataV1 && "value".equals(field_name)) {
+
+          if ((schema instanceof FieldMetadataV1 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
             return "Polymorphic";
-          }
+
+          if ((schema instanceof TwoDimTableV1 && "data".equals(field_name))) // IcedWrapper
+            return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
           return clz.getSimpleName();
