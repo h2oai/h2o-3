@@ -1493,9 +1493,9 @@ setMethod("apply", "H2OFrame", function(X, MARGIN, FUN, ...) {
     if (.is.op(substitute(FUN))) {
       fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
     } else {
-      fun_name <- as.character(FUN)
-      fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(FUN, fun_name)
+      fun_name <- as.character(myfun)
+      fun <- match.fun(myfun)
+      fun.ast <- .fun.to.ast(fun, fun_name)
       a <- invisible(.h2o.post.function(fun.ast))
       if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
     }
