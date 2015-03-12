@@ -683,7 +683,8 @@ assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of
 assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
 # TODO: validate_job_exists(splits['key']['name'])
 
-sys.exit('Terminating test before model-building')   # TODO: Remove after Deep Learning has been updated to remove do_classification
+print('Terminating test before model-building')   # TODO: Remove after Deep Learning has been updated to remove do_classification
+sys.exit(0)
 ####################################################################################################
 # Build and do basic validation checks on models
 ####################################################################################################
