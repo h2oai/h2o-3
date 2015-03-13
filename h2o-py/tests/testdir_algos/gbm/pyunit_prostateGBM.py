@@ -34,7 +34,8 @@ def prostateGBM(ip,port):
                               x=train[1:],
                    validation_x=train[1:],
                    ntrees=50,
-                   learn_rate=0.1)
+                   learn_rate=0.1,
+                   loss="bernoulli")
   my_gbm.show()
 
   my_gbm_metrics = my_gbm.model_performance(train)

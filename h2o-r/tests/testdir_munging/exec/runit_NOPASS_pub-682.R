@@ -12,14 +12,14 @@ source('../../h2o-runit.R')
 test.head_empty <- function(conn) {
 
     a_initial = data.frame(
-    v1=c("a,b","c,d", "e,f"),
-    v2=c("b","d", "f"),
-    v3=c("b","d", "f"),
-    v4=c("a,b","c,d", "e,f"),
-    v5=c("b","d", "f"),
-    v6=c("b","d", "f"),
-    v7=c("b","d", "f"),
-    v8=c("b","d", "f")
+    v1=c("a,b","c,d", "e,f",  "e,f"),
+    v2=c("b","d", "f",  "f"),
+    v3=c("b","d", "f",  "f"),
+    v4=c("a,b","c,d", "e,f",  "e,f"),
+    v5=c("b","d", "f",  "f"),
+    v6=c("b","d", "f",  "f"),
+    v7=c("b","d", "f",  "f"),
+    v8=c("b","d", "f",  "f")
     )
 
     a <- a_initial
@@ -38,7 +38,7 @@ test.head_empty <- function(conn) {
     #   V1 V2 C3 p4
     print(head(a.h2o[1,]))
 
-    # 1 0 0 0 0 
+    # 1 0 0 0 0
     # data frame with 0 columns and 0 rows
     print(head(b.h2o[,1]))
     print(head(b.h2o[1,]))

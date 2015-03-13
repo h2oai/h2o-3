@@ -4,18 +4,6 @@ import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
 public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetricsBinomial, ModelMetricsBinomialV3> {
-    @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
-    public double mse;
-
-    @API(help="The Confusion Matrices for this scoring run.", direction=API.Direction.OUTPUT)
-    public long[][][] confusion_matrices;
-
-    @API(help="The AUC for this scoring run.", direction=API.Direction.OUTPUT)
-    public double AUC;
-
-    @API(help="The Gini score for this run.", direction=API.Direction.OUTPUT)
-    public double Gini;
-
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
     public float[] hr;
 

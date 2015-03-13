@@ -45,6 +45,7 @@ Collate:
          'glm.R'
          'pca.R'
          'deeplearning.R'
+         'randomforest.R'
          'naivebayes.R'
          'word2vec.R'
          'locate.R'

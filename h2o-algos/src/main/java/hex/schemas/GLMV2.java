@@ -19,26 +19,26 @@ import water.fvec.Frame;
 public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParametersV2> {
 
   public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
-    static public String[] own_fields = new String[] {
-      "solver",
-      "max_iter",
-      "beta_eps",
-      "standardize",
-      "family",
-      "link",
-      "tweedie_variance_power",
-      "tweedie_link_power",
-      "alpha",
-      "lambda",
-      "prior1",
-      "lambda_search",
-      "nlambdas",
-      "lambda_min_ratio",
-      "use_all_factor_levels",
-      "n_folds"
+    static public String[] own_fields = new String[]{
+            "solver",
+            "max_iter",
+            "beta_eps",
+            "standardize",
+            "family",
+            "link",
+            "tweedie_variance_power",
+            "tweedie_link_power",
+            "alpha",
+            "lambda",
+            "prior1",
+            "lambda_search",
+            "nlambdas",
+            "lambda_min_ratio",
+            "use_all_factor_levels",
+            "n_folds"
     };
 
-    @API(help="solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"})
+    @API(help = "solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"})
     public Solver solver;
 
     // Input fields
@@ -48,54 +48,49 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @API(help = "Maximum number of iterations. ")
     public int max_iter = 50;
 
-    @API(help="beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
+    @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
     public double beta_eps;
 
-    @API(help = "Family.", values={ "gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}) // took tweedie out since it's not reliable
+    @API(help = "Family.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */})
+    // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
-    @API(help = "", level= Level.secondary, values={ "family_default", "identity", "logit", "log", "inverse", "tweedie" })
+    @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link = Link.family_default;
 
-    @API(help = "Tweedie variance power", level=Level.secondary)
+    @API(help = "Tweedie variance power", level = Level.secondary)
     public double tweedie_variance_power;
 
-    @API(help = "Tweedie link power", level=Level.secondary)
+    @API(help = "Tweedie link power", level = Level.secondary)
     public double tweedie_link_power;
 
-    @API(help = "distribution of regularization between L1 and L2.", level=Level.secondary)
-    public double [] alpha;
+    @API(help = "distribution of regularization between L1 and L2.", level = Level.secondary)
+    public double[] alpha;
 
-    @API(help = "regularization strength", level=Level.secondary)
-    public double [] lambda;
+    @API(help = "regularization strength", level = Level.secondary)
+    public double[] lambda;
 
-    @API(help="prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.",level=Level.expert)
+    @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior1;
 
-    @API(help="use lambda search starting at lambda max, given lambda is then interpreted as lambda min",level=Level.secondary)
+    @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.secondary)
     public boolean lambda_search;
 
-    @API(help="number of lambdas to be used in a search",level=Level.expert)
+    @API(help = "number of lambdas to be used in a search", level = Level.expert)
     public int nlambdas;
 
-    @API(help="min lambda used in lambda search, specified as a ratio of lambda_max",level=Level.expert)
+    @API(help = "min lambda used in lambda search, specified as a ratio of lambda_max", level = Level.expert)
     public double lambda_min_ratio;
 
-    @API(help="By default, first factor level is skipped from the possible set of predictors. Set this flag if you want use all of the levels. Needs sufficient regularization to solve!",level=Level.secondary)
+    @API(help = "By default, first factor level is skipped from the possible set of predictors. Set this flag if you want use all of the levels. Needs sufficient regularization to solve!", level = Level.secondary)
     public boolean use_all_factor_levels;
 
     @API(help = "validation folds")
     public int n_folds;
 
-    @API(help="beta constraints", direction=API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
+    @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV1 beta_constraint;
 
-    @Override
-    public GLMParametersV2 fillFromImpl(GLMParameters impl) {
-      super.fillFromImpl(impl);
-      this.do_classification = family == Family.binomial;
-      return this;
-    }
 
     @Override
     public GLMParameters fillImpl(GLMParameters impl) {
@@ -103,7 +98,5 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
       impl._convert_to_enum = false;
       return impl;
     }
-
-
   }
 }

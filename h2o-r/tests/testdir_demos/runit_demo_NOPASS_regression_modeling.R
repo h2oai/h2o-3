@@ -36,8 +36,8 @@ test <- function(h) {
 	myY <- "medv"
 
 	#Build gbm models by running a grid over interaction depth
-	my_gbm <- h2o.gbm(x=myX,y=myY,loss="gaussian",training_frame=BH_train,ntrees=500,
-	                      max_depth=c(2,3,4),learn_rate=0.01)
+	my_gbm <- h2o.gbm(x=myX,y=myY,loss="gaussian",data=BH_train,n.trees=500,
+	                      interaction.depth=c(2,3,4),shrinkage=0.01)
 	print(my_gbm)
 	#my_gbm is an S4 object and mse for all trees can be accessed for say, the first model, using following syntax
 	my_gbm@model[[1]]@model$err

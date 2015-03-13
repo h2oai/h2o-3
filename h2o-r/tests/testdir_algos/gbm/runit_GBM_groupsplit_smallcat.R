@@ -22,12 +22,12 @@ test.GBM.smallcat <- function(conn) {
   # Train H2O GBM Model:
   # No longer naive since group_split is always on
   Log.info("H2O GBM (Naive Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100)
+  drfmodel.nogrp <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100, loss = "bernoulli")
   print(drfmodel.nogrp)
   drfmodel.nogrp.perf <- h2o.performance(drfmodel.nogrp, alphabet.hex)
   
   Log.info("H2O GBM (Group Split) with parameters:\nntrees = 1, max_depth = 1, nbins = 100\n")
-  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100)
+  drfmodel.grpsplit <- h2o.gbm(x = "X", y = "y", training_frame = alphabet.hex, ntrees = 1, max_depth = 1, nbins = 100, loss = "bernoulli")
   print(drfmodel.grpsplit)
   drfmodel.grpsplit.perf <- h2o.performance(drfmodel.grpsplit, alphabet.hex)
   

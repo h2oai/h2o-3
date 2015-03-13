@@ -47,6 +47,8 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
+          Scope.track(frame.replace(resp, frame.vecs()[resp].toEnum())._key); // Convert response to categorical
+          DKV.put(frame);
           p._valid = null;
           p._score_interval = 2;
           p._train_samples_per_iteration = 0; //sync once per period
@@ -54,7 +56,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._fast_mode = true;
           p._ignore_const_cols = true;
           p._nesterov_accelerated_gradient = true;
-          p._convert_to_enum = true;
           p._diagnostics = true;
           p._expert_mode = true;
           p._score_training_samples = 1000;

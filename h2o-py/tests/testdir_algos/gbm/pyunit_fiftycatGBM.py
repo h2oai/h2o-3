@@ -16,7 +16,7 @@ def fiftycatGBM(ip,port):
   
   # Train H2O GBM Model:
   #Log.info(paste("H2O GBM with parameters:\nntrees = 10, max_depth = 20, nbins = 20\n", sep = ""))
-  model = h2o.gbm(x=train[["x1","x2"]], y=train["y"], ntrees=10, max_depth=5, nbins=20)
+  model = h2o.gbm(x=train[["x1","x2"]], y=train["y"], loss="bernoulli", ntrees=10, max_depth=5, nbins=20)
   model.show()
  
   # Test dataset has all 50 categories cat1 through cat50

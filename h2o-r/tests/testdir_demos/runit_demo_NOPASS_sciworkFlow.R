@@ -71,7 +71,7 @@ print(glm_best_model)
 
 #GBM
 print("Grid search gbm")
-pros.gbm <- h2o.gbm(x = myX, y = myY, distribution = "bernoulli", data = pros.train, n.trees = c(50,100),n.minobsinnode=1, 
+pros.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", data = pros.train, n.trees = c(50,100),n.minobsinnode=1, 
                     interaction.depth = c(2,3), shrinkage = c(0.01,.001), n.bins = c(20), importance = F) 
 pros.rf <- h2o.randomForest(x=myX,y=myY,data=pros.train,classification=T,ntree=c(5,10),depth=10,mtries=c(2,5),importance=F, type = "BigData")
 print(pros.gbm)

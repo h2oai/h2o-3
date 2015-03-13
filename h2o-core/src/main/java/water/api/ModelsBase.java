@@ -4,7 +4,7 @@ import hex.Model;
 import water.api.KeyV1.ModelKeyV1;
 import water.api.ModelsHandler.Models;
 
-abstract class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends Schema<I, ModelsBase<I, S>> {
+class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends Schema<I, ModelsBase<I, S>> {
   // Input fields
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public ModelKeyV1 key;

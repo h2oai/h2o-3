@@ -68,7 +68,7 @@ public class TimelineTest extends TestUtil{
     for( TimelineV2.EventV2 e : t.events) {
       if(e.bytes().contains("TestTask") && e instanceof TimelineV2.NetworkEvent) {
         TimelineV2.NetworkEvent ne = (TimelineV2.NetworkEvent)e;
-        msgs.add((ne.isSend?"SEND":"RECV")  + " " + ne.from + " -> " + ne.to);
+        msgs.add((ne.is_send ?"SEND":"RECV")  + " " + ne.from + " -> " + ne.to);
       }
     }
     // crude test for now, just look we got send and recv message for all test dtasks we made

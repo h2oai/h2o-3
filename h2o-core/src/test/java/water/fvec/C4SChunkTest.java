@@ -6,6 +6,7 @@ import water.TestUtil;
 import java.util.Arrays;
 
 public class C4SChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {

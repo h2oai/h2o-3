@@ -34,12 +34,16 @@ public class DeepLearningMNIST extends TestUtil {
         // populate model parameters
         p._destination_key = Key.make("dl_mnist_model");
         p._train = frame._key;
-        p._response_column = "C785"; //last column is the response
-        p._convert_to_enum = true; //response is categorical (digits 1 to 10)
+        p._response_column = "C785"; // last column is the response
         p._activation = DeepLearningParameters.Activation.Tanh;
         p._hidden = new int[]{2500, 2000, 1500, 1000, 500};
         p._train_samples_per_iteration = 1500 * H2O.getCloudSize(); //process 1500 rows per node per map-reduce step
         p._epochs = 1.8 * (float) p._train_samples_per_iteration / frame.numRows(); //train long enough to do 2 map-reduce passes (with scoring each time)
+
+        // Convert response 'C785' to categorical (digits 1 to 10)
+        int ci = frame.find("C785");
+        Scope.track(frame.replace(ci, frame.vecs()[ci].toEnum())._key);
+        DKV.put(frame);
 
         // speed up training
         p._adaptive_rate = false; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)

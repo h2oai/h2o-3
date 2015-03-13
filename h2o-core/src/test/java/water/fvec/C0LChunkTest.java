@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 public class C0LChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
     final int K = 1<<18;

@@ -7,7 +7,7 @@ function(conn) {
     print(summary(wine.hex))
     x <- 3:14
     wine.grid <- h2o.gbm(y = 2, x = c(1,3:14),
-                   loss='AUTO',
+                   loss='gaussian',
                    training_frame = wine.hex, ntrees=c(5,10,15),
                    max_depth=c(2,3,4),
                    learn_rate=c(0.1,0.2))
