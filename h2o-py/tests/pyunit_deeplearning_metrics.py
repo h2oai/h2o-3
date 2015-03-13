@@ -28,7 +28,8 @@ def deep_learning_metrics_test(ip, port):
   dl = h2o.deeplearning(x           = train[1:],
                         y           = train['CAPSULE'],
                         epochs = 100,
-                        hidden = [10, 10, 10])
+                        hidden = [10, 10, 10],
+                        loss   = 'CrossEntropy')
   print "Binomial Model Metrics: "
   print
   dl.show()

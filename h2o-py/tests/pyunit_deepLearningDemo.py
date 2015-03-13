@@ -37,6 +37,7 @@ def deepLearningDemo(ip, port):
                         y           = train_data['Angaus'],
                         validation_x= test_data [1:] ,
                         validation_y= test_data ['Angaus'],
+                        loss   = 'CrossEntropy',
                         epochs = 1000,
                         hidden = [20, 20, 20])
 

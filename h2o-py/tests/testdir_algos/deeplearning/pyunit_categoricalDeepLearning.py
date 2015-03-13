@@ -9,6 +9,7 @@ def deeplearning_multi(ip,port):
 
     # print(locate("smalldata/logreg/protstate.csv"))
     prostate = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
+    prostate[1] = prostate[1].asfactor() #CAPSULE -> CAPSULE
     prostate[2] = prostate[2].asfactor() #AGE -> Factor
     prostate[3] = prostate[3].asfactor() #RACE -> Factor
     prostate[4] = prostate[4].asfactor() #DPROS -> Factor
@@ -19,9 +20,10 @@ def deeplearning_multi(ip,port):
 
     hh = h2o.deeplearning(x                     = prostate.drop('CAPSULE'),
                           y                     = prostate['CAPSULE'],
+                          loss                  = 'CrossEntropy',
                           hidden                = [10, 10],
                           use_all_factor_levels = False)
     hh.show()
-    
+
 if __name__ == '__main__':
     h2o.run_test(sys.argv, deeplearning_multi)

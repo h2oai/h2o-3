@@ -5,7 +5,7 @@ import h2o
 def loss_behaviorGBM(ip,port):
   # Connect to h2o
   h2o.init(ip,port)
-  
+
   #Log.info("==============================")
   #Log.info("Default Behavior - Gaussian")
   #Log.info("==============================")
@@ -41,7 +41,7 @@ def loss_behaviorGBM(ip,port):
   #Log.info("Bernoulli Behavior")
   #Log.info("==============================")
   # 0/1 response: expect bernoulli
-  eco_model = h2o.gbm(x=eco[2:13], y=eco["Angaus"], loss="bernoulli")
+  eco_model = h2o.gbm(x=eco[2:13], y=eco["Angaus"].asfactor(), loss="bernoulli")
   assert isinstance(eco_model,h2o.model.binomial.H2OBinomialModel)
   # 2 level character response: expect bernoulli
   tree = h2o.import_frame(path=h2o.locate("smalldata/junit/test_tree_minmax.csv"))
@@ -64,7 +64,7 @@ def loss_behaviorGBM(ip,port):
   #Log.info("Multinomial Behavior")
   #Log.info("==============================")
   # more than two integers for response: expect multinomial
-  cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"], loss="multinomial")
+  cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"].asfactor(), loss="multinomial")
   assert isinstance(cars_model,h2o.model.multinomial.H2OMultinomialModel)
   # more than two character levels for response: expect multinomial
   eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"], loss="multinomial")
