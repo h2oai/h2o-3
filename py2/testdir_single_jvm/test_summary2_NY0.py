@@ -108,12 +108,12 @@ class Basic(unittest.TestCase):
                 # maybe eventually will make them return object? But I also pass expected stuff to them
                 # should I pass expected to summary? no, more complex?
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
-                print co.label, co.type, co.missing, co.domain, sum(co.bins)
+                print co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
                 print "\nComparing column %s to expected" % i
-                self.assertEqual(expectedNaCnt[i], co.missing, "Column %s Expected %s. missing: %s is incorrect" % \
-                    (i, expectedNaCnt[i], co.missing))
-                self.assertEqual(rowCount - expectedNaCnt[i], sum(co.bins))
+                self.assertEqual(expectedNaCnt[i], co.missing_count, "Column %s Expected %s. missing: %s is incorrect" % \
+                    (i, expectedNaCnt[i], co.missing_count))
+                self.assertEqual(rowCount - expectedNaCnt[i], sum(co.histogram_bins))
 
             h2p.green_print("\nDone with trial", trial)
             trial += 1
