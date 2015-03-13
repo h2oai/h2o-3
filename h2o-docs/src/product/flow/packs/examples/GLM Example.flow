@@ -23,11 +23,11 @@
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  paths: [\"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/abalone.csv.gz\"]\n  destination_key: \"abalone.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"C1\",\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\",\"C9\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+      "input": "parseFiles\n  paths: [\"https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/abalone.csv.gz\"]\n  destination_key: \"abalone1.hex\"\n  parse_type: \"CSV\"\n  separator: 32\n  number_columns: 9\n  single_quotes: false\n  column_names: [\"C1\",\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\",\"C9\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
     },
     {
       "type": "md",
-      "input": "### Building a Model\n\n0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. \n0. Select `glm` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  \n0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.\n**Note**: You must include at least 2 columns. \n0. In the **Response** field, select the column associated with the Whole Weight variable (`C1`).\n0. Leave the **Do_Classification** checkbox checked. Use classification when the dependent variable (column 1 in this example) is a binomial classifier. \n0. Uncheck the **Standardize** checkbox.\n0. From the drop-down **Family** menu, select `gaussian`. \n0. Enter `0` in the **N_folds** field. If **N_folds** is greater than 0, the model displays the specified number of cross-validation models.  \n0. Use the default **Tweedie Variance Power** value (NaN).  This option is only used for the Tweedie family of GLM models (like zero-inflated Poisson).\n0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.\n0. Enter `.002` in the **Lambda** field. \n0. Click the **Build Model** button."
+      "input": "### Building a Model\n\n0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. \n0. Select `glm` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  \n0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. \n0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.\n**Note**: You must include at least 2 columns. \n0. In the **Response** field, select the column associated with the Whole Weight variable (`C1`).\n0. Uncheck the **Standardize** checkbox.\n0. From the drop-down **Family** menu, select `gaussian`. \n0. Enter `0` in the **N_folds** field. If **N_folds** is greater than 0, the model displays the specified number of cross-validation models.  \n0. Use the default **Tweedie Variance Power** value (NaN).  This option is only used for the Tweedie family of GLM models (like zero-inflated Poisson).\n0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.\n0. Enter `.002` in the **Lambda** field. \n0. Click the **Build Model** button."
     },
     {
       "type": "cs",
@@ -39,7 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"destination_key\":\"glm-2093d534-eb80-4e4b-9640-4ed4b812a037\",\"training_frame\":\"abalone.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"dropNA20Cols\":false,\"response_column\":\"C1\",\"do_classification\":true,\"solver\":\"ADMM\",\"max_iter\":50,\"beta_eps\":0,\"standardize\":false,\"family\":\"gaussian\",\"n_folds\":0,\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior1\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"destination_key\":\"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\",\"training_frame\":\"abalone.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"dropNA20Cols\":false,\"response_column\":\"C1\",\"solver\":\"ADMM\",\"max_iter\":50,\"beta_eps\":0,\"standardize\":false,\"family\":\"gaussian\",\"n_folds\":0,\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior1\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "md",
@@ -47,15 +47,15 @@
     },
     {
       "type": "cs",
-      "input": "getModel \"glm-2093d534-eb80-4e4b-9640-4ed4b812a037\""
+      "input": "getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
     },
     {
       "type": "cs",
-      "input": "inspect getModel \"glm-2093d534-eb80-4e4b-9640-4ed4b812a037\""
+      "input": "inspect getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
     },
     {
       "type": "cs",
-      "input": "grid inspect \"Best Lambda\", getModel \"glm-2093d534-eb80-4e4b-9640-4ed4b812a037\""
+      "input": "grid inspect \"Best Lambda\", getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
     }
   ]
 }
