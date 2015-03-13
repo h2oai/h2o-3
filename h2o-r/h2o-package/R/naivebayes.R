@@ -27,7 +27,8 @@
 #' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
 h2o.naiveBayes <- function(x, y, training_frame, destination_key, 
                            laplace = 0, 
-                           min_sdev = 1e-10) {
+                           threshold = 0.001,
+                           eps = 0) {
   # Required args: x, y, training_frame
   if( missing(x) ) stop("`x` is missing, with no default")
   if( missing(y) ) stop("`y` is missing, with no default")
@@ -40,7 +41,8 @@ h2o.naiveBayes <- function(x, y, training_frame, destination_key,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
   
-  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column")
+  .naivebayes.map <- c("x" = "ignored_columns", "y" = "response_column",
+                       "threshold" = "min_sdev", "eps" = "eps_sdev")
   
   # Gather user input
   parms <- as.list(match.call()[-1L])
@@ -48,6 +50,10 @@ h2o.naiveBayes <- function(x, y, training_frame, destination_key,
   parms$x <- args$x_ignore
   parms$y <- args$y
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.naivebayes.map) ) i <- .naivebayes.map[[i]]; i })
+  
+  # In R package, cutoff and threshold for probability and standard deviation are the same
+  parms[["min_prob"]] <- parms[["threshold"]]
+  parms[["eps_prob"]] <- parms[["eps"]]
   
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'naivebayes', parms, parent.frame())

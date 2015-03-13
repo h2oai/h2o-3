@@ -9,12 +9,12 @@ test.nbayes.golden <- function(H2Oserver) {
   Log.info("Compare with Naive Bayes when x = 1:4, y = 5, laplace = 0")
   fitR <- NaiveBayes(class ~ ., irisR, usekernel = 0, fL = 0)
   fitH2O <- h2o.naiveBayes(x = 1:4, y = 5, training_frame = irisH2O, laplace = 0)
-  checkNaiveBayesModel(fitH2O, fitR, tolerance = 1e-6)
+  checkNaiveBayesModel(fitH2O, fitR, tolerance = 1e-4)
   
   Log.info("Compare Predictions between Models")
   predR <- predict(fitR, irisR)
   predH2O <- predict(fitH2O, irisH2O)
-  checkNaiveBayesPrediction(predH2O, predR, tolerance = 1e-6)
+  checkNaiveBayesPrediction(predH2O, predR, tolerance = 1e-4)
   
   testEnd()
 }
