@@ -46,6 +46,6 @@ iris.dl  <- h2o.deeplearning(myX, myY, training_frame = iris.hex, epochs=1, hidd
 print(iris.dl)
 
 # DRF Model
-iris.drf <- h2o.randomforest(myX, myY, training_frame = iris.hex)
+# iris.drf <- h2o.randomforest(myX, myY, training_frame = iris.hex)
 
 PASS_BANNER()
