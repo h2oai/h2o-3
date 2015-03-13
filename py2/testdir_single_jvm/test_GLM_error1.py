@@ -62,20 +62,19 @@ class Basic(unittest.TestCase):
 
         for trial in range(5):
             parameters = {
-                'response_column': 'C54', 
-                'standardize': 0, 
-                'family': 'log', 
+                'response_column': 'C55', 
+                'max_iter': 3, 
                 'solver': 'L_BFGS', 
-                'beta_eps': None, 
+                'ignored_columns': '[1]', 
+                'prior1': 1, 
                 'tweedie_variance_power': 0, 
-                'lambda_min_ratio': 0.9, 
-                'ignored_cols': 'C1', 
-                'link': None, 
-                'balance_classes': None, 
+                'beta_eps': 0.0001, 
                 'n_folds': 0, 
-                'alpha': '[0]', 
-                'lambda_search': None, 
-                'lambda': '[0]'
+                'alpha': '[0.1]', 
+                'max_after_balance_size': 1000.0, 
+                'class_sampling_factors': '[0.2]', 
+                'use_all_factor_levels': None, 
+                'lambda': '[0]',
             }
 
             bHack = hex_key

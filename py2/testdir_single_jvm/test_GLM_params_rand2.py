@@ -10,7 +10,7 @@ def define_params():
     paramDict = {
         # FIX! when is this needed? redundant for binomial?
         'balance_classes': [True, False, None],
-        'class_sampling_factors': [0.1, 0.2, None],
+        'class_sampling_factors': [0.1, 0.2, "0.1, 0.2", None],
         'max_after_balance_size': [100.0, 1000.0, None],
         # 'solver': ['ADMM', 'L_BFGS', None],
         'solver': ['L_BFGS', None],
@@ -123,7 +123,7 @@ class Basic(unittest.TestCase):
             print "hex_key summary:", co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
             # fix stupid params
-            fixList = ['alpha', 'lambda', 'ignored_columns']
+            fixList = ['alpha', 'lambda', 'ignored_columns', 'class_sampling_factors']
             for f in fixList:
                 if f in parameters:
                     parameters[f] = "[%s]" % parameters[f]
