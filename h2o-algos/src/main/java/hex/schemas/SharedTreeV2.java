@@ -11,13 +11,13 @@ public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<
       "ntrees", "max_depth", "min_rows", "nbins", "seed"
     };
 
-    @API(help="Number of trees.  Grid Search, comma sep values:50,100,150,200")
+    @API(help="Number of trees.")
     public int ntrees;
 
-    @API(help="Maximum tree depth.  Grid Search, comma sep values:5,7")
+    @API(help="Maximum tree depth.")
     public int max_depth;
 
-    @API(help="Fewest allowed observations in a leaf (in R called 'nodesize'). Grid Search, comma sep values")
+    @API(help="Fewest allowed observations in a leaf (in R called 'nodesize').")
     public int min_rows;
 
     @API(help="Build a histogram of this many bins, then split at the best point")
@@ -29,7 +29,7 @@ public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<
     @API(help="More in-depth tree stats", direction=API.Direction.OUTPUT)
     public TreeStatsV3 treeStats;
 
-    @API(help="r2 metric on validation set: 1-(MSE(model) / MSE(mean))", direction=API.Direction.OUTPUT)
+    @API(help="r2 metric on validation set: 1-(MSE(model)/variance(response))", direction=API.Direction.OUTPUT)
     public double r2;
 
     /** Train and validation errors per-tree (scored).  Zero index is the no-tree
