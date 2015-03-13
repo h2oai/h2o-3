@@ -567,17 +567,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (expensive) {
+      if (expensive) { //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
         if (_loss == null)
-          dl.error("_loss", "Loss function must be specified. For classification, try CrossEntropy (or MeanSquareClassification). For regression, use MeanSquare.");
+          dl.error("_loss", "Loss function must be specified. For classification, use CrossEntropy or MeanSquareClassification. For regression, use MeanSquare.");
         else if (_autoencoder && _loss != Loss.MeanSquare)
           dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
         else if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
+          dl.error("_loss", "Cannot use CrossEntropy loss function for regression (numerical response).");
         else if (!classification && _loss == Loss.MeanSquareClassification)
-          dl.error("_loss", "Cannot use MeanSquareClassification loss function for regression.");
+          dl.error("_loss", "Cannot use MeanSquareClassification loss function for regression (numerical response).");
         else if (classification && _loss == Loss.MeanSquare)
-          dl.error("_loss", "Cannot use MeanSquare loss function for classification.");
+          dl.error("_loss", "Cannot use MeanSquare loss function for classification (categorical response).");
       }
 
       if (_score_training_samples < 0) {
@@ -607,11 +607,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!_sparse && _col_major) {
         if (!_quiet_mode) dl.error("_col_major", "Cannot use column major storage for non-sparse data handling.");
       }
-      if (!classification && _balance_classes) {
-        dl.error("_balance_classes", "balance_classes requires classification to be enabled.");
-      }
-      if (_class_sampling_factors != null && !_balance_classes) {
-        dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
+      if (expensive) {
+        if (!classification && _balance_classes) {
+          dl.error("_balance_classes", "balance_classes requires classification to be enabled.");
+        }
+        if (_class_sampling_factors != null && !_balance_classes) {
+          dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
+        }
       }
       if (_reproducible) {
         if (expensive) {
