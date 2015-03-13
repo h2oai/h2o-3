@@ -12,26 +12,27 @@ source('../../h2o-runit.R')
 test.quoted_comma <- function(conn) {
 
     a_initial <- data.frame(cbind(
-    v1 = c("a,b","c,d", "e,f"),
-    v2=c("b","d", "f"),
-    v3=c("b","d", "f"),
-    v4=c("a,b","c,d", "e,f"),
-    v5=c("b","d", "f"),
-    v6=c("b","d", "f"),
-    v7=c("b","d", "f"),
-    v8=c("b","d", "f")
+    v1 = c("a,b","c,d", "e,f", "e,f"),
+    v2=c("b","d", "f", "f"),
+    v3=c("b","d", "f", "f"),
+    v4=c("a,b","c,d", "e,f", "e,f"),
+    v5=c("b","d", "f", "f"),
+    v6=c("b","d", "f", "f"),
+    v7=c("b","d", "f", "f"),
+    v8=c("b","d", "f", "f")
     ))
 
     a <- a_initial
     b <- a
     expect_that(all(b == a), equals(T))
+    print("b = a")
 
 
     a.h2o <- as.h2o(conn, a_initial, key="r.hex")
     b.h2o <- a.h2o
 
     b.h2o.R <- as.data.frame(b.h2o)
-    
+
     print("b")
     print(b)
     print("b.h2o")

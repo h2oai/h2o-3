@@ -13,15 +13,13 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
+import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingSetInt;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.PrettyPrint;
-import water.util.Log;
+import water.util.*;
 
 public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
@@ -179,39 +177,52 @@ public final class ParseDataset extends Job<Frame> {
       //TODO replace with H2OParseException
       throw new RuntimeException(mfpt._errors[0]);
     }*/
-    AppendableVec [] avs = mfpt.vecs();
+    final AppendableVec [] avs = mfpt.vecs();
 
     Frame fr = null;
     // Calculate enum domain
     // Filter down to columns with some enums
     int n = 0;
-    int [] ecols = new int[avs.length];
-    for( int i = 0; i < ecols.length; ++i )
+    int[] ecols2 = new int[avs.length];
+    for( int i = 0; i < ecols2.length; ++i )
       if( avs[i].shouldBeEnum()  )
-        ecols[n++] = i;
-    ecols = Arrays.copyOf(ecols, n);
+        ecols2[n++] = i;
+    final int[] ecols = Arrays.copyOf(ecols2, n);
     // If we have any, go gather unified enum domains
     if( n > 0 ) {
       EnumFetchTask eft = new EnumFetchTask(mfpt._eKey, ecols).doAllNodes();
-      Categorical[] enums = eft._gEnums;
-      ValueString[][] ds = new ValueString[ecols.length][];
+      final Categorical[] enums = eft._gEnums;
+      final ValueString[][] ds = new ValueString[ecols.length][];
       EnumMapping [] emaps = new EnumMapping[H2O.CLOUD.size()];
-      int k = 0;
-      for( int ei : ecols)
-        avs[ei].setDomain(ValueString.toString(ds[k++] = enums[ei].computeColumnDomain()));
+      H2OCountedCompleter[] domtasks = new H2OCountedCompleter[ecols.length];
+      // In parallel, compute enum column domains.  Includes expensive sort.
+      for( int k = 0; k<ecols.length; k++ ) {
+        final int fk = k;
+        H2O.submitTask(domtasks[k] = new H2OCountedCompleter() {
+            @Override public void compute2() {
+              int ei = ecols[fk];
+              avs[ei].setDomain(ValueString.toString(ds[fk] = enums[ei].computeColumnDomain()));
+              tryComplete();
+            }
+          });
+      }
+      for( int k = 0; k<ecols.length; k++ ) domtasks[k].join();
+
       for(int nodeId = 0; nodeId < H2O.CLOUD.size(); ++nodeId) {
         if(eft._lEnums[nodeId] == null)continue;
         int[][] emap = new int[ecols.length][];
         for (int i = 0; i < ecols.length; ++i) {
           final Categorical e = eft._lEnums[nodeId][ecols[i]];
           if(e == null) continue;
-          emap[i] = MemoryManager.malloc4(e.maxId() + 1);
+          int maxid = e.maxId();
+          emap[i] = MemoryManager.malloc4(maxid + 1);
           Arrays.fill(emap[i], -1);
           for (int j = 0; j < ds[i].length; ++j) {
             ValueString vs = ds[i][j];
             if (e.containsKey(vs)) {
-              assert e.getTokenId(vs) <= e.maxId() : "maxIdx = " + e.maxId() + ", got " + e.getTokenId(vs);
-              emap[i][e.getTokenId(vs)] = j;
+              int tokid = e.getTokenId(vs);
+              assert tokid <= maxid : "maxIdx = " + maxid + ", got " + tokid;
+              emap[i][tokid] = j;
             }
           }
         }

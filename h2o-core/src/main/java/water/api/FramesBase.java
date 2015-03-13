@@ -4,7 +4,7 @@ import water.api.FramesHandler.Frames;
 import water.api.KeyV1.FrameKeyV1;
 import water.fvec.Frame;
 
-abstract class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I, FramesBase<I, S>> {
+class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I, FramesBase<I, S>> {
   // Input fields
   @API(help="Key of Frame of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public FrameKeyV1 key; // TODO: change to Frame

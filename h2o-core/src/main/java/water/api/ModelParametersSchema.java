@@ -16,8 +16,10 @@ import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
+ * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
+ * for it for the metadata API.
  */
-abstract public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>> extends Schema<P, S> {
+public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>> extends Schema<P, S> {
   ////////////////////////////////////////
   // NOTE:
   // Parameters must be ordered for the UI

@@ -13,7 +13,7 @@ def cupMediumGBM(ip,port):
   train_cols = train.names()
   for c in ['', "TARGET_D", "TARGET_B", "CONTROLN"]:
     train_cols.remove(c)
-  model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], loss = "AUTO", ntrees = 5)
+  model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], loss = "bernoulli", ntrees = 5)
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, cupMediumGBM)
