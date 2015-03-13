@@ -7,19 +7,22 @@ def loss_behaviorGBM(ip,port):
   h2o.init(ip,port)
   
   #Log.info("==============================")
-  #Log.info("AUTO Behavior")
+  #Log.info("Default Behavior - Gaussian")
   #Log.info("==============================")
   eco = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
-  # 0/1 response: expect bernoulli
+  # 0/1 response: expect gaussian
   eco_model = h2o.gbm(x=eco[2:13], y=eco["Angaus"])
-  assert isinstance(eco_model,h2o.model.binomial.H2OBinomialModel)
+  assert isinstance(eco_model,h2o.model.regression.H2ORegressionModel)
   # more than 2 integers for response: expect gaussian
   cars = h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
   cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"])
   assert isinstance(cars_model,h2o.model.regression.H2ORegressionModel)
-  # character response: expect multinomial
-  eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"])
-  assert isinstance(eco_model,h2o.model.multinomial.H2OMultinomialModel)
+  # character response: expect error
+  try:
+    eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"])
+    assert False, "expected an error"
+  except EnvironmentError:
+    assert True
 
   #Log.info("==============================")
   #Log.info("Gaussian Behavior")
