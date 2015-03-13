@@ -9,7 +9,6 @@ from h2o_xl import Key, Assign
 def define_params():
     paramDict = {
         # FIX! when is this needed? redundant for binomial?
-        'do_classification': [True, False, None],
         'balance_classes': [True, False, None],
         'class_sampling_factors': [0.1, 0.2, None],
         'max_after_balance_size': [100.0, 1000.0, None],

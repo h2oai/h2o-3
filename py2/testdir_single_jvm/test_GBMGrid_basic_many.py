@@ -41,9 +41,7 @@ class Basic(unittest.TestCase):
         parameters = {
             'validation_frame': train_key,
             'ignored_columns': "['ID']", # this has to have []
-            'score_each_iteration': True,
             'response_column': 'CAPSULE',
-            'do_classification': 1 if DO_CLASSIFICATION else 0,
             # 'balance_classes':
             # 'max_after_balance_size':
             # ??

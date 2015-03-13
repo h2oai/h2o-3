@@ -58,7 +58,6 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
         # FIX! for now just use a column that's binomial
         'response_column': 'C11',
         # FIX! when is this needed? redundant for binomial?
-        'do_classification': True,
         'balance_classes': False,
         'max_after_balance_size': None,
         'standardize': False,

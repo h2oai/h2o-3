@@ -74,7 +74,6 @@ class Basic(unittest.TestCase):
                 'balance_classes': None, 
                 'n_folds': 0, 
                 'alpha': '[0]', 
-                'do_classification': True, 
                 'lambda_search': None, 
                 'lambda': '[0]'
             }

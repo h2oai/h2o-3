@@ -46,10 +46,8 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key,
                 'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
-                'score_each_iteration': True,
                 'response_column': response,
                 # FIX! when is this needed? redundant for binomial?
-                'do_classification': True,
                 'balance_classes': False,
                 'max_after_balance_size': None,
                 'standardize': False,

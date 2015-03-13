@@ -12,7 +12,7 @@ class Basic(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        h2o.init(1, java_heap_GB=12)
+        h2o.init(3, java_heap_GB=4)
 
     @classmethod
     def tearDownClass(cls):
