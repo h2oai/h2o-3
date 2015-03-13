@@ -43,3 +43,12 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Random stuff
+docs/docs/.doctrees/h2o.h2o.doctree
+docs/docs/.doctrees/other.doctree
+docs/docs/_sources/h2o.h2o.txt
+docs/docs/_sources/other.txt
+docs/docs/h2o.h2o.html
+docs/docs/other.html
+
