@@ -297,6 +297,20 @@ For users of Eclipse, generate project files with:
     ./gradlew eclipse
 
 
+Launching H2O from a build
+--------------------------
+
+After creating the build, launch your build of H2O using either 
+
+    `cd build`
+    `java -jar h2o.jar`
+    
+  -or-
+  
+    `java -jar build/h2o.jar`
+
+
+
 H2O on Hadoop
 -------------
 
