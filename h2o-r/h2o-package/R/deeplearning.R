@@ -5,7 +5,7 @@
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param data An \linkS4class{H2OFrame} object containing the variables in the model.
+#' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
 #' @param key (Optional) The unique \code{character} hex key assigned to the resulting model. If none is given, a key will automatically be generated.
 #' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best model found during traning. Defaults to \code{TRUE}.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -28,12 +28,12 @@
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
 #' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (reccomended)
 #' @param input_dropout_ratios Input layer dropout ration (can improve generalization) specify one value per hidden layer, defaults to 0.5
-#' @param l1 L1 regularization (can add stability and imporve generalization, cause many weights to become 0)
+#' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to become 0)
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small)
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Unifrom: -value ... value, Normal: stddev
-#' @param loss Loss function. Can be "Automatic", "MeanSquare", or "CrossEntropy"
+#' @param loss Loss function. Can be "MeanSquare" for regression and "CrossEntropy" or "MeanSquareClassification" for classification.
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
@@ -69,7 +69,7 @@
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' indep <- names(iris.hex)[1:4]
 #' dep <- names(iris.hex)[5]
-#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
+#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5, loss="CrossEntropy")
 
 h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
@@ -127,7 +127,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              average_activation,
                              sparsity_beta,
                              max_categorical_features,
-                             reproducible
+                             reproducible=FALSE
 )
 {
   dots <- list(...)
@@ -238,8 +238,18 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
-  res <- res$model_metrics[[1L]]$predictions$key$name
+  key <- res$model_metrics[[1L]]$predictions$key$name
   
-  h2o.getFrame(res)
+  h2o.getFrame(key)
+}
+
+h2o.deepfeatures <- function(object, data, layer) {
+  index = layer - 1
+  
+  url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
+  res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
+  key <- res$destination_key$name
+  
+  h2o.getFrame(key)
 }
 

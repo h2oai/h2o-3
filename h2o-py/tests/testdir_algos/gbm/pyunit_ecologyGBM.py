@@ -54,6 +54,8 @@ def ecologyGBM(ip,port):
     trainDataFeatures = trainData[["SegSumT","SegTSeas","SegLowFlow","DSDist","DSMaxSlope","USAvgT",
                                    "USRainDays","USSlope","USNative","DSDam","Method","LocSed"]]
 
+
+    ecology_train["Angaus"] = ecology_train["Angaus"].asfactor()
     # Train H2O GBM Model:
     gbm_h2o = h2o.gbm(x=ecology_train[2:], y=ecology_train["Angaus"], ntrees=ntrees, learn_rate=learn_rate, max_depth=max_depth, min_rows=min_rows, loss="bernoulli")
 

@@ -1,4 +1,4 @@
-import sys, os
+import os, sys
 sys.path.insert(1, "../../../")
 import h2o
 
@@ -9,10 +9,13 @@ def deeplearning_multi(ip, port):
 
     prostate = h2o.import_frame(h2o.locate("smalldata/logreg/prostate.csv"))
 
+    prostate[4] = prostate[4].asfactor()
+
     hh = h2o.deeplearning(x             = prostate[0:2],
                           y             = prostate[4],
                           validation_x  = prostate[0:2],
-                          validation_y  = prostate[4])
+                          validation_y  = prostate[4],
+                          loss          = 'CrossEntropy')
     hh.show()
 
 if __name__ == '__main__':

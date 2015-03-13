@@ -11,7 +11,7 @@ check.deeplearning.gridlayers <- function(conn) {
   }
   hidden_layers <- list(c(20,20), c(50,50,50))
   Log.info(paste("Deep Learning grid search over hidden layers:", pretty.list(hidden_layers)))
-  hh <- h2o.deeplearning(x=1:4, y=5, training_frame=iris.hex, hidden = hidden_layers)
+  hh <- h2o.deeplearning(x=1:4, y=5, training_frame=iris.hex, hidden = hidden_layers, loss = "CrossEntropy")
   expect_equal(length(hh@model), 2)
   
   hh_params <- lapply(hh@model, function(x) { x@model$params$hidden })

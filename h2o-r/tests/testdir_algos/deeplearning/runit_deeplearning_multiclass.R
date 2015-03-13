@@ -5,7 +5,8 @@ check.deeplearning_multi <- function(conn) {
   Log.info("Test checks if Deep Learning works fine with a multiclass training and test dataset")
   
   prostate <- h2o.uploadFile(conn, locate("smalldata/logreg/prostate.csv"))
-  hh <- h2o.deeplearning(x=c(1,2,3),y=5,training_frame=prostate,validation=prostate)
+  prostate[,5] <- as.factor(prostate[,5])
+  hh <- h2o.deeplearning(x=c(1,2,3),y=5,training_frame=prostate,validation_frame=prostate,loss="CrossEntropy")
   print(hh)
 
   testEnd()
