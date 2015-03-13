@@ -39,7 +39,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"destination_key\":\"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\",\"training_frame\":\"abalone.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"dropNA20Cols\":false,\"response_column\":\"C1\",\"solver\":\"ADMM\",\"max_iter\":50,\"beta_eps\":0,\"standardize\":false,\"family\":\"gaussian\",\"n_folds\":0,\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior1\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"destination_key\":\"glm-b7bd9aa1-edaf-4dde-ae06-1706de022b31\",\"training_frame\":\"abalone1.hex\",\"ignored_columns\":[\"C2\",\"C3\",\"C4\",\"C5\",\"C6\",\"C7\",\"C8\"],\"dropNA20Cols\":false,\"response_column\":\"C1\",\"solver\":\"ADMM\",\"max_iter\":50,\"beta_eps\":0,\"standardize\":true,\"family\":\"gaussian\",\"n_folds\":0,\"balance_classes\":false,\"link\":\"family_default\",\"tweedie_variance_power\":\"NaN\",\"tweedie_link_power\":\"NaN\",\"alpha\":[0.3],\"lambda\":[0.002],\"lambda_search\":false,\"use_all_factor_levels\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior1\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "md",
@@ -47,15 +47,15 @@
     },
     {
       "type": "cs",
-      "input": "getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
+      "input": "getModel \"glm-b7bd9aa1-edaf-4dde-ae06-1706de022b31\""
     },
     {
       "type": "cs",
-      "input": "inspect getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
+      "input": "inspect getModel \"glm-b7bd9aa1-edaf-4dde-ae06-1706de022b31\""
     },
     {
       "type": "cs",
-      "input": "grid inspect \"Best Lambda\", getModel \"glm-39da238e-e27f-4f9e-a709-a9ca0cca9aff\""
+      "input": "grid inspect \"Best Lambda\", getModel \"glm-b7bd9aa1-edaf-4dde-ae06-1706de022b31\""
     }
   ]
 }
