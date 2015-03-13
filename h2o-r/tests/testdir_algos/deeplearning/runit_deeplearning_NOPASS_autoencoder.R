@@ -35,6 +35,7 @@ check.deeplearning_autoencoder <- function(conn) {
                                   y=42, #ignored (pick any non-constant predictor)
                                   training_frame=train_unsupervised,
                                   activation="Tanh",
+                                  loss="MeanSquare",
                                   autoencoder=T,
                                   hidden=c(nfeatures),
                                   epochs=1,
