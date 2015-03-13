@@ -60,6 +60,10 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  different frames. */
   public Frame trainingFrame() { throw H2O.unimpl(); }
 
+  /** @return Factory method to return the grid for a particular modeling class
+   *  and frame.  */
+  public static Grid get( Class clz, Frame fr ) { throw H2O.unimpl(); }
+
   /** @param A set of hyper parameter values
    *  @return A model run with these parameters, or null if the model does not exist. */
   public Model model( double[] hypers ) { throw H2O.unimpl(); }
@@ -86,7 +90,9 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  built as needed - expected to be an expensive operation.  If the models
    *  in question are "in progress", a 2nd build will NOT be kicked off.  This
    *  is a non-blocking call. */
-  public Future<Grid> startGridSearch( double[][] hyperSearch ) { throw H2O.unimpl(); }
+  public H2OFuture<Grid> startGridSearch( double[][] hyperSearch ) { throw H2O.unimpl(); }
 
+  // Cleanup models and grid
+  @Override protected Futures remove_impl( Futures fs ) { throw H2O.unimpl(); }
 
 }

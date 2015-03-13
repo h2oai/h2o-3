@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import hex.*;
 import water.H2O;
+import water.fvec.Frame;
 
 /** A Grid of Models
  *  Used to explore Model hyper-parameter space.  Lazily filled in, this object
@@ -21,7 +22,7 @@ import water.H2O;
  */
 public class KMeansGrid extends Grid<KMeansGrid> {
 
-  private static final String[] HYPER_NAMES = new String[] {"k", "max_iterations", "standardize" };
+  private static final String[] HYPER_NAMES = new String[] {"k", "standardize", "init", "seed" };
 
   /** @return Number of hyperparameters this Grid will Grid-over */
   @Override protected int nHyperParms() { return HYPER_NAMES.length; }
@@ -35,8 +36,9 @@ public class KMeansGrid extends Grid<KMeansGrid> {
   @Override protected String hyperToString(int h, double val) {
     switch( h ) {
     case 0: return Double.toString(val);
-    case 1: return Integer.toString((int)val);
-    case 2: return val==0 ? "false" : "true";
+    case 1: return val==0 ? "false" : "true";
+    case 2: return KMeans.Initialization.values()[(int)val].toString();
+    case 3: return Long.toString((long)val);
     default: throw H2O.fail();
     }
   }
@@ -48,8 +50,9 @@ public class KMeansGrid extends Grid<KMeansGrid> {
     KMeansModel.KMeansParameters parms = ((KMeansModel)m)._parms;
     switch( h ) {
     case 0: return parms._k;
-    case 1: return parms._max_iterations;
-    case 2: return parms._standardize ? 1 : 0;
+    case 1: return parms._standardize ? 1 : 0;
+    case 2: return parms._init.ordinal();
+    case 3: return parms._seed;
     default: throw H2O.fail();
     }
   }
@@ -67,6 +70,8 @@ public class KMeansGrid extends Grid<KMeansGrid> {
   @Override protected double suggestedNextHyperValue( int h, Model m, double[] hyperLimits ) {
     throw H2O.unimpl();
   }
+
+  public static KMeansGrid get( Frame fr ) { return (KMeansGrid)Grid.get( KMeansModel.class, fr ); }
 
   @Override protected long checksum_impl() { throw H2O.unimpl(); }
 }
