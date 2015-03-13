@@ -45,6 +45,10 @@ class Basic(unittest.TestCase):
         numColsUsed = numCols - 1
         for trial in range(1):
             parameters = {
+                # required now
+                # loss enum True None [u'MeanSquare', u'CrossEntropy', u'MeanSquareClassification']
+                'loss': 'MeanSquareClassification',
+
                 'validation_frame': parse_key, # KeyIndexed None
                 'ignored_columns': '[STR]', # string[] None
                 'response_column': 'FNDX', # string None
