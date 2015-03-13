@@ -507,7 +507,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if (_autoencoder) {
         dl.hide("_use_all_factor_levels", "use_all_factor_levels is unsupported in combination with autoencoder.");
-        dl.hide("_convert_to_enum", "convert_to_enum is unsupported in combination with autoencoder.");
       }
       if (!_use_all_factor_levels && _autoencoder ) {
         if (expensive) {
