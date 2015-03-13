@@ -55,7 +55,6 @@ public class DeepLearningProstateTest extends TestUtil {
           }
           for (DeepLearningParameters.Loss loss : new DeepLearningParameters.Loss[]{
                   DeepLearningParameters.Loss.CrossEntropy,
-                  DeepLearningParameters.Loss.MeanSquareClassification,
                   DeepLearningParameters.Loss.MeanSquare
           }) {
             if ( !classification ^ loss == DeepLearningParameters.Loss.MeanSquare ) continue;
