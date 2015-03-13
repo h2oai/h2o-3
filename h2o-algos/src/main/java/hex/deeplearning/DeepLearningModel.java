@@ -441,7 +441,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
-      boolean classification = expensive ? dl.isClassifier() : (_loss == Loss.CrossEntropy || _loss == Loss.MeanSquareClassification);
+      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : (_loss == Loss.CrossEntropy || _loss == Loss.MeanSquareClassification);
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
       for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
@@ -567,17 +567,22 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (expensive) { //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
-        if (_loss == null)
-          dl.error("_loss", "Loss function must be specified. For classification, use CrossEntropy or MeanSquareClassification. For regression, use MeanSquare.");
-        else if (_autoencoder && _loss != Loss.MeanSquare)
+
+      if (_loss == null) {
+        if (expensive || dl._nclass != 0) {
+          dl.error("_loss", "Loss function must be specified. For classification (categorical response), use CrossEntropy or MeanSquareClassification. For regression (numerical response), use MeanSquare. For auto-encoders, use MeanSquare.");
+        }
+        //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
+      } else {
+        if (_autoencoder && _loss != Loss.MeanSquare)
           dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-        else if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "Cannot use CrossEntropy loss function for regression (numerical response).");
+
+        if (!classification && _loss == Loss.CrossEntropy)
+          dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
         else if (!classification && _loss == Loss.MeanSquareClassification)
-          dl.error("_loss", "Cannot use MeanSquareClassification loss function for regression (numerical response).");
+          dl.error("_loss", "For MeanSquareClassification loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
         else if (classification && _loss == Loss.MeanSquare)
-          dl.error("_loss", "Cannot use MeanSquare loss function for classification (categorical response).");
+          dl.error("_loss", "For MeanSquare loss, the response must be numerical. Either select CrossEntropy or MeanSquareClassification loss for classification, or convert the response to numerical (if applicable).");
       }
 
       if (_score_training_samples < 0) {
