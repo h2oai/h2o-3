@@ -95,7 +95,6 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @Override
     public GLMParameters fillImpl(GLMParameters impl) {
       super.fillImpl(impl);
-      impl._convert_to_enum = false;
       return impl;
     }
   }
