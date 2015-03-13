@@ -86,7 +86,6 @@ class Basic(unittest.TestCase):
                     # FIX! for now just use a column that's binomial
                     'response_column': response, # can't take index now?
                     # FIX! when is this needed? redundant for binomial?
-                    'do_classification': True,
                     'balance_classes': False,
                     'max_after_balance_size': None,
                     'standardize': False,
