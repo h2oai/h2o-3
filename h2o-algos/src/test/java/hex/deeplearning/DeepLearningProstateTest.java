@@ -321,8 +321,7 @@ public class DeepLearningProstateTest extends TestUtil {
   }
 
   public static class Mid extends DeepLearningProstateTest {
-    @Test //@Ignore
-    public void run() throws Exception { runFraction(0.01f); } //for nightly tests
+    @Test @Ignore public void run() throws Exception { runFraction(0.01f); } //for nightly tests
   }
 
   public static class Short extends DeepLearningProstateTest {
