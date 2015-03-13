@@ -24,7 +24,7 @@ running_inside_hexdata = url.exists("http://mr-0xe3-precise1:50070", timeout=5)
 
 if (running_inside_hexdata) {
     # hdp2.2 cluster
-    hdfs_name_node = "mr-0xe3-precise1"    
+    hdfs_name_node = "mr-0xe3-precise1"
     hdfs_airlines_file = "/datasets/airlines_all.csv"
 } else {
     stop("Not running on 0xdata internal network.  No access to HDFS.")
@@ -68,8 +68,8 @@ ArrY <- "IsDepDelayed"
 # Chose functions glm, gbm, deeplearning
 
 # obj name | function call | x = predictors | y = response | training_frame = airlines
-# 
+#
 air.glm <- h2o.glm(x = myX, y = DepY, training_frame = airlines.hex, family = "binomial")
-air.dl  <- h2o.deeplearning(x = myX, y = DepY, training_frame = airlines.hex, epochs=1, hidden=c(50,50))
+air.dl  <- h2o.deeplearning(x = myX, y = DepY, training_frame = airlines.hex, epochs=1, hidden=c(50,50), loss = "CrossEntropy")
 air.gbm <- h2o.gbm(x = myX, y = DepY, training_frame = airlines.hex, loss = "bernoulli", ntrees=5)
 PASS_BANNER()
