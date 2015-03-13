@@ -542,7 +542,7 @@ public class DataInfo extends Keyed {
       throw H2O.unimpl();
     Row[] rows = new Row[chunks[0]._len];
     double etaOffset = 0;
-    if(_normMul != null)
+    if(_normMul != null && beta != null)
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
     for (int i = 0; i < rows.length; ++i)
@@ -569,6 +569,7 @@ public class DataInfo extends Keyed {
     for (int cid = 0; cid < _bins; ++cid) {
       Chunk c = chunks[cid + _cats];
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        if(!c.isSparse() && c.atd(r) == 0)continue;
         Row row = rows[r];
         if (c.isNA(r))
           row.bad = _skipMissing;
@@ -581,6 +582,7 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+        if(!c.isSparse() && c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
         Row row = rows[r];
@@ -592,15 +594,25 @@ public class DataInfo extends Keyed {
         row.addNum(cid + numStart + _bins, d);
       }
     }
+    double rsum = 0;
+    int nobs = 0;
     // response(s)
-    for (int r = 0; r < chunks[0]._len; ++r) {
-      Row row = rows[r];
-      for (int i = 1; i <= _responses; ++i) {
-        row.response[row.response.length - i] = chunks[chunks.length - 1].atd(r);
-        if (_normRespMul != null)
+    for (int i = 1; i <= _responses; ++i) {
+      Chunk rChunk = chunks[chunks.length-i];
+      for (int r = 0; r < chunks[0]._len; ++r) {
+        nobs++;
+        Row row = rows[r];
+        double d = rChunk.atd(r);
+        rsum += d;
+        row.response[row.response.length - i] = rChunk.atd(r);
+        if (_normRespMul != null) {
+          assert false;
           row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
-        if (Double.isNaN(row.response[row.response.length - i]))
+        }
+        if (Double.isNaN(row.response[row.response.length - i])) {
+          assert false;
           row.bad = true;
+        }
       }
     }
     return rows;

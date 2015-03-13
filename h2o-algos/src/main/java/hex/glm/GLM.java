@@ -334,11 +334,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     int [] _activeCols;
 
+    boolean _allIn;
     /**
      * Apply strong rules to filter out expected innactive (with zero coefficient) predictors.
      * @return indeces of expected active predictors.
      */
     private int [] activeCols(final double l1, final double l2, final double [] grad) {
+      if(_allIn)return null;
       int selected = 0;
       int [] cols = null;
       if (_taskInfo._params._alpha[0] > 0) {
@@ -354,6 +356,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       if(_taskInfo._params._alpha[0] == 0 || selected == _taskInfo._dinfo.fullN()){
         _activeCols = null;
+        _allIn = true;
         _activeData = _taskInfo._dinfo;
         selected = _taskInfo._dinfo.fullN();
       } else {

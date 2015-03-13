@@ -174,7 +174,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public static class GLMParameters extends SupervisedModel.SupervisedParameters {
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
-    public final Family _family;
+    public Family _family;
     public Link _link;
     public Solver _solver = Solver.ADMM;
     public final double _tweedie_variance_power;
