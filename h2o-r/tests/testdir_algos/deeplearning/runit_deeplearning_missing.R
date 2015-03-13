@@ -40,7 +40,7 @@ check.deeplearning_missing <- function(conn) {
 
     hh=h2o.deeplearning(x=3:22,y=24,training_frame=train,validation=test,
                         activation='RectifierWithDropout', hidden=c(200,200),
-                        l1=1e-5,input_dropout_ratio=0.2)
+                        l1=1e-5,input_dropout_ratio=0.2,loss="CrossEntropy")
 
     errors[i] = hh@model$errors$valid_err
   }
