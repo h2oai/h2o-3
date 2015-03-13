@@ -28,12 +28,12 @@
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
 #' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (reccomended)
 #' @param input_dropout_ratios Input layer dropout ration (can improve generalization) specify one value per hidden layer, defaults to 0.5
-#' @param l1 L1 regularization (can add stability and imporve generalization, cause many weights to become 0)
+#' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to become 0)
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small)
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Unifrom: -value ... value, Normal: stddev
-#' @param loss Loss function. Can be "Automatic", "MeanSquare", or "CrossEntropy"
+#' @param loss Loss function. Can be "MeanSquare" for regression and "CrossEntropy" or "MeanSquareClassification" for classification.
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
@@ -67,6 +67,7 @@
 #'
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
+#' iris.hex[,5] <- as.factor(iris.hex[,5])
 #' indep <- names(iris.hex)[1:4]
 #' dep <- names(iris.hex)[5]
 #' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
