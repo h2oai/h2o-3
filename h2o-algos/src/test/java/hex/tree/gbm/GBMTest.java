@@ -146,6 +146,11 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
+      if (family == Family.bernoulli || family == Family.multinomial) {
+        if (!fr.vecs()[idx].isEnum()) {
+          Scope.track(fr.replace(idx, fr.vecs()[idx].toEnum())._key);
+        }
+      }
       DKV.put(fr);             // Update frame after hacking it
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();

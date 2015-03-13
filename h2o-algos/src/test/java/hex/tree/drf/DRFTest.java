@@ -245,16 +245,24 @@ public class DRFTest extends TestUtil {
 
 
 
-  // Put response as the last vector in the frame and return it.
+  // Put response as the last vector in the frame and return possible frames to clean up later
   // Also fill DRF.
-  static Vec unifyFrame(DRFModel.DRFParameters drf, Frame fr, PrepData prep) {
+  static Vec unifyFrame(DRFModel.DRFParameters drf, Frame fr, PrepData prep, boolean classification) {
     int idx = prep.prep(fr);
-    if( idx < 0 ) { drf._convert_to_enum = false; idx = ~idx; }
+    if( idx < 0 ) { idx = ~idx; }
     String rname = fr._names[idx];
     drf._response_column = fr.names()[idx];
-    Vec resp = fr.remove(idx);           // Move response to the end
-    fr.add(rname,resp);
-    return fr.lastVec();
+
+    Vec resp = fr.vecs()[idx];
+    Vec ret = null;
+    if (classification) {
+      ret = fr.remove(idx);
+      fr.add(rname,resp.toEnum());
+    } else {
+      fr.remove(idx);
+      fr.add(rname,resp);
+    }
+    return ret;
   }
 
   public void basicDRFTestOOBE_Classification(String fnametrain, String hexnametrain, PrepData prep, int ntree, long[][] expCM, String[] expRespDom) throws Throwable { basicDRF(fnametrain, hexnametrain, null, prep, ntree, expCM, expRespDom, -1, 10/*max_depth*/, 20/*nbins*/, true); }
@@ -269,12 +277,12 @@ public class DRFTest extends TestUtil {
     DRFModel model = null;
     try {
       frTrain = parse_test_file(fnametrain);
-      unifyFrame(drf, frTrain, prep);
+      Vec removeme = unifyFrame(drf, frTrain, prep, classification);
+      if (removeme != null) Scope.track(removeme._key);
       DKV.put(frTrain._key, frTrain);
       // Configure DRF
       drf._train = frTrain._key;
       drf._response_column = ((Frame)DKV.getGet(drf._train)).lastVecName();
-      drf._convert_to_enum = classification;
       drf._ntrees = ntree;
       drf._max_depth = max_depth;
       drf._min_rows = 1; // = nodesize

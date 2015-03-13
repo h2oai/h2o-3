@@ -289,7 +289,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    public Loss _loss = Loss.Automatic;
+    public Loss _loss = null;
 
   /*Scoring*/
     /**
@@ -434,10 +434,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     /**
      * Loss functions
-     * CrossEntropy is recommended
+     * CrossEntropy is recommended for classification, MeanSquare for regression (or classification)
      */
     public enum Loss {
-      Automatic, MeanSquare, CrossEntropy
+      MeanSquare, CrossEntropy, MeanSquareClassification
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
@@ -568,26 +568,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if(_loss == Loss.Automatic) {
-        if (expensive) {
-          if (!classification) {
-            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for regression.");
-            _loss = Loss.MeanSquare;
-          } else if (_autoencoder) {
-            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to MeanSquare for auto-encoder.");
-            _loss = Loss.MeanSquare;
-          } else {
-            if (!_quiet_mode) dl.info("_loss", "Automatically setting loss to Cross-Entropy for classification.");
-            _loss = Loss.CrossEntropy;
-          }
-        }
-      }
-      else {
-        if (_autoencoder && _loss != Loss.MeanSquare)
-          dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-        else if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
-      }
+      if (_loss == null)
+        dl.error("_loss", "Loss function must be specified. For classification, try CrossEntropy (or MeanSquareClassification). For regression, use MeanSquare.");
+      else if (_autoencoder && _loss != Loss.MeanSquare)
+        dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
+      else if (!classification && _loss == Loss.CrossEntropy)
+        dl.error("_loss", "Cannot use CrossEntropy loss function for regression.");
+      else if (!classification && _loss == Loss.MeanSquareClassification)
+        dl.error("_loss", "Cannot use MeanSquareClassification loss function for regression.");
+      else if (classification && _loss == Loss.MeanSquare)
+        dl.error("_loss", "Cannot use MeanSquare loss function for classification.");
 
       if (_score_training_samples < 0) {
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");

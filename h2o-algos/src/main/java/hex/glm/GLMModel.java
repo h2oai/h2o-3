@@ -255,7 +255,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       this._alpha = alpha;
       _tweedie_link_power = Double.NaN;
       _tweedie_variance_power = Double.NaN;
-      if( f==Family.binomial ) _convert_to_enum = true;
       _link = l;
     }
     public GLMParameters(Family f, double [] lambda, double [] alpha, double twVar, double twLnk){

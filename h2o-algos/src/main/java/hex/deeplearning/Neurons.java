@@ -1013,7 +1013,7 @@ public abstract class Neurons {
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
         } else {
-          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
+          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquareClassification);
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
         }
@@ -1038,7 +1038,6 @@ public abstract class Neurons {
      */
     protected void bprop(float target) {
       assert (target != missing_real_value);
-      if (params._loss != DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) throw new UnsupportedOperationException("Regression is only implemented for MeanSquare error.");
       final int row = 0;
       // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
       final float g = target - _a.get(row); //for MSE -dMSE/dy = target-y

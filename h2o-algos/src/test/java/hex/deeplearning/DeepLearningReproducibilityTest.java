@@ -58,6 +58,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._l1 = 1e-5;
           p._l2 = 3e-5;
           p._seed = 0xbebe;
+          p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._input_dropout_ratio = 0.2;
           p._train_samples_per_iteration = 3;
           p._hidden_dropout_ratios = new double[]{0.4, 0.1};
