@@ -183,7 +183,6 @@ class Basic(unittest.TestCase):
                 parameters = {
                     'validation_frame': parse_key, # KeyIndexed False []
                     'ignored_columns': None, # string[] None []
-                    'score_each_iteration': None, # boolean false []
 
                     'minWordFreq': 1, # int 5 []
                     'wordModel': 'CBOW', # enum [u'CBOW', u'SkipGram']

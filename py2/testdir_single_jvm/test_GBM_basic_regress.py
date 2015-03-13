@@ -41,9 +41,7 @@ class Basic(unittest.TestCase):
         parameters = {
             'validation_frame': train_key,
             'ignored_columns': None,
-            'score_each_iteration': True,
             'response_column': 'C55',
-            'do_classification': False,
             # 'balance_classes':
             # 'max_after_balance_size':
             'ntrees': 2,

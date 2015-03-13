@@ -55,7 +55,6 @@ class Basic(unittest.TestCase):
                 'ignored_columns': '[STR]',
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
-                'do_classification': True,
                 'balance_classes': False,
                 'max_after_balance_size': None,
                 'standardize': False,

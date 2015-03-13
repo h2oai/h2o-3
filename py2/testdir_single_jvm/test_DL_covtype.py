@@ -25,7 +25,7 @@ class Basic(unittest.TestCase):
         hex_key = 'covtype.hex'
         validation_key = 'covtype_v.hex'
         timeoutSecs = 60
-        parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False)
+        parseResult  = h2i.import_parse(bucket='home-0xdiag-datasets', path=csvPathname_train, hex_key=hex_key, timeoutSecs=timeoutSecs, doSummary=False, columnTypeDict={54: 'Enum'})
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
         parse_key = pA.parse_key
@@ -48,11 +48,11 @@ class Basic(unittest.TestCase):
         model_key = 'deeplearning_' + identifier + '.hex'
 
         parameters = {
+            # loss enum True None [u'MeanSquare', u'CrossEntropy', u'MeanSquareClassification']
+            'loss': 'MeanSquareClassification',
             'validation_frame': validation_key, # KeyIndexed None
             'ignored_columns': None, # string[] None
-            'score_each_iteration': None, # boolean false
             'response_column': labelList[response], # string None
-            'do_classification': True, # boolean false
             'balance_classes': None, # boolean false
             'max_after_balance_size': None, # float Infinity
             'n_folds': None, # int 0

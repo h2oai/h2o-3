@@ -44,9 +44,7 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': trainKey,
                 'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
-                'score_each_iteration': True,
                 'response_column': response,
-                'do_classification': True,
                 # 'balance_classes':
                 # 'max_after_balance_size':
                 'ntrees': 2,
@@ -54,6 +52,7 @@ class Basic(unittest.TestCase):
                 'min_rows': 3,
                 'nbins': 40,
                 'learn_rate': 0.2,
+                'loss': 'multinomial',
                 # FIX! doesn't like it?
                 # 'loss': 'Bernoulli',
                 # FIX..no variable importance for GBM yet?
@@ -74,8 +73,7 @@ class Basic(unittest.TestCase):
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
-            if parameters.get('do_classification', None):
-                print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
+            print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mmResultShort = mmResult['model_metrics'][0]
