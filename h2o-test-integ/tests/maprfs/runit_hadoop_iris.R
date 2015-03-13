@@ -40,8 +40,9 @@ print(iris.gbm)
 iris.glm <- h2o.glm(myX, myY, training_frame = iris.hex, family = "gaussian")
 print(iris.glm)
 
+
 # DL Model
-iris.dl  <- h2o.deeplearning(myX, myY, training_frame = iris.hex, epochs=1, hidden=c(50,50))
+iris.dl  <- h2o.deeplearning(myX, myY, training_frame = iris.hex, epochs=1, hidden=c(50,50), loss = 'CrossEntropy')
 print(iris.dl)
 
 # DRF Model
