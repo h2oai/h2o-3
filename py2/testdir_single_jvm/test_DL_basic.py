@@ -47,9 +47,7 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': parse_key, # KeyIndexed None
                 'ignored_columns': '[STR]', # string[] None
-                'score_each_iteration': None, # boolean false
                 'response_column': 'FNDX', # string None
-                'do_classification': None, # boolean false
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
                 'n_folds': None, # int 0

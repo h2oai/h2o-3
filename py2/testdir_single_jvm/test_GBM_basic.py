@@ -44,14 +44,13 @@ class Basic(unittest.TestCase):
         # run through a couple of parameter sets
         parameters = []
         parameters.append({
-            'score_each_iteration': True,
             'response_column': 'C55',
-            'do_classification': True,
             'ntrees': 2,
             'max_depth': 10,
             'min_rows': 3,
             'nbins': 40,
             'learn_rate': 0.2,
+            'loss': 'multinomial',
             # FIX! doesn't like it?
             # 'loss': 'Bernoulli',
             # FIX..no variable importance for GBM yet?
@@ -60,9 +59,8 @@ class Basic(unittest.TestCase):
         })
 
         parameters.append({
-            'score_each_iteration': True, 
             'response_column': 'C55', 
-            'do_classification': True, 
+            'loss': 'multinomial',
             # This does nothing! intent is solely based on type of response col
             'ntrees': 1, 
             'max_depth': 20, 
@@ -88,9 +86,7 @@ class Basic(unittest.TestCase):
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
-
-            if p.get('do_classification', None):
-                print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
+            print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             vis = OutputObj(model.variable_importances, 'vis')
 
