@@ -18,6 +18,7 @@ test.mnist.manyCols <- function(conn) {
 
   Log.info("Importing mnist train data...\n")
   train.hex <- h2o.uploadFile(conn, fPath, "train.hex")
+  train.hex[,785] <- as.factor(train.hex[,785])
   Log.info("Check that tail works...")
   tail(train.hex)
   tail_ <- tail(train.hex)
