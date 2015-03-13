@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-test.GBM.ecology <- function(conn) {  
+test.GBM.ecology <- function(conn) {
   Log.info("==============================")
   Log.info("Gaussian Behavior")
   Log.info("==============================")
@@ -16,6 +16,7 @@ test.GBM.ecology <- function(conn) {
   Log.info("Bernoulli Behavior")
   Log.info("==============================")
   # 0/1 response: expect bernoulli
+  eco.hex[, "Angaus"] = as.factor(eco.hex[, "Angaus"])
   eco.model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = eco.hex, loss="bernoulli")
   expect_true(class(eco.model) == "H2OBinomialModel")
   # 2 level character response: expect bernoulli
@@ -32,6 +33,7 @@ test.GBM.ecology <- function(conn) {
   Log.info("Multinomial Behavior")
   Log.info("==============================")
   # more than two integers for response: expect multinomial
+  cars.hex[, "cylinders"] = as.factor(cars.hex[, "cylinders"])
   cars.mod <- h2o.gbm(x = 4:7, y = "cylinders", training_frame = cars.hex, loss="multinomial")
   expect_true(class(cars.mod) == "H2OMultinomialModel")
   # more than two character levels for response: expect multinomial
