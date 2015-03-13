@@ -70,6 +70,8 @@ public final class ParseSetup extends Iced {
     this(false, 0, 0, null, ps.parse_type, ps.separator, ps.single_quotes,
             ps.check_header, -1, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
+    if(ps.parse_type == null) _parse_type = ParserType.AUTO;
+    if(ps.separator == 0) _separator = AUTO_SEP;
   }
 
   /**
@@ -408,7 +410,7 @@ public final class ParseSetup extends Iced {
     return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null, null, null);
   }
   public static ParseSetup guessSetup( byte[] bits, ParseSetup userSetup ) {
-    return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, userSetup._single_quotes, userSetup._check_header, null, null, null);
+    return guessSetup(bits, userSetup._parse_type, userSetup._separator, -1, userSetup._single_quotes, userSetup._check_header, null, null, null);
   }
 
   private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
