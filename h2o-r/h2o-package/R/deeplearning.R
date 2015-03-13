@@ -67,10 +67,9 @@
 #'
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' iris.hex[,5] <- as.factor(iris.hex[,5])
 #' indep <- names(iris.hex)[1:4]
 #' dep <- names(iris.hex)[5]
-#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5)
+#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5, loss="CrossEntropy")
 
 h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
