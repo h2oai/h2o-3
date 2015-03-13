@@ -169,7 +169,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
 
     if setup_result['na_strings']:
-        naStrings = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['na_strings'])) + "]"
+	naStrings = "[" + ",".join(map((lambda x: "'" + x + "'" if x != None else "''"), setup_result['na_strings'])) + "]"
     else:
         naStrings = None
 

@@ -312,8 +312,8 @@ public abstract class Parser extends Iced {
 
     public byte[] guessTypes() {
       byte[] types = new byte[_ncols];
-      for(int i = 0; i < _ncols; ++i) {
-        int nonemptyLines = _nlines-_nempty[i];
+      for (int i = 0; i < _ncols; ++i) {
+        int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line based on 4M boundary
 
         //Very redundant tests, but clearer and not speed critical
         
@@ -360,9 +360,8 @@ public abstract class Parser extends Iced {
         // Enum or string?
         // Enum with 0s for NAs
         if(_nzeros[i] > 0
-                && ((_nzeros[i] + _nstrings[i]) == _nlines) //just strings and zeros for NA (thus no empty lines)
+                && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
                 && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
-          //FIXME set NA string to "0"
           types[i] = Vec.T_ENUM;
           continue;
         }
@@ -377,6 +376,21 @@ public abstract class Parser extends Iced {
         types[i] = Vec.T_BAD;
       }
       return types;
+    }
+
+    public String[] guessNAStrings(byte[] types) {
+      //For now just catch 0's as NA in Enums
+      String[] na_strings = new String[_ncols];
+      for (int i = 0; i < _ncols; ++i) {
+        int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line (based on 4M boundary)
+        if (types[i] == Vec.T_ENUM
+                && _nzeros[i] > 0
+                && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i])) { // not all unique strings
+          na_strings[i] = "0";
+        }
+      }
+      return na_strings;
     }
   }
 }

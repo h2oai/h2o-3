@@ -916,7 +916,7 @@ public final class ParseDataset extends Job<Frame> {
           if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(lo, hi);
         } else if( _ctypes[colIdx] == Vec.T_STR ) {
           _nvs[_col = colIdx].addStr(str);
-        } else {
+        } else { // Enums
           if(!_enums[colIdx].isMapFull()) {
             int id = _enums[_col = colIdx].addKey(str);
             if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_ENUM;

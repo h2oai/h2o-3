@@ -102,7 +102,14 @@ MAIN_LOOP:
             assert str.get_buf() != bits;
             str.addBuff(bits);
           }
-          dout.addStrCol(colIdx, str);
+          if(/*_setup._column_types != null
+                  && colIdx < _setup._column_types.length
+                  &&*/ _setup._na_strings != null
+                  && _setup._na_strings[colIdx] != null
+                  && str.equals(_setup._na_strings[colIdx]))
+            dout.addInvalidCol(colIdx);
+          else
+            dout.addStrCol(colIdx, str);
           str.set(null, 0, 0);
           ++colIdx;
           state = SEPARATOR_OR_EOL;
@@ -694,6 +701,7 @@ MAIN_LOOP:
     try{
       p.streamParse(is, dout);
       resSetup._column_types = dout.guessTypes();
+      resSetup._na_strings = dout.guessNAStrings(resSetup._column_types);
     }catch(Throwable e){
       throw new RuntimeException(e);
     }
