@@ -1013,7 +1013,7 @@ public abstract class Neurons {
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
         } else {
-          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquareClassification);
+          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
         }

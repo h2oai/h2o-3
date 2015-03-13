@@ -46,8 +46,8 @@ class Basic(unittest.TestCase):
         for trial in range(1):
             parameters = {
                 # required now
-                # loss enum True None [u'MeanSquare', u'CrossEntropy', u'MeanSquareClassification']
-                'loss': 'MeanSquareClassification',
+                # loss enum True None [u'MeanSquare', u'CrossEntropy']
+                'loss': 'CrossEntropy',
 
                 'validation_frame': parse_key, # KeyIndexed None
                 'ignored_columns': '[STR]', # string[] None

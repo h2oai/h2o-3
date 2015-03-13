@@ -42,7 +42,7 @@ public class DeepLearningIrisTest extends TestUtil {
         // Note: Initial weight distributions are copied, but what is tested is the stability behavior.
 
         Activation[] activations = {Activation.Tanh, Activation.Rectifier};
-        Loss[] losses = {Loss.MeanSquareClassification, Loss.CrossEntropy};
+        Loss[] losses = {Loss.MeanSquare, Loss.CrossEntropy};
         InitialWeightDistribution[] dists = {
                 InitialWeightDistribution.Normal,
                 InitialWeightDistribution.Uniform,

@@ -16,7 +16,7 @@ import water.util.Log;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
 public class DeepLearningSpiralsTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() {
     Scope.enter();
@@ -57,7 +57,6 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._ignore_const_cols = true;
           p._nesterov_accelerated_gradient = true;
           p._diagnostics = true;
-          p._expert_mode = true;
           p._score_training_samples = 1000;
           p._score_validation_samples = 10000;
           p._shuffle_training_data = false;
