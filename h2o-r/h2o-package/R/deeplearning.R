@@ -5,7 +5,7 @@
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.
-#' @param data An \linkS4class{H2OFrame} object containing the variables in the model.
+#' @param training_frame An \linkS4class{H2OFrame} object containing the variables in the model.
 #' @param key (Optional) The unique \code{character} hex key assigned to the resulting model. If none is given, a key will automatically be generated.
 #' @param override_with_best_model Logcial. If \code{TRUE}, override the final model with the best model found during traning. Defaults to \code{TRUE}.
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
@@ -128,7 +128,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              average_activation,
                              sparsity_beta,
                              max_categorical_features,
-                             reproducible
+                             reproducible=FALSE
 )
 {
   dots <- list(...)
@@ -239,8 +239,18 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
-  res <- res$model_metrics[[1L]]$predictions$key$name
+  key <- res$model_metrics[[1L]]$predictions$key$name
   
-  h2o.getFrame(res)
+  h2o.getFrame(key)
+}
+
+h2o.deepfeatures <- function(object, data, layer) {
+  index = layer - 1
+  
+  url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
+  res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
+  key <- res$destination_key$name
+  
+  h2o.getFrame(key)
 }
 
