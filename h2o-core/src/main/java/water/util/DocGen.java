@@ -101,6 +101,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
+    public HTML putAAA4 (String name, int    [][][]isss) { return isss==null?f(name,"null"):f0(name).array(isss).f1(); }
     public HTML putAAA8 (String name, long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
     public HTML putAAA8d(String name, double [][][]dsss) { return dsss==null?f(name,"null"):f0(name).array(dsss).f1(); }
 
@@ -220,12 +221,21 @@ public abstract class DocGen<T extends DocGen> {
       }
       return arrayTail();
     }
-    public HTML array( long[][] iss ) {
+    public HTML array( long[][] lss ) {
       arrayHead();
-      for( long[] is : iss ) {
+      for( long[] ls : lss ) {
         p("<tr>");
-        if( is != null ) for( long i : is ) cell(i);
+        if( ls != null ) for( long l : ls ) cell(l);
         p("</tr>");
+      }
+      return arrayTail();
+    }
+    public HTML array( int[][][] isss ) {
+      arrayHead();
+      for( int i=0; i<isss.length; ++i ) {
+        p("<div>");
+        if( isss[i] != null ) array(isss[i]);
+        p("</div>");
       }
       return arrayTail();
     }

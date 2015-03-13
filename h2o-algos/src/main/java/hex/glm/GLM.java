@@ -76,10 +76,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   private transient double [] _betaLB;
   private transient double [] _betaUB;
   private transient double [] _rho;
-  private boolean _clean_enums;
   @Override
   public Job<GLMModel> trainModel() {
-    _clean_enums = _parms._convert_to_enum && _response.isEnum();
 //    Key k = Key.make("rebalanced");
 //    H2O.submitTask(new RebalanceDataSet(_parms.train(), k, 512)).join();
 //    Key oldK = _parms._train;
@@ -200,10 +198,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override public void compute2(){}
       @Override public void onCompletion(CountedCompleter cc){
         _parms.read_unlock_frames(GLM.this);
-        if( _clean_enums ) {
-          train().lastVec().remove();
-          if (valid() != null) valid().lastVec().remove();
-        }
         done();
       }
       @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
@@ -213,10 +207,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
              failed(ex);
           }
           _parms.read_unlock_frames(GLM.this);
-          if( _clean_enums ) {
-            train().lastVec().remove();
-            if (valid() != null) valid().lastVec().remove();
-          }
           return true;
         }
         return false;

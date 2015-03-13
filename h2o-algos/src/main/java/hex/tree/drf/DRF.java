@@ -99,7 +99,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       Chunk cy = chk_resp(chks);
       for( int i=0; i<cy._len; i++ ) {
         if( cy.isNA(i) ) continue;
-        if (_parms._convert_to_enum) {
+        if (isClassifier()) {
           int cls = (int)cy.at8(i);
           chk_work(chks,cls).set(i,1L);
         } else {
@@ -152,7 +152,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 //      }
 
       _mtry = (_parms._mtries==-1) ? // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
-              ( _parms._convert_to_enum ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
+              ( isClassifier() ? Math.max((int)Math.sqrt(_ncols),1) : Math.max(_ncols/3,1))  : _parms._mtries;
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,#cols> but it is " + _mtry);
       // Initialize TreeVotes for classification, MSE arrays for regression
       initTreeMeasurements();
@@ -168,7 +168,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         new OOBScorer(_ncols, _nclass, _parms._sample_rate, _model._output._treeKeys).doAll(_train);
         Log.info("Reconstructing oob stats from checkpointed model took " + t);
       }
-
 
       // The RNG used to pick split columns
       Random rand = createRNG(_actual_seed);
@@ -218,7 +217,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       // Use for all k-trees the same seed. NOTE: this is only to make a fair
       // view for all k-trees
-      final boolean classification = _parms._convert_to_enum;
       final long[] _distribution = _model._output._distribution;
       long rseed = rand.nextLong();
       // Initially setup as-if an empty-split had just happened
@@ -230,7 +228,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // DRF picks a random different set of columns for the 2nd tree.
           //if( k==1 && _nclass==2 ) continue;
           ktrees[k] = new DRFTree(fr,_ncols,(char)_parms._nbins,(char)_nclass,_parms._min_rows,mtrys,rseed);
-          boolean isBinom = classification;
+          boolean isBinom = isClassifier();
           new DRFUndecidedNode(ktrees[k],-1, DHistogram.initialHist(fr,_ncols,adj_nbins,hcs[k][0],isBinom) ); // The "root" node
         }
       }
@@ -297,7 +295,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       final boolean importance = true; //FIXME: cheap enough?
 
       if (importance) {
-        if (classification)   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
+        if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
         else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
       }
       Log.debug("CollectPreds done: " + t_4);
@@ -366,7 +364,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           } /* end of k-trees iteration */
           if (importance) {
             if (wasOOBRow && !y.isNA(row)) {
-              if (_parms._convert_to_enum) {
+              if (isClassifier()) {
                 int treePred = getPrediction(rpred, data_row(chks, row, rowdata));
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !

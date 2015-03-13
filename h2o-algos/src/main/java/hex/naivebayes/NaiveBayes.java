@@ -7,6 +7,7 @@ import hex.schemas.ModelBuilderSchema;
 import hex.schemas.NaiveBayesV2;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -50,26 +51,34 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     if (_response != null && !_response.isEnum()) error("_response", "Response must be a categorical column");
     if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");
     if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
+    if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
+    if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
+    if (_parms._eps_prob < 0) error("_eps_prob", "Threshold for probability must be positive");
   }
+  private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   class NaiveBayesDriver extends H2O.H2OCountedCompleter<NaiveBayesDriver> {
 
     public void computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      double[] apriori = tsk._rescnt.clone();
-      double[][][] pcond = tsk._jntcnt.clone();
       String[][] domains = dinfo._adaptedFrame.domains();
+      double[] apriori = new double[tsk._nrescat];
+      double[][][] pcond = new double[tsk._npreds][][];
+      for(int i = 0; i < pcond.length; i++) {
+        int ncnt = domains[i] == null ? 2 : domains[i].length;
+        pcond[i] = new double[tsk._nrescat][ncnt];
+      }
 
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)
-        apriori[i] = (apriori[i] + _parms._laplace)/(tsk._nobs + tsk._nres * _parms._laplace);
-        // apriori[i] = apriori[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
+        apriori[i] = ((double)tsk._rescnt[i] + _parms._laplace)/(tsk._nobs + tsk._nrescat * _parms._laplace);
+        // apriori[i] = tsk._rescnt[i]/tsk._nobs;     // Note: R doesn't apply laplace smoothing to priors, even though this is textbook definition
 
       // Probability of categorical predictor x_j conditional on response y
       for(int col = 0; col < dinfo._cats; col++) {
-        assert pcond[col].length == tsk._nres;
+        assert pcond[col].length == tsk._nrescat;
         for(int i = 0; i < pcond[col].length; i++) {
           for(int j = 0; j < pcond[col][i].length; j++)
-            pcond[col][i][j] = (pcond[col][i][j] + _parms._laplace)/(tsk._rescnt[i] + domains[col].length * _parms._laplace);
+            pcond[col][i][j] = ((double)tsk._jntcnt[col][i][j] + _parms._laplace)/((double)tsk._rescnt[i] + domains[col].length * _parms._laplace);
         }
       }
 
@@ -78,11 +87,11 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int i = 0; i < pcond[0].length; i++) {
           int cidx = dinfo._cats + col;
           double num = tsk._rescnt[i];
-          double pmean = pcond[cidx][i][0]/num;
+          double pmean = (double)tsk._jntsum[col][i][0]/num;
 
           pcond[cidx][i][0] = pmean;
-          // double pvar = pcond[cidx][i][1]/num - pmean * pmean;
-          double pvar = pcond[cidx][i][1]/(num - 1) - pmean * pmean * num/(num - 1);
+          // double pvar = tsk._jntsum[col][i][1]/num - pmean * pmean;
+          double pvar = tsk._jntsum[col][i][1]/(num - 1) - pmean * pmean * num/(num - 1);
           pcond[cidx][i][1] = Math.sqrt(pvar);
         }
       }
@@ -167,35 +176,43 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
   // H2O's method: Just skip all rows where any x_j = NA or y = NA. Should be more memory-efficient, but results incomparable with R.
   private static class NBTask extends MRTask<NBTask> {
     final DataInfo _dinfo;
-    final int _nres;              // Number of levels for the response y
+    final String[][] _domains;  // Domains of the training frame
+    final int _nrescat;         // Number of levels for the response y
+    final int _npreds;          // Number of predictors in the training frame
 
-    public int _nobs;             // Number of rows counted in calculation
-    public double[] _rescnt;      // Count of each level in the response
-    public double[][][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
-                                  // For each numeric predictor, sum of entries for every response level
+    public int _nobs;                     // Number of rows counted in calculation
+    public int[/*nrescat*/] _rescnt;      // Count of each level in the response
+    public int[/*npreds*/][/*nrescat*/][] _jntcnt;  // For each categorical predictor, joint count of response and predictor levels
+    public double[/*npreds*/][/*nrescat*/][] _jntsum; // For each numeric predictor, sum and squared sum of entries for every response level
 
     public NBTask(DataInfo dinfo, int nres) {
       _dinfo = dinfo;
-      _nres = nres;
-
-      String[][] domains = dinfo._adaptedFrame.domains();
-      int ncol = dinfo._adaptedFrame.numCols();
-      assert ncol-1 == dinfo._nums + dinfo._cats;   // ncol-1 because we drop response col
-      assert nres == domains[ncol-1].length;  // Response in last vec of adapted frame
-
-      _nobs = 0;
-      _rescnt = new double[_nres];
-      _jntcnt = new double[ncol-1][][];
-      for(int i = 0; i < _jntcnt.length; i++) {
-        int ncnt = domains[i] == null ? 2 : domains[i].length;
-        _jntcnt[i] = new double[_nres][ncnt];
-      }
+      _nrescat = nres;
+      _domains = dinfo._adaptedFrame.domains();
+      _npreds = dinfo._adaptedFrame.numCols()-1;
+      assert _npreds == dinfo._nums + dinfo._cats;
+      assert _nrescat == _domains[_npreds].length;       // Response in last vec of adapted frame
     }
 
     @Override public void map(Chunk[] chks) {
-      int res_idx = chks.length - 1;
-      Chunk res = chks[res_idx];
+      _nobs = 0;
+      _rescnt = new int[_nrescat];
 
+      if(_dinfo._cats > 0) {
+        _jntcnt = new int[_dinfo._cats][][];
+        for (int i = 0; i < _dinfo._cats; i++) {
+          _jntcnt[i] = new int[_nrescat][_domains[i].length];
+        }
+      }
+
+      if(_dinfo._nums > 0) {
+        _jntsum = new double[_dinfo._nums][][];
+        for (int i = 0; i < _dinfo._nums; i++) {
+          _jntsum[i] = new double[_nrescat][2];
+        }
+      }
+
+      Chunk res = chks[_npreds];    // Response at the end
       OUTER:
       for(int row = 0; row < chks[0]._len; row++) {
         // Skip row if any entries in it are NA
@@ -214,8 +231,8 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int col = 0; col < _dinfo._nums; col++) {
           int cidx = _dinfo._cats + col;
           double x = chks[cidx].atd(row);
-          _jntcnt[cidx][rlevel][0] += x;
-          _jntcnt[cidx][rlevel][1] += x*x;
+          _jntsum[col][rlevel][0] += x;
+          _jntsum[col][rlevel][1] += x*x;
         }
         _rescnt[rlevel]++;
         _nobs++;
@@ -225,8 +242,14 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
     @Override public void reduce(NBTask nt) {
       _nobs += nt._nobs;
       ArrayUtils.add(_rescnt, nt._rescnt);
-      for(int col = 0; col < _jntcnt.length; col++)
-        _jntcnt[col] = ArrayUtils.add(_jntcnt[col], nt._jntcnt[col]);
+      if(null != _jntcnt) {
+        for (int col = 0; col < _jntcnt.length; col++)
+          ArrayUtils.add(_jntcnt[col], nt._jntcnt[col]);
+      }
+      if(null != _jntsum) {
+        for (int col = 0; col < _jntsum.length; col++)
+          ArrayUtils.add(_jntsum[col], nt._jntsum[col]);
+      }
     }
   }
 }
