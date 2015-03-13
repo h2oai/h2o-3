@@ -11,7 +11,7 @@ def grid_wineGBM(ip,port):
     x_cols = range(2,14) + [0]
     wine_grid = h2o.gbm(y=wine[1],
                         x=wine[x_cols],
-                        loss='AUTO',
+                        loss='gaussian',
                         ntrees=[5,10,15],
                         max_depth=[2,3,4],
                         learn_rate=[0.1,0.2])

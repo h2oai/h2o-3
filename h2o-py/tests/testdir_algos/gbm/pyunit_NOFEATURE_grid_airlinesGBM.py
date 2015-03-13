@@ -10,7 +10,7 @@ def grid_airlinesGBM(ip,port):
     #air.summary()
     myX = ["DayofMonth", "DayOfWeek"]
     air_grid = h2o.gbm(y=air["IsDepDelayed"], x=air[myX],
-                   loss="AUTO",
+                   loss="bernoulli",
                    ntrees=[5,10,15],
                    max_depth=[2,3,4],
                    learn_rate=[0.1,0.2])
