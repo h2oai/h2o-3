@@ -5,6 +5,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.genmodel.GenModel;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -244,6 +245,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+        Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
