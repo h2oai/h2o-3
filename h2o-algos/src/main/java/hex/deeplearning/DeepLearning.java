@@ -5,7 +5,6 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
-import hex.genmodel.GenModel;
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
