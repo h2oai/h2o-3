@@ -108,8 +108,12 @@ subprojects {
           url "http://repo.hortonworks.com/content/repositories/releases/"
         }
         maven {
+          url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+        }
+        maven {
           url "http://repository.mapr.com/maven/"
         }
+
         // mavenLocal()
     }
     // Publish artifacts - we should filter subproject in future but now apply publisher plugin
