@@ -10,6 +10,7 @@ import re
 g_user = None
 g_pass = None
 g_sprint = None
+g_csv = False
 
 
 class Person:
@@ -45,11 +46,21 @@ class Person:
             i += 1
         sys.stdout.write("\n")
 
-    def emit(self):
+    def emit_csv(self):
+        print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
+
+    def emit_barchart(self):
         print("")
         print("-----" + self.name + "-----")
         self._printbar("  resolved", self.resolved_story_points, "R")
         self._printbar("unresolved", self.unresolved_story_points, "U")
+
+    def emit(self):
+        global g_csv
+        if g_csv:
+            self.emit_csv()
+        else:
+            self.emit_barchart()
 
 
 class PeopleManager:
@@ -73,6 +84,9 @@ class PeopleManager:
         return person
 
     def emit(self):
+        global g_csv
+        if g_csv:
+            print("name,resolved,unresolved")
         for key in sorted(self.people_map.keys()):
             person = self.people_map[key]
             person.emit()
@@ -117,6 +131,7 @@ def parse_args(argv):
     global g_user
     global g_pass
     global g_sprint
+    global g_csv
 
     i = 1
     while (i < len(argv)):
@@ -137,6 +152,8 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_sprint = argv[i]
+        elif (s == "-csv"):
+            g_csv = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:
