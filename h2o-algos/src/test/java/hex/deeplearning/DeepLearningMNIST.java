@@ -22,7 +22,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 public class DeepLearningMNIST extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() {
+  @Test @Ignore public void run() {
     Scope.enter();
     try {
       File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
@@ -35,13 +35,10 @@ public class DeepLearningMNIST extends TestUtil {
         p._destination_key = Key.make("dl_mnist_model");
         p._train = frame._key;
         p._response_column = "C785"; // last column is the response
-        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-        p._input_dropout_ratio = 0.2;
-        p._hidden = new int[]{200, 200};
-        p._train_samples_per_iteration = -1;
-        p._epochs = 10;
-        p._l1 = 1e-5;
-        p._loss = DeepLearningParameters.Loss.Huber;
+        p._activation = DeepLearningParameters.Activation.Tanh;
+        p._hidden = new int[]{2500, 2000, 1500, 1000, 500};
+        p._train_samples_per_iteration = 1500 * H2O.getCloudSize(); //process 1500 rows per node per map-reduce step
+        p._epochs = 1.8 * (float) p._train_samples_per_iteration / frame.numRows(); //train long enough to do 2 map-reduce passes (with scoring each time)
 
         // Convert response 'C785' to categorical (digits 1 to 10)
         int ci = frame.find("C785");
@@ -49,10 +46,12 @@ public class DeepLearningMNIST extends TestUtil {
         DKV.put(frame);
 
         // speed up training
-        p._adaptive_rate = true; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
-        p._diagnostics = true; //no need to compute statistics during training
-        p._score_interval = 5; //score and print progress report (only) every 20 seconds
-//        p._score_training_samples = 50; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
+        p._adaptive_rate = false; //disable adaptive per-weight learning rate -> default settings for learning rate and momentum are probably not ideal (slow convergence)
+        p._replicate_training_data = false; //avoid extra communication cost upfront, got enough data on each node for load balancing
+        p._override_with_best_model = false; //no need to keep the best model around
+        p._diagnostics = false; //no need to compute statistics during training
+        p._score_interval = 20; //score and print progress report (only) every 20 seconds
+        p._score_training_samples = 50; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel model = null;
