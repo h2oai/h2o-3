@@ -125,6 +125,16 @@ public class NodePersistentStorage {
     // Move tmp file to final spot
     File realf = new File(d2 + File.separator + keyName);
     try {
+      // Windows can't handle move, so delete the target file first if it exists.
+      if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+        if (realf.exists()) {
+          boolean success = realf.delete();
+          if (! success) {
+            throw new RuntimeException("NodePersistentStorage delete failed (" + realf + ")");
+          }
+        }
+      }
+
       boolean success = tmpf.renameTo(realf);
       if (! success) {
         throw new RuntimeException("NodePersistentStorage move failed (" + tmpf + " -> " + realf + ")");
