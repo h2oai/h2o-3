@@ -8,14 +8,16 @@ test.nbayes.golden <- function(H2Oserver) {
   
   smoothing <- rnorm(1, mean = 1e-6, sd = 5)^2
   Log.info(paste("Compare with Naive Bayes when x = 1:4, y = 5, laplace =", smoothing))
-  fitR <- NaiveBayes(class ~ ., irisR, usekernel = 0, fL = smoothing)
+  fitR <- naiveBayes(class ~ ., irisR, laplace = smoothing)
   fitH2O <- h2o.naiveBayes(x = 1:4, y = 5, training_frame = irisH2O, laplace = smoothing)
-  checkNaiveBayesModel(fitH2O, fitR, tolerance = 1e-4)
+  checkNaiveBayesModel(fitH2O, fitR, nrow(irisR), tolerance = 1e-4)
   
   Log.info("Compare Predictions between Models")
-  predR <- predict(fitR, irisR)
+  classR <- predict(fitR, irisR, type = "class")
+  postR <- predict(fitR, irisR, type = "raw")
   predH2O <- predict(fitH2O, irisH2O)
-  checkNaiveBayesPrediction(predH2O, predR, tolerance = 1e-4)
+  checkNaiveBayesPrediction(predH2O, classR, type = "class", tolerance = 1e-4)
+  checkNaiveBayesPrediction(predH2O, postR, type = "raw", tolerance = 1e-4)
   
   testEnd()
 }
