@@ -20,7 +20,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
  * Note: requires './gradlew syncBigDataLaptop'
  */
 public class DeepLearningMNIST extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test @Ignore public void run() {
     Scope.enter();
