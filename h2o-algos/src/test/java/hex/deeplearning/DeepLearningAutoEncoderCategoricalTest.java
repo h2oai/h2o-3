@@ -37,7 +37,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
     p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
-    p._loss = DeepLearningModel.DeepLearningParameters.Loss.MeanSquare;
+    p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
     p._epochs = 2;
     p._force_load_balance = true;
     p._score_training_samples = 0;

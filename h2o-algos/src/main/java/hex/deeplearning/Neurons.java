@@ -484,8 +484,25 @@ public abstract class Neurons {
    */
   protected float autoEncoderError(int row) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    assert (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
-    return (_input._a.get(row) - _a.get(row));
+    final float t = _input._a.get(row);
+    final float y = _a.get(row);
+    float g;
+    if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+      g = t - y;
+    } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+      g = y > t ? -1f : 1f;
+    }
+    // Huber:
+    // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
+    // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
+    else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+      if (Math.abs(y-t) < 1) {
+        g = t - y;
+      } else {
+        g = y >= t + 1f ? -2f : 2f;
+      }
+    } else throw H2O.unimpl("Loss " + params._loss + " not implemented for Auto-Encoder.");
+    return g;
   }
 
   /**
@@ -929,9 +946,9 @@ public abstract class Neurons {
       final int rows = _a.size();
       if (_w instanceof DenseRowMatrix) {
         for (int row = 0; row < rows; row++) {
-          //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           if (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length)
             _e.set(row, autoEncoderError(row));
+          //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           float g = _a.get(row) > 0f ? _e.get(row) : 0f;
           bprop(row, g, r, m);
         }
@@ -1012,11 +1029,27 @@ public abstract class Neurons {
           //nothing else needed, -dCE/dy * dy/dnet = target - y
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
-        } else {
-          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+          g = (2*t-1) * (1f - y) * y; //-dL/dy = 2*t-1
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
-        }
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+          if (t==0) {
+            if (y<0.5) {
+              g = -4*y; //L=2*y^2 for y<0.5
+            } else {
+              g = -2;   //L=2*y-0.5 for y>=0.5
+            }
+          } else {
+            if (y>0.5) {
+              g = 4*(1-y); //L=2*(1-y)^2 for y<0.5
+            } else {
+              g = 2;   //L=2*(1-y)-0.5 for y>=0.5
+            }
+          }
+          g *= (1f - y) * y;
+        } else throw H2O.unimpl("Loss " + params._loss + " not implemented for classification.");
         // this call expects dE/dnet
         bprop(row, g, r, m);
       }
@@ -1024,7 +1057,7 @@ public abstract class Neurons {
   }
 
   /**
-   * Output neurons for regression - Softmax
+   * Output neurons for regression - Linear units
    */
   public static class Linear extends Output {
     public Linear(int units) { super(units); }
@@ -1039,8 +1072,27 @@ public abstract class Neurons {
     protected void bprop(float target) {
       assert (target != missing_real_value);
       final int row = 0;
+      final float t = target;
+      final float y = _a.get(row);
+      float g;
       // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
-      final float g = target - _a.get(row); //for MSE -dMSE/dy = target-y
+      if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+        g = t - y; //for MSE -dMSE/dy = target-y
+      }
+      // L = |y-t|, -dL/dy = -/+1
+      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+        g = y > t ? -1f : 1f;
+      }
+      // Huber:
+      // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
+      // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
+      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+        if (Math.abs(y-t) < 1) {
+          g = t - y;
+        } else {
+          g = y >= t + 1f ? -2f : 2f;
+        }
+      } else throw H2O.unimpl("Loss " + params._loss + " not implemented for regression.");
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       bprop(row, g, r, m);
