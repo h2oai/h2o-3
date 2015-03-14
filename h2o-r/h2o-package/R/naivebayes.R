@@ -52,8 +52,8 @@ h2o.naiveBayes <- function(x, y, training_frame, destination_key,
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.naivebayes.map) ) i <- .naivebayes.map[[i]]; i })
   
   # In R package, cutoff and threshold for probability and standard deviation are the same
-  parms[["min_prob"]] <- parms[["threshold"]]
-  parms[["eps_prob"]] <- parms[["eps"]]
+  parms$min_prob <- threshold
+  parms$eps_prob <- eps
   
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'naivebayes', parms, parent.frame())
