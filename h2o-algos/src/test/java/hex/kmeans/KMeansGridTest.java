@@ -1,26 +1,17 @@
 package hex.kmeans;
 
-import static org.junit.Assert.assertArrayEquals;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-//import java.io.File;
-//import java.util.Arrays;
-//import java.util.Comparator;
-//import org.junit.*;
-//import water.Key;
-import water.TestUtil;
-import water.fvec.Frame;
-import water.H2O.H2OFuture;
-//import water.fvec.NFSFileVec;
-//import water.parser.ParseDataset;
 import hex.Grid;
+import org.junit.*;
+import water.H2O.H2OFuture;
+import water.TestUtil;
+import water.Job;
+import water.fvec.Frame;
 
 
 public class KMeansGridTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void testIrisGrid() {
+  @Test @Ignore public void testIrisGrid() {
     KMeansGrid kmg = null;
     Frame fr = null;
     try {
@@ -49,9 +40,8 @@ public class KMeansGridTest extends TestUtil {
       double[] seeds = new double[]{0,1,123456789,987654321};
 
       // Fire off a grid search
-      H2OFuture<Grid> fg = kmg.startGridSearch(new double[][]{ks,stds,inits,seeds});
-      
-      Grid g2 = fg.getResult();
+      Job<Grid> jg = kmg.startGridSearch(new double[][]{ks,stds,inits,seeds});
+      Grid g2 = jg.get();
       assert g2==kmg;
 
     } finally {

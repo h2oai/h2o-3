@@ -2,6 +2,8 @@ package hex.kmeans;
 
 import hex.*;
 import water.H2O;
+import water.Key;
+import water.DKV;
 import water.fvec.Frame;
 
 /** A Grid of Models
@@ -21,6 +23,10 @@ import water.fvec.Frame;
  *  value internally.
  */
 public class KMeansGrid extends Grid<KMeansGrid> {
+
+  /** @return Model name */
+  public static final String MODEL_NAME = "KMeans";
+  @Override protected String modelName() { return MODEL_NAME; }
 
   private static final String[] HYPER_NAMES = new String[] {"k", "standardize", "init", "seed" };
 
@@ -57,6 +63,18 @@ public class KMeansGrid extends Grid<KMeansGrid> {
     }
   }
   
+  /** @param h The h-th hyperparameter
+   *  @return The h-th hyperparameter default value */
+  @Override protected double hyperDefault( int h ) {
+    switch( h ) {
+    case 0: return 2;           // k=2??? for a default?  Or no-default-allowed?
+    case 1: return 1;           // standardize = true
+    case 2: return KMeans.Initialization.PlusPlus.ordinal();
+    case 3: return 123456789L;
+    default: throw H2O.fail();
+    }
+  }
+  
   /** Ask the Grid for a suggested next hyperparameter value, given an existing
    *  Model as a starting point and the complete set of hyperparameter limits.
    *  Returning a NaN signals there is no next suggestion, which is reasonable
@@ -71,7 +89,16 @@ public class KMeansGrid extends Grid<KMeansGrid> {
     throw H2O.unimpl();
   }
 
-  public static KMeansGrid get( Frame fr ) { return (KMeansGrid)Grid.get( KMeansModel.class, fr ); }
+  // Factory for returning a grid based on an algorithm flavor
+  private KMeansGrid( Key key, Frame fr ) { super(key,fr); }
+  public static KMeansGrid get( Frame fr ) { 
+    Key k = Grid.keyName(MODEL_NAME, fr);
+    KMeansGrid kmg = DKV.getGet(k);
+    if( kmg != null ) return kmg;
+    kmg = new KMeansGrid(k,fr);
+    DKV.put(kmg);
+    return kmg;
+  }
 
   @Override protected long checksum_impl() { throw H2O.unimpl(); }
 }

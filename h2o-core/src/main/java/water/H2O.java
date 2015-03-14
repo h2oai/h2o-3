@@ -6,7 +6,6 @@ import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
-import water.persist.Persist;
 import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.Log;

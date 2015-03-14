@@ -1,8 +1,7 @@
 package hex;
 
-import java.util.concurrent.Future;
 import water.*;
-import water.H2O.H2OFuture;
+import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
 
 /** A Grid of Models
@@ -22,9 +21,11 @@ import water.fvec.Frame;
  *  value internally.
  */
 public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
-  protected Grid( ) { super(Key.make("Grid"+Key.rand())); }
+  final Frame _fr;
+  protected Grid( Key key, Frame fr ) { super(key); _fr = fr; }
 
-  // Subclasses describe their hyperparameters
+  /** @return Model name */
+  protected abstract String modelName();
 
   /** @return Number of hyperparameters this Grid will Grid-over */
   protected abstract int nHyperParms();
@@ -42,6 +43,10 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  @return The h-th hyperparameter value from Model m  */
   protected abstract double hyperValue( int h, Model m );
   
+  /** @param h The h-th hyperparameter
+   *  @return The h-th hyperparameter default value */
+  protected abstract double hyperDefault( int h );
+
   /** Ask the Grid for a suggested next hyperparameter value, given an existing
    *  Model as a starting point and the complete set of hyperparameter limits.
    *  Returning a NaN signals there is no next suggestion, which is reasonable
@@ -54,26 +59,31 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  @return Suggested next value for hyperparameter h or NaN if no next value */
   protected abstract double suggestedNextHyperValue( int h, Model m, double[] hyperLimits );
 
-
   /** @return The data frame used to train all these models.  All models are
    *  trained on the same data frame, but might be validated on multiple
    *  different frames. */
-  public Frame trainingFrame() { throw H2O.unimpl(); }
+  public Frame trainingFrame() { return _fr; }
 
   /** @return Factory method to return the grid for a particular modeling class
    *  and frame.  */
-  public static Grid get( Class clz, Frame fr ) { throw H2O.unimpl(); }
+  protected static Key keyName( String modelName, Frame fr ) {
+    if( fr._key==null ) throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
+    return Key.make("Grid_"+modelName+"_"+fr._key.toString());
+  }
 
-  /** @param A set of hyper parameter values
+  /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, or null if the model does not exist. */
-  public Model model( double[] hypers ) { throw H2O.unimpl(); }
+  public Model model( double[] hypers ) { 
+    throw H2O.unimpl(); 
+  }
 
-  /** @param A set of hyper parameter values
+  /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, typically built on demand and
    *  not cached - expected to be an expensive operation.  If the model in question
    *  is "in progress", a 2nd build will NOT be kicked off.  This is a blocking call. */
   public Model buildModel( double[] hypers ) {
-    return startBuildModel(hypers).getResult(); 
+    Job<Model> jm = startBuildModel(hypers);
+    return jm==null ? model(hypers) : jm.get();
   }
   
   /** @param hypers A set of hyper parameter values
@@ -81,18 +91,72 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  demand and not cached - expected to be an expensive operation.  If the
    *  model in question is "in progress", a 2nd build will NOT be kicked off.
    *  This is a non-blocking call. */
-  public H2OFuture<Model> startBuildModel( double[] hypers ) { throw H2O.unimpl(); }
+  public Job<Model> startBuildModel( double[] hypers ) {
+    if( model(hypers) != null ) return null; // Model already built
+    throw H2O.unimpl(); 
+  }
 
   
   /** @param hyperSearch A set of arrays of hyper parameter values, used to
    *  specify a simple fully-filled-in grid search.
-   *  @return A Future of this Grid, with models run with these parameters,
-   *  built as needed - expected to be an expensive operation.  If the models
-   *  in question are "in progress", a 2nd build will NOT be kicked off.  This
-   *  is a non-blocking call. */
-  public H2OFuture<Grid> startGridSearch( double[][] hyperSearch ) { throw H2O.unimpl(); }
+   *  @return GridSearch Job, with models run with these parameters, built as
+   *  needed - expected to be an expensive operation.  If the models in
+   *  question are "in progress", a 2nd build will NOT be kicked off.  This is
+   *  a non-blocking call. */
+  public GridSearch startGridSearch( final double[][] hyperSearch ) { return new GridSearch(_key,hyperSearch).start(); }
 
   // Cleanup models and grid
   @Override protected Futures remove_impl( Futures fs ) { throw H2O.unimpl(); }
 
+  // A search over a hyperparameter space
+  public class GridSearch extends Job<Grid> {
+    double[][] _hyperSearch;
+    GridSearch( Key gkey, double[][] hyperSearch ) {
+      super(Key.make("GridSearch_"+modelName()+Key.rand()), gkey, modelName()+" Grid Search");
+      _hyperSearch = hyperSearch;
+    }
+
+    GridSearch start() {
+      // Replace null hyperparameters with the model default
+      for( int i=0; i<_hyperSearch.length; i++ )
+        if( _hyperSearch[i] == null )
+          _hyperSearch[i] = new double[]{hyperDefault(i)};
+      // Work is 1 for every model to be built
+      long work = 1;
+      for( double hparms[] : _hyperSearch )
+        work *= hparms.length;
+      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(); tryComplete(); } },work);
+      return this;
+    }
+
+    // Classic grid search over hyper-parameter space
+    void gridSearch() {
+      double[] hypers = new double[nHyperParms()];
+      for( int[] hidx = new int[nHyperParms()]; hidx != null; hidx = nextModel(hidx) ) {
+       if( !isRunning() ) { cancel(); return; }
+       buildModel(hypers(hidx,hypers));
+      }
+      done();
+    }
+
+    // Dumb iteration over the hyper-parameter space.
+    // Return NULL at end
+    private int[] nextModel( int[] hidx ) {
+      // Find the next parm to flip
+      int i;
+      for( i=0; i<hidx.length; i++ )
+        if( hidx[i]<_hyperSearch[i].length )
+          break;
+      if( i==hidx.length ) return null; // All done, report null
+      // Flip indices
+      for( int j=0; j<i; j++ ) hidx[j]=0;
+      hidx[i]++;
+      return hidx;
+    }
+    private double[] hypers( int[] hidx, double[] hypers ) {
+      for( int i=0; i<hidx.length; i++ )
+        hypers[i] = _hyperSearch[i][hidx[i]];
+      return hypers;            // Flow coding
+    }
+  }
 }
