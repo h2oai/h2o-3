@@ -326,8 +326,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           proximalPen += diff*diff*_taskInfo._rho[i]*.5;
         }
       }
-      return proximalPen
-        +  likelihood / _taskInfo._nobs
+      return likelihood / _taskInfo._nobs
+        +  proximalPen
         + _currentLambda * (alpha * ArrayUtils.l1norm(beta,_activeData._intercept)
         + (1-alpha)*.5*ArrayUtils.l2norm2(beta,_activeData._intercept));
     }
@@ -979,7 +979,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public GramSolver(Gram gram, double [] xy,double [] xbar, double ybar, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho) {
       _lambda = l2pen;
       _ybar = ybar;
-      _xy = xy;
       _gram = gram;
       int ii = intercept?1:0;
 
@@ -1020,13 +1019,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           l2 *= 10;
           _chol = _gram.cholesky(_chol);
         }
+        _xy = xy;
         return;
       }
       gram.addDiag(rhos);
       _chol = gram.cholesky(null,true,null);
       gram.addDiag(ArrayUtils.mult(rhos,-1));
-      ArrayUtils.mult(rhos,-1);
+      ArrayUtils.mult(rhos, -1);
       _rho = rhos;
+      _xy = xy;
     }
 
     public double [] nullGradient(){

@@ -1,10 +1,12 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
+import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -402,7 +404,6 @@ public class GLMTest  extends TestUtil {
 //      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
       model.delete();
       job.remove();
-
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
@@ -474,7 +475,7 @@ public class GLMTest  extends TestUtil {
 //  }
 
 
-  @Ignore
+
   @Test public void testProximal() {
 //    glmnet's result:
 //    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
@@ -495,26 +496,43 @@ public class GLMTest  extends TestUtil {
     DKV.put(fr._key,fr);
     Key betaConsKey = Key.make("beta_constraints");
 
-    //String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
-    //double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
-    // [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
+    String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
+    double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
+//    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
     FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
-    Frame betaConstraints = ParseDataset.parse(parsed, new Key[]{betaConsKey});
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
     try {
       // H2O differs on intercept and race, same residual deviance though
-//      GLM2.Source src = new GLM2.Source((Frame)fr.clone(), fr.vec("CAPSULE"), false, true);
-//      new GLM2("GLM offset test on prostate.", Key.make(), modelKey, src, Family.binomial).setNonNegative(false).setRegularization(new double[]{0},new double[]{0.000}).setBetaConstraints(betaConstraints).setHighAccuracy().doInit().fork().get(); //.setHighAccuracy().doInit().fork().get();
-//      model = DKV.get(modelKey).get();
-//      fr.add("CAPSULE", fr.remove("CAPSULE"));
-//      DataInfo dinfo = new DataInfo(fr, 1, true, false, TransformType.NONE, DataInfo.TransformType.NONE);
-//      GLMIterationTask glmt = new GLMTask.GLMIterationTask(0,null, dinfo, new GLMParams(Family.binomial),false, true, true, model.beta(), 0, 1.0/380, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
-//      double [] beta = model.beta();
-//      double [] grad = glmt.gradient(0,0);
-//      for(int i = 0; i < beta.length; ++i)
-//        Assert.assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-8);
-      // now standardized
+      GLMParameters params = new GLMParameters();
+      params._standardize = false;
+      params._family = Family.binomial;
+      params._beta_constraint = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._alpha = new double[]{0};
+      params._lambda = new double[]{0};
+      GLM job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.get(modelKey).get();
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      // now check the gradient
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
+      double [] beta = model.beta();
+      // todo: remove, result from h2o.1
+      beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0).doAll(dinfo._adaptedFrame);
+      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta,1.0/380).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      System.out.println("objval = " + glmt._objVal);
+      System.out.println("grad.1 = " + Arrays.toString(lt._gradient));
+      System.out.println("grad.2 = " + Arrays.toString(glmt._gradient));
+      System.out.println("beta = " + Arrays.toString(beta));
+      for(int i = 0; i < beta.length; ++i)
+        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-8);
     } finally {
-      fr.delete();
+      for(Vec v:fr.vecs())v.remove();
+      DKV.remove(fr._key);
       if(model != null)model.delete();
     }
   }
@@ -580,7 +598,7 @@ public class GLMTest  extends TestUtil {
       job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
       model4 = job.trainModel().get();
       assertEquals(model3.validation().null_deviance,model4.validation().nullDeviance(),1e-4);
-      assertEquals(model4.validation().residual_deviance,model3.validation().residualDeviance(),model3.validation().null_deviance*1e-3);
+      assertEquals(model4.validation().residual_deviance, model3.validation().residualDeviance(), model3.validation().null_deviance * 1e-3);
       HashMap<String, Double> coefs1 = model1.coefficients();
       HashMap<String, Double> coefs2 = model2.coefficients();
       GLMValidation val1 = model1.validation();
