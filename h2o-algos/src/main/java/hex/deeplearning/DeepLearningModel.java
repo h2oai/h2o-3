@@ -1845,11 +1845,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       int x=_output._names.length, y=adaptFrm.numCols();
       Frame f = adaptFrm.extractFrame(x, y); //this will call vec_impl() and we cannot call the delete() below just yet
 
-      if (destination_key != null) {
-        Key k = Key.make(destination_key);
-        f = new Frame(k, f.names(), f.vecs());
-        DKV.put(k, f);
-      }
+      f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+      DKV.put(f);
       makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
       return f;
     }
