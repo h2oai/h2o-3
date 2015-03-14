@@ -176,9 +176,10 @@ public class NodePersistentStorage {
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
+    BufferedReader reader = null;
     try {
       String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
-      BufferedReader reader = new BufferedReader(new FileReader(fileName));
+      reader = new BufferedReader(new FileReader(fileName));
       String line;
       StringBuilder stringBuilder = new StringBuilder();
       String lineseparator = "\n";
@@ -195,6 +196,14 @@ public class NodePersistentStorage {
     }
     catch (Exception e) {
       throw new RuntimeException(e);
+    }
+    finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        }
+        catch (Exception ignore) {}
+      }
     }
   }
 
