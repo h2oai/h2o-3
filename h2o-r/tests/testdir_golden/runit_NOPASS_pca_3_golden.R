@@ -17,7 +17,7 @@ test.pcascore.golden <- function(H2Oserver) {
   predH2O <- predict(fitH2O, arrestsH2O)
   Log.info("R Projection:"); print(head(predR))
   Log.info("H2O Projection:"); print(head(predH2O))
-  checkSignedCols(as.matrix(predH2O), predR, tolerance = 1e-6)
+  checkSignedCols(as.matrix(predH2O), predR, tolerance = 1e-5)
   
   testEnd()
 }
