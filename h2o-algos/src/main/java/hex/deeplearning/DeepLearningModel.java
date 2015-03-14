@@ -37,7 +37,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     /**
      * A model key associated with a previously trained Deep Learning
      * model. This option allows users to build a new model as a
-     * continuation of a previously generated model (e.g., by a grid search).
+     * continuation of a previously generated model.
      */
     public Key _checkpoint;
 
@@ -46,14 +46,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Only applicable if training is not cancelled.
      */
     public boolean _override_with_best_model = true;
-
-    /**
-     * Unlock expert mode parameters than can affect model building speed,
-     * predictive accuracy and scoring. Leaving expert mode parameters at default
-     * values is fine for many problems, but best results on complex datasets are often
-     * only attainable via expert mode options.
-     */
-    public boolean _expert_mode = false;
 
     public boolean _autoencoder = false;
 
@@ -76,14 +68,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * The number and size of each hidden layer in the model.
      * For example, if a user specifies "100,200,100" a model with 3 hidden
      * layers will be produced, and the middle hidden layer will have 200
-     * neurons.To specify a grid search, add parentheses around each
-     * model's specification: "(100,100), (50,50,50), (20,20,20,20)".
+     * neurons.
      */
     public int[] _hidden = new int[] { 200, 200 };
 
     /**
      * The number of passes over the training dataset to be carried out.
-     * It is recommended to start with lower values for initial grid searches.
+     * It is recommended to start with lower values for initial experiments.
      * This value can be modified during checkpoint restarts and allows continuation
      * of selected models.
      */
@@ -434,14 +425,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     /**
      * Loss functions
-     * CrossEntropy is recommended for classification, MeanSquare for regression (or classification)
+     * Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression)
      */
     public enum Loss {
-      MeanSquare, CrossEntropy, MeanSquareClassification
+      MeanSquare, CrossEntropy
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
-      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : (_loss == Loss.CrossEntropy || _loss == Loss.MeanSquareClassification);
+      boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
       for( int h : _hidden ) if( h==0 ) dl.error("_hidden", "Hidden layer size must be >0.");
@@ -570,7 +561,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
       if (_loss == null) {
         if (expensive || dl._nclass != 0) {
-          dl.error("_loss", "Loss function must be specified. For classification (categorical response), use CrossEntropy or MeanSquareClassification. For regression (numerical response), use MeanSquare. For auto-encoders, use MeanSquare.");
+          dl.error("_loss", "Loss function must be specified. Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression). For auto-encoders, use MeanSquare.");
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
       } else {
@@ -579,10 +570,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
         if (!classification && _loss == Loss.CrossEntropy)
           dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
-        else if (!classification && _loss == Loss.MeanSquareClassification)
-          dl.error("_loss", "For MeanSquareClassification loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
-        else if (classification && _loss == Loss.MeanSquare)
-          dl.error("_loss", "For MeanSquare loss, the response must be numerical. Either select CrossEntropy or MeanSquareClassification loss for classification, or convert the response to numerical (if applicable).");
       }
 
       if (_score_training_samples < 0) {
@@ -795,8 +782,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     @Override public double[] classErr() { return null; }
   }
 
-  /** for grid search error reporting */
-//  @Override
   public ConfusionMatrix cm() {
     final DeepLearningScoring lasterror = last_scored();
     if (lasterror == null) return null;
