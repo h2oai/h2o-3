@@ -706,7 +706,7 @@ public class NewChunk extends Chunk {
     if( mode==AppendableVec.NA ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, sparseLen());
     if( mode==AppendableVec.STRING )
-      return new CStrChunk(_sslen, _ss, sparseLen(), _is);
+      return new CStrChunk(_sslen, _ss, sparseLen(), _len, _is);
     boolean rerun=false;
     if(mode == AppendableVec.ENUM){
       for( int i=0; i< sparseLen(); i++ )

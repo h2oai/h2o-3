@@ -116,6 +116,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
 
 
 def _quoted(key):
+  if key == None: return "\"\""
   is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
   key = key if is_quoted  else "\"" + key + "\""
   return key

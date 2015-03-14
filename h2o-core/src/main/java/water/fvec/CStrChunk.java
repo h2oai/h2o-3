@@ -9,7 +9,7 @@ public class CStrChunk extends Chunk {
   static protected final int _OFF=4;
   private int _valstart;
 
-  public CStrChunk(int sslen, byte[] ss, int idxLen, int[] strIdx) {
+  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx) {
     _start = -1;
     _valstart = _OFF + (idxLen<<2);
     set_len(idxLen);
@@ -17,8 +17,10 @@ public class CStrChunk extends Chunk {
     _mem = MemoryManager.malloc1(CStrChunk._OFF + idxLen*4 + sslen, false);
     UnsafeUtils.set4(_mem, 0, CStrChunk._OFF + idxLen*4); // location of start of strings
 
-    for( int i = 0; i < idxLen; ++i )
+    for( int i = 0; i < sparseLen; ++i )
       UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, strIdx[i]);
+    for( int i = sparseLen; i < idxLen; ++i )  // set NAs
+      UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, -1);
     for( int i = 0; i < sslen; ++i )
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }

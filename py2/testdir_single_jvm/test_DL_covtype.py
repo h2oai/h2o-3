@@ -48,8 +48,8 @@ class Basic(unittest.TestCase):
         model_key = 'deeplearning_' + identifier + '.hex'
 
         parameters = {
-            # loss enum True None [u'MeanSquare', u'CrossEntropy', u'MeanSquareClassification']
-            'loss': 'MeanSquareClassification',
+            # loss enum True None [u'MeanSquare', u'CrossEntropy']
+            'loss': 'CrossEntropy',
             'validation_frame': validation_key, # KeyIndexed None
             'ignored_columns': None, # string[] None
             'response_column': labelList[response], # string None

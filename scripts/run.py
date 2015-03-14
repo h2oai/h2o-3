@@ -1434,8 +1434,6 @@ def signal_handler(signum, stackframe):
     print("SIGNAL CAUGHT (" + str(signum) + ").  TEARING DOWN CLOUDS.")
     print("")
     print("----------------------------------------------------------------------")
-    # get a summary if jenkins causes timeout
-    g_runner.report_summary(g_nopass)
     g_runner.terminate()
 
 
