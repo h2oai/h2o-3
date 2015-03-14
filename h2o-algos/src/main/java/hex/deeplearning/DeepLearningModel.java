@@ -280,7 +280,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    public Loss _loss = null;
+    public Loss _loss = Loss.Automatic;
 
   /*Scoring*/
     /**
@@ -425,10 +425,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     /**
      * Loss functions
-     * Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression)
+     * Absolute, MeanSquare, Huber for regression
+     * Absolute, MeanSquare, Huber or CrossEntropy for classification
      */
     public enum Loss {
-      MeanSquare, CrossEntropy
+      Automatic, MeanSquare, CrossEntropy, Huber, Absolute
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
@@ -558,19 +559,28 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
+      if (_loss == Loss.Automatic) {
+        if (expensive) _loss = (classification && !_autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
+      }
 
       if (_loss == null) {
         if (expensive || dl._nclass != 0) {
-          dl.error("_loss", "Loss function must be specified. Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression). For auto-encoders, use MeanSquare.");
+          dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare for numerical response (regression).");
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
       } else {
-        if (_autoencoder && _loss != Loss.MeanSquare)
-          dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-
+        if (_autoencoder && _loss == Loss.CrossEntropy)
+          dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
         if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
+          dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+//        if (classification && _loss == Loss.Huber)
+//          dl.error("_loss", "For Huber loss, the response must be numerical.");
       }
+      if (_autoencoder && _loss == Loss.CrossEntropy)
+        dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
+
+      if (!classification && _loss == Loss.CrossEntropy)
+        dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or use a categorical response.");
 
       if (_score_training_samples < 0) {
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
@@ -686,7 +696,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
-      default: throw H2O.unimpl();
+      default: throw H2O.unimpl("Invalid Modelcategory " + _output.getModelCategory());
     }
   }
 
@@ -938,8 +948,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           table.set(row, col++, e.valid_err);
         }
       }
-      else if(get_params()._n_folds > 0) {
-        throw H2O.unimpl();
+      else if(get_params()._n_folds > 1) {
+        throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
       }
       row++;
     }
@@ -1161,7 +1171,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
-              "Status of Neuron Layers",
+              "Status of Neuron Layers (" +
+                      (get_params()._autoencoder ? "Auto-Encoder" :
+                              _classification ? "Classification" : "Regression" )
+                      + ", Loss: " + get_params()._loss.toString() + ")",
               new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
@@ -1181,13 +1194,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         table.set(i, 2, neurons[i].getClass().getSimpleName());
 
         if (i == 0) {
-          table.set(i, 3, neurons[i].params._input_dropout_ratio);
+          table.set(i, 3, neurons[i].params._input_dropout_ratio*100);
           continue;
         } else if (i < neurons.length - 1) {
           if (neurons[i].params._hidden_dropout_ratios == null) {
             table.set(i, 3, 0);
           } else {
-            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]);
+            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]*100);
           }
         }
         table.set(i, 4, neurons[i].params._l1);

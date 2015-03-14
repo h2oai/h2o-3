@@ -11,6 +11,7 @@ import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.OSUtils;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -727,6 +728,8 @@ final public class H2O {
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
+    long totalMemory = OSUtils.getTotalPhysicalMemory();
+    Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
   }
 
   private static void startGAStartupReport() {
