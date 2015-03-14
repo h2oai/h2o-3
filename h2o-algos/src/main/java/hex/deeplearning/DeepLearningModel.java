@@ -1172,9 +1172,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers (" +
-                      (get_params()._autoencoder ? "Auto-Encoder" :
-                              _classification ? "Classification" : "Regression" )
-                      + ", Loss: " + get_params()._loss.toString() + ")",
+                  (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
+                      (get_params()._autoencoder ? "auto-encoder" :
+                              _classification ? (units[units.length-1] + "-class classification") : "regression" )
+                      + ", " + get_params()._loss.toString() + " loss)",
               new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
