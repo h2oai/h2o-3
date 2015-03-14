@@ -14,7 +14,7 @@ The following help window displays:
 
 ![help menu](https://raw.githubusercontent.com/h2oai/h2o/master/docs/Flow-images/Shortcuts.png)
 
-To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. 
+To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**. 
 
 For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button. 
 
@@ -24,7 +24,17 @@ You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of c
 
  ![Assist Me links](images/Flow_assist.png)
  
-You can also access the quick start guide, keyboard shortcuts, or H2O documentation from the "Help" menu at the top of the screen. 
+There are multiple resources to help you get started with Flow in the **Help** sidebar. To access this document, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+
+You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
+
+  ![Flow Packs](images/Flow_ExampleFlows.png)
+
+If you have a flow currently open, a confirmation window appears asking if the current notebook should be replaced. To load the example flow, click the **Load Notebook** button. 
+
+To view the REST API documentation, click the **Help** tab in the sidebar and then select the type of REST API documentation (**Routes** or **Schemas**). 
+
+ ![REST API documentation](images/Flow_REST_docs.png)
 
 Before getting started with H2O Flow, make sure you understand the different cell modes. 
 
@@ -65,6 +75,16 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
  
  ![Cell executing](images/Flow_cellmode_runningflag.png)
 
+When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
+
+  ![Flow Progress Bar](images/Flow_progressbar.png)
+
+When the flow is complete, a message displays in the upper right. 
+**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
+
+  ![Flow - Completed Successfully](images/Flow_run_pass.png)
+  ![Flow - Did Not Complete](images/Flow_run_fail.png) 
+
 Here are some important keyboard shortcuts to remember: 
 
 - Click a cell and press **Enter** to enter edit mode, which allows you to change the contents of a cell. 
@@ -104,11 +124,11 @@ There are multiple ways to import data in H2O flow:
 
 - Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  
-  You can also drag and drop the file onto the **Search** field in the cell.
+- You can also drag and drop the file onto the **Search** field in the cell.
   
  ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
-- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. 
+- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
@@ -124,7 +144,18 @@ After you click the **Import** button, the raw code for the current job displays
 
  ![Import Files - Results](images/Flow_import_results.png)
 
-Ok, now that you've imported your data, let's move on to the next step: parsing. Click the **Parse these files** button to continue. 
+##Uploading Data
+
+To upload a local file, click the **Flow** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button. 
+  
+  ![File Upload Pop-Up](images/Flow_UploadDataset.png)
+  
+  When the file has uploaded successfully, a message displays in the upper right and the **Setup Parse** cell displays. 
+
+  
+  ![File Upload Successful](images/Flow_FileUploadPass.png)
+
+Ok, now that your data is available in H2O Flow, let's move on to the next step: parsing. Click the **Parse these files** button to continue. 
 
 ---
 
@@ -246,6 +277,12 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 - **word2vec**: Create a word-to-vector model for text-based data. 
 **Note**: For a word2vec model, the training frame must contain string columns. 
 
+<a name="drf"></a>
+- **drf**: Create a distributed Random Forest model.  
+
+<a name="nb"></a>
+- **naivebayes**: Create a Naive Bayes model. 
+
 <a name="pca"></a> 
 - **pca**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
@@ -284,19 +321,25 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
-- **Do_classification**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Convert the response column to an enum (forcing classification instead of regression).
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
+- **Max\_after\_balance\_size**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
 
-- **Max\_after\_balance\_size**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is infinity. 
+- **Ntrees**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
 
-- **Ntrees**: [(GBM)](#GBM) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
+- **Max\_depth**: [(GBM)](#GBM), [(DRF)](#drf) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). For GBM, the default value is 5. For DRF, the default value is 20. 
 
-- **Max\_depth**: [(GBM)](#GBM) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). The default value is 5. 
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10. 
 
-- **Min\_rows**: [(GBM)](#GBM) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10. 
+- **Nbins**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of bins for the histogram. The default value is 20. 
 
-- **Nbins**: [(GBM)](#GBM) Specify the number of bins for the histogram. The default value is 20. 
+- **Mtries**: [(DRF)](#drf) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
+
+- **Sample\_rate**: [(DRF)](#drf) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
+
+- **Do_grpsplit**: [(DRF)](#drf) To check non-contiguous group splits for categorical predictors, check this checkbox. The default setting is disabled. 
+
+- **Build\_tree\_one\_node**: [(DRF)](#drf) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
@@ -335,11 +378,13 @@ The available options vary depending on the selected model. If an option is only
 
 - **Epochs**: ([word2vec](#w2v), [DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
 
+- **Loss**: [(DL)](#DL) *Required* Select the loss function (MeanSquare, CrossEntropy, or MeanSqaureClassification). 
+
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
 - **Max\_confusion\_matrix\_size**: [(DL)](#DL) Specify the number of classes for the confusion matrices. The default value is 20. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
@@ -357,6 +402,10 @@ The available options vary depending on the selected model. If an option is only
 
 - **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0.0. 
 
+- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing.
+
+- **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
+
 - **Minwordfreq**: [(word2vec)](#w2v) Specify the number of times a word must appear to be included in the model. The default is 5. 
 
 - **WordModel**: [(word2vec)](#w2v) Select the model type (continuous bag of words [CBOW], SkipGram, or None). 
@@ -373,6 +422,15 @@ The available options vary depending on the selected model. If an option is only
 
 - **Initlearningrate**: [(word2vec)](#w2v) Specify the starting learning rate. The default is 0.05. 
 
+- **Laplace**: [(NaiveBayes)](#nb) Specify the Laplace smoothing parameter. The default value is 0. 
+
+- **Min\_sdev**: [(NaiveBayes)](#nb) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+
+- **Eps\_sdev**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
+
+- **Min\_prob**: [(NaiveBayes)](#nb) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+
+- **Eps\_prob**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
 
 **Advanced Options**
 
@@ -460,7 +518,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Col_major**: [(DL)](#DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
-- **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **Seed**: [K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [(DRF)](#drf) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Prior1**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
 
@@ -714,6 +772,24 @@ To download the logs for further analysis, click the **Admin** menu, then click 
 
 ---
 
+## Viewing Stack Trace Information
+
+To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
+
+ ![Stack Trace](images/Flow_stacktrace.png)
+
+To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
+
+---
+
+##Viewing Network Test Results
+
+To view network test results, click the **Admin** menu, then click **Network Test**. 
+
+  ![Network Test Results](images/Flow_NetworkTest.png)
+
+---
+
 ## Accessing the Profiler
 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
@@ -723,14 +799,6 @@ To view the profiler, click the **Admin** menu, then click **Profiler**.
 To view the profiler information for a specific node, select it from the drop-down **Select Node** menu. 
 
 ---
-
-## Viewing Stack Trace Information
-
-To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
-
- ![Stack Trace](images/Flow_stacktrace.png)
-
-To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
 
 
 ## Viewing the Timeline
