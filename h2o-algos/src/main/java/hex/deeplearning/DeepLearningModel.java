@@ -1184,13 +1184,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         table.set(i, 2, neurons[i].getClass().getSimpleName());
 
         if (i == 0) {
-          table.set(i, 3, neurons[i].params._input_dropout_ratio);
+          table.set(i, 3, neurons[i].params._input_dropout_ratio*100);
           continue;
         } else if (i < neurons.length - 1) {
           if (neurons[i].params._hidden_dropout_ratios == null) {
             table.set(i, 3, 0);
           } else {
-            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]);
+            table.set(i, 3, neurons[i].params._hidden_dropout_ratios[i - 1]*100);
           }
         }
         table.set(i, 4, neurons[i].params._l1);
