@@ -352,7 +352,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "Automatic", "MeanSquare", "CrossEntropy" }, required = false, level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.expert, direction=API.Direction.INOUT)
     public DeepLearningParameters.Loss loss;
 
     /*Scoring*/

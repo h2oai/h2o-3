@@ -73,13 +73,13 @@ public class DeepLearningMissingTest extends TestUtil {
           p._response_column = train._names[train.numCols()-1];
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
-          p._loss = DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy;
-          p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
+          p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+          p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
           p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
           p._epochs = 3;
-          p._quiet_mode = true;
+//          p._quiet_mode = true;
           p._destination_key = Key.make();
           p._reproducible = true;
           p._seed = seed;
@@ -134,7 +134,7 @@ public class DeepLearningMissingTest extends TestUtil {
     }
     Log.info(sb.toString());
     Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip) > sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation));
-    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 2);
+    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1);
   }
 }
 
