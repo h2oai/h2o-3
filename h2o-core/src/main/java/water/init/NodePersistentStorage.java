@@ -125,6 +125,16 @@ public class NodePersistentStorage {
     // Move tmp file to final spot
     File realf = new File(d2 + File.separator + keyName);
     try {
+      // Windows can't handle move, so delete the target file first if it exists.
+      if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+        if (realf.exists()) {
+          boolean success = realf.delete();
+          if (! success) {
+            throw new RuntimeException("NodePersistentStorage delete failed (" + realf + ")");
+          }
+        }
+      }
+
       boolean success = tmpf.renameTo(realf);
       if (! success) {
         throw new RuntimeException("NodePersistentStorage move failed (" + tmpf + " -> " + realf + ")");
@@ -176,9 +186,10 @@ public class NodePersistentStorage {
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
+    BufferedReader reader = null;
     try {
       String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
-      BufferedReader reader = new BufferedReader(new FileReader(fileName));
+      reader = new BufferedReader(new FileReader(fileName));
       String line;
       StringBuilder stringBuilder = new StringBuilder();
       String lineseparator = "\n";
@@ -195,6 +206,14 @@ public class NodePersistentStorage {
     }
     catch (Exception e) {
       throw new RuntimeException(e);
+    }
+    finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        }
+        catch (Exception ignore) {}
+      }
     }
   }
 

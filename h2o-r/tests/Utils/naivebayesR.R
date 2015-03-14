@@ -1,5 +1,5 @@
-checkNaiveBayesModel <- function(fitH2O, fitR, tolerance = 1e-6) {
-  aprioriR <- fitR$apriori
+checkNaiveBayesModel <- function(fitH2O, fitR, num_rows, tolerance = 1e-6) {
+  aprioriR <- fitR$apriori / num_rows
   aprioriH2O <- fitH2O@model$apriori
   Log.info("Compare A-priori Probabilities between R and H2O\n")
   Log.info(paste("R A-priori: ", paste(aprioriR, collapse = ",")))
@@ -25,18 +25,20 @@ checkNaiveBayesModel <- function(fitH2O, fitR, tolerance = 1e-6) {
   tablesR, tablesH2O )
 }
 
-checkNaiveBayesPrediction <- function(predH2O, predR, tolerance = 1e-6) {
+checkNaiveBayesPrediction <- function(predH2O, predR, type = "class", tolerance = 1e-6) {
   predH2O.df <- as.data.frame(predH2O)
   
-  classR <- predR$class
-  classH2O <- predH2O.df[,1]
-  Log.info("Compare Class Assignments between R and H2O\n")
-  expect_equal(classH2O, classR)
-  
-  postR <- predR$posterior
-  postH2O <- predH2O.df[,-1]
-  Log.info("Compare Posterior Probabilities between R and H2O\n")
-  checkNumMatrixVals(as.matrix(postH2O), postR, tolerance)
+  if(type == "class") {
+    classH2O <- predH2O.df[,1]
+    if(!is.factor(classH2O)) classH2O <- as.factor(classH2O)
+    Log.info("Compare Class Assignments between R and H2O\n")
+    expect_equivalent(classH2O, predR)
+  } else if(type == "raw") {
+    postH2O <- predH2O.df[,-1]
+    Log.info("Compare Posterior Probabilities between R and H2O\n")
+    checkNumMatrixVals(as.matrix(postH2O), predR, tolerance)
+  } else
+    stop("type must be either 'class' or 'raw'")
 }
 
 checkNumMatrixVals <- function(object, predicted, tolerance = 1e-6) {

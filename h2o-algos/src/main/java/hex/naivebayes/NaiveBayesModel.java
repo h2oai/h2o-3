@@ -16,9 +16,9 @@ import java.util.Arrays;
 public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   public static class NaiveBayesParameters extends SupervisedModel.SupervisedParameters {
     public double _laplace = 0;         // Laplace smoothing parameter
-    public double _eps_sdev = 1e-10;   // Cutoff below which standard deviation is replaced with _min_sdev
+    public double _eps_sdev = 0;   // Cutoff below which standard deviation is replaced with _min_sdev
     public double _min_sdev = 0.001;   // Minimum standard deviation to use for observations without enough data
-    public double _eps_prob = 1e-10;   // Cutoff below which probability is replaced with _min_prob
+    public double _eps_prob = 0;   // Cutoff below which probability is replaced with _min_prob
     public double _min_prob = 0.001;   // Minimum conditional probability to use for observations without enough data
   }
 
