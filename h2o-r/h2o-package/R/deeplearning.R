@@ -33,7 +33,7 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Unifrom: -value ... value, Normal: stddev
-#' @param loss Loss function. Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression). For auto-encoders, use MeanSquare.
+#' @param loss Loss function: Automatic, CrossEntropy (for classification only), MeanSquare, Absolute (experimental) or Huber (experimental)
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
@@ -67,9 +67,7 @@
 #'
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' indep <- names(iris.hex)[1:4]
-#' dep <- names(iris.hex)[5]
-#' iris.dl <- h2o.deeplearning(x = indep, y = dep, data = iris.hex, activation = "Tanh", epochs = 5, loss="CrossEntropy")
+#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
 
 h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
@@ -101,7 +99,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              max_w2 = Inf,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
-                             loss,
+                             loss = "Automatic",
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,

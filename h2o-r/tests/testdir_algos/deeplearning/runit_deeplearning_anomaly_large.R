@@ -58,7 +58,6 @@ check.deeplearning_anomaly <- function(conn) {
                                training_frame=train_hex,
                                activation="Tanh",
                                autoencoder=T,
-                               loss="MeanSquare",
                                hidden=c(50),
                                l1=1e-5,
                                ignore_const_cols=F,
