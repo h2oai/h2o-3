@@ -33,7 +33,24 @@ class Person:
         else:
             self.resolved_story_points += story_points
 
-    def _printbar(self, label, value, char):
+    def emit(self):
+        global g_csv
+        if g_csv:
+            self._emit_csv()
+        else:
+            self._emit_barchart()
+
+    def _emit_csv(self):
+        print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
+
+    def _emit_barchart(self):
+        print("")
+        print("-----" + self.name + "-----")
+        Person._printbar("  resolved", self.resolved_story_points, "R")
+        Person._printbar("unresolved", self.unresolved_story_points, "U")
+
+    @staticmethod
+    def _printbar(label, value, char):
         bars_per_day = 4
         sys.stdout.write(label + ":  ")
         num_bars = int(value * bars_per_day)
@@ -45,22 +62,6 @@ class Person:
             num_bars -= 1
             i += 1
         sys.stdout.write("\n")
-
-    def emit_csv(self):
-        print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
-
-    def emit_barchart(self):
-        print("")
-        print("-----" + self.name + "-----")
-        self._printbar("  resolved", self.resolved_story_points, "R")
-        self._printbar("unresolved", self.unresolved_story_points, "U")
-
-    def emit(self):
-        global g_csv
-        if g_csv:
-            self.emit_csv()
-        else:
-            self.emit_barchart()
 
 
 class PeopleManager:
