@@ -425,10 +425,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     /**
      * Loss functions
-     * Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression)
+     * Absolute, MeanSquare, Huber for regression
+     * Absolute, MeanSquare, Huber or CrossEntropy for classification
      */
     public enum Loss {
-      Automatic, MeanSquare, CrossEntropy
+      Automatic, MeanSquare, CrossEntropy, Huber, Absolute
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
@@ -561,6 +562,20 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (_loss == Loss.Automatic) {
         if (expensive) _loss = (classification && !_autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
       }
+
+      if (_loss == null) {
+        if (expensive || dl._nclass != 0) {
+          dl.error("_loss", "Loss function must be specified. Try CrossEntropy for categorical response (classification), MeanSquare for numerical response (regression).");
+        }
+        //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
+      } else {
+        if (_autoencoder && _loss == Loss.CrossEntropy)
+          dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
+        if (!classification && _loss == Loss.CrossEntropy)
+          dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+//        if (classification && _loss == Loss.Huber)
+//          dl.error("_loss", "For Huber loss, the response must be numerical.");
+      }
       if (_autoencoder && _loss == Loss.CrossEntropy)
         dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
 
@@ -681,7 +696,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
-      default: throw H2O.unimpl();
+      default: throw H2O.unimpl("Invalid Modelcategory " + _output.getModelCategory());
     }
   }
 
@@ -933,8 +948,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           table.set(row, col++, e.valid_err);
         }
       }
-      else if(get_params()._n_folds > 0) {
-        throw H2O.unimpl();
+      else if(get_params()._n_folds > 1) {
+        throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
       }
       row++;
     }

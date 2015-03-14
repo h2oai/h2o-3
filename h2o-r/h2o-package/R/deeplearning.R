@@ -33,7 +33,7 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier)
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal"
 #' @param initial_weight_scale Unifrom: -value ... value, Normal: stddev
-#' @param loss Loss function. Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression). For auto-encoders, use MeanSquare.
+#' @param loss Loss function: CrossEntropy (classification only), MeanSquare, Absolute or Huber
 #' @param score_interval Shortest time interval (in secs) between model scoring
 #' @param score_training_samples Number of training set samples for scoring (0 for all)
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all)
