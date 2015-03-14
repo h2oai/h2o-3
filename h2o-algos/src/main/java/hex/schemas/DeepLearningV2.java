@@ -343,16 +343,16 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
 
     /**
      * The loss (error) function to be minimized by the model.
-     * Cross Entropy loss is used when the model output consists of independent
+     * CrossEntropy loss is used when the model output consists of independent
      * hypotheses, and the outputs can be interpreted as the probability that each
      * hypothesis is true. Cross entropy is the recommended loss function when the
      * target values are class labels, and especially for imbalanced data.
      * It strongly penalizes error in the prediction of the actual class label.
-     * Mean Square loss is used when the model output are continuous real values, but can
+     * MeanSquare loss is used when the model output are continuous real values, but can
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "MeanSquare", "CrossEntropy" }, required = false, level = API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "Loss function", values = { "Automatic", "MeanSquare", "CrossEntropy" }, required = false, level = API.Level.expert, direction=API.Direction.INOUT)
     public DeepLearningParameters.Loss loss;
 
     /*Scoring*/

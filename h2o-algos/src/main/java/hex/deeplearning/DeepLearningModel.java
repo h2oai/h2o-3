@@ -280,7 +280,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    public Loss _loss = null;
+    public Loss _loss = Loss.Automatic;
 
   /*Scoring*/
     /**
@@ -428,7 +428,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression)
      */
     public enum Loss {
-      MeanSquare, CrossEntropy
+      Automatic, MeanSquare, CrossEntropy
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
@@ -558,19 +558,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-
-      if (_loss == null) {
-        if (expensive || dl._nclass != 0) {
-          dl.error("_loss", "Loss function must be specified. Use CrossEntropy (or MeanSquare) for categorical response (classification), MeanSquare for numerical response (regression). For auto-encoders, use MeanSquare.");
-        }
-        //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
-      } else {
-        if (_autoencoder && _loss != Loss.MeanSquare)
-          dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
-
-        if (!classification && _loss == Loss.CrossEntropy)
-          dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or convert the response to a categorical (if applicable).");
+      if (_loss == Loss.Automatic) {
+        if (expensive) _loss = (classification && !_autoencoder) ? Loss.CrossEntropy : Loss.MeanSquare;
       }
+      if (_autoencoder && _loss == Loss.CrossEntropy)
+        dl.error("_loss", "Must use MeanSquare loss function for auto-encoder.");
+
+      if (!classification && _loss == Loss.CrossEntropy)
+        dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select MeanSquare loss for regression, or use a categorical response.");
 
       if (_score_training_samples < 0) {
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
