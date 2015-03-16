@@ -8,6 +8,8 @@ source('../h2o-runit-hadoop.R')
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
 myPort <- ipPort[[2]]
+hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
+print(hdfs_name_node)
 
 library(RCurl)
 library(h2o)
@@ -15,12 +17,15 @@ library(h2o)
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
+hdfs_airlines_file = "/datasets/airlines_all.csv"
+
 #----------------------------------------------------------------------
 # Single file cases.
 #----------------------------------------------------------------------
 
-heading("Testing single file importHDFS")
-airlines.hex <- h2o.importFile(conn, "hdfs://datasets/airlines/airlines_all.csv")
+leading("Testing single file importHDFS")
+url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
+airlines.hex <- h2o.importFile(conn, url)
 
 n <- nrow(airlines.hex)
 print(n)
