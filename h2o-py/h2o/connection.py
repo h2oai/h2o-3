@@ -371,8 +371,11 @@ class H2OConnection(object):
       detailed_error_msgs = []
       try:
         result = http_result.json()
-        detailed_error_msgs = '\n'.join([m['message'] for m in result['validation_messages'] if m['message_type'] in \
-                                         ['ERROR']])
+        if 'validation_messages' in result.keys():
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['validation_messages'] if m['message_type'] in \
+                                          ['ERROR']])
+        elif 'exception_msg' in result.keys():
+          detailed_error_msgs = result['exception_msg']
       except ValueError:
         pass
       raise EnvironmentError(("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {}). \n"+ \
