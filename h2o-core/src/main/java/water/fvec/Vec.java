@@ -199,6 +199,10 @@ public class Vec extends Keyed<Vec> {
     assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
     return _type==T_ENUM; 
   }
+
+  public final double sparseRatio() {
+    return rollupStats()._nzCnt/(double)length();
+  }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }

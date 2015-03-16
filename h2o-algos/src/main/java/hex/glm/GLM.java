@@ -247,8 +247,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final GLMParameters   _params;
     final double [] _betaGiven;
     final double [] _rho;
-    final double [] _lb;
-    final double [] _ub;
+    final double [] _betaLB;
+    final double [] _betaUB;
 
     L_BFGS _lbfgs;      // lbfgs solver if we use lbfgs or null
     GradientInfo _gOld; // gradient info of the last returned result
@@ -262,8 +262,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _lambdaMax = lmax;
       _betaGiven = betaGiven;
       _rho = rho;
-      _lb = lb;
-      _ub = ub;
+      _betaLB = lb;
+      _betaUB = ub;
 //      _lastLambda = lambda;
       _beta = beta;
       _ginfo = ginfo;
@@ -326,19 +326,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           proximalPen += diff*diff*_taskInfo._rho[i]*.5;
         }
       }
-      return proximalPen
-        +  likelihood / _taskInfo._nobs
+      return likelihood / _taskInfo._nobs
+        +  proximalPen
         + _currentLambda * (alpha * ArrayUtils.l1norm(beta,_activeData._intercept)
         + (1-alpha)*.5*ArrayUtils.l2norm2(beta,_activeData._intercept));
     }
 
     int [] _activeCols;
 
+    boolean _allIn;
     /**
      * Apply strong rules to filter out expected innactive (with zero coefficient) predictors.
      * @return indeces of expected active predictors.
      */
     private int [] activeCols(final double l1, final double l2, final double [] grad) {
+      if(_allIn)return null;
       int selected = 0;
       int [] cols = null;
       if (_taskInfo._params._alpha[0] > 0) {
@@ -354,6 +356,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       if(_taskInfo._params._alpha[0] == 0 || selected == _taskInfo._dinfo.fullN()){
         _activeCols = null;
+        _allIn = true;
         _activeData = _taskInfo._dinfo;
         selected = _taskInfo._dinfo.fullN();
       } else {
@@ -612,8 +615,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         final double [] newBeta = MemoryManager.malloc8d(glmt._xy.length);
         double l2pen = _currentLambda * (1-_taskInfo._params._alpha[0]);
         double l1pen = _currentLambda * _taskInfo._params._alpha[0];
+        double defaultRho = _taskInfo._betaLB != null || _taskInfo._betaUB != null?_taskInfo._lambdaMax*1e-2:0;
         // l1pen or upper/lower bounds require ADMM solver
-        if(l1pen > 0 || _taskInfo._lb != null || _taskInfo._ub != null){
+        if(l1pen > 0 || _taskInfo._betaLB != null || _taskInfo._betaUB != null){
           // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_taskInfo._params._alpha[0],_currentLambda*_taskInfo._params._alpha[0]);
           long tx= System.currentTimeMillis();
           double [] xbar = MemoryManager.malloc8d(glmt._xy.length);
@@ -623,13 +627,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           if(_activeData._predictor_transform == TransformType.NONE)
             for(int j = ns; j < xbar.length; ++j)
               xbar[j] = _activeData._adaptedFrame.vec(j-ns).mean();
+
+          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, xbar, glmt._zsum /glmt._nobs, _activeData._intercept, l2pen, l1pen /*, rho*/, _taskInfo._betaGiven, _taskInfo._rho, defaultRho);
           long ty = System.currentTimeMillis();
-          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, xbar, glmt._zsum /glmt._nobs, _activeData._intercept, l2pen, l1pen /*, rho*/, _taskInfo._betaGiven, _taskInfo._rho);
-          ty = System.currentTimeMillis()-ty;
-          new ADMM.L1Solver(1e-18, 5000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _taskInfo._lb, _taskInfo._ub);
-          LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + ty + "ms");
+          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _taskInfo._betaLB, _taskInfo._betaUB);
+          LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (tx-ty) + "ms");
         } else
-          new GramSolver(glmt._gram, glmt._xy,  null, glmt._zsum /glmt._nobs, _activeData._intercept, l2pen /*, 0*/,l1pen,  _taskInfo._betaGiven, _taskInfo._rho).solve(null,newBeta);
+          new GramSolver(glmt._gram, glmt._xy,  null, glmt._zsum /glmt._nobs, _activeData._intercept, l2pen /*, 0*/,l1pen,  _taskInfo._betaGiven, _taskInfo._rho, defaultRho).solve(null,newBeta);
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
@@ -972,21 +976,41 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double _addedL2;
     double  [] _rho;
 
-    public GramSolver(Gram gram, double [] xy,double [] xbar, double ybar, boolean intercept, double lambda, double l1pen, double [] beta_given, double [] proxPen) {
-      _lambda = lambda;
+    public GramSolver(Gram gram, double [] xy,double [] xbar, double ybar, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho) {
+      _lambda = l2pen;
       _ybar = ybar;
-      _xy = xy;
       _gram = gram;
       int ii = intercept?1:0;
-      if(lambda > 0)
-        gram.addDiag(lambda);
+
+      double [] rhos = MemoryManager.malloc8d(xy.length);
+      Arrays.fill(rhos,default_rho);
+      if(l1pen > 0) {
+        double min = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < xy.length - ii; ++i) {
+          double d = xy[i];
+          d = d >= 0 ? d : -d;
+          if (d < min && d != 0) min = d;
+        }
+        for (int i = 0; i < rhos.length - ii; ++i) {
+          double y = xy[i];
+          if (y == 0) y = min;
+          if(beta_given != null && proxPen != null)
+            y = (l1pen * ((gram.get(i, i) - xbar[i] * xbar[i]) + l2pen + proxPen[i])) / (y - _ybar * xbar[i] + proxPen[i]*beta_given[i]);///gram.get(i,i);
+          else
+            y = (l1pen * ((gram.get(i, i) - xbar[i] * xbar[i]) + l2pen)) / (y - _ybar * xbar[i]);///gram.get(i,i);
+          if (y < 0) y = -y;
+          rhos[i] = y; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
+        }
+      }
+      if(l2pen > 0)
+        gram.addDiag(l2pen);
       if(proxPen != null && beta_given != null) {
         gram.addDiag(proxPen);
         xy = xy.clone();
         for(int i = 0; i < xy.length; ++i)
           xy[i] += proxPen[i]*beta_given[i];
       }
-      if(l1pen == 0){
+      if(l1pen == 0) {
         _chol = gram.cholesky(null,true,null);
         double l2 = 1e-8;
         while(!_chol.isSPD() && _addedL2 < 1) { // need to add l2
@@ -995,27 +1019,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           l2 *= 10;
           _chol = _gram.cholesky(_chol);
         }
+        _xy = xy;
         return;
-      }
-      double [] rhos = MemoryManager.malloc8d(xy.length);
-      double min = Double.POSITIVE_INFINITY;
-      for(int i = 0; i < xy.length - ii; ++i) {
-        double d = gram.get(i,i)/xy[i];
-        d = d >= 0?d:-d;
-        if(d < min && d != 0) min = d;
-      }
-      for(int i = 0; i < rhos.length-ii; ++i) {
-        double y = xy[i];
-        if(y == 0) y = min;
-        y = l1pen*(gram.get(i,i)-xbar[i]*xbar[i])/(y - _ybar*xbar[i]);///gram.get(i,i);
-        if(y < 0) y = -y;
-        rhos[i] = y; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
       }
       gram.addDiag(rhos);
       _chol = gram.cholesky(null,true,null);
       gram.addDiag(ArrayUtils.mult(rhos,-1));
-      ArrayUtils.mult(rhos,-1);
+      ArrayUtils.mult(rhos, -1);
       _rho = rhos;
+      _xy = xy;
     }
 
     public double [] nullGradient(){

@@ -120,6 +120,14 @@ public class FrameUtils {
     return ks;
   }
 
+  public static double sparseRatio(Frame fr) {
+    double reg = 1.0/fr.numCols();
+    double res = 0;
+    for(Vec v:fr.vecs())
+      res += v.sparseRatio();
+    return res * reg;
+  }
+
   /**
    * Helper to insert missing values into a Frame
    */

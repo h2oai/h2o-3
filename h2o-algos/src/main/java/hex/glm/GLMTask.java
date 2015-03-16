@@ -666,6 +666,7 @@ public abstract class GLMTask  {
     public static final int N_THRESHOLDS = 50;
     final double _lambda;
     double _zsum;
+    final boolean _sparse;
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, float [] thresholds, H2OCountedCompleter cmp) {
       super(cmp);
@@ -678,6 +679,7 @@ public abstract class GLMTask  {
       assert glm._family != Family.binomial || thresholds != null;
       _thresholds = _validate?thresholds:null;
       _lambda = lambda;
+      _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
     }
 
     private void sampleThresholds(int yi){
@@ -708,14 +710,13 @@ public abstract class GLMTask  {
         _ti = new int[2];
         _newThresholds = new float[2][4*N_THRESHOLDS];
       }
-
       // compute
-      boolean sparse = FrameUtils.sparseRatio(chks) > .5;
-      if(sparse) {
+      if(_sparse) {
         for(Row r:_dinfo.extractSparseRows(chks, _beta))
           processRow(r);
         // need to adjust gradient by centered zeros
         int numStart = _dinfo.numStart();
+
       } else {
         Row row = _dinfo.newDenseRow();
         for(int r = 0 ; r < chks[0]._len; ++r)
@@ -813,6 +814,24 @@ public abstract class GLMTask  {
     }
 
     @Override protected void postGlobal(){
+      if(_sparse && _dinfo._normSub != null) { // need to adjust gram for missing centering!
+        int ns = _dinfo.numStart();
+        int interceptIdx = _xy.length-1;
+        for(int i = ns; i < _dinfo.fullN(); ++i) {
+          double iMean = _dinfo._normSub[i - ns] * _dinfo._normMul[i - ns];
+          for (int j = 0; j <= i; ++j) {
+            double jMean = (j >= ns)?_dinfo._normSub[j - ns] * _dinfo._normMul[j - ns]:1;
+            _gram._xx[i - _gram._diagN][j] = _gram.get(i,j) -  _gram.get(interceptIdx,i)*jMean - _gram.get(interceptIdx,j)*iMean + _gram.get(interceptIdx,interceptIdx) * iMean * jMean;
+          }
+        }
+        if(_dinfo._intercept) { // do the intercept row
+          for(int j = 0; j < _dinfo.fullN(); ++j)
+            _gram._xx[_gram._xx.length-1][j] -= _gram.get(interceptIdx,interceptIdx)*_dinfo._normSub[j-ns]*_dinfo._normMul[j-ns];
+        }
+        // and the xy vec as well
+        for(int i = ns; i < _dinfo.fullN(); ++i)
+          _xy[i] -= _xy[_xy.length-1]*_dinfo._normSub[i-ns]*_dinfo._normMul[i-ns];
+      }
       if(_val != null){
         _val.computeAIC();
         _val.computeAUC();
