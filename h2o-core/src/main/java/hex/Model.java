@@ -364,12 +364,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // fill in with NAs.  If this is the response column for supervised
       // learners, it is still made.
       if( vec == null ) {
-        msgs.add("Validation set is missing training column "+names[i]);
+        String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
+          str = str + ": substituting in a column of NAs";
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
           convNaN++;
         }
+        msgs.add(str);
       }
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an enum

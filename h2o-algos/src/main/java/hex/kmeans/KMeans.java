@@ -61,7 +61,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    *  categorical columns. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._max_iterations < 0 || _parms._max_iterations > 1000000) error("_max_iterations", " max_iterations must be between 0 and 1e6");
+    if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6) error("_max_iterations", " max_iterations must be between 0 and 1e6");
     if( _train == null ) return;
     if( null != _parms._user_points ){ // Check dimensions of user-specified centers
       if( _parms._user_points.get().numCols() != _train.numCols() ) {
