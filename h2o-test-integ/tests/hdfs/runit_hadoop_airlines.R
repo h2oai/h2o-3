@@ -23,7 +23,7 @@ hdfs_airlines_file = "/datasets/airlines_all.csv"
 # Single file cases.
 #----------------------------------------------------------------------
 
-leading("Testing single file importHDFS")
+heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 airlines.hex <- h2o.importFile(conn, url)
 
