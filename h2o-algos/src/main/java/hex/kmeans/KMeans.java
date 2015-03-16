@@ -2,13 +2,11 @@ package hex.kmeans;
 
 import hex.ClusteringModelBuilder;
 import hex.Model;
-import hex.ModelBuilder;
 import hex.schemas.KMeansV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -69,10 +67,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
     }
 
-    new CheckCols() {
-      @Override protected boolean filter(Vec v) { return v.isEnum(); }
-    }.doIt(_train, "Columns cannot have categorical values: ", expensive);
-
     // Sort columns, so the categoricals are all up front.  They use a
     // different distance metric than numeric columns.
     Vec vecs[] = _train.vecs();
@@ -83,24 +77,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       if( ncats < nvecs-1 ) _train.swap(ncats,nvecs-1);
     }
     _ncats = ncats;
-  }
-
-  abstract class CheckCols {
-    abstract protected boolean filter(Vec v);
-    void doIt( Frame f, String msg, boolean expensive ) {
-      boolean any=false;
-      for( int i = 0; i < f.vecs().length; i++ ) {
-        if( filter(f.vecs()[i]) ) {
-          if( any ) msg += ", "; // Log cols with errors
-          any = true;
-          msg += f._names[i];
-        }
-      }
-      if( any ) {
-        error("_train", msg);
-        if (expensive) Log.info(msg);
-      }
-    }
   }
 
   // ----------------------
@@ -239,9 +215,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       for( int clu=0; clu<_parms._k; clu++ )
         average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_ncats);
       average_change /= _parms._k;  // Average change per cluster
-      if( average_change < TOLERANCE ) return true;
-
-      return false;             // Not stopping
+      return average_change < TOLERANCE;
     }
 
     // Main worker thread
