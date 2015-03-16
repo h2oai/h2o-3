@@ -357,7 +357,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ArrayList<String> msgs = new ArrayList<>();
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
+    boolean isNaN;
     for( int i=0; i<names.length; i++ ) {
+      isNaN = false;
       Vec vec = test.vec(names[i]); // Search in the given validation set
       // If the training set is missing in the validation set, complain and
       // fill in with NAs.  If this is the response column for supervised
@@ -367,6 +369,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( expensive ) {
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
+          isNaN = true;
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -380,12 +383,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (expensive) { vec = evec;  good++; } // Keep it
             else { evec.remove(); vec = null; } // No leaking if not-expensive
           } else {
-            good++;
+            if(!isNaN) good++;
           }
         } else if( vec.isEnum() ) {
           throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
-          good++;      // Assumed compatible; not checking e.g. Strings vs UUID
+          if(!isNaN) good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
       }
       vvecs[i] = vec;
