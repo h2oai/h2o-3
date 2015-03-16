@@ -9,6 +9,7 @@ import water.TestUtil;
 import java.util.Random;
 
 public class NewChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   final int K = 1 + (int)(new Random().nextFloat() * (FileVec.DFLT_CHUNK_SIZE >> 4));
   AppendableVec av;
   NewChunk nc;
@@ -103,6 +104,7 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(3.1415);
       assertEquals(K, nc._len);
       post();
+      Assert.assertTrue(cc instanceof C0DChunk);
       cc.setNA(K - 1); //should inflate
       post_write();
       assertEquals(K, nc._len);

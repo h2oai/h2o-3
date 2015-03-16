@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.*;
 
 import water.*;
+import water.fvec.Vec;
 
 /** A collection of utility classes for parsing.
  *
@@ -56,92 +57,16 @@ public abstract class Parser extends Iced {
   public final static int STRING_DOMINANCE_RATIO = 4;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
-
-  public enum ColType {
-    UNKNOWN, NUM, ENUM, TIME, UUID, STR, INVALID
-  }
-
-  public static class ColTypeInfo extends Iced{
-    ColType _type = ColType.UNKNOWN;
-    ValueString _naStr = new ValueString("");
-    boolean _strongGuess = false;
-
-    public ColTypeInfo() {}
-
-    public ColTypeInfo(ColType type) {
-      _type = type;
-    }
-
-    public ColTypeInfo(String str) {
-      if (str.equalsIgnoreCase("Unknown")) {
-        _type = ColType.UNKNOWN;
-        return;
-      } else if (str.equalsIgnoreCase("Unknown")) {
-        _type = ColType.UNKNOWN;
-        return;
-      } else if(str.equalsIgnoreCase("Numeric")) {
-        _type = ColType.NUM;
-        return;
-      } else if(str.equalsIgnoreCase("Enum")) {
-        _type = ColType.ENUM;
-        return;
-      } else if(str.equalsIgnoreCase("Time")) {
-        _type = ColType.TIME;
-        return;
-      } else if(str.equalsIgnoreCase("UUID")) {
-        _type = ColType.UUID;
-        return;
-      } else if(str.equalsIgnoreCase("String")) {
-        _type = ColType.STR;
-        return;
-      } else if(str.equalsIgnoreCase("Invalid")) {
-        _type = ColType.INVALID;
-        return;
-      } //TODO Throw error
-    }
-
-    public void merge(ColTypeInfo tinfo){
-      if(_type == ColType.UNKNOWN || !_strongGuess && tinfo._strongGuess){ // copy over stuff from the other
-        _type = tinfo._type;
-        _naStr = tinfo._naStr;
-        _strongGuess = tinfo._strongGuess;
-      } else if(tinfo._type != ColType.UNKNOWN && !_strongGuess){
-        tinfo._type = ColType.INVALID;
-      } // else just keep mine
-    }
-
-    public String toString() {
-      switch (_type) {
-        case UNKNOWN:  return "Unknown";
-        case NUM:  return "Numeric";
-        case ENUM:  return "Enum";
-        case TIME:  return "Time";
-        case UUID:  return "UUID";
-        case STR:  return "String";
-        case INVALID: return "Invalid";
-        default:    throw new RuntimeException("Undefined column type used.");
-      }
-    }
-
-    public static ColTypeInfo[] fromStrings(String strs[]) {
-      if(strs == null) return null;
-      ColTypeInfo[] res = new ColTypeInfo[strs.length];
-      for (int i=0; i < strs.length; i++)
-        res[i] = new ColTypeInfo(strs[i]);
-      return res;
-    }
-  }
-
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
-  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._sep; }
+  Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
 
   DataOut streamParse( final InputStream is, final DataOut dout) throws IOException {
-    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     while( is.available() > 0 )
@@ -155,7 +80,7 @@ public abstract class Parser extends Iced {
   // parse local chunks; distribute chunks later.
   DataOut streamParseZip( final InputStream is, final StreamDataOut dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
-    if( !_setup._pType._parallelParseSupported ) throw H2O.unimpl();
+    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamDataOut nextChunk = dout;
@@ -356,20 +281,16 @@ public abstract class Parser extends Iced {
     @Override public void addStrCol(int colIdx, ValueString str) {
       if(colIdx < _ncols) {
         // Check for time
-        if (ParseTime.attemptTimeParse(str) != Long.MIN_VALUE) {
+        if (ParseTime.isDateTime(str)) {
           ++_ndates[colIdx];
           return;
         }
 
         //Check for UUID
-        int old = str.get_off();
-        ParseTime.attemptUUIDParse0(str);
-        ParseTime.attemptUUIDParse1(str);
-        if( str.get_off() != -1 ) {
+        if(ParseTime.isUUID(str)) {
           ++_nUUID[colIdx];
           return;
         }
-        str.setOff(old);
 
         //Add string to domains list for later determining string, NA, or enum
         ++_nstrings[colIdx];
@@ -389,62 +310,87 @@ public abstract class Parser extends Iced {
     }
     String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
 
-    public ColTypeInfo[] guessTypes() {
-      ColTypeInfo [] res = new ColTypeInfo[_ncols];
-      for(int i = 0; i < _ncols; ++i) {
-        res[i] = new ColTypeInfo();
-        int nonemptyLines = _nlines-_nempty[i];
+    public byte[] guessTypes() {
+      byte[] types = new byte[_ncols];
+      for (int i = 0; i < _ncols; ++i) {
+        int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line based on 4M boundary
 
-        // Numeric
-        if (((_nnums[i] + _nzeros[i]) > (nonemptyLines/2)) // over 50% numbers
-            || (_nnums[i]+_nzeros[i] > 0 && _domains[i].size() <= 1 // or numbers + 1 unique string (NA?)
-                && (_nnums[i] + _nstrings[i] + _nzeros[i]) >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.NUM;
+        //Very redundant tests, but clearer and not speed critical
+        
+        // is it clearly numeric?
+        if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
+                && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
+                && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among enums, ignore
+          types[i] = Vec.T_NUM;
+          continue;
+        }
+
+        // with NA, but likely numeric
+        if (_domains[i].size() <= 1
+                && (_nnums[i] + _nstrings[i] + _nzeros[i]) > _ndates[i] + _nUUID[i]) {
+          types[i] = Vec.T_NUM;
           continue;
         }
 
         // Datetime
-        if ((_ndates[i] > (nonemptyLines/2)) // over 50% dates
-            || (_ndates[i] > 1 && _domains[i].size() <= 1 // or time + 1 unique string (NA?)
-                && _ndates[i] + _nstrings[i]  >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.TIME;
+        if (_ndates[i] > _nUUID[i]
+                && _ndates[i] > (_nnums[i] + _nzeros[i])
+                && (_ndates[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          types[i] = Vec.T_TIME;
           continue;
         }
 
         // UUID
-        if ((_nUUID[i] > 0) //  some UUID
-                || (_nUUID[i] > 0 && _domains[i].size() <= 1 // or UUID + 1 unique string (NA?)
-                && _nUUID[i] + _nstrings[i] >= (nonemptyLines - 1))) {
-          res[i]._type = ColType.UUID;
+        if (_nUUID[i] > _ndates[i]
+                && _nUUID[i] > (_nnums[i] + _nzeros[i])
+                && (_nUUID[i] > _nstrings[i] || _domains[i].size() <= 1)) {
+          types[i] = Vec.T_UUID;
+          continue;
+        }
+
+        // Strings, almost no dups
+        if (_nstrings[i] > _ndates[i]
+                && _nstrings[i] > _nUUID[i]
+                && _nstrings[i] > (_nnums[i] + _nzeros[i])
+                && _domains[i].size() >= 0.95 * _nstrings[i]) {
+          types[i] = Vec.T_STR;
           continue;
         }
 
         // Enum or string?
         // Enum with 0s for NAs
         if(_nzeros[i] > 0
-                && (_nzeros[i] + _nstrings[i] >= (nonemptyLines - 1)) //just strings and zeros
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // not all unique strings
-          res[i]._naStr = new ValueString("0");
-          res[i]._type = ColType.ENUM;
-          res[i]._strongGuess = true;
+                && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // not all unique strings
+          types[i] = Vec.T_ENUM;
           continue;
         }
         // Enum mixed with numbers
-        if(_nstrings[i] >= STRING_DOMINANCE_RATIO*(_nnums[i]+_nzeros[i]) // mostly strings
-                && (_domains[i].size() <= 0.98 * _nstrings[i]) ) { // but not all unique
-          res[i]._type = ColType.ENUM;
-          continue;
-        }
-        // Strings, almost no dups
-        if (_domains[i].size() >= 0.98 * _nstrings[i]) {
-          res[i]._type = ColType.STR;
+        if(_nstrings[i] >= (_nnums[i]+_nzeros[i]) // mostly strings
+                && (_domains[i].size() <= 0.95 * _nstrings[i]) ) { // but not all unique
+          types[i] = Vec.T_ENUM;
           continue;
         }
 
         // All guesses failed
-        res[i]._type = ColType.UNKNOWN;
+        types[i] = Vec.T_BAD;
       }
-      return res;
+      return types;
+    }
+
+    public String[] guessNAStrings(byte[] types) {
+      //For now just catch 0's as NA in Enums
+      String[] na_strings = new String[_ncols];
+      for (int i = 0; i < _ncols; ++i) {
+        int nonemptyLines = _nlines - _nempty[i] - 1; //During guess, some columns may be shorted one line (based on 4M boundary)
+        if (types[i] == Vec.T_ENUM
+                && _nzeros[i] > 0
+                && ((_nzeros[i] + _nstrings[i]) >= nonemptyLines) //just strings and zeros for NA (thus no empty lines)
+                && (_domains[i].size() <= 0.95 * _nstrings[i])) { // not all unique strings
+          na_strings[i] = "0";
+        }
+      }
+      return na_strings;
     }
   }
 }

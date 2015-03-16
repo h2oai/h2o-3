@@ -1,6 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util
 
 print "Create csv with lots of same data (98% 0?), so gz will have high compression ratio"
 

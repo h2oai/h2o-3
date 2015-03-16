@@ -56,7 +56,7 @@ test.GBM.bernoulli.SyntheticData <- function(conn) {
 
     #  Run H2O-GBM grid job
     print("H2O GBM grid search")
-    system.time(tru.gbm <- h2o.gbm(x = myX, y = myY, training_frame = alldata, loss = "bernoulli", ntrees = c(150), min_rows = 1, max_depth = c(1,2,3,4), learn_rate = c(1,.1,.01), nbins = c(20), variable_importance = FALSE) )
+    system.time(tru.gbm <- h2o.gbm(x = myX, y = myY, training_frame = alldata, loss = "bernoulli", ntrees = c(150), min_rows = 1, max_depth = c(1,2,3,4), learn_rate = c(1,.1,.01), nbins = c(20)) )
 
     num_models <- length(tru.gbm@sumtable)
     print(paste("Number of gbm models created:", num_models,sep ='') )

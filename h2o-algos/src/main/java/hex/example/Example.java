@@ -76,7 +76,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
           sb.append("Example: iter: ").append(model._output._iterations);
           Log.info(sb);
         }
-
+        done();                 // Job done!
       } catch( Throwable t ) {
         if (_state == JobState.CANCELLED) {
           Log.info("Job cancelled by user.");
@@ -89,7 +89,6 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
         if( model != null ) model.unlock(_key);
         _parms.read_unlock_frames(Example.this);
         Scope.exit(model._key);
-        done();                 // Job done!
       }
       tryComplete();
     }

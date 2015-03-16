@@ -1,6 +1,7 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 
 
@@ -26,7 +27,7 @@ class Basic(unittest.TestCase):
         csvPathname = importFolderPath + "/" + csvFilename
 
         parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, 
-            checkHeader=1, timeoutSecs=180, doSummary=False)
+            check_header=1, timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
         parse_key = pA.parse_key
@@ -44,11 +45,13 @@ class Basic(unittest.TestCase):
         numColsUsed = numCols - 1
         for trial in range(1):
             parameters = {
+                # required now
+                # loss enum True None [u'MeanSquare', u'CrossEntropy']
+                'loss': 'CrossEntropy',
+
                 'validation_frame': parse_key, # KeyIndexed None
                 'ignored_columns': '[STR]', # string[] None
-                'score_each_iteration': None, # boolean false
                 'response_column': 'FNDX', # string None
-                'do_classification': None, # boolean false
                 'balance_classes': None, # boolean false
                 'max_after_balance_size': None, # float Infinity
                 'n_folds': None, # int 0

@@ -2,15 +2,17 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.FrameTask;
-import water.Iced;
-import water.MemoryManager;
+import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
+import water.fvec.FileVec;
+import water.fvec.Frame;
+import water.fvec.Vec;
+import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import java.nio.ByteBuffer;
 import java.util.*;
-
-import org.apache.hadoop.util.hash.Hash;
-import org.apache.hadoop.util.hash.MurmurHash;
 
 /**
  * This class implements the concept of a Neuron layer in a Neural Network
@@ -482,8 +484,25 @@ public abstract class Neurons {
    */
   protected float autoEncoderError(int row) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    assert (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
-    return (_input._a.get(row) - _a.get(row));
+    final float t = _input._a.get(row);
+    final float y = _a.get(row);
+    float g;
+    if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+      g = t - y;
+    } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+      g = y > t ? -1f : 1f;
+    }
+    // Huber:
+    // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
+    // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
+    else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+      if (Math.abs(y-t) < 1) {
+        g = t - y;
+      } else {
+        g = y >= t + 1f ? -2f : 2f;
+      }
+    } else throw H2O.unimpl("Loss " + params._loss + " not implemented for Auto-Encoder.");
+    return g;
   }
 
   /**
@@ -743,7 +762,7 @@ public abstract class Neurons {
           final int cM = params._max_categorical_features;
 
           assert (_a.size() == M);
-          Hash murmur = MurmurHash.getInstance();
+          MurmurHash murmur = MurmurHash.getInstance();
           for (int i = 0; i < numcat; ++i) {
             ByteBuffer buf = ByteBuffer.allocate(4);
             int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params._seed); // turn horizontalized categorical integer into another integer, based on seed
@@ -927,9 +946,9 @@ public abstract class Neurons {
       final int rows = _a.size();
       if (_w instanceof DenseRowMatrix) {
         for (int row = 0; row < rows; row++) {
-          //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           if (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length)
             _e.set(row, autoEncoderError(row));
+          //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
           float g = _a.get(row) > 0f ? _e.get(row) : 0f;
           bprop(row, g, r, m);
         }
@@ -1010,11 +1029,27 @@ public abstract class Neurons {
           //nothing else needed, -dCE/dy * dy/dnet = target - y
           //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
           g = t - y;
-        } else {
-          assert(params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare);
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+          g = (2*t-1) * (1f - y) * y; //-dL/dy = 2*t-1
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
           //-dMSE/dy = target-y
           g = (t - y) * (1f - y) * y;
-        }
+        } else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+          if (t==0) {
+            if (y<0.5) {
+              g = -4*y; //L=2*y^2 for y<0.5
+            } else {
+              g = -2;   //L=2*y-0.5 for y>=0.5
+            }
+          } else {
+            if (y>0.5) {
+              g = 4*(1-y); //L=2*(1-y)^2 for y<0.5
+            } else {
+              g = 2;   //L=2*(1-y)-0.5 for y>=0.5
+            }
+          }
+          g *= (1f - y) * y;
+        } else throw H2O.unimpl("Loss " + params._loss + " not implemented for classification.");
         // this call expects dE/dnet
         bprop(row, g, r, m);
       }
@@ -1022,7 +1057,7 @@ public abstract class Neurons {
   }
 
   /**
-   * Output neurons for regression - Softmax
+   * Output neurons for regression - Linear units
    */
   public static class Linear extends Output {
     public Linear(int units) { super(units); }
@@ -1036,10 +1071,28 @@ public abstract class Neurons {
      */
     protected void bprop(float target) {
       assert (target != missing_real_value);
-      if (params._loss != DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) throw new UnsupportedOperationException("Regression is only implemented for MeanSquare error.");
       final int row = 0;
+      final float t = target;
+      final float y = _a.get(row);
+      float g;
       // Computing partial derivative: dE/dnet = dE/dy * dy/dnet = dE/dy * 1
-      final float g = target - _a.get(row); //for MSE -dMSE/dy = target-y
+      if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.MeanSquare) {
+        g = t - y; //for MSE -dMSE/dy = target-y
+      }
+      // L = |y-t|, -dL/dy = -/+1
+      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Absolute) {
+        g = y > t ? -1f : 1f;
+      }
+      // Huber:
+      // L = (y-t)^2    for |t-y| < 1,  -dL/dy = t - y
+      // L = 2*|t-y|-1  for |t-y| >= 1, -dL/dy = +/- 2
+      else if (params._loss == DeepLearningModel.DeepLearningParameters.Loss.Huber) {
+        if (Math.abs(y-t) < 1) {
+          g = t - y;
+        } else {
+          g = y >= t + 1f ? -2f : 2f;
+        }
+      } else throw H2O.unimpl("Loss " + params._loss + " not implemented for regression.");
       float m = momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
       bprop(row, g, r, m);
@@ -1244,6 +1297,26 @@ public abstract class Neurons {
     public abstract void add(int i, float val);
     public abstract int size();
     public abstract float[] raw();
+    public abstract Frame toFrame(Key key);
+  }
+
+  /**
+   * Helper to convert a Vector into a Frame
+   * @param v Vector
+   * @param key Key for output Frame
+   * @return Reference to Frame (which is also in DKV)
+   */
+  static Frame toFrame(Vector v, Key key) {
+    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
+    Vec vv = makeCon(0, v.size(), log_rows_per_chunk);
+    Frame f = new Frame(key, new Vec[]{vv}, true);
+    Vec.Writer vw = f.vecs()[0].open();
+    for (int r = 0; r < v.size(); ++r) {
+      vw.set(r, v.get(r));
+    }
+    vw.close();
+    DKV.put(key, f);
+    return f;
   }
 
   /**
@@ -1258,6 +1331,7 @@ public abstract class Neurons {
     @Override public void add(int i, float val) { _data[i] += val; }
     @Override public int size() { return _data.length; }
     @Override public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1348,6 +1422,8 @@ public abstract class Neurons {
 
     public Iterator begin() { return new Iterator(0); }
     public Iterator end() { return new Iterator(_indices.length); }
+
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1361,6 +1437,72 @@ public abstract class Neurons {
     abstract int rows();
     abstract long size();
     abstract float[] raw();
+    public Frame toFrame(Key key);
+  }
+
+  /**
+   *  Helper to convert the Matrix to a Frame using MRTask
+   */
+  private static class FrameFiller extends MRTask<FrameFiller> {
+    final DenseColMatrix dcm;
+    final DenseRowMatrix drm;
+    final SparseRowMatrix srm;
+    final SparseColMatrix scm;
+    FrameFiller(Matrix m) {
+      if (m instanceof DenseColMatrix) {
+        dcm = (DenseColMatrix)m;
+        drm = null;
+        srm = null;
+        scm = null;
+      }
+      else if (m instanceof DenseRowMatrix) {
+        dcm = null;
+        drm = (DenseRowMatrix)m;
+        srm = null;
+        scm = null;
+      }
+      else if (m instanceof SparseRowMatrix) {
+        dcm = null;
+        drm = null;
+        srm = (SparseRowMatrix)m;
+        scm = null;
+      }
+      else {
+        dcm = null;
+        drm = null;
+        srm = null;
+        scm = (SparseColMatrix)m;
+      }
+    }
+    @Override public void map(Chunk[] cs) {
+      Matrix m=null;
+      if (dcm != null) m = dcm;
+      if (drm != null) m = drm;
+      if (scm != null) m = scm;
+      if (srm != null) m = srm;
+      for (int c = 0; c < cs.length; ++c) {
+        for (int r = 0; r < m.rows(); ++r) {
+          cs[c].set(r, m.get((int)cs[0].start() + r, c));
+        }
+      }
+    }
+  }
+
+  /**
+   * Helper to convert a Matrix into a Frame
+   * @param m Matrix
+   * @param key Key for output Frame
+   * @return Reference to Frame (which is also in DKV)
+   */
+  static Frame toFrame(Matrix m, Key key) {
+    final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(m.cols()) / Math.log(2.)));
+    Vec v[] = new Vec[m.cols()];
+    for (int i = 0; i < m.cols(); ++i) {
+      v[i] = makeCon(0, m.rows(), log_rows_per_chunk);
+    }
+    Frame f = new FrameFiller(m).doAll(new Frame(key, v, true))._fr;
+    DKV.put(key, f);
+    return f;
   }
 
   /**
@@ -1379,6 +1521,7 @@ public abstract class Neurons {
     @Override public int rows() { return _rows; }
     @Override public long size() { return (long)_rows*(long)_cols; }
     public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
@@ -1398,12 +1541,13 @@ public abstract class Neurons {
     @Override public int rows() { return _rows; }
     @Override public long size() { return (long)_rows*(long)_cols; }
     public float[] raw() { return _data; }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
    * Sparse row matrix implementation
    */
-  public final static class SparseRowMatrix implements Matrix {
+  public final static class SparseRowMatrix extends Iced implements Matrix {
     private TreeMap<Integer, Float>[] _rows;
     private int _cols;
     SparseRowMatrix(int rows, int cols) { this(null, rows, cols); }
@@ -1425,12 +1569,13 @@ public abstract class Neurons {
     @Override public long size() { return (long)_rows.length*(long)_cols; }
     TreeMap<Integer, Float> row(int row) { return _rows[row]; }
     public float[] raw() { throw new UnsupportedOperationException("raw access to the data in a sparse matrix is not implemented."); }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 
   /**
    * Sparse column matrix implementation
    */
-  static final class SparseColMatrix implements Matrix {
+  static final class SparseColMatrix extends Iced implements Matrix {
     private TreeMap<Integer, Float>[] _cols;
     private int _rows;
     SparseColMatrix(int rows, int cols) { this(null, rows, cols); }
@@ -1452,5 +1597,6 @@ public abstract class Neurons {
     @Override public long size() { return (long)_rows*(long)_cols.length; }
     TreeMap<Integer, Float> col(int col) { return _cols[col]; }
     public float[] raw() { throw new UnsupportedOperationException("raw access to the data in a sparse matrix is not implemented."); }
+    @Override public Frame toFrame(Key key) { return Neurons.toFrame(this, key); }
   }
 }

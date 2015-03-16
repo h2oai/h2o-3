@@ -14,7 +14,7 @@ test.GLM.lambda.search <- function(conn) {
   expect_error(h2o.getGLMLambdaModel(prostate.nosearch, 0.5))
   
   # GLM with lambda search, return only model corresponding to best lambda as determined by H2O
-  Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, return_all_lambda: FALSE, nfolds: 2\n")
+  Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, nfolds: 2\n")
   prostate.bestlambda = h2o.glm(x = 3:9, y = 2, training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = TRUE, n_folds = 2)
   params.bestlambda = prostate.bestlambda@model$params
   
@@ -28,8 +28,8 @@ test.GLM.lambda.search <- function(conn) {
   expect_equal(best_model@model, prostate.bestlambda@model)
   
   # GLM with lambda search, return models corresponding to all lambda searched over
-  Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, return_all_lambda: TRUE, nfolds: 2\n")
-  prostate.search = h2o.glm(x = 3:9, y = 2, training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = TRUE, return_all_lambda = TRUE, n_folds = 2)
+  Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, nfolds: 2\n")
+  prostate.search = h2o.glm(x = 3:9, y = 2, training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = TRUE, n_folds = 2)
   models.best = prostate.search@models[[prostate.search@best_model]]
   models.bestlambda = models.best@model$params$lambda_best
   expect_equal(models.best@model$lambda, models.bestlambda)

@@ -1,6 +1,7 @@
 import unittest, random, sys, time, re
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
+import h2o2 as h2o
+import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
 from h2o_test import dump_json, verboseprint
 
 initList = [
@@ -298,7 +299,7 @@ class Basic(unittest.TestCase):
             funs = '[(def anon {x}  (%s);;;)]' % execExpr1
             execResult, result = h2e.exec_expr(h2o.nodes[0], funs, doFuns=True, resultKey=None, timeoutSecs=5)
             execExpr2 = '(apply %r1 #2 %anon)'
-            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=15)
+            execResult, result = h2e.exec_expr(h2o.nodes[0], execExpr2, doFuns=False, resultKey=None, timeoutSecs=25)
 
             # see if the execExpr had a lhs assign. If so, it better be in the storeview
             r = re.search('![a-zA-Z0-9]+', execExpr1)

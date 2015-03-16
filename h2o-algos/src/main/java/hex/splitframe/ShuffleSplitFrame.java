@@ -3,6 +3,7 @@ package hex.splitframe;
 import java.util.Random;
 import water.*;
 import water.fvec.*;
+import water.parser.ValueString;
 
 /** Frame splitter function to divide given frame into multiple partitions
  *  based on given ratios.
@@ -35,9 +36,28 @@ public class ShuffleSplitFrame {
           int x=0;              // Pick the NewChunk split
           for( ; x<ratios.length-1; x++ ) if( r<ratios[x] ) break;
           x *= ncols;
+          // Helper string holder
+          ValueString vstr = new ValueString();
           // Copy row to correct set of NewChunks
-          for( int j=0; j<ncols; j++ )
-            ncs[x+j].addNum(cs[j].atd(i));
+          for( int j=0; j<ncols; j++ ) {
+            byte colType = cs[j].vec().get_type();
+            switch (colType) {
+              case Vec.T_BAD : break; /* NOP */
+              case Vec.T_STR : ncs[x + j].addStr(cs[j].atStr(vstr, i)); break;
+              case Vec.T_UUID: ncs[x + j].addUUID(cs[j], i); break;
+              case Vec.T_NUM : /* fallthrough */
+              case Vec.T_ENUM:
+              case Vec.T_TIME:
+                ncs[x + j].addNum(cs[j].atd(i));
+                break;
+              default:
+                if (colType > Vec.T_TIME && colType <= Vec.T_TIMELAST)
+                  ncs[x + j].addNum(cs[j].atd(i));
+                else
+                  throw new IllegalArgumentException("Unsupported vector type: " + colType);
+                break;
+            }
+          }
         }
       }
     }.doAll(ncols*ratios.length,fr);

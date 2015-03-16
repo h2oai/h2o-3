@@ -7,9 +7,11 @@ import water.api.RequestServer;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.Persist;
+import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.OSUtils;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -18,6 +20,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+//import com.brsanthu.googleanalytics.GoogleAnalytics;
+//import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -155,6 +159,9 @@ final public class H2O {
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
+    /** -flow_dir=/path/to/dir; directory to save flows in */
+    public String flow_dir;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -173,6 +180,12 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
+    /** --ga_hadoop_ver=ga_hadoop_ver; Version string for hadoop */
+    public String ga_hadoop_ver = null;
+
+    /** --ga_opt_out; Turns off useage reporting to Google Analytics  */
+    public boolean ga_opt_out = false;
+
     //-----------------------------------------------------------------------------------
     // Debugging
     //-----------------------------------------------------------------------------------
@@ -184,6 +197,9 @@ final public class H2O {
 
     /** -md5skip, -md5skip=true; test-only; Skip the MD5 Jar checksum; allows jars from different builds to mingle in the same cloud */
     public boolean md5skip = false;
+
+    /** -quiet Enable quiet mode and avoid any prints to console, useful for client embedding */
+    public boolean quiet = false;
   }
 
   private static void parseFailed(String message) {
@@ -289,6 +305,10 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.ice_root = args[i];
       }
+      else if (s.matches("flow_dir")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.flow_dir = args[i];
+      }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
         ARGS.nthreads = s.parseInt(args[i]);
@@ -312,6 +332,13 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.aws_credentials = args[i];
       }
+      else if (s.matches("ga_hadoop_ver")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.ga_hadoop_ver = args[i];
+      }
+      else if (s.matches("ga_opt_out")) {
+        ARGS.ga_opt_out = true;
+      }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
         ARGS.log_level = args[i];
@@ -322,11 +349,18 @@ final public class H2O {
       else if (s.matches("md5skip")) {
         ARGS.md5skip = true;
       }
+      else if (s.matches("quiet")) {
+        ARGS.quiet = true;
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }
   }
+
+  //Google analytics performance measurement
+//  public static GoogleAnalytics GA;
+//  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -686,7 +720,7 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   static void printAndLogVersion() {
-    Log.init(ARGS.log_level, ARGS.client);
+    Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
@@ -701,6 +735,12 @@ final public class H2O {
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
+    long totalMemory = OSUtils.getTotalPhysicalMemory();
+    Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
+  }
+
+  private static void startGAStartupReport() {
+    new GAStartupReportThread().start();
   }
 
   /** Initializes the local node and the local cloud with itself as the only member. */
@@ -896,8 +936,8 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   static void initializePersistence() {
-    // Need to figure out the multi-jar HDFS story here
-    //water.persist.HdfsLoader.loadJars();
+    PM = new PersistManager(ICE_ROOT);
+
     if( ARGS.aws_credentials != null ) {
       try { water.persist.PersistS3.getClient(); }
       catch( IllegalArgumentException e ) { Log.err(e); }
@@ -980,6 +1020,10 @@ final public class H2O {
     return sb.toString();
   }
 
+  // Persistence manager
+  private static PersistManager PM;
+  public static PersistManager getPM() { return PM; }
+
   // Node persistent storage
   private static NodePersistentStorage NPS;
   public static NodePersistentStorage getNPS() { return NPS; }
@@ -1021,6 +1065,16 @@ final public class H2O {
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
 
+    // Register with GA
+/*    if((new File(".h2o_no_collect")).exists()
+            || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
+            || ARGS.ga_opt_out ) {
+      GA = null;
+      Log.info("Opted out of sending usage metrics.");
+    } else {
+      GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
+    }
+*/
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
 
@@ -1031,7 +1085,7 @@ final public class H2O {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
 
-      Log.info("Cur dir: " + System.getProperty("user.dir"));
+      Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
     }
     catch (Exception e) {
       System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
@@ -1041,17 +1095,38 @@ final public class H2O {
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();
-    NPS = new NodePersistentStorage(ICE_ROOT);
+
+    // Initialize NPS
+    {
+      String flow_dir;
+      if (ARGS.flow_dir != null) {
+        flow_dir = ARGS.flow_dir;
+      }
+      else if (ARGS.ga_hadoop_ver != null) {
+        // TODO:  Write somewhere to hdfs or disable writing entirely.
+        flow_dir = ICE_ROOT + File.separator + "h2oflows";
+      }
+      else {
+        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+      }
+
+      flow_dir = flow_dir.replace("\\", "/");
+      Log.info("Flow dir: '" + flow_dir + "'");
+
+      URI flow_uri;
+      try {
+        flow_uri = new URI(flow_dir);
+      }
+      catch (Exception e) {
+        throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+      }
+
+      NPS = new NodePersistentStorage(flow_uri);
+    }
 
     // Start network services, including heartbeats
     startNetworkServices();   // start server services
     Log.trace("Network services started");
-
-    // Deadlock initializing PersistNFS occurred when doHeartbeat was earlier
-    // (allowed a cloud to form before the persistence layer was initialized,
-    // and then started accepting REST calls), so put it here.
-    Persist.getIce();
-    Log.trace("Persist static block initialized");
 
     // The "Cloud of size N formed" message printed out by doHeartbeat is the trigger
     // for users of H2O to know that it's OK to start sending REST API requests.
@@ -1062,11 +1137,39 @@ final public class H2O {
     // Clouds. This will typically trigger a round of Paxos voting so we can
     // join an existing Cloud.
     new HeartBeatThread().start();
+
+    startGAStartupReport();
   }
 
   // Die horribly
   public static void die(String s) {
     Log.fatal(s);
     H2O.exit(-1);
+  }
+
+  public static class GAStartupReportThread extends Thread {
+    final private String threadName = "GAStartupReport";
+    final private int sleepMillis = 150 * 1000; //2.5 min
+
+    // Constructor.
+    public GAStartupReportThread() {
+      super("GAStartupReport");        // Only 9 characters get printed in the log.
+      setDaemon(true);
+      setPriority(MAX_PRIORITY - 2);
+    }
+
+    // Class main thread.
+    @Override
+    public void run() {
+      try {
+        Thread.sleep (sleepMillis);
+      }
+      catch (Exception ignore) {};
+/*      if (H2O.SELF == H2O.CLOUD._memary[0]) {
+        if (ARGS.ga_hadoop_ver != null)
+          H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
+        H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
+      } */
+    }
   }
 }

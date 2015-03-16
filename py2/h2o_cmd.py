@@ -77,22 +77,45 @@ def infoFromInspect(inspect):
     # it it index[0] or key '0' in a dictionary?
     frame = inspect['frames'][0]
 
-    if frame['isText']:
-        raise Exception("infoFromInspect only for parsed frames?: %s " % frame['isText'])
-
     # need more info about this dataset for debug
     columns = frame['columns']
     key_name = frame['key']['name']
-    # look for nonzero num_missing_values count in each col
     missingList = []
     labelList = []
     typeList = []
     for i, colDict in enumerate(columns): # columns is a list
+        if 'missing_count' not in colDict:
+            # debug
+            print "\ncolDict"
+            for k in colDict:
+                print "  key: %s" % k
+
+            # data
+            # domain
+            # string_data
+            # type
+            # label
+            # percentiles
+            # precision
+            # mins
+            # maxs
+            # mean
+            # histogram_base
+            # histogram_bins
+            # histogram_stride
+            # zero_count
+            # missing_count
+            # positive_infinity_count
+            # negative_infinity_count
+            # __meta
+
+
         mins = colDict['mins']
         maxs = colDict['maxs']
-        missing = colDict['missing']
+        missing = colDict['missing_count']
         label = colDict['label']
         stype = colDict['type']
+
         missingList.append(missing)
         labelList.append(label)
         typeList.append(stype)
@@ -108,9 +131,7 @@ def infoFromInspect(inspect):
     # no type per col in inspect2
     numCols = len(frame['columns'])
     numRows = frame['rows']
-    byteSize = frame['byteSize']
-
-    print "\n%s numRows: %s, numCols: %s, byteSize: %s" % (key_name, numRows, numCols, byteSize)
+    print "\n%s numRows: %s, numCols: %s" % (key_name, numRows, numCols)
     return missingList, labelList, numRows, numCols
 
 #************************************************************************
@@ -127,6 +148,8 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
     labelList = i.labelList
     numRows = i.numRows
     numCols = i.numCols
+    print "labelList:", labelList
+    assert labelList is not None
 
     # doesn't take indices? only column labels?
     # return first column, unless specified
@@ -143,7 +166,9 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
         colIndexToDo = [column]
     elif isinstance(column, basestring):
         colNameToDo = [column]
-        colIndexToDo = [labelList.index[column]]
+        if column not in labelList:
+            raise Exception("% not in labellist: %s" % (column, labellist))
+        colIndexToDo = [labelList.index(column)]
     else:
         raise Exception("wrong type %s for column %s" % (type(column), column))
 
@@ -165,17 +190,18 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
                     print k, v
 
         if expected is not None:
-            print "len(co.bins):", len(co.bins)
+            print "len(co.histogram_bins):", len(co.histogram_bins)
             print "co.label:", co.label, "mean (2 places):", h2o_util.twoDecimals(co.mean)
             # what is precision. -1?
             print "co.label:", co.label, "std dev. (2 places):", h2o_util.twoDecimals(co.sigma)
 
-            print "FIX! hacking the co.pctiles because it's short by two"
-            
-            if co.pctiles:
-                pctiles = [0] + co.pctiles + [0]
-            else:
-                pctiles = None
+            # print "FIX! hacking the co.percentiles because it's short by two"
+            # if co.percentiles:
+            #     percentiles = [0] + co.percentiles + [0]
+            # else:
+            #     percentiles = None
+            percentiles = co.percentiles
+            assert len(co.percentiles) == len(co.default_percentiles)
 
             # the thresholds h2o used, should match what we expected
                 # expected = [0] * 5
@@ -187,11 +213,11 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
 
             if expected[0]: h2o_util.assertApproxEqual(co.mins[0], expected[0], tol=maxDelta, 
                 msg='min is not approx. expected')
-            if expected[1]: h2o_util.assertApproxEqual(pctiles[3], expected[1], tol=maxDelta, 
+            if expected[1]: h2o_util.assertApproxEqual(percentiles[2], expected[1], tol=maxDelta, 
                 msg='25th percentile is not approx. expected')
-            if expected[2]: h2o_util.assertApproxEqual(pctiles[5], expected[2], tol=maxDelta, 
+            if expected[2]: h2o_util.assertApproxEqual(percentiles[4], expected[2], tol=maxDelta, 
                 msg='50th percentile (median) is not approx. expected')
-            if expected[3]: h2o_util.assertApproxEqual(pctiles[7], expected[3], tol=maxDelta, 
+            if expected[3]: h2o_util.assertApproxEqual(percentiles[6], expected[3], tol=maxDelta, 
                 msg='75th percentile is not approx. expected')
             if expected[4]: h2o_util.assertApproxEqual(co.maxs[0], expected[4], tol=maxDelta, 
                 msg='max is not approx. expected')
@@ -210,22 +236,22 @@ def runSummary(node=None, key=None, column=None, expected=None, maxDelta=None, n
                 print "Test won't calculate max expected error"
                 maxErr = 0
 
-            pt = h2o_util.twoDecimals(pctiles)
+            pt = h2o_util.twoDecimals(percentiles)
 
             # only look at [0] for now...bit e308 numbers if unpopulated due to not enough unique values in dataset column
             mx = h2o_util.twoDecimals(co.maxs[0])
             mn = h2o_util.twoDecimals(co.mins[0])
 
-            print "co.label:", co.label, "co.pctiles (2 places):", pt
-            print "co.default_pctiles:", co.default_pctiles
+            print "co.label:", co.label, "co.percentiles (2 places):", pt
+            print "co.default_percentiles:", co.default_percentiles
             print "co.label:", co.label, "co.maxs: (2 places):", mx
             print "co.label:", co.label, "co.mins: (2 places):", mn
 
-            # FIX! why would pctiles be None? enums?
+            # FIX! why would percentiles be None? enums?
             if pt is None:
                 compareActual = mn, [None] * 3, mx
             else:
-                compareActual = mn, pt[3], pt[5], pt[7], mx
+                compareActual = mn, pt[2], pt[4], pt[6], mx
 
             h2p.green_print("actual min/25/50/75/max co.label:", co.label, "(2 places):", compareActual)
             h2p.green_print("expected min/25/50/75/max co.label:", co.label, "(2 places):", expected)
@@ -312,17 +338,19 @@ class SummaryObj(OutputObj):
         summaryResult = h2o_nodes.nodes[0].summary(key=key, column=colName, timeoutSecs=timeoutSecs, **kwargs)
         # this should be the same for all the cols? Or does the checksum change?
         frame = summaryResult['frames'][0]
-        default_pctiles = frame['default_pctiles']
+        default_percentiles = frame['default_percentiles']
         checksum = frame['checksum']
         rows = frame['rows']
 
-        assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s" % \
-            (colIndex, len(frame['columns']))
-        coJson = frame['columns'][colIndex]
+        # assert colIndex < len(frame['columns']), "You're asking for colIndex %s but there are only %s. " % \
+        #     (colIndex, len(frame['columns']))
+        # coJson = frame['columns'][colIndex]
+
+        # is it always 0 now? the one I asked for ?
+        coJson = frame['columns'][0]
 
         assert checksum !=0 and checksum is not None
         assert rows!=0 and rows is not None
-        assert not frame['isText']
 
         # FIX! why is frame['key'] = None here?
         # assert frame['key'] == key, "%s %s" % (frame['key'], key)
@@ -331,9 +359,26 @@ class SummaryObj(OutputObj):
         # how are enums binned. Stride of 1? (what about domain values)
         # touch all
         # print "vars", vars(self)
-        coList = [self.base, len(self.bins), len(self.data),
-            self.domain, self.label, self.maxs, self.mean, self.mins, self.missing, self.ninfs, self.pctiles,
-            self.pinfs, self.precision, self.sigma, self.str_data, self.stride, self.type, self.zeros]
+
+        coList = [
+            len(self.data),
+            self.domain,
+            self.string_data,
+            self.type,
+            self.label,
+            self.percentiles,
+            self.precision,
+            self.mins,
+            self.maxs,
+            self.mean,
+            self.histogram_base,
+            len(self.histogram_bins),
+            self.histogram_stride,
+            self.zero_count,
+            self.missing_count,
+            self.positive_infinity_count,
+            self.negative_infinity_count,
+            ]
 
         assert self.label==colName, "%s You must have told me the wrong colName %s for the given colIndex %s" % \
             (self.label, colName, colIndex)
@@ -343,7 +388,7 @@ class SummaryObj(OutputObj):
             print "%s" % k,
 
         # hack these into the column object from the full summary
-        self.default_pctiles = default_pctiles
+        self.default_percentiles = default_percentiles
         self.checksum = checksum
         self.rows = rows
 

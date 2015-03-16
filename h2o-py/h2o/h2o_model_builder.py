@@ -53,6 +53,8 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   if y:
     kwargs['response_column']=y._name
 
+  kwargs = dict([(k, kwargs[k]) for k in kwargs if kwargs[k] is not None])
+
   # launch the job and poll
   job = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo_url, **kwargs), job_type=(algo_url+" Model Build")).poll()
   model_json = H2OConnection.get_json("Models/"+job.dest_key)["models"][0]
@@ -68,6 +70,14 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   elif model_type=="Regression":
     from model.regression import H2ORegressionModel
     model = H2ORegressionModel(job.dest_key,model_json)
+
+  elif model_type=="Multinomial":
+    from model.multinomial import H2OMultinomialModel
+    model = H2OMultinomialModel(job.dest_key,model_json)
+
+  elif model_type=="AutoEncoder":
+    from model.autoencoder import H2OAutoEncoderModel
+    model = H2OAutoEncoderModel(job.dest_key,mode_json)
 
   else:
     print model_type

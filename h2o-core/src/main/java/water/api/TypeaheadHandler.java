@@ -1,95 +1,13 @@
 package water.api;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import water.persist.PersistHdfs;
-import water.util.Log;
-
-import java.io.File;
+import water.H2O;
 import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 class TypeaheadHandler extends Handler {
-  // Find files
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public Schema files(int version, TypeaheadV2 t) {
-    if (t.src.startsWith("hdfs://" ))
-      return serveHDFS(version, t);
-    else if( t.src.startsWith("s3n://"  ) )
-      return serveHDFS(version, t);
-    //else if( p2.startsWith("maprfs:/") ) serveHdfs();
-    //else if( p2.startsWith("s3://"   ) ) serveS3();
-    //else if( p2.startsWith("http://" ) ) serveHttp();
-    //else if( p2.startsWith("https://") ) serveHttp();
-    // else
-    else return serveLocalDisk(version, t);
-  }
-
-
-  private Schema serveLocalDisk(int version, TypeaheadV2 t) {
-    File base = null;
-    String filterPrefix = "";
-    if( t.limit == 0 ) t.limit--;
-    if( !t.src.isEmpty() ) {
-      File file = new File(t.src);
-      if( file.isDirectory() ) {
-        base = file;
-      } else {
-        base = file.getParentFile();
-        filterPrefix = file.getName().toLowerCase();
-      }
-    }
-    if( base == null ) base = new File(".");
-
-    ArrayList<String> array = new ArrayList<>();
-    File[] files = base.listFiles();
-    if( files != null ) {
-      for (File file : files) {
-        if (file.isHidden()) continue;
-        if (file.getName().toLowerCase().startsWith(filterPrefix))
-          array.add(file.getPath());
-        if (array.size() == t.limit) break;    // When t.limit == -1, check all files/directories in directory for matches
-      }
-      t.matches = array.toArray(new String[array.size()]);
-    }
-    return t;
-  }
-
-  private static final Pattern S3N_BARE_BUCKET = Pattern.compile("s3n://[^/]*");
-
-  private Schema serveHDFS(int version, TypeaheadV2 t) {
-    // Get HDFS configuration
-    Configuration conf = PersistHdfs.CONF;
-    String filter = t.src;
-    // Handle S3N bare buckets - s3n://bucketname should be always suffixed by '/'
-    // since underlying Jets3n will throw NPE, i.e. right filter name should be
-    // s3n://bucketname/
-    if (S3N_BARE_BUCKET.matcher(filter).matches()) {
-      filter += "/";
-    }
-    // Output matches
-    ArrayList<String> array = new ArrayList<>();
-    try {
-      Path p = new Path(filter);
-      Path expand = p;
-      if( !filter.endsWith("/") ) expand = p.getParent();
-      FileSystem fs = FileSystem.get(p.toUri(), conf);
-      for( FileStatus file : fs.listStatus(expand) ) {
-        Path fp = file.getPath();
-        if( fp.toString().startsWith(p.toString()) ) {
-          array.add(fp.toString());
-        }
-        if( array.size() == t.limit) break;
-      }
-    } catch( Throwable xe ) {
-      xe.printStackTrace();
-      Log.debug(xe); /* ignore here */
-    }
-    // Fill resulting pojo
-    t.matches = array.toArray(new String[array.size()]);
-    // And return schema
+    ArrayList<String> matches = H2O.getPM().calcTypeaheadMatches(t.src, t.limit);
+    t.matches = matches.toArray(new String[matches.size()]);
     return t;
   }
 }

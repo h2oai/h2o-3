@@ -1,6 +1,5 @@
 package water.fvec;
 
-import org.apache.hadoop.fs.FileStatus;
 import water.DKV;
 import water.Futures;
 import water.Key;
@@ -14,22 +13,20 @@ public class HDFSFileVec extends FileVec {
     super(key, len, Value.HDFS);
   }
 
-  public static Key make(FileStatus f) {
+  public static Key make(String path, long size) {
     Futures fs = new Futures();
-    Key key = make(f, fs);
+    Key key = make(path, size, fs);
     fs.blockForPending();
     return key;
   }
-  public static Key make(FileStatus f, Futures fs) {
-    long size = f.getLen();
-    String fname = f.getPath().toString();
-    Key k = Key.make(fname);
+  public static Key make(String path, long size, Futures fs) {
+    Key k = Key.make(path);
     Key k2 = Vec.newKey(k);
     new Frame(k).delete_and_lock(null);
     // Insert the top-level FileVec key into the store
     Vec v = new HDFSFileVec(k2,size);
     DKV.put(k2, v, fs);
-    Frame fr = new Frame(k,new String[]{fname},new Vec[]{v});
+    Frame fr = new Frame(k,new String[]{path},new Vec[]{v});
     fr.update(null);
     fr.unlock(null);
     return k;

@@ -1,6 +1,7 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i
 from h2o_test import dump_json, verboseprint, OutputObj
 
 class Basic(unittest.TestCase):
@@ -26,7 +27,9 @@ class Basic(unittest.TestCase):
             csvPathname = importFolderPath + "/" + csvFilename
 
             model_key = 'GBMModelKey'
-            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey, timeoutSecs=timeoutSecs)
+            # IsDepDelayed might already be enum, but just to be sure
+            parseResult = h2i.import_parse(path=csvPathname, schema='hdfs', hex_key=trainKey, 
+                columnTypeDict={'IsDepDelayed': 'Enum'}, timeoutSecs=timeoutSecs)
 
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -41,9 +44,7 @@ class Basic(unittest.TestCase):
             parameters = {
                 'validation_frame': trainKey,
                 'ignored_columns': '[CRSDepTime,CRSArrTime,ActualElapsedTime,CRSElapsedTime,AirTime,ArrDelay,DepDelay,TaxiIn,TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,IsArrDelayed]',
-                'score_each_iteration': True,
                 'response_column': response,
-                'do_classification': True,
                 # 'balance_classes':
                 # 'max_after_balance_size':
                 'ntrees': 2,
@@ -51,6 +52,7 @@ class Basic(unittest.TestCase):
                 'min_rows': 3,
                 'nbins': 40,
                 'learn_rate': 0.2,
+                'loss': 'multinomial',
                 # FIX! doesn't like it?
                 # 'loss': 'Bernoulli',
                 # FIX..no variable importance for GBM yet?
@@ -63,7 +65,7 @@ class Basic(unittest.TestCase):
                 destination_key=model_key,
                 training_frame=parse_key,
                 parameters=parameters,
-                timeoutSecs=180)
+                timeoutSecs=360)
             bm = OutputObj(bmResult, 'bm')
 
             modelResult = h2o.n0.models(key=model_key)
@@ -71,7 +73,7 @@ class Basic(unittest.TestCase):
 
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
-            print "\nLook!, can use dot notation: cmm.cm.confusion.matrix", cmm.cm.confusion_matrix, "\n"
+            print "\nLook!, can use dot notation: cmm.cm.confusion_matrix", cmm.cm.confusion_matrix, "\n"
 
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             mmResultShort = mmResult['model_metrics'][0]

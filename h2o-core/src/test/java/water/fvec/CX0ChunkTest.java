@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 public class CX0ChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
     NewChunk nc = new NewChunk(null, 0);

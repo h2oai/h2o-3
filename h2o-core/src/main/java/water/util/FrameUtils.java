@@ -4,13 +4,13 @@ import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
-import water.Key;
-import water.MRTask;
+import jsr166y.CountedCompleter;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.persist.Persist;
 
 public class FrameUtils {
 
@@ -41,9 +41,60 @@ public class FrameUtils {
       throw new IllegalArgumentException("List of uris is empty!");
     }
     Key[] inKeys = new Key[uris.length];
-    for (int i=0; i<uris.length; i++)  inKeys[i] = Persist.anyURIToKey(uris[i]);
+    for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
     if(okey == null) okey = Key.make(uris[0].toString());
     return ParseDataset.parse(okey, inKeys);
+  }
+
+  private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
+    final int N;
+    public double [] res;
+    public Vec2ArryTsk(int N){this.N = N;}
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc8d(N);
+    }
+    @Override public void map(Chunk c){
+      final int off = (int)c.start();
+      for(int i = 0; i < c._len; i = c.nextNZ(i))
+        res[off+i] = c.atd(i);
+    }
+    @Override public void reduce(Vec2ArryTsk other){
+      if(res != other.res) {
+        for(int i = 0; i < res.length; ++i) {
+          assert res[i] == 0 || other.res[i] == 0;
+          res[i] += other.res[i]; // assuming only one nonzero
+        }
+      }
+    }
+  }
+  public static double [] asDoubles(Vec v){
+    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    return new Vec2ArryTsk((int)v.length()).doAll(v).res;
+  }
+  private static class Vec2IntArryTsk extends MRTask<Vec2IntArryTsk> {
+    final int N;
+    public int [] res;
+    public Vec2IntArryTsk(int N){this.N = N;}
+    @Override public void setupLocal(){
+      res = MemoryManager.malloc4(N);
+    }
+    @Override public void map(Chunk c){
+      final int off = (int)c.start();
+      for(int i = 0; i < c._len; i = c.nextNZ(i))
+        res[off+i] = (int)c.at8(i);
+    }
+    @Override public void reduce(Vec2IntArryTsk other){
+      if(res != other.res) {
+        for(int i = 0; i < res.length; ++i) {
+          assert res[i] == 0 || other.res[i] == 0;
+          res[i] += other.res[i]; // assuming only one nonzero
+        }
+      }
+    }
+  }
+  public static int [] asInts(Vec v){
+    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    return new Vec2IntArryTsk((int)v.length()).doAll(v).res;
   }
 
   /**
@@ -72,17 +123,66 @@ public class FrameUtils {
   /**
    * Helper to insert missing values into a Frame
    */
-  public static class MissingInserter extends MRTask<MissingInserter> {
+  public static class MissingInserter extends Job<Frame> {
+    final Key _dataset;
+    final double _fraction;
     final long _seed;
-    final double _frac;
-    public MissingInserter(long seed, double frac){ _seed = seed; _frac = frac; }
 
-    @Override public void map (Chunk[]cs){
-      final Random rng = new Random();
-      for (int c = 0; c < cs.length; c++) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-          if (rng.nextDouble() < _frac) cs[c].setNA(r);
+    public MissingInserter(Key frame, long seed, double frac){
+      super(frame, "MissingValueInserter");
+      _dataset = frame; _seed = seed; _fraction = frac;
+    }
+
+    /**
+     * Driver for MissingInserter
+     */
+    class MissingInserterDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      MissingInserterDriver(Frame frame) {_frame = frame; }
+      @Override
+      protected void compute2() {
+        new MRTask() {
+          @Override public void map (Chunk[]cs){
+            final Random rng = new Random();
+            for (int c = 0; c < cs.length; c++) {
+              for (int r = 0; r < cs[c]._len; r++) {
+                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
+                if (rng.nextDouble() < _fraction) cs[c].setNA(r);
+              }
+            }
+            update(1);
+          }
+        }.doAll(_frame);
+        tryComplete();
+      }
+
+      @Override
+      public void onCompletion(CountedCompleter caller){
+        done();
+      }
+
+      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
+        failed(ex);
+        return true;
+      }
+    }
+
+    public void execImpl() {
+      if (DKV.get(_dataset) == null)
+        throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
+      if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
+      try {
+        final Frame frame = DKV.getGet(_dataset);
+        MissingInserterDriver mid = new MissingInserterDriver(frame);
+        int work = frame.vecs()[0].nChunks();
+        start(mid, work);
+      } catch (Throwable t) {
+        Job thisJob = DKV.getGet(_key);
+        if (thisJob._state == JobState.CANCELLED) {
+          Log.info("Job cancelled by user.");
+        } else {
+          failed(t);
+          throw t;
         }
       }
     }

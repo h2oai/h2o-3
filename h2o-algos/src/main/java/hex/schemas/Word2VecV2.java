@@ -74,8 +74,4 @@ public class Word2VecV2 extends ModelBuilderSchema<Word2Vec,Word2VecV2,Word2VecV
     public Word2Vec.WordModel wordModel;
 
   }
-
-  // Return a URL to invoke Word2Vec on this Frame
-  @Override protected String acceptsFrame( Frame fr ) { return "/v2/Word2Vec?training_frame="+fr._key; }
-  
 }

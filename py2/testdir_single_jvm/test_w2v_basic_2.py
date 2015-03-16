@@ -1,6 +1,7 @@
 import unittest, time, sys, random, re
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 
 print "This variant plays with colsep of space, and eols, more"
@@ -164,7 +165,7 @@ class Basic(unittest.TestCase):
 
             # just parse to make sure it's good
             parseResult = h2i.import_parse(path=csvPathname,
-                checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
+                check_header=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
             parse_key = pA.parse_key
@@ -182,7 +183,6 @@ class Basic(unittest.TestCase):
                 parameters = {
                     'validation_frame': parse_key, # KeyIndexed False []
                     'ignored_columns': None, # string[] None []
-                    'score_each_iteration': None, # boolean false []
 
                     'minWordFreq': 1, # int 5 []
                     'wordModel': 'CBOW', # enum [u'CBOW', u'SkipGram']

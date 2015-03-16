@@ -61,6 +61,10 @@ setClass("H2OConnection",
          prototype(ip      = NA_character_,
                    port    = NA_integer_,
                    mutable = new("H2OConnectionMutableState")))
+
+
+
+
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
 #' @rdname H2OConnection-class
@@ -297,6 +301,8 @@ setClass("H2ORegressionModel",  contains="H2OModel")
 setClass("H2OClusteringModel",  contains="H2OModel")
 #' @rdname H2OModel-class
 setClass("H2OAutoEncoderModel", contains="H2OModel")
+#' @rdname H2OModel-class
+setClass("H2ODimReductionModel", contains="H2OModel")
 
 #' 
 #' The H2OModelMetrics Object.
@@ -322,14 +328,14 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     cat("Metric Details:\n\n")
     if(object@algorithm == "glm") {
-      cat("Null Deviance:     ", object@metrics$nullDeviance,"\n", sep="")
-      cat("Residual Deviance: ", object@metrics$residualDeviance,"\n", sep="")
+      cat("Null Deviance:     ", object@metrics$null_deviance,"\n", sep="")
+      cat("Residual Deviance: ", object@metrics$residual_deviance,"\n", sep="")
       cat("aic:               ", object@metrics$aic,"\n\n", sep="")
     }
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
     cat("MSE:  ", object@metrics$mse, "\n\n", sep="")    
-    print(object@metrics$maxCriteriaAndMetricScores)
+    print(object@metrics$max_criteria_and_metric_scores)
 })
 
 #' @rdname H2OModelMetrics-class
@@ -338,3 +344,13 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2OAutoEncoderMetrics", contains="H2OModelMetrics")
+#' @rdname H2OModelMetrics-class
+setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
+
+setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
+h2o.getFutureModel <- function(object) {
+  .h2o.__waitOnJob(object@h2o, object@job_key)
+  h2o.getModel(object@destination_key, object@h2o)
+}

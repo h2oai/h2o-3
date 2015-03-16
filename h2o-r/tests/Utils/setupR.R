@@ -21,9 +21,11 @@ if (!"plyr" %in% rownames(installed.packages())) install.packages("plyr")
 #if (!"rgl" %in% rownames(installed.packages())) install.packages("rgl")
 if (!"randomForest" %in% rownames(installed.packages())) install.packages("randomForest")
 if(!"flexclust" %in% rownames(installed.packages())) install.packages("flexclust")
+if(!"e1071" %in% rownames(installed.packages())) install.packages("e1071")
 require(glmnet)
 require(gbm)
 require(ROCR)
+library(e1071)
 
 #Global Variables
 myIP   <- ipPort[[1]]

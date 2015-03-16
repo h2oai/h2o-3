@@ -7,14 +7,9 @@ from model_base import *
 
 class H2OMultinomialModel(ModelBase):
 
-    def __init__(self, raw_model_output=None, algo=None):
-        if raw_model_output is None:
-            raise H2OModelInstantiationException(
-                "Failed to instantiate a Multinomial model: no model output found!")
-        super(H2OMultinomialModel, self).__init__()
-        self.model_type = self.MULTINOMIAL
-        self.algo = algo
-        self.raw_model_output = raw_model_output
+    def __init__(self, dest_key, model_json):
+        super(H2OMultinomialModel, self).__init__(dest_key, model_json,H2OMultinomialModelMetrics)
+
 
     def summary(self):
         """
@@ -24,8 +19,7 @@ class H2OMultinomialModel(ModelBase):
         """
         pass
 
-    def model_performance(self, test_data=None):
-        pass
-
-    def predict(self, test_data=None):
-        pass
+class H2OMultinomialModelMetrics(object):
+  def __init__(self, metric_json):
+    self._metric_json = metric_json
+    

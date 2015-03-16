@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
-import water.persist.Persist;
+import water.persist.PersistManager;
 
 /** Log for H2O. 
  *
@@ -31,12 +31,12 @@ abstract public class Log {
   static final int TRACE= 5;
   static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   static int _level=INFO;
-  static boolean _clientMode = false;
+  static boolean _quiet = false;
 
   // Common pre-header
   private static String _preHeader;
 
-  public static void init( String slvl, boolean clientMode ) {
+  public static void init( String slvl, boolean quiet ) {
     if( slvl != null ) {
       slvl = slvl.toLowerCase();
       if( slvl.startsWith("fatal") ) _level = FATAL;
@@ -46,7 +46,7 @@ abstract public class Log {
       if( slvl.startsWith("debug") ) _level = DEBUG;
       if( slvl.startsWith("trace") ) _level = TRACE;
     }
-    _clientMode = clientMode;
+    _quiet = quiet;
   }
   
   public static void trace( Object... objs ) { write(TRACE,objs); }
@@ -97,8 +97,7 @@ abstract public class Log {
     write0(sb, hdr, s);
 
     // stdout first - in case log4j dies failing to init or write something
-    // but do not print to stdout in client mode!
-    if( stdout && !_clientMode) System.out.println(sb);
+    if(stdout && !_quiet) System.out.println(sb);
 
     // log something here
     org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
@@ -280,7 +279,7 @@ abstract public class Log {
     // Use ice folder if local, or default
     if (windowsPath)
       dir = new File(H2O.ICE_ROOT.toString());
-    else if( H2O.ICE_ROOT.getScheme() == null || Persist.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
+    else if( H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()) )
       dir = new File(H2O.ICE_ROOT.getPath());
     else
       dir = new File(H2O.DEFAULT_ICE_ROOT());
@@ -392,4 +391,7 @@ abstract public class Log {
       POST(n, els[i].toString());
     }
   }
+
+  public static void setQuiet(boolean q) { _quiet = q; }
+  public static boolean getQuiet() { return _quiet; }
 }

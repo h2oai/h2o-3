@@ -1,26 +1,11 @@
-#Getting Started with H2O Flow
+# Getting Started with H2O Flow
+
+This guide will walk you through how to use H2O-dev's web UI, H2O Flow. 
+
 ---
 
-This tutorial will show you how to: 
-
-- [get help](#GetHelp)
-- [understand cell modes](#Cells)
-- [import data](#ImportData)
-- [parse data](#ParseData)
-- [view jobs](#ViewJobs)
-- [build a model](#BuildModel)
-- [view a model](#ViewModels)
-- [make a prediction](#Predict)
-- [view predictions](#ViewPredict)
-- [view a frame](#ViewFrames)
-- [use clips](#Clips)
-- [view an outline of your flow](#Outline)
-- [save a flow](#SaveFlows)
-- [troubleshoot issues](#Troubleshooting)
-
-
 <a name="GetHelp"></a> 
-##Getting Help 
+# Getting Help 
 ---
 
 First, let's go over the basics. Type `h` to view a list of helpful shortcuts. 
@@ -29,7 +14,7 @@ The following help window displays:
 
 ![help menu](https://raw.githubusercontent.com/h2oai/h2o/master/docs/Flow-images/Shortcuts.png)
 
-To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. 
+To close this window, click the **X** in the upper-right corner, or click the **Close** button in the lower-right corner. You can also click behind the window to close it. You can also access this list of shortcuts by clicking the **Help** menu and selecting **Keyboard Shortcuts**. 
 
 For additional help, select the **Help** sidebar to the right and click the **Assist Me!** button. 
 
@@ -39,14 +24,24 @@ You can also type `assist` in a blank cell and press **Ctrl+Enter**. A list of c
 
  ![Assist Me links](images/Flow_assist.png)
  
-You can also access the quick start guide, keyboard shortcuts, or H2O documentation from the "Help" menu at the top of the screen. 
+There are multiple resources to help you get started with Flow in the **Help** sidebar. To access this document, select the **Getting Started with H2O Flow** link below the **Help Topics** heading. 
+
+You can also explore the pre-configured flows available in H2O Flow for a demonstration of how to create a flow. To view the example flows, click the **Browse installed packs...** link in the **Packs** subsection of the **Help** sidebar. Click the **examples** folder and select the example flow from the list. 
+
+  ![Flow Packs](images/Flow_ExampleFlows.png)
+
+If you have a flow currently open, a confirmation window appears asking if the current notebook should be replaced. To load the example flow, click the **Load Notebook** button. 
+
+To view the REST API documentation, click the **Help** tab in the sidebar and then select the type of REST API documentation (**Routes** or **Schemas**). 
+
+ ![REST API documentation](images/Flow_REST_docs.png)
 
 Before getting started with H2O Flow, make sure you understand the different cell modes. 
 
 ---
 
 <a name="Cell"></a>
-##Understanding Cell Modes
+# Understanding Cell Modes
 
 There are two modes for cells: edit and command. In edit mode, the cell is yellow with a blinking bar to indicate where text can be entered and there is an orange flag to the left of the cell.
 
@@ -54,7 +49,9 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
  
  In command mode, the flag is yellow. The flag also indicates the cell's format: 
 
-- **MD**: Markdown
+- **MD**: Markdown 
+   
+   **Note**: Markdown formatting is not applied until you run the cell by clicking the **Run** button or clicking the **Run** menu and selecting **Run**. 
 
  ![Flow - Markdown](images/Flow_markdown.png)
 
@@ -73,6 +70,20 @@ There are two modes for cells: edit and command. In edit mode, the cell is yello
 **NOTE**: If there is an error in the cell, the flag is red. 
 
  ![Cell error](images/Flow_redflag.png)
+ 
+ If the cell is executing commands, the flag is teal. The flag returns to yellow when the task is complete. 
+ 
+ ![Cell executing](images/Flow_cellmode_runningflag.png)
+
+When you run the flow, a progress bar that indicates the current status of the flow. You can cancel the currently running flow by clicking the **Stop** button in the progress bar. 
+
+  ![Flow Progress Bar](images/Flow_progressbar.png)
+
+When the flow is complete, a message displays in the upper right. 
+**Note**: If there is an error in the flow, H2O Flow stops the flow at the cell that contains the error. 
+
+  ![Flow - Completed Successfully](images/Flow_run_pass.png)
+  ![Flow - Did Not Complete](images/Flow_run_fail.png) 
 
 Here are some important keyboard shortcuts to remember: 
 
@@ -101,22 +112,23 @@ Now that you are familiar with the cell modes, let's import some data.
 ---
 
 <a name="ImportData"></a>
-##Importing Data
+# Importing Data
 
 If you don't have any of your own data to work with, you can find some example datasets here: 
 
-- http://docs.h2o.ai/resources/publicdata.html
-- http://data.h2o.ai
+- <a href="http://docs.h2o.ai/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/resources/publicdata.html </a>
+- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+
 
 There are multiple ways to import data in H2O flow:
 
 - Click the **Assist Me!** button in the **Help** sidebar, then click the **importFiles** link. Enter the file path in the auto-completing **Search** entry field and press **Enter**. Select the file from the search results and select it by clicking the **Add All** link.
  
-  You can also drag and drop the file onto the **Search** field in the cell.
+- You can also drag and drop the file onto the **Search** field in the cell.
   
  ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
-- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. 
+- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
@@ -132,12 +144,23 @@ After you click the **Import** button, the raw code for the current job displays
 
  ![Import Files - Results](images/Flow_import_results.png)
 
-Ok, now that you've imported your data, let's move on to the next step: parsing. Click the **Parse these files** button to continue. 
+##Uploading Data
+
+To upload a local file, click the **Flow** menu and select **Upload File...**. Click the **Choose File** button, select the file, click the **Choose** button, then click the **Upload** button. 
+  
+  ![File Upload Pop-Up](images/Flow_UploadDataset.png)
+  
+  When the file has uploaded successfully, a message displays in the upper right and the **Setup Parse** cell displays. 
+
+  
+  ![File Upload Successful](images/Flow_FileUploadPass.png)
+
+Ok, now that your data is available in H2O Flow, let's move on to the next step: parsing. Click the **Parse these files** button to continue. 
 
 ---
 
 <a name="ParseData"></a>
-##Parsing Data
+# Parsing Data
 
 After you have imported your data, parse the data.
 
@@ -161,9 +184,21 @@ Select any necessary additional options:
 - **Enable single quotes as a field quotation character**: Treat single quote marks (also known as apostrophes) in the data as a character, rather than an enum. This option is not selected by default. 
 - **Delete on done**: Check this checkbox to delete the imported data after parsing. This option is selected by default. 
 
-A preview of the data displays in the "Data Preview" section. After making your selections, click the **Parse** button. 
-
+A preview of the data displays in the "Data Preview" section. 
  ![Flow - Parse options](images/Flow_parse_setup.png)
+
+**Note**: To change the column type, select the drop-down list at the top of the column and select the data type. The options are: 
+  - Unknown
+  - Numeric
+  - Enum
+  - Time
+  - UUID
+  - String
+  - Invalid
+
+
+After making your selections, click the **Parse** button. 
+
 
 After you click the **Parse** button, the code for the current job displays. 
 
@@ -174,11 +209,11 @@ Since we've submitted a couple of jobs (data import & parse) to H2O now, let's t
 --- 
  
 <a name="ViewJobs"></a>
-##Viewing Jobs
+# Viewing Jobs
 
 Any command (such as `importFiles`) you enter in H2O is submitted as a job, which is associated with a key. The key identifies the job within H2O and is used as a reference. 
 
-###Viewing Recent Jobs
+## Viewing Recent Jobs
 
 To view all recent jobs, click the **Admin** menu, then click **Jobs**, or enter `getJobs` in a cell in CS mode. 
 
@@ -190,7 +225,7 @@ The following information displays:
 - Description of the type of job (for example, `GLM` or `Parse`)
 - Status (`RUNNING` or `DONE`)
 
-###Viewing Specific Jobs
+## Viewing Specific Jobs
 
 To view a specific job, click the **Destination Key** link. 
 
@@ -213,7 +248,7 @@ Ok, now that you understand how to find jobs in H2O, let's submit a new one by b
 ---
 
 <a name="BuildModel"></a>
-##Building Models
+# Building Models
 
 To build a model: 
 
@@ -229,18 +264,27 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 
 <a name="Kmeans"></a>
 - **kmeans**: Create a K-Means model
+**Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
 - **glm**: Create a Generalized Linear model
 
 <a name="grep"></a>
 - **grep**: Perform a global search for a specified character string and display the results (global regular expression)
+**Note**: For a grep model, the selected training frame must contain one vector of raw text. 
  
 <a name="w2v"></a>
-- **word2vec**: Create a word-to-vector model for text-based data
+- **word2vec**: Create a word-to-vector model for text-based data. 
+**Note**: For a word2vec model, the training frame must contain string columns. 
 
-<a name="sf"></a>
-- **splitframe**: Split a data frame
+<a name="drf"></a>
+- **drf**: Create a distributed Random Forest model.  
+
+<a name="nb"></a>
+- **naivebayes**: Create a Naive Bayes model. 
+
+<a name="pca"></a> 
+- **pca**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
 <a name="GBM"></a>
 - **gbm**: Create a Gradient Boosted model
@@ -264,27 +308,38 @@ The available options vary depending on the selected model. If an option is only
 
 - **DropNA20Cols**: (Optional)Check this checkbox to drop columns that are missing (i.e., use 0 or NA) over 20% of their values 
 
+- **User_points**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of initial cluster centers. For PCA, specify the initial Y matrix. 
+**Note**: The PCA **User_points** parameter should only be used by advanced users for testing purposes.  
+
+- **Transform**: [(PCA)](#pca) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
+
 - **Score\_each\_iteration**: (Optional) Score the validation set after each iteration of the model-building process. If you select this option, the model-building time increases. 
 
-- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are [0.01, 0.05, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.95, 0.99]. 
+- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are 0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999. 
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL)) Select the column to use as the independent variable.
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
-- **Do_classification**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Convert the response column to an enum (forcing classification instead of regression).
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
+- **Max\_after\_balance\_size**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
 
-- **Max\_after\_balance\_size**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL)) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is infinity. 
+- **Ntrees**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
 
-- **Ntrees**: [(GBM)](#GBM) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
+- **Max\_depth**: [(GBM)](#GBM), [(DRF)](#drf) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). For GBM, the default value is 5. For DRF, the default value is 20. 
 
-- **Max\_depth**: [(GBM)](#GBM) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). The default value is 5. 
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10. 
 
-- **Min\_rows**: [(GBM)](#GBM) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10. 
+- **Nbins**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of bins for the histogram. The default value is 20. 
 
-- **Nbins**: [(GBM)](#GBM) Specify the number of bins for the histogram. The default value is 20. 
+- **Mtries**: [(DRF)](#drf) Specify the columns to randomly select at each level. To use the square root of the columns, enter `-1`.  The default value is -1.  
+
+- **Sample\_rate**: [(DRF)](#drf) Specify the sample rate. The range is 0 to 1.0 and the default value is 0.6666667. 
+
+- **Do_grpsplit**: [(DRF)](#drf) To check non-contiguous group splits for categorical predictors, check this checkbox. The default setting is disabled. 
+
+- **Build\_tree\_one\_node**: [(DRF)](#drf) To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. The default setting is disabled. 
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
@@ -292,11 +347,16 @@ The available options vary depending on the selected model. If an option is only
 
 - **Variable_importance**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
-- **K**: [(K-Means)](#Kmeans) Specify the number of clusters. The default is 0.
+- **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. The K-Means default is 0. For PCA, specify the rank of matrix approximation. The PCA default is 1.  
 
-- **Max_iters**: [(K-Means)](#Kmeans) Specify the number of training iterations. The default is 1000. 
+- **Gamma**: [(PCA)](#pca) Specify the regularization weight for PCA. The default is 0. 
 
-- **Init**: [(K-Means)](#Kmeans) Select the initialization mode (Furthest, PlusPlus, or None).
+- **Max_iterations**: [(K-Means)](#Kmeans), [(PCA)](#pca) Specify the number of training iterations. The default is 1000.
+
+- **Max_iters**: [(GLM)](#GLM) Specify the number of training iterations. The default is 50.  
+
+- **Init**: [(K-Means)](#Kmeans), [(PCA)](#pca) Select the initialization mode For K-Means, the options are Furthest, PlusPlus, or None. For PCA, the options are PlusPlus, User, or None. 
+**Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, Tweedie, or none).
 
@@ -310,7 +370,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Expert_mode**: [(DL)](#DL) Check this checkbox to enable "expert mode" and configure additional options. This option is not selected by default.
 
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). The default option is Rectifier. 
 
@@ -318,13 +378,17 @@ The available options vary depending on the selected model. If an option is only
 
 - **Epochs**: ([word2vec](#w2v), [DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
 
+- **Loss**: [(DL)](#DL) *Required* Select the loss function (MeanSquare, CrossEntropy, or MeanSqaureClassification). 
+
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
 - **Max\_confusion\_matrix\_size**: [(DL)](#DL) Specify the number of classes for the confusion matrices. The default value is 20. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
+
+- **Beta_eps**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -337,6 +401,10 @@ The available options vary depending on the selected model. If an option is only
 - **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0.0. 
 
 - **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0.0. 
+
+- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing.
+
+- **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
 - **Minwordfreq**: [(word2vec)](#w2v) Specify the number of times a word must appear to be included in the model. The default is 5. 
 
@@ -354,6 +422,15 @@ The available options vary depending on the selected model. If an option is only
 
 - **Initlearningrate**: [(word2vec)](#w2v) Specify the starting learning rate. The default is 0.05. 
 
+- **Laplace**: [(NaiveBayes)](#nb) Specify the Laplace smoothing parameter. The default value is 0. 
+
+- **Min\_sdev**: [(NaiveBayes)](#nb) Specify the minimum standard deviation to use for observations without enough data. The default value is 0.001. 
+
+- **Eps\_sdev**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
+
+- **Min\_prob**: [(NaiveBayes)](#nb) Specify the minimum probability to use for observations without enough data. The default value is 0.001. 
+
+- **Eps\_prob**: [(NaiveBayes)](#nb) Specify the threshold for standard deviation. If this threshold is not met, the **min\_sdev** value is used. The default value is 1e-10. 
 
 **Advanced Options**
 
@@ -441,7 +518,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Col_major**: [(DL)](#DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
-- **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
+- **Seed**: [K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [(DRF)](#drf) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **Prior1**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
 
@@ -452,7 +529,7 @@ The available options vary depending on the selected model. If an option is only
 ---
 
 <a name="ViewModel"></a>
-###Viewing Models
+## Viewing Models
 
 Click the **Assist Me!** button, then click the **getModels** link, or enter `getModels` in the cell in CS mode and press **Ctrl+Enter**. A list of available models displays. 
 
@@ -473,7 +550,7 @@ To learn how to make predictions, continue to the next section.
 ---
 
 <a name="Predict"></a>
-##Making Predictions
+# Making Predictions
 
 After creating your model, click the destination key link for the model, then click the **Predict** button. 
 Select the model to use in the prediction from the drop-down **Model:** menu and the data frame to use in the prediction from the drop-down **Frame** menu, then click the **Predict** button. 
@@ -483,7 +560,7 @@ Select the model to use in the prediction from the drop-down **Model:** menu and
 ---
  
 <a name="ViewPredict"></a>
-###Viewing Predictions
+## Viewing Predictions
 
 Click the **Assist Me!** button, then click the **getPredictions** link, or enter `getPredictions` in the cell in CS mode and press **Ctrl+Enter**. A list of the stored predictions displays. 
 To view a prediction, click the **View** button to the right of the model name. 
@@ -493,7 +570,7 @@ To view a prediction, click the **View** button to the right of the model name.
 ---
 
 <a name="ViewFrame"></a>
-##Viewing Frames
+# Viewing Frames
 
 To view a specific frame, click the "Destination Key" link for the specified frame, or enter `getFrame "FrameName"` in a cell in CS mode (where `FrameName` is the name of a frame, such as `allyears2k.hex`.
 
@@ -537,7 +614,7 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 
 
-###Plotting Frames
+## Plotting Frames
 
 To create a plot from a frame, click the **Inspect** button, then click the **Plot** button. 
 
@@ -561,7 +638,7 @@ Select one of the above options from the drop-down **Color** menu to display the
 
 <a name="Clips"></a>
 
-##Using Clips
+# Using Clips
 
 Clips enable you to save cells containing your workflow for later reuse. To save a cell as a clip, click the paperclip icon to the right of the cell (highlighted in the red box in the following screenshot). 
  ![Paperclip icon](images/Flow_clips_paperclip.png)
@@ -581,7 +658,7 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 ---
 
 <a name="Outline"></a>
-##Viewing Outlines
+# Viewing Outlines
 
 The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. To jump to a specific cell, click the cell description. 
 
@@ -589,10 +666,10 @@ The "Outline" tab in the sidebar displays a brief summary of the cells currently
 
 ---
 
-<a name"SaveFlow"></a>
-##Saving Flows
+<a name="SaveFlow"></a>
+# Saving Flows
 
-You can save your flow for later reuse. To save your flow, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
+You can save your flow for later reuse. To save your flow as a notebook, click the "Save" button (the first button in the row of buttons below the flow name), or click the drop-down "Flow" menu and select "Save." 
 To enter a custom name for the flow, click the default flow name ("Untitled Flow") and type the desired flow name. A pencil icon indicates where to enter the desired name. 
 
  ![Renaming Flows](images/Flow_rename.png)
@@ -608,14 +685,43 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
  **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
 
+## Duplicating Flows
+
+To create a copy of the current flow, select the **Flow** menu, then click **Duplicate**. The name of the current flow changes to "Copy of <FlowName>" (where <FlowName> is the name of the flow). You can save the duplicated flow using this name by clicking **Flow** > **Save**. 
+
+
+## Exporting Flows
+
+After saving a flow as a notebook, click the **Flow** menu, then select **Export**. A new window opens and the saved flow is downloaded to the default downloads folder on your computer. The file is exported as *<filename>*.flow, where *<filename>* is the name specified when the flow was saved. 
+
+**Caution**: You must have an active internet connection to export flows. 
+
+## Loading Flows
+
+To load a saved flow, click the **Flows** tab in the sidebar at the right. In the pop-up confirmation window that appears, select **Load Notebook**, or click **Cancel** to return to the current flow. 
+
+ ![Confirm Replace Flow](images/Flow_confirmreplace.png)
+
+After clicking **Load Notebook**, the saved flow is loaded. 
+
+To load an exported flow, click the **Flow** menu and select **Open...**. In the pop-up window that appears, click the **Choose File** button and select the exported flow, then click the **Open** button. 
+
+ ![Open Flow](images/Flow_Open.png)
+
+**Notes**: 
+- Only exported flows using the default .flow filetype are supported. Other filetypes will not open. 
+- If the current notebook has the same name as the selected file, a pop-up confirmation appears to confirm that the current notebook should be overwritten. 
+
+---
+
 <a name="Troubleshooting"></a>
-##Troubleshooting 
+# Troubleshooting 
 
 To troubleshoot issues in Flow, use the **Admin** menu. The **Admin** menu allows you to check the status of the cluster, view a timeline of events, and view or download logs for issue analysis. 
 
 **NOTE**: To view the current version, click the **Help** menu, then click **About**. 
 
-###Viewing Cluster Status
+## Viewing Cluster Status
 
 Click the **Admin** menu, then select **Cluster Status**. A summary of the status of the cluster (also known as a cloud) displays, which includes the same information: 
 
@@ -623,8 +729,7 @@ Click the **Admin** menu, then select **Cluster Status**. A summary of the statu
 - Whether all nodes can communicate (consensus)
 - Whether new nodes can join (locked/unlocked)
 - H2O version
-- Cluster size
-- Number of unavailable nodes
+- Number of used and available nodes
 - When the cluster was created
 
  ![Cluster Status](images/Flow_CloudStatus.png)
@@ -646,13 +751,13 @@ To view more information, click the **Show Advanced** button.
 
 ---
 
-###Viewing CPU Status (Water Meter)
+## Viewing CPU Status (Water Meter)
 
 To view the current CPU usage, click the **Admin** menu, then click **Water Meter (CPU Meter)**. A new window opens, displaying the current CPU use statistics. 
 
 ---
 
-###Viewing Logs
+## Viewing Logs
 To view the logs for troubleshooting, click the **Admin** menu, then click **Inspect Log**. 
 
  ![Inspect Log](images/Flow_viewLog.png)
@@ -661,13 +766,31 @@ To view the logs for a specific node, select it from the drop-down **Select Node
 
 ---
 
-###Downloading Logs
+## Downloading Logs
 
 To download the logs for further analysis, click the **Admin** menu, then click **Download Log**. A new window opens and the logs download to your default download folder. You can close the new window after downloading the logs. Send the logs to support@h2o.ai for issue resolution. 
 
 ---
 
-###Accessing the Profiler
+## Viewing Stack Trace Information
+
+To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
+
+ ![Stack Trace](images/Flow_stacktrace.png)
+
+To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
+
+---
+
+##Viewing Network Test Results
+
+To view network test results, click the **Admin** menu, then click **Network Test**. 
+
+  ![Network Test Results](images/Flow_NetworkTest.png)
+
+---
+
+## Accessing the Profiler
 
 To view the profiler, click the **Admin** menu, then click **Profiler**. 
 
@@ -677,16 +800,8 @@ To view the profiler information for a specific node, select it from the drop-do
 
 ---
 
-###Viewing Stack Trace Information
 
-To view the stack trace information, click the **Admin** menu, then click **Stack Trace**. 
-
- ![Stack Trace](images/Flow_stacktrace.png)
-
-To view the stack trace information for a specific node, select it from the drop-down **Select Node** menu. 
-
-
-###Viewing the Timeline
+## Viewing the Timeline
 
 To view a timeline of events in Flow, click the **Admin** menu, then click **Timeline**. The following information displays for each event: 
 
@@ -703,7 +818,7 @@ To obtain the most recent information, click the **Refresh** button.
 
 ---
 
-###Shutting Down H2O
+## Shutting Down H2O
 
 To shut down H2O, click the **Admin** menu, then click **Shut Down**. A *Shut down complete* message displays in the upper right when the cluster has been shut down. 
 

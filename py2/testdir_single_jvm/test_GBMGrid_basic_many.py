@@ -1,6 +1,7 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i
 from h2o_test import dump_json, verboseprint, OutputObj
 import h2o_jobs
 
@@ -40,9 +41,7 @@ class Basic(unittest.TestCase):
         parameters = {
             'validation_frame': train_key,
             'ignored_columns': "['ID']", # this has to have []
-            'score_each_iteration': True,
             'response_column': 'CAPSULE',
-            'do_classification': 1 if DO_CLASSIFICATION else 0,
             # 'balance_classes':
             # 'max_after_balance_size':
             # ??

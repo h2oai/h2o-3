@@ -10,11 +10,11 @@ independent<- c("premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoi
 dependent<- "runoffnew"
 
 # gaussian
-h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees = 10, max_depth = 3, min_rows = 2, learn_rate = 0.2, loss= "AUTO")
+h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees = 10, max_depth = 3, min_rows = 2, learn_rate = 0.2, loss= "gaussian")
 
 # multinomial (coerce response to factor. "AUTO" recognize this as a multinomial classification problem)
 australia.hex$runoffnew <- as.factor(australia.hex$runoffnew)
-h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees = 15, max_depth = 5, min_rows = 2, learn_rate = 0.01, loss= "AUTO")
+h2o.gbm(y = dependent, x = independent, training_frame = australia.hex, ntrees = 15, max_depth = 5, min_rows = 2, learn_rate = 0.01, loss= "multinomial")
 
 testEnd()
 }

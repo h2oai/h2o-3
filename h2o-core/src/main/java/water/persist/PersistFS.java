@@ -2,6 +2,7 @@ package water.persist;
 
 import java.io.*;
 import java.net.URI;
+import java.util.ArrayList;
 
 import water.*;
 import water.fvec.NFSFileVec;
@@ -85,5 +86,16 @@ final class PersistFS extends Persist {
   @Override
   public Key uriToKey(URI uri) {
     return NFSFileVec.make(new File(uri.toString()))._key;
+  }
+
+  @Override
+  public ArrayList<String> calcTypeaheadMatches(String src, int limit) {
+    assert false;
+    return new ArrayList<>();
+  }
+
+  @Override
+  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    assert false;
   }
 }

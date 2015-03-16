@@ -1,6 +1,7 @@
 import unittest, time, sys, random, string
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 
 class Basic(unittest.TestCase):
@@ -39,9 +40,7 @@ class Basic(unittest.TestCase):
         parameters = {
             'validation_frame': validation_key, # KeyIndexed None
             'ignored_columns': "['IsDepDelayed_REC']", # string[] None
-            'score_each_iteration': None, # boolean false
             'response_column': 'IsDepDelayed', # string None
-            'do_classification': True, # boolean false
             'loss': 'CrossEntropy'
         }
         expectedErr = 0.32 ## expected validation error for the above model

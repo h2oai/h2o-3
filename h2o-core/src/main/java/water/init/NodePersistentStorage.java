@@ -6,6 +6,7 @@ import water.util.Log;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 public class NodePersistentStorage {
@@ -36,27 +37,27 @@ public class NodePersistentStorage {
     }
   }
 
-  public NodePersistentStorage(URI npsDirParentURI) {
-    NPS_DIR = npsDirParentURI.toString() + File.separator + "h2onps";
+  public NodePersistentStorage(URI npsDirURI) {
+    NPS_DIR = npsDirURI.toString();
   }
 
   private void validateCategoryName(String categoryName) {
     if (categoryName == null) {
-      throw new RuntimeException("NodePersistentStorage category not specified");
+      throw new IllegalArgumentException("NodePersistentStorage category not specified");
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9]+", categoryName)) {
-      throw new RuntimeException("NodePersistentStorage illegal category");
+      throw new IllegalArgumentException("NodePersistentStorage illegal category");
     }
   }
 
   private void validateKeyName(String keyName) {
     if (keyName == null) {
-      throw new RuntimeException("NodePersistentStorage name not specified");
+      throw new IllegalArgumentException("NodePersistentStorage name not specified");
     }
 
-    if (! Pattern.matches("[\\-a-zA-Z0-9]+", keyName)) {
-      throw new RuntimeException("NodePersistentStorage illegal name");
+    if (! Pattern.matches("[\\-a-zA-Z0-9_ \\(\\)]+", keyName)) {
+      throw new IllegalArgumentException("NodePersistentStorage illegal name");
     }
   }
 
@@ -70,7 +71,7 @@ public class NodePersistentStorage {
     // Create common directories
     File d = new File(NPS_DIR);
     if (! d.exists()) {
-      boolean success = d.mkdir();
+      boolean success = d.mkdirs();
       if (! success) {
         throw new RuntimeException("Could not make NodePersistentStorage directory (" + d + ")");
       }
@@ -124,6 +125,16 @@ public class NodePersistentStorage {
     // Move tmp file to final spot
     File realf = new File(d2 + File.separator + keyName);
     try {
+      // Windows can't handle move, so delete the target file first if it exists.
+      if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+        if (realf.exists()) {
+          boolean success = realf.delete();
+          if (! success) {
+            throw new RuntimeException("NodePersistentStorage delete failed (" + realf + ")");
+          }
+        }
+      }
+
       boolean success = tmpf.renameTo(realf);
       if (! success) {
         throw new RuntimeException("NodePersistentStorage move failed (" + tmpf + " -> " + realf + ")");
@@ -175,9 +186,10 @@ public class NodePersistentStorage {
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
+    BufferedReader reader = null;
     try {
       String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
-      BufferedReader reader = new BufferedReader(new FileReader(fileName));
+      reader = new BufferedReader(new FileReader(fileName));
       String line;
       StringBuilder stringBuilder = new StringBuilder();
       String lineseparator = "\n";
@@ -188,6 +200,51 @@ public class NodePersistentStorage {
       }
 
       return stringBuilder.toString();
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("Not found");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        }
+        catch (Exception ignore) {}
+      }
+    }
+  }
+
+  public long get_length(String categoryName, String keyName) {
+    validateCategoryName(categoryName);
+    validateKeyName(keyName);
+
+    String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
+    File f = new File(fileName);
+    if (! f.exists()) {
+      throw new IllegalArgumentException("Not found");
+    }
+
+    return f.length();
+  }
+
+  public InputStream get(String categoryName, String keyName, AtomicLong length) {
+    validateCategoryName(categoryName);
+    validateKeyName(keyName);
+
+    try {
+      String fileName = NPS_DIR + File.separator + categoryName + File.separator + keyName;
+      File f = new File(fileName);
+      if (length != null) {
+        length.set(f.length());
+      }
+
+      return new FileInputStream(f);
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("Not found");
     }
     catch (Exception e) {
       throw new RuntimeException(e);

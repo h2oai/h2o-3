@@ -1,7 +1,9 @@
 import unittest, time, sys, random
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs, h2o_glm
 from h2o_test import verboseprint, dump_json, OutputObj
+from tabulate import tabulate
 
 
 class Basic(unittest.TestCase):
@@ -25,7 +27,7 @@ class Basic(unittest.TestCase):
         hex_key = "benign.hex"
         csvPathname = importFolderPath + "/" + csvFilename
 
-        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, checkHeader=1, 
+        parseResult = h2i.import_parse(bucket='smalldata', path=csvPathname, hex_key=hex_key, check_header=1, 
             timeoutSecs=180, doSummary=False)
         pA = h2o_cmd.ParseObj(parseResult)
         iA = h2o_cmd.InspectObj(pA.parse_key)
@@ -53,7 +55,6 @@ class Basic(unittest.TestCase):
                 'ignored_columns': '[STR]',
                 'response_column': 'FNDX',
                 # FIX! when is this needed? redundant for binomial?
-                'do_classification': True,
                 'balance_classes': False,
                 'max_after_balance_size': None,
                 'standardize': False,
@@ -88,13 +89,28 @@ class Basic(unittest.TestCase):
             cmmResult = h2o.n0.compute_model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
             cmm = OutputObj(cmmResult, 'cmm')
 
+            mcms = OutputObj({'data': cmm.max_criteria_and_metric_scores.data}, 'mcms')
+            m1 = mcms.data[1:]
+            h0 = mcms.data[0]
+            print "\nmcms", tabulate(m1, headers=h0)
+
+            thms = OutputObj(cmm.thresholds_and_metric_scores, 'thms')
+            cmms = OutputObj({'cm': cmm.confusion_matrices}, 'cmms')
+
+            if 1==0:
+                print ""
+                for i,c in enumerate(cmms.cm):
+                    print "\ncmms.cm[%s]" % i, tabulate(c)
+                print ""
+                
+
             mmResult = h2o.n0.model_metrics(model=model_key, frame=parse_key, timeoutSecs=60)
-            mm = OutputObj(mmResult, 'mm')
+            mm = OutputObj(mmResult['model_metrics'][0], 'mm')
 
             prResult = h2o.n0.predict(model=model_key, frame=parse_key, timeoutSecs=60)
             pr = OutputObj(prResult['model_metrics'][0]['predictions'], 'pr')
 
-            h2o_cmd.runStoreView()
+            # h2o_cmd.runStoreView()
 
 if __name__ == '__main__':
     h2o.unit_main()

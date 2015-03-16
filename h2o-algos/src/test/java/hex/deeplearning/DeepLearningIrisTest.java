@@ -4,13 +4,9 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import org.junit.*;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
-import water.util.Log;
-import water.util.RandomUtils;
+import water.util.*;
 
 import java.util.Random;
 
@@ -28,7 +24,7 @@ public class DeepLearningIrisTest extends TestUtil {
   @Test public void run() throws Exception { runFraction(0.05f); }
 
   private void compareVal(double a, double b, double abseps, double releps) {
-    if( !compare(a,b,abseps,releps) ) // Complex test does not fit JUnit Assert very well
+    if( !MathUtils.compare(a,b,abseps,releps) ) // Complex test does not fit JUnit Assert very well
       Assert.assertEquals("Not equal: ", a, b, 0.0); // always fails if we get here, and prints nice msg
   }
 
@@ -137,7 +133,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 p._train = _train._key;
                                 p._response_column = _train.lastVecName();
                                 assert _train.lastVec().isEnum();
-                                p._convert_to_enum = true;
                                 p._ignored_columns = null;
 
                                 p._seed = seed;
@@ -210,7 +205,6 @@ public class DeepLearningIrisTest extends TestUtil {
                                 ref.train((int) p._epochs, rate, p._momentum_stable, loss);
 
                                 // Train H2O
-                                mymodel.delete_best_model();
                                 mymodel.delete();
                                 dl = new DeepLearning(p);
                                 try {
@@ -335,7 +329,6 @@ public class DeepLearningIrisTest extends TestUtil {
                               } finally {
                                 // cleanup
                                 if (mymodel != null) {
-                                  mymodel.delete_best_model();
                                   mymodel.delete();
                                 }
                                 if (_train != null) _train.delete();

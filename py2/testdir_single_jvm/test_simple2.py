@@ -1,7 +1,8 @@
 import unittest, sys, time
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b, h2o_util
 from h2o_test import find_file, dump_json, verboseprint
 
 DO_INTERMEDIATE_RESULTS = False
@@ -26,19 +27,15 @@ class Basic(unittest.TestCase):
         # print dump_json(import_result)
 
         k = import_result['keys'][0]
-        # frames_result = h2o.n0.frames(key=k[0], len=5)
-
         frames_result = h2o.n0.frames(key=k)
 
         frame = frames_result['frames'][0]
-        byteSize = frame['byteSize']
         rows = frame['rows']
         columns = frame['columns']
         for c in columns:
             label = c['label']
-            missing = c['missing']
+            missing = c['missing_count']
             stype = c['type']
-            zeros = c['zeros']
             domain = c['domain']
 
         # print dump_json(frame)

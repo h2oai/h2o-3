@@ -27,7 +27,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
     Map<Integer,Float> repeatErrs = new TreeMap<>();
 
-    int N = 6;
+    int N = 3;
     StringBuilder sb = new StringBuilder();
     float repro_error = 0;
     for (boolean repro : new boolean[]{true, false}) {
@@ -47,19 +47,22 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 
           p._train = train._key;
           p._valid = test._key;
-          p._convert_to_enum = true;
           p._destination_key = Key.make();
           p._response_column = train.names()[train.names().length-1];
+          int ci = train.names().length-1;
+          Scope.track(train.replace(ci, train.vecs()[ci].toEnum())._key);
+          DKV.put(train);
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
           p._hidden = new int[]{32, 58};
           p._l1 = 1e-5;
           p._l2 = 3e-5;
           p._seed = 0xbebe;
+          p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._input_dropout_ratio = 0.2;
           p._train_samples_per_iteration = 3;
           p._hidden_dropout_ratios = new double[]{0.4, 0.1};
-          p._epochs = 3.32;
+          p._epochs = 1.32;
           p._quiet_mode = true;
           p._reproducible = repro;
           DeepLearning dl = new DeepLearning(p);
@@ -84,7 +87,6 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           // cleanup
           if (mymodel != null) {
             mymodel.delete_xval_models();
-            mymodel.delete_best_model();
             mymodel.delete();
           }
           if (train != null) train.delete();
@@ -116,6 +118,9 @@ public class DeepLearningReproducibilityTest extends TestUtil {
             mean += error;
           }
           mean /= N;
+          // check non-reproducibility (Hogwild! will never reproduce)
+          for (int i=1; i<N; ++i)
+            assertTrue(repeatErrs.get(i) != repeatErrs.get(0));
           Log.info("mean error: " + mean);
           double stddev = 0;
           for (Float error : repeatErrs.values()) {

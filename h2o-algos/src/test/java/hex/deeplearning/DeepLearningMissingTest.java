@@ -43,6 +43,7 @@ public class DeepLearningMissingTest extends TestUtil {
       for (double missing_fraction : new double[]{0, 0.1, 0.25, 0.5, 0.75, 0.99}) {
 
         try {
+          Scope.enter();
           NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), nfs._key);
           Log.info("FrameSplitting");
@@ -56,9 +57,13 @@ public class DeepLearningMissingTest extends TestUtil {
 
           // add missing values to the training data (excluding the response)
           if (missing_fraction > 0) {
-            Frame frtmp = new Frame(null, train.names(), train.vecs());
+            Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
             frtmp.remove(frtmp.numCols() - 1); //exclude the response
-            new FrameUtils.MissingInserter(seed, missing_fraction).doAll(frtmp);
+            DKV.put(frtmp._key, frtmp); //need to put the frame (to be modified) into DKV for MissingInserter to pick up
+            FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
+            j.execImpl();
+            j.get(); //MissingInserter is non-blocking, must block here explicitly
+            DKV.remove(frtmp._key); //Delete the frame header (not the data)
           }
 
           // Build a regularized DL model with polluted training data, score on clean validation set
@@ -68,15 +73,25 @@ public class DeepLearningMissingTest extends TestUtil {
           p._response_column = train._names[train.numCols()-1];
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
-          p._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
-          p._hidden = new int[]{200,200};
+          p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+          p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+          p._hidden = new int[]{100,100};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
-          p._epochs = 10;
-          p._quiet_mode = true;
+          p._epochs = 3;
+//          p._quiet_mode = true;
           p._destination_key = Key.make();
           p._reproducible = true;
           p._seed = seed;
+
+          // Convert response to categorical
+          int ri = train.numCols()-1;
+          int ci = test.find(p._response_column);
+          Scope.track(train.replace(ri, train.vecs()[ri].toEnum())._key);
+          Scope.track(test .replace(ci, test.vecs()[ci].toEnum())._key);
+          DKV.put(train);
+          DKV.put(test);
+
           DeepLearning dl = new DeepLearning(p);
           try {
             Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
@@ -94,7 +109,7 @@ public class DeepLearningMissingTest extends TestUtil {
           Log.info("Missing " + missing_fraction * 100 + "% -> Err: " + err);
           map.put(missing_fraction, err);
           sumerr += err;
-
+          Scope.exit();
         } catch(Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
@@ -102,7 +117,6 @@ public class DeepLearningMissingTest extends TestUtil {
           // cleanup
           if (mymodel != null) {
             mymodel.delete_xval_models();
-            mymodel.delete_best_model();
             mymodel.delete();
           }
           if (train != null) train.delete();
@@ -120,7 +134,7 @@ public class DeepLearningMissingTest extends TestUtil {
     }
     Log.info(sb.toString());
     Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip) > sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation));
-    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 2);
+    Assert.assertTrue(sumErr.get(DeepLearningModel.DeepLearningParameters.MissingValuesHandling.MeanImputation) < 1);
   }
 }
 

@@ -1,0 +1,35 @@
+---
+title: "The Definitive Performance Tuning Guide for H2O Deep Learning"
+author: arno-candel
+date: "2015-02-27"
+---
+
+<!-- AUTO-GENERATED  DO NOT EDIT! -->
+<!-- AUTO-GENERATED  DO NOT EDIT! -->
+<!-- AUTO-GENERATED  DO NOT EDIT! -->
+
+INSERT1 dlperf.Rmd
+
+<!-- Do not add content after this line -->
+
+<script type="text/javascript" src="/assets/scripts/lightning-lib.js"></script>
+<script type="text/javascript" src="/assets/scripts/lightning.min.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() { 
+  var renderPlot = function(id){
+    return function(error, vis) {
+      var el = document.getElementById(id);
+      if (el) {
+        if (error) {
+          el.innerHTML = error.message;
+        } else {
+          el.appendChild(vis.element);
+        }
+      }
+    };
+  };
+
+    INSERT2 PerformanceH2ODeepLearning.plots
+
+});
+</script>

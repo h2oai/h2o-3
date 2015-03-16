@@ -14,7 +14,7 @@ import java.util.Comparator;
  *  the fly" during ModelBuilding - or after-the-fact with a Model and a new
  *  Frame to be scored.
  */
-public class ModelMetrics extends Keyed {
+public class ModelMetrics extends Keyed<ModelMetrics> {
   final Key _modelKey;
   final Key _frameKey;
   final Model.ModelCategory _model_category;
@@ -24,9 +24,6 @@ public class ModelMetrics extends Keyed {
   transient Frame _frame;
 
   public double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
-
-  long duration_in_ms = -1L;
-  long scoring_time = -1L;
 
   public ModelMetrics(Model model, Frame frame, double mse) {
     this(model, frame);
@@ -50,6 +47,7 @@ public class ModelMetrics extends Keyed {
   public Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
+  public double mse() { return _mse; }
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUCData auc() { return null; }
@@ -79,7 +77,6 @@ public class ModelMetrics extends Keyed {
       for(int i = 0; i < coef_names.length; i++)
         coef_names[i] = "C" + String.valueOf(i+1);
     }
-    assert rel_imp.length == coef_names.length;
 
     // Sort in descending order by relative importance
     Integer[] sorted_idx = new Integer[rel_imp.length];
@@ -92,7 +89,7 @@ public class ModelMetrics extends Keyed {
 
     double total = 0;
     double max = rel_imp[sorted_idx[0]];
-    String[] sorted_names = new String[coef_names.length];
+    String[] sorted_names = new String[rel_imp.length];
     double[][] sorted_imp = new double[rel_imp.length][3];
 
     // First pass to sum up relative importance measures
@@ -116,11 +113,11 @@ public class ModelMetrics extends Keyed {
             new String[rel_imp.length][], sorted_imp);
   }
 
-  private static Key buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
+  private static Key<ModelMetrics> buildKey(Key model_key, long model_checksum, Key frame_key, long frame_checksum) {
     return Key.make("modelmetrics_" + model_key + "@" + model_checksum + "_on_" + frame_key + "@" + frame_checksum);
   }
 
-  private static Key buildKey(Model model, Frame frame) {
+  private static Key<ModelMetrics> buildKey(Model model, Frame frame) {
     return buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
@@ -128,8 +125,7 @@ public class ModelMetrics extends Keyed {
   public boolean isForFrame(Frame f) { return _frame_checksum == f.checksum(); }
 
   public static ModelMetrics getFromDKV(Model model, Frame frame) {
-    Key metricsKey = buildKey(model, frame);
-    Value v = DKV.get(metricsKey);
+    Value v = DKV.get(buildKey(model, frame));
     return null == v ? null : (ModelMetrics)v.get();
   }
 

@@ -53,8 +53,8 @@ public class WordCountTest extends TestUtil {
   
   private static class WordCount extends MRTask<WordCount> {
     static NonBlockingHashMap<VStr,VStr> WORDS;
-    NonBlockingHashMap<VStr,VStr> _words;
     static AtomicLong PROGRESS;
+    transient NonBlockingHashMap<VStr,VStr> _words;
 
     @Override public void setupLocal() { WORDS = new NonBlockingHashMap<>(); PROGRESS = new AtomicLong(0); }
     private static int isChar( int b ) {

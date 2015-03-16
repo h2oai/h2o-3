@@ -44,11 +44,8 @@ public abstract class TreeVisitor<T extends Exception> {
     if(equal == 0 || equal == 1)
       fcmp = _ts.get4f();
     else {
-      int off = (equal == 3) ? _ts.get2() : 0;
-      int sz  = (equal == 3) ? _ts.get2() : 4;
-      _gcmp.fill(_ct._bits,_ts.position(),sz<<3,off);
-      //skip = sz;
-      throw H2O.unimpl();
+      if( equal == 2 ) _gcmp.fill2(_ct._bits,_ts);
+      else             _gcmp.fill3(_ct._bits,_ts);
     }
 
     // Compute the amount to skip.

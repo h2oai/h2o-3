@@ -14,6 +14,7 @@ import java.util.Arrays;
  *  <p>
  *  Jobs are {@link Keyed}, because they need to Key to control e.g. atomic updates.
  *  Jobs produce a {@link Keyed} result, such as a Frame (from Parsing), or a Model.
+ *  NOTE: the Job class is parameterized on the type of its _dest field.
  */
 public class Job<T extends Keyed> extends Keyed {
   /** A system key for global list of Job keys. */
@@ -56,7 +57,7 @@ public class Job<T extends Keyed> extends Keyed {
   public final Key<T> dest() { return _dest; }
 
   /** User description */
-  public final String _description;
+  public String _description;
   /** Job start_time using Sys.CTM */
   public long _start_time;     // Job started
   /** Job end_time using Sys.CTM, or 0 if not ended */
@@ -131,7 +132,7 @@ public class Job<T extends Keyed> extends Keyed {
    *  @see JobState
    *  @see H2OCountedCompleter
    */
-  public Job start(final H2OCountedCompleter fjtask, long work) {
+  public Job<T> start(final H2OCountedCompleter fjtask, long work) {
     DKV.put(_progressKey = Key.make(), new Progress(work));
     assert _state == JobState.CREATED : "Trying to run job which was already run?";
     assert fjtask != null : "Starting a job with null working task is not permitted!";

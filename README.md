@@ -78,23 +78,40 @@ Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
+##Making a clean build
+
+Making a clean build is strongly recommended if: 
+
+- the gradle build fails
+- there have been many changes in the last pull
+- source files have been renamed or deleted
+
+If you try to create a gradle build using `./gradlew build` and any of the conditions listed above apply, the build is likely to fail. 
+
+Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. We strongly recommend using `./gradlew clean` after every `git pull`. 
+
+While using `./gradlew clean` is not required, it helps to prevent errors due to missing or outdated files during the build process. However, due to the increased time required for this method, we recommend using `./gradlew clean` only for integrating recent changes or troubleshooting failed builds.  
+
 ### For all Platforms:
 
 ##### Install required python packages (using `sudo` if necessary)
 
-	`pip install grip`
-	`pip install tabulate`
+    `pip install grip`
+    `pip install tabulate`
+    `pip install wheel`
 
 ### For Windows
 
 ##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
-  From the command line, validate `python` is using the newly-installed package. If needed, [update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables). 
+  From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
+  
+  `C:\Python27\;C:\Python27\Scripts\`
 
 ###### Step 2: Install required Python packages:
 
-   `pip install grip`
-   `pip install tabulate`
-   `pip install wheel --upgrade`
+    `pip install grip`
+    `pip install tabulate`
+    `pip install wheel`
 
 ##### Step 3: Install JDK
 
@@ -102,11 +119,13 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 4. Install Node.js, npm, and bower
+The CLASSPATH variable also needs to be set to the lib subfolder of the JDK: 
 
-Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. After installing Node.js, install bower using:
+    CLASSPATH=/<path>/<to>/<jdk>/lib
 
-    npm install -g bower
+##### Step 4. Install Node.js
+
+Install [Node.js](http://nodejs.org/download/) and add the installed directory `C:\Program Files\nodejs`, which must include node.exe and npm.cmd to PATH if not already prepended. 
 
 ##### Step 5. Install R, the required packages, and Rtools:
 
@@ -158,7 +177,7 @@ Download and update h2o-dev source codes:
 ##### Step 9. Run the top-level gradle build:
 
     cd h2o-dev
-    gradlew.bat build
+    gradlew build
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
@@ -173,15 +192,13 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 2. Install Node.js, npm, and bower:
+##### Step 2. Install Node.js:
 
 Using Homebrew:
 
     brew install node
 
-Otherwise, install from the [NodeJS website](http://nodejs.org/download/). After you have installed Node.js, install bower using
-
-    npm install -g bower
+Otherwise, install from the [NodeJS website](http://nodejs.org/download/). 
 
 ##### Step 3. Install R and the required packages:
 
@@ -265,7 +282,7 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
     wget http://npmjs.org/install.sh
     sudo apt-get install curl
     sudo sh install.sh
-    npm install -g bower
+   
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
@@ -279,72 +296,45 @@ For users of Eclipse, generate project files with:
 
     ./gradlew eclipse
 
-Launching H2O on Hadoop from your workspace
--------------------------------------------
-Note: This capability is new to h2o-dev and still under development!
 
-### Step 1. Choose the version of Hadoop to use with the build.
+Launching H2O from a build
+--------------------------
 
-Right now, h2o-dev can only build for one version of Hadoop at a time.  This is specified in **_h2o-dev/build.gradle_** by the line below.
+After creating the build, launch your build of H2O using either 
 
-	hadoopVersion = '2.5.0-cdh5.2.0'
+    cd build
+    java -jar h2o.jar
+    
+  -or-
+  
+    java -jar build/h2o.jar
 
-The default version is set to CDH5.2, but this method also works for HDP2.1 (the example below is launching on hdp2.1).
 
-### Step 2. Do a standard build (if you haven't already):
 
-	(In the top-level h2o-dev directory)
-	./gradlew build
+H2O on Hadoop
+-------------
 
-### Step 3. Launch Hadoop.
+To build H2O with Hadoop support, do the following from the top-level h2o-dev directory:
 
-Copy the h2o-hadoop.jar and h2o.jar files to an appropriate Hadoop-enabled host.  The following command shows an example of running in place, assuming you created your build on a Hadoop-enabled host.
+    (export BUILD_HADOOP=1; ./gradlew build -x test)
+    ./gradlew dist
 
-	(In top-level h2o-dev directory)
-	hadoop jar h2o-hadoop/build/libs/h2o-hadoop.jar water.hadoop.h2odriver -libjars build/h2o.jar -n 3 -mapperXmx 4g -output hdfsOutputDirectory
 
-This example creates a cluster with three nodes, where each node has a 4g Java heap.
+This will create a directory called 'target' and generate zip files there.    
 
-**_Note: For best results, we recommend you give your cluster enough memory to avoid swapping data to disk. (Of course, this depends on the size of your data!)_**
 
-Output from the above command:
+### Adding support for a new version of Hadoop
 
-```
-Determining driver host interface for mapper->driver callback...
-    [Possible callback IP address: 172.16.2.181]
-    [Possible callback IP address: 127.0.0.1]
-Using mapper->driver callback IP address and port: 172.16.2.181:44948
-(You can override these with -driverif and -driverport.)
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.child.java.opts is deprecated. Instead, use mapreduce.map.java.opts
-Memory Settings:
-    mapred.child.java.opts:      -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
-    mapred.map.child.java.opts:  -Xms4g -Xmx4g -Dlog4j.defaultInitOverride=true
-    Extra memory percent:        10
-    mapreduce.map.memory.mb:     4505
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.used.genericoptionsparser is deprecated. Instead, use mapreduce.client.genericoptionsparser.used
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.tasks.speculative.execution is deprecated. Instead, use mapreduce.map.speculative
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.map.max.attempts is deprecated. Instead, use mapreduce.map.maxattempts
-14/10/26 22:59:07 INFO Configuration.deprecation: mapred.job.reuse.jvm.num.tasks is deprecated. Instead, use mapreduce.job.jvm.numtasks
-14/10/26 22:59:08 INFO client.RMProxy: Connecting to ResourceManager at mr-0xd7.0xdata.loc/172.16.2.187:8050
-14/10/26 22:59:09 INFO mapreduce.JobSubmitter: number of splits:3
-14/10/26 22:59:09 INFO mapreduce.JobSubmitter: Submitting tokens for job: job_1413598290344_0035
-14/10/26 22:59:09 INFO impl.YarnClientImpl: Submitted application application_1413598290344_0035
-14/10/26 22:59:09 INFO mapreduce.Job: The url to track the job: http://mr-0xd7.0xdata.loc:8088/proxy/application_1413598290344_0035/
-Job name 'H2O_3581' submitted
-JobTracker job ID is 'job_1413598290344_0035'
-For YARN users, logs command is 'yarn logs -applicationId application_1413598290344_0035'
-Waiting for H2O cluster to come up...
-H2O node 172.16.2.184:54321 reports H2O cluster size 1
-H2O node 172.16.2.185:54321 reports H2O cluster size 1
-H2O node 172.16.2.181:54321 reports H2O cluster size 1
-H2O node 172.16.2.181:54321 reports H2O cluster size 3
-H2O cluster (3 nodes) is up
-(Note: Use the -disown option to exit the driver after cluster formation)
-(Press Ctrl-C to kill the cluster)
-Blocking until the H2O cluster shuts down...
-H2O node 172.16.2.185:54321 reports H2O cluster size 3
-H2O node 172.16.2.184:54321 reports H2O cluster size 3
-```
+In the h2o-hadoop directory each hadoop version has a build directory for the driver and an assembly directory for the fatjar.
+
+You need to:
+
+1.  Add a new driver directory and assembly directory (each with a build.gradle file) in h2o-hadoop
+2.  Add these new projects to h2o-dev/settings.gradle
+3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
+4.  Add the new hadoop version to wget list in h2o-dist/index.html
+
+
 
 Sparkling Water
 ---------------------------------

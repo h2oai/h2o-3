@@ -1,6 +1,7 @@
 import unittest, random, sys, time, re
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
+import h2o2 as h2o
+import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_cmd
 from h2o_test import dump_json, verboseprint
 
 initList = [
@@ -134,7 +135,10 @@ initList = [
         '= !x ^ #1 ^ #1 (^ #1 #1)',
         '= !x / #1 / #1 (/ #1 #1)',
         '= !x ** #1 ** #1 (** #1 #1)',
-        '= !x % #1 % #1 (% #1 #1)',
+
+        # what is modulo now?
+        # '= !x % #1 % #1 (% #1 #1)',
+
         # '= !x %/% #1 %/% #1 %/% #1 #1', # unimplemented
         # '= !x %% #1 %% #1 %% #1 #1', # unimplemented
 
@@ -152,7 +156,8 @@ initList = [
         '= !x _ ^ #1 ^ #1 (^ #1 _ #1)',
         '= !x _ / #1 / #1 (/ #1 _ #1)',
         '= !x _ ** #1 ** #1 (** #1 _ #1)',
-        '= !x _ % #1 % #1 (% #1 _ #1)',
+        # what is modulo now?
+        # '= !x _ % #1 % #1 (% #1 _ #1)',
 
 
         # can have space between ( and function
@@ -271,7 +276,7 @@ class Basic(unittest.TestCase):
     def setUpClass(cls):
         global SEED
         SEED = h2o.setup_random_seed()
-        h2o.init(1, base_port=54333)
+        h2o.init(1, java_heap_GB=12, base_port=54333)
 
     @classmethod
     def tearDownClass(cls):

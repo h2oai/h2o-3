@@ -1,18 +1,20 @@
 package hex.kmeans;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import org.junit.*;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 
-import java.io.File;
-
 public class KMeansTest extends TestUtil {
+  public final double threshold = 1e-6;
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   // Run KMeans with a given seed, & check all clusters are non-empty
@@ -50,6 +52,70 @@ public class KMeansTest extends TestUtil {
       fr2 = kmm.score(fr);
 
     } finally {
+      if( fr  != null ) fr .remove();
+      if( fr2 != null ) fr2.remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testArrests() {
+    // Initialize using first 4 rows of USArrests
+    Frame init = frame(ard(ard(13.2, 236, 58, 21.2),
+                           ard(10.0, 263, 48, 44.5),
+                           ard( 8.1, 294, 80, 31.0),
+                           ard( 8.8, 190, 50, 19.5)));
+
+    // R k-means results for comparison
+    double totssR = 355807.821599;
+    double btwssR = 318155.162076;
+    double[] wmseR = new double[] {558.825556, 636.587500, 652.617347, 963.188000};
+    double[][] centersR = ard(ard( 4.270000,  87.550000, 59.750000, 14.390000),
+                              ard( 8.214286, 173.285714, 70.642857, 22.842857),
+                              ard(11.766667, 257.916667, 68.416667, 28.933333),
+                              ard(11.950000, 316.500000, 68.000000, 26.700000));
+    Frame predR = frame(ar("predict"), ear(1, 1, 2, 0, 1, 0, 3, 1, 2, 0, 3, 3, 1, 3,
+                                           3, 3, 3, 1, 3, 2, 0, 1, 3, 1, 0, 3, 3, 1,
+                                           3, 0, 1, 1, 2, 3, 3, 0, 0, 3, 0, 1, 3, 0,
+                                           0, 3, 3, 0, 0, 3, 3, 0));
+
+    KMeansModel kmm = null;
+    Frame fr = null, fr2 = null;
+    try {
+      fr = parse_test_file("smalldata/pca_test/USArrests.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 4;
+      parms._standardize = false;
+      parms._init = KMeans.Initialization.User;
+      parms._user_points = init._key;
+      kmm = doSeed(parms, 0);
+
+      // Sort cluster centers by first column for comparison purposes
+      double[][] centers = new double[parms._k][];
+      for(int i = 0; i < parms._k; i++)
+        centers[i] = kmm._output._centers_raw[i].clone();
+      Arrays.sort(centers, new Comparator<double[]>() {
+        @Override
+        public int compare(final double[] a, final double[] b) {
+          Double d1 = a[0]; Double d2 = b[0];
+          return d1.compareTo(d2);
+        }
+      });
+      for(int i = 0; i < centers.length; i++)
+        assertArrayEquals(centersR[i], centers[i], threshold);
+
+      Arrays.sort(kmm._output._within_mse);
+      assertArrayEquals(wmseR, kmm._output._within_mse, threshold);
+      assertEquals(totssR / fr.numRows(), kmm._output._avg_ss, threshold);
+      assertEquals(btwssR / fr.numRows(), kmm._output._avg_between_ss, threshold);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+      assertVecEquals(predR.vec(0), fr2.vec(0), threshold);
+    } finally {
+      init .delete();
+      predR.delete();
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
       if( kmm != null ) kmm.delete();
@@ -192,4 +258,32 @@ public class KMeansTest extends TestUtil {
   }
 
 
+  @Test public void testPOJO() {
+    // Ignore test if the compiler failed to load
+    Assume.assumeTrue(water.util.JCodeGen.canCompile());
+
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[] {"class"};
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._init = KMeans.Initialization.Random;
+      kmm = doSeed(parms,0);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2));
+
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( fr2 != null ) fr2.remove();
+      if( kmm != null ) kmm.delete();
+    }
+  }
 }

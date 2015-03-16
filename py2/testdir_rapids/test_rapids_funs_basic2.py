@@ -1,6 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
+import h2o2 as h2o
+import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i
 
 funsList = [
     # bad (KeyIndexed.java: 78 assert)

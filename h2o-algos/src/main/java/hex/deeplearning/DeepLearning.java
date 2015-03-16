@@ -10,13 +10,16 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.*;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
@@ -89,21 +92,6 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     }
 
     Key self() { return _key; }
-
-//  /**
-//   * Report the relative progress of building a Deep Learning model (measured by how many epochs are done)
-//   * @return floating point number between 0 and 1
-//   */
-//  @Override public float progress(){
-//    if(UKV.get(dest()) == null)return 0;
-//    DeepLearningModel m = UKV.get(dest());
-//    if (m != null && m.model_info()!=null ) {
-//      final float p = (float) Math.min(1, (m.epoch_counter / m.model_info().get_params().epochs));
-//      return cv_progress(p);
-//    }
-//    return 0;
-//  }
-
 
     // the following parameters can be modified when restarting from a checkpoint
     transient final String [] cp_modifiable = new String[] {
@@ -209,8 +197,22 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       trainModel(cp);
 
       // clean up, but don't delete the model and the (last) model metrics
-      Key[] mms = cp._output._model_metrics;
-      Scope.exit(dest(),mms.length==0 ? null : mms[mms.length-1]);
+      List<Key> keep = new ArrayList<>();
+      keep.add(dest());
+      if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
+      for (Key k : Arrays.asList(cp._output.weights)) {
+        keep.add(k);
+        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
+          keep.add(vk._key);
+        }
+      }
+      for (Key k : Arrays.asList(cp._output.biases)) {
+        keep.add(k);
+        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
+          keep.add(vk._key);
+        }
+      }
+      Scope.exit(keep.toArray(new Key[0]));
     }
 
 
@@ -227,6 +229,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+        Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
@@ -283,7 +286,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           mp._shuffle_training_data = true;
         }
 
-        if (!mp._quiet_mode) Log.info("Initial model:\n" + model.model_info());
+        if (!mp._quiet_mode && mp._diagnostics) Log.info("Initial model:\n" + model.model_info());
         if (_parms._autoencoder) {
           new ProgressUpdate("Scoring null model of autoencoder...").fork(_progressKey);
           model.doScoring(trainScoreFrame, validScoreFrame, self(), null); //get the null model reconstruction error
@@ -298,6 +301,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           final String speed = (model.run_time!=0 ? (" at " + model.model_info().get_processed_total() * 1000 / model.run_time + " samples/s..."): "...");
           final String etl = model.run_time == 0 ? "" : " Estimated time left: " + PrettyPrint.msecs((long)(model.run_time*(1.-progress())/progress()), true);
           new ProgressUpdate("Training" + speed + etl).fork(_progressKey);
+//          if (!_parms._quiet_mode) Log.info("Training (MapReduce step)...");
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAll(Key.make()).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(self(), train, model.model_info(), rowFraction(train, mp, model)).doAllNodes().model_info()) : //replicated data + multi-node mode
@@ -327,14 +331,19 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info(model);
         Log.info("==============================================================================================");
       }
-      catch(RuntimeException ex) {
+      catch(Throwable ex) {
         model = DKV.get(dest()).get();
-        _state = JobState.CANCELLED; //for JSON REST response
         Log.info("Deep Learning model building was cancelled.");
-        throw ex;
+        throw new RuntimeException(ex);
       }
       finally {
-        if (model != null) model.unlock(self());
+        if (model != null) {
+          model.unlock(self());
+          if (model.actual_best_model_key != null) {
+            assert (model.actual_best_model_key != model._key);
+            DKV.remove(model.actual_best_model_key);
+          }
+        }
         for (Frame f : _delete_me) f.delete(); //delete internally rebalanced frames
       }
       return model;
@@ -465,29 +474,5 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     private float rowFraction(Frame train, DeepLearningModel.DeepLearningParameters p, DeepLearningModel m) {
       return computeRowUsageFraction(train.numRows(), m.actual_train_samples_per_iteration, p._replicate_training_data);
     }
-
-//  /**
-//   * Cross-Validate a DeepLearning model by building new models on N train/test holdout splits
-//   * @param splits Frames containing train/test splits
-//   * @param cv_preds Array of Frames to store the predictions for each cross-validation run
-//   * @param offsets Array to store the offsets of starting row indices for each cross-validation run
-//   * @param i Which fold of cross-validation to perform
-//   */
-//  @Override public void crossValidate(Frame[] splits, Frame[] cv_preds, long[] offsets, int i) {
-//    // Train a clone with slightly modified parameters (to account for cross-validation)
-//    final DeepLearning cv = (DeepLearning) this.clone();
-//    cv.genericCrossValidation(splits, offsets, i);
-//    cv_preds[i] = ((DeepLearningModel) UKV.get(cv.dest())).score(cv.validation);
-//    new TAtomic<DeepLearningModel>() {
-//      @Override public DeepLearningModel atomic(DeepLearningModel m) {
-//        if (!keep_cross_validation_splits && /*paranoid*/cv.dest().toString().contains("xval")) {
-//          m.get_params().source = null;
-//          m.get_params().validation=null;
-//          m.get_params().response=null;
-//        }
-//        return m;
-//      }
-//    }.invoke(cv.dest());
-//  }
   }
 }

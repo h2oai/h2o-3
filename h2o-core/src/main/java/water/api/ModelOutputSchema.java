@@ -9,8 +9,10 @@ import java.lang.reflect.Field;
 
 /**
  * An instance of a ModelOutput schema contains the Model build output (e.g., the cluster centers for KMeans).
+ * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
+ * for it for the metadata API.
  */
-abstract public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
+public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
 
   @API(help="Column names.", direction=API.Direction.OUTPUT)
   public String[] names;

@@ -7,7 +7,7 @@ function(conn) {
     print(summary(air.hex))
     myX <- c("DayofMonth", "DayOfWeek")
     air.grid <- h2o.gbm(y = "IsDepDelayed", x = myX, 
-                   loss="AUTO",
+                   loss="bernoulli",
                    training_frame = air.hex, ntrees=c(5,10,15),
                    max_depth=c(2,3,4),
                    learn_rate=c(0.1,0.2))

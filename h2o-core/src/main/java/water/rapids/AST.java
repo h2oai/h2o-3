@@ -573,9 +573,10 @@ class ASTString extends AST {
   final String _s;
   final char _eq;
   ASTString(char eq, String s) { _eq = eq; _s = s; }
-  ASTString parse_impl(Exec E) {
+  AST parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
-    return new ASTString(_eq, E.parseString(_eq));
+    ASTString as = new ASTString(_eq, E.parseString(_eq));
+    return Env.staticLookup(as);
   }
   @Override public String toString() { return _s; }
   @Override void exec(Env e) { e.push(new ValStr(_s)); }
@@ -820,12 +821,14 @@ class ASTAssign extends AST {
                 ? e.popAry() // pop without lowering counts
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
-        Frame fr = new Frame(k, f.names(), f.vecs());
+        Vec[] vecs = f.vecs();
+        if (id.isGlobalSet()) vecs = f.deepSlice(null,null).vecs();
+        Frame fr = new Frame(k, f.names(), vecs);
         if (id.isGlobalSet()) DKV.put(k, fr);
-        e._locked.add(fr._key);
+        e._locked.add(k);
         e.addKeys(fr);
-        if (!e.isGlobal()) e._local._frames.put(fr._key.toString(), fr);
-        else e._global._frames.put(fr._key.toString(), fr);
+        if (!e.isGlobal()) e._local._frames.put(k.toString(), fr);
+        else e._global._frames.put(k.toString(), fr);
         e.push(new ValFrame(fr, id.isGlobalSet()));
         e.put(id._id, Env.ARY, id._id);
       }
@@ -1039,6 +1042,8 @@ class ASTSlice extends AST {
   @Override String value() { return null; }
   @Override int type() { return 0; }
 
+  // Read-only execution.  Assignment to the left-hand-side is handled by
+  // ASTAssign.  Here we do copy-on-write when possible.
   @Override void exec(Env env) {
 
     // stack looks like:  [....,hex,rows,cols], so pop, pop !
@@ -1071,15 +1076,32 @@ class ASTSlice extends AST {
       // Else It's A Big Copy.  Some Day look at proper memory sharing,
       // disallowing unless an active-temp is available, etc.
       // Eval cols before rows (R's eval order).
-      Frame ary = env.peekAry(); // Get without popping
+      Frame fr2,ary = env.peekAry(); // Get without popping
       if (rows_type == Env.ARY) env.addRef(((ValFrame)rows)._fr);
       Object colSelect = select(ary.numCols(), cols, env, true);
       Object rowSelect = select(ary.numRows(),rows,env, false);
-      Frame fr2 = ary.deepSlice(rowSelect,colSelect);
-      if (colSelect instanceof Frame && cols_type != Env.ARY) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
-      if (rowSelect instanceof Frame && rows_type != Env.ARY) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
-      if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
-      if (rows_type == Env.ARY) env.subRef(((ValFrame)rows)._fr);
+      if( rowSelect == null && (colSelect==null || colSelect instanceof long[]) ) {
+        if( colSelect == null ) {
+          fr2 = ary;            // All of it
+        } else {
+          long[] cols2 = (long[])colSelect;
+          if( cols2.length > 0 && cols2[0] < 0 ) { // Dropping cols
+            fr2 = new Frame(ary);
+            for( int i=0; i<cols2.length; i++ )
+              fr2.remove((int)-cols2[i]-1);
+          } else {              // Else selecting positive cols
+            fr2 = new Frame();
+            for( int i=0; i<cols2.length; i++ )
+              fr2.add(ary._names[(int) cols2[i]], ary.vec((int) cols2[i]));
+          }
+        }
+      } else {
+        fr2 = ary.deepSlice(rowSelect,colSelect);
+        if (colSelect instanceof Frame && cols_type != Env.ARY) for (Vec v : ((Frame)colSelect).vecs()) Keyed.remove(v._key);
+        if (rowSelect instanceof Frame && rows_type != Env.ARY) for (Vec v : ((Frame)rowSelect).vecs()) Keyed.remove(v._key);
+        if( fr2 == null ) fr2 = new Frame(); // Replace the null frame with the zero-column frame
+        if (rows_type == Env.ARY) env.subRef(((ValFrame)rows)._fr);
+      }
       env.poppush(1, new ValFrame(fr2));
     }
   }
@@ -1206,7 +1228,10 @@ class ASTDelete extends AST {
   @Override public String toString() { return "(del)"; }
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
-    DKV.remove(Key.make(((ASTId)_asts[0])._id));
+    AST ast = _asts[0];
+    String s = ast instanceof ASTFrame ? ((ASTFrame)ast)._key :
+      (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
+    DKV.remove(Key.make(s));
     env.push(new ValNum(0));
   }
 }

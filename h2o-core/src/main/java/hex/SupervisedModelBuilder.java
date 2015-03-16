@@ -14,7 +14,8 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   public Vec vresponse() { return _vresponse == null ? (_vresponse = DKV.getGet(_vresponse_key)) : _vresponse; }
 
   public int _nclass; // Number of classes; 1 for regression; 2+ for classification
-  public final boolean isClassifier() { return _parms._convert_to_enum || _nclass > 1; }
+
+  public final boolean isClassifier() { return _nclass > 1; }
   public boolean isSupervised() { return true; }
 
   /** Constructor called from an http request; MUST override in subclasses. */
@@ -41,7 +42,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_train", "Training data must have at least 2 features (incl. response).");
 
     if (!isSupervised()) {
-      hide(_parms._response_column, "Ignored for unsupervised methods.");
+      hide("_response_column", "Ignored for unsupervised methods.");
       _response = null;
       _response_key = null;
       _vresponse = null;
@@ -53,6 +54,9 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_response_column", "Response column parameter not set.");
       return;
     }
+
+    if( !_parms._balance_classes )
+      hide("_max_after_balance_size", "Only used with balanced classes");
 
     // put response to the end (if not already), and convert to an enum
     int ridx = _train.find(_parms._response_column);
@@ -67,17 +71,12 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
         error("_response_column", "Response column is all NAs!");
       if (_response.isConst())
         error("_response_column", "Response column is constant!");
-      if (_parms._convert_to_enum && expensive) { // Expensive; only do it on demand
-        _response  =  _response.toEnum();
-        if (_vresponse != null) _vresponse = _vresponse.toEnum();
-      }
       _train.add(_parms._response_column, _response);
       _response_key  =  _response._key;
       if (_valid != null) {
         _valid.add(_parms._response_column, _vresponse);
         _vresponse_key = _vresponse._key;
       }
-
       // #Classes: 1 for regression, domain-length for enum columns
       _nclass = _response.isEnum() ? _response.domain().length : 1;
     }

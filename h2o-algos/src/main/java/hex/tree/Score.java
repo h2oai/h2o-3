@@ -43,7 +43,7 @@ public class Score extends MRTask<Score> {
     for( int row=0; row<ys._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
-      if( _oob && chks[oobColIdx].at8(row)!=0 ) continue;
+      if( _oob && chks[oobColIdx].at8(row)==0 ) continue;
       if( _bldr._parms._valid!=null )   // Must score "the hard way"
         _bldr._model.score0(chks,row,tmp,cdists);
       else                      // Passed in the model-specific columns

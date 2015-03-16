@@ -29,9 +29,9 @@ public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
     }
   }
 
-  protected final Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
-  protected final Chunk chk_tree(Chunk chks[], int c) { return chks[_ncols+1+c]; }
-  protected final Chunk chk_resp( Chunk chks[] ) { return chks[_ncols]; }
+  public final Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
+  public final Chunk chk_tree(Chunk chks[], int c) { return chks[_ncols+1+c]; }
+  public final Chunk chk_resp( Chunk chks[] ) { return chks[_ncols]; }
 
   protected void score0(double data[], float preds[], CompressedTree[] ts) { scoreTree(data, preds, ts); }
 

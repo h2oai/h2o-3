@@ -11,6 +11,8 @@ import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.fvec.*;
+import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashSet;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -122,6 +124,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTScale());
     putPrefix(new ASTCharacter());
     putPrefix(new ASTFactor());
+    putPrefix(new ASTAsNumeric());
     putPrefix(new ASTIsFactor());
     putPrefix(new ASTAnyFactor());              // For Runit testing
     putPrefix(new ASTCanBeCoercedToLogical());
@@ -157,6 +160,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSdev());
     putPrefix(new ASTVar ());
     putPrefix(new ASTMean());
+    putPrefix(new ASTMedian());
 
     // Misc
     putPrefix(new ASTMatch ());
@@ -1302,10 +1306,12 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
+        assert C.vec().isNumeric();
+        double sum = _d;
         for (int r = 0; r < rows; r++)
-          _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+          sum = _bin.op(sum, C.atd(r));
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( RedOp s ) { _d = _bin.op(_d,s._d); }
@@ -1318,18 +1324,58 @@ abstract class ASTReducerOp extends ASTOp {
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
       for (Chunk C : chks) {
-        if (C.vec().isEnum() || C.vec().isUUID() || C.vec().isString()) continue; // skip enum/uuid vecs
-        for (int r = 0; r < rows; r++)
-          if (!Double.isNaN(C.atd(r)))
-            _d = _bin.op(_d, C.atd(r));
-        if (Double.isNaN(_d)) break;
+        assert C.vec().isNumeric();
+        double sum = _d;
+        for (int r = 0; r < rows; r++) {
+          double d = C.atd(r);
+          if (!Double.isNaN(d))
+            sum = _bin.op(sum, d);
+        }
+        _d = sum;
+        if (Double.isNaN(sum)) break;
       }
     }
     @Override public void reduce( NaRmRedOp s ) { _d = _bin.op(_d,s._d); }
   }
 }
 
-class ASTSum extends ASTReducerOp { ASTSum() {super(0);} @Override String opStr(){ return "sum";} @Override ASTOp make() {return new ASTSum();} @Override double op(double d0, double d1) { return d0+d1;}}
+class ASTSum extends ASTReducerOp { 
+  ASTSum() {super(0);} 
+  @Override String opStr(){ return "sum";} 
+  @Override ASTOp make() {return new ASTSum();} 
+  @Override double op(double d0, double d1) { return d0+d1;}
+  @Override void apply(Env env) {
+    double sum=_init;
+    int argcnt = _argcnt;
+    for( int i=0; i<argcnt; i++ )
+      if( env.isNum() ) sum = op(sum,env.popDbl());
+      else {
+        Frame fr = env.popAry(); // pop w/o lowering refcnts ... clean it up later
+        for(Vec v : fr.vecs()) if (v.isEnum() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+opStr()+"`" + " only defined on a data frame with all numeric variables");
+        sum += new RedSum(_narm).doAll(fr)._d;
+      }
+    env.push(new ValNum(sum));
+  }
+
+  private static class RedSum extends MRTask<RedSum> {
+    final boolean _narm;
+    double _d;
+    RedSum( boolean narm ) { _narm = narm; }
+    @Override public void map( Chunk chks[] ) {
+      int rows = chks[0]._len;
+      for (Chunk C : chks) {
+        assert C.vec().isNumeric();
+        double sum=_d;
+        if( _narm ) for (int r = 0; r < rows; r++) { double d = C.atd(r); if( !Double.isNaN(d) ) sum += d; }
+        else        for (int r = 0; r < rows; r++) { double d = C.atd(r);                        sum += d; }
+        _d = sum;
+        if( Double.isNaN(sum) ) break;
+      }
+    }
+    @Override public void reduce( RedSum s ) { _d += s._d; }
+  }
+}
+
 
 class ASTRbind extends ASTUniPrefixOp {
   protected static int argcnt;
@@ -1606,6 +1652,32 @@ class ASTMin extends ASTReducerOp {
           else min = Math.min(min, v.min());
       }
     env.push(new ValNum(min));
+  }
+}
+
+class ASTMedian extends ASTReducerOp {
+  ASTMedian() { super( 0 ); }
+  @Override String opStr() { return "median"; }
+  @Override ASTOp make() { return new ASTMedian(); }
+  ASTMedian parse_impl(Exec E) { return (ASTMedian)super.parse_impl(E); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
+  @Override void apply(Env env) {
+    Frame fr;
+    try {
+      fr = env.popAry();
+    } catch (Exception e) {
+      throw new IllegalArgumentException("`median` expects a single column from a Frame.");
+    }
+    if (fr.numCols() != 1)
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    if (!fr.anyVec().isNumeric())
+      throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
+
+    Quantiles q = new Quantiles();
+    Quantiles[] qbins = new Quantiles.BinningTask(q._max_qbins, fr.anyVec().min(), fr.anyVec().max()).doAll(fr.anyVec())._qbins;
+    qbins[0].finishUp(fr.anyVec(), new double[]{0.5}, q._interpolation_type, true);
+    env.push(new ValNum(qbins[0]._pctile[0]));
   }
 }
 
@@ -2245,13 +2317,15 @@ class ASTVar extends ASTUniPrefixOp {
           // Build output vecs for var-cov matrix
           Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(covars.length);
           Vec[] vecs = new Vec[covars.length];
+          Futures fs = new Futures();
           for (int i = 0; i < covars.length; i++) {
             AppendableVec v = new AppendableVec(keys[i]);
             NewChunk c = new NewChunk(v, 0);
             for (int j = 0; j < covars[0].length; j++) c.addNum(covars[i][j]);
-            c.close(0, null);
-            vecs[i] = v.close(null);
+            c.close(0, fs);
+            vecs[i] = v.close(fs);
           }
+          fs.blockForPending();
           env.poppush(3, new ValFrame(new Frame(colnames, vecs)));
         }
       }
@@ -2442,83 +2516,286 @@ class ASTTable extends ASTUniPrefixOp {
     if (two != null)
       if (two.numCols() != 1 || one.numCols() != 1)
         throw new IllegalArgumentException("`table` supports at *most* two vectors");
-    else
-      if (one.numCols() < 1 || one.numCols() > 2 )
+      else if (one.numCols() < 1 || one.numCols() > 2)
         throw new IllegalArgumentException("`table` supports at *most* two vectors and at least one vector.");
 
     Frame fr;
     if (two != null) fr = new Frame(one.add(two));
     else fr = one;
 
-    int ncol;
+    final int ncol;
     if ((ncol = fr.vecs().length) > 2)
       throw new IllegalArgumentException("table does not apply to more than two cols.");
-    for (int i = 0; i < ncol; i++) if (!fr.vecs()[i].isInt())
-      throw new IllegalArgumentException("table only applies to integer vectors.");
-    String[][] domains = new String[ncol][];  // the domain names to display as row and col names
-    // if vec does not have original domain, use levels returned by CollectDomain
-    long[][] levels = new long[ncol][];
-    for (int i = 0; i < ncol; i++) {
-      Vec v = fr.vecs()[i];
-      levels[i] = new Vec.CollectDomain().doAll(new Frame(v)).domain();
-      domains[i] = v.domain();
-    }
-    long[][] counts = new Tabularize(levels).doAll(fr)._counts;
-    // Build output vecs
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(counts.length+1);
-    Vec[] vecs = new Vec[counts.length+1];
-    String[] colnames = new String[counts.length+1];
-    AppendableVec v0 = new AppendableVec(keys[0]);
-    v0.setDomain(fr.vecs()[0].domain() == null ? null : fr.vecs()[0].domain().clone());
-    NewChunk c0 = new NewChunk(v0,0);
-    for( int i=0; i<levels[0].length; i++ ) c0.addNum((double) levels[0][i]);
-    c0.close(0,null);
-    Futures fs = new Futures();
-    vecs[0] = v0.close(fs);
-    colnames[0] = "row.names";
-    if (ncol==1) colnames[1] = "Count";
-    for (int level1=0; level1 < counts.length; level1++) {
-      AppendableVec v = new AppendableVec(keys[level1+1]);
-      NewChunk c = new NewChunk(v,0);
-      v.setDomain(null);
-      for (int level0=0; level0 < counts[level1].length; level0++)
-        c.addNum((double) counts[level1][level0]);
-      c.close(0, null);
-      vecs[level1+1] = v.close(fs);
-      if (ncol>1) {
-        colnames[level1+1] = domains[1]==null? Long.toString(levels[1][level1]) : domains[1][(int)(levels[1][level1])];
+    for (int i = 0; i < ncol; i++)
+      if (!fr.vecs()[i].isInt())
+        throw new IllegalArgumentException("table only applies to integer vectors.");
+    Vec dataLayoutVec;
+    Frame fr2;
+    String colnames[];
+    String[][] d = new String[ncol+1][];
+
+    if (ncol == 1) {
+      final int min = (int)fr.anyVec().min();
+      final int max = (int)fr.anyVec().max();
+      colnames = new String[]{fr.name(0), "Count"};
+      d[0] = fr.anyVec().domain(); // should always be null for all neg values!
+      d[1] = null;
+
+      // all pos
+      if (min >= 0) {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max,false,false,0).doAll(fr.anyVec());
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
+
+        // all neg  -- flip the sign and count...
+      } else if (min <= 0 && max <= 0) {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(-1*min,true,false,0).doAll(fr.anyVec());
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx * -1);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
+
+        // mixed
+      } else {
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max+-1*min,false,true,max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
+        final long[] cts = t._cts;
+        dataLayoutVec = Vec.makeCon(0, cts.length);
+
+        // second pass to build the result frame
+        fr2 = new MRTask() {
+          @Override public void map(Chunk[] c, NewChunk[] cs) {
+            for (int i = 0; i < c[0]._len; ++i) {
+              int idx = (int) (i + c[0].start());
+              if (cts[idx] == 0) continue;
+              cs[0].addNum(idx > max ? (idx-max)*-1 : idx);
+              cs[1].addNum(cts[idx]);
+            }
+          }
+        }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
       }
+
+    } else {
+
+      // 2 COLUMN CASE
+      colnames = new String[]{fr.name(0), fr.name(1), "count"};
+      long s = System.currentTimeMillis();
+
+      // Strategy: Avoid doing NBHM reduces (which is way too slow).
+      //  1. Build NBHS of Groups (useful for
+      Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
+      Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
+      final long[] pairs = new long[u._s.size()];
+      int i=0;
+      Iterator it = u._s.iterator();
+      while(it.hasNext())
+        pairs[i++]=(long)it.next();
+      dataLayoutVec = Vec.makeCon(0, pairs.length);
+
+      s = System.currentTimeMillis();
+      NewHashMap h = new NewHashMap(pairs).doAll(dataLayoutVec);
+      Log.info("Finished creating new HashMap in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
+      s = System.currentTimeMillis();
+      final long[] cnts = new CountUniq2ColTsk(h._s).doAll(fr)._cnts;
+      Log.info("Finished gathering counts in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
+      d[0] = fr.vec(0).domain();
+      d[1] = fr.vec(1).domain();
+
+      fr2 = new MRTask() {
+        @Override
+        public void map(Chunk[] c, NewChunk[] cs) {
+          int start = (int)c[0].start();
+          for (int i = 0; i < c[0]._len; ++i) {
+            long[] g = unmix(pairs[i+start]);
+            cs[0].addNum(g[0]);
+            cs[1].addNum(g[1]);
+            cs[2].addNum(cnts[i+start]);
+          }
+        }
+      }.doAll(ncol + 1, dataLayoutVec).outputFrame(colnames, d);
     }
-    fs.blockForPending();
-    Frame fr2 = new Frame(colnames, vecs);
+    Keyed.remove(dataLayoutVec._key);
     env.pushAry(fr2);
   }
 
-  protected static class Tabularize extends MRTask<Tabularize> {
-    public final long[][]  _domains;
-    public long[][] _counts;
-
-    public Tabularize(long[][] dom) { super(); _domains=dom; }
-    @Override public void map(Chunk[] cs) {
-      assert cs.length == _domains.length;
-      _counts = _domains.length==1? new long[1][] : new long[_domains[1].length][];
-      for (int i=0; i < _counts.length; i++) _counts[i] = new long[_domains[0].length];
-      for (int i=0; i < cs[0]._len; i++) {
-        if (cs[0].isNA(i)) continue;
-        long ds[] = _domains[0];
-        int level0 = Arrays.binarySearch(ds,cs[0].at8(i));
-        assert 0 <= level0 && level0 < ds.length : "l0="+level0+", len0="+ds.length+", min="+ds[0]+", max="+ds[ds.length-1];
-        int level1;
-        if (cs.length>1) {
-          if (cs[1].isNA(i)) continue; else level1 = Arrays.binarySearch(_domains[1],(int)cs[1].at8(i));
-          assert 0 <= level1 && level1 < _domains[1].length;
-        } else {
-          level1 = 0;
+  // gets vast majority of cases and is stupidly fast (35x faster than using UniqueTwoColumnTask)
+  private static class UniqueColumnCountTask extends MRTask<UniqueColumnCountTask> {
+    long[] _cts;
+    final int _max;
+    final boolean _flip;
+    final boolean _mixed;
+    final int _piv;
+    public UniqueColumnCountTask(int max, boolean flip, boolean mixed, int piv) { _max = max; _flip = flip; _mixed = mixed; _piv = piv; }
+    @Override public void map( Chunk c ) {
+      _cts = MemoryManager.malloc8(_max+1);
+      // choose the right hot loop
+      if (_flip) {
+        for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
+          int val = (int) (-1 * c.at8(i));
+          _cts[val]++;
         }
-        _counts[level1][level0]++;
+      } else if (_mixed) {
+        for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
+          int val = (int) (c.at8(i));
+          int idx = val < 0 ? -1*val + _piv : val;
+          _cts[idx]++;
+        }
+      } else {
+        for (int i = 0; i < c._len; ++i) {
+          if (c.isNA(i)) continue;
+          int val = (int) (c.at8(i));
+          _cts[val]++;
+        }
       }
     }
-    @Override public void reduce(Tabularize that) { ArrayUtils.add(_counts, that._counts); }
+    @Override public void reduce(UniqueColumnCountTask t) { ArrayUtils.add(_cts, t._cts); }
+  }
+
+  public static class GroupPair extends Iced {
+    public long _ls[];
+    public int _hash;
+    public GroupPair() { _ls = MemoryManager.malloc8(2);}
+    public void fill(int row, Chunk chks[]) {
+      _ls[0] = (long) chks[0].atd(row);
+      _ls[1] = (long) chks[1].atd(row);
+      _hash = hash();
+    }
+    private int hash() {
+      long h=0;                 // hash is sum of field bits
+      for( long d : _ls ) h += Double.doubleToRawLongBits(d);
+      h ^= (h>>>20) ^ (h>>>12);
+      h ^= (h>>> 7) ^ (h>>> 4);
+      return (int)((h^(h>>32))&0x7FFFFFFF);
+    }
+    public boolean has(long ls[]) { return Arrays.equals(_ls, ls); }
+    @Override public boolean equals( Object o ) { return o instanceof GroupPair && Arrays.equals(_ls,((GroupPair)o)._ls); }
+    @Override public int hashCode() { return _hash; }
+    @Override public String toString() { return Arrays.toString(_ls); }
+  }
+
+  private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
+    NonBlockingHashSet<Long> _s;
+    @Override public void setupLocal() { _s = new NonBlockingHashSet<>(); }
+    @Override public void map(Chunk[] c) {
+      for (int i=0;i<c[0]._len;++i) {
+//        GroupPair g = new GroupPair();
+//        g.fill(i,c);
+        _s.add(mix(c[0].at8(i), c[1].at8(i)));
+      }
+    }
+    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
+
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _s == null ) return ab.put4(0);
+      ab.put4(_s.size());
+      for( Long g : _s ) {ab.put8(g); }
+      return ab;
+    }
+
+    @Override public Uniq2ColTsk read_impl( AutoBuffer ab ) {
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _s = new NonBlockingHashSet<>();
+      for( int i=0; i<len; i++ ) { _s.add(ab.get8());}
+      return this;
+    }
+  }
+
+  /** http://szudzik.com/ElegantPairing.pdf */
+  private static long mix(long A, long B) { return mix(null,A,B);}
+  private static long mix(GroupPair g) { return mix(g,0,0); }
+  private static long mix(GroupPair g, long A, long B) {
+    long a,b;
+    if (g == null) {
+      a=A;b=B;
+    } else {
+      a = g._ls[0];
+      b = g._ls[1];
+    }
+    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
+    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
+    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
+    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
+  }
+
+  // always returns a long[] of length 2;
+  // long[0] -> A, long[1] -> B
+  private static long[] unmix(long z) {
+    long rflr = (long)Math.floor(Math.sqrt(z));
+    long rflr2=rflr*rflr;
+    long z_rflr2 = z-rflr2;
+    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
+  }
+
+  private static class NewHashMap extends MRTask<NewHashMap> {
+    NonBlockingHashMap<Long, Integer> _s;
+    final long[] _m;
+    NewHashMap(long[] m) { _m = m; }
+    @Override public void setupLocal() {}
+    @Override public void map(Chunk[] c) {
+      int start = (int)c[0].start();
+      _s = new NonBlockingHashMap<>();
+      for (int i = 0; i < c[0]._len; ++i)
+        _s.put(_m[i + start], i+start);
+    }
+    @Override public void reduce(NewHashMap t) { if (_s != t._s) _s.putAll(t._s); }
+
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _s == null ) return ab.put4(0);
+      ab.put4(_s.size());
+      for( Long l : _s.keySet() ) {ab.put8(l); ab.put4(_s.get(l)); }
+      return ab;
+    }
+
+    @Override public NewHashMap read_impl( AutoBuffer ab ) {
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _s = new NonBlockingHashMap<>();
+      for( int i=0; i<len; i++ ) { _s.put(ab.get8(), ab.get4());}
+      return this;
+    }
+  }
+
+  private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
+    final NonBlockingHashMap<Long, Integer> _s;
+
+    // out
+    long[] _cnts;
+    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) { _s = s; }
+    @Override public void map(Chunk[] cs) {
+      _cnts = MemoryManager.malloc8(_s.size());
+      for (int i=0; i < cs[0]._len; ++i) {
+        long h = mix(cs[0].at8(i), cs[1].at8(i));
+        _cnts[_s.get(h)]++;
+      }
+    }
+    @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }
   }
 }
 
@@ -2801,6 +3078,27 @@ class ASTCut extends ASTUniPrefixOp {
   }
 }
 
+class ASTAsNumeric extends ASTUniPrefixOp {
+  ASTAsNumeric() { super(new String[]{"as.numeric", "ary"}); }
+  @Override String opStr() { return "as.numeric"; }
+  @Override ASTOp make() {return new ASTAsNumeric(); }
+  ASTAsNumeric parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
+    ASTAsNumeric res = (ASTAsNumeric) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame ary = env.peekAry();
+    Vec[] nvecs = new Vec[ary.numCols()];
+    for (int c = 0; c < ary.numCols(); ++c)
+      nvecs[c] = ary.vecs()[c].toInt();
+    Frame v = new Frame(ary._names, nvecs);
+    env.poppush(1, new ValFrame(v));
+  }
+}
+
 class ASTFactor extends ASTUniPrefixOp {
   ASTFactor() { super(new String[]{"", "ary"});}
   @Override String opStr() { return "as.factor"; }
@@ -2817,7 +3115,7 @@ class ASTFactor extends ASTUniPrefixOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     env.pushAry(fr);
   }
 }
@@ -2838,7 +3136,7 @@ class ASTCharacter extends ASTUniPrefixOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     env.pushAry(fr);
   }
 }

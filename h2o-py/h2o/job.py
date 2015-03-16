@@ -27,6 +27,7 @@ class H2OJob(object):
     self._100_percent = False
     self._progress_bar_width = 50
     self._job_type = job_type
+    self.exception = job['exception'] if 'exception' in job else None
 
   def poll(self):
     sleep = 0.1
@@ -45,7 +46,7 @@ class H2OJob(object):
     if self.status == "CANCELLED":
       raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
     if self.status == "FAILED":
-      raise EnvironmentError("Job with key {} failed with an exception.".format(self.job_key))
+      raise EnvironmentError("Job with key {} failed with an exception: {}".format(self.job_key, self.exception))
     return self
 
   def _refresh_job_view(self):

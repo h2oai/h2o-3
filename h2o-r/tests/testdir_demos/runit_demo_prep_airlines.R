@@ -36,7 +36,7 @@ cn <- colnames(noDepDelayedNAs.hex)
 cn[numCols+1] <- y_col
 colnames(noDepDelayedNAs.hex) = cn
 
-air.gbm <- h2o.gbm(x = x_cols, y = y_col, training_frame = noDepDelayedNAs.hex)
+air.gbm <- h2o.gbm(x = x_cols, y = y_col, training_frame = noDepDelayedNAs.hex, loss = "multinomial")
 air.gbm
 
 

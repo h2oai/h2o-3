@@ -5,7 +5,7 @@ import h2o
 
 def deep_learning_metrics_test(ip, port):
   h2o.init(ip, port)               # connect to existing cluster
-  df = h2o.import_frame(path="smalldata/logreg/prostate.csv")
+  df = h2o.import_frame(path=h2o.locate("smalldata/logreg/prostate.csv"))
 
   del df['ID']                               # remove ID
   df['CAPSULE'] = df['CAPSULE'].asfactor()   # make CAPSULE categorical
@@ -28,7 +28,8 @@ def deep_learning_metrics_test(ip, port):
   dl = h2o.deeplearning(x           = train[1:],
                         y           = train['CAPSULE'],
                         epochs = 100,
-                        hidden = [10, 10, 10])
+                        hidden = [10, 10, 10],
+                        loss   = 'CrossEntropy')
   print "Binomial Model Metrics: "
   print
   dl.show()

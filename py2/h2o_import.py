@@ -1,4 +1,5 @@
-import h2o, h2o_cmd, h2o_jobs, h2o_print as h2p
+import h2o2 as h2o
+import h2o_cmd, h2o_jobs, h2o_print as h2p
 import getpass, time, re, os, fnmatch
 import h2o_args, h2o_util, h2o_nodes, h2o_print as h2p
 from h2o_test import verboseprint, dump_json, check_sandbox_for_errors

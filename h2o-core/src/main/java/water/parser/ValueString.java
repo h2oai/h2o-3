@@ -45,7 +45,7 @@ public class ValueString extends Iced implements Comparable<ValueString> {
    }
 
 
-// WARNING: LOSSY CONVERSION!!!
+  // WARNING: LOSSY CONVERSION!!!
   // Converting to a String will truncate all bytes with high-order bits set,
   // even if they are otherwise a valid member of the field/ValueString.
   // Converting back to a ValueString will then make something with fewer
@@ -78,12 +78,20 @@ public class ValueString extends Iced implements Comparable<ValueString> {
   public void setOff(int off) { _off=off; }
 
   @Override public boolean equals(Object o){
-    if(!(o instanceof ValueString)) return false;
-    ValueString str = (ValueString)o;
-    if(str.get_length() != get_length())return false;
-    for(int i = 0; i < get_length(); ++i)
-      if(get_buf()[get_off()+i] != str.get_buf()[str.get_off()+i]) return false;
-    return true;
+    if(o instanceof ValueString) {
+      ValueString str = (ValueString) o;
+      if (str.get_length() != get_length()) return false;
+      for (int i = 0; i < get_length(); ++i)
+        if (get_buf()[get_off() + i] != str.get_buf()[str.get_off() + i]) return false;
+      return true;
+    } else if (o instanceof String) {
+      String str = (String) o;
+      if (str.length() != get_length()) return false;
+      for (int i = 0; i < get_length(); ++i)
+        if (get_buf()[get_off() + i] != str.charAt(i)) return false;
+      return true;
+    }
+    return false; //FIXME find out if this is required for some case or if an exception can be thrown
   }
   public final byte [] get_buf() {return _buf;}
   public final int get_off() {return _off;}

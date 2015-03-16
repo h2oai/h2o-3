@@ -45,6 +45,8 @@ public abstract class ParseTime {
   // Time parse patterns
   public static final String TIME_PARSE[] = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.SSS", "dd-MMM-yy" };
 
+  public static boolean isDateTime(ValueString str) { return ParseTime.attemptTimeParse(str) != Long.MIN_VALUE; };
+
   // Returns:
   //  - not a time parse: Long.MIN_VALUE 
   //  - time parse via pattern X: time in msecs since Jan 1, 1970, shifted left by 1 byte, OR'd with X
@@ -456,6 +458,15 @@ public abstract class ParseTime {
     return encodeTimePat(new DateTime(yy,MM,dd,0,0,0, getTimezone()).getMillis(),2);
   }
 
+  public static final boolean isUUID(ValueString str) {
+    boolean res;
+    int old = str.get_off();
+    ParseTime.attemptUUIDParse0(str);
+    ParseTime.attemptUUIDParse1(str);
+    res = str.get_off() != -1;
+    str.setOff(old);
+    return res;
+  }
   // --------------------------------
   // Parse XXXXXXXX-XXXX-XXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).

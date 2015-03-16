@@ -93,6 +93,11 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;
   }
+  public static boolean[] or(boolean[] a, boolean[] b) {
+    if (b==null)return a;
+    for (int i = 0; i < a.length; i++) a[i] |= b[i];
+    return a;
+  }
 
   public static double[][] deepClone(double [][] ary){
     double [][] res = ary.clone();
@@ -170,6 +175,16 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+
+  public static double[][] transpose(double[][] ary) {
+    if(ary == null) return null;
+    double[][] res = new double[ary[0].length][ary.length];
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
   }
 
   public static double [][] generateLineSearchVecs(double [] srcVec, double [] gradient, int n, final double step) {
@@ -675,5 +690,26 @@ public class ArrayUtils {
   public static void subtract (double [] a, double [] b, double [] c) {
     for(int i = 0; i < a.length; ++i)
       c[i] = a[i] - b[i];
+  }
+
+  /** Flatenize given array.
+   *
+   * Example: [[1,2], [3,null], [4]] -> [1,2,3,null,4]
+   * @param arr array of arrays
+   * @param <T> any type
+   * @return flattened array, if input was null return null, if input was empty return null
+   */
+  public static <T> T[] flat(T[][] arr) {
+    if (arr == null) return null;
+    if (arr.length == 0) return null;
+    int tlen = 0;
+    for (T[] t : arr) tlen += t.length;
+    T[] result = Arrays.copyOf(arr[0], tlen);
+    int j = arr[0].length;
+    for (int i = 1; i < arr.length; i++) {
+      System.arraycopy(arr[i], 0, result, j, arr[i].length);
+      j += arr[i].length;
+    }
+    return result;
   }
 }

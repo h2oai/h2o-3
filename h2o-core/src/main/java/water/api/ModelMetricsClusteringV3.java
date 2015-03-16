@@ -1,17 +1,20 @@
 package water.api;
 
-import hex.Model;
 import hex.ModelMetricsClustering;
-import water.fvec.Frame;
 
 public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClustering, ModelMetricsClusteringV3> {
-  @API(help="The Total MSE.", direction=API.Direction.OUTPUT)
-  public double mse;
+  @API(help="Cluster Size[k]")
+  public long[/*k*/] size;
 
-  @API(help="The Within-Cluster MSE.", direction=API.Direction.OUTPUT)
-  public double[] within_mse;
+  @API(help="Within cluster Mean Square Error per cluster")
+  public double[/*k*/] within_mse;   // Within-cluster MSE, variance
 
-  @Override public ModelMetricsClustering createImpl() {
-    return new ModelMetricsClustering(this.model.key().get(), this.frame.key().get());
-  }
+  @API(help="Average within cluster Mean Square Error")
+  public double avg_within_ss;       // Average within-cluster MSE, variance
+
+  @API(help="Average Mean Square Error to grand mean")
+  public double avg_ss;    // Total MSE to grand mean centroid
+
+  @API(help="Average between cluster Mean Square Error")
+  public double avg_between_ss;
 }

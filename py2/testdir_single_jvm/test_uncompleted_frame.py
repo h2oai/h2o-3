@@ -5,7 +5,8 @@ import string
 print "This test looks more complicated than it is, only because it's a parameterized version of something else"
 print "look at sandbox/commands.log for the sequence to h2o (pretty simple)"
 
-import h2o, h2o_cmd, h2o_import as h2i, h2o_browse as h2b
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_browse as h2b
 from h2o_test import find_file, dump_json, verboseprint
 
 expectedZeros = [0, 4914, 656, 24603, 38665, 124, 13, 5, 1338, 51, 320216, 551128, 327648, 544044, 577981, 
@@ -29,14 +30,13 @@ def parseKeyIndexedCheck(frames_result, multiplyExpected, expectedColumnNames):
     # get the name of the frame?
     print ""
     frame = frames_result['frames'][0]
-    byteSize = frame['byteSize']
     rows = frame['rows']
     columns = frame['columns']
     for i,c in enumerate(columns):
         label = c['label']
         stype = c['type']
-        missing = c['missing']
-        zeros = c['zeros']
+        missing = c['missing_count']
+        zeros = c['zero_count']
         domain = c['domain']
         print "column: %s label: %s type: %s missing: %s zeros: %s domain: %s" %\
             (i,label,stype,missing,zeros,domain)
@@ -80,7 +80,7 @@ class Basic(unittest.TestCase):
                 if not DO_IMPORT_PARSE:
                     import_result = a_node.import_files(path=csvPathname)
                     k = import_result['keys'][0]
-                    frames_result = a_node.frames(key=k, len=5, timeoutSecs=timeoutSecs)
+                    frames_result = a_node.frames(key=k, row_count=5, timeoutSecs=timeoutSecs)
                     kList.append(k)
             # print "frames_result from the first import_result key", dump_json(frames_result)
 
@@ -110,10 +110,10 @@ class Basic(unittest.TestCase):
 
             colLength = 1 if DO_TEST_BAD_COL_LENGTH else 55
             expectedColumnNames = map(lambda x: basename + "_" + str(x+1), range(colLength))
-            columnNames = "[" + ",".join(map((lambda x: "'" + x + "'"), expectedColumnNames)) + "]"
+            column_names = "[" + ",".join(map((lambda x: "'" + x + "'"), expectedColumnNames)) + "]"
 
             kwargs = {
-                'columnNames': columnNames,
+                'column_names': column_names,
                 'intermediateResults': DO_INTERMEDIATE_RESULTS,
             }
             print kwargs
@@ -126,7 +126,7 @@ class Basic(unittest.TestCase):
 
             k = parse_result['frames'][0]['key']['name']
             # print "parse_result:", dump_json(parse_result)
-            frames_result = a_node.frames(key=k, len=5)
+            frames_result = a_node.frames(key=k, row_count=5)
             # print "frames_result from the first parse_result key", dump_json(frames_result)
             
             # we doubled the keyList, from what was in tryList

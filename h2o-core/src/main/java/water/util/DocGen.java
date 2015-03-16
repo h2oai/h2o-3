@@ -37,6 +37,7 @@ public abstract class DocGen<T extends DocGen> {
     /* @Override */ public HTML p(Enum e) { _sb.append(e); return this; }
     @Override public String toString() { return _sb.toString(); }
     private HTML p(char c) { _sb.append(c); return this; }
+    private HTML p(boolean b) { _sb.append(b); return this; }
 
     // Weaver shortcuts for placing Java fields nicely.
     private HTML f0(String name) { return p("<dl class='dl-horizontal'><dt>").p(name).p("</dt><dd>"); }
@@ -65,6 +66,8 @@ public abstract class DocGen<T extends DocGen> {
       for( short s : ss ) p("<tr><td>").p(Integer.toString(s)).p("</td></tr>");
       return arrayTail().f1();
     }
+
+    public HTML putAZ (String name, boolean[] b) { return b==null?f(name, "null"):f0(name).array(b).f1(); }
 
     public HTML putA4  (String name, int    [] is) { return is==null?f(name, "null"):f0(name).array(is).f1(); } //throw H2O.unimpl(); }
     public HTML putA4f (String name, float  [] fs) { return fs==null?f(name, "null"):f0(name).array(fs).f1(); }
@@ -98,7 +101,9 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
     public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
 
+    public HTML putAAA4 (String name, int    [][][]isss) { return isss==null?f(name,"null"):f0(name).array(isss).f1(); }
     public HTML putAAA8 (String name, long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
+    public HTML putAAA8d(String name, double [][][]dsss) { return dsss==null?f(name,"null"):f0(name).array(dsss).f1(); }
 
     public HTML href( String name, String text, String link ) {
       return f0(name).p("<a href='").p(link).p("'>").p(text).p("</a>").f1();
@@ -153,6 +158,11 @@ public abstract class DocGen<T extends DocGen> {
     public HTML array( String[] ss ) {
       arrayHead();
       if( ss != null ) for( String s : ss ) p("<tr>").cell(s).p("</tr>");
+      return arrayTail();
+    }
+    public HTML array(boolean[] ss) {
+      arrayHead();
+      if (ss != null ) for (boolean b : ss) p("<tr>").cell(b).p("</tr>");
       return arrayTail();
     }
     public HTML array( int[] ds    ) {
@@ -211,12 +221,21 @@ public abstract class DocGen<T extends DocGen> {
       }
       return arrayTail();
     }
-    public HTML array( long[][] iss ) {
+    public HTML array( long[][] lss ) {
       arrayHead();
-      for( long[] is : iss ) {
+      for( long[] ls : lss ) {
         p("<tr>");
-        if( is != null ) for( long i : is ) cell(i);
+        if( ls != null ) for( long l : ls ) cell(l);
         p("</tr>");
+      }
+      return arrayTail();
+    }
+    public HTML array( int[][][] isss ) {
+      arrayHead();
+      for( int i=0; i<isss.length; ++i ) {
+        p("<div>");
+        if( isss[i] != null ) array(isss[i]);
+        p("</div>");
       }
       return arrayTail();
     }
@@ -229,10 +248,20 @@ public abstract class DocGen<T extends DocGen> {
       }
       return arrayTail();
     }
+    public HTML array( double[][][] dsss ) {
+      arrayHead();
+      for( int i=0; i<dsss.length; ++i ) {
+        p("<div>");
+        if( dsss[i] != null ) array(dsss[i]);
+        p("</div>");
+      }
+      return arrayTail();
+    }
     public HTML cell( Enum e ) { return p("<td>").p(e).p("</td>"); }
     public HTML cell( String s ) { return p("<td>").p(s).p("</td>"); }
     public HTML cell( long l )   { return cell(Long.toString(l)); }
     public HTML cell( double d ) { return cell(Double.toString(d)); }
+    public HTML cell( boolean b ) { return p("<td>").p(b).p("</td>"); }
     public HTML cell( String[] ss ) { return p("<td>").array(ss).p("</td>"); }
     public HTML cell( double[] ds ) { return p("<td>").array(ds).p("</td>"); }
 

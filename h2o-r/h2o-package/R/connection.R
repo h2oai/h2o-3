@@ -538,3 +538,10 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   }
   dest_file
 }
+
+#' View Network Traffic Speed
+h2o.networkTest <- function(conn = h2o.getConnection()) {
+  res <- .h2o.__remoteSend(conn = conn, "NetworkTest.json", method = "GET")
+  
+  res$table
+}

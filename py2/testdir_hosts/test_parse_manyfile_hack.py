@@ -1,7 +1,8 @@
 import unittest, sys
 sys.path.extend(['.','..','../..','py'])
 
-import h2o, h2o_cmd, h2o_import as h2i
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i
 from h2o_test import find_file, dump_json, verboseprint
 
 print "Do a hack to import files individually, then parse, to avoid Frames.json on unused files"

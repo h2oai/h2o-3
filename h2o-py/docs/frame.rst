@@ -25,6 +25,11 @@ Loading Data From A CSV File
                    recursive import of data)
      * S3/S3N
      * Native Language Data Structure (c.f. the subsequent section)
+  .. code-block:: python
+
+    trainFrame = h2o.import_frame(path="hdfs://192.168.1.10/user/data/data_test.csv")
+    #or
+    trainFrame = h2o.import_frame(path="~/data/data_test.csv")
 
 Loading Data From A Python Object
 ---------------------------------
@@ -200,9 +205,20 @@ Loading A Python Dictionary Or collections.OrderedDict
       which they were entered.
 
 :mod:`frame` Module
-----------------------
+===================
 
-.. automodule:: h2o.frame
+H2OFrame Class
+--------------
+
+.. autoclass:: h2o.frame.H2OFrame
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+H2OVec Class
+------------
+
+.. autoclass:: h2o.frame.H2OVec
     :members:
     :undoc-members:
     :show-inheritance:

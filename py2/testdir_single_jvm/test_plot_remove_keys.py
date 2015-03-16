@@ -1,6 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e, h2o_util, h2o_gbm
+import h2o2 as h2o
+import h2o_cmd, h2o_browse as h2b, h2o_import as h2i, h2o_exec as h2e, h2o_util, h2o_gbm
 
 print "Plot the time to remove a key vs parsed size"
 print "Stress the # of cols with fp reals here." 
@@ -66,10 +67,9 @@ class Basic(unittest.TestCase):
             iA = h2o_cmd.InspectObj(pA.parse_key)
             parseElapsed = pA.python_elapsed
             parse_key = pA.parse_key
-            byteSize = pA.byteSize
             numRows = iA.numRows
             numCols = iA.numCols
-            print parse_key, parseElapsed, byteSize, numRows, numCols
+            print parse_key, parseElapsed, numRows, numCols
 
             labelList = iA.labelList
             node = h2o.nodes[0]
@@ -81,7 +81,7 @@ class Basic(unittest.TestCase):
             print "Deleting", hex_key, "took", removeElapsed, "seconds"
 
             # xList.append(ntrees)
-            xList.append(byteSize)
+            xList.append(numRows)
             eList.append(parseElapsed)
             fList.append(removeElapsed)
 

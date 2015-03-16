@@ -199,7 +199,7 @@ function(conn, ast) {
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
-  if (!is.null(res$error)) stop(res$error, call.=FALSE)
+  if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   if (!is.null(res$string)) {
     # String or boolean result
@@ -223,7 +223,7 @@ function(conn, ast, key=.key.make(conn, "rapids"), linkToGC=FALSE) {
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
-  if (!is.null(res$error)) stop(res$error, call.=FALSE)
+  if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   h2o.getFrame(key, conn, linkToGC=linkToGC)
 }
@@ -235,7 +235,7 @@ function(conn, ast, key, finalizers) {
 
   # Process the results
   res <- .h2o.__remoteSend(conn, .h2o.__RAPIDS, ast=ast, method = "POST")
-  if (!is.null(res$error)) stop(res$error, call.=FALSE)
+  if (!is.null(res$error)) stop(paste0("Error From H2O: ", res$error), call.=FALSE)
 
   res <- h2o.getFrame(key, conn, linkToGC=FALSE)
   res@finalizers <- finalizers

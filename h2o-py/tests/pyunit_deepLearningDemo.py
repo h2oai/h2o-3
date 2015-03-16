@@ -8,14 +8,14 @@ def deepLearningDemo(ip, port):
   h2o.init(ip, port)
 
   # Training data
-  train_data = h2o.import_frame(path="smalldata/gbm_test/ecology_model.csv")
+  train_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_model.csv"))
   train_data = train_data.drop('Site')
   train_data['Angaus'] = train_data['Angaus'].asfactor()
   print train_data.describe()
   train_data.head()
 
   # Testing data
-  test_data = h2o.import_frame(path="smalldata/gbm_test/ecology_eval.csv")
+  test_data = h2o.import_frame(path=h2o.locate("smalldata/gbm_test/ecology_eval.csv"))
   test_data['Angaus'] = test_data['Angaus'].asfactor()
   print test_data.describe()
   test_data.head()
@@ -26,7 +26,8 @@ def deepLearningDemo(ip, port):
                 y           = train_data['Angaus'],
                 validation_x= test_data [1:] ,
                 validation_y= test_data ['Angaus'],
-                ntrees=100)
+                ntrees=100,
+                loss="bernoulli")
 
   gbm.show()
 
@@ -36,6 +37,7 @@ def deepLearningDemo(ip, port):
                         y           = train_data['Angaus'],
                         validation_x= test_data [1:] ,
                         validation_y= test_data ['Angaus'],
+                        loss   = 'CrossEntropy',
                         epochs = 1000,
                         hidden = [20, 20, 20])
 

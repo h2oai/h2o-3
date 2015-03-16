@@ -1,6 +1,6 @@
 package water;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import water.util.HttpResponseStatus;
 import water.util.IcedHashMap;
 
 import java.util.Arrays;

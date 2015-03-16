@@ -16,8 +16,10 @@ import java.util.*;
 
 /**
  * An instance of a ModelParameters schema contains the Model build parameters (e.g., K and max_iterations for KMeans).
+ * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
+ * for it for the metadata API.
  */
-abstract public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>> extends Schema<P, S> {
+public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>> extends Schema<P, S> {
   ////////////////////////////////////////
   // NOTE:
   // Parameters must be ordered for the UI
@@ -35,6 +37,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       try {
         for (Class<? extends ModelParametersSchema> clz = this_clz; ; clz = (Class<? extends ModelParametersSchema>) clz.getSuperclass()) {
           String[] fields = (String[]) clz.getField("own_fields").get(clz);
+
           String[] tmp = new String[fields.length + __fields_cache.length];
           System.arraycopy(fields, 0, tmp, 0, fields.length);
           System.arraycopy(__fields_cache, 0, tmp, fields.length, __fields_cache.length);
@@ -55,7 +58,7 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(help="Destination key for this model; if unset they key is auto-generated.", required = false, direction=API.Direction.INOUT)
+  @API(help="Destination key for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
   public ModelKeyV1 destination_key;
 
   @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
@@ -145,7 +148,8 @@ abstract public class ModelParametersSchema<P extends Model.Parameters, S extend
       // Turn param.is_mutually_exclusive_with into a List which we will walk over twice
       List<String> me = new ArrayList<String>();
       me.add(name);
-      me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
+      // Note: this can happen if this field doesn't have an @API annotation, in which case we got an earlier WARN
+      if (null != param.is_mutually_exclusive_with) me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
 
       // Make a new Set which contains ourselves, fields we have already been connected to,
       // and fields *they* have already been connected to.

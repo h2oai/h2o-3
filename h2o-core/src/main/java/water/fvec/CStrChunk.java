@@ -9,7 +9,7 @@ public class CStrChunk extends Chunk {
   static protected final int _OFF=4;
   private int _valstart;
 
-  public CStrChunk(int sslen, byte[] ss, int idxLen, int[] strIdx) {
+  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx) {
     _start = -1;
     _valstart = _OFF + (idxLen<<2);
     set_len(idxLen);
@@ -17,8 +17,10 @@ public class CStrChunk extends Chunk {
     _mem = MemoryManager.malloc1(CStrChunk._OFF + idxLen*4 + sslen, false);
     UnsafeUtils.set4(_mem, 0, CStrChunk._OFF + idxLen*4); // location of start of strings
 
-    for( int i = 0; i < idxLen; ++i )
+    for( int i = 0; i < sparseLen; ++i )
       UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, strIdx[i]);
+    for( int i = sparseLen; i < idxLen; ++i )  // set NAs
+      UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, -1);
     for( int i = 0; i < sslen; ++i )
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }
@@ -31,8 +33,7 @@ public class CStrChunk extends Chunk {
 
   @Override public boolean isNA_impl(int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
-    if( off == NA ) return true;
-    else return false;
+    return off == NA;
   }
 
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -40,8 +41,8 @@ public class CStrChunk extends Chunk {
   @Override public ValueString atStr_impl(ValueString vstr, int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     if( off == NA ) return null;
-    int len;
-    for( len = 0; _mem[_valstart+off+len] != 0; len++ );
+    int len = 0;
+    while( _mem[_valstart+off+len] != 0 ) len++;
     return vstr.set(_mem,_valstart+off,len);
   }
 
@@ -51,7 +52,7 @@ public class CStrChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem, _mem.length);  }
   @Override public CStrChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     _valstart = UnsafeUtils.get4(_mem,0);
     set_len((_valstart-_OFF)>>2);
     return this;
@@ -64,8 +65,7 @@ public class CStrChunk extends Chunk {
       nc._is[i] = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
     nc._sslen = _mem.length - _valstart;
     nc._ss = MemoryManager.malloc1(nc._sslen);
-    for (int i = 0; i < nc._sslen; i++)
-      nc._ss[i] = _mem[_valstart+i];
+    System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
     return nc;
   }
 }

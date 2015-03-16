@@ -1,6 +1,7 @@
 import unittest, time, sys, os
 sys.path.extend(['.','..','../..','py'])
-import h2o_cmd, h2o, h2o_browse as h2b, h2o_args
+import h2o2 as h2o
+import h2o_cmd, h2o_browse as h2b, h2o_args
 
 
 class Basic(unittest.TestCase):

@@ -205,7 +205,7 @@ class Expr(object):
     if __CMD__ is None:
       h2o.remove(self._data)
     else:
-      s = " (del %" + self._data + " #0)"
+      s = " (del '" + self._data + "' #0)"
       global __TMPS__
       if __TMPS__ is None:
         print "Lost deletes: ", s
@@ -252,7 +252,7 @@ class Expr(object):
       elif isinstance(child._data, (int, float)):
         __CMD__ += "#" + str(child._data)
       elif isinstance(child._data, unicode):
-        __CMD__ += "%" + str(child._data)
+        __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
         __CMD__ += \
             "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \

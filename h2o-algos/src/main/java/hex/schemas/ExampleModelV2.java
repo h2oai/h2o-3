@@ -5,7 +5,7 @@ import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
-public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModelV2, ExampleModel.ExampleParameters, ExampleModel.ExampleOutput> {
+public class ExampleModelV2 extends ModelSchema<ExampleModel, ExampleModelV2, ExampleModel.ExampleParameters, ExampleV2.ExampleParametersV2, ExampleModel.ExampleOutput, ExampleModelV2.ExampleModelOutputV2> {
 
   public static final class ExampleModelOutputV2 extends ModelOutputSchema<ExampleModel.ExampleOutput, ExampleModelOutputV2> {
     // Output fields

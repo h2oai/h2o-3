@@ -9,9 +9,8 @@ remoteH2O = h2o.init(ip = myIP, port = as.numeric(myPort), startH2O = FALSE)
 australia.hex = h2o.uploadFile(remoteH2O, system.file("extdata", "australia.csv", package="h2o"), "australia.hex")
 summary(australia.hex)
 
-australia.pca = h2o.prcomp(australia.hex)
+australia.pca = h2o.prcomp(australia.hex, k = 8)
 print(australia.pca)
-screeplot(australia.pca)
 
-australia.pca2 = h2o.prcomp(australia.hex, tol = 0.5, standardize = FALSE)
+australia.pca2 = h2o.prcomp(australia.hex, k = 4, gamma = 0.5, center = TRUE, scale. = TRUE)
 print(australia.pca2)

@@ -7,7 +7,7 @@ import water.api.ModelSchema;
 import water.api.TwoDimTableV1;
 //import water.util.DocGen.HTML;
 
-public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMeansModel.KMeansParameters, KMeansModel.KMeansOutput> {
+public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMeansModel.KMeansParameters, KMeansV2.KMeansParametersV2, KMeansModel.KMeansOutput, KMeansModelV2.KMeansModelOutputV2> {
 
   public static final class KMeansModelOutputV2 extends ModelOutputSchema<KMeansModel.KMeansOutput, KMeansModelOutputV2> {
     // Output fields; input fields are in the parameters list
@@ -46,8 +46,7 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
 
   // Version&Schema-specific filling into the impl
   @Override public KMeansModel createImpl() {
-    KMeansV2.KMeansParametersV2 p = ((KMeansV2.KMeansParametersV2)this.parameters);
-    KMeansModel.KMeansParameters parms = p.createImpl();
+    KMeansModel.KMeansParameters parms = parameters.createImpl();
     return new KMeansModel( key.key(), parms, null );
   }
 }

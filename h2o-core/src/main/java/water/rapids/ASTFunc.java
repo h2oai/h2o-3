@@ -104,7 +104,7 @@ public class ASTFunc extends ASTFuncDef {
     }
     captured._local.copyOver(_table); // put the local table for the function into the _local table for the env
     _body.exec(captured);
-    captured.popScope();
+//    captured.popScope();
     _e = captured;
   }
 

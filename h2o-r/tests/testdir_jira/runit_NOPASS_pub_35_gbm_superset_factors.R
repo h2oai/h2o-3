@@ -33,7 +33,8 @@ pub35gbm <- function(conn){
                ntrees = 10,
                max_depth = 5,  
                min_rows = 10, 
-               learn_rate = 0.1)
+               learn_rate = 0.1,
+               loss = "multinomial")
 
   preds <- as.data.frame(predict(m, df.h2))
 

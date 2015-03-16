@@ -18,11 +18,12 @@ test.mnist.manyCols <- function(conn) {
 
   Log.info("Importing mnist train data...\n")
   train.hex <- h2o.uploadFile(conn, fPath, "train.hex")
+  train.hex[,785] <- as.factor(train.hex[,785])
   Log.info("Check that tail works...")
   tail(train.hex)
   tail_ <- tail(train.hex)
   Log.info("Doing gbm on mnist training data.... \n")
-  gbm.mnist <- h2o.gbm(x= 1:784, y = 785, training_frame = train.hex, ntrees = 1, max_depth = 1, min_rows = 10, learn_rate = 0.01)
+  gbm.mnist <- h2o.gbm(x= 1:784, y = 785, training_frame = train.hex, ntrees = 1, max_depth = 1, min_rows = 10, learn_rate = 0.01, loss = "multinomial")
   print(gbm.mnist)
 
   testEnd()

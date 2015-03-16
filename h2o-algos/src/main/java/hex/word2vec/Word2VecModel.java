@@ -42,9 +42,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 
-  // Default publicly visible Schema is V2
-  @Override public ModelSchema schema() { return new Word2VecModelV2(); }
-
   @Override public float[] score0(Chunk[] cs, int foo, double data[/*ncols*/], float preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }

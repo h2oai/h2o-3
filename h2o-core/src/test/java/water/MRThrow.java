@@ -10,7 +10,7 @@ import water.fvec.FileVec;
 import water.fvec.Vec;
 
 public class MRThrow extends TestUtil {
-  public MRThrow() { super(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5);}
 
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
@@ -20,7 +20,7 @@ public class MRThrow extends TestUtil {
     int sz = H2O.CLOUD.size();
     Vec vec = Vec.makeZero((sz+1)*FileVec.DFLT_CHUNK_SIZE+1);
     try {
-      for(int i = 0; i < sz; ++i){
+      for(int i = 0; i < sz; ++i) {
         ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
         Throwable ex=null;
         try {
@@ -56,9 +56,9 @@ public class MRThrow extends TestUtil {
           bh.asyncExec(vec);
           // If the chosen file is too small for the cluster, some nodes will have *no* work
           // and so no exception is thrown.
-          int MAX_CNT=5;
+          int MAX_CNT=50;
           while( !ok[0] && MAX_CNT-- > 0 ) {
-            Thread.sleep(1000);
+            Thread.sleep(100);
           }
         } catch( DException.DistributedException e ) {
           assertTrue(e.getMessage().contains("test"));

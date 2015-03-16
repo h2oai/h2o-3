@@ -5,7 +5,7 @@ import water.Key;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
-public class CoxPHModelV2 extends ModelSchema<CoxPHModel, CoxPHModelV2, CoxPHModel.CoxPHParameters, CoxPHModel.CoxPHOutput> {
+public class CoxPHModelV2 extends ModelSchema<CoxPHModel, CoxPHModelV2, CoxPHModel.CoxPHParameters, CoxPHV2.CoxPHParametersV2, CoxPHModel.CoxPHOutput, CoxPHModelV2.CoxPHModelOutputV2> {
 
   public static final class CoxPHModelOutputV2 extends ModelOutputSchema<CoxPHModel.CoxPHOutput, CoxPHModelOutputV2> {
     //FIXME
@@ -22,8 +22,7 @@ public class CoxPHModelV2 extends ModelSchema<CoxPHModel, CoxPHModelV2, CoxPHMod
 
   // Version&Schema-specific filling into the impl
   @Override public CoxPHModel createImpl() {
-    CoxPHV2.CoxPHParametersV2 p = ((CoxPHV2.CoxPHParametersV2)this.parameters);
-    CoxPHModel.CoxPHParameters parms = p.createImpl();
+    CoxPHModel.CoxPHParameters parms = parameters.createImpl();
     return new CoxPHModel(Key.make() /*dest*/, parms, new CoxPHModel.CoxPHOutput(null));
   }
 }

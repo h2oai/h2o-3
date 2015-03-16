@@ -72,7 +72,7 @@ public class C2SChunk extends Chunk {
   @Override public AutoBuffer write_impl(AutoBuffer bb) { return bb.putA1(_mem,_mem.length); }
   @Override public C2SChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
-    _start = -1;
+    _start = -1;  _cidx = -1;
     set_len((_mem.length-_OFF)>>1);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get4 (_mem,8);

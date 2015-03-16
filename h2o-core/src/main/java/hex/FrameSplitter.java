@@ -52,7 +52,7 @@ public class FrameSplitter extends H2OCountedCompleter {
     this(null, dataset, ratios,destKeys,jobKey);
   }
   public FrameSplitter(H2OCountedCompleter cc, Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
-    super(cc);
+    super(null);
     assert ratios.length > 0 : "No ratio specified!";
     assert ratios.length < 100 : "Too many frame splits demanded!";
     this.dataset  = dataset;
@@ -191,7 +191,7 @@ public class FrameSplitter extends H2OCountedCompleter {
       long pnrows = 0;
       for (int p=0; p<_partIdx; p++) pnrows += partSizes[p];
       long[] espc = anyInVec._espc;
-      while (_pcidx < espc.length-1 && (pnrows -= (espc[_pcidx+1]-espc[_pcidx])) > 0 ) _pcidx++;
+      while (_pcidx < espc.length-1 && (pnrows -= (espc[_pcidx+1]-espc[_pcidx])) >= 0 ) _pcidx++;
       assert pnrows <= 0;
       _psrow = (int) (pnrows + espc[_pcidx+1]-espc[_pcidx]);
     }

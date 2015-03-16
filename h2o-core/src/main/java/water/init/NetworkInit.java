@@ -8,8 +8,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import water.H2O;
+import water.TCPReceiverThread;
 import water.H2ONode;
 import water.util.Log;
+import java.nio.channels.ServerSocketChannel;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -328,15 +330,24 @@ public class NetworkInit {
         // cnc: this is busted on windows.  Back to the old code.
         _apiSocket = new ServerSocket(H2O.API_PORT);
         _apiSocket.setReuseAddress(true);
+        // Bind to the UDP socket
         _udpSocket = DatagramChannel.open();
         _udpSocket.socket().setReuseAddress(true);
-        _udpSocket.socket().bind(new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT));
+        InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
+        _udpSocket.socket().bind(isa);
+        // Bind to the TCP socket also
+        TCPReceiverThread.SOCK = ServerSocketChannel.open();
+        TCPReceiverThread.SOCK.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+        TCPReceiverThread.SOCK.socket().bind(isa);
+        
         break;
       } catch (IOException e) {
         if( _apiSocket != null ) try { _apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
+        if( TCPReceiverThread.SOCK != null ) try { TCPReceiverThread.SOCK.close(); } catch( IOException ie ) { }
         _apiSocket = null;
         _udpSocket = null;
+        TCPReceiverThread.SOCK = null;
         if( H2O.ARGS.port != 0 )
           H2O.die("On " + H2O.SELF_ADDRESS +
               " some of the required ports " + H2O.ARGS.port +

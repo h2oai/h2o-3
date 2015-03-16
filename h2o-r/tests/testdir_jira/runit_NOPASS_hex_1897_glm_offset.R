@@ -36,14 +36,14 @@ test.GLM.offset <- function(conn) {
   check_models <- function (family_type) {
     Log.info (paste ("Checking", family_type, "models without offset..."))
     prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv)
-    prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F, higher_accuracy = T)
+    prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F)
     compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
     compare_scores(prostate.glm.h2o, prostate.glm.r)
     
     Log.info (paste ("Checking", family_type, "models with offset..."))
     options(warn=-1)
     prostate.glm.r = glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv, offset = prostate.csv$AGE)
-    prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, offset = "AGE", standardize = F, higher_accuracy = T)
+    prostate.glm.h2o = h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"), y = "CAPSULE", training_frame = prostate.hex, family = family_type, offset = "AGE", standardize = F)
     compare_res_deviance(prostate.glm.h2o, prostate.glm.r)
     compare_scores(prostate.glm.h2o, prostate.glm.r)
     print("PASSED")

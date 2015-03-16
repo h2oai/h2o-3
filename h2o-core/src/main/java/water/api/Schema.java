@@ -213,13 +213,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         if (schema_type_parms.length < 2)
           throw H2O.fail("Found a Schema that does not pass at least two type parameters.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
         Class parm0 = ReflectionUtils.findActualClassParameter(clz, 0);
-        if (! Iced.class.isAssignableFrom(parm0))
+        if (!Iced.class.isAssignableFrom(parm0))
           throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Iced.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
         if (Schema.class.isAssignableFrom(parm0))
           throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
 
         Class parm1 = ReflectionUtils.findActualClassParameter(clz, 1);
-        if (! Schema.class.isAssignableFrom(parm1))
+        if (!Schema.class.isAssignableFrom(parm1))
           throw H2O.fail("Found a Schema with bad type parameters.  Second parameter is not a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm1);
       } else {
         throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
@@ -229,6 +229,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if (version > getHighestSupportedVersion())
         throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
 
+      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can fetch the metadata for them.
       if (version > -1) {
         // Track highest version of all schemas; only valid after all are registered at startup time.
         if (version > HIGHEST_SUPPORTED_VERSION)
@@ -239,18 +240,39 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
             if (version > latest_version) latest_version = version;
           }
         }
+      }
 
-        Schema s = null;
-        try {
-          s = clz.newInstance();
-        } catch (Exception e) {
-          Log.err("Failed to instantiate schema class: " + clz + " because: " + e.getMessage());
-        }
-        if (null != s) {
-          Log.debug("Instantiated: " + clz.getSimpleName());
+      Schema s = null;
+      try {
+        s = clz.newInstance();
+      } catch (Exception e) {
+        Log.err("Failed to instantiate schema class: " + clz + " because: " + e);
+      }
+      if (null != s) {
+        Log.debug("Registered Schema: " + clz.getSimpleName());
 
-          // Validate the fields:
-          SchemaMetadata ignoreme = new SchemaMetadata(s);
+        // Validate the fields:
+        SchemaMetadata meta = new SchemaMetadata(s);
+
+        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
+          String name = field_meta.name;
+
+          if ("__meta".equals(name) || "__http_status".equals(name))
+            continue;
+          if ("Gini".equals(name)) // proper name
+            continue;
+
+          if (name.endsWith("AUC")) // trainAUC, validAUC
+            continue;
+
+          // TODO: remove after we move these into a TwoDimTable:
+          if ("F0point5".equals(name) || "F0point5_for_criteria".equals(name) || "F1_for_criteria".equals(name) || "F2_for_criteria".equals(name))
+            continue;
+
+          if (name.startsWith("_"))
+            Log.warn("Found schema field which violates the naming convention; name starts with underscore: " + meta.name + "." + name);
+          if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase())) // allow AUC but not residualDeviance
+            Log.warn("Found schema field which violates the naming convention; name has mixed lowercase and uppercase characters: " + meta.name + "." + name);
         }
       }
     }
@@ -556,33 +578,30 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     if (schemas_registered) return;
     // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
 
-    Reflections reflections = null;
+    long before = System.currentTimeMillis();
 
     // Microhack to effect Schema.register(Schema.class), which is
     // normally not allowed because it has no version:
     new Schema();
 
+    String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
+
     // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
     Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
-    for (Class<? extends Schema> clz : clzs) {
-      // Ensure that water is pulled in:
-      for (Class<? extends Schema> schema_class : (new Reflections("water")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
 
-      // Ensure that hex is pulled in:
-      for (Class<? extends Schema> schema_class : (new Reflections("hex")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
-          Schema.register(schema_class);
+    for (String pkg :  packages) {
+      Reflections reflections = new Reflections(pkg);
 
-      // Get mixed-package schemas:
-      for (Class<? extends Schema> schema_class : (new Reflections("")).getSubTypesOf(clz))
-        if (!Modifier.isAbstract(schema_class.getModifiers()))
+      for (Class<? extends Schema> clz : clzs) {
+        Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
+        for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
+         if (!Modifier.isAbstract(schema_class.getModifiers()))
           Schema.register(schema_class);
+      }
     }
 
     schemas_registered = true;
-    Log.info("Registered: " + Schema.schemas().size() + " schemas.");
+    Log.info("Registered: " + Schema.schemas().size() + " schemas in: " + (System.currentTimeMillis() - before) + "mS");
   }
 
   /**
@@ -601,7 +620,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
 
   /**
-   * For a given version and Iced class return the appropriate Schema class, if any.
+   * For a given version and Iced class return the appropriate Schema class, if any.f
    * @see #schemaClass(int, java.lang.String)
    */
   public static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {

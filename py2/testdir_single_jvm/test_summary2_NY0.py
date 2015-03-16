@@ -1,6 +1,7 @@
 import unittest, time, sys, random, math, getpass
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_util, h2o_print as h2p
 
 def write_syn_dataset(csvPathname, rowCount, colCount, SEED, choices):
     r1 = random.Random(SEED)
@@ -107,12 +108,12 @@ class Basic(unittest.TestCase):
                 # maybe eventually will make them return object? But I also pass expected stuff to them
                 # should I pass expected to summary? no, more complex?
                 co = h2o_cmd.runSummary(key=hex_key, column=i)
-                print co.label, co.type, co.missing, co.domain, sum(co.bins)
+                print co.label, co.type, co.missing_count, co.domain, sum(co.histogram_bins)
 
                 print "\nComparing column %s to expected" % i
-                self.assertEqual(expectedNaCnt[i], co.missing, "Column %s Expected %s. missing: %s is incorrect" % \
-                    (i, expectedNaCnt[i], co.missing))
-                self.assertEqual(rowCount - expectedNaCnt[i], sum(co.bins))
+                self.assertEqual(expectedNaCnt[i], co.missing_count, "Column %s Expected %s. missing: %s is incorrect" % \
+                    (i, expectedNaCnt[i], co.missing_count))
+                self.assertEqual(rowCount - expectedNaCnt[i], sum(co.histogram_bins))
 
             h2p.green_print("\nDone with trial", trial)
             trial += 1

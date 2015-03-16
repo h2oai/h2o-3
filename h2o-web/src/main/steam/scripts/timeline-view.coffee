@@ -17,7 +17,7 @@ Steam.TimelineView = (_) ->
           event.date
           event.nanos
           event.node
-          event.ioFlavor or '-'
+          event.io_flavor or '-'
           'I/O'
           event.data
         ]
@@ -38,7 +38,7 @@ Steam.TimelineView = (_) ->
           event.nanos
           "#{event.from} &#8594; #{event.to}"
           event.protocol
-          event.msgType
+          event.msg_type
           event.data
         ]
 

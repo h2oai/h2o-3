@@ -4,7 +4,7 @@ import argparse
 import boto
 import os, time, sys, socket
 import h2o_cmd
-import h2o
+import h2o2 as h2o
 import h2o_hosts
 import json
 import commands

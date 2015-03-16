@@ -1,6 +1,7 @@
 import unittest, random, sys, time
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_gbm
+import h2o2 as h2o
+import h2o_browse as h2b, h2o_exec as h2e, h2o_import as h2i, h2o_gbm
 import h2o_print as h2p
 
 class Basic(unittest.TestCase):
@@ -26,10 +27,10 @@ class Basic(unittest.TestCase):
 
         keys = []
         # stop if > 1G (fails memory cleaner assetion
-        maxx = 29
+        maxx = 10
         # for trial in range(maxx):
         # for trial in range(int(1e6),int(200e6),int(1e6)):
-        for trial in [int(100e6)]:
+        for trial in [int(10e6)]:
             
             # length = (2 ** trial)
             # execExpr = '(= !v (c {(: #0 #%s)})' % (length - 1)
@@ -47,7 +48,7 @@ class Basic(unittest.TestCase):
             xList = []
             eList = []
             fList = []
-            for trial2 in range(0, 16):
+            for trial2 in range(0, 5):
             # for trial2 in range(0, 10):
             # fails. Post size?
             # for trial2 in range(0, 16):

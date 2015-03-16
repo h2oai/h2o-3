@@ -5,7 +5,7 @@ from h2o_objects import RemoteHost
 
 # some circular import issues, so go with the full import
 import h2o_bc # write_flatfile, get_base_port
-import h2o # build_cloud
+import h2o2 as h2o # build_cloud
 
 from h2o_test import verboseprint, clean_sandbox, find_file
 

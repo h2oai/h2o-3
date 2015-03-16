@@ -153,7 +153,7 @@ After this operation, `vol` has been permanently mutated in place (it is not a c
 
 H2OVec
 ++++++
-An H2OVec is...
+An H2OVec is a single column of data that is uniformly typed and possibly lazily computed.
 
 Expr
 ++++
@@ -195,7 +195,7 @@ Metrics
 * See more in the chapter on Metrics
 
 """
-__version__ = "0.0.0a5"
+__version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
 from model import *
 from frame import H2OFrame

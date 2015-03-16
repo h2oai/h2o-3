@@ -90,6 +90,7 @@ public class DTree extends Iced {
     abstract protected int size();
 
     public final int nid() { return _nid; }
+    public final int pid() { return _pid; }
   }
 
   // --------------------------------------------------------------------------
@@ -100,14 +101,14 @@ public class DTree extends Iced {
     final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
-    final long    _n0,  _n1;    // Rows in each final split
-    final double  _p0,  _p1;    // Predicted value for each split
+    final long   _n0,  _n1;     // Rows in each final split
+    final double _p0,  _p1;     // Predicted value for each split
 
     public Split( int col, int bin, IcedBitSet bs, byte equal, double se, double se0, double se1, long n0, long n1, double p0, double p1 ) {
       _col = col;  _bin = bin;  _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
-      assert se > se0+se1 || se==Double.MAX_VALUE;      // No point in splitting unless error goes down
+      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
     }
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
@@ -375,19 +376,21 @@ public class DTree extends Iced {
     // Bin #.
     public int bin( Chunk chks[], int row ) {
       float d = (float)chks[_split._col].atd(row); // Value to split on for this row
-      if( Float.isNaN(d) )               // Missing data?
-        return 0;                        // NAs always to bin 0
+//      if( Float.isNaN(d) )               // Missing data?
+//        return 0;                        // NAs always to bin 0
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.
       if(_split._equal == 0)
-        return d < _splat ? 0 : 1;
+        return d >= _splat ? 1 : 0; //NaN goes to 0
       else if(_split._equal == 1)
-        return d != _splat ? 0 : 1;
+        return d == _splat ? 1 : 0; //NaN goes to 0
       else
         return _split._bs.contains((int)d) ? 1 : 0;
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
+
+    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
 
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
@@ -504,6 +507,8 @@ public class DTree extends Iced {
       sb.append(_nid).append(" ");
       return sb.append("pred=").append(_pred).append("\n");
     }
+    public final double pred() { return _pred; }
+    public final void pred(double pred) { _pred = pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }
@@ -518,163 +523,5 @@ public class DTree extends Iced {
     root().compress(ab);      // Compress whole tree
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
-  }
-
-  private static final SB TO_JAVA_BENCH_FUNC = new SB().
-      nl().
-      p("  /**").nl().
-      p("   * Run a predict() benchmark with the generated model and some synthetic test data.").nl().
-      p("   *").nl().
-      p("   * @param iters number of iterations to run; each iteration predicts on every sample (i.e. row) in the test data").nl().
-      p("   * @param data test data to predict on").nl().
-      p("   * @param preds output predictions").nl().
-      p("   * @param ntrees number of trees").nl().
-      p("   */").nl().
-      p("  public void bench(int iters, double[][] data, float[] preds, int ntrees) {").nl().
-      p("    System.out.println(\"Iterations: \" + iters);").nl().
-      p("    System.out.println(\"Data rows : \" + data.length);").nl().
-      p("    System.out.println(\"Trees     : \" + ntrees + \"x\" + (preds.length-1));").nl().
-      nl().
-      p("    long startMillis;").nl().
-      p("    long endMillis;").nl().
-      p("    long deltaMillis;").nl().
-      p("    double deltaSeconds;").nl().
-      p("    double samplesPredicted;").nl().
-      p("    double samplesPredictedPerSecond;").nl().
-      p("    System.out.println(\"Starting timing phase of \"+iters+\" iterations...\");").nl().
-      nl().
-      p("    startMillis = System.currentTimeMillis();").nl().
-      p("    for (int i=0; i<iters; i++) {").nl().
-      p("      // Uncomment the nanoTime logic for per-iteration prediction times.").nl().
-      p("      // long startTime = System.nanoTime();").nl().
-      nl().
-      p("      for (double[] row : data) {").nl().
-      p("        predict(row, preds);").nl().
-      p("        // System.out.println(java.util.Arrays.toString(preds) + \" : \" + (DOMAINS[DOMAINS.length-1]!=null?(DOMAINS[DOMAINS.length-1][(int)preds[0]]+\"~\"+DOMAINS[DOMAINS.length-1][(int)row[row.length-1]]):(preds[0] + \" ~ \" + row[row.length-1])) );").nl().
-      p("      }").nl().
-      nl().
-      p("      // long ttime = System.nanoTime()-startTime;").nl().
-      p("      // System.out.println(i+\". iteration took \" + (ttime) + \"ns: scoring time per row: \" + ttime/data.length +\"ns, scoring time per row and tree: \" + ttime/data.length/ntrees + \"ns\");").nl().
-      nl().
-      p("      if ((i % 1000) == 0) {").nl().
-      p("        System.out.println(\"finished \"+i+\" iterations (of \"+iters+\")...\");").nl().
-      p("      }").nl().
-      p("    }").nl().
-      p("    endMillis = System.currentTimeMillis();").nl().
-      nl().
-      p("    deltaMillis = endMillis - startMillis;").nl().
-      p("    deltaSeconds = (double)deltaMillis / 1000.0;").nl().
-      p("    samplesPredicted = data.length * iters;").nl().
-      p("    samplesPredictedPerSecond = samplesPredicted / deltaSeconds;").nl().
-      p("    System.out.println(\"finished in \"+deltaSeconds+\" seconds.\");").nl().
-      p("    System.out.println(\"samplesPredicted: \" + samplesPredicted);").nl().
-      p("    System.out.println(\"samplesPredictedPerSecond: \" + samplesPredictedPerSecond);").nl().
-      p("  }").nl().
-  nl();
-
-  static class TreeJCodeGen extends TreeVisitor<RuntimeException> {
-    public static final int MAX_NODES = (1 << 12) / 4; // limit for a number decision nodes
-    final byte  _bits[]  = new byte [100];
-    final float _fs  []  = new float[100];
-    final SB    _sbs []  = new SB   [100];
-    final int   _nodesCnt[] = new int  [100];
-    final SharedTreeModel _tm;
-    SB _sb;
-    SB _csb;
-    SB _grpsplit;
-
-    int _subtrees = 0;
-    int _grpcnt = 0;
-
-    public TreeJCodeGen(SharedTreeModel tm, CompressedTree ct, SB sb) {
-      super(ct);
-      _tm = tm;
-      _sb = sb;
-      _csb = new SB();
-      _grpsplit = new SB();
-    }
-
-    // code preamble
-    protected void preamble(SB sb, int subtree) throws RuntimeException {
-      String subt = subtree>0?String.valueOf(subtree):"";
-      sb.i().p("static final ").p(SharedTreeModel.PRED_TYPE).p(" predict").p(subt).p("(double[] data) {").nl().ii(1); // predict method for one tree
-      sb.i().p(SharedTreeModel.PRED_TYPE).p(" pred = ");
-    }
-
-    // close the code
-    protected void closure(SB sb) throws RuntimeException {
-      sb.p(";").nl();
-      sb.i(1).p("return pred;").nl().di(1);
-      sb.i().p("}").nl();
-      // sb.p(_grpsplit).di(1);
-    }
-
-    @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
-      if(equal == 2 || equal == 3 && gcmp != null) {
-        _grpsplit.i(1).p("// ").p(gcmp.toString()).nl();
-        _grpsplit.i(1).p("public static final byte[] GRPSPLIT").p(_grpcnt).p(" = new byte[] ").p(gcmp.toStrArray()).p(";").nl();
-      }
-
-      if( _depth > 0 ) {
-        int b = _bits[_depth-1];
-        assert b > 0 : Arrays.toString(_bits)+"\n"+_sb.toString();
-        if( b==1         ) _bits[_depth-1]=3;
-        if( b==1 || b==2 ) _sb.p('\n').i(_depth).p("?");
-        if( b==2         ) _sb.p(' ').pj(_fs[_depth-1]); // Dump the leaf containing float value
-        if( b==2 || b==3 ) _sb.p('\n').i(_depth).p(":");
-      }
-      if (_nodes>MAX_NODES) {
-        _sb.p("predict").p(_subtrees).p("(data)");
-        _nodesCnt[_depth] = _nodes;
-        _sbs[_depth] = _sb;
-        _sb = new SB();
-        _nodes = 0;
-        preamble(_sb, _subtrees);
-        _subtrees++;
-      }
-      // All NAs are going always to the left
-      _sb.p(" (Double.isNaN(data[").p(col).p("]) || ");
-      if(equal == 0 || equal == 1) {
-        //String scmp = _tm.isFromSpeeDRF() ? "<= " : "< ";
-        String scmp = "< ";
-        _sb.p("(float) data[").p(col).p(" /* ").p(_tm._output._names[col]).p(" */").p("] ").p(equal == 1 ? "!= " : scmp).pj(fcmp); // then left and then right (left is !=)
-      } else {
-        //_sb.p("!water.genmodel.GeneratedModel.grpContains(GRPSPLIT").p(_grpcnt).p(", ").p(gcmp._offset).p(", (int) data[").p(col).p(" /* ").p(_tm._names[col]).p(" */").p("])");
-        _grpcnt++;
-        throw H2O.unimpl();     // TODO: fold offset into IcedBitSet
-      }
-      assert _bits[_depth]==0;
-      _bits[_depth]=1;
-    }
-    @Override protected void leaf( float pred  ) {
-      assert _depth==0 || _bits[_depth-1] > 0 : Arrays.toString(_bits); // it can be degenerated tree
-      if( _depth==0) { // it is de-generated tree
-        _sb.pj(pred);
-      } else if( _bits[_depth-1] == 1 ) { // No prior leaf; just memorize this leaf
-        _bits[_depth-1]=2; _fs[_depth-1]=pred;
-      } else {          // Else==2 (prior leaf) or 3 (prior tree)
-        if( _bits[_depth-1] == 2 ) _sb.p(" ? ").pj(_fs[_depth-1]).p(" ");
-        else                       _sb.p('\n').i(_depth);
-        _sb.p(": ").pj(pred);
-      }
-    }
-    @Override protected void post( int col, float fcmp, int equal ) {
-      _sb.p(')');
-      _bits[_depth]=0;
-      if (_sbs[_depth]!=null) {
-        closure(_sb);
-        _csb.p(_sb);
-        _sb = _sbs[_depth];
-        _nodes = _nodesCnt[_depth];
-        _sbs[_depth] = null;
-      }
-    }
-    public void generate() {
-      preamble(_sb, _subtrees++);   // TODO: Need to pass along group split BitSet
-      visit();
-      closure(_sb);
-      _sb.p(_grpsplit).di(1);
-      _sb.p(_csb);
-    }
   }
 }

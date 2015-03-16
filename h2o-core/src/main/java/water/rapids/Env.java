@@ -38,16 +38,34 @@ public class Env extends Iced {
   final static int VEC   =9;
   final static int NULL  =99999;
 
-  transient final ExecStack _stack;            // The stack
-  final IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
+  transient ExecStack _stack;            // The stack
+  transient IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
   transient final public StringBuilder _sb;    // Holder for print results
   transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
   transient final SymbolTable  _global;
   transient final SymbolTable  _local;
-  final Env _parent;
+  transient final Env _parent;
   final private boolean _isGlobal;
 
-  final HashSet<ValFrame> _trash;
+  transient HashSet<ValFrame> _trash;
+
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    // write _refcnt
+    ab.put4(_refcnt.size());
+    for (Vec v: _refcnt.keySet()) { ab.putStr(v._key.toString()); ab.put4(_refcnt.get(v)._val); }
+    return ab;
+  }
+
+  @Override public Env read_impl(AutoBuffer ab) {
+    _refcnt = new IcedHashMap<>();
+    _stack = new ExecStack();
+    _trash = new HashSet<>();
+    int len = ab.get4();
+    for (int i = 0; i < len; ++i) {
+      _refcnt.put((Vec)DKV.getGet(ab.getStr()), new IcedInt(ab.get4()));
+    }
+    return this;
+  }
 
   // Top-level Env object: This is the global Env object. To determine if we're in the global scope, _parent == null
   // and _local == null will always be true. The parent of a scope is the calling scope. All scopes inherit from the
@@ -161,7 +179,8 @@ public class Env extends Iced {
   public void clean() {
     if (_trash == null) return;
     for (ValFrame f : _trash)
-      if (!f._g) cleanup(f._fr);
+      if (!f._g)
+        cleanup(f._fr);
     _trash.clear();
   }
 
@@ -212,6 +231,7 @@ public class Env extends Iced {
     boolean delete;
 
     if (_refcnt.get(v) == null) return false;
+    if (_locked.contains(v._key)) return false;
     int cnt = _refcnt.get(v)._val - 1;
     if( cnt > 0 ) {
       _refcnt.put(v, new IcedInt(cnt));
@@ -322,6 +342,7 @@ public class Env extends Iced {
       if (isAry()) {
         if(peekAry()._key != null && peekAry()._key == _local._frames.get(k)._key) continue;
       }
+      if ( _locked.contains(Key.make(k))) continue;
       Frame f = _local._frames.get(k);
       for (Vec v : f.vecs()) delete &= subRef(v);
       if(delete) f.delete();
@@ -635,6 +656,8 @@ public class Env extends Iced {
   }
 
   int getType(String name, boolean search_global) {
+    if (name == null || name.equals(""))
+      throw new IllegalArgumentException("Tried to lookup on a missing name. Are there free floating `%` in your AST?");
     int res = NULL;
 
     // Check the local_frames first
@@ -646,7 +669,7 @@ public class Env extends Iced {
     if (res == NULL && _local != null) res = _local.typeOf(name);
 
     // Didn't find it? Try the global scope next, if we haven't already
-    if (res == NULL && search_global) res = _global.typeOf(name);
+    if (res == NULL && search_global && _global != null) res = _global.typeOf(name);
 
     // Still didn't find it? Try the KV store next, if we haven't already
     if (res == NULL && search_global) res = kvLookup(name);
@@ -699,6 +722,12 @@ public class Env extends Iced {
       case ARY: return new ASTFrame(id.value());
       default: return id;
     }
+  }
+
+  // Optimistically lookup strings in the K/V.  On hit, return the found Key as a Frame.
+  // On a miss, return the String.
+  static AST staticLookup(water.rapids.ASTString str) {
+    return kvLookup(str.value())==ARY ? new ASTFrame(str.value()) : str;
   }
 
   // take the local id, check if it maps to a Frame in _local_frames

@@ -20,9 +20,17 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
         kwargs = {'ast': execExpr} 
 
     start = time.time()
+    if resultKey is not None:
+        # doesn't like no key 
+        node.rapids_iseval(ast_key=resultKey)
+
     resultExec = h2o_cmd.runExec(node, timeoutSecs=timeoutSecs, ignoreH2oError=ignoreH2oError, **kwargs)
     verboseprint('exec took', time.time() - start, 'seconds')
-    print "exec:", dump_json(resultExec)
+    # print "exec:", dump_json(resultExec)
+    shortenIt = resultExec
+    if 'head' in shortenIt:
+        shortenIt['head'] = 'chopped out by python exec_expr for print brevity'
+    print "exec:", dump_json(shortenIt)
 
     # when do I get cols?
 
@@ -52,11 +60,15 @@ def exec_expr(node=None, execExpr=None, resultKey=None, timeoutSecs=10, ignoreH2
             raise Exception("cols and funstr shouldn't both be in resultExec: %s" % dump_json(resultExec))
         else:
             print "Frame return"
-            if resultKey is None:
-                raise Exception("\nWhy is key.name null when it looks like a frame result? %s" % dump_json(resultExec))
+            # No longer required...can be null
+            # if resultKey is None:
+            #     raise Exception("\nWhy is key.name null when it looks like a frame result? %s" % dump_json(resultExec))
                 
+            if resultKey is None:
+                pass
+                result = None
             # FIX! don't look for it if it starts with "_"..spencer deletes?
-            if resultKey[0]=='_':
+            elif resultKey=='_':
                 print "WARNING: key/name in result, but leading '_' means it's deleted, so can't view. %s" % resultKey
                 result = None
             else:

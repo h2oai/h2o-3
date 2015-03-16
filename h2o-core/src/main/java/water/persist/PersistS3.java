@@ -2,6 +2,7 @@ package water.persist;
 
 import java.io.*;
 import java.net.URI;
+import java.util.ArrayList;
 //import java.net.SocketTimeoutException;
 //import java.util.Arrays;
 //import java.util.Properties;
@@ -268,5 +269,16 @@ public final class PersistS3 extends Persist {
   @Override
   public Key uriToKey(URI uri) throws IOException {
     throw H2O.unimpl();
+  }
+
+  @Override
+  public ArrayList<String> calcTypeaheadMatches(String src, int limit) {
+    assert false;
+    return new ArrayList<>();
+  }
+
+  @Override
+  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    assert false;
   }
 }

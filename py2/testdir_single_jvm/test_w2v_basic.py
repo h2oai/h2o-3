@@ -1,6 +1,7 @@
 import unittest, time, sys, random, re
 sys.path.extend(['.','..','../..','py'])
-import h2o, h2o_cmd, h2o_import as h2i, h2o_jobs
+import h2o2 as h2o
+import h2o_cmd, h2o_import as h2i, h2o_jobs
 from h2o_test import verboseprint, dump_json, OutputObj
 import h2o_test
 
@@ -142,7 +143,7 @@ class Basic(unittest.TestCase):
     def tearDownClass(cls):
         h2o.tear_down_cloud()
 
-    def test_w2v_basic_1(self):
+    def test_w2v_basic(self):
         global SYNDATASETS_DIR
         SYNDATASETS_DIR = h2o.make_syn_dir()
         n = 500000
@@ -164,7 +165,7 @@ class Basic(unittest.TestCase):
 
             # just parse to make sure it's good
             parseResult = h2i.import_parse(path=csvPathname, 
-                checkHeader=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
+                check_header=1, delete_on_done = 0, timeoutSecs=180, doSummary=False)
             pA = h2o_cmd.ParseObj(parseResult)
             iA = h2o_cmd.InspectObj(pA.parse_key)
             cA = h2o_test.OutputObj(iA.columns[0], "inspect_column")
@@ -175,15 +176,15 @@ class Basic(unittest.TestCase):
             labelList = iA.labelList
 
             for i in range(colCount):
-                print cA.type, cA.missing
-                self.assertEqual(0, cA.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing))
+                print cA.type, cA.missing_count
+                self.assertEqual(0, cA.missing_count, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, cA.missing_count))
                 self.assertEqual('string', cA.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, cA.type))
 
             if DO_SUMMARY:
                 for i in range(colCount):
                     co = h2o_cmd.runSummary(key=parse_key, column=i)
                     print co.label, co.type, co.missing, co.domain, sum(co.bins)
-                    self.assertEqual(0, co.missing, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing))
+                    self.assertEqual(0, co.missing_count, "Column %s Expected %s. missing: %s is incorrect" % (i, 0, co.missing_count))
                     self.assertEqual('String', co.type, "Column %s Expected %s. type: %s is incorrect" % (i, 0, co.type))
 
 
@@ -195,7 +196,6 @@ class Basic(unittest.TestCase):
                 parameters = {
                     'validation_frame': parse_key, # KeyIndexed False []
                     'ignored_columns': None, # string[] None []
-                    'score_each_iteration': None, # boolean false []
 
                     'minWordFreq': 5, # int 5 []
                     'wordModel': 'SkipGram', # enum [u'CBOW', u'SkipGram']

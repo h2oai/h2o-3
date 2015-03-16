@@ -119,31 +119,49 @@ class RollupStats extends Iced {
 
 
     // Walk the non-zeros
-    for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-      if( c.isNA(i) ) {
-        _naCnt++;
-      } else if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-        long lo = c.at16l(i), hi = c.at16h(i);
-        if (lo != 0 || hi != 0) _nzCnt++;
-        l = lo ^ 37*hi;
-      } else if( isString ) { // String columns do not compute min/max/mean/sigma
-        _nzCnt++;
-        l = c.atStr(vs, i).hashCode();
-      } else {                  // All other columns have useful rollups
-        double d = c.atd(i);
-        l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
-        if( d == Double.POSITIVE_INFINITY) _pinfs++;
-        else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
+    if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        if( c.isNA(i) ) _naCnt++;
         else {
-          if( d != 0 ) _nzCnt++;
-          min(d);  max(d);
-          _mean += d;
-          _rows++;
-          if( _isInt && ((long)d) != d ) _isInt = false;
+          long lo = c.at16l(i), hi = c.at16h(i);
+          if (lo != 0 || hi != 0) _nzCnt++;
+          l = lo ^ 37*hi;
         }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
       }
-      if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
-        checksum ^= (17 * (start+i)) ^ 23*l;
+
+    } else if( isString ) { // String columns do not compute min/max/mean/sigma
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        if( c.isNA(i) ) _naCnt++;
+        else {
+          _nzCnt++;
+          l = c.atStr(vs, i).hashCode();
+        }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
+      }
+
+    } else {                    // Numeric
+      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
+        double d = c.atd(i);
+        if( Double.isNaN(d) ) _naCnt++;
+        else {                  // All other columns have useful rollups
+          l = c.hasFloat()?Double.doubleToRawLongBits(d):c.at8(i);
+          if( d == Double.POSITIVE_INFINITY ) _pinfs++;
+          else if( d == Double.NEGATIVE_INFINITY ) _ninfs++;
+          else {
+            if( d != 0 ) _nzCnt++;
+            min(d);  max(d);
+            _mean += d;
+            _rows++;
+            if( _isInt && ((long)d) != d ) _isInt = false;
+          }
+        }
+        if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
+          checksum ^= (17 * (start+i)) ^ 23*l;
+      }
+
     }
     _checksum = checksum;
 
@@ -160,18 +178,19 @@ class RollupStats extends Iced {
       Arrays.fill(_maxs,Double.NaN);
       _mean = _sigma = Double.NaN;
     } else if( !Double.isNaN(_mean) && _rows > 0 ) {
-      _mean = _mean / _rows;
+      final double mean = _mean = _mean / _rows;
       // Handle all zero rows
       int zeros = c._len - c.sparseLen();
-      _sigma += _mean*_mean*zeros;
+      double sigma = mean*mean*zeros;
       // Handle all non-zero rows
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.atd(i);
         if( !Double.isNaN(d) ) {
-          d -= _mean;
-          _sigma += d*d;
+          d -= mean;
+          sigma += d*d;
         }
       }
+      _sigma = sigma;
     }
     return this;
   }
@@ -214,7 +233,7 @@ class RollupStats extends Iced {
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
-    @Override public void postGlobal() {  _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1));}
+    @Override public void postGlobal() { if( _rs == null ) _rs = new RollupStats(0); else _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1)); }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
   }
@@ -247,9 +266,14 @@ class RollupStats extends Iced {
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
       if(rs != null && rs.isMutating())
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
       // 1. compute
-      RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+      try {
+        RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+      } catch( Throwable t ) {
+        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
+        throw new RuntimeException(t);
+      }
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
       rs = DKV.getGet(rskey);
     }
@@ -332,7 +356,7 @@ class RollupStats extends Iced {
       Value old = DKV.DputIfMatch(_rsKey,new Value(_rsKey,rs),nnn,fs);
       assert rs.isReady();
       if(old != nnn)
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (2)");
       fs.blockForPending();
     }
 
@@ -369,7 +393,7 @@ class RollupStats extends Iced {
           } else if (rs.isComputing()) { // b) => wait for current computation to finish
             rs._tsk.join();
           } else if(rs.isMutating()) // c) => throw IAE
-            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified.");
+            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (3)");
         } else { // d) => compute the rollups
           final Value nnn = makeComputing();
           Futures fs = new Futures();
@@ -433,7 +457,7 @@ class RollupStats extends Iced {
           double oldVal = rs._mins[0];
           for (int i = 0; i < Vec.PERCENTILES.length; i++) {
             final double P = Vec.PERCENTILES[i];
-            long pint = (long) (P * rows);
+            long pint = (long) ((P * rows)+0.5);
             if (pint == oldPint) { // can happen if rows < 100
               rs._pctiles[i] = oldVal;
               continue;
@@ -443,7 +467,8 @@ class RollupStats extends Iced {
             // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to too big
             rs._pctiles[i] = base + stride * (j - 1);
             // linear interpolate stride, based on fraction of bin
-            rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
+            if( stride != 1.0 || !rs._isInt )
+              rs._pctiles[i] += stride * ((double) (pint - (hsum - rs._bins[j - 1])) / rs._bins[j - 1]);
             oldVal = rs._pctiles[i];
           }
           installResponse(nnn,rs);

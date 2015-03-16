@@ -30,7 +30,7 @@ myX <- 1:20
 myY <- "y"
 
 # Run GBM with variable importance
-my.gbm <- h2o.gbm(x = myX, y = myY, distribution = "bernoulli", training_frame = data.hex, ntrees =100,
+my.gbm <- h2o.gbm(x = myX, y = myY, loss = "bernoulli", training_frame = data.hex, ntrees =100,
                   max_depth = 2, learn_rate = 0.01, variable_importance = T) 
 
 # Access Variable Importance from the built model
@@ -68,7 +68,7 @@ barplot(t(nrf.VI[1,]),beside=T,names.arg=row.names(t(nrf.VI[1,])),las=2,main="VI
 
 #--------------------------------------------------
 # Run GLM with variable importance, lambda search and using all factor levels
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial",standardize=T,use_all_factor_levels=T,higher_accuracy=T,lambda_search=T,return_all_lambda=T,variable_importances=T)
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=data.hex, family="binomial",standardize=T,use_all_factor_levels=T,lambda_search=T)
 
 # Select the best model picked by glm
 best_model <- my.glm@best_model

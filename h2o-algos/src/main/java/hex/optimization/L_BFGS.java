@@ -55,26 +55,26 @@ public final class L_BFGS extends Iced {
   public int maxIter(){ return _maxIter;}
 
   public static class GradientInfo extends Iced {
-    public double _objVal;
+    public double _likelihood;
     public final double [] _gradient;
 
     public GradientInfo(double objVal, double [] grad){
-      _objVal = objVal;
+      _likelihood = objVal;
       _gradient = grad;
     }
 
     public boolean isValid(){
-      if(Double.isNaN(_objVal))
+      if(Double.isNaN(_likelihood))
         return false;
       return !ArrayUtils.hasNaNsOrInfs(_gradient);
     }
     @Override
     public String toString(){
-      return " objVal = " + _objVal + ", " + Arrays.toString(_gradient);
+      return " objVal = " + _likelihood + ", " + Arrays.toString(_gradient);
     }
 
     public boolean hasNaNsOrInfs() {
-      return Double.isNaN(_objVal) || ArrayUtils.hasNaNsOrInfs(_gradient);
+      return Double.isNaN(_likelihood) || ArrayUtils.hasNaNsOrInfs(_gradient);
     }
   }
 
@@ -118,7 +118,7 @@ public final class L_BFGS extends Iced {
       double [] objVals = getObjVals(beta, direction);
       double t = 1;
       for (int i = 0; i < objVals.length; ++i) {
-        if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
+        if (admissibleStep(t, ginfo._likelihood, objVals[i], direction, ginfo._gradient))
           return new LineSearchSol(true, objVals[i], t);
         t *= tdec;
       }
@@ -149,8 +149,8 @@ public final class L_BFGS extends Iced {
 
     public String toString(){
       return coefs.length < 50?
-        "L-BFGS_res(iter = " + iter + ", obj = " + ginfo._objVal + ", " + " coefs = " + Arrays.toString(coefs) + ", grad = " + Arrays.toString(ginfo._gradient) + ")"
-        :("L-BFGS_res(iter = " + iter + ", obj = " + ginfo._objVal + ", coefs = [" + coefs[0] + ", " + coefs[1] + ", ..., " + coefs[coefs.length-2] + ", " + coefs[coefs.length-1] + "]" +
+        "L-BFGS_res(iter = " + iter + ", obj = " + ginfo._likelihood + ", " + " coefs = " + Arrays.toString(coefs) + ", grad = " + Arrays.toString(ginfo._gradient) + ")"
+        :("L-BFGS_res(iter = " + iter + ", obj = " + ginfo._likelihood + ", coefs = [" + coefs[0] + ", " + coefs[1] + ", ..., " + coefs[coefs.length-2] + ", " + coefs[coefs.length-1] + "]" +
         ", grad = [" + ginfo._gradient[0] + ", " + ginfo._gradient[1] + ", ..., " + ginfo._gradient[ginfo._gradient.length-2] + ", " + ginfo._gradient[ginfo._gradient.length-1] + "])") +
         "|grad|^2 = " + MathUtils.l2norm2(ginfo._gradient);
     }
@@ -274,12 +274,12 @@ public final class L_BFGS extends Iced {
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
       if(!doLineSearch) //{
-        if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
+        if(!admissibleStep(1,ginfo._likelihood,newGinfo._likelihood,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {
             doLineSearch = true;
             ls_switch = 0;
           }
-          if(ginfo._objVal < newGinfo._objVal && (newGinfo._objVal - ginfo._objVal > .001*ginfo._objVal)) {
+          if(ginfo._likelihood < newGinfo._likelihood && (newGinfo._likelihood - ginfo._likelihood > .001*ginfo._likelihood)) {
             doLineSearch = true;
             ArrayUtils.subtract(beta,pk,beta);
             continue;
@@ -301,7 +301,7 @@ public final class L_BFGS extends Iced {
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       ginfo = newGinfo;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
+    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._likelihood + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);
   }
 

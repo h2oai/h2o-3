@@ -186,7 +186,7 @@ task smokeTest(type: Exec) {
     commandLine 'python', 'run.py', '--wipeall', '--testsize', 's'
 }
 
-task cleanUpSmokeTest {
+task cleanUpSmokeTest << {
     new File([T, "tests/results"].join(File.separator)).deleteDir()
 }
 

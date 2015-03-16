@@ -46,9 +46,10 @@ class H2OFrame:
       rawkey = h2o.import_file(remote_fname)
       setup = h2o.parse_setup(rawkey)
       parse = h2o.parse(setup, H2OFrame.py_tmp_key())  # create a new key
-      cols = parse['columnNames']
+      veckeys = parse['vec_keys']
+      print "Veckeys", veckeys
       rows = parse['rows']
-      veckeys = parse['vecKeys']
+      cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
       print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
 
@@ -131,11 +132,11 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = column_names if column_names and not parse["columnNames"] else parse['columnNames']
+    cols = column_names if column_names and not parse["column_names"] else parse['column_names']
     # set the rows
     rows = parse['rows']
     # set the vector keys
-    veckeys = parse['vecKeys']
+    veckeys = parse['vec_keys']
     # create a new vec[] array
     self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
     # print some information on the *uploaded* data
@@ -218,6 +219,34 @@ class H2OFrame:
     print tabulate.tabulate(head, headers=["Row ID"] + colnames)
     print
 
+  def tail(self, rows=10, cols=200, **kwargs):
+    nrows = min(self.nrow(), rows)
+    ncols = min(self.ncol(), cols)
+    colnames = self.names()[0:ncols]
+
+    exprs = [self[c][(self.nrow()-nrows):(self.nrow())] for c in range(ncols)]
+    print "Last", str(nrows), "rows and first", str(ncols), "columns: "
+    if nrows != 1:
+      fr = H2OFrame.py_tmp_key()
+      cbind = "(= !" + fr + " (cbind %"
+      cbind += " %".join([expr.eager() for expr in exprs]) + "))"
+      res = h2o.rapids(cbind)
+      h2o.remove(fr)
+      tail_rows = [range(self.nrow()-nrows+1, self.nrow() + 1, 1)]
+      tail_rows += [rows[0:nrows] for rows in res["head"][0:ncols]]
+      tail = zip(*tail_rows)
+      print tabulate.tabulate(tail, headers=["Row ID"] + colnames)
+    else:
+      print tabulate.tabulate([[self.nrow()] + [expr.eager() for expr in exprs]], headers=["Row ID"] + colnames)
+    print
+
+  def levels(self, col=0):
+    if col < 0: col = 0
+    if col >= self.ncol(): col = self.ncol() - 1
+    vec = self._vecs[col]
+    res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
+    print res["domain"][0]
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -235,13 +264,13 @@ class H2OFrame:
       self._row('mean', None),
       self._row('maxs', 0),
       self._row('sigma', None),
-      self._row('zeros', None),
-      self._row('missing', None)
+      self._row('zero_count', None),
+      self._row('missing_count', None)
     ]
 
     chunk_summary_tmp_key = H2OFrame.send_frame(self)
 
-    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunkSummary"]
+    chunk_summary = h2o.frame(chunk_summary_tmp_key)["frames"][0]["chunk_summary"]
 
     h2o.remove(chunk_summary_tmp_key)
 
@@ -330,11 +359,17 @@ class H2OFrame:
     :param i: Column to select
     :return: Returns an H2OVec or H2OFrame.
     """
+    # i is a named column
     if isinstance(i, str):
       for v in self._vecs:
         if i == v._name:
           return H2OFrame(vecs=[v for v in self._vecs if i != v._name])
       raise ValueError("Name " + i + " not in Frame")
+    # i is a 0-based column
+    elif isinstance(i, int):
+      if i < 0 or i >= self.__len__():
+        raise ValueError("Index out of range: 0 <= " + str(i) + " < " + str(self.__len__()))
+      return H2OFrame(vecs=[v for v in self._vecs if v != self._vecs[i]])
     raise NotImplementedError
 
   def __len__(self):
@@ -402,8 +437,8 @@ class H2OFrame:
     """
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
-    cbind = "(= !" + fr + " (cbind %"
-    cbind += " %".join([vec._expr.eager() for vec in self._vecs]) + "))"
+    cbind = "(= !" + fr + " (cbind '"
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "'))"
     h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
@@ -518,7 +553,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['veckeys']# List of h2o vec keys
+    veckeys = fr['vec_keys']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
@@ -555,7 +590,7 @@ class H2OFrame:
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
-    veckeys = fr['veckeys']# List of h2o vec keys
+    veckeys = fr['vec_keys']# List of h2o vec keys
     cols = fr['columns']   # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))

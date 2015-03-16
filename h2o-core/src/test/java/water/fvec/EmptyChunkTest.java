@@ -3,9 +3,9 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
 import water.TestUtil;
+
+import static water.fvec.FrameTestUtil.createFrame;
 
 /**
  * Testing empty chunks.
@@ -78,31 +78,5 @@ public class EmptyChunkTest extends TestUtil {
       Assert.assertEquals("Chunk len is wrong!", chunkLens[i], c.len());
       Assert.assertEquals("Chunk start is wrong!", espc[i], c.start());
     }
-  }
-
-  private Frame createFrame(String fname, long[] chunkLayout) {
-    // Create a frame
-    Frame f = new Frame(Key.make(fname));
-    f.preparePartialFrame(new String[]{"C0"});
-    f.update(null);
-    // Create chunks
-    for (int i=0; i<chunkLayout.length; i++) {
-      createNC(fname, i, (int) chunkLayout[i]);
-    }
-    // Reload frame from DKV
-    f = DKV.get(fname).get();
-    // Finalize frame
-    f.finalizePartialFrame(chunkLayout, new String[][] { null }, new byte[] {Vec.T_NUM});
-    return f;
-  }
-
-  private NewChunk createNC(String fname, int cidx, int len) {
-    NewChunk[] nchunks = Frame.createNewChunks(fname, cidx);
-    int starVal = cidx * 1000;
-    for (int i=0; i<len; i++) {
-      nchunks[0].addNum(starVal + i);
-    }
-    Frame.closeNewChunks(nchunks);
-    return nchunks[0];
   }
 }
