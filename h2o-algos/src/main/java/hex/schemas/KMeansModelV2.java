@@ -13,6 +13,9 @@ public class KMeansModelV2 extends ModelSchema<KMeansModel, KMeansModelV2, KMean
     // Output fields; input fields are in the parameters list
     @API(help="Cluster Centers[k][features]")
     public TwoDimTableV1 centers;
+
+    @API(help="Cluster Centers[k][features] on Standardized Data")
+    public TwoDimTableV1 centers_std;
     
     @API(help="Cluster Size[k]")
     public long[/*k*/] size;

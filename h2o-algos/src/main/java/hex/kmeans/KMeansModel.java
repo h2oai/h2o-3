@@ -21,6 +21,11 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
+    /** Cluster centers built on standardized data. Null if standardize = false.
+     *  During model init, might be null or might have a "k" which is oversampled a lot. */
+    public TwoDimTable _centers_std;    // Row = cluster ID, Column = feature
+    public double[/*k*/][/*features*/] _centers_std_raw;
+
     // Number of categorical variables in the training set; they are all moved
     // up-front and use a different distance metric than numerical variables
     public int _categorical_column_count;
@@ -55,7 +60,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._categorical_column_count);
+    double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._categorical_column_count,_output._normSub,_output._normMul);
     return preds;
   }
 
