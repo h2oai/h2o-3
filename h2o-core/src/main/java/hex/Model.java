@@ -357,9 +357,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ArrayList<String> msgs = new ArrayList<>();
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
-    boolean isNaN;
+    int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
-      isNaN = false;
       Vec vec = test.vec(names[i]); // Search in the given validation set
       // If the training set is missing in the validation set, complain and
       // fill in with NAs.  If this is the response column for supervised
@@ -369,7 +368,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( expensive ) {
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
-          isNaN = true;
+          convNaN++;
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -383,17 +382,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (expensive) { vec = evec;  good++; } // Keep it
             else { evec.remove(); vec = null; } // No leaking if not-expensive
           } else {
-            if(!isNaN) good++;
+            good++;
           }
         } else if( vec.isEnum() ) {
           throw new IllegalArgumentException("Validation set has categorical column "+names[i]+" which is real-valued in the training data");
         } else {
-          if(!isNaN) good++;      // Assumed compatible; not checking e.g. Strings vs UUID
+          good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
       }
       vvecs[i] = vec;
     }
-    if( good == 0 )
+    if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
     if( good == names.length )  // Only update if got something for all columns
       test.restructure(names,vvecs);
