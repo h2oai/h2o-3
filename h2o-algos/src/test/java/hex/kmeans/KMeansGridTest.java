@@ -1,6 +1,7 @@
 package hex.kmeans;
 
 import hex.Grid;
+import hex.Model;
 import org.junit.*;
 import water.H2O.H2OFuture;
 import water.TestUtil;
@@ -25,7 +26,7 @@ public class KMeansGridTest extends TestUtil {
 
       // Search over this range of K's
       assert kmg.hyperName(0).equals("k");
-      double[] ks = new double[]{0,1,2,3,4,5,6}; // Note that k==0 is illegal, and k==1 is trivial
+      double[] ks = new double[]{1,2,3,4,5,6}; // Note that k==0 is illegal, and k==1 is trivial
 
       // Search over this range of the standardize flag
       assert kmg.hyperName(1).equals("standardize");
@@ -40,9 +41,19 @@ public class KMeansGridTest extends TestUtil {
       double[] seeds = new double[]{0,1,123456789,987654321};
 
       // Fire off a grid search
-      Job<Grid> jg = kmg.startGridSearch(new double[][]{ks,stds,inits,seeds});
-      Grid g2 = jg.get();
+      Grid.GridSearch gs = kmg.startGridSearch(new double[][]{ks,stds,inits,seeds});
+      Grid g2 = (Grid)gs.get();
       assert g2==kmg;
+
+      // Print out the models from this grid search
+      Model[] ms = gs.models();
+      String[][] sss = gs.toStrings();
+      for( int i=0; i<ms.length; i++ ) {
+        KMeansModel kmm = (KMeansModel)ms[i];
+        for( int j=0; j<sss[i].length; j++ )
+          System.out.print(sss[i][j]+" ");
+        System.out.println(kmm._output._avg_within_ss);
+      }
 
     } finally {
       if( fr  != null ) fr .remove();

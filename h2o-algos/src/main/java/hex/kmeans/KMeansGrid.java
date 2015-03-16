@@ -1,9 +1,9 @@
 package hex.kmeans;
 
 import hex.*;
+import water.DKV;
 import water.H2O;
 import water.Key;
-import water.DKV;
 import water.fvec.Frame;
 
 /** A Grid of Models
@@ -24,8 +24,8 @@ import water.fvec.Frame;
  */
 public class KMeansGrid extends Grid<KMeansGrid> {
 
-  /** @return Model name */
   public static final String MODEL_NAME = "KMeans";
+  /** @return Model name */
   @Override protected String modelName() { return MODEL_NAME; }
 
   private static final String[] HYPER_NAMES = new String[] {"k", "standardize", "init", "seed" };
@@ -87,6 +87,19 @@ public class KMeansGrid extends Grid<KMeansGrid> {
    *  @return Suggested next value for hyperparameter h or NaN if no next value */
   @Override protected double suggestedNextHyperValue( int h, Model m, double[] hyperLimits ) {
     throw H2O.unimpl();
+  }
+
+  /** @param hypers A set of hyper parameter values
+   *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
+   *  cheap; used to check hyperparameter sanity or make models */
+  @Override protected KMeans getBuilder( double[] hypers ) {
+    KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+    parms._train = _fr._key;
+    parms._k = (int)hypers[0];
+    parms._standardize = hypers[1]!=0;
+    parms._init = KMeans.Initialization.values()[(int)hypers[2]];
+    parms._seed = (long)hypers[3];
+    return new KMeans(parms);
   }
 
   // Factory for returning a grid based on an algorithm flavor

@@ -3,6 +3,8 @@ package hex;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
+import water.nbhm.NonBlockingHashMap;
+import water.rapids.ASTddply.Group;
 
 /** A Grid of Models
  *  Used to explore Model hyper-parameter space.  Lazily filled in, this object
@@ -21,7 +23,10 @@ import water.fvec.Frame;
  *  value internally.
  */
 public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
-  final Frame _fr;
+  protected final Frame _fr;    // The training frame for this grid of models
+  // A cache of double[] hyper-parameters mapping to Models
+  final NonBlockingHashMap<Group,Model> _cache = new NonBlockingHashMap<>();
+
   protected Grid( Key key, Frame fr ) { super(key); _fr = fr; }
 
   /** @return Model name */
@@ -73,29 +78,36 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
 
   /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, or null if the model does not exist. */
-  public Model model( double[] hypers ) { 
-    throw H2O.unimpl(); 
-  }
+  public Model model( double[] hypers ) { return _cache.get(new Group(hypers)); }
 
   /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, typically built on demand and
    *  not cached - expected to be an expensive operation.  If the model in question
    *  is "in progress", a 2nd build will NOT be kicked off.  This is a blocking call. */
   public Model buildModel( double[] hypers ) {
-    Job<Model> jm = startBuildModel(hypers);
-    return jm==null ? model(hypers) : jm.get();
+    Model m = model(hypers);
+    if( m != null ) return m;
+    m = (Model)(startBuildModel(hypers).get());
+    _cache.put(new Group(hypers.clone()),m);
+    return m;
   }
   
+  /** @param hypers A set of hyper parameter values
+   *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
+   *  cheap; used to check hyperparameter sanity */
+  protected abstract ModelBuilder getBuilder( double[] hypers );
+
   /** @param hypers A set of hyper parameter values
    *  @return A Future of a model run with these parameters, typically built on
    *  demand and not cached - expected to be an expensive operation.  If the
    *  model in question is "in progress", a 2nd build will NOT be kicked off.
    *  This is a non-blocking call. */
-  public Job<Model> startBuildModel( double[] hypers ) {
-    if( model(hypers) != null ) return null; // Model already built
-    throw H2O.unimpl(); 
+  public ModelBuilder startBuildModel( double[] hypers ) {
+    if( model(hypers) != null ) return null;
+    ModelBuilder mb = getBuilder(hypers);
+    mb.trainModel();
+    return mb;
   }
-
   
   /** @param hyperSearch A set of arrays of hyper parameter values, used to
    *  specify a simple fully-filled-in grid search.
@@ -106,35 +118,78 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
   public GridSearch startGridSearch( final double[][] hyperSearch ) { return new GridSearch(_key,hyperSearch).start(); }
 
   // Cleanup models and grid
-  @Override protected Futures remove_impl( Futures fs ) { throw H2O.unimpl(); }
+  @Override protected Futures remove_impl( Futures fs ) {
+    for( Model m : _cache.values() )
+      m.remove(fs);
+    _cache.clear();
+    return fs;
+  }
 
   // A search over a hyperparameter space
   public class GridSearch extends Job<Grid> {
     double[][] _hyperSearch;
+    final int _total_models;
     GridSearch( Key gkey, double[][] hyperSearch ) {
       super(Key.make("GridSearch_"+modelName()+Key.rand()), gkey, modelName()+" Grid Search");
       _hyperSearch = hyperSearch;
-    }
-
-    GridSearch start() {
       // Replace null hyperparameters with the model default
       for( int i=0; i<_hyperSearch.length; i++ )
         if( _hyperSearch[i] == null )
           _hyperSearch[i] = new double[]{hyperDefault(i)};
-      // Work is 1 for every model to be built
-      long work = 1;
+      // Count of models in this search
+      int work = 1;
       for( double hparms[] : _hyperSearch )
         work *= hparms.length;
-      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(); tryComplete(); } },work);
+      _total_models = work;
+
+      // Check all parameter combos for validity
+      double[] hypers = new double[nHyperParms()];
+      for( int[] hidx = new int[nHyperParms()]; hidx != null; hidx = nextModel(hidx) ) {
+        ModelBuilder mb = getBuilder(hypers(hidx,hypers));
+        mb.init(false);
+        if( mb.error_count() > 0 ) 
+          throw new IllegalArgumentException(mb.validationErrors());
+      }
+    }
+
+    GridSearch start() {
+      start(new H2OCountedCompleter() { @Override public void compute2() { gridSearch(); tryComplete(); } },_total_models);
       return this;
     }
 
+    /** @return the set of models covered by this grid search, some may be null
+     *  if the search is in progress or otherwise incomplete. */
+    public Model[] models() {
+      Model[] ms = new Model[_total_models];
+      int mcnt = 0;
+      double[] hypers = new double[nHyperParms()];
+      for( int[] hidx = new int[nHyperParms()]; hidx != null; hidx = nextModel(hidx) )
+        ms[mcnt++] = model(hypers(hidx,hypers));
+      return ms;
+    }
+
+    /** @return the stringified set of model parameters covered by this grid search */
+    public String[][] toStrings() {
+      int nhps = nHyperParms();
+      String[][] sss = new String[_total_models][nhps];
+      int mcnt = 0;
+      double[] hypers = new double[nhps];
+      for( int[] hidx = new int[nhps]; hidx != null; hidx = nextModel(hidx) ) {
+        hypers = hypers(hidx,hypers);
+        String[] ss = new String[nhps];
+        for( int i=0; i<nhps; i++ )
+          ss[i] = hyperToString(i,hypers[i]);
+        sss[mcnt++] = ss;
+      }
+      return sss;
+    }
+
     // Classic grid search over hyper-parameter space
-    void gridSearch() {
+    private void gridSearch() {
       double[] hypers = new double[nHyperParms()];
       for( int[] hidx = new int[nHyperParms()]; hidx != null; hidx = nextModel(hidx) ) {
-       if( !isRunning() ) { cancel(); return; }
-       buildModel(hypers(hidx,hypers));
+        if( !isRunning() ) { cancel(); return; }
+        buildModel(hypers(hidx,hypers));
       }
       done();
     }
@@ -145,7 +200,7 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
       // Find the next parm to flip
       int i;
       for( i=0; i<hidx.length; i++ )
-        if( hidx[i]<_hyperSearch[i].length )
+        if( hidx[i]+1 < _hyperSearch[i].length )
           break;
       if( i==hidx.length ) return null; // All done, report null
       // Flip indices
