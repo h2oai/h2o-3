@@ -69,9 +69,17 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   @Override protected void toJavaPredictBody(SB bodySb, SB classCtxSb, SB fileCtxSb) {
     // fileCtxSb.ip("").nl(); // at file level
     // Two class statics to support prediction
-    JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
     JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
-    // Predict function body: main work function is a utility in GenModel class.
-    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    if(_parms._standardize) {
+      JCodeGen.toStaticVar(classCtxSb,"MEANS",_output._normSub,"Column means of training data");
+      JCodeGen.toStaticVar(classCtxSb,"MULTS",_output._normMul,"Reciprocal of column standard deviations of training data");
+      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_std_raw, "Normalized cluster centers[K][features]");
+      // Predict function body: main work function is a utility in GenModel class.
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT,MEANS,MULTS);").nl(); // at function level
+    } else {
+      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_raw, "Denormalized cluster centers[K][features]");
+      // Predict function body: main work function is a utility in GenModel class.
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    }
   }
 }
