@@ -26,7 +26,8 @@ library(h2o)
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
-iris.hex <- h2o.importFile(conn, "maprfs://mr-0xf1/datasets/iris.csv")
+iris.hex <- h2o.importFile(conn, "maprfs:/datasets/iris/iris.csv")
+
 print(summary(iris.hex))
 
 myX = 1:4
