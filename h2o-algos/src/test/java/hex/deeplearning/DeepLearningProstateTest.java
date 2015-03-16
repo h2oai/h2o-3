@@ -25,7 +25,7 @@ import static hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 public class DeepLearningProstateTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void run() throws Exception { runFraction(0.0007f); }
+  @Test public void run() throws Exception { runFraction(0.0001f); }
 
   public void runFraction(float fraction) {
     long seed = 0xDECAF;
@@ -55,9 +55,11 @@ public class DeepLearningProstateTest extends TestUtil {
           }
           for (DeepLearningParameters.Loss loss : new DeepLearningParameters.Loss[]{
                   DeepLearningParameters.Loss.CrossEntropy,
+                  DeepLearningParameters.Loss.Huber,
+                  DeepLearningParameters.Loss.Absolute,
                   DeepLearningParameters.Loss.MeanSquare
           }) {
-            if ( !classification ^ loss == DeepLearningParameters.Loss.MeanSquare ) continue;
+            if ( !classification && loss == DeepLearningParameters.Loss.CrossEntropy ) continue;
 
             for (boolean replicate : new boolean[]{
                     true,
