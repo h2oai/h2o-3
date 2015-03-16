@@ -53,7 +53,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 //    p._l2 = 1e-4;
 //    p._rate = 1e-5;
         p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
-        p._loss = DeepLearningModel.DeepLearningParameters.Loss.MeanSquare;
+        p._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
 //        p._initial_weight_distribution = DeepLearningModel.DeepLearningParameters.InitialWeightDistribution.Normal;
 //    p._initial_weight_scale = 1e-3;
         p._epochs = 100;

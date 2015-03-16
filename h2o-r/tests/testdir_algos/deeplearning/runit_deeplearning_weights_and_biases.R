@@ -6,7 +6,7 @@ check.deeplearning_imbalanced <- function(conn) {
   
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
   covtype[,55] <- as.factor(covtype[,55])
-  dlmodel<-h2o.deeplearning(x=c(1:54),y=55,hidden=c(17,191),epochs=1,loss="CrossEntropy",
+  dlmodel<-h2o.deeplearning(x=c(1:54),y=55,hidden=c(17,191),epochs=1,
                             training_frame=covtype,balance_classes=F,
                             reproducible=T, seed=1234)
   #print(dlmodel)

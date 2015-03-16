@@ -11,6 +11,7 @@ import water.persist.PersistManager;
 import water.util.DocGen.HTML;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.OSUtils;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -158,6 +159,9 @@ final public class H2O {
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
     public int nthreads=Runtime.getRuntime().availableProcessors();
 
+    /** -flow_dir=/path/to/dir; directory to save flows in */
+    public String flow_dir;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -300,6 +304,10 @@ final public class H2O {
       else if (s.matches("ice_root")) {
         i = s.incrementAndCheck(i, args);
         ARGS.ice_root = args[i];
+      }
+      else if (s.matches("flow_dir")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.flow_dir = args[i];
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -727,6 +735,8 @@ final public class H2O {
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     Log.info("OS   version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
+    long totalMemory = OSUtils.getTotalPhysicalMemory();
+    Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
   }
 
   private static void startGAStartupReport() {
@@ -1075,7 +1085,7 @@ final public class H2O {
       String logDir = Log.getLogDir();
       Log.info("Log dir: '" + logDir + "'");
 
-      Log.info("Cur dir: " + System.getProperty("user.dir"));
+      Log.info("Cur dir: '" + System.getProperty("user.dir") + "'");
     }
     catch (Exception e) {
       System.err.println("ERROR: Log.getLogDir() failed, exiting now.");
@@ -1085,7 +1095,34 @@ final public class H2O {
 
     // Load up from disk and initialize the persistence layer
     initializePersistence();
-    NPS = new NodePersistentStorage(ICE_ROOT);
+
+    // Initialize NPS
+    {
+      String flow_dir;
+      if (ARGS.flow_dir != null) {
+        flow_dir = ARGS.flow_dir;
+      }
+      else if (ARGS.ga_hadoop_ver != null) {
+        // TODO:  Write somewhere to hdfs or disable writing entirely.
+        flow_dir = ICE_ROOT + File.separator + "h2oflows";
+      }
+      else {
+        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+      }
+
+      flow_dir = flow_dir.replace("\\", "/");
+      Log.info("Flow dir: '" + flow_dir + "'");
+
+      URI flow_uri;
+      try {
+        flow_uri = new URI(flow_dir);
+      }
+      catch (Exception e) {
+        throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+      }
+
+      NPS = new NodePersistentStorage(flow_uri);
+    }
 
     // Start network services, including heartbeats
     startNetworkServices();   // start server services
