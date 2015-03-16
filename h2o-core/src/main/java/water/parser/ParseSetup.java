@@ -335,9 +335,13 @@ public final class ParseSetup extends Iced {
             _gblSetup._column_names = other._gblSetup._column_names;
           } else {
             for (int i = 0; i < _gblSetup._column_names.length; i++) {
-              if (!_gblSetup._column_names[i].equals(other._gblSetup._column_names[i]))
+              if (i > other._gblSetup._column_names.length || !_gblSetup._column_names[i].equals(other._gblSetup._column_names[i])) {
                 //TODO throw something more serious
                 Log.warn("Column names do not match between files");
+                _gblSetup._is_valid = false;
+                other._gblSetup._is_valid = false;
+                break;
+              }
             }
           }
         }
