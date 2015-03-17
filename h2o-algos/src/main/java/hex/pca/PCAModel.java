@@ -4,13 +4,9 @@ import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
-import hex.ModelMetricsUnsupervised.MetricBuilderUnsupervised;
 import water.DKV;
-import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.api.ModelSchema;
-import hex.schemas.PCAModelV2;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -128,13 +124,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     int x = _output._names.length, y = adaptFrm.numCols();
     Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
 
-    if (destination_key != null) {
-      Key k = Key.make(destination_key);
-      f = new Frame(k, f.names(), f.vecs());
-      DKV.put(k, f);
-    }
-    ModelMetrics mm = makeMetricBuilder(null).makeModelMetrics(this,orig,Double.NaN);
-    DKV.put(mm);
+    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    DKV.put(f);
+    makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
     return f;
   }
 
