@@ -509,7 +509,7 @@ public class GBMTest extends TestUtil {
   }
 
   // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
-  @Test public void testChunkReprodubility() {
+  @Test public void testReprodubility() {
     Frame tfr=null, vfr=null;
     final int N = 5;
     double[] mses = new double[N];
@@ -526,6 +526,8 @@ public class GBMTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -536,6 +538,7 @@ public class GBMTest extends TestUtil {
         parms._max_depth = 8;
         parms._learn_rate = 0.1f;
         parms._min_rows = 10;
+//        parms._loss = Family.multinomial;
         parms._loss = Family.gaussian;
 
         // Build a first model; all remaining models should be equal

@@ -350,7 +350,7 @@ public class DRFTest extends TestUtil {
   }
 
   // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
-  @Test public void testChunkReprodubility() {
+  @Test public void testReprodubility() {
     Frame tfr=null, vfr=null;
     final int N = 5;
     double[] mses = new double[N];
@@ -367,6 +367,8 @@ public class DRFTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
 
       for (int i=0; i<N; ++i) {
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
