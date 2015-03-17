@@ -6,6 +6,7 @@ import org.junit.*;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -504,6 +505,68 @@ public class GBMTest extends TestUtil {
       if (tfr  != null) tfr.remove();
       if (vfr  != null) vfr.remove();
       Scope.exit();
+    }
+  }
+
+  // HDEXDEV-194 Test that results are independent of parsing behavior (#chunks) - small data
+  @Test @Ignore public void testChunkReprodubility() {
+    Frame tfr=null, vfr=null;
+    int[] chunksList = new int[]{1, 2, 4, 8, 16, 32, 64, 128, 256};
+    double[] mses = new double[chunksList.length];
+
+    for (int i=0; i<chunksList.length; ++i) {
+      Scope.enter();
+      try {
+        // Load data, hack frames
+        tfr = parse_test_file("smalldata/logreg/prostate.csv");
+
+        Key dest = Key.make("prostate.rebalanced.hex");
+        RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunksList[i]);
+        H2O.submitTask(rb);
+        rb.join();
+        tfr.delete();
+        tfr = DKV.get(dest).get();
+
+        // Same parms for all
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "CAPSULE";
+        parms._ignored_columns = new String[]{"ID"};
+        parms._ntrees = 100;
+        parms._max_depth = 10;
+
+        parms._loss = Family.gaussian;
+//        parms._loss = Family.bernoulli;
+
+        if (parms._loss == Family.bernoulli) {
+          Scope.track(tfr.replace(1, tfr.vecs()[1].toEnum())._key);   // Convert response 'CAPSULE' to categorical
+          DKV.put(tfr);
+        }
+
+        // Build a first model; all remaining models should be equal
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        assertEquals(gbm._output._ntrees, parms._ntrees);
+
+        gbm.score(tfr);
+        hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(gbm, tfr);
+        mses[i] = mm._mse;
+
+        if (parms._loss == Family.bernoulli)
+          assertEquals(mm._mse, 0.00855471310659207, 1e-10);
+        else if (parms._loss == Family.gaussian)
+          assertEquals(mm._mse, 0.027168913163568113, 1e-10);
+
+        job.remove();
+        gbm.delete();
+      } finally{
+        if (tfr != null) tfr.remove();
+        if (vfr != null) vfr.remove();
+        Scope.exit();
+      }
+    }
+    for (int i=0; i<mses.length; ++i) {
+      Log.info(chunksList[i] + " chunks -> mse: " + mses[i]);
     }
   }
 }
