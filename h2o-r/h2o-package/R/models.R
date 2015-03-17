@@ -408,52 +408,52 @@ h2o.metric <- function(object, thresholds, metric) {
 
 #' @rdname h2o.metric
 h2o.F0point5 <- function(object, thresholds){
-  h2o.metric(object, "F0point5", thresholds)
+  h2o.metric(object, thresholds, "F0point5")
 }
 
 #' @rdname h2o.metric
 h2o.F1 <- function(object, thresholds){
-  h2o.metric(object, "F1", thresholds)
+  h2o.metric(object, thresholds, "F1")
 }
 
 #' @rdname h2o.metric
 h2o.F2 <- function(object, thresholds){
-  h2o.metric(object, "F2", thresholds)
+  h2o.metric(object, thresholds, "F2")
 }
 
 #' @rdname h2o.metric
 h2o.accuracy <- function(object, thresholds){
-  h2o.metric(object, "accuracy", thresholds)
+  h2o.metric(object, thresholds, "accuracy")
 }
 
 #' @rdname h2o.metric
 h2o.error <- function(object, thresholds){
-  h2o.metric(object, "error", thresholds)
+  h2o.metric(object, thresholds, "error")
 }
 
 #' @rdname h2o.metric
 h2o.maxPerClassError <- function(object, thresholds){
-  h2o.metric(object, "max_per_class_error", thresholds)
+  h2o.metric(object, thresholds, "max_per_class_error")
 }
 
 #' @rdname h2o.metric
 h2o.mcc <- function(object, thresholds){
-  h2o.metric(object, "mcc", thresholds)
+  h2o.metric(object, thresholds, "mcc")
 }
 
 #' @rdname h2o.metric
 h2o.precision <- function(object, thresholds){
-  h2o.metric(object, "precision", thresholds)
+  h2o.metric(object, thresholds, "precision")
 }
 
 #' @rdname h2o.metric
 h2o.recall <- function(object, thresholds){
-  h2o.metric(object, "recall", thresholds)
+  h2o.metric(object, thresholds, "recall")
 }
 
 #' @rdname h2o.metric
 h2o.specificity <- function(object, thresholds){
-  h2o.metric(object, "specificity", thresholds)
+  h2o.metric(object, thresholds, "specificity")
 }
 
 #' @rdname h2o.metric
