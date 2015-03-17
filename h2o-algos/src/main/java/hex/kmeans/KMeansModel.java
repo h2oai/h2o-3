@@ -1,14 +1,12 @@
 package hex.kmeans;
 
 import hex.ClusteringModel;
-import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import water.Key;
 import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SB;
-import water.util.TwoDimTable;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
 
@@ -21,10 +19,6 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
-    // Number of categorical variables in the training set; they are all moved
-    // up-front and use a different distance metric than numerical variables
-    public int _categorical_column_count;
-
     // Iterations executed
     public int _iterations;
 
@@ -55,7 +49,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._categorical_column_count);
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._domains);
     return preds;
   }
 
@@ -64,8 +58,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // fileCtxSb.ip("").nl(); // at file level
     // Two class statics to support prediction
     JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
-    JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
     // Predict function body: main work function is a utility in GenModel class.
-    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS);").nl(); // at function level
   }
 }

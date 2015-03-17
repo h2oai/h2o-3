@@ -33,9 +33,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     Random, PlusPlus, Furthest, User
   }
 
-  // Number of categorical columns
-  private int _ncats;
-
   // Convergence tolerance
   final private double TOLERANCE = 1e-6;
 
@@ -66,24 +63,19 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
-
-    // Sort columns, so the categoricals are all up front.  They use a
-    // different distance metric than numeric columns.
-    Vec vecs[] = _train.vecs();
-    int ncats=0, nvecs=vecs.length; // Feature count;
-    while( ncats != nvecs ) {
-      while( ncats < nvecs && vecs[ncats].isEnum() ) ncats++;
-      while( nvecs > 0 && !vecs[nvecs-1].isEnum() ) nvecs--;
-      if( ncats < nvecs-1 ) _train.swap(ncats,nvecs-1);
-    }
-    _ncats = ncats;
   }
 
   // ----------------------
   private class KMeansDriver extends H2OCountedCompleter<KMeansDriver> {
+    private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
+
+      // Categoricals use a different distance metric than numeric columns.
+      _isCats = new String[vecs.length][];
+      for( int v=0; v<vecs.length; v++ ) _isCats[v] = vecs[v].isEnum() ? new String[0] : null;
+      
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
       double centers[][];    // Cluster centers
       if( null != _parms._user_points ) { // User-specified starting points
@@ -112,15 +104,15 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
           while (model._output._iterations < 5) {
             // Sum squares distances to cluster center
-            SumSqr sqr = new SumSqr(centers, means, mults, _ncats).doAll(vecs);
+            SumSqr sqr = new SumSqr(centers, means, mults, _isCats).doAll(vecs);
 
             // Sample with probability inverse to square distance
-            Sampler sampler = new Sampler(centers, means, mults, _ncats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
+            Sampler sampler = new Sampler(centers, means, mults, _isCats, sqr._sqr, _parms._k * 3, _parms._seed).doAll(vecs);
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
             if (!isRunning()) return null; // Stopped/cancelled
-            model._output._centers_raw = destandardize(centers, _ncats, means, mults);
+            model._output._centers_raw = destandardize(centers, _isCats, means, mults);
             model._output._avg_within_ss = sqr._sqr / _train.numRows();
 
             model._output._iterations++;     // One iteration done
@@ -128,7 +120,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             model.update(_key); // Make early version of model visible, but don't update progress using update(1)
           }
           // Recluster down to k cluster centers
-          centers = recluster(centers, rand);
+          centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
           model._output._iterations = -1; // Reset iteration count
         }
       }
@@ -173,7 +165,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // etc).  Return new centers.
     double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults ) {
       // Fill in the model based on original destandardized centers
-      model._output._centers_raw = destandardize(centers, _ncats, means, mults);
+      model._output._centers_raw = destandardize(centers, _isCats, means, mults);
       String[] rowHeaders = new String[_parms._k];
       for(int i = 0; i < _parms._k; i++)
         rowHeaders[i] = String.valueOf(i+1);
@@ -213,7 +205,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       if( oldCenters==null ) return false; // No prior iteration, not stopping
       double average_change = 0;
       for( int clu=0; clu<_parms._k; clu++ )
-        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_ncats);
+        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_isCats);
       average_change /= _parms._k;  // Average change per cluster
       return average_change < TOLERANCE;
     }
@@ -232,7 +224,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model.delete_and_lock(_key);
 
         //
-        model._output._categorical_column_count = _ncats;
         final Vec vecs[] = _train.vecs();
         // mults & means for standardization
         final double[] means = _train.means();  // means are used to impute NAs
@@ -248,9 +239,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or average_change < TOLERANCE
         while( !isDone(model,centers,oldCenters) ) {
-          Lloyds task = new Lloyds(centers,means,mults,_ncats, _parms._k).doAll(vecs);
+          Lloyds task = new Lloyds(centers,means,mults,_isCats, _parms._k).doAll(vecs);
           // Pick the max categorical level for cluster center
-          max_cats(task._cMeans,task._cats);
+          max_cats(task._cMeans,task._cats,_isCats);
 
           // Handle the case where some centers go dry.  Rescue only 1 cluster
           // per iteration ('cause we only tracked the 1 worst row)
@@ -319,16 +310,16 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     double[][] _centers;
     double[] _means, _mults; // Standardization
-    final int _ncats;
+    final String[][] _isCats;
 
     // OUT
     double _sqr;
 
-    SumSqr( double[][] centers, double[] means, double[] mults, int ncats ) {
+    SumSqr( double[][] centers, double[] means, double[] mults, String[][] isCats ) {
       _centers = centers;
       _means = means;
       _mults = mults;
-      _ncats = ncats;
+      _isCats = isCats;
     }
 
     @Override public void map(Chunk[] cs) {
@@ -336,7 +327,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
         data(values, cs, row, _means, _mults);
-        _sqr += minSqr(_centers, values, _ncats, cd);
+        _sqr += minSqr(_centers, values, _isCats, cd);
       }
       _means = _mults = null;
       _centers = null;
@@ -352,7 +343,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     double[][] _centers;
     double[] _means, _mults; // Standardization
-    final int _ncats;
+    final String[][] _isCats;
     final double _sqr;           // Min-square-error
     final double _probability;   // Odds to select this point
     final long _seed;
@@ -360,11 +351,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // OUT
     double[][] _sampled;   // New cluster centers
 
-    Sampler( double[][] centers, double[] means, double[] mults, int ncats, double sqr, double prob, long seed ) {
+    Sampler( double[][] centers, double[] means, double[] mults, String[][] isCats, double sqr, double prob, long seed ) {
       _centers = centers;
       _means = means;
       _mults = mults;
-      _ncats = ncats;
+      _isCats = isCats;
       _sqr = sqr;
       _probability = prob;
       _seed = seed;
@@ -378,7 +369,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
       for( int row = 0; row < cs[0]._len; row++ ) {
         data(values, cs, row, _means, _mults);
-        double sqr = minSqr(_centers, values, _ncats, cd);
+        double sqr = minSqr(_centers, values, _isCats, cd);
         if( _probability * sqr > rand.nextDouble() * _sqr )
           list.add(values.clone());
       }
@@ -405,21 +396,22 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     // IN
     double[][] _centers;
     double[] _means, _mults;      // Standardization
-    final int _ncats, _k;
+    final int _k;
+    final String[][] _isCats;
 
     // OUT
     double[][] _cMeans;         // Means for each cluster
-    long[/*k*/][/*ncats*/][] _cats; // Histogram of cat levels
+    long[/*k*/][/*features*/][/*nfactors*/] _cats; // Histogram of cat levels
     double[] _cSqr;             // Sum of squares for each cluster
     long[] _size;               // Number of rows in each cluster
     long _worst_row;            // Row with max err
     double _worst_err;          // Max-err-row's max-err
 
-    Lloyds( double[][] centers, double[] means, double[] mults, int ncats, int k ) {
+    Lloyds( double[][] centers, double[] means, double[] mults, String[][] isCats, int k ) {
       _centers = centers;
       _means = means;
       _mults = mults;
-      _ncats = ncats;
+      _isCats = isCats;
       _k = k;
     }
 
@@ -430,27 +422,28 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _cSqr = new double[_k];
       _size = new long[_k];
       // Space for cat histograms
-      _cats = new long[_k][_ncats][];
+      _cats = new long[_k][N][];
       for( int clu=0; clu< _k; clu++ )
-        for( int col=0; col<_ncats; col++ )
-          _cats[clu][col] = new long[cs[col].vec().cardinality()];
+        for( int col=0; col<N; col++ )
+          _cats[clu][col] = _isCats[col]==null ? null : new long[cs[col].vec().cardinality()];
       _worst_err = 0;
 
       // Find closest cluster center for each row
-      double[] values = new double[N];
+      double[] values = new double[N]; // Temp data to hold row as doubles
       ClusterDist cd = new ClusterDist();
       for( int row = 0; row < cs[0]._len; row++ ) {
-        data(values, cs, row, _means, _mults);
-        closest(_centers, values, _ncats, cd);
+        data(values, cs, row, _means, _mults); // Load row as doubles
+        closest(_centers, values, _isCats, cd); // Find closest cluster center
         int clu = cd._cluster;
-        assert clu != -1; // No broken rows
+        assert clu != -1;       // No broken rows
         _cSqr[clu] += cd._dist;
 
         // Add values and increment counter for chosen cluster
-        for( int col = 0; col < _ncats; col++ )
-          _cats[clu][col][(int)values[col]]++; // Histogram the cats
-        for( int col = _ncats; col < N; col++ )
-          _cMeans[clu][col] += values[col];
+        for( int col = 0; col < N; col++ )
+          if( _isCats[col] != null )
+            _cats[clu][col][(int)values[col]]++; // Histogram the cats
+          else 
+            _cMeans[clu][col] += values[col]; // Sum the column centers
         _size[clu]++;
         // Track worst row
         if( cd._dist > _worst_err) { _worst_err = cd._dist; _worst_row = cs[0].start()+row; }
@@ -482,24 +475,24 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   // A pair result: nearest cluster center and the square distance
   private static final class ClusterDist { int _cluster; double _dist;  }
 
-  private static double minSqr(double[][] centers, double[] point, int ncats, ClusterDist cd) {
-    return closest(centers, point, ncats, cd, centers.length)._dist;
+  private static double minSqr(double[][] centers, double[] point, String[][] isCats, ClusterDist cd) {
+    return closest(centers, point, isCats, cd, centers.length)._dist;
   }
 
-  private static double minSqr(double[][] centers, double[] point, int ncats, ClusterDist cd, int count) {
-    return closest(centers,point,ncats,cd,count)._dist;
+  private static double minSqr(double[][] centers, double[] point, String[][] isCats, ClusterDist cd, int count) {
+    return closest(centers,point,isCats,cd,count)._dist;
   }
 
-  private static ClusterDist closest(double[][] centers, double[] point, int ncats, ClusterDist cd) {
-    return closest(centers, point, ncats, cd, centers.length);
+  private static ClusterDist closest(double[][] centers, double[] point, String[][] isCats, ClusterDist cd) {
+    return closest(centers, point, isCats, cd, centers.length);
   }
 
   /** Return both nearest of N cluster center/centroids, and the square-distance. */
-  private static ClusterDist closest(double[][] centers, double[] point, int ncats, ClusterDist cd, int count) {
+  private static ClusterDist closest(double[][] centers, double[] point, String[][] isCats, ClusterDist cd, int count) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < count; cluster++ ) {
-      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[cluster],point,ncats);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[cluster],point,isCats);
       if( sqr < minSqr ) {      // Record nearest cluster
         min = cluster;
         minSqr = sqr;
@@ -511,21 +504,21 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   // KMeans++ re-clustering
-  private double[][] recluster(double[][] points, Random rand) {
-    double[][] res = new double[_parms._k][];
+  private static double[][] recluster(double[][] points, Random rand, int N, Initialization init, String[][] isCats) {
+    double[][] res = new double[N][];
     res[0] = points[0];
     int count = 1;
     ClusterDist cd = new ClusterDist();
-    switch( _parms._init ) {
+    switch( init ) {
     case Random:
       break;
     case PlusPlus: { // k-means++
       while( count < res.length ) {
         double sum = 0;
-        for (double[] point1 : points) sum += minSqr(res, point1, _ncats, cd, count);
+        for (double[] point1 : points) sum += minSqr(res, point1, isCats, cd, count);
 
         for (double[] point : points) {
-          if (minSqr(res, point, _ncats, cd, count) >= rand.nextDouble() * sum) {
+          if (minSqr(res, point, isCats, cd, count) >= rand.nextDouble() * sum) {
             res[count++] = point;
             break;
           }
@@ -538,7 +531,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         double max = 0;
         int index = 0;
         for( int i = 0; i < points.length; i++ ) {
-          double sqr = minSqr(res, points[i], _ncats, cd, count);
+          double sqr = minSqr(res, points[i], isCats, cd, count);
           if( sqr > max ) {
             max = sqr;
             index = i;
@@ -559,24 +552,24 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   }
 
   // Pick most common cat level for each cluster_centers' cat columns
-  private static double[][] max_cats(double[][] centers, long[][][] cats) {
-    int K = cats.length;
-    int ncats = cats[0].length;
-    for( int clu = 0; clu < K; clu++ )
-      for( int col = 0; col < ncats; col++ ) // Cats use max level for cluster center
-        centers[clu][col] = ArrayUtils.maxIndex(cats[clu][col]);
+  private static double[][] max_cats(double[][] centers, long[][][] cats, String[][] isCats) {
+    for( int clu = 0; clu < centers.length; clu++ )
+      for( int col = 0; col < centers[0].length; col++ )
+        if( isCats[col] != null )
+          centers[clu][col] = ArrayUtils.maxIndex(cats[clu][col]);
     return centers;
   }
 
-  private static double[][] destandardize(double[][] centers, int ncats, double[] means, double[] mults) {
+  private static double[][] destandardize(double[][] centers, String[][] isCats, double[] means, double[] mults) {
     int K = centers.length;
     int N = centers[0].length;
     double[][] value = new double[K][N];
     for( int clu = 0; clu < K; clu++ ) {
       System.arraycopy(centers[clu],0,value[clu],0,N);
       if( mults!=null ) {        // Reverse standardization
-        for (int col = ncats; col < N; col++)
-          value[clu][col] = value[clu][col] / mults[col] + means[col];
+        for( int col = 0; col < N; col++)
+          if( isCats[col] == null )
+            value[clu][col] = value[clu][col] / mults[col] + means[col];
       }
     }
     return value;
