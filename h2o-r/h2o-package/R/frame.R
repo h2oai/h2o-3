@@ -1248,6 +1248,15 @@ setMethod("as.factor",    "H2OFrame", function(x)
 setMethod("as.character", "H2OFrame", function(x)
   .h2o.unary_frame_op("as.character", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
 
+setMethod("as.numeric", "H2OFrame", function(x)
+  .h2o.unary_frame_op("as.numeric", x, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names))
+
+
+#as.numeric.H2OParsedData <- function(x, ...) {
+#  if(class(x) != "H2OParsedData") stop("x must be of class H2OParsedData")
+#  .h2o.__unop2("as.numeric", x)
+#}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Merge Operations: ifelse, cbind, rbind, merge
 #-----------------------------------------------------------------------------------------------------------------------
