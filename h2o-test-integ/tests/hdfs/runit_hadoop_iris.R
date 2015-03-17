@@ -8,26 +8,21 @@ source('../h2o-runit-hadoop.R')
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
 myPort <- ipPort[[2]]
+hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
+print(hdfs_name_node)
 
 library(RCurl)
 library(h2o)
-
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
-
-# Check if we are running inside the 0xdata network by seeing if we can touch
-# the HDP2.1 namenode. Update if using other clusters.
-# Note this should fail on home networks, since 176 is not likely to exist
-# also should fail in ec2.
 
 #----------------------------------------------------------------------
 
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
-iris.hex <- h2o.importFile(conn, "maprfs:/datasets/iris/iris.csv")
+hdfs_iris_file = "/datasets/iris/iris.csv"
 
+url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_iris_file)
+iris.hex <- h2o.importFile(conn, url)
 print(summary(iris.hex))
 
 myX = 1:4
