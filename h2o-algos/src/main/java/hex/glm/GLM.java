@@ -445,7 +445,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if(!failedLineSearch) {
               LogInfo("Check KKT got NaNs. Invoking line search");
               getCompleter().addToPendingCount(1);
-              new GLMTask.GLMLineSearchTask(_activeData,_taskInfo._params._alpha[0], _currentLambda,_taskInfo._params,1.0/_taskInfo._nobs,_lastResult._beta,ArrayUtils.subtract( contractVec(fullBeta, _activeCols),_lastResult._beta),LINE_SEARCH_STEP,NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);;
+              new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params,1.0/_taskInfo._nobs,_lastResult._beta,ArrayUtils.subtract( contractVec(fullBeta, _activeCols),_lastResult._beta),LINE_SEARCH_STEP,NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);;
 //              new GLMGradientTask(_activeData, _taskInfo._params, _currentLambda * (1-_taskInfo._params._alpha[0]),, NUM_LINE_SEARCH_STEPS, LINE_SEARCH_STEP), 1.0/_taskInfo._nobs, new LineSearchIteration(getCompleter(), ArrayUtils.subtract(newBeta, _lastResult._beta) )).asyncExec(_activeData._adaptedFrame);
               return;
             } else {
@@ -603,7 +603,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if(_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))){
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
-          new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params._alpha[0], _currentLambda, _taskInfo._params, 1.0/_taskInfo._nobs, _lastResult._beta.clone(), ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params, 1.0/_taskInfo._nobs, _lastResult._beta.clone(), ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else if(_lastResult == null || lastObjVal > objVal)
           _lastResult = new IterationInfo(_iter, glmt._beta, glmt._likelihood);
@@ -1103,10 +1103,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs).doAll(_dinfo._adaptedFrame)
         : new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs).doAll(_dinfo._adaptedFrame);
-
       if (_betaGiven != null) { // add proximal gradient
-        for (int i = 0; i < gt._gradient.length; ++i)
-          gt._gradient[i] += _proximalPen[i] * (beta[i] - _betaGiven[i]);
+        for (int i = 0; i < gt._gradient.length; ++i) {
+          double diff = (beta[i] - _betaGiven[i]);
+          double pen = _proximalPen[i] * diff;
+          gt._gradient[i] += pen;
+          gt._objVal += .5*pen*diff;
+        }
       }
       return new GradientInfo(gt._objVal, gt._gradient);
     }
@@ -1114,12 +1117,12 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     public double[] getObjVals(double[] beta, double[] direction) {
       double reg = 1.0 / _nobs;
-      double[] objs = new GLMLineSearchTask(_dinfo, 0, _lambda, _glmp, 1.0 / _nobs, beta, direction, _stepDec, _nsteps).doAll(_dinfo._adaptedFrame)._likelihoods;
+      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, _stepDec, _nsteps).doAll(_dinfo._adaptedFrame)._likelihoods;
       double step = 1;
       for (int i = 0; i < objs.length; ++i, step *= _stepDec) {
         objs[i] *= reg;
         if (_lambda > 0 || _betaGiven != null) { // have some l2 pen
-          double[] b = ArrayUtils.wadd(beta, direction, step);
+          double[] b = ArrayUtils.wadd(beta.clone(), direction, step);
           if (_lambda > 0)
             objs[i] += .5 * _lambda * ArrayUtils.l2norm2(b, _dinfo._intercept);
           if (_betaGiven != null && _proximalPen != null) {

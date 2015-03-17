@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
@@ -228,7 +229,7 @@ public class GLMTest  extends TestUtil {
         beta[i] = 1 - 2 * rnd.nextDouble();
         pk[i]   = 10* (1 - 2*rnd.nextDouble());
       }
-      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo,0,0,params, 1, beta,pk,.7,16).doAll(dinfo._adaptedFrame);
+      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta,pk,.7,16).doAll(dinfo._adaptedFrame);
       double step = 1, stepDec = .7;
       for(int i = 0; i < glst._nSteps; ++i) {
         double [] b =  beta.clone();
@@ -476,6 +477,7 @@ public class GLMTest  extends TestUtil {
 
 
 
+
   @Test public void testProximal() {
 //    glmnet's result:
 //    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
@@ -515,17 +517,31 @@ public class GLMTest  extends TestUtil {
       GLM job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
+
+      double [] beta_1 = model.beta();
+      params._solver = Solver.L_BFGS;
+      params._max_iter = 1000;
+      job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.get(modelKey).get();
+
+      double [] beta_2 = model.beta();
+      System.out.println("beta1 = " + Arrays.toString(beta_1));
+      System.out.println("beta2 = " + Arrays.toString(beta_2));
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the gradient
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
-      double [] beta = model.beta();
       // todo: remove, result from h2o.1
      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0).doAll(dinfo._adaptedFrame);
-      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta,1.0/380).doAll(dinfo._adaptedFrame);
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0).doAll(dinfo._adaptedFrame);
+      LBFGS_LogisticGradientTask lt2 = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_2,1.0/380.0).doAll(dinfo._adaptedFrame);
+      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
-      for(int i = 0; i < beta.length; ++i)
-        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
+      double [] grad_2 = lt2._gradient;
+      for(int i = 0; i < beta_1.length; ++i)
+        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
+      for(int i = 0; i < beta_1.length; ++i)
+        assertEquals(0, grad_2[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
     } finally {
       for(Vec v:betaConstraints.vecs())
         v.remove();

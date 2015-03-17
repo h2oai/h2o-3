@@ -87,16 +87,12 @@ public abstract class GLMTask  {
     final int _nSteps;
     final GLMParameters _params;
     final double _reg;
-    final double _lambda;
-    final double _alpha;
 
-    public GLMLineSearchTask(DataInfo dinfo, double alpha, double lambda, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, alpha, lambda, params, reg, beta, direction, step, nsteps, null);}
-    public GLMLineSearchTask(DataInfo dinfo, double alpha, double lamdba, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, reg, beta, direction, step, nsteps, null);}
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
       _reg = reg;
-      _alpha = alpha;
-      _lambda = lamdba;
       _beta = beta;
       _direction = direction;
       _step = step;
@@ -526,9 +522,17 @@ public abstract class GLMTask  {
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
         double eta = row.innerProduct(b);
-        double d = 1 + Math.exp(-y*eta);
-        _objVal += Math.log(d);
-        double gval = -y*(1-1.0/d);
+        double xp = -y*eta;
+        double gval;
+        if(xp > 20) {
+          _objVal += xp;
+          gval = -y;
+        } else if(xp > -20) {
+          double d = 1 + Math.exp(-y * eta);
+          _objVal += Math.log(d);
+          gval = -y*(1-1.0/d);
+        } else // gval and objval ~ 0
+          gval = 0;
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
