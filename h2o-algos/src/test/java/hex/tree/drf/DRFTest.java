@@ -181,7 +181,7 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
-            80.38636908313232
+            84.839608306093
     );
 
   }
@@ -197,7 +197,7 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            60.63686017358242
+            62.34506810852538
     );
 
   }
@@ -213,7 +213,7 @@ public class DRFTest extends TestUtil {
               }
             },
             50,
-            47.62149404858757
+            48.16452608223481
     );
 
   }
