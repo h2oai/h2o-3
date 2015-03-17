@@ -329,7 +329,6 @@ public class ConfusionMatrix extends Iced {
         table.set(a, p, confusion_matrix[a][p]);
       }
       long err = acts[a] - correct;
-      terr += err;
       table.set(a, pdomain.length, (double) err / acts[a]);
       table.set(a, pdomain.length + 1, String.format("%,d / %,d", err, acts[a]));
     }
@@ -339,7 +338,6 @@ public class ConfusionMatrix extends Iced {
       if (pdomain[p] == null) continue;
       table.set(adomain.length, p, preds[p]);
     }
-    for (long n : acts) nrows += n;
     table.set(adomain.length, pdomain.length, (float) terr / nrows);
     table.set(adomain.length, pdomain.length + 1, String.format("%,d / %,d", terr, nrows));
     return table;
