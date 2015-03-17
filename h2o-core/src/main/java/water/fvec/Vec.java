@@ -6,13 +6,13 @@ import water.parser.Categorical;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
-import water.util.Log;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
@@ -327,16 +327,20 @@ public class Vec extends Keyed<Vec> {
    * A new vector which is a copy of {@code this} one.
    * @return a copy of the vector.
    */
-  public Vec makeCopy(){
+  public Vec makeCopy(String[] domain){
     final Vec v = new Vec(group().addVec(),_espc.clone());
     new MRTask(){
       @Override public void map(Chunk c){
         Chunk c2 = (Chunk)c.clone();
+        c2._vec=null;
+        c2._start=-1;
+        c2._cidx=-1;
         c2._mem = c2._mem.clone();
         DKV.put(v.chunkKey(c.cidx()), c2, _fs);
       }
     }.doAll(this);
-    DKV.put(v._key,v);
+    v._domain = domain;
+    DKV.put(v._key, v);
     return v;
   }
 
@@ -927,6 +931,41 @@ public class Vec extends Keyed<Vec> {
     if( domain.length > Categorical.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
     return adaptTo(ArrayUtils.toString(domain));
+  }
+
+  /** Transform an Enum Vec to a Int Vec. If the domain of the Vec is stringified ints, then
+   * it will use those ints. Otherwise, it will use the raw domain mapping.
+   * If the domain is stringified ints, then all of the domain must be able to be parsed as
+   * an int. If it cannot be parsed as such, a NumberFormatException will be caught and
+   * rethrown as an IllegalArgumentException that declares the illegal domain value.
+   * Otherwise, the this pointer is copied to a new Vec whose domain is null.
+   * @return A new Vec
+   */
+  public Vec toInt() {
+    if( isInt() && _domain==null ) return this.makeCopy(null);
+    if( !isEnum()) throw new IllegalArgumentException("toInt conversion only works on Enum and Int vecs");
+    // check if the 1st lvl of the domain can be parsed as int
+    boolean useDomain=false;
+    Vec newVec;
+    try {
+      int ignored = Integer.parseInt(this._domain[0]);
+      useDomain=true;
+    } catch (NumberFormatException e) {
+      // makeCopy and return...
+    }
+    if (useDomain) {
+      newVec = this.makeCopy(null);
+      final String[] oldDomain = this._domain;
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for (int i=0;i<c._len;++i)
+            c.set(i, Integer.parseInt(oldDomain[(int)c.at8(i)]));
+        }
+      }.doAll(newVec);
+    } else {
+      newVec = this.makeCopy(null);
+    }
+    return newVec;
   }
 
   /** Make a Vec adapting this Enum vector to the 'to' Enum Vec.  The adapted

@@ -37,8 +37,8 @@ public class NodePersistentStorage {
     }
   }
 
-  public NodePersistentStorage(URI npsDirParentURI) {
-    NPS_DIR = npsDirParentURI.toString() + File.separator + "h2onps";
+  public NodePersistentStorage(URI npsDirURI) {
+    NPS_DIR = npsDirURI.toString();
   }
 
   private void validateCategoryName(String categoryName) {
@@ -71,7 +71,7 @@ public class NodePersistentStorage {
     // Create common directories
     File d = new File(NPS_DIR);
     if (! d.exists()) {
-      boolean success = d.mkdir();
+      boolean success = d.mkdirs();
       if (! success) {
         throw new RuntimeException("Could not make NodePersistentStorage directory (" + d + ")");
       }
