@@ -425,7 +425,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       switch(_link) {
         case logit:
           double div = (x * (1 - x));
-          if(div == 0) return 1e9; // avoid numerical instability
+          if(div < 1e-6) return 1e6; // avoid numerical instability
           return 1.0 / div;
         case identity:
           return 1;

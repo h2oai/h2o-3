@@ -520,17 +520,17 @@ public class GLMTest  extends TestUtil {
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
       double [] beta = model.beta();
       // todo: remove, result from h2o.1
-      beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
+     // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0).doAll(dinfo._adaptedFrame);
       GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta,1.0/380).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
-      System.out.println("objval = " + glmt._objVal);
-      System.out.println("grad.1 = " + Arrays.toString(lt._gradient));
-      System.out.println("grad.2 = " + Arrays.toString(glmt._gradient));
-      System.out.println("beta = " + Arrays.toString(beta));
       for(int i = 0; i < beta.length; ++i)
-        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-8);
+        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
     } finally {
+      for(Vec v:betaConstraints.vecs())
+        v.remove();
+      DKV.remove(betaConstraints._key);
+      betaConstraints.delete();
       for(Vec v:fr.vecs())v.remove();
       DKV.remove(fr._key);
       if(model != null)model.delete();

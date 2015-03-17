@@ -518,7 +518,6 @@ public abstract class GLMTask  {
     }
 
     @Override   protected void goByRows(Chunk [] chks){
-      Log.info("go by rows for start row = " + chks[0].start());
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
