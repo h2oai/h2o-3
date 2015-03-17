@@ -214,7 +214,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
       String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
-      if( expensive ) for( String s : msgs ) Log.info(s);
+      if( expensive ) {
+        for( String s : msgs ) {
+          Log.info(s);
+          info("_valid", s);
+        }
+      }
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }
