@@ -54,7 +54,7 @@ def is_javascript_test_file(file_name):
     Return True if file_name matches a regexp for a javascript test.  False otherwise.
     """
 
-    if (re.match("^.*tests.js$", file_name)):
+    if (re.match("^.*test.*\.js$", file_name)):
         return True
 
     return False
@@ -588,10 +588,8 @@ class Test:
                    "--args",
                    self.ip + ":" + str(self.port)]
         elif (is_javascript_test_file(self.test_name)):
-            cmd = ["node",
+            cmd = ["phantomjs",
                    self.test_name,
-                   "-s",
-                   "--usecloud",
                    self.ip + ":" + str(self.port)]
         else:
             print("")
