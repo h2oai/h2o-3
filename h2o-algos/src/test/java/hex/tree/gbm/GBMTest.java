@@ -471,10 +471,15 @@ public class GBMTest extends TestUtil {
   // Test uses big data and is too slow for a pre-push
   @Test @Ignore public void testMNIST() {
     Frame tfr=null, vfr=null;
+    Scope.enter();
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      vfr = new Frame(tfr);
+      Scope.track(tfr.replace(784, tfr.vecs()[784].toEnum())._key);   // Convert response 'C785' to categorical
+      DKV.put(tfr);
+
+      vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
+      Scope.track(vfr.replace(784, vfr.vecs()[784].toEnum())._key);   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -482,17 +487,23 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._valid = vfr._key;
       parms._response_column = "C785";
-      parms._ntrees = 100;
-      parms._max_depth = 10;
+      parms._ntrees = 2;
+      parms._max_depth = 4;
       parms._loss = Family.multinomial;
       // Build a first model; all remaining models should be equal
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
+
+      Frame pred = gbm.score(vfr);
+      double sq_err = new CompErr().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
+      double mse = sq_err/pred.numRows();
+      assertEquals(3.0199, mse, 1e-15); //same results
       job.remove();
       gbm.delete();
     } finally {
       if (tfr  != null) tfr.remove();
       if (vfr  != null) vfr.remove();
+      Scope.exit();
     }
   }
 }
