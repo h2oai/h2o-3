@@ -534,6 +534,8 @@ public class GBMTest extends TestUtil {
         parms._nbins = 1000;
         parms._ntrees = 1;
         parms._max_depth = 8;
+        parms._learn_rate = 0.1f;
+        parms._min_rows = 10;
         parms._loss = Family.gaussian;
 
         // Build a first model; all remaining models should be equal
@@ -541,10 +543,7 @@ public class GBMTest extends TestUtil {
         GBMModel gbm = job.trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
-        gbm.score(tfr);
-        hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(gbm, tfr);
-        mses[i] = mm._mse;
-
+        mses[i] = gbm._output._mse_train[gbm._output._mse_train.length-1];
         job.remove();
         gbm.delete();
       }
