@@ -16,8 +16,6 @@
 #' @param mtries Columns to randomly select at each level, or -1 for
 #'        sqrt(#cols).
 #' @param sample_rate Sample rate, from 0. to 1.0.
-#' @param do_grpsplit Check non-contiguous group splits for categorical
-#'        predictors.
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param ntrees A nonnegative integer that determines the number of trees to
@@ -39,7 +37,6 @@ h2o.randomForest <- function( x, y, training_frame, ...,
                              validation_frame,
                              mtries = -1,
                              sample_rate = 0.6666667,
-                             do_grpsplit = FALSE,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
                              max_depth = 20,
@@ -94,5 +91,5 @@ h2o.randomForest <- function( x, y, training_frame, ...,
 
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.drf.map) ) i <- .drf.map[[i]]; i })
 
- .h2o.createModel(training_frame@conn, 'gbm', parms, dots$envir)
+ .h2o.createModel(training_frame@conn, 'drf', parms, dots$envir)
 }
