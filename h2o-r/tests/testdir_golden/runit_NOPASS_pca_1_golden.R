@@ -11,14 +11,14 @@ test.pcavanilla.golden <- function(H2Oserver) {
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
   fitH2O <- h2o.prcomp(arrestsH2O, k = 4, gamma = 0, init = "PlusPlus", center = TRUE, scale. = FALSE)
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  checkPCAModel(fitH2O, fitR, tolerance = 1e-5)
   
   pcimpR <- summary(fitR)$importance
   pcimpH2O <- fitH2O@model$pc_importance
   Log.info("R Importance of Components:"); print(pcimpR)
   Log.info("H2O Importance of Components:"); print(pcimpH2O)
   Log.info("Compare Importance between R and H2O\n") 
-  expect_equal(as.matrix(pcimpH2O), pcimpR, tolerance = 1e-6)
+  expect_equal(as.matrix(pcimpH2O), pcimpR, tolerance = 1e-5)
   
   testEnd()
 }
