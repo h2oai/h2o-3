@@ -63,7 +63,9 @@ public abstract class Neurons {
   public Neurons _input;
   DeepLearningModel.DeepLearningModelInfo _minfo; //reference to shared model info
   public Matrix _w;
+  public Matrix _wConsensus;
   public DenseVector _b;
+  public DenseVector _bConsensus;
 
   /**
    * References for momentum training
@@ -266,8 +268,9 @@ public abstract class Neurons {
       if (fast_mode && previous_a == 0) continue;
 
       //this is the actual gradient dE/dw
-      final float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
       final int w = idx + col;
+      float grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
+      if (_wConsensus!=null) grad -= 0.001f*(_wConsensus.raw()[w] -_w.raw()[w]); //FIXME: Make regularization strength a parameter, also use _bConsensus
 
       if (have_ada) {
         assert(!have_momenta);

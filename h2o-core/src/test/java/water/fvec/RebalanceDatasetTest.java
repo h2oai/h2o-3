@@ -10,15 +10,15 @@ import water.util.Log;
 
 /** Created by tomasnykodym on 4/1/14. */
 public class RebalanceDatasetTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(10); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
   @Test public void testProstate(){
     Key rebalancedKey = Key.make("rebalanced");
-    int [] trials = { 80 };
+    int [] trials = { 380, 1, 3, 8, 12, 256, 16, 32, 64, 11, 13 };
     for (int k=0; k<trials.length; ++k) {
       int i = trials[k];
       Frame fr = null, rebalanced = null;
       try {
-        NFSFileVec nfs = NFSFileVec.make(find_test_file("bigdata/laptop/mnist/train.csv.gz"));
+        NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));
         fr = ParseDataset.parse(Key.make(), nfs._key);
         RebalanceDataSet rb = new RebalanceDataSet(fr, rebalancedKey, i);
         H2O.submitTask(rb);

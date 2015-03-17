@@ -960,7 +960,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   // This describes the model, together with the parameters
   // This will be shared: one per node
   public static class DeepLearningModelInfo extends Iced {
-
+    public Key myModelInfoKey(H2ONode node) { return Key.make(get_params()._destination_key + ".node." + node._key); }
     public TwoDimTable summaryTable;
     private DataInfo data_info;
     public DataInfo data_info() { return data_info; }
@@ -1742,8 +1742,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             //  final Frame bestPredict = bestModel.score(fr);
             //  final Frame hitRatio_bestPredict = new Frame(bestPredict);
             //  final double err3 = calcError(fr, fr.lastVec(), bestPredict, hitRatio_bestPredict, "cross-check",
-            //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _output.isClassifier() && _output.nclasses() == 2 ? new AUC(null,null) : null, null);
-            //  if (_output.isClassifier())
+            //    printme, get_params()._max_confusion_matrix_size, new hex.ConfusionMatrix2(), _mymodel.isClassifier() && _mymodel.nclasses() == 2 ? new AUC(null,null) : null, null);
+            //  if (_mymodel.isClassifier())
             //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
             //  else
             //    assert (ftest != null ? Math.abs(err.valid_mse - err3) < 1e-5 : Math.abs(err.train_mse - err3) < 1e-5);
@@ -1865,7 +1865,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data);
-    DeepLearningTask.step(-1, neurons, model_info, false, null);
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null);
     float[] out = neurons[neurons.length - 1]._a.raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
@@ -1973,7 +1973,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp);
-          DeepLearningTask.step(-1, neurons, model_info, false, null);
+          DeepLearningTask.step(-1, neurons, model_info, null, false, null);
           float[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
@@ -2013,7 +2013,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data); // expands categoricals inside
-    DeepLearningTask.step(-1, neurons, model_info, false, null); // reconstructs data in expanded space
+    DeepLearningTask.step(-1, neurons, model_info, null, false, null); // reconstructs data in expanded space
     float[] in  = neurons[0]._a.raw(); //input (expanded)
     float[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
     assert(in.length == out.length);
@@ -2074,6 +2074,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
     }
     super.delete();
+    for (H2ONode node : H2O.CLOUD._memary) {
+      DKV.remove(model_info().myModelInfoKey(node));
+    }
   }
 
   void delete_xval_models( ) {

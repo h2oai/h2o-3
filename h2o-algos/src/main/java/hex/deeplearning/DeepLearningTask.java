@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.DataInfo;
 import hex.FrameTask;
+import water.DKV;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Key;
@@ -12,36 +13,47 @@ import java.util.Random;
 
 public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
-  private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _input;
-  hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _output;
-  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _output; }
+  private hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _sharedmodel; //"consensus" model
+  hex.deeplearning.DeepLearningModel.DeepLearningModelInfo _mymodel; //my workspace
+  final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _mymodel; }
 
   transient Neurons[] _neurons;
 
   int _chunk_node_count = 1;
+  boolean consensusADMM = true;
 
-  public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction){this(jobKey, input,fraction,null);}
-  private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo input, float fraction, H2OCountedCompleter cmp){
-    super(jobKey,input.data_info(),cmp);
+  public DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo sharedModel, float fraction){this(jobKey, sharedModel,fraction,null);}
+  private DeepLearningTask(Key jobKey, hex.deeplearning.DeepLearningModel.DeepLearningModelInfo sharedModel, float fraction, H2OCountedCompleter cmp){
+    super(jobKey, sharedModel.data_info(),cmp);
     _training=true;
-    _input=input;
+    _sharedmodel = sharedModel;
     _useFraction=fraction;
-    _shuffle = _input.get_params()._shuffle_training_data;
-    assert(_output == null);
+    _shuffle = _sharedmodel.get_params()._shuffle_training_data;
+    assert(_mymodel == null);
   }
 
   // transfer ownership from input to output (which will be worked on)
   @Override protected void setupLocal(){
     super.setupLocal();
-    _output = _input; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
-    _input = null;
-    _output.set_processed_local(0l);
+    if (consensusADMM) {
+//      Log.info("Loading my local model checkpoint.");
+      if (DKV.get(_sharedmodel.myModelInfoKey(H2O.SELF)) != null) {
+        _mymodel = DKV.getGet(_sharedmodel.myModelInfoKey(H2O.SELF));
+      } else {
+//        Log.info("Starting with global initial model.");
+        _mymodel = _sharedmodel; //first time
+      }
+    } else {
+      _mymodel = _sharedmodel; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
+      _sharedmodel = null;
+    }
+//    _mymodel.set_processed_local(0l);
   }
 
   // create local workspace (neurons)
   // and link them to shared weights
   @Override protected void chunkInit(){
-    _neurons = makeNeuronsForTraining(_output);
+    _neurons = makeNeuronsForTraining(_mymodel);
   }
 
   @Override public final void processRow(long seed, DataInfo.Row r){
@@ -52,34 +64,52 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       seed = new Random().nextLong();
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _output, _training, r.response);
+    step(seed, _neurons, _mymodel, _sharedmodel, _training, r.response);
   }
 
   @Override protected void chunkDone(long n) {
-    if (_training) _output.add_processed_local(n);
+    if (_training) {
+//      Log.info("Chunk done. Updating local model.");
+      _mymodel.add_processed_local(n);
+    }
   }
 
+  @Override
+  protected void postLocal() {
+    if (consensusADMM) {
+//      Log.info("Storing my local model checkpoint.");
+      DKV.put(_sharedmodel.myModelInfoKey(H2O.SELF), _mymodel);
+//      Log.info("Getting my local model ready for reduction.");
+//      assert(_output == null);
+      _sharedmodel = _mymodel.deep_clone(); //no longer need _sharedmodel for training, use it send back
+    } else {
+      _sharedmodel = _mymodel;
+    }
+    super.postLocal();
+  }
+
+
   @Override public void reduce(DeepLearningTask other){
-    if (other._output.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
-            && other._output != _output) //other NNTask worked on a different model_info
+    if (_sharedmodel != null && other._sharedmodel != null && other._sharedmodel.get_processed_local() > 0 //other NNTask was active (its model_info should be used for averaging)
+            && other._sharedmodel != _sharedmodel) //other NNTask worked on a different model_info
     {
       // avoid adding remote model info to unprocessed local data, still random
       // (this can happen if we have no chunks on the master node)
-      if (_output.get_processed_local() == 0) {
-        _output = other._output;
+      if (_sharedmodel.get_processed_local() == 0) {
+        _sharedmodel = other._sharedmodel;
         _chunk_node_count = other._chunk_node_count;
       } else {
-        _output.add(other._output);
+        _sharedmodel.add(other._sharedmodel);
         _chunk_node_count += other._chunk_node_count;
       }
+      if (other._sharedmodel.unstable()) _sharedmodel.set_unstable();
     }
-    if (other._output.unstable()) _output.set_unstable();
   }
 
   static long _lastWarn;
   static long _warnCount;
   @Override protected void postGlobal(){
-    if (H2O.CLOUD.size() > 1 && !_output.get_params()._replicate_training_data) {
+    if (H2O.CLOUD.size() > 1 && !_mymodel.get_params()._replicate_training_data) {
       long now = System.currentTimeMillis();
       if (_chunk_node_count < H2O.CLOUD.size() && (now - _lastWarn > 5000) && _warnCount < 3) {
 //        Log.info("Synchronizing across " + _chunk_node_count + " H2O node(s).");
@@ -89,12 +119,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         _warnCount++;
       }
     }
-    if (!_output.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) {
-      _output.div(_chunk_node_count);
-      _output.add_processed_global(_output.get_processed_local());
-      _output.set_processed_local(0l);
+    if (_sharedmodel!=null && (!_sharedmodel.get_params()._replicate_training_data || H2O.CLOUD.size() == 1) ) {
+      _sharedmodel.div(_chunk_node_count);
+      _sharedmodel.add_processed_global(_sharedmodel.get_processed_local());
+      _sharedmodel.set_processed_local(0l);
     }
-    assert(_input == null);
   }
 
   public static Neurons[] makeNeuronsForTraining(final DeepLearningModel.DeepLearningModelInfo minfo) {
@@ -156,7 +185,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   // forward/backward propagation
   // assumption: layer 0 has _a filled with (horizontalized categoricals) double values
-  public static void step(long seed, Neurons[] neurons, DeepLearningModel.DeepLearningModelInfo minfo, boolean training, double[] responses) {
+  public static void step(long seed, Neurons[] neurons, DeepLearningModel.DeepLearningModelInfo minfo,
+                          DeepLearningModel.DeepLearningModelInfo consensus_minfo, boolean training, double[] responses) {
     try {
       for (int i=1; i<neurons.length-1; ++i) {
         neurons[i].fprop(seed, training);
@@ -169,6 +199,12 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
           }
         }
       } else {
+        if (consensus_minfo != null) {
+          for (int i = 1; i < neurons.length; i++) {
+            neurons[i]._wConsensus = consensus_minfo.get_weights(i - 1);
+            neurons[i]._bConsensus = consensus_minfo.get_biases(i - 1);
+          }
+        }
         if (minfo._classification) {
           ((Neurons.Softmax) neurons[neurons.length - 1]).fprop();
           if (training) {
