@@ -16,7 +16,9 @@ test.kmstand.golden <- function(H2Oserver) {
   fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], standardize = TRUE)
   
   Log.info("R Final Clusters:"); print(fitR$centers)
+  Log.info("H2O Final Clusters:"); print(fitH2O@model$centers_std)
   Log.info("H2O Final Clusters (de-standardized):"); print(fitH2O@model$centers)
+  expect_equivalent(as.matrix(fitH2O@model$centers_std), fitR$centers)
   
   # De-standardize R final clusters for comparison with H2O
   avg <- apply(ozoneR, 2, mean)
@@ -44,14 +46,7 @@ test.kmstand.golden <- function(H2Oserver) {
   expect_equal(btwssH2O, btwssR, tolerance = 0.01)
   
   Log.info("Compare Predicted Classes between R and H2O\n")
-  # Need to compute distance of original data from de-standardized centers
-  # R's fitted method computes distance of standardized data from standardized centers
-  # classR <- fitted(fitR, method = "classes")
-  clusters <- function(x, centers) {
-    tmp <- sapply(seq_len(nrow(x)), function(i) apply(centers, 1, function(v) sum((x[i, ]-v)^2)))
-    max.col(-t(tmp))  # find index of min distance
-  }
-  classR <- clusters(ozoneR, fitR_centstd)
+  classR <- fitted(fitR, method = "classes")
   classH2O <- as.matrix(predict(fitH2O, ozoneH2O))
   expect_equivalent(as.numeric(as.matrix(classH2O))+1, classR)   # H2O indexes from 0, but R indexes from 1
   

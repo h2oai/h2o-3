@@ -119,10 +119,13 @@ public abstract class GenModel {
   // KMeans utilities
   // For KMeansModel scoring; just the closest cluster center
   public static int KMeans_closest(double[][] centers, double[] point, int ncats) {
+    return KMeans_closest(centers, point, ncats, new double[point.length], null);
+  }
+  public static int KMeans_closest(double[][] centers, double[] point, int ncats, double[] means, double[] mults) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = KMeans_distance(centers[cluster],point,ncats);
+      double sqr = KMeans_distance(centers[cluster],point,ncats,means,mults);
       if( sqr < minSqr ) {      // Record nearest cluster center
         min = cluster;
         minSqr = sqr;
@@ -132,6 +135,9 @@ public abstract class GenModel {
   }
 
   public static double KMeans_distance(double[] center, double[] point, int ncats) {
+    return KMeans_distance(center, point, ncats, new double[point.length], null);
+  }
+  public static double KMeans_distance(double[] center, double[] point, int ncats, double[] means, double[] mults) {
     double sqr = 0;             // Sum of dimensional distances
     int pts = point.length;     // Count of valid points
 
@@ -147,6 +153,10 @@ public abstract class GenModel {
       double d = point[column];
       if( Double.isNaN(d) ) pts--; // Do not count
       else {
+        if( mults != null ) {
+          d -= means[column];
+          d *= mults[column];
+        }
         double delta = d - center[column];
         sqr += delta * delta;
       }
