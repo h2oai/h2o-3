@@ -1,12 +1,13 @@
 package hex.tree.drf;
 
 
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import org.junit.*;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import static org.junit.Assert.assertEquals;
+import water.*;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -345,6 +346,58 @@ public class DRFTest extends TestUtil {
       if( test != null ) test.delete();
       if( res != null ) res.delete();
       Scope.exit();
+    }
+  }
+
+  // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  @Test public void testChunkReprodubility() {
+    Frame tfr=null, vfr=null;
+    final int N = 5;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+
+      // rebalance to 256 chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+
+      for (int i=0; i<N; ++i) {
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "C55";
+        parms._nbins = 1000;
+        parms._ntrees = 1;
+        parms._max_depth = 8;
+        parms._mtries = -1;
+        parms._min_rows = 10;
+        parms._seed = 1234;
+
+        // Build a first model; all remaining models should be equal
+        DRF job = new DRF(parms);
+        DRFModel drf = job.trainModel().get();
+        assertEquals(drf._output._ntrees, parms._ntrees);
+
+        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        job.remove();
+        drf.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(mses[i], mses[0], 1e-15);
     }
   }
 }
