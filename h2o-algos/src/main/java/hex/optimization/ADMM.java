@@ -27,16 +27,11 @@ public class ADMM {
     int iter;
     final double _eps;
     final int max_iter;
-    final double [] _ub;
-    final double [] _lb;
 
     public L1Solver(){this(1e-4,5000);}
     public L1Solver(double eps){this(eps,5000);}
-    public L1Solver(double eps, int max_iter){this(eps, max_iter, null, null);}
-    public L1Solver(double eps, int max_iter, double [] lb, double [] ub) {
+    public L1Solver(double eps, int max_iter) {
       _eps = eps; this.max_iter = max_iter;
-      _lb = lb;
-      _ub = ub;
     }
 
     public boolean solve(ProximalSolver solver, double[] res, double lambda) {
@@ -75,6 +70,7 @@ public class ADMM {
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
+
       double[] u = MemoryManager.malloc8d(N);
       double[] x = MemoryManager.malloc8d(N);
       double[] beta_given = MemoryManager.malloc8d(N);
@@ -95,6 +91,10 @@ public class ADMM {
           double zjold = z[j];
           double x_hat = xj * orlx + (1 - orlx) * zjold;
           double zj = shrinkage(x_hat + u[j], kappa[j]);
+          if (lb != null && zj < lb[j])
+            zj = lb[j];
+          if (ub != null && zj > ub[j])
+            zj = ub[j];
           u[j] += x_hat - zj;
           beta_given[j] = zj - u[j];
           double r = xj - zj;
@@ -103,22 +103,17 @@ public class ADMM {
           snorm += s * s;
           xnorm += xj * xj;
           unorm += rho[j] * rho[j] * u[j] * u[j];
-          if (_lb != null && zj < _lb[j])
-            zj = _lb[j];
-          if (_ub != null && zj > _ub[j])
-            zj = _ub[j];
           z[j] = zj;
         }
-        if (hasIntercept) {
+        if (hasIntercept) { // TODO update unorm and so on
           int idx = x.length - 1;
           double icpt = x[idx];
-          if (_lb != null && icpt < _lb[idx])
-            icpt = _lb[idx];
-          if (_ub != null && icpt < _ub[idx])
-            icpt = _ub[idx];
+          if (lb != null && icpt < lb[idx])
+            icpt = lb[idx];
+          if (ub != null && icpt > ub[idx])
+            icpt = ub[idx];
           z[idx] = icpt;
         }
-
         if (solver.hasGradient() || rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z), lambda, lb, ub);

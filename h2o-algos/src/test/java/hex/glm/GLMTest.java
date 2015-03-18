@@ -8,6 +8,7 @@ import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
 import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -21,6 +22,7 @@ import hex.utils.MSETsk;
 import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
@@ -28,6 +30,7 @@ import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
@@ -476,6 +479,61 @@ public class GLMTest  extends TestUtil {
 //  }
 
 
+  @Test public void testBounds() {
+//    glmnet's result:
+//    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
+//    res2$beta[,58]
+//    AGE        RACE          DPROS       PSA         VOL         GLEASON
+//    -0.00616326 -0.50000000  0.50000000  0.03628192 -0.01249324  0.50000000 //    res2$a0[100]
+//    res2$a0[58]
+//    s57
+//    -4.155864
+//    lambda = 0.001108, null dev =  512.2888, res dev = 379.7597
+    GLMModel model = null;
+
+    Key parsed = Key.make("prostate_parsed");
+    Key modelKey = Key.make("prostate_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Key betaConsKey = Key.make("beta_constraints");
+
+    String[] cfs1 = new String[]{"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON", "Intercept"};
+    double[] vals = new double[]{-0.006502588, -0.500000000,  0.500000000,  0.400000000,  0.034826559, -0.011661747,  0.500000000, -4.564024 };
+
+//    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
+    FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._beta_constraint = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._alpha = new double[]{1};
+      params._lambda = new double[]{0.001607};
+      GLM job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      System.out.println("coefs = " + model.coefficients());
+      System.out.println("beta = " + Arrays.toString(model.beta()));
+      Map<String, Double> coefs =  model.coefficients();
+      for (int i = 0; i < cfs1.length; ++i)
+        assertEquals(vals[i], coefs.get(cfs1[i]), 1e-2);
+      GLMValidation val = model.validation();
+      assertEquals(512.2888, val.nullDeviance(), 1e-1);
+      assertEquals(388.4686, val.residualDeviance(),1e-1);
+    } finally {
+      fr.delete();
+      betaConstraints.delete();
+      if(model != null)model.delete();
+    }
+  }
+
 
 
   @Test public void testProximal() {
@@ -546,7 +604,6 @@ public class GLMTest  extends TestUtil {
       for(Vec v:betaConstraints.vecs())
         v.remove();
       DKV.remove(betaConstraints._key);
-      betaConstraints.delete();
       for(Vec v:fr.vecs())v.remove();
       DKV.remove(fr._key);
       if(model != null)model.delete();
@@ -633,7 +690,7 @@ public class GLMTest  extends TestUtil {
       }
       assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
       assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
-      assertEquals(val1.aic(), val2.aic(),1e-4);
+      assertEquals(val1.aic(), val2.aic(),1e-2);
       // compare result against glmnet
       assertEquals(5336.918,val1.residualDeviance(),1);
       assertEquals(6051.613,val1.nullDeviance(),1);
