@@ -404,7 +404,6 @@ public class DRFTest extends TestUtil {
   }
 
   // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
-  @Ignore
   @Test public void testReprodubilityAirline() {
     Frame tfr=null, vfr=null;
     final int N = 1;
@@ -463,7 +462,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2273639898, mses[i], 1e-9); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.2273639898, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 }
