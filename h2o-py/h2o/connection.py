@@ -368,8 +368,19 @@ class H2OConnection(object):
     elapsed_time_seconds = end_time_seconds - begin_time_seconds
     elapsed_time_millis = elapsed_time_seconds * 1000
     if not http_result.ok:
-      raise EnvironmentError("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {})"
-                             .format(http_result.status_code,http_result.reason,method,url))
+      detailed_error_msgs = []
+      try:
+        result = http_result.json()
+        if 'validation_messages' in result.keys():
+          detailed_error_msgs = '\n'.join([m['message'] for m in result['validation_messages'] if m['message_type'] in \
+                                          ['ERROR']])
+        elif 'exception_msg' in result.keys():
+          detailed_error_msgs = result['exception_msg']
+      except ValueError:
+        pass
+      raise EnvironmentError(("h2o-py got an unexpected HTTP status code:\n {} {} (method = {}; url = {}). \n"+ \
+                              "detailed error messages: {}")
+                             .format(http_result.status_code,http_result.reason,method,url,detailed_error_msgs))
 
     # TODO: is.logging? -> write to logs
     # print "Time to perform REST call (millis): " + str(elapsed_time_millis)

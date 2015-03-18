@@ -370,7 +370,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression
                 float  treePred = rpred[1];
-                float  actuPred = (float) y.atd(row);
+                double actuPred = y.atd(row);
                 sse += (actuPred-treePred)*(actuPred-treePred);
               }
               allRows++;
@@ -484,7 +484,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
-    float sum = 0;
+    double sum = 0;
     if (_nclass > 1) { //classification
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = (float) chk_tree(chks, k).atd(row));
@@ -493,7 +493,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       sum += (fs[0] = (float) chk_tree(chks, 0).atd(row) / (float)chk_oobt(chks).atd(row) );
       fs[1] = 0;
     }
-    return sum;
+    return (float)sum;
   }
 
 

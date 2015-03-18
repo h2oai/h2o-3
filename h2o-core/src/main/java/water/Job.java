@@ -178,10 +178,10 @@ public class Job<T extends Keyed> extends Keyed {
   /** Blocks and get result of this job.
    * <p>
    * This call blocks on working task which was passed via {@link #start}
-   * method and returns the result which is fetched from UKV based on job
+   * method and returns the result which is fetched from DKV based on job
    * destination key.
    * </p>
-   * @return result of this job fetched from UKV by destination key.
+   * @return result of this job fetched from DKV by destination key.
    * @see #start
    * @see DKV
    */

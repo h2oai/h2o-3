@@ -128,9 +128,27 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
 
 #' Inserting Missing Values to an H2O DataFrame
 #'
+#' Randomly replaces a user-specified fraction of entries in a H2O dataset with
+#' missing values.
+#'
+#' @param data An \linkS4class{H2OFrame} object representing the dataset.
+#' @param fraction A number between 0 and 1 indicating the fraction of entries
+#'        to replace with missing.
+#' @param seed A random number used to select which entries to replace with
+#'        missing values. Default of \code{seed = -1} will automatically
+#'        generate a seed in H2O.
 #' @section WARNING: This will modify the original dataset. Unless this is intended,
 #' this function should only be called on a subset of the original.
-h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
+#' @examples
+#' library(h2o)
+#' localH2O <- h2o.init()
+#' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex <- h2o.importFile(localH2O, path = irisPath)
+#' summary(iris.hex)
+#' irismiss.hex <- h2o.insertMissingValues(iris.hex[,1:4], fraction = 0.25)
+#' head(irismiss.hex)
+#' summary(irismiss.hex)
+h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(data)
   if (delete) {
@@ -146,7 +164,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
     parms$seed <- seed
 
   json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
-  # .h2o.__waitOnJob(data@conn, json$key$name)
+  .h2o.__waitOnJob(data@conn, json$key$name)
   # TODO: uncomment once job key progress is functional
   res <- json$dataset$name
 
@@ -155,11 +173,31 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed) {
   h2o.getFrame(res)
 }
 
+#' Split an H2O Data Set
+#'
+#' Split an existing H2O data set according to user-specified ratios.
+#'
+#' @param data An \linkS4class{H2OFrame} object representing the dataste to split.
+#' @param ratios A numeric value or array indicating the ratio of total rows
+#'        contained in each split. Must total up to less than 1.
+#' @param destination_keys An array of string keys equal to the number of ratios
+#'        specified plus one.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' irisPath = system.file("extdata", "iris.csv", package = "h2o")
+#' iris.hex = h2o.importFile(localH2O, path = irisPath)
+#' iris.split = h2o.splitFrame(iris.hex, ratios = c(0.2, 0.5))
+#' head(iris.split[[1]])
+#' summary(iris.split[[1]])
 h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
-  # if(!is.numeric(ratios) || length(ratios) == 0L || any(!is.finite(ratios) | ratios < 0 | ratios > 1))
-  #   stop("`ratios` must be between 0 and 1 exclusive")
-  # if(sum(ratios) >= 1) stop("sum of ratios must be strictly less than 1")
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(data)
+  if (delete) {
+    temp_key <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
+  }
 
   params <- list()
   params$dataset <- data@key
@@ -168,26 +206,14 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
     params$destKeys <- .collapse(destination_keys)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
-  # .h2o.__waitOnJob(data@conn, res$key$name)
+  .h2o.__waitOnJob(data@conn, res$key$name)
 
   splitKeys <- res$dest_keys
   splits <- list()
   splits <- lapply(splitKeys, function(split) h2o.getFrame(split$name))
 
-
-  # if (missing(destination_keys))
-  #   splits <- lapply(0:length(ratios), function(x) {
-  #     name <- paste0(data@key, "_part", x)
-  #     h2o.getFrame(name, conn)
-  #   }) else
-  #   splits <- lapply(destination_keys, function(x) { h2o.getFrame(x, conn) })
-
-  # splits
-  # model.view <- .h2o.__remoteSend(data@conn, method="GET", paste0(.h2o.__MODELS, "/", res$job$dest$name))
-  # splits <- lapply(model.view$models[[1L]]$output$splits,
-  #                  function(l) h2o.getFrame(l$`_key`$name, data@conn, linkToGC = TRUE))
-  # names(splits) <- paste0("split_", c(ratios, 1 - sum(ratios)))
-  # splits
+  if(delete)
+    h2o.rm(temp_key)
 }
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {
@@ -1262,6 +1288,23 @@ h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
   .h2o.nary_frame_op("cbind", ...)
+}
+
+#' Set a Factor Column to Level
+#'
+#' Sets the factor column to the level specified.
+#'
+#' @name h2o.setLevel
+NULL
+
+h2o.setLevel <- function(x, level) {
+  if( missing(level) ) stop("`level` is missing")
+  if( !is.character(level) ) stop("`level` must be a character")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, key=x@key)
+  }
+  .h2o.nary_frame_op("setLevel", x, level)
 }
 
 #' Combine H2O Datasets by Rows

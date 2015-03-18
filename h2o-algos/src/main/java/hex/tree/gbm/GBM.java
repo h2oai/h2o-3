@@ -493,10 +493,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fs[2] = 1.0f/fs[1]; // exp(-d) === 1/exp(d)
       return fs[1]+fs[2];
     }
-    float sum=0;
+    double sum=0;
     for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
       sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).atd(row)));
-    return sum;
+    return (float)sum;
   }
 
 }

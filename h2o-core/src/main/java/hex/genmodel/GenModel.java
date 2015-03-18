@@ -118,11 +118,11 @@ public abstract class GenModel {
   // --------------------------------------------------------------------------
   // KMeans utilities
   // For KMeansModel scoring; just the closest cluster center
-  public static int KMeans_closest(double[][] centers, double[] point, int ncats) {
+  public static int KMeans_closest(double[][] centers, double[] point, String[][] domains, double[] means, double[] mults) {
     int min = -1;
     double minSqr = Double.MAX_VALUE;
     for( int cluster = 0; cluster < centers.length; cluster++ ) {
-      double sqr = KMeans_distance(centers[cluster],point,ncats);
+      double sqr = KMeans_distance(centers[cluster],point,domains,means,mults);
       if( sqr < minSqr ) {      // Record nearest cluster center
         min = cluster;
         minSqr = sqr;
@@ -131,22 +131,21 @@ public abstract class GenModel {
     return min;
   }
 
-  public static double KMeans_distance(double[] center, double[] point, int ncats) {
+  public static double KMeans_distance(double[] center, double[] point, String[][] domains, double[] means, double[] mults) {
     double sqr = 0;             // Sum of dimensional distances
     int pts = point.length;     // Count of valid points
 
-    // Categorical columns first.  Only equals/unequals matters (i.e., distance is either 0 or 1).
-    for(int column = 0; column < ncats; column++) {
-        double d = point[column];
-      if( Double.isNaN(d) ) pts--;
-      else if( d != center[column] )
-        sqr += 1.0;           // Manhattan distance
-    }
-    // Numeric column distance
-    for( int column = ncats; column < center.length; column++ ) {
+    for(int column = 0; column < center.length; column++) {
       double d = point[column];
-      if( Double.isNaN(d) ) pts--; // Do not count
-      else {
+      if( Double.isNaN(d) ) { pts--; continue; }
+      if( domains[column] != null ) { // Categorical?
+        if( d != center[column] )
+          sqr += 1.0;           // Manhattan distance
+      } else {                  // Euclidean distance
+        if( mults != null ) {   // Standardize if requested
+          d -= means[column];
+          d *= mults[column];
+        }
         double delta = d - center[column];
         sqr += delta * delta;
       }
