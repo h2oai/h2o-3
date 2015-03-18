@@ -327,7 +327,7 @@ h2o.performance <- function(model, data=NULL) {
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.giniCoef}} for the GINI coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
-#'          various threshold metrics. See \code{\link{h2o.perfomrance}} for
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
 pros <-
 h2o.auc <- function(object) {
@@ -344,7 +344,7 @@ h2o.auc <- function(object) {
 #' @param object an \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
-#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #'          threshold metrics.
 h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
@@ -359,7 +359,7 @@ h2o.giniCoef <- function(object) {
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
 #'          \code{\link{h2o.metric}} for the various threshold metrics. See
-#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$mse
@@ -387,7 +387,7 @@ h2o.mse <- function(object) {
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
 #'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
-#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
