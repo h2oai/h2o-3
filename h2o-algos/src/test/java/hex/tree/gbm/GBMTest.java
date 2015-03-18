@@ -7,7 +7,6 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
 import water.util.Log;
 
 import static org.junit.Assert.assertEquals;
@@ -562,4 +561,66 @@ public class GBMTest extends TestUtil {
       assertEquals(mses[i], mses[0], 1e-15);
     }
   }
+
+  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
+  @Test public void testReprodubilityAirline() {
+    Frame tfr=null, vfr=null;
+    final int N = 1;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+
+      // rebalance to fixed number of chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
+      for (String s : new String[]{
+          "DepTime", "ArrTime", "ActualElapsedTime",
+          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+          "CancellationCode", "CarrierDelay", "WeatherDelay",
+          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      for (int i=0; i<N; ++i) {
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "IsDepDelayed";
+        parms._nbins = 10;
+        parms._ntrees = 7;
+        parms._max_depth = 10;
+        parms._min_rows = 1;
+        parms._loss = Family.bernoulli;
+
+        // Build a first model; all remaining models should be equal
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        assertEquals(gbm._output._ntrees, parms._ntrees);
+
+        mses[i] = gbm._output._mse_train[gbm._output._mse_train.length-1];
+        job.remove();
+        gbm.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(0.20431793792, mses[i], 1e-9); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+    }
+  }
+
 }
