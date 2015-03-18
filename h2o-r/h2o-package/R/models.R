@@ -327,7 +327,9 @@ h2o.performance <- function(model, data=NULL) {
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.giniCoef}} for the GINI coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
-#'          various threshold metrics.
+#'          various threshold metrics. See \code{\link{h2o.perfomrance}} for
+#'          creating H2OModelMetrics objects.
+pros <-
 h2o.auc <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
@@ -341,7 +343,8 @@ h2o.auc <- function(object) {
 #'
 #' @param object an \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
-#'          GINI coefficient, and \code{\link{h2o.metric}} for the various
+#'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
+#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
 #'          threshold metrics.
 h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
@@ -355,7 +358,8 @@ h2o.giniCoef <- function(object) {
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
-#'          \code{\link{h2o.metric}} for the various threshold metrics.
+#'          \code{\link{h2o.metric}} for the various threshold metrics. See
+#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$mse
@@ -374,12 +378,16 @@ h2o.mse <- function(object) {
 #' return all possible values. Otherwise, the function will return the value for
 #' the indicated threshold.
 #'
+#' Currently, the these functions are only supported by
+#' \linkS4class{H2OBinomialMetrics} objects.
+#'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @param thresholds A value between 0.0 and 1.0.
 #' @param metric A specified paramter to retrieve.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
-#'          GINI coefficient, and \code{\link{h2o.mse}} for MSE.
+#'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
+#'          \code{\link{h2o.perfomrance}} for creating H2OModelMetrics objects.
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
