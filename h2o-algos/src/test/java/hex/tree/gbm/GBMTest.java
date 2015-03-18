@@ -619,7 +619,7 @@ public class GBMTest extends TestUtil {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20431793792, mses[i], 1e-9); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.20431793792, mses[i], 1e-6); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
     }
   }
 
