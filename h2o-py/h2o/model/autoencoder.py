@@ -6,12 +6,12 @@ from model_base import *
 
 class H2OAutoEncoderModel(ModelBase):
   """
-  Class for Binomial models.  
+  Class for Binomial models.
   """
   def __init__(self, dest_key, model_json):
     super(H2OAutoEncoderModel, self).__init__(dest_key, model_json,H2OAutoEncoderModelMetrics)
 
-  def anomaly
+  def anomaly:
   """
   Return the reconstruction error for an AutoEncoder models
   """
