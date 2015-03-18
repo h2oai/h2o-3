@@ -58,13 +58,24 @@ function(seed = NULL, suppress = FALSE, userDefined=FALSE) {
 cleanSummary <- function(mysum, alphabetical = FALSE) {
   # Returns string without leading or trailing whitespace
   trim <- function(x) { gsub("^\\s+|\\s+$", "", x) }
+  
   lapply(1:ncol(mysum), { 
     function(i) {
       nams <- sapply(mysum[,i], function(x) { trim(unlist(strsplit(x, ":"))[1]) })
-      vals <- sapply(mysum[,i], function(x) { as.numeric(unlist(strsplit(x, ":"))[2]) })
-      
+      vals <- sapply(mysum[,i], function(x) {
+        numMatch <- sum(unlist(strsplit(x, "")) == ":")
+        # If only one colon, then it contains numeric data
+        # WARNING: This assumes categorical levels don't contain colons
+        if(numMatch == 1)
+          as.numeric(unlist(strsplit(x, ":"))[2])
+        # Otherwise, return a string for min/max/quantile
+        else {
+          tmp <- unlist(strsplit(as.character(x), ":"))[-1]
+          paste(tmp, collapse = ":")
+        }
+      })
       names(vals) <- nams
-      vals <- vals[!is.na(vals)]
+      # vals <- vals[!is.na(vals)]
       if(alphabetical) vals <- vals[order(names(vals))]
       return(vals)
     }
