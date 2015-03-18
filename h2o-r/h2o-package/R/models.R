@@ -92,8 +92,8 @@
 
 
 .h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, envir) {
-  .key.validate(params$key)  
-  #---------- Force evaluate temporary ASTs ----------#  
+  .key.validate(params$key)
+  #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
   params <- lapply(as.list(params), function(i) {
@@ -132,7 +132,7 @@
         k = which(params[[i$name]] == Inf | params[[i$name]] == -Inf)
         if (length(k) > 0)
           for (n in k)
-            if (params[[i$name]][n] == Inf) 
+            if (params[[i$name]][n] == Inf)
               params[[i$name]][n] <<- "Infinity"
             else
               params[[i$name]][n] <<- "-Infinity"
@@ -177,11 +177,11 @@
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
   job_key  <- res$job[[1L]]$key$name
   dest_key <- res$jobs[[1L]]$dest$name
-  
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
+
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) { 
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
  params$training_frame <- get("training_frame", parent.frame())
  delete_train <- !.is.eval(params$training_frame)
  if (delete_train) {
@@ -196,13 +196,13 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))      
+  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
   if (delete_train)
     h2o.rm(temp_train_key)
   if (!is.null(params$validation_frame))
     if (delete_valid)
-      h2o.rm(temp_valid_key)  
-  m 
+      h2o.rm(temp_valid_key)
+  m
 }
 
 predict.H2OModel <- function(object, newdata, ...) {
@@ -224,14 +224,14 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 {
   output <- data.frame()
   dots <- list(...)
-  
+
   for(type in dots)
     if (is.environment(type))
     {
       dots$envir <- type
       type <- NULL
     }
-  if (is.null(dots$envir)) 
+  if (is.null(dots$envir))
     dots$envir <- parent.frame()
 #   params$envir <- l$envir
 
@@ -242,13 +242,13 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
     if(model.type == "gbm") model.type = "h2o.gbm"
     else if(model.type == "glm") model.type = "h2o.glm"
     else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
-    
+
     model <- do.call(model.type, c(params, envir = dots$envir))
   }
   output[1, "fold_num"] <- -1
   output[1, "model_key"] <- model@key
   # output[1, "model"] <- model@model$mse_valid
-  
+
   data <- params$training_frame
   data <- eval(data, dots$envir)
   data.len <- nrow(data)
@@ -269,7 +269,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
       fold
     })
   print(output)
-  
+
   model
 }
 
@@ -322,6 +322,12 @@ h2o.performance <- function(model, data=NULL) {
       metrics   = metrics)
 }
 
+#' Retrieve an H2O AUC metric
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @seealso \code{\link{h2o.giniCoef}} for the GINI coefficient,
+#'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics.
 h2o.auc <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
@@ -331,6 +337,12 @@ h2o.auc <- function(object) {
   }
 }
 
+#' Retrieve the GINI Coeficcient
+#'
+#' @param object an \linkS4class{H2OBinomialMetrics} object.
+#' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
+#'          GINI coefficient, and \code{\link{h2o.metric}} for the various
+#'          threshold metrics.
 h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$Gini
@@ -339,7 +351,11 @@ h2o.giniCoef <- function(object) {
     stop(paste0("No Gini for ",class(object)))
   }
 }
-
+#' Retrieves Mean Squared Error Value
+#'
+#' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
+#' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
+#'          \code{\link{h2o.metric}} for the various threshold metrics.
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$mse
@@ -349,47 +365,22 @@ h2o.mse <- function(object) {
   }
 }
 
-h2o.F0point5 <- function(object, thresholds){
-  h2o.metric(object, "F0point5", thresholds)
-}
-
-h2o.F1 <- function(object, thresholds){
-  h2o.metric(object, "F1", thresholds)
-}
-
-h2o.F2 <- function(object, thresholds){
-  h2o.metric(object, "F2", thresholds)
-}
-
-h2o.accuracy <- function(object, thresholds){
-  h2o.metric(object, "accuracy", thresholds)
-}
-
-h2o.error <- function(object, thresholds){
-  h2o.metric(object, "error", thresholds)
-}
-
-h2o.maxPerClassError <- function(object, thresholds){
-  h2o.metric(object, "max_per_class_error", thresholds)
-}
-
-h2o.mcc <- function(object, thresholds){
-  h2o.metric(object, "mcc", thresholds)
-}
-
-h2o.precision <- function(object, thresholds){
-  h2o.metric(object, "precision", thresholds)
-}
-
-h2o.recall <- function(object, thresholds){
-  h2o.metric(object, "recall", thresholds)
-}
-
-h2o.specificity <- function(object, thresholds){
-  h2o.metric(object, "specificity", thresholds)
-}
-
-h2o.metric <- function(object, metric, thresholds) {
+#' H2O Model Metric Accessor Functions
+#'
+#' A series of functions that retrieve model metric details.
+#'
+#' Many of these functions have an optional thresholds parameter. Currently
+#' only increments of 0.1 are allowed. If not specified, the functions will
+#' return all possible values. Otherwise, the function will return the value for
+#' the indicated threshold.
+#'
+#' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
+#' @param thresholds A value between 0.0 and 1.0.
+#' @param metric A specified paramter to retrieve.
+#' @return Returns either a single value, or a list of values.
+#' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
+#'          GINI coefficient, and \code{\link{h2o.mse}} for MSE.
+h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
       t <- as.character(thresholds)
@@ -415,6 +406,57 @@ h2o.metric <- function(object, metric, thresholds) {
   }
 }
 
+#' @rdname h2o.metric
+h2o.F0point5 <- function(object, thresholds){
+  h2o.metric(object, thresholds, "F0point5")
+}
+
+#' @rdname h2o.metric
+h2o.F1 <- function(object, thresholds){
+  h2o.metric(object, thresholds, "F1")
+}
+
+#' @rdname h2o.metric
+h2o.F2 <- function(object, thresholds){
+  h2o.metric(object, thresholds, "F2")
+}
+
+#' @rdname h2o.metric
+h2o.accuracy <- function(object, thresholds){
+  h2o.metric(object, thresholds, "accuracy")
+}
+
+#' @rdname h2o.metric
+h2o.error <- function(object, thresholds){
+  h2o.metric(object, thresholds, "error")
+}
+
+#' @rdname h2o.metric
+h2o.maxPerClassError <- function(object, thresholds){
+  h2o.metric(object, thresholds, "max_per_class_error")
+}
+
+#' @rdname h2o.metric
+h2o.mcc <- function(object, thresholds){
+  h2o.metric(object, thresholds, "mcc")
+}
+
+#' @rdname h2o.metric
+h2o.precision <- function(object, thresholds){
+  h2o.metric(object, thresholds, "precision")
+}
+
+#' @rdname h2o.metric
+h2o.recall <- function(object, thresholds){
+  h2o.metric(object, thresholds, "recall")
+}
+
+#' @rdname h2o.metric
+h2o.specificity <- function(object, thresholds){
+  h2o.metric(object, thresholds, "specificity")
+}
+
+#' @rdname h2o.metric
 h2o.confusionMatrices <- function(object, thresholds) {
   if(is(object, "H2OBinomialMetrics")){
     names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholds_and_metric_scores)

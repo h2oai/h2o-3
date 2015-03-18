@@ -37,7 +37,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
   // Add one row to a bin found via simple linear interpolation.
   // Compute bin min/max.
   // Compute response mean & variance.
-  @Override void incr0( int b, float y ) {
+  @Override void incr0( int b, double y ) {
     water.util.AtomicUtils.IntArray.incr(_sums,b);
   }
 

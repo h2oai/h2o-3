@@ -12,7 +12,7 @@ import water.util.IcedBitSet;
  *  @author Cliff Click
  */
 public class DRealHistogram extends DHistogram<DRealHistogram> {
-  private float _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
+  private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
 
   public DRealHistogram( String name, final int nbins, byte isInt, float min, float maxEx, long nelems ) {
     super(name,nbins,isInt,min,maxEx,nelems);
@@ -31,21 +31,21 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
 
   // Big allocation of arrays
   @Override void init0() {
-    _sums = MemoryManager.malloc4f(_nbin);
-    _ssqs = MemoryManager.malloc4f(_nbin);
+    _sums = MemoryManager.malloc8d(_nbin);
+    _ssqs = MemoryManager.malloc8d(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
-  @Override void incr0( int b, float y ) {
-    AtomicUtils.FloatArray.add(_sums,b,y);
-    AtomicUtils.FloatArray.add(_ssqs,b,y*y);
+  @Override void incr0( int b, double y ) {
+    AtomicUtils.DoubleArray.add(_sums,b,y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,y*y);
   }
   // Same, except square done by caller
-  void incr1( int b, float y, float yy ) {
-    AtomicUtils.FloatArray.add(_sums,b,y);
-    AtomicUtils.FloatArray.add(_ssqs,b,yy);
+  void incr1( int b, double y, double yy ) {
+    AtomicUtils.DoubleArray.add(_sums,b,y);
+    AtomicUtils.DoubleArray.add(_ssqs,b,yy);
   }
 
   // Merge two equal histograms together.
@@ -66,8 +66,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
     // unordered predictor, i.e. categorical predictor).
-    float[] sums = _sums;
-    float[] ssqs = _ssqs;
+    double[] sums = _sums;
+    double[] ssqs = _ssqs;
     int  [] bins = _bins;
     int idxs[] = null;          // and a reverse index mapping
 
@@ -87,8 +87,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         });
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
-      sums = MemoryManager.malloc4f(nbins);
-      ssqs = MemoryManager.malloc4f(nbins);
+      sums = MemoryManager.malloc8d(nbins);
+      ssqs = MemoryManager.malloc8d(nbins);
       bins = MemoryManager.malloc4 (nbins);
       for( int i=0; i<nbins; i++ ) {
         sums[i] = _sums[idxs[i]];
