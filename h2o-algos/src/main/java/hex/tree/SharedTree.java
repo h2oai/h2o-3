@@ -9,6 +9,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -256,8 +259,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
-        //System.out.println("--> Decided node: " + dn +
-        //                   "  > Split: " + dn._split + " L/R:" + dn._split.rowsLeft()+" + "+dn._split.rowsRight());
+//        System.out.println("--> Decided node: " + dn +
+//                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
         if( dn._split.col() == -1 ) udn.do_not_split();
         else {
           _did_split = true;
@@ -381,12 +384,23 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return training_r2;
   }
 
+  static int counter = 0;
   // helper for debugging
   @SuppressWarnings("unused")
   static protected void printGenerateTrees(DTree[] trees) {
     for( DTree dtree : trees )
-      if( dtree != null )
-        System.out.println(dtree.root().toString2(new StringBuilder(),0));
+      if( dtree != null ) {
+        try {
+          PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
+          writer.println(dtree.root().toString2(new StringBuilder(), 0));
+          writer.close();
+        } catch (FileNotFoundException e) {
+          e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+          e.printStackTrace();
+        }
+        System.out.println(dtree.root().toString2(new StringBuilder(), 0));
+      }
   }
 
   double initial_MSE( Vec train, Vec test ) {
