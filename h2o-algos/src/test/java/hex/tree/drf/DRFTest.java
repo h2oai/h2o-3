@@ -403,7 +403,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  // PUBDEV-557 Test dependency on # chunks
+  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Ignore
   @Test public void testReprodubilityAirline() {
     Frame tfr=null, vfr=null;
