@@ -1,7 +1,6 @@
 package hex.kmeans;
 
 import hex.ClusteringModel;
-import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import water.Key;
@@ -21,9 +20,11 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
-    // Number of categorical variables in the training set; they are all moved
-    // up-front and use a different distance metric than numerical variables
-    public int _categorical_column_count;
+    /** Cluster centers built on standardized data. Null if standardize = false.
+     *  During model init, might be null or might have a "k" which is oversampled a lot. */
+    public TwoDimTable _centers_std;    // Row = cluster ID, Column = feature
+    public double[/*k*/][/*features*/] _centers_std_raw;
+    public double[/*k*/][/*features*/] _centers_raw;
 
     // Iterations executed
     public int _iterations;
@@ -55,7 +56,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   }
 
   @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
-    preds[0] = hex.genmodel.GenModel.KMeans_closest(_output._centers_raw,data,_output._categorical_column_count);
+    double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
+    preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);
     return preds;
   }
 
@@ -63,9 +65,16 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   @Override protected void toJavaPredictBody(SB bodySb, SB classCtxSb, SB fileCtxSb) {
     // fileCtxSb.ip("").nl(); // at file level
     // Two class statics to support prediction
-    JCodeGen.toStaticVar(classCtxSb,"CENTERS",_output._centers_raw,"Denormalized cluster centers[K][features]");
-    JCodeGen.toStaticVar(classCtxSb,"CATEGORICAL_COLUMN_COUNT",_output._categorical_column_count,"Count of categorical features");
-    // Predict function body: main work function is a utility in GenModel class.
-    bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,CATEGORICAL_COLUMN_COUNT);").nl(); // at function level
+    if(_parms._standardize) {
+      JCodeGen.toStaticVar(classCtxSb,"MEANS",_output._normSub,"Column means of training data");
+      JCodeGen.toStaticVar(classCtxSb,"MULTS",_output._normMul,"Reciprocal of column standard deviations of training data");
+      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_std_raw, "Normalized cluster centers[K][features]");
+      // Predict function body: main work function is a utility in GenModel class.
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,MEANS,MULTS);").nl(); // at function level
+    } else {
+      JCodeGen.toStaticVar(classCtxSb, "CENTERS", _output._centers_raw, "Denormalized cluster centers[K][features]");
+      // Predict function body: main work function is a utility in GenModel class.
+      bodySb.ip("preds[0] = KMeans_closest(CENTERS,data,DOMAINS,null,null);").nl(); // at function level
+    }
   }
 }

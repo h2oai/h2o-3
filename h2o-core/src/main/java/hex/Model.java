@@ -357,17 +357,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ArrayList<String> msgs = new ArrayList<>();
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
+    int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
       Vec vec = test.vec(names[i]); // Search in the given validation set
       // If the training set is missing in the validation set, complain and
       // fill in with NAs.  If this is the response column for supervised
       // learners, it is still made.
       if( vec == null ) {
-        msgs.add("Validation set is missing training column "+names[i]);
+        String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
+          str = str + ": substituting in a column of NAs";
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
+          convNaN++;
         }
+        msgs.add(str);
       }
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an enum
@@ -390,7 +394,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       vvecs[i] = vec;
     }
-    if( good == 0 )
+    if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
     if( good == names.length )  // Only update if got something for all columns
       test.restructure(names,vvecs);
