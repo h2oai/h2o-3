@@ -1,19 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-summary_to_numeric <- function(s) {
-  res <- list()
-  for(p in s) {
-    p_name <- strsplit(p, ':')[[1]][1]
-    res[p_name] <- strsplit(p, ':')[[1]][2]
-  }
-
-  res
-}
-
-
-
-
 test.summary.numeric <- function(conn) {
   Log.info("Importing USArrests.csv data...\n")
   # arrests.hex <- h2o.importFile(conn, locate("smalldata/pca_test/USArrests.csv", schema = "local"), "arrests.hex")
