@@ -66,7 +66,7 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
         numMatch <- sum(unlist(strsplit(x, "")) == ":")
         # If only one colon, then it contains numeric data
         # WARNING: This assumes categorical levels don't contain colons
-        if(numMatch == 1)
+        if(is.na(numMatch) || numMatch <= 1)
           as.numeric(unlist(strsplit(x, ":"))[2])
         # Otherwise, return a string for min/max/quantile
         else {
@@ -75,7 +75,7 @@ cleanSummary <- function(mysum, alphabetical = FALSE) {
         }
       })
       names(vals) <- nams
-      # vals <- vals[!is.na(vals)]
+      vals <- vals[!is.na(nams)]
       if(alphabetical) vals <- vals[order(names(vals))]
       return(vals)
     }
