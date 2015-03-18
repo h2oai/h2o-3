@@ -218,7 +218,7 @@ public class DRFTest extends TestUtil {
 
   }
 
-  @Ignore  //1-vs-5 node discrepancy
+  @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
@@ -349,7 +349,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  // HEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testReprodubility() {
     Frame tfr=null, vfr=null;
     final int N = 5;
@@ -400,6 +400,70 @@ public class DRFTest extends TestUtil {
     }
     for (int i=0; i<mses.length; ++i) {
       assertEquals(mses[i], mses[0], 1e-15);
+    }
+  }
+
+  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
+  @Ignore
+  @Test public void testReprodubilityAirline() {
+    Frame tfr=null, vfr=null;
+    final int N = 1;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+
+      // rebalance to fixed number of chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
+      for (String s : new String[]{
+          "DepTime", "ArrTime", "ActualElapsedTime",
+          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+          "CancellationCode", "CarrierDelay", "WeatherDelay",
+          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      for (int i=0; i<N; ++i) {
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "IsDepDelayed";
+        parms._nbins = 10;
+        parms._ntrees = 7;
+        parms._max_depth = 10;
+        parms._mtries = -1;
+        parms._min_rows = 1;
+        parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._seed = (1L<<32)|2;
+
+        // Build a first model; all remaining models should be equal
+        DRF job = new DRF(parms);
+        DRFModel drf = job.trainModel().get();
+        assertEquals(drf._output._ntrees, parms._ntrees);
+
+        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        job.remove();
+        drf.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(0.2273639898, mses[i], 1e-9); //check for the same result on 1 nodes and 5 nodes
     }
   }
 }
