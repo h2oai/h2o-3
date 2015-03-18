@@ -41,12 +41,19 @@ public class KMeansTest extends TestUtil {
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._init = KMeans.Initialization.Random;
       kmm = doSeed(parms,0);
+
+      // Iris last column is categorical; make sure centers are ordered in the
+      // same order as the iris columns.
+      double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+      for( int k=0; k<parms._k; k++ ) {
+        double flower = centers[k][4];
+        Assert.assertTrue("categorical column expected",flower==(int)flower);
+      }
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
@@ -268,7 +275,6 @@ public class KMeansTest extends TestUtil {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._ignored_columns = new String[] {"class"};
       parms._k = 3;
       parms._standardize = true;
       parms._max_iterations = 10;
