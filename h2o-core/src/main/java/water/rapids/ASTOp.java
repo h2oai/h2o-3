@@ -163,12 +163,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMedian());
 
     // Misc
+    putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
-    putPrefix(new ASTRename());  //TODO
-    putPrefix(new ASTSeq   ());  //TODO
-    putPrefix(new ASTSeqLen());  //TODO
-    putPrefix(new ASTRepLen());  //TODO
-    putPrefix(new ASTQtile ());  //TODO
+    putPrefix(new ASTRename());
+    putPrefix(new ASTSeq   ());
+    putPrefix(new ASTSeqLen());
+    putPrefix(new ASTRepLen());
+    putPrefix(new ASTQtile ());
     putPrefix(new ASTCbind ());
     putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
@@ -1763,6 +1764,39 @@ class ASTRename extends ASTUniPrefixOp {
     Frame fr2 = new Frame(Key.make(_newname), fr.names(), fr.deepSlice(null,null).vecs());
     DKV.put(Key.make(_newname), fr2);
     e.pushAry(fr2);  // the vecs have not changed and their refcnts remain the same
+  }
+}
+
+class ASTSetLevel extends ASTUniPrefixOp {
+  private String _lvl;
+  ASTSetLevel() { super(new String[]{"setLevel", "x", "level"});}
+  @Override String opStr() { return "setLevel"; }
+  @Override ASTOp make() { return new ASTSetLevel(); }
+  ASTSetLevel parse_impl(Exec E) {
+    AST ary = E.parse();
+    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
+    _lvl = ((ASTString)E.parse())._s;
+    ASTSetLevel res = (ASTSetLevel) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.peekAry();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+    final int idx = Arrays.asList(doms).indexOf(_lvl);
+    if (idx == -1)
+      throw new IllegalArgumentException("Did not find level `" + _lvl + "` in the column.");
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(idx);
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    env.poppush(1, new ValFrame(fr2));
   }
 }
 
