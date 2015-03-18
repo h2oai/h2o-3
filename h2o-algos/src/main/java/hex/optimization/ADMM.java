@@ -44,12 +44,12 @@ public class ADMM {
       gerr = 0;
       if (lb != null)
         for (int j = 0; j < z.length; ++j)
-          if (z[j] == lb[j] && grad[j] < 0)
-            grad[j] = 0;
+          if (z[j] == lb[j] && grad[j] > 0)
+            grad[j] = z[j] >= 0?-lambda:lambda;
       if (ub != null)
         for (int j = 0; j < z.length; ++j)
-          if (z[j] == ub[j] && grad[j] > 0)
-            grad[j] = 0;
+          if (z[j] == ub[j] && grad[j] < 0)
+            grad[j] = z[j] >= 0?-lambda:lambda;
       subgrad(lambda, z, grad);
       for (int x = 0; x < grad.length - 1; ++x) {
         double err = grad[x];

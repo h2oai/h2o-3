@@ -977,7 +977,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double _addedL2;
     double  [] _rho;
 
-    public GramSolver(Gram gram, double [] xy,double [] xbar, double ybar, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho, double [] lb, double [] ub) {
+    public GramSolver(Gram gram, double [] xy, double [] xbar, double ybar, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho, double [] lb, double [] ub) {
       if(ub != null && lb != null)
         for(int i = 0; i < ub.length; ++i) {
           assert ub[i] >= lb[i]:i + ": ub < lb, ub = " + Arrays.toString(ub) + ", lb = " + Arrays.toString(lb) ;
@@ -987,14 +987,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _gram = gram;
       int ii = intercept?1:0;
       double [] rhos = MemoryManager.malloc8d(xy.length);
-      Arrays.fill(rhos,default_rho);
-      if(l1pen > 0) {
-        double min = Double.POSITIVE_INFINITY;
-        for (int i = 0; i < xy.length - ii; ++i) {
-          double d = xy[i];
-          d = d >= 0 ? d : -d;
-          if (d < min && d != 0) min = d;
-        }
+      double min = Double.POSITIVE_INFINITY;
+      for (int i = 0; i < xy.length - ii; ++i) {
+        double d = xy[i];
+        d = d >= 0 ? d : -d;
+        if (d < min && d != 0) min = d;
+      }
+      if(l1pen > 0)
         for (int i = 0; i < rhos.length - ii; ++i) {
           double y = xy[i];
           if (y == 0) y = min;
@@ -1003,26 +1002,25 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             :((y - _ybar * xbar[i])/ (gram.get(i, i) - xbar[i] * xbar[i]) + l2pen);///gram.get(i,i);
           double rho = l1pen/x;
           if(rho < 0)rho = -rho;
-          if(ub != null || lb != null) {
-            double kappa = l1pen/rho;
-            double diff = 0;//x*1e-2;
-            if(ub != null && x > ub[i])
-              diff = x - ub[i];
-            if(lb != null && x < lb[i])
-              diff = lb[i] - x;
-            if(diff > kappa)
-              rho = diff/ (x - diff);
-          }
-          rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
+          if(ub != null && x > ub[i] || lb != null && x < lb[i]) {
+            rhos[i] = Math.max(rho,xy[i] >= 0 ? xy[i] : -xy[i]);
+          } else
+            rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
         }
+      // do the ointercept separate as l1pen does not apply to it
+      if(lb != null || ub != null) {
+        int icpt = xy.length-1;
+        double y = xy[icpt];
+        if (y == 0) y = min;
+        double x = (beta_given != null && proxPen != null)
+          ?(y - _ybar * xbar[icpt] + proxPen[icpt] * beta_given[icpt]) / ((gram.get(icpt, icpt) - xbar[icpt] * xbar[icpt]) + l2pen + proxPen[icpt])
+          :((y - _ybar * xbar[icpt])/ (gram.get(icpt, icpt) - xbar[icpt] * xbar[icpt]) + l2pen);///gram.get(i,i);
+        double rho = default_rho;
+        if(ub != null && x > ub[icpt] || lb != null && x < lb[icpt]) {
+          rhos[icpt] = Math.max(rho,xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
+        } else
+          rhos[icpt] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
       }
-      double sum = 0;
-      for(int i = 0; i < rhos.length; ++i)
-        sum += rhos[i];
-      double avg = sum/(rhos.length-1)*1e-1;
-      for(int i = 0; i < rhos.length-1; ++i)
-        if(rhos[i] < avg)
-          rhos[i] = avg;
       if(l2pen > 0)
         gram.addDiag(l2pen);
       if(proxPen != null && beta_given != null) {
@@ -1031,20 +1029,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         for(int i = 0; i < xy.length; ++i)
           xy[i] += proxPen[i]*beta_given[i];
       }
-      if(l1pen == 0) {
-        _chol = gram.cholesky(null,true,null);
-        double l2 = 1e-8;
-        while(!_chol.isSPD() && _addedL2 < 1) { // need to add l2
-          _gram.addDiag(l2 - _addedL2);
-          _addedL2 = l2;
-          l2 *= 10;
-          _chol = _gram.cholesky(_chol);
-        }
-        _xy = xy;
-        return;
-      }
       gram.addDiag(rhos);
       _chol = gram.cholesky(null,true,null);
+      double l2 = 1e-8;
+      while(!_chol.isSPD() && _addedL2 < 1) { // need to add l2
+        _gram.addDiag(l2 - _addedL2);
+        _addedL2 = l2;
+        l2 *= 10;
+        _chol = _gram.cholesky(_chol);
+      }
       gram.addDiag(ArrayUtils.mult(rhos,-1));
       ArrayUtils.mult(rhos, -1);
       _rho = rhos;
