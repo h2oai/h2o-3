@@ -1,8 +1,6 @@
 package hex.tree.drf;
 
 
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import water.*;
@@ -18,9 +16,9 @@ public class DRFTest extends TestUtil {
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
-  static final String[] s(String...arr)  { return arr; }
-  static final long[]   a(long ...arr)   { return arr; }
-  static final long[][] a(long[] ...arr) { return arr; }
+  static String[] s(String...arr)  { return arr; }
+  static long[]   a(long ...arr)   { return arr; }
+  static long[][] a(long[] ...arr) { return arr; }
 
   @Test public void testClassIris1() throws Throwable {
 
@@ -36,8 +34,8 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(25, 0, 0),
-                    a(0, 17, 1),
-                    a(1, 2, 15)),
+              a(0, 17, 1),
+              a(1, 2, 15)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -54,8 +52,8 @@ public class DRFTest extends TestUtil {
             },
             5,
             a(a(41, 0, 0),
-                    a(0, 39, 3),
-                    a(0, 4, 41)),
+              a(0, 39, 3),
+              a(0, 4, 41)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -72,10 +70,10 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(0, 0, 0, 0, 0),
-                    a(0, 62, 0, 7, 0),
-                    a(0, 1, 0, 0, 0),
-                    a(0, 0, 0, 31, 0),
-                    a(0, 0, 0, 0, 40)),
+              a(0, 62, 0, 7, 0),
+              a(0, 1, 0, 0, 0),
+              a(0, 0, 0, 31, 0),
+              a(0, 0, 0, 0, 40)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -90,11 +88,11 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            a(a(3, 0, 0, 0, 0),
-                    a(0, 173, 2, 9, 0),
-                    a(0, 1, 1, 0, 0),
-                    a(0, 2, 2, 68, 2),
-                    a(0, 0, 0, 2, 88)),
+            a(a(3,   0, 0,  0,  0),
+              a(0, 173, 2,  9,  0),
+              a(0,   1, 1,  0,  0),
+              a(0,   2, 2, 68,  2),
+              a(0,   0, 0,  2, 88)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -123,15 +121,10 @@ public class DRFTest extends TestUtil {
   @Ignore @Test public void testBadData() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("DateofBirth");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { return fr.find("DateofBirth"); } },
             1,
             a(a(6, 0),
-                    a(9, 1)),
+              a(9, 1)),
             s("0", "1"));
   }
 
@@ -148,7 +141,7 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(46294, 202),
-                    a(3187, 107)),
+              a( 3187, 107)),
             s("0", "1"));
 
   }
@@ -165,7 +158,7 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(0, 81),
-                    a(0, 53)),
+              a(0, 53)),
             s("0", "1"));
 
   }
@@ -181,7 +174,7 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
-            84.839608306093
+            84.83960821204235
     );
 
   }
@@ -197,7 +190,7 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            62.34506810852538
+            62.34506819058169
     );
 
   }
@@ -213,7 +206,7 @@ public class DRFTest extends TestUtil {
               }
             },
             50,
-            48.16452608223481
+            48.164526152604566
     );
 
   }
@@ -350,8 +343,8 @@ public class DRFTest extends TestUtil {
   }
 
   // HEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
-  @Test public void testReprodubility() {
-    Frame tfr=null, vfr=null;
+  @Test public void testReproducibility() {
+    Frame tfr=null;
     final int N = 5;
     double[] mses = new double[N];
 
@@ -392,21 +385,19 @@ public class DRFTest extends TestUtil {
       }
     } finally{
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
     for (int i=0; i<mses.length; ++i) {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
-    for (int i=0; i<mses.length; ++i) {
-      assertEquals(mses[i], mses[0], 1e-15);
-    }
+    for(double mse : mses)
+      assertEquals(mse, mses[0], 1e-15);
   }
 
   // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Ignore
   @Test public void testReprodubilityAirline() {
-    Frame tfr=null, vfr=null;
+    Frame tfr=null;
     final int N = 1;
     double[] mses = new double[N];
 
@@ -456,14 +447,12 @@ public class DRFTest extends TestUtil {
       }
     } finally{
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
     for (int i=0; i<mses.length; ++i) {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
-    for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2273639898, mses[i], 1e-9); //check for the same result on 1 nodes and 5 nodes
-    }
+    for( double mse : mses )
+      assertEquals(0.2273639898, mse, 1e-9); //check for the same result on 1 nodes and 5 nodes
   }
 }

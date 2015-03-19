@@ -31,11 +31,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static void updateHits(int iact, float[] ds, long[] hits ) {
+  public static void updateHits(int iact, double[] ds, long[] hits ) {
     int pred = (int)ds[0];
     if( iact == pred ) hits[0]++; // Top prediction is correct?
     else {                  // Else need to find how far down the correct guy is
-      float p = ds[pred+1]; // Prediction value which failed
+      double p = ds[pred+1]; // Prediction value which failed
       int tie=0;
       for( int k=1; k<hits.length; k++ ) {
         // Find largest prediction less than 'p', or for ties, the tie'th
@@ -74,16 +74,16 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public float[] perRow( float ds[], float [] yact, Model m ) {
-      if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Float.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+    @Override public double[] perRow( double ds[], float [] yact, Model m ) {
+      if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+      if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
 
       // Compute error
-      float sum = 0;          // Check for sane class distribution
-      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
+//      double sum = 0;          // Check for sane class distribution
+//      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
 //      assert Math.abs(sum-1.0f) < 1e-6;
-      float err = iact+1 < ds.length ? 1.0f-ds[iact+1] : 1.0f;  // Error: distance from predicting ycls as 1.0
+      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 

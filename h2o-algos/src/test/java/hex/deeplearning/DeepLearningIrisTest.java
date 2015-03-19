@@ -271,8 +271,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                     // find the label
                                     // do the same as H2O here (compare float values and break ties based on row number)
-                                    float[] preds = new float[ref_preds.length + 1];
-                                    for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = (float) ref_preds[j];
+                                    double[] preds = new double[ref_preds.length + 1];
+                                    for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
                                     preds[0] = getPrediction(preds, i);
 
                                     // compare predicted label

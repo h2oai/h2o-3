@@ -53,25 +53,25 @@ public abstract class GenModel {
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public float[] score0( double[] data, float[] preds );
+  abstract public double[] score0( double[] data, double[] preds );
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
-  public float[] score0( Map<String, Double> row, double data[], float preds[] ) {
+  public double[] score0( Map<String, Double> row, double data[], double preds[] ) {
     return score0(map(row,data),preds);
   }
 
   // Does the mapping lookup for every row.
   // preds array is pre-allocated and can be re-used for every row.
   // Allocates a double[] for every row.
-  public float[] score0( Map<String, Double> row, float preds[] ) {
+  public double[] score0( Map<String, Double> row, double preds[] ) {
     return score0(map(row,new double[nfeatures()]),preds);
   }
 
   // Does the mapping lookup for every row.
   // Allocates a double[] and a float[] for every row.
-  public float[] score0( Map<String, Double> row ) {
-    return score0(map(row,new double[nfeatures()]),new float[nclasses()+1]);
+  public double[] score0( Map<String, Double> row ) {
+    return score0(map(row,new double[nfeatures()]),new double[nclasses()+1]);
   }
 
   /** Utility function to get a best prediction from an array of class
@@ -81,7 +81,7 @@ public abstract class GenModel {
    *  @param preds an array of prediction distribution.  Length of arrays is equal to a number of classes+1.
    *  @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction( float[] preds, double data[] ) {
+  public static int getPrediction( double[] preds, double data[] ) {
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -93,7 +93,7 @@ public abstract class GenModel {
     }
     if( tieCnt==0 ) return best-1; // Return zero-based best class
     // Tie-breaking logic
-    float res = preds[best];    // One of the tied best results
+    double res = preds[best];    // One of the tied best results
     long hash = 0;              // hash for tie-breaking
     if( data != null )
       for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantisa (layout of long is: 1b sign, 11b exp, 52b mantisa)
@@ -164,12 +164,11 @@ public abstract class GenModel {
   // --------------------------------------------------------------------------
   // SharedTree utilities
 
-  // Tree scoring is done in float precision; and NaNs always "go left": count
-  // as -Float.MAX_VALUE
-  public static float[] SharedTree_fclean( double[] data ) {
-    float[] fs = new float[data.length];
+  // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
+  public static double[] SharedTree_clean( double[] data ) {
+    double[] fs = new double[data.length];
     for( int i=0; i<data.length; i++ )
-      fs[i] = Double.isNaN(data[i]) ? -Float.MAX_VALUE : (float)data[i];
+      fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
     return fs;
   }
 
@@ -177,15 +176,15 @@ public abstract class GenModel {
   // we get Infinities, and then shortly NaN's.  Rescale the data so the
   // largest value is +/-1 and the other values are smaller.
   // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-  public static void GBM_rescale(double[] data, float[] preds) {
+  public static void GBM_rescale(double[] data, double[] preds) {
     // Find a max
-    float maxval=Float.NEGATIVE_INFINITY;
+    double maxval=Double.NEGATIVE_INFINITY;
     for( int k=1; k<preds.length; k++) maxval = Math.max(maxval,preds[k]);
-    assert !Float.isInfinite(maxval) : "Something is wrong with GBM trees since returned prediction is " + Arrays.toString(preds);
+    assert !Double.isInfinite(maxval) : "Something is wrong with GBM trees since returned prediction is " + Arrays.toString(preds);
     // exponentiate the scaled predictions; keep a rolling sum
-    float dsum=0;
+    double dsum=0;
     for( int k=1; k<preds.length; k++ )
-      dsum += (preds[k]=(float)Math.exp(preds[k]-maxval));
+      dsum += (preds[k]=Math.exp(preds[k]-maxval));
     // Rescale to a probability distribution
     for( int k=1; k<preds.length; k++ ) preds[k] /= dsum;
     preds[0] = getPrediction(preds, data);

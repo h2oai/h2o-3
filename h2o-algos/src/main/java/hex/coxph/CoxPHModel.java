@@ -110,7 +110,7 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public float[] score0(double[] data, float[] preds) {
+  @Override public double[] score0(double[] data, double[] preds) {
     final int n_offsets = (_parms.offset_columns == null) ? 0 : _parms.offset_columns.length;
     final int n_time    = _output.time.length;
     final int n_coef    = _output.coef.length;
@@ -130,7 +130,7 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
       numsHasNA |= Double.isNaN(data[j]);
     if (numsHasNA || (catsHasNA && !catsAllNA)) {
       for (int i = 1; i <= 2 * n_time; ++i)
-        preds[i] = Float.NaN;
+        preds[i] = Double.NaN;
     } else {
       double[] full_data = MemoryManager.malloc8d(n_full);
       for (int j = 0; j < n_cats; ++j)
@@ -149,7 +149,7 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
         logRisk += full_data[j];
       final double risk = Math.exp(logRisk);
       for (int t = 0; t < n_time; ++t)
-        preds[t + 1] = (float) (risk * _output.cumhaz_0[t]);
+        preds[t + 1] = risk * _output.cumhaz_0[t];
       for (int t = 0; t < n_time; ++t) {
         final double cumhaz_0_t = _output.cumhaz_0[t];
         double var_cumhaz_2_t = 0;
@@ -159,10 +159,10 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
             sum += _output.var_coef[j][k] * (full_data[k] * cumhaz_0_t - _output.var_cumhaz_2[t][k]);
           var_cumhaz_2_t += (full_data[j] * cumhaz_0_t - _output.var_cumhaz_2[t][j]) * sum;
         }
-        preds[t + 1 + n_time] = (float) (risk * Math.sqrt(_output.var_cumhaz_1[t] + var_cumhaz_2_t));
+        preds[t + 1 + n_time] = risk * Math.sqrt(_output.var_cumhaz_1[t] + var_cumhaz_2_t);
       }
     }
-    preds[0] = Float.NaN;
+    preds[0] = Double.NaN;
     return preds;
   }
 }

@@ -92,10 +92,10 @@ public class MRUtils {
     public ClassDist(final Vec label) { super(label.domain().length); }
     public ClassDist(int n) { super(n); }
     public final long[] dist() { return _ys; }
-    public final float[] rel_dist() {
-      float[] rel = new float[_ys.length];
+    public final double[] rel_dist() {
+      double[] rel = new double[_ys.length];
       for (int i=0; i<_ys.length; ++i) rel[i] = (float)_ys[i];
-      final float sum = ArrayUtils.sum(rel);
+      final double sum = ArrayUtils.sum(rel);
       assert(sum != 0.);
       ArrayUtils.div(rel, sum);
       return rel;
