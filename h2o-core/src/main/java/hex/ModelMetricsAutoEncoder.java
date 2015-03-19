@@ -16,10 +16,10 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
 
   public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised {
     public MetricBuilderAutoEncoder(int dims) {
-      _work = new float[dims];
+      _work = new double[dims];
     }
 
-    @Override public float[] perRow( float ds[], float yact[], Model m) {
+    @Override public double[] perRow( double ds[], float yact[], Model m) {
       throw H2O.unimpl();
     }
 

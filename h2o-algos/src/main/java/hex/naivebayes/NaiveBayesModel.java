@@ -2,16 +2,11 @@ package hex.naivebayes;
 
 import hex.*;
 import hex.schemas.NaiveBayesModelV2;
-import org.apache.commons.math3.distribution.NormalDistribution;
 import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
-import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
-
-import java.util.Arrays;
 
 public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   public static class NaiveBayesParameters extends SupervisedModel.SupervisedParameters {
@@ -59,7 +54,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
   }
 
   // Note: For small probabilities, product may end up zero due to underflow error. Can circumvent by taking logs.
-  @Override protected float[] score0(double[] data, float[] preds) {
+  @Override protected double[] score0(double[] data, double[] preds) {
     double[] nums = new double[_output._levels.length];    // log(p(x,y)) for all levels of y
     assert preds.length == (_output._levels.length + 1);   // Note: First column of preds is predicted response class
 
@@ -97,11 +92,11 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
       double sum = 0;
       for(int j = 0; j < nums.length; j++)
         sum += Math.exp(nums[j] - nums[i]);
-      preds[i+1] = 1/(float)sum;
+      preds[i+1] = 1/sum;
     }
 
     // Select class with highest conditional probability
-    float max = -1;
+    double max = -1;
     for(int i = 1; i < preds.length; i++) {
       if(preds[i] > max) {
         max = preds[i];
