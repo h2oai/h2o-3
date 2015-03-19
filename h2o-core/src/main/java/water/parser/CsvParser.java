@@ -26,15 +26,19 @@ class CsvParser extends Parser {
     final byte[] bits0 = bits;  // Bits for chunk0
     boolean firstChunk = true;  // Have not rolled into the 2nd chunk
     byte[] bits1 = null;        // Bits for chunk1, loaded lazily.
-    // Starting state.  Are we skipping the first (partial) line, or not?  Skip
-    // a header line, or a partial line if we're in the 2nd and later chunks.
-    int state = (_setup.headerLines() > 0 || cidx > 0) ? SKIP_LINE : WHITESPACE_BEFORE_TOKEN;
+    int state;
     // If handed a skipping offset, then it points just past the prior partial line.
     if( offset >= 0 ) state = WHITESPACE_BEFORE_TOKEN;
-    else offset = 0; // Else start skipping at the start
+    else {
+      offset = 0; // Else start skipping at the start
+      // Starting state.  Are we skipping the first (partial) line, or not?  Skip
+      // a header line, or a partial line if we're in the 2nd and later chunks.
+      if (_setup._check_header == ParseSetup.HAS_HEADER || cidx > 0) state = SKIP_LINE;
+      else state = WHITESPACE_BEFORE_TOKEN;
+    }
 
     // For parsing ARFF
-    if (_setup._parse_type == ParserType.ARFF && _setup.headerLines() > 0) state = WHITESPACE_BEFORE_TOKEN;
+    if (_setup._parse_type == ParserType.ARFF && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
 
     int quotes = 0;
     long number = 0;
@@ -438,6 +442,17 @@ MAIN_LOOP:
     return dout;
   }
 
+  @Override protected int fileHasHeader(byte[] bits, ParseSetup ps) {
+    boolean hasHdr = true;
+    String[] lines = getFirstLines(bits);
+    if (lines != null && lines.length > 0) {
+      String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
+      for (int i = 0; hasHdr && i < _setup._column_names.length; ++i)
+        hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
+    } else System.out.println("Foo"); //FIXME Throw exception
+    return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
+    // consider making insensitive to quotes
+  }
 
   // ==========================================================================
   /** Separators recognized by the CSV parser.  You can add new separators to
@@ -519,6 +534,7 @@ MAIN_LOOP:
       tokens.add("");
     return tokens.toArray(new String[tokens.size()]);
   }
+
 
   public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
     final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
@@ -641,15 +657,15 @@ MAIN_LOOP:
       ncols = guessNcols(columnNames,data);
 
       // Asked to check for a header, so see if 1st line looks header-ish
-      if( checkHeader == GUESS_HEADER) {  // Guess
-        labels = ParseSetup.hasHeader(data[0], data[1]) && (data[0].length == ncols) ? data[0] : null;
-      } else if( checkHeader == HAS_HEADER ) { // Told: take 1st line
+      if( checkHeader == HAS_HEADER
+        || ( checkHeader == GUESS_HEADER && ParseSetup.hasHeader(data[0], data[1]) && data[0].length == ncols)) {
+        checkHeader = HAS_HEADER;
         labels = data[0];
-      } else {                  // Told: no headers
+      } else {
+        checkHeader = NO_HEADER;
         labels = null;
       }
-      if( checkHeader == GUESS_HEADER) checkHeader = labels==null ? NO_HEADER : HAS_HEADER;
-      
+
       // See if compatible headers
       if( columnNames != null && labels != null ) {
         if( labels.length != columnNames.length )

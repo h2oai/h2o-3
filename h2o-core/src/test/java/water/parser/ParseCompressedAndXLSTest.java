@@ -52,22 +52,25 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       NFSFileVec nfs = NFSFileVec.make(f);
       byte[] ctypes = new byte[12];
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
-      ParseSetup setup = new ParseSetup( true, // is valid
-                                         0,    // invalidLines
-                                         1,    // headerlines
-                                         null, // errors
-                                         ParserType.XLS,
-                                         (byte)52, // sep; ascii '4'
-                                         true,     // singleQuotes
-                                         ParseSetup.NO_HEADER, // check header
-                                         12,       // ncols
-                                         new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
-                                         ctypes,
-                                         null, null, null);
-      k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
-      assertEquals( 0,k1.numCols());
-      assertEquals( 0,k1.numRows());
-      k1.delete();
+      ParseSetup setup = new ParseSetup(true, // is valid
+                0,    // invalidLines
+                1,    // headerlines
+                null, // errors
+                ParserType.XLS,
+                (byte) 52, // sep; ascii '4'
+                true,     // singleQuotes
+                ParseSetup.NO_HEADER, // check header
+                12,       // ncols
+                new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "UniqueCarrier", "Origin", "Dest", "Distance", "IsDepDelayed", "IsDepDelayed_REC"},
+                ctypes,
+                null, null, null);
+      try {
+        k1 = ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, setup, true).get();
+        assertTrue("Should have thrown ParseException since file isn't XLS file",false); // fail - should've thrown
+        k1.delete();
+      } catch (Throwable t) {
+        assertTrue(t.getMessage().contains("H2OParseException"));
+      }
     } finally {
       if( k1 != null ) k1.delete();
     }

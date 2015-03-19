@@ -28,7 +28,6 @@ public final class ParseSetup extends Iced {
   Key[] _source_keys;                      // Source Keys being parsed
   boolean _is_valid;           // The initial parse is sane
   long _invalid_lines; // Number of broken/invalid lines found
-  long _header_lines; // Number of header lines found
   String[] _errors;           // Errors in this parse setup
   ParserType _parse_type;          // CSV, XLS, XSLX, SVMLight, Auto, ARFF
   byte _separator;                  // Field separator, usually comma ',' or TAB or space ' '
@@ -47,10 +46,15 @@ public final class ParseSetup extends Iced {
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   String _destination_key;            // Cleaned up result Key suggested name
 
+  public ParseSetup(ParseSetup ps) {
+    this(ps._is_valid, ps._invalid_lines, ps._invalid_lines, ps._errors, ps._parse_type,
+            ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
+            ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, ps._chunk_size);
+  }
+
   public ParseSetup(boolean isValid, long invalidLines, long headerLines, String[] errors, ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[] naStrings, String[][] data, int chunkSize) {
     _is_valid = isValid;
     _invalid_lines = invalidLines;
-    _header_lines = headerLines;
     _errors = errors;
     _parse_type = t;
     _separator = sep;
@@ -106,8 +110,6 @@ public final class ParseSetup extends Iced {
    * Used by Ray's schema magic
    */
   public ParseSetup() {}
-
-  final long headerLines() { return _header_lines; }
 
   public String[] getColumnTypeStrings() {
     String[] types = new String[_column_types.length];
@@ -363,10 +365,15 @@ public final class ParseSetup extends Iced {
           _gblSetup._parse_type = ParserType.ARFF;
           _gblSetup._column_types = other._gblSetup._column_types;
         }
+
+        // ARFF header files won't know the separator, pull from other file
+        if (_gblSetup._separator == GUESS_SEP && other._gblSetup._separator != GUESS_SEP)
+          _gblSetup._separator = other._gblSetup._separator;
+
         //merge header settings
-/*        if (!_gblSetup._setup._header && other._gblSetup._setup._header) {
-          _gblSetup._setup._header = true;
-          _gblSetup._hdrFromFile = other._gblSetup._hdrFromFile;*/
+        if (_gblSetup._check_header == NO_HEADER && other._gblSetup._check_header == HAS_HEADER)
+          _gblSetup._check_header = HAS_HEADER;
+        else if (_gblSetup._check_header == GUESS_HEADER) Log.err("Header guess failed.");
 
         // merge column names
         if (other._gblSetup._column_names != null) {
@@ -444,32 +451,6 @@ public final class ParseSetup extends Iced {
         }
     }
     return new ParseSetup( false, 0, 0, new String[]{"Cannot determine file type"}, pType, sep, singleQuotes, checkHeader, ncols, columnNames, null, domains, naStrings, null, FileVec.DFLT_CHUNK_SIZE);
-  }
-
-  // Guess a local setup that is compatible to the given global (this) setup.
-  // If they are not compatible, there will be _errors set.
-  ParseSetup guessSetup( byte[] bits, int checkHeader ) {
-    assert _is_valid;
-    ParseSetup ps = guessSetup(bits, _single_quotes, checkHeader);
-    if( !ps._is_valid) return ps; // Already invalid
-
-    // ARFF wins over CSV (Note: ARFF might not know separator or ncols yet)
-    if ((_parse_type == ParserType.CSV || _parse_type == ParserType.AUTO) && ps._parse_type == ParserType.ARFF) {
-      if (ps._separator == ParseSetup.GUESS_SEP && _separator != ParseSetup.GUESS_SEP) ps._separator = _separator; //use existing separator
-      return ps;
-    }
-    if (_parse_type == ParserType.ARFF && (ps._parse_type == ParserType.CSV || _parse_type == ParserType.AUTO)) {
-      if (ps._separator != ParseSetup.GUESS_SEP && _separator == ParseSetup.GUESS_SEP) _separator = ps._separator; //use existing separator
-      return this;
-    }
-
-    if( _parse_type != ps._parse_type || ( (_parse_type == ParserType.CSV && (_separator != ps._separator || _number_columns != ps._number_columns)) || (_parse_type == ParserType.ARFF && (_separator != ps._separator || _number_columns != ps._number_columns)) ) ) {
-      ps._is_valid = false;
-      ps._errors = new String[]{"Conflicting file layouts, expecting: " + this + " but found " + ps + "\n"};
-      return ps;
-    }
-    ps._column_types = _column_types;
-    return ps;
   }
 
   public boolean isCompatible(ParseSetup other){

@@ -60,6 +60,7 @@ public abstract class Parser extends Iced {
 
   protected final ParseSetup _setup;
   Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; }
+  protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
   abstract DataOut parseChunk(int cidx, final DataIn din, final DataOut dout);
