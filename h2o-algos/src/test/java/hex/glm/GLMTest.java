@@ -560,14 +560,9 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < names.length; ++i){
         for(int j = 0; j < betaConstraints.numRows();++j) {
           if(betaConstraints.vec("names").atStr(vs,j).toString().equals(names[i])) {
-//            System.out.println("found bounds for " + names[i]);
             if(beta[i] == betaConstraints.vec("lower_bounds").at(j) || beta[i] == betaConstraints.vec("upper_bounds").at(j)) {
-//              System.out.println("skipping var " + i + " which is on the boundary");
               continue outer;
             }
-//            } else {
-//              System.out.println(names[i] + ": " + betaConstraints.vec("lower_bounds").at(j) + " <= " + beta[i] + " <= " + betaConstraints.vec("upper_bounds").at(j));
-//            }
           }
         }
         assertEquals(grad[i],0,1e-3);
