@@ -190,6 +190,13 @@ class H2OFrame:
     """
     return len(self)
 
+  def dim(self):
+    """
+    Get the number of rows and columns in the H2OFrame.
+    :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
+    """
+    return [self.nrow(), self.ncol()]
+
   # Print [col, cols...]
   def show(self):
     if len(self) == 1:
@@ -531,6 +538,22 @@ class H2OFrame:
     if len(self) == 0: return self
     return H2OFrame(vecs=[vec.quantile(prob) for vec in self._vecs ])
 
+  def append(self,data):
+    """
+    :param data: H2OFrame or H2OVec to append to self
+    :return: self, but with the extra data appended to the end
+    """
+    if isinstance(data, H2OFrame):
+      num_vecs = len(data._vecs)
+      for vidx in range(num_vecs):
+        self._vecs.append(data._vecs[vidx])
+    elif isinstance(data, H2OVec):
+      self._vecs.append(data)
+    else:
+      raise ValueError("Data to append must be H2OVec or H2OFrame")
+
+    return self
+
   # ddply in h2o
   def ddply(self,cols,fun):
     """
@@ -620,6 +643,12 @@ class H2OVec:
 
   def name(self):
     return self._name
+
+  def setName(self,name=None):
+    if name and isinstance(name,str):
+      self._name = name
+    else:
+        raise ValueError("name parameter must be a string")
 
   def get_expr(self):
     return self._expr
@@ -779,6 +808,12 @@ class H2OVec:
     :return: A transformed H2OVec from numeric to categorical.
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
+
+  def isna(self):
+    """
+    :return: Returns a new boolean H2OVec.
+    """
+    return H2OVec("", Expr("is.na", self._expr, None))
 
   def month(self):
     """
