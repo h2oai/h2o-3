@@ -6,11 +6,12 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 import water.H2O;
+import water.exceptions.H2OParseException;
 import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps ) { super(ps); }
-  @Override DataOut parseChunk(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
+  @Override DataOut parseChunk(int cidx, final DataIn din, final DataOut dout) { throw H2O.unimpl(); }
 
   // A Stream, might be a Zip stream
   private InputStream _is;
@@ -142,7 +143,7 @@ class XlsParser extends Parser {
     readAtLeast(IDENTIFIER_OLE.length);
     for( int i=0; i<IDENTIFIER_OLE.length; i++ ) 
       if( _buf[i] != IDENTIFIER_OLE[i] )
-        throw new IOException("not an XLS file");
+        throw new H2OParseException("Not a valid XLS file.","Tried to parse as XLS file, but lacks correct starting bits (aka magic number).");
 
     _numBigBlockDepotBlocks = get4(NUM_BIG_BLOCK_DEPOT_BLOCKS_POS);
     _sbdStartBlock = get4(SMALL_BLOCK_DEPOT_BLOCK_POS);

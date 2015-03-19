@@ -14,6 +14,7 @@ import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
@@ -149,7 +150,13 @@ public final class ParseDataset extends Job<Frame> {
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
-      if( _job != null ) _job.failed(ex);
+      if( _job != null ) {
+        if (ex instanceof H2OParseException) {
+          _job.cancel();
+          throw (H2OParseException) ex;
+        }
+        else _job.failed(ex);
+      }
       return true;
     }
     @Override public void onCompletion(CountedCompleter caller) { _job.done(); }
@@ -622,6 +629,8 @@ public final class ParseDataset extends Job<Frame> {
         }
       } catch( IOException ioe ) {
         throw new RuntimeException(ioe);
+      } catch (H2OParseException pe) {
+        throw new H2OParseException(key,pe);
       }
     }
 

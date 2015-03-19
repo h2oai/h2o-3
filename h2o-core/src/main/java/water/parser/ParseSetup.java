@@ -3,6 +3,9 @@ package water.parser;
 import water.*;
 import water.api.ParseSetupV2;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OInternalParseException;
+import water.exceptions.H2OParseException;
+import water.exceptions.H2OParseSetupException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.fvec.UploadFileVec;
@@ -136,7 +139,8 @@ public final class ParseSetup extends Iced {
       case SVMLight: return new SVMLightParser(this);
       case ARFF:     return new     ARFFParser(this);
     }
-    throw H2O.fail();
+    throw new H2OInternalParseException("Unknown file type.  Parse cannot be completed.",
+            "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
   }
 
   // Set of duplicated column names
@@ -278,7 +282,11 @@ public final class ParseSetup extends Iced {
         _empty = false;
 //        _failedSetup = new IcedArrayList<Key>();
 //        _conflicts = new IcedArrayList<Key>();
-        _gblSetup = guessSetup(bits, _userSetup);
+        try {
+          _gblSetup = guessSetup(bits, _userSetup);
+        } catch (H2OParseException pse) {
+          throw new H2OParseSetupException(key, pse);
+        }
 //        if (_gblSetup == null || !_gblSetup._is_valid)
 //          _failedSetup.add(key);
 //        else {
@@ -306,6 +314,7 @@ public final class ParseSetup extends Iced {
     @Override
     public void reduce(GuessSetupTsk other) {
       if (other._empty || other == null) return;
+
       if (_gblSetup == null || !_gblSetup._is_valid) {
         _empty = false;
         _gblSetup = other._gblSetup;
@@ -465,7 +474,8 @@ public final class ParseSetup extends Iced {
     if ((_parse_type != other._parse_type)
             && !(_parse_type == ParserType.ARFF && other._parse_type == ParserType.CSV )
               && !(_parse_type == ParserType.CSV && other._parse_type == ParserType.ARFF ))
-        return false;
+      throw new H2OParseSetupException("Cannot parse files of type "+_parse_type+" and "+
+              other._parse_type+" as one dataset","File type mismatch: "+_parse_type+", "+other._parse_type);
 
     //different separators or col counts
     if (_separator != other._separator && (other._separator != AUTO_SEP || _separator != AUTO_SEP))
