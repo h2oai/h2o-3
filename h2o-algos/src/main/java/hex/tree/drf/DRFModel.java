@@ -32,14 +32,14 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=tmp.length;
     for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }
 
-  @Override protected float[] score0(double data[], float preds[]) {
+  @Override protected double[] score0(double data[], double preds[]) {
     super.score0(data, preds);
     int N = _parms._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
@@ -47,7 +47,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       return preds;
     }
     else { // classification
-      float sum = MathUtils.sum(preds);
+      double sum = MathUtils.sum(preds);
       if (sum>0) MathUtils.div(preds, sum);
       preds[0] = getPrediction(preds, data);
     }

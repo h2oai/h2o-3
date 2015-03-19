@@ -29,7 +29,7 @@ public class CompressedTree extends Keyed {
   }
 
   /** Highly efficient (critical path) tree scoring */
-  public float score( final double row[] ) {
+  public double score( final double row[] ) {
     AutoBuffer ab = new AutoBuffer(_bits);
     IcedBitSet ibs = null;      // Lazily set on hitting first group test
     while(true) {

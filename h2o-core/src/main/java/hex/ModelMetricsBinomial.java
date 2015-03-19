@@ -53,21 +53,21 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public float[] perRow( float ds[], float[] yact, Model m ) {
-      if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Float.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+    @Override public double[] perRow( double ds[], float[] yact, Model m ) {
+      if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+      if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
 
       // Compute error
-      float sum = 0;          // Check for sane class distribution
-      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
+//      float sum = 0;          // Check for sane class distribution
+//      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
 //      assert Math.abs(sum-1.0f) < 1e-6;
-      float err = 1.0f-ds[iact+1];  // Error: distance from predicting ycls as 1.0
+      double err = 1-ds[iact+1];  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 
       // Binomial classification -> compute AUC, draw ROC
-      float snd = ds[2];      // Probability of a TRUE
+      double snd = ds[2];      // Probability of a TRUE
       // TODO: Optimize this: just keep deltas from one CM to the next
       for(int i = 0; i < ModelUtils.DEFAULT_THRESHOLDS.length; i++) {
         int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold

@@ -42,10 +42,10 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl("No Model Metrics for Word2Vec.");
   }
 
-  @Override public float[] score0(Chunk[] cs, int foo, double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override public double[] score0(Chunk[] cs, int foo, double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 

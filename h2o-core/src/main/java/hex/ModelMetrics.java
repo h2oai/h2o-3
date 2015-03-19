@@ -139,10 +139,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
    */
   public static abstract class MetricBuilder extends Iced {
     public double _sumsqe;      // Sum-squared-error
-    transient public float[] _work;
+    transient public double[] _work;
     public long _count;
 
-    abstract public float[] perRow( float ds[], float yact[], Model m);
+    abstract public double[] perRow( double ds[], float yact[], Model m);
     public void reduce( MetricBuilder mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

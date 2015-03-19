@@ -55,7 +55,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
   }
 
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
     preds[0] = hex.genmodel.GenModel.KMeans_closest(centers,data,_output._domains,_output._normSub,_output._normMul);
     return preds;

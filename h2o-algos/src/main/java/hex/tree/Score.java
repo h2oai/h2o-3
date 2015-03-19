@@ -33,7 +33,7 @@ public class Score extends MRTask<Score> {
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
     _mb = _bldr._model.makeMetricBuilder(domain);
-    final float[] cdists = _mb._work; // Temp working array for class distributions
+    final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
     final double[] tmp = _bldr._parms._valid!=null ? new double[_bldr._ncols] : null;
