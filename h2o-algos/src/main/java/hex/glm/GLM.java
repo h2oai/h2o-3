@@ -968,13 +968,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double _addedL2;
     double  [] _rho;
 
+    private static double boundedXAbs(double x, double lb, double ub) {
+      if(x < lb)x = lb;
+      if(x > ub)x = ub;
+      return x >= 0?x:-x;
+    }
+
     public GramSolver(Gram gram, double [] xy, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho, double [] lb, double [] ub) {
       if(ub != null && lb != null)
         for(int i = 0; i < ub.length; ++i) {
           assert ub[i] >= lb[i]:i + ": ub < lb, ub = " + Arrays.toString(ub) + ", lb = " + Arrays.toString(lb) ;
         }
       _lambda = l2pen;
-
       _gram = gram;
       int ii = intercept?1:0;
       int icptCol = xy.length-1;
@@ -986,35 +991,25 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (d < min && d != 0) min = d;
       }
       double ybar = xy[icptCol];
-      if(l1pen > 0)
-        for (int i = 0; i < rhos.length - ii; ++i) {
-          double y = xy[i];
-          if (y == 0) y = min;
-          double xbar = gram.get(icptCol,i);
-          double x = (beta_given != null && proxPen != null)
-            ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
-            :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
-          double rho = l1pen/x;
-          if(rho < 0)rho = -rho;
-          if(ub != null && x > ub[i] || lb != null && x < lb[i]) {
-            rhos[i] = Math.max(rho,xy[i] >= 0 ? xy[i] : -xy[i]);
-          } else
-            rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
-        }
-      // do the ointercept separate as l1pen does not apply to it
-      if(lb != null || ub != null) {
-        int icpt = xy.length-1;
-        double y = xy[icpt];
+      for (int i = 0; i < rhos.length - ii; ++i) {
+        double y = xy[i];
         if (y == 0) y = min;
-        double xbar = gram.get(icptCol,icptCol);
+        double xbar = gram.get(icptCol,i);
         double x = (beta_given != null && proxPen != null)
-          ?(y -  ybar * xbar + proxPen[icpt] * beta_given[icpt]) / ((gram.get(icpt, icpt) - xbar * xbar) + l2pen + proxPen[icpt])
-          :((y - ybar * xbar)/ (gram.get(icpt, icpt) - xbar * xbar) + l2pen);///gram.get(i,i);
-        double rho = default_rho;
-        if(ub != null && x > ub[icpt] || lb != null && x < lb[icpt]) {
-          rhos[icpt] = Math.max(rho,xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
-        } else
-          rhos[icpt] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
+          ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
+          :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
+        double rho = l1pen == 0?0:l1pen/x;
+        if(rho < 0)rho = -rho;
+        if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
+          rhos[i] = (l1pen > .1?l1pen:.1)/boundedXAbs(x,lb[i],ub[i]);
+        } else {
+          rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
+        }
+      }
+      // do the intercept separate as l1pen does not apply to it
+      if(lb != null && !Double.isInfinite(lb[icptCol])|| ub != null && !Double.isInfinite(ub[icptCol])) {
+        int icpt = xy.length-1;
+        rhos[icpt] = (xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
       }
       if(l2pen > 0)
         gram.addDiag(l2pen);

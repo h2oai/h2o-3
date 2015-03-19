@@ -75,8 +75,9 @@ public class ADMM {
       double[] x = MemoryManager.malloc8d(N);
       double[] beta_given = MemoryManager.malloc8d(N);
       double  [] kappa = MemoryManager.malloc8d(rho.length);
-      for(int i = 0; i < N-ii; ++i)
-        kappa[i] = lambda/rho[i];
+      if(lambda > 0)
+        for(int i = 0; i < N-ii; ++i)
+          kappa[i] = lambda/rho[i];
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;

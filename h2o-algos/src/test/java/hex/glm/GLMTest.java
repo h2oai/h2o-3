@@ -26,6 +26,7 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.parser.ValueString;
 import water.util.ModelUtils;
 
 import java.util.Arrays;
@@ -478,7 +479,11 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
-
+  /**
+   * Test bounds on prostate dataset, 2 cases :
+   *    1) test against known result in glmnet (with elastic net regularization) with elastic net penalty
+   *    2) test with no regularization, check the gradient in the end.
+   */
   @Test public void testBounds() {
 //    glmnet's result:
 //    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
@@ -519,14 +524,54 @@ public class GLMTest  extends TestUtil {
       job.trainModel().get();
       assertTrue(job.isDone());
       model = DKV.get(modelKey).get();
-      System.out.println("coefs = " + model.coefficients());
-      System.out.println("beta = " + Arrays.toString(model.beta()));
       Map<String, Double> coefs =  model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]), 1e-2);
       GLMValidation val = model.validation();
+      System.out.println("val = " + val);
       assertEquals(512.2888, val.nullDeviance(), 1e-1);
+                // 388.4952716196743
       assertEquals(388.4686, val.residualDeviance(),1e-1);
+      model.delete();
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
+      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+      job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      double [] beta = model.beta();
+      System.out.println("beta = " + Arrays.toString(beta));
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.remove("ID").remove();
+      DKV.put(fr._key,fr);
+      // now check the gradient
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
+      // todo: remove, result from h2o.1
+      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      String [] names = model._dinfo.coefNames();
+      System.out.println("coefs = " + Arrays.toString(names));
+      System.out.println("grad = " + Arrays.toString(grad));
+      ValueString vs = new ValueString();
+      outer:
+      for(int i = 0; i < names.length; ++i){
+        for(int j = 0; j < betaConstraints.numRows();++j) {
+          if(betaConstraints.vec("names").atStr(vs,j).toString().equals(names[i])) {
+//            System.out.println("found bounds for " + names[i]);
+            if(beta[i] == betaConstraints.vec("lower_bounds").at(j) || beta[i] == betaConstraints.vec("upper_bounds").at(j)) {
+//              System.out.println("skipping var " + i + " which is on the boundary");
+              continue outer;
+            }
+//            } else {
+//              System.out.println(names[i] + ": " + betaConstraints.vec("lower_bounds").at(j) + " <= " + beta[i] + " <= " + betaConstraints.vec("upper_bounds").at(j));
+//            }
+          }
+        }
+        assertEquals(grad[i],0,1e-3);
+      }
     } finally {
       fr.delete();
       betaConstraints.delete();
@@ -582,24 +627,16 @@ public class GLMTest  extends TestUtil {
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
-
-      double [] beta_2 = model.beta();
-      System.out.println("beta1 = " + Arrays.toString(beta_1));
-      System.out.println("beta2 = " + Arrays.toString(beta_2));
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the gradient
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
       // todo: remove, result from h2o.1
      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0).doAll(dinfo._adaptedFrame);
-      LBFGS_LogisticGradientTask lt2 = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_2,1.0/380.0).doAll(dinfo._adaptedFrame);
       GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
-      double [] grad_2 = lt2._gradient;
       for(int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
-      for(int i = 0; i < beta_1.length; ++i)
-        assertEquals(0, grad_2[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
     } finally {
       for(Vec v:betaConstraints.vecs())
         v.remove();
