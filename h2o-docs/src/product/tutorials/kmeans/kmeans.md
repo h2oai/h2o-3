@@ -83,32 +83,7 @@ be thought of as a factor.
 ![Image](KMinspect.png )
 
 
-### K-means Next Steps
 
-For further information on the model select K-Means from the
-drop down menu Score. Specify the K-Means model key, and the
-.hex key for the data set originally used.
-
-The output obtained when submit is pressed is the number of rows
-assigned to each cluster, and the squared error per cluster.
-
-![Image](KMscore.png)
-
-
-### K-means Apply
-
-To generate a prediction (assign the observations in a data set
-to a cluster) select K-means Apply from the Score drop down menu.
-Specify the model to be applied and the  .hex for the data
-you would like to apply it to, and press submit.
-
-Here cluster assignments have been generated
-for the original data. Because the data have been sufficiently well
-researched, the ideal cluster assignments were known in
-advance. Comparing known cluster with predicted cluster demonstrated
-that this K-Means model classifies with a less than 10% error rate.
-
-![Image](KMapply.png)
 
 
 
