@@ -103,6 +103,11 @@ public class GBMTest extends TestUtil {
             },
             false, Family.multinomial);
 
+    basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
+            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
+            },
+            false, Family.bernoulli);
+
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
              new PrepData() { int prep(Frame fr) {
                for( String s : ignored_aircols ) fr.remove(s).remove();
