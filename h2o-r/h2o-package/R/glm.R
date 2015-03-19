@@ -57,8 +57,9 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
     if (!is.null(beta_constraint)) {
         if (!inherits(beta_constraint, "data.frame") && !inherits(beta_constraint, "H2OFrame"))
           stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraint)))
-        if (inherits(beta_constraint, "data.frame"))
+        if (inherits(beta_constraint, "data.frame")) {
           beta_constraint <- as.h2o(training_frame@conn, beta_constraint)
+        }
     }
     dots <- list(...)
   
@@ -68,6 +69,10 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
         dots$envir <- type
         type <- NULL
         } else {
+          print("TYPE: ")
+          print(type)
+          print("DOTS[[TYPE]]: ")
+          print(dots[[type]])
           stop(paste0("\n  unused argument (", type, " = ", dots[[type]], ")"))
         }
     if (is.null(dots$envir)) 
@@ -178,7 +183,8 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
 
     args <- .verify_dataxy(training_frame, x, y)
     parms$x <- args$x_ignore
-    parms$y <- args$y    
+    parms$y <- args$y
+    parms$beta_constraint <- beta_constraint
     names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
 
     .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
