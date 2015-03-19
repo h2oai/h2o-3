@@ -1290,6 +1290,23 @@ h2o.cbind <- function(...) {
   .h2o.nary_frame_op("cbind", ...)
 }
 
+#' Set a Factor Column to Level
+#'
+#' Sets the factor column to the level specified.
+#'
+#' @name h2o.setLevel
+NULL
+
+h2o.setLevel <- function(x, level) {
+  if( missing(level) ) stop("`level` is missing")
+  if( !is.character(level) ) stop("`level` must be a character")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, key=x@key)
+  }
+  .h2o.nary_frame_op("setLevel", x, level)
+}
+
 #' Combine H2O Datasets by Rows
 #'
 #' Takes a sequence of H2O data sets and combines them by rows

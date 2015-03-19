@@ -510,10 +510,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
       int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
-      float[] preds = _mb._work;  // Sized for the union of test and train classes
+      double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        float[] p = score0(chks, row, tmp, preds);
+        double[] p = score0(chks, row, tmp, preds);
         float[] actual = new float[chks.length-startcol];
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
@@ -532,7 +532,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length;
     for( int i=0; i<_output._names.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
@@ -542,10 +542,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
-  protected abstract float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]);
+  protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
-  public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
+  public double score(double[] data){ return ArrayUtils.maxIndex(score0(data, new double[_output.nclasses()]));  }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (_output._model_metrics != null)
@@ -567,14 +567,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *      // Jam predictions into the preds[] array; preds[0] is reserved for the
    *      // main prediction (class for classifiers or value for regression),
    *      // and remaining columns hold a probability distribution for classifiers.
-   *      float[] predict( double data[], float preds[] );
+   *      double[] predict( double data[], double preds[] );
    *      double[] map( HashMap &lt; String,Double &gt; row, double data[] );
    *      // Does the mapping lookup for every row, no allocation
-   *      float[] predict( HashMap &lt; String,Double &gt; row, double data[], float preds[] );
+   *      double[] predict( HashMap &lt; String,Double &gt; row, double data[], double preds[] );
    *      // Allocates a double[] for every row
-   *      float[] predict( HashMap &lt; String,Double &gt; row, float preds[] );
-   *      // Allocates a double[] and a float[] for every row
-   *      float[] predict( HashMap &lt; String,Double &gt; row );
+   *      double[] predict( HashMap &lt; String,Double &gt; row, double preds[] );
+   *      // Allocates a double[] and a double[] for every row
+   *      double[] predict( HashMap &lt; String,Double &gt; row );
    *    }
    *  </pre>
    */
@@ -651,7 +651,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ccsb.ip("// Jam predictions into the preds[] array; preds[0] is reserved for the").nl();
     ccsb.ip("// main prediction (class for classifiers or value for regression),").nl();
     ccsb.ip("// and remaining columns hold a probability distribution for classifiers.").nl();
-    ccsb.ip("public final float[] score0( double[] data, float[] preds ) {").nl();
+    ccsb.ip("public final double[] score0( double[] data, double[] preds ) {").nl();
     SB classCtxSb = new SB().ii(1);
     toJavaPredictBody(ccsb.ii(1), classCtxSb, file);
     ccsb.ip("return preds;").nl();
@@ -690,7 +690,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       String java_text = toJava();
-//      System.out.println(java_text);
+      //System.out.println(java_text);
       GenModel genmodel;
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
@@ -700,8 +700,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
     
-      double features  [] = MemoryManager.malloc8d(genmodel._names.length);
-      float predictions[] = MemoryManager.malloc4f(genmodel.nclasses()+1);
+      double features   [] = MemoryManager.malloc8d(genmodel._names.length);
+      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses()+1);
 
       // Compare predictions, counting mis-predicts
       int miss = 0;

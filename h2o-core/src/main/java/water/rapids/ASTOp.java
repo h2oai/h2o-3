@@ -9,10 +9,12 @@ import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
+import sun.misc.Unsafe;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
+import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -151,7 +153,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
-    
+
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -163,12 +165,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMedian());
 
     // Misc
+    putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
-    putPrefix(new ASTRename());  //TODO
-    putPrefix(new ASTSeq   ());  //TODO
-    putPrefix(new ASTSeqLen());  //TODO
-    putPrefix(new ASTRepLen());  //TODO
-    putPrefix(new ASTQtile ());  //TODO
+    putPrefix(new ASTRename());
+    putPrefix(new ASTSeq   ());
+    putPrefix(new ASTSeqLen());
+    putPrefix(new ASTRepLen());
+    putPrefix(new ASTQtile ());
     putPrefix(new ASTCbind ());
     putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
@@ -1766,6 +1769,39 @@ class ASTRename extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetLevel extends ASTUniPrefixOp {
+  private String _lvl;
+  ASTSetLevel() { super(new String[]{"setLevel", "x", "level"});}
+  @Override String opStr() { return "setLevel"; }
+  @Override ASTOp make() { return new ASTSetLevel(); }
+  ASTSetLevel parse_impl(Exec E) {
+    AST ary = E.parse();
+    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
+    _lvl = ((ASTString)E.parse())._s;
+    ASTSetLevel res = (ASTSetLevel) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.peekAry();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+    final int idx = Arrays.asList(doms).indexOf(_lvl);
+    if (idx == -1)
+      throw new IllegalArgumentException("Did not find level `" + _lvl + "` in the column.");
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(idx);
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    env.poppush(1, new ValFrame(fr2));
+  }
+}
+
 class ASTMatch extends ASTUniPrefixOp {
   protected static double _nomatch;
   protected static String[] _matches;
@@ -2722,10 +2758,9 @@ class ASTTable extends ASTUniPrefixOp {
     NonBlockingHashMap<Long, Integer> _s;
     final long[] _m;
     NewHashMap(long[] m) { _m = m; }
-    @Override public void setupLocal() {}
+    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
-      _s = new NonBlockingHashMap<>();
       for (int i = 0; i < c[0]._len; ++i)
         _s.put(_m[i + start], i+start);
     }
@@ -2748,15 +2783,23 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
-    final NonBlockingHashMap<Long, Integer> _s;
+    private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
+    final NonBlockingHashMap<Long, Integer> _m;
     // out
     long[] _cnts;
-    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) { _s = s; }
+    private static final int _b = _unsafe.arrayBaseOffset(long[].class);
+    private static final int _s = _unsafe.arrayIndexScale(long[].class);
+    private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
+
+    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
+    @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
     @Override public void map(Chunk[] cs) {
-      _cnts = new long[_s.size()];
       for (int i=0; i < cs[0]._len; ++i) {
-        int h = _s.get(mix(cs[0].at8(i), cs[1].at8(i)));
-        _cnts[h]++;
+        int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
+        long offset = ssid(h);
+        long c = _cnts[h];
+        while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
+          c = _cnts[h];
       }
     }
     @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }

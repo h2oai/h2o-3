@@ -28,53 +28,13 @@ public class KMeansGrid extends Grid<KMeansGrid> {
   /** @return Model name */
   @Override protected String modelName() { return MODEL_NAME; }
 
-  private static final String[] HYPER_NAMES = new String[] {"k", "standardize", "init", "seed" };
+  private static final String[] HYPER_NAMES    = new String[] {"_k", "_standardize",          "_init",                         "_seed" };
+  private static final double[] HYPER_DEFAULTS = new double[] {  0,          1     , KMeans.Initialization.PlusPlus.ordinal(),123456789L};
+  /** @return hyperparameter names corresponding to a Model.Parameter field names */
+  @Override protected String[] hyperNames() { return HYPER_NAMES; }
+  /** @return hyperparameter defaults, aligned with the field names */
+  @Override protected double[] hyperDefaults() { return HYPER_DEFAULTS; }
 
-  /** @return Number of hyperparameters this Grid will Grid-over */
-  @Override protected int nHyperParms() { return HYPER_NAMES.length; }
-
-  /** @param h The h-th hyperparameter
-   *  @return h-th hyperparameter name; should correspond to a Model.Parameter field name */
-  @Override protected String hyperName(int h) { return HYPER_NAMES[h]; }
-
-  /** @param h The h-th hyperparameter
-   *  @return Preferred string representation of h-th hyperparameter */
-  @Override protected String hyperToString(int h, double val) {
-    switch( h ) {
-    case 0: return Double.toString(val);
-    case 1: return val==0 ? "false" : "true";
-    case 2: return KMeans.Initialization.values()[(int)val].toString();
-    case 3: return Long.toString((long)val);
-    default: throw H2O.fail();
-    }
-  }
-
-  /** @param h The h-th hyperparameter
-   *  @param m A model to fetch the hyperparameter from
-   *  @return The h-th hyperparameter value from Model m  */
-  @Override protected double hyperValue( int h, Model m ) {
-    KMeansModel.KMeansParameters parms = ((KMeansModel)m)._parms;
-    switch( h ) {
-    case 0: return parms._k;
-    case 1: return parms._standardize ? 1 : 0;
-    case 2: return parms._init.ordinal();
-    case 3: return parms._seed;
-    default: throw H2O.fail();
-    }
-  }
-  
-  /** @param h The h-th hyperparameter
-   *  @return The h-th hyperparameter default value */
-  @Override protected double hyperDefault( int h ) {
-    switch( h ) {
-    case 0: return 2;           // k=2??? for a default?  Or no-default-allowed?
-    case 1: return 1;           // standardize = true
-    case 2: return KMeans.Initialization.PlusPlus.ordinal();
-    case 3: return 123456789L;
-    default: throw H2O.fail();
-    }
-  }
-  
   /** Ask the Grid for a suggested next hyperparameter value, given an existing
    *  Model as a starting point and the complete set of hyperparameter limits.
    *  Returning a NaN signals there is no next suggestion, which is reasonable
@@ -100,6 +60,18 @@ public class KMeansGrid extends Grid<KMeansGrid> {
     parms._init = KMeans.Initialization.values()[(int)hypers[2]];
     parms._seed = (long)hypers[3];
     return new KMeans(parms);
+  }
+
+  /** @param parms Model parameters
+   *  @return Gridable parameters pulled out of the parms */
+  @Override public double[] getHypers( Model.Parameters parms ) {
+    double[] ds = new double[HYPER_NAMES.length];
+    KMeansModel.KMeansParameters kp = (KMeansModel.KMeansParameters)parms;
+    ds[0] = kp._k;
+    ds[1] = kp._standardize ? 1 : 0;
+    ds[2] = kp._init.ordinal();
+    ds[3] = kp._seed;
+    return ds;
   }
 
   // Factory for returning a grid based on an algorithm flavor

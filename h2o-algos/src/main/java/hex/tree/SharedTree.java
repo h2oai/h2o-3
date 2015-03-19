@@ -307,14 +307,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
+  abstract protected double score1( Chunk chks[], double fs[/*nclass*/], int row );
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
-  void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
-    float sum = score1(chks, fs, row);
+  void score2(Chunk chks[], double fs[/*nclass*/], int row ) {
+    double sum = score1(chks, fs, row);
     if( isClassifier()) {
-      if( !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
+      if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }

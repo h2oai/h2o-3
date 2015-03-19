@@ -26,7 +26,7 @@ import water.fvec.Chunk;
 
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
-    float [] preds = new float[_nclass+1];
+    double [] preds = new double[_nclass+1];
     int ntrees = _trees.length;
     Chunk coobt = chk_oobt(chks);
     Chunk cys   = chk_resp(chks);

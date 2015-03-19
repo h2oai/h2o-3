@@ -30,19 +30,19 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=tmp.length;
     for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }
 
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
     if( _parms._loss == GBMParameters.Family.bernoulli ) {
       double fx = preds[1] + _output._initialPrediction;
-      preds[2] = 1.0f/(float)(1f+Math.exp(-fx));
-      preds[1] = 1f-preds[2];
+      preds[2] = 1.0/(1.0+Math.exp(-fx));
+      preds[1] = 1.0-preds[2];
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
       return preds;
     }
@@ -66,8 +66,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     // the loss function.
     if( _parms._loss == GBMParameters.Family.bernoulli ) {
       body.ip("double fx = preds[1] + ").p(_output._initialPrediction).p(";").nl();
-      body.ip("preds[2] = 1.0f/(float)(1f+Math.exp(-fx));").nl();
-      body.ip("preds[1] = 1f-preds[2];").nl();
+      body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
+      body.ip("preds[1] = 1.0-preds[2];").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
       return;
     }
