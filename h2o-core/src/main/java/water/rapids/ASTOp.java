@@ -2789,16 +2789,16 @@ class ASTTable extends ASTUniPrefixOp {
     long[] _cnts;
     private static final int _b = _unsafe.arrayBaseOffset(long[].class);
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
-    private static long scaIdx(int i) { return _b + _s*i; } // Scale and Shift
+    private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
     CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
     @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
     @Override public void map(Chunk[] cs) {
       for (int i=0; i < cs[0]._len; ++i) {
         int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
-        long offset = scaIdx(h);
+        long offset = ssid(h);
         long c = _cnts[h];
-        while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))
+        while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
           c = _cnts[h];
       }
     }
