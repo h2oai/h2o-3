@@ -20,7 +20,11 @@ import java.util.HashSet;
 * Configuration and base guesser for a parse;
 */
 public final class ParseSetup extends Iced {
-  public static final byte AUTO_SEP = -1;
+  public static final byte GUESS_SEP = -1;
+  public static final int NO_HEADER = -1;
+  public static final int GUESS_HEADER = 0;
+  public static final int HAS_HEADER = 1;
+  public static final int GUESS_COL_CNT = -1;
   Key[] _source_keys;                      // Source Keys being parsed
   boolean _is_valid;           // The initial parse is sane
   long _invalid_lines; // Number of broken/invalid lines found
@@ -71,10 +75,10 @@ public final class ParseSetup extends Iced {
    */
   public ParseSetup(ParseSetupV2 ps) {
     this(false, 0, 0, null, ps.parse_type, ps.separator, ps.single_quotes,
-            ps.check_header, -1, ps.column_names, strToColumnTypes(ps.column_types),
+            ps.check_header, GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
     if(ps.parse_type == null) _parse_type = ParserType.AUTO;
-    if(ps.separator == 0) _separator = AUTO_SEP;
+    if(ps.separator == 0) _separator = GUESS_SEP;
   }
 
   /**
@@ -103,7 +107,6 @@ public final class ParseSetup extends Iced {
    */
   public ParseSetup() {}
 
-  final boolean hasHeaders() { return _column_names != null; }
   final long headerLines() { return _header_lines; }
 
   public String[] getColumnTypeStrings() {
@@ -192,7 +195,7 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup(Key[] fkeys, boolean singleQuote, int checkHeader) {
-    return guessSetup(fkeys, new ParseSetup(false, 0, 0, null, ParserType.AUTO, AUTO_SEP, singleQuote, checkHeader, -1, null));
+    return guessSetup(fkeys, new ParseSetup(false, 0, 0, null, ParserType.AUTO, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
   }
 
   /**
@@ -419,10 +422,10 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup( byte[] bits, boolean singleQuotes, int checkHeader ) {
-    return guessSetup(bits, ParserType.AUTO, AUTO_SEP, -1, singleQuotes, checkHeader, null, null, null);
+    return guessSetup(bits, ParserType.AUTO, GUESS_SEP, GUESS_COL_CNT, singleQuotes, checkHeader, null, null, null);
   }
   public static ParseSetup guessSetup( byte[] bits, ParseSetup userSetup ) {
-    return guessSetup(bits, userSetup._parse_type, userSetup._separator, -1, userSetup._single_quotes, userSetup._check_header, null, null, null);
+    return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, null, null, null);
   }
 
   private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
@@ -452,11 +455,11 @@ public final class ParseSetup extends Iced {
 
     // ARFF wins over CSV (Note: ARFF might not know separator or ncols yet)
     if ((_parse_type == ParserType.CSV || _parse_type == ParserType.AUTO) && ps._parse_type == ParserType.ARFF) {
-      if (ps._separator == ParseSetup.AUTO_SEP && _separator != ParseSetup.AUTO_SEP) ps._separator = _separator; //use existing separator
+      if (ps._separator == ParseSetup.GUESS_SEP && _separator != ParseSetup.GUESS_SEP) ps._separator = _separator; //use existing separator
       return ps;
     }
     if (_parse_type == ParserType.ARFF && (ps._parse_type == ParserType.CSV || _parse_type == ParserType.AUTO)) {
-      if (ps._separator != ParseSetup.AUTO_SEP && _separator == ParseSetup.AUTO_SEP) _separator = ps._separator; //use existing separator
+      if (ps._separator != ParseSetup.GUESS_SEP && _separator == ParseSetup.GUESS_SEP) _separator = ps._separator; //use existing separator
       return this;
     }
 
@@ -478,7 +481,7 @@ public final class ParseSetup extends Iced {
               other._parse_type+" as one dataset","File type mismatch: "+_parse_type+", "+other._parse_type);
 
     //different separators or col counts
-    if (_separator != other._separator && (other._separator != AUTO_SEP || _separator != AUTO_SEP))
+    if (_separator != other._separator && (other._separator != GUESS_SEP || _separator != GUESS_SEP))
       return false;
 
     if (_number_columns != other._number_columns && (other._number_columns > 0 && _number_columns > 0))

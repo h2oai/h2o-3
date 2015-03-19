@@ -19,13 +19,13 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   public ParserType parse_type = ParserType.AUTO;
 
   @API(help="Field separator", direction=API.Direction.INOUT)
-  public byte separator = ParseSetup.AUTO_SEP;
+  public byte separator = ParseSetup.GUESS_SEP;
 
   @API(help="Single quotes", direction=API.Direction.INOUT)
   public boolean single_quotes = false;
 
   @API(help="Check header: 0 means guess, +1 means 1st line is header not data, -1 means 1st line is data not header", direction=API.Direction.INOUT)
-  public int check_header = 0;
+  public int check_header = ParseSetup.GUESS_HEADER;
 
   @API(help="Column names", direction=API.Direction.INOUT)
   public String[] column_names = null;
@@ -50,7 +50,7 @@ public class ParseSetupV2 extends Schema<ParseSetup,ParseSetupV2> {
   long header_lines;
 
   @API(help="Number of columns", direction=API.Direction.OUTPUT)
-  public int number_columns = -1;
+  public int number_columns = ParseSetup.GUESS_COL_CNT;
 
   @API(help="Domains for categorical columns", direction=API.Direction.OUTPUT)
   public String[][] domains = null;

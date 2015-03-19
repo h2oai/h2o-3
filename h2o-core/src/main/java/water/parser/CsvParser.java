@@ -6,9 +6,13 @@ import water.fvec.FileVec;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 class CsvParser extends Parser {
-  private static final byte AUTO_SEP = ParseSetup.AUTO_SEP;
+  private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
+  private static final int NO_HEADER = ParseSetup.NO_HEADER;
+  private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
+  private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
 
   CsvParser( ParseSetup ps ) { super(ps); }
 
@@ -447,12 +451,12 @@ MAIN_LOOP:
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
   /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
-  private static int[] determineSeparatorCounts(String from, int single_quote) {
+  private static int[] determineSeparatorCounts(String from, byte singleQuote) {
     int[] result = new int[separators.length];
     byte[] bits = from.getBytes();
     boolean in_quote = false;
     for( byte c : bits ) {
-      if( (c == single_quote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
+      if( (c == singleQuote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
         in_quote ^= true;
       if( !in_quote || c == HIVE_SEP )
         for( int i = 0; i < separators.length; ++i )
@@ -465,7 +469,11 @@ MAIN_LOOP:
   /** Determines the tokens that are inside a line and returns them as strings
    *  in an array.  Assumes the given separator.
    */
-  public static String[] determineTokens(String from, byte separator, int single_quote) {
+  public static String[] determineTokens(String from, byte separator, boolean singleQuotes) {
+    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
+    return determineTokens(from, separator, singleQuote);
+  }
+  public static String[] determineTokens(String from, byte separator, byte singleQuote) {
     ArrayList<String> tokens = new ArrayList<>();
     byte[] bits = from.getBytes();
     int offset = 0;
@@ -475,7 +483,7 @@ MAIN_LOOP:
       if(offset == bits.length)break;
       StringBuilder t = new StringBuilder();
       byte c = bits[offset];
-      if ((c == CsvParser.CHAR_DOUBLE_QUOTE) || (c == single_quote)) {
+      if ((c == CsvParser.CHAR_DOUBLE_QUOTE) || (c == singleQuote)) {
         quotes = c;
         ++offset;
       }
@@ -512,7 +520,8 @@ MAIN_LOOP:
     return tokens.toArray(new String[tokens.size()]);
   }
 
-  public static byte guessSeparator(String l1, String l2, int single_quote) {
+  public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
+    final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
     int[] s1 = determineSeparatorCounts(l1, single_quote);
     int[] s2 = determineSeparatorCounts(l2, single_quote);
     // Now we have the counts - if both lines have the same number of
@@ -543,7 +552,7 @@ MAIN_LOOP:
         return separators[max];
     }
 
-    return AUTO_SEP;
+    return GUESS_SEP;
   }
 
   // Guess number of columns
@@ -565,48 +574,26 @@ MAIN_LOOP:
   /** Determines the CSV parser setup from the first few lines.  Also parses
    *  the next few lines, tossing out comments and blank lines.
    *
-   *  If the separator is AUTO_SEP, then it is guessed by looking at tokenization 
+   *  If the separator is GUESS_SEP, then it is guessed by looking at tokenization
    *  and column count of the first few lines.
    *
    *  If ncols is -1, then it is guessed similarly to the separator.
    *
    *  singleQuotes is honored in all cases (and not guessed).
    *
-   *  checkHeader== -1 ==> 1st line is data, not header
-   *  checkHeader== +1 ==> 1st line is header, not data.  Error if not compatible with prior header
-   *  checkHeader==  0 ==> Guess 1st line header, only if compatible with prior
    */
   static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
 
-    // Parse up to 10 lines (skipping hash-comments & ARFF comments)
-    String[] lines = new String[10]; // Parse 10 lines
-    int nlines = 0;
-    int offset = 0;
-    while( offset < bits.length && nlines < lines.length ) {
-      int lineStart = offset;
-      while( offset < bits.length && !CsvParser.isEOL(bits[offset]) ) ++offset;
-      int lineEnd = offset;
-      ++offset;
-      // For Windoze, skip a trailing LF after CR
-      if( (offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
-      if( bits[lineStart] == '#') continue; // Ignore      comment lines
-      if( bits[lineStart] == '%') continue; // Ignore ARFF comment lines
-      if( bits[lineStart] == '@') continue; // Ignore ARFF lines
-      if( lineEnd > lineStart ) {
-        String str = new String(bits, lineStart,lineEnd-lineStart).trim();
-        if( !str.isEmpty() ) lines[nlines++] = str;
-      }
-    }
-    if( nlines==0 )
-      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO,AUTO_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
+    String[] lines = getFirstLines(bits);
+    if(lines.length==0 )
+      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO, GUESS_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
     String[] labels;
-    final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
-    final String[][] data = new String[nlines][];
-    if( nlines == 1 ) {       // Ummm??? Only 1 line?
-      if( sep == AUTO_SEP ) {
+    final String[][] data = new String[lines.length][];
+    if( lines.length == 1 ) {       // Ummm??? Only 1 line?
+      if( sep == GUESS_SEP) {
         if (lines[0].split(",").length > 2) sep = (byte) ',';
         else if (lines[0].split(" ").length > 2) sep = ' ';
         else { //one item, guess type
@@ -627,41 +614,41 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
         }
       }
-      data[0] = determineTokens(lines[0], sep, single_quote);
+      data[0] = determineTokens(lines[0], sep, singleQuotes);
       ncols = (ncols > 0) ? ncols : data[0].length;
-      if( checkHeader == 0 ) labels =  ParseSetup.allStrings(data[0]) ? data[0] : null;
-      else if( checkHeader == 1 ) labels = data[0];
+      if( checkHeader == GUESS_HEADER) labels =  ParseSetup.allStrings(data[0]) ? data[0] : null;
+      else if( checkHeader == HAS_HEADER ) labels = data[0];
       else labels = null;
     } else {                    // 2 or more lines
 
       // First guess the field separator by counting occurrences in first few lines
-      if( sep == AUTO_SEP ) {   // first guess the separator
-        sep = guessSeparator(lines[0], lines[1], single_quote);
-        if( sep == AUTO_SEP && nlines > 2 ) {
-          if( sep == AUTO_SEP ) sep = guessSeparator(lines[1], lines[2], single_quote);
-          if( sep == AUTO_SEP ) sep = guessSeparator(lines[0], lines[2], single_quote);
+      if( sep == GUESS_SEP) {   // first guess the separator
+        sep = guessSeparator(lines[0], lines[1], singleQuotes);
+        if( sep == GUESS_SEP && lines.length > 2 ) {
+          sep = guessSeparator(lines[1], lines[2], singleQuotes);
+          if( sep == GUESS_SEP) sep = guessSeparator(lines[0], lines[2], singleQuotes);
         }
-        if( sep == AUTO_SEP ) sep = (byte)' '; // Bail out, go for space
+        if( sep == GUESS_SEP) sep = (byte)' '; // Bail out, go for space
       }
 
       // Tokenize the first few lines using the separator
-      for( int i = 0; i < nlines; ++i )
-        data[i] = determineTokens(lines[i], sep, single_quote );
+      for( int i = 0; i < lines.length; ++i )
+        data[i] = determineTokens(lines[i], sep, singleQuotes );
       // guess columns from tokenization
       ncols = guessNcols(columnNames,data);
 
       // Asked to check for a header, so see if 1st line looks header-ish
-      if( checkHeader == 0 ) {  // Guess
-        labels = ParseSetup.hasHeader(data[0],data[1]) && (data[0].length == ncols) ? data[0] : null;
-      } else if( checkHeader == 1 ) { // Told: take 1st line
+      if( checkHeader == GUESS_HEADER) {  // Guess
+        labels = ParseSetup.hasHeader(data[0], data[1]) && (data[0].length == ncols) ? data[0] : null;
+      } else if( checkHeader == HAS_HEADER ) { // Told: take 1st line
         labels = data[0];
       } else {                  // Told: no headers
         labels = null;
       }
-      if( checkHeader == 0 ) checkHeader = labels==null ? -1 : +1;
+      if( checkHeader == GUESS_HEADER) checkHeader = labels==null ? NO_HEADER : HAS_HEADER;
       
       // See if compatible headers
       if( columnNames != null && labels != null ) {
@@ -708,4 +695,28 @@ MAIN_LOOP:
     // Return the final setup
     return resSetup;
   }
+
+  private static String[] getFirstLines(byte[] bits) {
+    // Parse up to 10 lines (skipping hash-comments & ARFF comments)
+    String[] lines = new String[10]; // Parse 10 lines
+    int nlines = 0;
+    int offset = 0;
+    while( offset < bits.length && nlines < lines.length ) {
+      int lineStart = offset;
+      while( offset < bits.length && !CsvParser.isEOL(bits[offset]) ) ++offset;
+      int lineEnd = offset;
+      ++offset;
+      // For Windoze, skip a trailing LF after CR
+      if( (offset < bits.length) && (bits[offset] == CsvParser.CHAR_LF)) ++offset;
+      if( bits[lineStart] == '#') continue; // Ignore      comment lines
+      if( bits[lineStart] == '%') continue; // Ignore ARFF comment lines
+      if( bits[lineStart] == '@') continue; // Ignore ARFF lines
+      if( lineEnd > lineStart ) {
+        String str = new String(bits, lineStart,lineEnd-lineStart).trim();
+        if( !str.isEmpty() ) lines[nlines++] = str;
+      }
+    }
+    return Arrays.copyOf(lines, nlines);
+  }
+
 }

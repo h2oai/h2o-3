@@ -26,7 +26,7 @@ public final class ParseDataset extends Job<Frame> {
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
-  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false,0/*guess header*/); }
+  public static Frame parse(Key okey, Key... keys) { return parse(okey,keys,true, false, ParseSetup.GUESS_HEADER); }
 
   // Guess setup from inspecting the first Key only, then parse.
   // Suitable for e.g. testing setups, where the data is known to be sane.
@@ -580,13 +580,13 @@ public final class ParseDataset extends Job<Frame> {
 
       // Allow dup headers, if they are equals-ignoring-case
       boolean has_hdr = false;
-      if (_gblSetup._check_header == 1 && localSetup._check_header == 1) has_hdr = true;
+      if (_gblSetup._check_header == ParseSetup.GUESS_HEADER && localSetup._check_header == ParseSetup.HAS_HEADER) has_hdr = true;
       if( has_hdr ) {           // Both have headers?
         for( int i = 0; has_hdr && i < localSetup._column_names.length; ++i )
           has_hdr = localSetup._column_names[i].equalsIgnoreCase(_gblSetup._column_names[i]);
         if( !has_hdr )          // Headers not compatible?
           // Then treat as no-headers, i.e., parse it as a normal row
-          localSetup._check_header = -1;
+          localSetup._check_header = ParseSetup.NO_HEADER;
       }
 
       // Parse the file

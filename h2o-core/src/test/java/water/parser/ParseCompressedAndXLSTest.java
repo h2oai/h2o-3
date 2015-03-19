@@ -59,7 +59,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
                                          ParserType.XLS,
                                          (byte)52, // sep; ascii '4'
                                          true,     // singleQuotes
-                                         -1, // check header
+                                         ParseSetup.NO_HEADER, // check header
                                          12,       // ncols
                                          new String[]{"fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance","IsDepDelayed","IsDepDelayed_REC"},
                                          ctypes,

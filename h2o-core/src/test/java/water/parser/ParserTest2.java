@@ -44,7 +44,8 @@ public class ParserTest2 extends TestUtil {
     };
 
     Key rkey = ParserTest.makeByteVec(data);
-    ParseSetup ps = new ParseSetup(true, 0, 1, null, ParserType.CSV, (byte)',', false, 0, 9, null,
+    ParseSetup ps = new ParseSetup(true, 0, 1, null, ParserType.CSV, (byte)',', false, ParseSetup.HAS_HEADER, 9,
+            new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'", "'C8DChunk'", "'Categorical'"},
             ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
     Frame fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
     int nlines = (int)fr.numRows();
@@ -69,16 +70,14 @@ public class ParserTest2 extends TestUtil {
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
     Key k = ParserTest.makeByteVec(data);
-    ParseSetup gSetupF = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, -1, null, null, null);
-    gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
+   ParseSetup gSetupF = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 4, false/*single quote*/, ParseSetup.NO_HEADER, null, null, null);    gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frF = ParseDataset.parse(Key.make(), new Key[]{k}, false, gSetupF);
     testParsed(frF,expectFalse);
 
     String[][] expectTrue = new String[][] { ar("Tomass,test,first,line", null),
                                              ar("Tomas''stest2","test2"),
                                              ar("last", "lines trailing piece") };
-    ParseSetup gSetupT = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, -1, null, null, null);
-    gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
+   ParseSetup gSetupT = ParseSetup.guessSetup(data[0].getBytes(),ParserType.CSV, (byte)',', 2, true/*single quote*/, ParseSetup.NO_HEADER, null, null, null);    gSetupT._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
     Frame frT = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupT);
     //testParsed(frT,expectTrue);  // not currently passing
     frT.delete();
