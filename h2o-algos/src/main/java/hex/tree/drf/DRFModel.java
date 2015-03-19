@@ -58,7 +58,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     if (_output.nclasses() == 1) { // Regression
       body.ip("preds[0] /= " + _output._ntrees + ";").nl();
     } else { // Classification
-      body.ip("float sum = 0;").nl();
+      body.ip("double sum = 0;").nl();
       body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
       body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();

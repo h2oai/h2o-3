@@ -141,7 +141,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for( int t=0; t < _output._treeKeys.length; t++ ) {
-      toJavaForestName(body,mname,t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
       file.nl();
       toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
       file.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
