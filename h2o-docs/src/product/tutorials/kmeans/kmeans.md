@@ -4,7 +4,7 @@ This tutorial describes how to perform a K-Means analysis. By the end of this tu
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
-In H2O-dev, the K-means algorithm has a "k-modes" option that allows you to use mixed categorical and real-valued data. By using dissimilarity measures to handle categoricals, replacing cluster means with cluster modes, and using a frequency-based method to update modes in the clustering process to minimize the clustering costs, the k-modes algorithm is scalable in both the number of clusters and the number of records. 
+In H2O-dev, the K-means algorithm has a "k-modes" function that allows you to use mixed categorical and real-valued data. By using dissimilarity measures to handle categoricals, replacing cluster means with cluster modes, and using a frequency-based method to update modes in the clustering process to minimize the clustering costs, the k-modes algorithm is scalable in both the number of clusters and the number of records. The k-modes method is used anytime categorical data is present. 
 
 For more information, refer to <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf" target="_blank">"A Fast Clustering Algorithm to Cluster Very Large Categorical Data Sets in Data Mining"</a> and <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf" target="_blank">"Extensions to the k-Means Algorithm for Clustering Large Data Sets with Catgorical Values"</a> by Zhexue Huang.
 
