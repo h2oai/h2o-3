@@ -63,7 +63,7 @@ h2o.gbm <- function(x, y, training_frame, ...,
     dots$envir <- type
     type <- NULL
     } else {
-      stop(paste0("\n  unused argument (", type, " = ", dots[[type]], ")"))
+      stop(paste0("\n  unused argument (", type, " = ", deparse(dots[[type]]), ")"))
     }
   if (is.null(dots$envir))
     dots$envir <- parent.frame()
