@@ -217,6 +217,32 @@ public class DRFTest extends TestUtil {
     );
 
   }
+  @Test public void testAlphabet() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            a(a(664, 0),
+              a(0, 702)),
+            s("0", "1"));
+  }
+  @Test public void testAlphabetRegression() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            0.0);
+  }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
@@ -462,7 +488,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2273639898, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.206421137, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 }

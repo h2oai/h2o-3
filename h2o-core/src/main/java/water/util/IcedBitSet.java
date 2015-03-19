@@ -55,7 +55,7 @@ public class IcedBitSet extends Iced {
     _val[idx >> 3] |= ((byte)1 << (idx & 7));
   }
   public void clear(int idx) {
-    if( _bitoff != 0 ) throw H2O.unimpl(); // TODO
+    idx -= _bitoff;
     if(idx < 0 || idx >= _nbits)
       throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
     if( _byteoff != 0 ) throw H2O.unimpl(); // TODO

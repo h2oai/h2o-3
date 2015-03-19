@@ -256,7 +256,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int tmax = _tree.len();   // Number of total splits in tree K
       for( int leaf=leafk; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-        //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
+//        System.out.println((_st._nclass==1?"Regression":("Class "+_fr2.vecs()[_st._ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
 //        System.out.println("--> Decided node: " + dn +
@@ -359,7 +359,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms.train(), _parms._response_column);
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
+      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
