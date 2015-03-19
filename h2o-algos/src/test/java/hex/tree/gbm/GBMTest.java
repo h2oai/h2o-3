@@ -628,4 +628,50 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  // HEXDEV-223
+  @Test public void testCategorical() {
+    Frame tfr=null, vfr=null;
+    final int N = 1;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
+      Scope.track(tfr.replace(1, tfr.vecs()[1].toEnum())._key);
+      DKV.put(tfr);
+      for (int i=0; i<N; ++i) {
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "y";
+        parms._ntrees = 1;
+        parms._max_depth = 1;
+        parms._learn_rate = 1;
+        parms._loss = Family.bernoulli;
+
+        // Build a first model; all remaining models should be equal
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        assertEquals(gbm._output._ntrees, parms._ntrees);
+
+        hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.train());
+        double auc = mm._aucdata.AUC();
+        Assert.assertTrue(1 == auc);
+
+        mses[i] = gbm._output._mse_train[gbm._output._mse_train.length-1];
+        job.remove();
+        gbm.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(0.0142093, mses[i], 1e-6);
+    }
+  }
+
 }
