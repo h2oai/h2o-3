@@ -25,7 +25,7 @@ public class ParseSetupHandler extends Handler {
     // TODO: ParseSetup throws away the srcs list. . .
     PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] { "destination_key", "source_keys", "column_types"});
     p.destination_key = ParseSetup.hex(p.source_keys[0].toString());
-    if( p.check_header==1 ) p.data = Arrays.copyOfRange(p.data,1,p.data.length-1); // Drop header from the preview data
+    if( p.check_header==ParseSetup.HAS_HEADER ) p.data = Arrays.copyOfRange(p.data,1,p.data.length); // Drop header from the preview data
 
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
