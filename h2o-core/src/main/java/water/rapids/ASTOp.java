@@ -1595,7 +1595,7 @@ class ASTCbind extends ASTUniPrefixOp {
         if (ast instanceof ASTFrame) { dblarys.add(a); }
         else {broke = true; break; } // if not a frame then break here since we are done parsing Frame args
       }
-      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
+      else if (a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTBinOp || a instanceof ASTUniPrefixOp || a instanceof ASTUniOp || a instanceof ASTReducerOp) { // basically anything that returns a Frame...
         dblarys.add(a);
       }
       else { broke = true; break; }
@@ -1957,6 +1957,19 @@ class ASTRepLen extends ASTUniPrefixOp {
   @Override String opStr() { return "rep_len"; }
   public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
+  ASTRepLen parse_impl(Exec E) {
+    AST ary = E.parse();
+    if (ary instanceof ASTId) { ary = Env.staticLookup((ASTId)ary); }
+    try {
+      _length = E.nextDbl();
+    } catch(ClassCastException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("Argument `length` expected to be a number.");
+    }
+    ASTRepLen res = (ASTRepLen) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
   @Override void apply(Env env) {
 
     // two cases if x is a frame: x is a single vec, x is a list of vecs

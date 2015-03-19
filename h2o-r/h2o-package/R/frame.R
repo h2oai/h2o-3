@@ -126,6 +126,12 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+h2o.rep_len <- function(x, length) {
+  if(length <= 0) return(NULL)
+
+  .h2o.nary_frame_op("rep_len", x, length)
+}
+
 #' Inserting Missing Values to an H2O DataFrame
 #'
 #' Randomly replaces a user-specified fraction of entries in a H2O dataset with
