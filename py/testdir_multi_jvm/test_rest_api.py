@@ -702,10 +702,10 @@ models_to_build = [
     ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10] } ),
     ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
 
-    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'family': 'gaussian' } ),
-    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
-    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
-    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'family': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'loss': 'gaussian' } ),
+    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
+    ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
 ]
 
 built_models = {}
@@ -736,8 +736,8 @@ for algo, model_builder in model_builders.iteritems():
 
     expected_count = 1
     if expected_count != parameters_validation['validation_error_count']:
-        print "validation errors: "
-        pp.pprint(parameters_validation)
+       print "validation errors: "
+       pp.pprint(parameters_validation)
     assert expected_count == parameters_validation['validation_error_count'], "FAIL: " + str(expected_count) + " != validation_error_count in good-parameters parameters validation result."
     assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
 
