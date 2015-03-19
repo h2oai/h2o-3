@@ -94,17 +94,14 @@ public class ASTApply extends ASTOp {
       // Create the results frame.
       if (isRow) {
         Futures fs = new Futures();
-        Vec[] vecs = new Vec[row_result.length];
-        Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
-        for( int c = 0; c < vecs.length; c++ ) {
-          AppendableVec vec = new AppendableVec(keys[c]);
-          NewChunk chunk = new NewChunk(vec, 0);
-          chunk.addNum(row_result[c]);
-          chunk.close(0, fs);
-          vecs[c] = vec.close(fs);
-        }
+        Key key = Vec.VectorGroup.VG_LEN1.addVecs(1)[0];
+        AppendableVec v = new AppendableVec(key);
+        NewChunk chunk = new NewChunk(v, 0);
+        for (double aRow_result : row_result) chunk.addNum(aRow_result);
+        chunk.close(0, fs);
+        Vec vec = v.close(fs);
         fs.blockForPending();
-        fr2 = new Frame(fr.names(), vecs);
+        fr2 = new Frame(vec);
       } else {
         fr2 = new Frame(fr.names(), vecs_result);
       }
