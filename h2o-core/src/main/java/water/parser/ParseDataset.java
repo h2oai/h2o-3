@@ -143,7 +143,7 @@ public final class ParseDataset extends Job<Frame> {
       _delete_on_done = delete_on_done;
     }
     @Override public void compute2() {
-      parse_impl(_job, _keys, _setup, _delete_on_done);
+      parseAllKeys(_job, _keys, _setup, _delete_on_done);
       tryComplete();
     }
 
@@ -161,7 +161,7 @@ public final class ParseDataset extends Job<Frame> {
   }
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parse_impl(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
+  private static void parseAllKeys(ParseDataset job, Key[] fkeys, ParseSetup setup, boolean delete_on_done) {
     assert setup._number_columns > 0;
     if( setup._column_names != null &&
         ( (setup._column_names.length == 0) ||
@@ -713,7 +713,7 @@ public final class ParseDataset extends Job<Frame> {
         default:
           throw H2O.unimpl();
         }
-        p.parallelParse(in.cidx(),din,dout);
+        p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
         Job.update(in._len,_job_key); // Record bytes parsed
 

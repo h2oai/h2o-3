@@ -10,7 +10,7 @@ import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps ) { super(ps); }
-  @Override DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
+  @Override DataOut parseChunk(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
 
   // A Stream, might be a Zip stream
   private InputStream _is;

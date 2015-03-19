@@ -14,7 +14,7 @@ class CsvParser extends Parser {
 
   // Parse this one Chunk (in parallel with other Chunks)
   @SuppressWarnings("fallthrough")
-  @Override public DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
+  @Override public DataOut parseChunk(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
     ValueString str = new ValueString();
     byte[] bits = din.getChunkData(cidx);
     if( bits == null ) return dout;
@@ -102,9 +102,7 @@ MAIN_LOOP:
             assert str.get_buf() != bits;
             str.addBuff(bits);
           }
-          if(/*_setup._column_types != null
-                  && colIdx < _setup._column_types.length
-                  &&*/ _setup._na_strings != null
+          if( _setup._na_strings != null
                   && _setup._na_strings[colIdx] != null
                   && str.equals(_setup._na_strings[colIdx]))
             dout.addInvalidCol(colIdx);
@@ -628,6 +626,7 @@ MAIN_LOOP:
                 domains[0] = new String[]{data[0][0]};
             }
           }
+          //FIXME should set warning message and let fall through
           return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
         }
       }

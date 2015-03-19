@@ -38,7 +38,7 @@ class SVMLightParser extends Parser {
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
 
   @SuppressWarnings("fallthrough")
-  @Override public final DataOut parallelParse(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
+  @Override public final DataOut parseChunk(int cidx, final Parser.DataIn din, final Parser.DataOut dout) {
       ValueString _str = new ValueString();
       byte[] bits = din.getChunkData(cidx);
       if( bits == null ) return dout;

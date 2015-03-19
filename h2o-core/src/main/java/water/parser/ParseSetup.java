@@ -369,7 +369,6 @@ public final class ParseSetup extends Iced {
           }
 
           //merge column types
-          //TODO revisit to adjust for strength of guesses
           if (_gblSetup._column_types == null) _gblSetup._column_types = other._gblSetup._column_types;
           else if (other._gblSetup._column_types != null) {
             for (int i = 0; i < _gblSetup._column_types.length; ++i)
@@ -459,42 +458,6 @@ public final class ParseSetup extends Iced {
     }
     ps._column_types = _column_types;
     return ps;
-
-    /* h2ov1
-    switch(_parse_type){
-      case CSV:
-        return CsvParser.guessSetup(bits,checkHeader);
-      case SVMLight:
-        return SVMLightParser.guessSetup(bits);
-      case XLS:
-        return XlsParser.guessSetup(bits);
-      case AUTO:
-        try{
-          if((res = XlsParser.guessSetup(bits)) != null && res._is_valid)
-            if(!res.hasErrors())return res;
-            else guesses.add(res);
-        }catch(Exception e){}
-        try{
-          if((res = SVMLightParser.guessSetup(bits)) != null && res._is_valid)
-            if(!res.hasErrors())return res;
-            else guesses.add(res);
-        }catch(Exception e){}
-        try{
-          if((res = CsvParser.guessSetup(bits,setup,checkHeader)) != null && res._is_valid)
-            if(!res.hasErrors())return res;
-            else guesses.add(res);
-        }catch(Exception e){e.printStackTrace();}
-        if(res == null || !res._is_valid && !guesses.isEmpty()){
-          for(PSetupGuess pg:guesses)
-            if(res == null || pg._validLines > res._validLines)
-              res = pg;
-        }
-        assert res != null;
-        return res;
-      default:
-        throw H2O.unimpl();
-    }
-  } */
   }
 
   public boolean isCompatible(ParseSetup other){
