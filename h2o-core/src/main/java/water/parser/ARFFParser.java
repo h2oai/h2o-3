@@ -4,17 +4,18 @@ import java.util.ArrayList;
 import water.fvec.Vec;
 
 class ARFFParser extends CsvParser {
-  private static final int FIRST_ROW_IS_HEADER = 1;
-  private static final int FIRST_ROW_IS_NOT_HEADER = -1;
-  private static final byte AUTO_SEP = ParseSetup.AUTO_SEP;
+  private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
+  private static final int NO_HEADER = ParseSetup.NO_HEADER;
+  private static final int GUESS_HEADER = ParseSetup.GUESS_HEADER;
+  private static final int HAS_HEADER = ParseSetup.HAS_HEADER;
+
   ARFFParser(ParseSetup ps) { super(ps); }
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
-    checkHeader = FIRST_ROW_IS_NOT_HEADER;   // ARFF file by definition has no header as the first row of the data file.
+    checkHeader = NO_HEADER;   // ARFF file by definition has no header as the first row of the data file.
 
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
-    final byte single_quote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
 
     // Parse all lines starting with @ until EOF or @DATA
     boolean have_data = false;
@@ -45,13 +46,13 @@ class ARFFParser extends CsvParser {
             }
             break;
           }
-          String[] tok = determineTokens(str, CHAR_SPACE, single_quote);
+          String[] tok = determineTokens(str, CHAR_SPACE, singleQuotes);
           if (tok.length > 0 && tok[0].equalsIgnoreCase("@RELATION")) continue; // Ignore name of dataset
           if (!str.isEmpty()) header.add(str);
         }
       }
       if (header.size() == 0)
-        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, false, checkHeader, 0, null);
+        return new ParseSetup(false, 0, header.size(), new String[]{"No data!"}, ParserType.AUTO, GUESS_SEP, false, checkHeader, 0, null);
       headerlines = header.toArray(headerlines);
 
       // process header
@@ -64,10 +65,10 @@ class ARFFParser extends CsvParser {
       for (int i=0; i<ncols; ++i) {
         data[i] = headerlines[i].split("\\s+");
         if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
-          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
+          return new ParseSetup(false,1,nlines,new String[]{"Expected line to start with @ATTRIBUTE."},ParserType.ARFF, GUESS_SEP,singleQuotes,checkHeader,ncols,data);
         } else {
           if (data[i].length != 3 ) {
-            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
+            return new ParseSetup(false,1,nlines,new String[]{"Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>"},ParserType.ARFF, GUESS_SEP,singleQuotes,checkHeader,ncols,data);
           }
           labels[i] = data[i][1];
           String type = data[i][2];
@@ -105,7 +106,7 @@ class ARFFParser extends CsvParser {
           }
 
           // only get here if data is invalid ARFF
-          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF,AUTO_SEP,singleQuotes,checkHeader,ncols,data);
+          return new ParseSetup(false,1,nlines,new String[]{"Unexpected line."},ParserType.ARFF, GUESS_SEP,singleQuotes,checkHeader,ncols,data);
         }
       }
     }
@@ -129,7 +130,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (datablock.size() == 0)
-        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, AUTO_SEP, false, checkHeader, 0, null);
+        return new ParseSetup(false, 0, headerlines.length, new String[]{"No data!"}, ParserType.AUTO, GUESS_SEP, false, checkHeader, 0, null);
       datalines = datablock.toArray(datalines);
 
       // process data section
@@ -138,29 +139,29 @@ class ARFFParser extends CsvParser {
 
       // First guess the field separator by counting occurrences in first few lines
       if (nlines == 1) {
-        if (sep == AUTO_SEP) {
+        if (sep == GUESS_SEP) {
           if (datalines[0].split(",").length > 2) sep = (byte) ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else
-            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, AUTO_SEP, singleQuotes, checkHeader, ncols, data);
+            return new ParseSetup(false, 1, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, ncols, data);
         }
-        data[0] = determineTokens(datalines[0], sep, single_quote);
+        data[0] = determineTokens(datalines[0], sep, singleQuotes);
         ncols = (ncols > 0) ? ncols : data[0].length;
-        if (checkHeader == 0) labels = ParseSetup.allStrings(data[0]) ? data[0] : null;
-        else if (checkHeader == 1) labels = data[0];
+        if (checkHeader == GUESS_HEADER) labels = ParseSetup.allStrings(data[0]) ? data[0] : null;
+        else if (checkHeader == HAS_HEADER) labels = data[0];
         else labels = null;
       } else {                    // 2 or more lines
-        if (sep == AUTO_SEP) {   // first guess the separator
-          sep = guessSeparator(datalines[0], datalines[1], single_quote);
-          if (sep == AUTO_SEP && nlines > 2) {
-            if (sep == AUTO_SEP) sep = guessSeparator(datalines[1], datalines[2], single_quote);
-            if (sep == AUTO_SEP) sep = guessSeparator(datalines[0], datalines[2], single_quote);
+        if (sep == GUESS_SEP) {   // first guess the separator
+          sep = guessSeparator(datalines[0], datalines[1], singleQuotes);
+          if (sep == GUESS_SEP && nlines > 2) {
+            if (sep == GUESS_SEP) sep = guessSeparator(datalines[1], datalines[2], singleQuotes);
+            if (sep == GUESS_SEP) sep = guessSeparator(datalines[0], datalines[2], singleQuotes);
           }
-          if (sep == AUTO_SEP) sep = (byte) ' '; // Bail out, go for space
+          if (sep == GUESS_SEP) sep = (byte) ' '; // Bail out, go for space
         }
 
         for (int i = 0; i < nlines; ++i) {
-          data[i] = determineTokens(datalines[i], sep, single_quote);
+          data[i] = determineTokens(datalines[i], sep, singleQuotes);
         }
       }
     }

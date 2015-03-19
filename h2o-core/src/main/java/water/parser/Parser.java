@@ -54,24 +54,24 @@ public abstract class Parser extends Iced {
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
-  public final static int STRING_DOMINANCE_RATIO = 4;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
 
   protected final ParseSetup _setup;
   Parser( ParseSetup setup ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; }
+  protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
-  abstract DataOut parallelParse(int cidx, final DataIn din, final DataOut dout);
+  abstract DataOut parseChunk(int cidx, final DataIn din, final DataOut dout);
 
   DataOut streamParse( final InputStream is, final DataOut dout) throws IOException {
     if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     while( is.available() > 0 )
-      parallelParse(cidx++,din,dout);
-    parallelParse(cidx,din,dout);     // Parse the remaining partial 32K buffer
+      parseChunk(cidx++, din, dout);
+    parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
     return dout;
   }
 
@@ -94,9 +94,9 @@ public abstract class Parser extends Iced {
         if( dout != nextChunk ) dout.reduce(nextChunk);
         nextChunk = nextChunk.nextChunk();
       }
-      parallelParse(cidx++,din,nextChunk);
+      parseChunk(cidx++, din, nextChunk);
     }
-    parallelParse(cidx,din,nextChunk);     // Parse the remaining partial 32K buffer
+    parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
     nextChunk.close();
     if( dout != nextChunk ) dout.reduce(nextChunk);
     return dout;
