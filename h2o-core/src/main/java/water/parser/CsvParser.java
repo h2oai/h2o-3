@@ -447,8 +447,12 @@ MAIN_LOOP:
     String[] lines = getFirstLines(bits);
     if (lines != null && lines.length > 0) {
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
-      for (int i = 0; hasHdr && i < _setup._column_names.length; ++i)
-        hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
+      if (_setup._column_names != null) {
+        for (int i = 0; hasHdr && i < _setup._column_names.length; ++i)
+          hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
+      } else { // declared to have header, but no column names provided, assume header exist in all files
+        _setup._column_names = firstLine;
+      }
     } else System.out.println("Foo"); //FIXME Throw exception
     return hasHdr ? ParseSetup.HAS_HEADER: ParseSetup.NO_HEADER;
     // consider making insensitive to quotes
