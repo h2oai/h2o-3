@@ -97,6 +97,7 @@ public class ReflectionUtils {
     if( o == null ) return Double.NaN;
     if( o instanceof Integer ) return ((Integer)o);
     if( o instanceof Long ) return ((Long)o);
+    if( o instanceof Float ) return ((Float)o);
     if( o instanceof Double ) return ((Double)o);
     if( o instanceof Enum ) return ((Enum)o).ordinal();
     System.out.println("Do not know how to convert a "+o.getClass()+" to a double");

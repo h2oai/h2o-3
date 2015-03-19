@@ -180,7 +180,6 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
       double[] hypers = new double[_hyperSearch.length];
       for( int[] hidx = new int[_hyperSearch.length]; hidx != null; hidx = nextModel(hidx) ) {
         ModelBuilder mb = getBuilder(hypers(hidx,hypers));
-        mb.init(false);
         if( mb.error_count() > 0 ) 
           throw new IllegalArgumentException(mb.validationErrors());
       }
