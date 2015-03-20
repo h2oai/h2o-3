@@ -111,6 +111,7 @@ MAIN_LOOP:
             str.addBuff(bits);
           }
           if( _setup._na_strings != null
+                  && _setup._na_strings.length < colIdx
                   && _setup._na_strings[colIdx] != null
                   && str.equals(_setup._na_strings[colIdx]))
             dout.addInvalidCol(colIdx);
@@ -602,7 +603,7 @@ MAIN_LOOP:
    *  singleQuotes is honored in all cases (and not guessed).
    *
    */
-  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
+  static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[] naStrings) {
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
@@ -701,15 +702,20 @@ MAIN_LOOP:
     ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
-    InputStream is = new ByteArrayInputStream(bits);
-    CsvParser p = new CsvParser(resSetup);
-    InspectDataOut dout = new InspectDataOut(resSetup._number_columns);
-    try{
-      p.streamParse(is, dout);
-      resSetup._column_types = dout.guessTypes();
-      resSetup._na_strings = dout.guessNAStrings(resSetup._column_types);
-    }catch(Throwable e){
-      throw new RuntimeException(e);
+    if (columnTypes == null || ncols != columnTypes.length) {
+      InputStream is = new ByteArrayInputStream(bits);
+      CsvParser p = new CsvParser(resSetup);
+      InspectDataOut dout = new InspectDataOut(resSetup._number_columns);
+      try {
+        p.streamParse(is, dout);
+        resSetup._column_types = dout.guessTypes();
+        resSetup._na_strings = dout.guessNAStrings(resSetup._column_types);
+      } catch (Throwable e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      resSetup._column_types = columnTypes;
+      resSetup._na_strings = null;
     }
 
     // Return the final setup
