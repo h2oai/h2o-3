@@ -72,7 +72,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       }
 
       // Compute log loss
-      _logloss -=  Math.log(ds[iact+1]);
+      final double eps = 1e-15;
+      if (iact == 0) {
+        _logloss -= Math.log(1-Math.min(1-eps, ds[0]));
+      } else {
+        _logloss -= Math.log(Math.max(eps, ds[1]));
+      }
 
       _count++;
       return ds;                // Flow coding

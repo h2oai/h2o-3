@@ -98,7 +98,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
       // Compute log loss
-      _logloss -=  Math.log(ds[iact+1]);
+      if (iact+1 < ds.length) _logloss -= Math.log(Math.max(1e-15, ds[iact+1]));
 
       return ds;                // Flow coding
     }
