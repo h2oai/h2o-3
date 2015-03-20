@@ -394,9 +394,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
           writer.println(dtree.root().toString2(new StringBuilder(), 0));
           writer.close();
-        } catch (FileNotFoundException e) {
-          e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (FileNotFoundException|UnsupportedEncodingException e) {
           e.printStackTrace();
         }
         System.out.println(dtree.root().toString2(new StringBuilder(), 0));
