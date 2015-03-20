@@ -183,7 +183,7 @@ public class DBinomHistogram extends DHistogram<DBinomHistogram> {
       }
       bs = new IcedBitSet(max-min+1,min);
       for( int i=best; i<nbins; i++ ) bs.set(idxs[i]);
-      equal = (byte)(bs.max() < 32 ? 2 : 3); // Flag for bitset split; also check max size
+      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
     if( best==0 ) return null;  // No place to split
