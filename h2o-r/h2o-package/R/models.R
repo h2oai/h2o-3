@@ -175,10 +175,11 @@
   }
 
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
-  job_key  <- res$job[[1L]]$key$name
-  dest_key <- res$jobs[[1L]]$dest$name
 
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
