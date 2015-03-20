@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
+import hex.ModelMetrics;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.GLMIterationTask;
@@ -653,7 +654,6 @@ public class GLMTest  extends TestUtil {
     frMM.add("IsDepDelayed",frMM.remove("IsDepDelayed"));
     DKV.put(frMM._key,frMM);
     Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
-
     //  Distance + Origin + Dest + UniqueCarrier
     String [] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime","ArrTime","IsDepDelayed_REC"};
     try{
@@ -663,24 +663,21 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._lambda = new double[]{1e-5};
-//      params._alpha = new double[]{0};
       params._standardize = false;
       job = new GLM(Key.make("airlines_cat_nostd"),"Airlines with auto-expanded categoricals, no standardization",params);
       model1 = job.trainModel().get();
+      Frame score1 = model1.score(fr);
+      ModelMetrics mm = ModelMetrics.getFromDKV(model1, fr);
+      Assert.assertEquals(5336.918,mm._mse * score1.numRows(),1);
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
-
       job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
       model2 = job.trainModel().get();
-
       params._standardize = true;
       params._train = frMM._key;
-
       params._use_all_factor_levels = true;
       // test the gram
-
       DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
-
       GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null,null).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < glmt._xy.length; ++i) {
         for(int j = 0; j <= i; ++j ) {
@@ -690,14 +687,11 @@ public class GLMTest  extends TestUtil {
       }
       frG.delete();
       xy.remove();
-
       params._standardize = true;
       params._family = Family.binomial;
       params._link = Link.logit;
       job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
       model3 = job.trainModel().get();
-
-
       params._train = fr._key;
       params._ignored_columns = ignoredCols;
       job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
