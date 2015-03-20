@@ -39,7 +39,7 @@ public class Env extends Iced {
   final static int NULL  =99999;
 
   transient ExecStack _stack;            // The stack
-  transient IcedHashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
+  transient HashMap<Vec,IcedInt> _refcnt;      // Ref Counts for each vector
   transient final public StringBuilder _sb;    // Holder for print results
   transient final HashSet<Key> _locked;        // Vec keys, these shalt not be DKV.removed.
   transient final SymbolTable  _global;
@@ -57,7 +57,7 @@ public class Env extends Iced {
   }
 
   @Override public Env read_impl(AutoBuffer ab) {
-    _refcnt = new IcedHashMap<>();
+    _refcnt = new HashMap<>();
     _stack = new ExecStack();
     _trash = new HashSet<>();
     int len = ab.get4();
@@ -72,7 +72,7 @@ public class Env extends Iced {
   // global scope.
   Env(HashSet<Key> locked) {
     _stack  = new ExecStack();
-    _refcnt = new IcedHashMap<>();
+    _refcnt = new HashMap<>();
     _sb     = new StringBuilder();
     _locked = locked;
     _global = new SymbolTable();

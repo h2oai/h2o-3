@@ -54,7 +54,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
       ParseSetup setup = new ParseSetup(true, // is valid
                 0,    // invalidLines
-                1,    // headerlines
+              // headerlines
                 null, // errors
                 ParserType.XLS,
                 (byte) 52, // sep; ascii '4'
