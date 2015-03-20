@@ -310,7 +310,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
-          ((LeafNode)tree.node(leafs[k]+i))._pred = g;
+          ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }
 
@@ -332,7 +332,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if( nid < 0 ) continue;
               // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
               // <tree_klazz> fields from tree prediction
-              ct.set(row, (float)(ct.atd(row) + (float) ((LeafNode)tree.node(nid))._pred));
+              ct.set(row, (float)(ct.atd(row) + ((LeafNode)tree.node(nid))._pred));
               nids.set(row, 0);
             }
           }
@@ -471,7 +471,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
     @Override protected int size() { return 4; }
   }
 
@@ -480,8 +480,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0/(float)(1f+Math.exp(chk_tree(chks,0).atd(row)));
-      fs[2] = 1-fs[1];
+      fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
+      fs[2] = 1.0-fs[1];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
     if( _nclass == 1 ) // Regression
