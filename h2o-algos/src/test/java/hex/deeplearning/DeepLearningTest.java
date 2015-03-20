@@ -12,8 +12,6 @@ import water.util.Log;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
@@ -26,7 +24,6 @@ public class DeepLearningTest extends TestUtil {
   @Test public void testClassIris1() throws Throwable {
 
     // iris ntree=1
-    // the DRF should  use only subset of rows since it is using oob validation
     basicDLTest_Classification(
         "./smalldata/iris/iris.csv", "iris.hex",
         new PrepData() {
@@ -274,7 +271,6 @@ public class DeepLearningTest extends TestUtil {
 
 
   // Put response as the last vector in the frame and return possible frames to clean up later
-  // Also fill DRF.
   static Vec unifyFrame(DeepLearningModel.DeepLearningParameters drf, Frame fr, PrepData prep, boolean classification) {
     int idx = prep.prep(fr);
     if( idx < 0 ) { idx = ~idx; }
@@ -308,7 +304,7 @@ public class DeepLearningTest extends TestUtil {
       Vec removeme = unifyFrame(dl, frTrain, prep, classification);
       if (removeme != null) Scope.track(removeme._key);
       DKV.put(frTrain._key, frTrain);
-      // Configure DRF
+      // Configure DL
       dl._train = frTrain._key;
       dl._response_column = ((Frame)DKV.getGet(dl._train)).lastVecName();
       dl._seed = (1L<<32)|2;
@@ -318,7 +314,7 @@ public class DeepLearningTest extends TestUtil {
       dl._hidden = hidden;
       dl._l1 = l1;
 
-      // Invoke DRF and block till the end
+      // Invoke DL and block till the end
       DeepLearning job = null;
       try {
         job = new DeepLearning(dl);
