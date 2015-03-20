@@ -16,7 +16,6 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
@@ -175,6 +174,7 @@ public final class ParseDataset extends Job<Frame> {
         ( (setup._column_names.length == 0) ||
           (setup._column_names.length == 1 && setup._column_names[0].isEmpty())) )
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
+    if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
