@@ -332,7 +332,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if( nid < 0 ) continue;
               // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
               // <tree_klazz> fields from tree prediction
-              ct.set(row, (float)(ct.atd(row) + (float) ((LeafNode)tree.node(nid))._pred));
+              ct.set(row, (float)(ct.atd(row) + ((LeafNode)tree.node(nid))._pred));
               nids.set(row, 0);
             }
           }
@@ -471,7 +471,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
     @Override protected int size() { return 4; }
   }
 
