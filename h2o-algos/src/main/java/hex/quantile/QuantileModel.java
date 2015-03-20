@@ -29,7 +29,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     throw H2O.unimpl("No model metrics for Quantile.");
   }
 
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     throw H2O.unimpl();
   }
 
