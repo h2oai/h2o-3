@@ -16,7 +16,6 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;

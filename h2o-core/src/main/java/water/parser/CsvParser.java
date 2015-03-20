@@ -606,7 +606,7 @@ MAIN_LOOP:
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
-      return new ParseSetup(false,0,0,new String[]{"No data!"},ParserType.AUTO, GUESS_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
+      return new ParseSetup(false,0, new String[]{"No data!"},ParserType.AUTO, GUESS_SEP,false,checkHeader,0,null,null,null, null, null, FileVec.DFLT_CHUNK_SIZE);
 
     // Guess the separator, columns, & header
     ArrayList<String> errors = new ArrayList<>();
@@ -634,7 +634,7 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(true, 0, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(true, 0, new String[]{"Failed to guess separator."}, ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
         }
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
@@ -698,7 +698,7 @@ MAIN_LOOP:
       errors.toArray(err = new String[errors.size()]);
 
     // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(true, ilines, labels != null ? 1 : 0, err, ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
+    ParseSetup resSetup = new ParseSetup(true, ilines, err, ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
     InputStream is = new ByteArrayInputStream(bits);
