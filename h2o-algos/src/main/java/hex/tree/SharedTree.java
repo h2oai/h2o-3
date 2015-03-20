@@ -85,7 +85,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // For classification, guess the largest class.
           _model = makeModel(_dest, _parms, 
                              initial_MSE(response(), response()), 
-                             initial_MSE(response(),vresponse())); // Make a fresh model
+                             _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
           _model._output._initialPrediction = _initialPrediction;
         }
