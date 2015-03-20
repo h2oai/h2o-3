@@ -8,19 +8,15 @@ import water.util.ModelUtils;
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUCData _aucdata;
   public final ConfusionMatrix _cm;
+  public final double _logloss;
 
-  public ModelMetricsBinomial(Model model, Frame frame) {
-    super(model, frame);
-    _aucdata = null;
-    _cm = null;
-  }
-
-  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, double sigma, double mse) {
+  public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, double logloss, double sigma, double mse) {
     super(model, frame);
     _aucdata = aucdata;
     _cm = aucdata != null ? aucdata.CM() : null;
     _sigma = sigma;
     _mse = mse;
+    _logloss = logloss;
   }
 
   @Override public ConfusionMatrix cm() {
@@ -43,6 +39,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public static class MetricBuilderBinomial extends MetricBuilderSupervised {
     protected final float[] _thresholds;
     protected long[/*nthreshes*/][/*nclasses*/][/*nclasses*/] _cms; // Confusion Matric(es)
+    double _logloss;
     public MetricBuilderBinomial( String[] domain, float[] thresholds ) {
       super(2,domain);
       _thresholds = thresholds;
@@ -73,6 +70,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         int p = snd >= ModelUtils.DEFAULT_THRESHOLDS[i] ? 1 : 0; // Compute prediction based on threshold
         _cms[i][iact][p]++;   // Increase matrix
       }
+
+      // Compute log loss
+      _logloss -=  Math.log(ds[iact+1]);
+
       _count++;
       return ds;                // Flow coding
     }
@@ -83,15 +84,17 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      double logloss = Double.NaN;
       if (sigma != 0.0) {
         ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
         for (int i = 0; i < cms.length; i++) cms[i] = new ConfusionMatrix(_cms[i], _domain);
 
         AUCData aucdata = new AUC(cms, _thresholds, _domain).data();
         double mse = _sumsqe / _count;
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, sigma, mse));
+        logloss = _logloss / _count;
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, logloss, sigma, mse));
       } else {
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, null, Double.NaN, Double.NaN));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, null, Double.NaN, Double.NaN, Double.NaN));
       }
     }
   }
