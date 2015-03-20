@@ -19,7 +19,7 @@ public class RandomUtils {
       // Do not copy the seeds - use them, and initialize the first two ints by
       // seeds based given argument.  The call is locked, and also
       // MersenneTwisterRNG will just copy the seeds into its datastructures
-      return new MersenneTwisterRNG((int)(seed[0]&0xFFFFFFFFL), (int)(seed[0]>>>32));
+      return new MersenneTwisterRNG(ArrayUtils.unpackInts(seed));
     }
     throw H2O.fail();
   }
