@@ -16,7 +16,6 @@
 #' @param min_rows \code{Defaults to 10} Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate \code{Defaults to 0.1} An \code{interger} from \code{0.0} to \code{1.0}
 #' @param nbins \code{Defaults to 20} Number of bins to use in building histogram.
-#' @param variable_importance #TODO: NEED TO FINISH
 #' @param validation_frame An \code{\link{H2OFrame}} object indicating the validation dataset used to contruct the
 #'        confusion matrix. If left blank, this defaults to the training data when \code{nfolds = 0}
 #' @param balance_classes \code{Defaults to FALSE} logical, indicates whether or not to balance training data class
@@ -48,7 +47,6 @@ h2o.gbm <- function(x, y, training_frame, ...,
                     min_rows = 10,
                     learn_rate = 0.1,
                     nbins = 20,
-                    variable_importance = FALSE,
                     validation_frame = NULL,
                     balance_classes = FALSE,
                     max_after_balance_size = 1,

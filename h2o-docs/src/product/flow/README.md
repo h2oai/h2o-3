@@ -1,5 +1,9 @@
 #Introduction
 
+This guide will walk you through how to use H2O-dev's web UI, H2O Flow. To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
+
+##About H2O Flow
+
 H2O Flow is an open-source user interface for H2O. It is a web-based interactive computational environment that allows you to combine code execution, text, mathematics, plots, and rich media in a single document, similar to <a href="http://ipython.org/notebook.html" target="_blank">iPython Notebooks</a>. 
 
 With H2O Flow, you can capture, rerun, annotate, present, and share your workflow. H2O Flow allows you to use H2O interactively to import files, build models, and iteratively improve them. Based on your models, you can make predictions and add rich text to create vignettes of your work - all within Flow's browser-based environment. 
@@ -9,8 +13,6 @@ Flow's hybrid user interface seamlessly blends command-line computing with a mod
 H2O Flow sends commands to H2O as a sequence of executable cells. The cells can be modified, rearranged, or saved to a library. Each cell contains an input field that allows you to enter commands, define functions, call other functions, and access other cells or objects on the page. When you execute the cell, the output is a graphical object, which can be inspected to view additional details. 
 
 While H2O Flow supports REST API, R scripts, and Coffeescript, no programming experience is required to run H2O Flow. You can click your way through any H2O operation without ever writing a single line of code. You can even disable the input cells to run H2O Flow using only the GUI. H2O Flow is designed to guide you every step of the way, by providing input prompts, interactive help, and example flows. 
-
-To view a demo video of H2O Flow, click <a href="https://www.youtube.com/watch?feature=player_embedded&v=wzeuFfbW7WE" target="_blank">here</a>. 
 
 ---
 
@@ -285,7 +287,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
  
 <a name="w2v"></a>
 - **word2vec**: Create a word-to-vector model for text-based data. 
-**Note**: For a word2vec model, the training frame must contain string columns. 
+**Note**: For a word2vec model, the training frame must contain string columns. For more information about creating a "bag of words" model, refer to the tutorial on <a href="https://www.kaggle.com/c/word2vec-nlp-tutorial/details/part-1-for-beginners-bag-of-words" target="_blank">Kaggle's website</a>. 
 
 <a name="drf"></a>
 - **drf**: Create a distributed Random Forest model.  
@@ -694,6 +696,24 @@ To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow
  
  **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
+Flows are saved to the home directory in "H2OFlows\notebook" (`Users\<user name>\H2OFlows\notebook`). The default location displays in the output above the IP address for H2O when you launch H2O: 
+```
+03-20 14:54:20.945 172.16.2.39:54323     95667  main      INFO: Flow dir: '/Users/<UserName>/h2oflows'
+03-20 14:54:20.960 172.16.2.39:54323     95667  main      INFO: Cloud of size 1 formed [/172.16.2.39:54323]
+```
+To back up saved flows, copy this directory to your preferred backup location.  
+
+To specify a different location for saved flows, use the argument `-flow_dir` when launching H2O:
+`java -jar h2o.jar -flow_dir /<New>/<Location>/<For>/<Saved>/<Flows>`
+where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location. 
+
+##Saving Flows on a Hadoop cluster
+
+**Caution**: If you are running H2O Flow on a Hadoop cluster, H2O does not specify a location for saved flows by default. To save flows, you must specify the location for saved flows using the `-flow_dir` argument when launching H2O:
+
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`
+
+If you do not specify a location for saved flows when launching H2O on Hadoop, flows cannot be saved.
 
 ## Duplicating Flows
 
