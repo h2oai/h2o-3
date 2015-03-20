@@ -1,148 +1,138 @@
 package water.util;
 
-import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import water.H2O;
 
 public class RandomUtils {
-
-  /* Always returns a deterministic java.util.Random RNG.
-  *
-  * The determinism is important for re-playing sampling.
-  */
-  public static Random getDeterRNG(long seed) { return new H2ORandomRNG(seed); }
-
-  public static void setUsedRNGKind(final H2ORandomRNG.RNGKind kind) {
-    switch (kind) {
-      case DETERMINISTIC:
-        setUsedRNGType(H2ORandomRNG.RNGType.MersenneTwisterRNG);
-        break;
-      case NON_DETERMINISTIC:
-        setUsedRNGType(H2ORandomRNG.RNGType.SecureRNG);
-        break;
-    }
-  }
+  public enum RNGType { PCGRNG, MersenneTwisterRNG, JavaRNG, XorShiftRNG }
+  private static RNGType _rngType = RNGType.PCGRNG;
 
   /* Returns the configured random generator */
   public static Random getRNG(long... seed) {
-    assert _rngType != null : "Random generator type has to be configured";
-    switch (_rngType) {
-      case JavaRNG:
-        assert seed.length >= 1;
-        return new H2ORandomRNG(seed[0]);
-      case MersenneTwisterRNG:
-        // do not copy the seeds - use them, and initialize the first two ints by seeds based given argument
-        // the call is locked, and also MersenneTwisterRNG will just copy the seeds into its datastructures
-        assert seed.length == 1;
-        int[] inSeeds = ArrayUtils.unpackInts(seed);
-        return new MersenneTwisterRNG(inSeeds);
-      case XorShiftRNG:
-        assert seed.length >= 1;
-        return new XorShiftRNG(seed[0]);
-      case SecureRNG:
-        return new SecureRandom();
+    switch(_rngType) {
+    case JavaRNG:      return new H2ORandomRNG(seed[0]);
+    case XorShiftRNG:  return new XorShiftRNG (seed[0]);
+    case PCGRNG:       return new PCGRNG      (seed[0],seed.length > 1 ? seed[1] : 1);
+    case MersenneTwisterRNG:
+      // Do not copy the seeds - use them, and initialize the first two ints by
+      // seeds based given argument.  The call is locked, and also
+      // MersenneTwisterRNG will just copy the seeds into its datastructures
+      return new MersenneTwisterRNG((int)(seed[0]&0xFFFFFFFFL), (int)(seed[0]>>>32));
     }
-
-    throw new IllegalArgumentException("Unknown random generator type: " + _rngType);
+    throw H2O.fail();
   }
 
-  private static H2ORandomRNG.RNGType _rngType = H2ORandomRNG.RNGType.MersenneTwisterRNG;
+  // Converted to Java from the C
+  /*
+   * PCG Random Number Generation for C.
+   *
+   * Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   * http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *
+   * For additional information about the PCG random number generation scheme,
+   * including its license and other licensing options, visit
+   *
+   * http://www.pcg-random.org
+   */
+  public static class PCGRNG extends Random {
+    private long _state;        // Random state
+    private long _inc;          // Fixed sequence, always odd
+    // Seed the rng. Specified in two parts, state initializer and a sequence
+    // selection constant (a.k.a. stream id)
+    public PCGRNG(long seed, long seq) {
+      _inc = (seq<<1)|1;
+      nextInt();
+      _state += seed;
+      nextInt();
+    }
+    // CNC: PCG expects the output to be an *unsigned* int which Java does not
+    // support.  Instead we're returning a signed int, and the caller has to
+    // figure out the sign-extension.
+    @Override public int nextInt() { 
+      long oldstate = _state;
+      _state = oldstate * 6364136223846793005L + _inc;
+      int xorshifted = (int)(((oldstate >>> 18) ^ oldstate) >>> 27);
+      int rot = (int)(oldstate >>> 59);
+      return (xorshifted >>> rot) | (xorshifted << ((-rot) & 31));      
+    }
+    @Override public long nextLong() { return (((long)nextInt())<<32) | (((long)nextInt())&0xFFFFFFFFL); }
 
-  public static void setUsedRNGType(H2ORandomRNG.RNGType rngType) {
-    _rngType = rngType;
+    @Override protected int next(int bits) { long nextseed = nextLong(); return (int) (nextseed & ((1L << bits) - 1)); }
+    // Generate a uniformly distributed number, r, where 0 <= r < bound
+    @Override public int nextInt(int bound) {
+      // To avoid bias, we need to make the range of the RNG a multiple of
+      // bound, which we do by dropping output less than a threshold.  A naive
+      // scheme to calculate the threshold would be to do
+      //
+      // uint32_t threshold = 0x100000000ull % bound;
+      //
+      // but 64-bit div/mod is slower than 32-bit div/mod (especially on 32-bit
+      // platforms).  In essence, we do
+      //
+      // uint32_t threshold = (0x100000000ull-bound) % bound;
+      //
+      // because this version will calculate the same modulus, but the LHS
+      // value is less than 2^32.
+      long threshold = (-(long)bound % (long)bound)&0xFFFFFFFFL;
+      // Uniformity guarantees that this loop will terminate. In practice, it
+      // should usually terminate quickly; on average (assuming all bounds are
+      // equally likely), 82.25% of the time, we can expect it to require just
+      // one iteration. In the worst case, someone passes a bound of 2^31 + 1
+      // (i.e., 2147483649), which invalidates almost 50% of the range. In
+      // practice, bounds are typically small and only a tiny amount of the
+      // range is eliminated.
+      for (;;) {
+        long r = ((long)nextInt()) & 0xFFFFFFFFL;
+        if (r >= threshold)
+          return (int)(r % bound);
+      }
+    }
   }
 
-  public static H2ORandomRNG.RNGType getUsedRNGType() {
-    return _rngType;
-  }
 
-  public static H2ORandomRNG.RNGKind getUsedRNGKind() {
-    return _rngType.kind();
-  }
-
+  /** Stock Java RNG, but force the initial seed to have no zeros in either the
+   *  low 32 or high 32 bits - leading to well known really bad behavior. */
   public static class H2ORandomRNG extends Random {
-
     public H2ORandomRNG(long seed) {
       super();
       if ((seed >>> 32) < 0x0000ffffL)         seed |= 0x5b93000000000000L;
       if (((seed << 32) >>> 32) < 0x0000ffffL) seed |= 0xdb910000L;
       setSeed(seed);
     }
-
-    public enum RNGKind {
-      DETERMINISTIC("deter", "determ"),
-      NON_DETERMINISTIC("nondeter", "non-deter", "nondeterm", "non-determ");
-
-      String[] shorcuts;
-
-      private RNGKind(String... shortcuts) {  this.shorcuts = shortcuts; }
-
-      public static RNGKind value(String s) {
-        RNGKind[] kinds = RNGKind.values();
-        for( RNGKind kind : kinds )
-          for( String ss : kind.shorcuts )
-            if( ss.equals(s) ) return kind;
-        return RNGKind.valueOf(s);
-      }
-
-    }
-
-    public enum RNGType {
-      JavaRNG(RNGKind.DETERMINISTIC),
-      MersenneTwisterRNG(RNGKind.DETERMINISTIC),
-      XorShiftRNG(RNGKind.DETERMINISTIC),
-      SecureRNG(RNGKind.NON_DETERMINISTIC);
-
-      RNGKind kind;
-      private RNGType(RNGKind kind) {  this.kind = kind; }
-      public RNGKind kind() { return this.kind; }
-    }
   }
 
-  /**
-   * Simple XorShiftRNG.
-   *
-   * Note: According to RF benchmarks it does not provide so accurate results
-   * as {@link java.util.Random}, however it can be used as an alternative.
-   *
-   */
+  /** Simple XorShiftRNG.
+   *  Note: According to RF benchmarks it does not provide so accurate results
+   *  as {@link java.util.Random}, however it can be used as an alternative. */
   public static class XorShiftRNG extends Random {
-
     private AtomicLong _seed;
-
-    public XorShiftRNG (long seed) {
-      this._seed = new AtomicLong(seed);
-    }
-
-    @Override
-    public long nextLong() {
+    public XorShiftRNG (long seed) { _seed = new AtomicLong(seed); }
+    @Override public long nextLong() {
       long oldseed, nextseed;
       AtomicLong seed = this._seed;
       do {
         oldseed = seed.get();
         nextseed = xorShift(oldseed);
       } while (!seed.compareAndSet(oldseed, nextseed));
-
       return nextseed;
     }
 
-    @Override
-    public int nextInt() {
-      return nextInt(Integer.MAX_VALUE);
-    }
-
-    @Override
-    public int nextInt(int n) {
-      int r = (int) (nextLong() % n);
-      return r > 0 ? r : -r;
-    }
-
-    @Override
-    protected int next(int bits) {
-      long nextseed = nextLong();
-      return (int) (nextseed & ((1L << bits) - 1));
-    }
+    @Override public int nextInt() { return nextInt(Integer.MAX_VALUE); }
+    @Override public int nextInt(int n) { int r = (int) (nextLong() % n); return r > 0 ? r : -r; }
+    @Override protected int next(int bits) { long nextseed = nextLong(); return (int) (nextseed & ((1L << bits) - 1)); }
 
     private long xorShift(long x) {
       x ^= (x << 21);

@@ -116,7 +116,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final float fraction = _useFraction / repeats;
 
     if (fraction < 1.0) {
-      skip_rng = RandomUtils.getDeterRNG(new Random().nextLong());
+      skip_rng = RandomUtils.getRNG(new Random().nextLong());
     }
     long[] shuf_map = null;
     if (_shuffle) {
