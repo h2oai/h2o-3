@@ -217,6 +217,7 @@ public class ASTddply extends ASTOp {
   public static class Group extends Iced {
     public final double _ds[];  // Array is final; contents change with the "fill"
     public int _hash;           // Hash is not final; changes with the "fill"
+    public Group() { _ds = null; }
     public Group(int len) { _ds = new double[len]; }
     public Group( double ds[] ) { _ds = ds; _hash=hash(); }
     // Efficiently allow groups to be hashed & hash-probed

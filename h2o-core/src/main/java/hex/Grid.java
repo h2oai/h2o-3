@@ -4,9 +4,9 @@ import java.util.HashMap;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Frame;
-import water.nbhm.NonBlockingHashMap;
 import water.rapids.ASTddply.Group;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 import water.util.ReflectionUtils;
 
 /** A Grid of Models
@@ -37,7 +37,7 @@ import water.util.ReflectionUtils;
 public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
   protected final Frame _fr;    // The training frame for this grid of models
   // A cache of double[] hyper-parameters mapping to Models
-  final NonBlockingHashMap<Group,Model> _cache = new NonBlockingHashMap<>();
+  final IcedHashMap<Group,Key<Model>> _cache = new IcedHashMap<>();
 
   protected Grid( Key key, Frame fr ) { super(key); _fr = fr; }
 
@@ -110,8 +110,8 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
 
   /** @param hypers A set of hyper parameter values
    *  @return A model run with these parameters, or null if the model does not exist. */
-  public Model model( double[] hypers ) { return _cache.get(new Group(hypers)); }
-  public Model model( HashMap<String,Object> hypers ) { return model(hyper2double(hypers)); }
+  public Key<Model> model( double[] hypers ) { return _cache.get(new Group(hypers)); }
+  public Key<Model> model( HashMap<String,Object> hypers ) { return model(hyper2double(hypers)); }
 
   /** @param hypers A set of hyper parameter values
    *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
@@ -139,10 +139,10 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
    *  cached - expected to be an expensive operation.  If the model in question
    *  is "in progress", a 2nd build will NOT be kicked off.  This is a blocking call. */
   private Model buildModel( double[] hypers ) {
-    Model m = model(hypers);
-    if( m != null ) return m;
-    m = (Model)(startBuildModel(hypers).get());
-    _cache.put(new Group(hypers.clone()), m);
+    Key<Model> key = model(hypers);
+    if( key != null ) return key.get();
+    Model m = (Model)(startBuildModel(hypers).get());
+    _cache.put(new Group(hypers.clone()), m._key);
     return m;
   }
   
@@ -156,8 +156,8 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
 
   // Cleanup models and grid
   @Override protected Futures remove_impl( Futures fs ) {
-    for( Model m : _cache.values() )
-      m.remove(fs);
+    for( Key<Model> k : _cache.values() )
+      k.remove(fs);
     _cache.clear();
     return fs;
   }
@@ -197,7 +197,7 @@ public abstract class Grid<G extends Grid<G>> extends Lockable<G> {
       int mcnt = 0;
       double[] hypers = new double[_hyperSearch.length];
       for( int[] hidx = new int[_hyperSearch.length]; hidx != null; hidx = nextModel(hidx) )
-        ms[mcnt++] = model(hypers(hidx,hypers));
+        ms[mcnt++] = model(hypers(hidx,hypers)).get();
       return ms;
     }
 

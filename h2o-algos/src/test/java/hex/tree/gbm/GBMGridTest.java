@@ -12,7 +12,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 
 public class GBMGridTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
 
   @Test public void testCarsGrid() {
     GBMGrid gbmg = null;
