@@ -71,8 +71,8 @@ public class CompressedTree extends Keyed {
       //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
       double d = row[colId];
 //      if( !Double.isNaN(d) ) {  // NaNs always go to bin 0
-        if( ( equal==0 && ((float)d) >= splitVal) ||
-            ( equal==1 && ((float)d) == splitVal) ||
+        if( ( equal==0 && d >= splitVal) ||
+            ( equal==1 && d == splitVal) ||
             ( (equal==2 || equal==3) && ibs.contains((int)d) )) { //if Double.isNaN(d), then (int)d == 0, which means that NA is treated like enum level 0
           ab.skip(skip);        // Skip to the right subtree
           lmask = rmask;        // And set the leaf bits into common place

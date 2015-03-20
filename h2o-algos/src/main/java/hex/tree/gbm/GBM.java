@@ -480,8 +480,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0/(float)(1f+Math.exp(chk_tree(chks,0).atd(row)));
-      fs[2] = 1-fs[1];
+      fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
+      fs[2] = 1.0-fs[1];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
     if( _nclass == 1 ) // Regression
