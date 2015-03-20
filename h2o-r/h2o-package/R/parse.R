@@ -5,19 +5,30 @@
 
 #'
 #' Parse the Raw Data produced by the import phase.
-h2o.parseRaw <- function(data, key = "", header, sep = "", col.names) {
+h2o.parseRaw <- function(data, key = "", header=NA, sep = "", col.names=NULL, col.types=NULL) {
   if(!is(data, "H2ORawData")) stop("`data` must be an H2ORawData object")
   .key.validate(key)
-  if(!(missing(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
+  if(!(is.na(header) || is.logical(header))) stop("`header` cannot be of class ", class(header))
   if(!is.character(sep) || length(sep) != 1L || is.na(sep)) stop("`sep` must a character string")
-  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
+#  if(!(missing(col.names) || is(col.names, "H2OFrame"))) stop("`col.names` cannot be of class ", class(col.names))
 
+  parseSetup.params <- list()
   # Prep srcs: must be of the form [src1,src2,src3,...]
-  srcs <- data@key
-  srcs <- .collapse.char(srcs)
+  parseSetup.params$source_keys = .collapse.char(data@key)
+  if (nchar(sep) > 0) parseSetup.params$separator = sep
+  if(is.na(header) && is.null(col.names)) { 
+    parseSetup.params$check_header = 0 
+  } else if (!isTRUE(header)) { 
+    parseSetup.params$check_header = -1 
+  } else parseSetup.params$check_header = 1
+  if (!is.null(col.names)) {
+    if (is(col.names, "H2OFrame")) parseSetup.params$column_names = .collapse.char(colnames(col.names))
+    else parseSetup.params$column_names = .collapse.char(col.names)
+  }
+  if (!is.null(col.types)) parseSetup.params$column_types = .collapse.char(col.types)
 
   # First go through ParseSetup
-  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, source_keys = srcs, method = "POST")
+  parseSetup <- .h2o.__remoteSend(data@conn, .h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
   ncols <- parseSetup$number_columns
   col.names <- parseSetup$column_names
   col.types <- parseSetup$column_types

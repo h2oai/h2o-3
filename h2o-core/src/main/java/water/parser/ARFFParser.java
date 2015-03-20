@@ -12,7 +12,7 @@ class ARFFParser extends CsvParser {
   ARFFParser(ParseSetup ps) { super(ps); }
 
   /** Try to parse the bytes as ARFF format  */
-  static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, String[] naStrings) {
+  static ParseSetup guessSetup( byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[] naStrings) {
     checkHeader = NO_HEADER;   // ARFF file by definition has no header as the first row of the data file.
 
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");

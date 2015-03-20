@@ -1148,9 +1148,17 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
   if(!is.data.frame(object)) {
     object <- as.data.frame(object)
   }
+  types <- sapply(object, class)
+  types <- gsub("integer", "numeric", types)
+  types <- gsub("double", "numeric", types)
+  types <- gsub("complex", "numeric", types)
+  types <- gsub("logical", "enum", types)
+  types <- gsub("factor", "enum", types)
+  types <- gsub("character", "string", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
-  h2f <- h2o.uploadFile(conn, tmpf, key = key)
+  h2f <- h2o.uploadFile(conn, tmpf, key = key, header = TRUE, col.types=types,
+                        col.names=colnames(object, do.NULL=FALSE, prefix="C"))
   file.remove(tmpf)
   h2f
 }
