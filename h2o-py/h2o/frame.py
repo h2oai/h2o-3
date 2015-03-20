@@ -788,6 +788,7 @@ class H2OVec:
     if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
+    if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
     if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
@@ -804,13 +805,13 @@ class H2OVec:
   def __or__ (self, i):  return self._simple_bin_op(i,"|" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
   def __mul__(self, i):  return self._simple_bin_op(i,"*" )
-  def __eq__ (self, i):  return self._simple_bin_op(i,"==")
-  def __neg__(self, i):  return self._simple_bin_op(i,"!=")
+  def __eq__ (self, i):  return self._simple_bin_op(i,"n")
+  def __ne__ (self, i):  return self._simple_bin_op(i,"N")
   def __pow__(self, i):  return self._simple_bin_op(i,"^" )
-  def __ge__ (self, i):  return self._simple_bin_op(i,">=")
-  def __gt__ (self, i):  return self._simple_bin_op(i,">" )
-  def __le__ (self, i):  return self._simple_bin_op(i,"<=")
-  def __lt__ (self, i):  return self._simple_bin_op(i,"<" )
+  def __ge__ (self, i):  return self._simple_bin_op(i,"G")
+  def __gt__ (self, i):  return self._simple_bin_op(i,"g" )
+  def __le__ (self, i):  return self._simple_bin_op(i,"L")
+  def __lt__ (self, i):  return self._simple_bin_op(i,"l" )
 
   def __radd__(self, i): return self.__add__(i)  # commutativity
   def __rsub__(self, i): return self._simple_bin_rop(i,"-")  # not commutative
