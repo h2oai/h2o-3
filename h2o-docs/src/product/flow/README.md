@@ -693,27 +693,30 @@ To confirm the name, click the checkmark to the right of the name field.
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name. 
 
  ![Flows](images/Flow_flows.png)
- 
- **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
 
-Flows are saved to the home directory in "H2OFlows\notebook" (`Users\<user name>\H2OFlows\notebook`). The default location displays in the output above the IP address for H2O when you launch H2O: 
+## Finding Saved Flows on your Disk
+ 
+By default, flows are saved to the `h2oflows` directory underneath your home directory.  The directory where flows are saved is printed to stdout:
+ 
 ```
 03-20 14:54:20.945 172.16.2.39:54323     95667  main      INFO: Flow dir: '/Users/<UserName>/h2oflows'
-03-20 14:54:20.960 172.16.2.39:54323     95667  main      INFO: Cloud of size 1 formed [/172.16.2.39:54323]
 ```
+
 To back up saved flows, copy this directory to your preferred backup location.  
 
-To specify a different location for saved flows, use the argument `-flow_dir` when launching H2O:
-`java -jar h2o.jar -flow_dir /<New>/<Location>/<For>/<Saved>/<Flows>`
-where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location. 
+To specify a different location for saved flows, use the command-line argument `-flow_dir` when launching H2O:
 
-##Saving Flows on a Hadoop cluster
+`java -jar h2o.jar -flow_dir /<New>/<Location>/<For>/<Saved>/<Flows>`  
 
-**Caution**: If you are running H2O Flow on a Hadoop cluster, H2O does not specify a location for saved flows by default. To save flows, you must specify the location for saved flows using the `-flow_dir` argument when launching H2O:
+where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location.  If the directory does not exist it will be created the first time you save a flow.
 
-`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`
+## Saving Flows on a Hadoop cluster
 
-If you do not specify a location for saved flows when launching H2O on Hadoop, flows cannot be saved.
+**Caution**: If you are running H2O Flow on a Hadoop cluster, H2O has no default location to save flows. To save flows, you must specify a directory using the `-flow_dir` command-line argument when launching H2O:
+
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
+
+The specified flow_dir may be either an hdfs or regular filesystem directory.  If the directory does not exist it will be created the first time you save a flow.
 
 ## Duplicating Flows
 
