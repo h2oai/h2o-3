@@ -769,7 +769,8 @@ class TestRunner:
     def __init__(self,
                  test_root_dir,
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
-                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir, failed_output_dir):
+                 num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, output_dir,
+                 failed_output_dir, path_to_tar):
         """
         Create a runner.
 
@@ -816,6 +817,7 @@ class TestRunner:
         self._create_failed_output_dir()
         self.nopass_counter = 0
         self.nofeature_counter = 0
+        self.path_to_tar = path_to_tar
 
         if (use_cloud):
             node_num = 0
@@ -1062,6 +1064,9 @@ class TestRunner:
                    "--quiet",
                    "-f",
                    runner_setup_package_r]
+            if self.path_to_tar is not None:
+              print "Using R TAR located at: " + self.path_to_tar
+              cmd += ["--args", self.path_to_tar]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
@@ -1407,6 +1412,7 @@ g_convenient = False
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+g_path_to_tar = None
 
 
 def use(x):
@@ -1485,6 +1491,8 @@ def usage():
     print("")
     print("    --c           Start the JVMs in a _c_onvenient location h2o-dev.")
     print("")
+    print("    --tar         Supply a path to the R TAR.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -1562,6 +1570,7 @@ def parse_args(argv):
     global g_jvm_xmx
     global g_nopass
     global g_convenient
+    global g_path_to_tar
 
     i = 1
     while (i < len(argv)):
@@ -1643,6 +1652,9 @@ def parse_args(argv):
             g_nopass = True
         elif s == "--c":
             g_convenient = True
+        elif s == "--tar":
+          i += 1
+          g_path_to_tar = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
@@ -1722,6 +1734,7 @@ def main(argv):
     global g_test_group
     global g_runner
     global g_nopass
+    global g_path_to_tar
 
     g_script_name = os.path.basename(argv[0])
 
@@ -1768,7 +1781,7 @@ def main(argv):
     g_runner = TestRunner(test_root_dir,
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx,
-                          g_output_dir, g_failed_output_dir)
+                          g_output_dir, g_failed_output_dir, g_path_to_tar)
 
     # Build test list.
     if (g_test_to_run is not None):

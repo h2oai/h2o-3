@@ -47,9 +47,21 @@ public class MathUtils {
     return nums;
   }
 
+  public static double[] div(double[] nums, double n) {
+    assert !Double.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+    for (int i=0; i<nums.length; i++) nums[i] /= n;
+    return nums;
+  }
+
   public static float sum(final float[] from) {
     float result = 0;
     for (float d: from) result += d;
+    return result;
+  }
+
+  public static double sum(final double[] from) {
+    double result = 0;
+    for (double d: from) result += d;
     return result;
   }
 

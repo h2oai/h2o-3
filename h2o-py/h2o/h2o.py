@@ -87,7 +87,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = 0
+    first_line_is_header = setup["check_header"] 
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]

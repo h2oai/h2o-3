@@ -213,12 +213,12 @@ public class ASTddply extends ASTOp {
   }
 
   // ---
-  // Group descrption: unpacked selected double columns
+  // Group description: unpacked selected double columns
   public static class Group extends Iced {
-    public double _ds[];
-    public int _hash;
+    public final double _ds[];  // Array is final; contents change with the "fill"
+    public int _hash;           // Hash is not final; changes with the "fill"
     public Group(int len) { _ds = new double[len]; }
-    Group( double ds[] ) { _ds = ds; _hash=hash(); }
+    public Group( double ds[] ) { _ds = ds; _hash=hash(); }
     // Efficiently allow groups to be hashed & hash-probed
     public void fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
@@ -233,7 +233,6 @@ public class ASTddply extends ASTOp {
       h ^= (h>>> 7) ^ (h>>> 4);
       return (int)((h^(h>>32))&0x7FFFFFFF);
     }
-    public boolean has(double ds[]) { return Arrays.equals(_ds, ds); }
     @Override public boolean equals( Object o ) {
       return o instanceof Group && Arrays.equals(_ds,((Group)o)._ds); }
     @Override public int hashCode() { return _hash; }

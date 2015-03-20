@@ -34,11 +34,13 @@ test.km.bad_data <- function(conn) {
   train <- data.frame(rawdata)
   train[,1] <- factor(sample(LETTERS[1:4], nrow(rawdata), replace = TRUE))
   colFac.hex <- as.h2o(conn, train)
-  expect_error(h2o.kmeans(colFac.hex, k = 5))
+  # expect_error(h2o.kmeans(colFac.hex, k = 5))
   
   Log.info("Importing iris.csv data...\n")
   iris.hex <- h2o.uploadFile(conn, locate("smalldata/iris/iris.csv"))
-  expect_error(h2o.kmeans(iris.hex, k = 5))
+  fitH2O <- h2o.kmeans(iris.hex, k = 5)
+  expect_equal(dim(fitH2O@model$centers), c(5,5))
+  # expect_error(h2o.kmeans(iris.hex, k = 5))
   
   testEnd()
 }

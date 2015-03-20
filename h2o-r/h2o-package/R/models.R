@@ -210,6 +210,12 @@ predict.H2OModel <- function(object, newdata, ...) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
 
+  tmp_data <- !.is.eval(newdata)
+  if( tmp_data ) {
+    key  <- newdata@key
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=newdata@mutable$ast, key=key)
+  }
+
   # Send keys to create predictions
   url <- paste0('Predictions.json/models/', object@key, '/frames/', newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")

@@ -63,7 +63,7 @@ def init_err_casesKmeans(ip,port):
     except EnvironmentError:
         assert True
 
-    # NAs are replaced with mean of a column in H2O. Not sure about Inf.
+    # Nones are replaced with mean of a column in H2O. Not sure about Inf.
     # Log.info("Any entry is NA, NaN, or Inf")
     start = [[random.gauss(0,1) for c in range(numcol)] for r in range(3)]
     for x in ["NA", "NaN", "Inf", "-Inf"]:

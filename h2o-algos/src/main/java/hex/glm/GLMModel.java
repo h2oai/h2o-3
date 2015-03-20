@@ -48,11 +48,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
 
     @Override
-    public float[] perRow(float[] ds, float[] yact, Model m) {
-      float [] res = super.perRow(ds,yact,m);
+    public double[] perRow(double[] ds, float[] yact, Model m) {
+      double [] res = super.perRow(ds,yact,m);
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
-      _resDev += gm._parms.deviance(yact[0], ds[2]);
+      _resDev += gm._parms.deviance(yact[0], (float)ds[2]);
       _nullDev += gm._parms.deviance(yact[0],(float)gm._ymu);
       return res;
     }
@@ -110,7 +110,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   }
 
   @Override
-  public float[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, float[] preds) {
+  public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // good level 0 of all factors
@@ -125,23 +125,23 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       eta += b[noff+i]*chks[i].atd(row_in_chunk);
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
-    preds[0] = (float)mu;
+    preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){
-        preds[0] = Float.NaN;
-        preds[1] = Float.NaN;
-        preds[2] = Float.NaN;
+        preds[0] = Double.NaN;
+        preds[1] = Double.NaN;
+        preds[2] = Double.NaN;
       } else {
         preds[0] = (mu >= _output._threshold ? 1 : 0);
-        preds[1] = 1.0f - (float)mu; // class 0
-        preds[2] =        (float)mu; // class 1
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] =       mu; // class 1
       }
     }
     return preds;
   }
 
   @Override
-  protected float[] score0(double[] data, float[] preds) {
+  protected double[] score0(double[] data, double[] preds) {
     double eta = 0.0;
     final double [] b = beta();
     if(!_parms._use_all_factor_levels){ // good level 0 of all factors
@@ -156,16 +156,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       eta += b[noff+i]*data[i];
     eta += b[b.length-1]; // add intercept
     double mu = _parms.linkInv(eta);
-    preds[0] = (float)mu;
+    preds[0] = mu;
     if( _parms._family == Family.binomial ) { // threshold for prediction
       if(Double.isNaN(mu)){
-        preds[0] = Float.NaN;
-        preds[1] = Float.NaN;
-        preds[2] = Float.NaN;
+        preds[0] = Double.NaN;
+        preds[1] = Double.NaN;
+        preds[2] = Double.NaN;
       } else {
         preds[0] = (mu >= _output._threshold ? 1 : 0);
-        preds[1] = 1.0f - (float)mu; // class 0
-        preds[2] =        (float)mu; // class 1
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] =       mu; // class 1
       }
     }
     return preds;

@@ -9,10 +9,12 @@ import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
+import sun.misc.Unsafe;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
+import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -151,7 +153,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
-    
+
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -163,12 +165,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMedian());
 
     // Misc
+    putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
-    putPrefix(new ASTRename());  //TODO
-    putPrefix(new ASTSeq   ());  //TODO
-    putPrefix(new ASTSeqLen());  //TODO
-    putPrefix(new ASTRepLen());  //TODO
-    putPrefix(new ASTQtile ());  //TODO
+    putPrefix(new ASTRename());
+    putPrefix(new ASTSeq   ());
+    putPrefix(new ASTSeqLen());
+    putPrefix(new ASTRepLen());
+    putPrefix(new ASTQtile ());
     putPrefix(new ASTCbind ());
     putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
@@ -176,7 +179,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTIfElse());
     putPrefix(new ASTApply ());
     putPrefix(new ASTSApply());
-    putPrefix(new ASTddply ());
+    putPrefix(new ASTddply());
     putPrefix(new ASTMerge ());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
@@ -1766,6 +1769,39 @@ class ASTRename extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetLevel extends ASTUniPrefixOp {
+  private String _lvl;
+  ASTSetLevel() { super(new String[]{"setLevel", "x", "level"});}
+  @Override String opStr() { return "setLevel"; }
+  @Override ASTOp make() { return new ASTSetLevel(); }
+  ASTSetLevel parse_impl(Exec E) {
+    AST ary = E.parse();
+    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
+    _lvl = ((ASTString)E.parse())._s;
+    ASTSetLevel res = (ASTSetLevel) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.peekAry();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+    final int idx = Arrays.asList(doms).indexOf(_lvl);
+    if (idx == -1)
+      throw new IllegalArgumentException("Did not find level `" + _lvl + "` in the column.");
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(idx);
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    env.poppush(1, new ValFrame(fr2));
+  }
+}
+
 class ASTMatch extends ASTUniPrefixOp {
   protected static double _nomatch;
   protected static String[] _matches;
@@ -2301,7 +2337,7 @@ class ASTVar extends ASTUniPrefixOp {
             ss += (fr.vecs()[r].at(0) - xmean) * (y.vecs()[r].at(0) - ymean);
           }
         }
-        env.poppush(3, new ValNum(ss == Double.NaN ? ss : ss/divideby));
+        env.poppush(3, new ValNum(Double.isNaN(ss) ? ss : ss/divideby));
 
       } else {
 
@@ -2622,9 +2658,7 @@ class ASTTable extends ASTUniPrefixOp {
 
       final long[] pairs = new long[u._s.size()];
       int i=0;
-      Iterator it = u._s.iterator();
-      while(it.hasNext())
-        pairs[i++]=(long)it.next();
+      for (Object o : u._s) pairs[i++] = (long) o;
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -2690,37 +2724,12 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void reduce(UniqueColumnCountTask t) { ArrayUtils.add(_cts, t._cts); }
   }
 
-  public static class GroupPair extends Iced {
-    public long _ls[];
-    public int _hash;
-    public GroupPair() { _ls = MemoryManager.malloc8(2);}
-    public void fill(int row, Chunk chks[]) {
-      _ls[0] = (long) chks[0].atd(row);
-      _ls[1] = (long) chks[1].atd(row);
-      _hash = hash();
-    }
-    private int hash() {
-      long h=0;                 // hash is sum of field bits
-      for( long d : _ls ) h += Double.doubleToRawLongBits(d);
-      h ^= (h>>>20) ^ (h>>>12);
-      h ^= (h>>> 7) ^ (h>>> 4);
-      return (int)((h^(h>>32))&0x7FFFFFFF);
-    }
-    public boolean has(long ls[]) { return Arrays.equals(_ls, ls); }
-    @Override public boolean equals( Object o ) { return o instanceof GroupPair && Arrays.equals(_ls,((GroupPair)o)._ls); }
-    @Override public int hashCode() { return _hash; }
-    @Override public String toString() { return Arrays.toString(_ls); }
-  }
-
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
     NonBlockingHashSet<Long> _s;
     @Override public void setupLocal() { _s = new NonBlockingHashSet<>(); }
     @Override public void map(Chunk[] c) {
-      for (int i=0;i<c[0]._len;++i) {
-//        GroupPair g = new GroupPair();
-//        g.fill(i,c);
+      for (int i=0;i<c[0]._len;++i)
         _s.add(mix(c[0].at8(i), c[1].at8(i)));
-      }
     }
     @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
 
@@ -2741,16 +2750,8 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   /** http://szudzik.com/ElegantPairing.pdf */
-  private static long mix(long A, long B) { return mix(null,A,B);}
-  private static long mix(GroupPair g) { return mix(g,0,0); }
-  private static long mix(GroupPair g, long A, long B) {
-    long a,b;
-    if (g == null) {
-      a=A;b=B;
-    } else {
-      a = g._ls[0];
-      b = g._ls[1];
-    }
+  private static long mix(long A, long B) {
+    long a=A,b=B;
     long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
     long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
     long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
@@ -2770,10 +2771,9 @@ class ASTTable extends ASTUniPrefixOp {
     NonBlockingHashMap<Long, Integer> _s;
     final long[] _m;
     NewHashMap(long[] m) { _m = m; }
-    @Override public void setupLocal() {}
+    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
-      _s = new NonBlockingHashMap<>();
       for (int i = 0; i < c[0]._len; ++i)
         _s.put(_m[i + start], i+start);
     }
@@ -2790,22 +2790,29 @@ class ASTTable extends ASTUniPrefixOp {
       int len = ab.get4();
       if( len == 0 ) return this;
       _s = new NonBlockingHashMap<>();
-      for( int i=0; i<len; i++ ) { _s.put(ab.get8(), ab.get4());}
+      for( int i=0;i<len;i++ ) _s.put(ab.get8(), ab.get4());
       return this;
     }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
-    final NonBlockingHashMap<Long, Integer> _s;
-
+    private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
+    final NonBlockingHashMap<Long, Integer> _m;
     // out
     long[] _cnts;
-    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) { _s = s; }
+    private static final int _b = _unsafe.arrayBaseOffset(long[].class);
+    private static final int _s = _unsafe.arrayIndexScale(long[].class);
+    private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
+
+    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
+    @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
     @Override public void map(Chunk[] cs) {
-      _cnts = MemoryManager.malloc8(_s.size());
       for (int i=0; i < cs[0]._len; ++i) {
-        long h = mix(cs[0].at8(i), cs[1].at8(i));
-        _cnts[_s.get(h)]++;
+        int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
+        long offset = ssid(h);
+        long c = _cnts[h];
+        while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
+          c = _cnts[h];
       }
     }
     @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }
