@@ -7,7 +7,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.GLM.betaConstraints <- function(conn){
-  
+
     Log.info("Importing prostate dataset...")
     prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
 
@@ -31,12 +31,11 @@ test.GLM.betaConstraints <- function(conn){
                         alpha = 0.5,
                         standardization = T
                         ) {
-
-    prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
-    Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
-                   standardization =", standardization, "..."))
-    if(family_type == "binomial"){
-        prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+        prostate.hex <- h2o.importFile(conn, system.file("extdata", "prostate.csv", package = "h2o"))
+        Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
+                       standardization =", standardization, "..."))
+        if(family_type == "binomial"){
+            prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
     }
     glm_constraints.h2o <- h2o.glm(x = myX, y = myY, training_frame = prostate.hex, standardize = standardization,
                                    family = family_type, alpha = alpha , beta_constraint = betaConstraints.hex)
