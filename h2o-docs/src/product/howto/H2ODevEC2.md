@@ -38,7 +38,7 @@ Otherwise, download PuTTY and follow these instructions:
 
 0. Download [Java](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
 ) (JDK 1.7 or later) if it is not already available on the instance. 
-0. To download H2O, run the `wget` command with the link to the zip file available on our website by copying the link associated with the **Download** button. 
+0. To download H2O, run the `wget` command with the link to the zip file available on our [website](http://h2o.ai/download/) by copying the link associated with the **Download** button for the selected H2O-Dev build. 
 	
 		wget http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/index.html
 		unzip h2o-dev-0.2.1.1.zip

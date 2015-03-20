@@ -449,7 +449,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else if(model_cat == ModelCategory.Multinomial)
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
-      if (cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) { //don't print table for regression
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -700,7 +700,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] pvecs = model_predictions.vecs();
     
       double features   [] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses()+1);
+      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int miss = 0;
@@ -712,11 +712,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions
-            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
-            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+            if (miss++ < 10)
+              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }
         }
       }
+      if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;
     } finally {
       // Remove temp keys.

@@ -105,18 +105,22 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
-      float[] hr = new float[_K];
-      double mse = Double.NaN;
-      if (_count != 0) {
-        if (_hits != null) {
-          for (int i = 0; i < hr.length; i++) {
-            hr[i] = _hits[i] / _count;
+      if (sigma != 0) {
+        ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
+        float[] hr = new float[_K];
+        double mse = Double.NaN;
+        if (_count != 0) {
+          if (_hits != null) {
+            for (int i = 0; i < hr.length; i++) {
+              hr[i] = _hits[i] / _count;
+            }
           }
+          mse = _sumsqe / _count;
         }
-        mse = _sumsqe / _count;
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
+      } else {
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, null, null, Double.NaN, Double.NaN));
       }
-      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
     }
   }
 }
