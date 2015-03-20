@@ -61,6 +61,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
   static String licenseFileName = null;
+  static String flowDir = null;
 
   // State filled in as a result of handling options.
   static String licenseData = null;
@@ -401,6 +402,7 @@ public class h2odriver extends Configured implements Tool {
                     "          -n | -nodes <number of H2O nodes (i.e. mappers) to create>\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
+                    "          [-flow_dir <server side directory or hdfs directory>]\n " +
                     "          [-ea]\n" +
                     "          [-verbose:gc]\n" +
                     "          [-XX:+PrintGCDetails]\n" +
@@ -611,6 +613,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-license")) {
         i++; if (i >= args.length) { usage(); }
         licenseFileName = args[i];
+      }
+      else if (s.equals("-flow_dir")) {
+        i++; if (i >= args.length) { usage(); }
+        flowDir = args[i];
       }
       else {
         error("Unrecognized option " + s);
@@ -951,6 +957,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (licenseData != null) {
         conf.set(h2omapper.H2O_LICENSE_DATA_KEY, licenseData);
+    }
+    if (flowDir != null) {
+        conf.set(h2omapper.H2O_FLOW_DIR_KEY, flowDir);
     }
     String hadoopVersion = calcHadoopVersion();
     conf.set(h2omapper.H2O_HADOOP_VERSION, hadoopVersion);

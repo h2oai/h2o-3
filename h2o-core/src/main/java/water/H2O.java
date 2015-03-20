@@ -72,7 +72,10 @@ final public class H2O {
             "\n" +
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
-            "          (The default is '" + ARGS.port + "'.)\n" +
+            "\n" +
+            "    -flow_dir <server side directory or hdfs directory>\n" +
+            "          The directory where H2O stores saved flows.\n" +
+            "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n" +
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
@@ -704,6 +707,19 @@ final public class H2O {
     return "/tmp/h2o-" + u2;
   }
 
+  // Place to store flows
+  public static String DEFAULT_FLOW_DIR() {
+    String flow_dir;
+    if (ARGS.ga_hadoop_ver != null) {
+      // TODO:  Write somewhere to hdfs or disable writing entirely.
+      flow_dir = ICE_ROOT + File.separator + "h2oflows";
+    }
+    else {
+      flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+    }
+    return flow_dir;
+  }
+
   /* Static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   public static HashSet<H2ONode> STATIC_H2OS = null;
@@ -1101,12 +1117,8 @@ final public class H2O {
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
       }
-      else if (ARGS.ga_hadoop_ver != null) {
-        // TODO:  Write somewhere to hdfs or disable writing entirely.
-        flow_dir = ICE_ROOT + File.separator + "h2oflows";
-      }
       else {
-        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+        flow_dir = DEFAULT_FLOW_DIR();
       }
 
       flow_dir = flow_dir.replace("\\", "/");

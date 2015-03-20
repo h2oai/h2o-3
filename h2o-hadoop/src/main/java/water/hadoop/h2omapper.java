@@ -30,6 +30,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   final static public String H2O_NTHREADS_KEY = "h2o.nthreads";
   final static public String H2O_BASE_PORT_KEY = "h2o.baseport";
   final static public String H2O_LICENSE_DATA_KEY = "h2o.license.data";
+  final static public String H2O_FLOW_DIR_KEY = "h2o.flow.dir";
   final static public String H2O_HADOOP_VERSION = "h2o.hadoop.version";
   final static public String H2O_GA_OPTOUT = "h2o.ga.optout";
 
@@ -305,6 +306,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     String betaString = conf.get(H2O_BETA_KEY);
     String randomUdpDropString = conf.get(H2O_RANDOM_UDP_DROP_KEY);
     String licenseData = conf.get(H2O_LICENSE_DATA_KEY);
+    String flowDir = conf.get(H2O_FLOW_DIR_KEY);
     String hadoopVersion = conf.get(H2O_HADOOP_VERSION);
     String gaOptOut = conf.get(H2O_GA_OPTOUT);
 
@@ -369,6 +371,12 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         out.close();
         argsList.add("-license");
         argsList.add(fileName);
+      }
+    }
+    if (flowDir != null) {
+      if (flowDir.length() > 0) {
+        argsList.add("-flow_dir");
+        argsList.add(flowDir);
       }
     }
     if (hadoopVersion != null) {
