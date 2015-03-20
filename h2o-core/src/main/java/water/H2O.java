@@ -1145,6 +1145,9 @@ final public class H2O {
           throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
         }
       }
+      else {
+        Log.info("Flow dir is undefined; saving flows not available");
+      }
 
       NPS = new NodePersistentStorage(flow_uri);
     }
