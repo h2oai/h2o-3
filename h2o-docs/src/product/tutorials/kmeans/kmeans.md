@@ -80,7 +80,7 @@ K-Means randomly chooses starting points and converges on
 optimal centroids. The cluster number is arbitrary, and should
 be thought of as a factor.
 
-![Image](KMinspect.png )
+  >Output for K-Means is currently in progress in H2O-dev. 
 
 
 
