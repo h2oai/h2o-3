@@ -602,7 +602,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _valid != null) dl.error("_validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
       if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -1648,6 +1647,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             err.train_mse = l2.mean();
+            mse_frame.delete();
+          }
+          if (ftest != null) {
+            final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
+            final Vec l2 = mse_frame.anyVec();
+            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
+            err.valid_mse = l2.mean();
             mse_frame.delete();
           }
         } else {
