@@ -254,6 +254,17 @@ class H2OFrame:
     res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
     print res["domain"][0]
 
+  def setNames(self,names):
+    if not names or not isinstance(names,list):
+      raise ValueError("names parameter must be a list of strings")
+    if len(names) != self.ncol():
+      raise ValueError("names parameter must be a list of ncol names")
+    for s in names:
+      if not isinstance(s,str):
+        raise ValueError("all names in names parameter must be strings")
+    for name, vec in zip(names,self._vecs):
+      vec._name = name
+
   def describe(self):
     """
     Generate an in-depth description of this H2OFrame.
@@ -538,10 +549,11 @@ class H2OFrame:
     if len(self) == 0: return self
     return H2OFrame(vecs=[vec.quantile(prob) for vec in self._vecs ])
 
-  def append(self,data):
+  # H2OFrame Mutating cbind
+  def cbind(self,data):
     """
-    :param data: H2OFrame or H2OVec to append to self
-    :return: self, but with the extra data appended to the end
+    :param data: H2OFrame or H2OVec to cbind to self
+    :return: void
     """
     if isinstance(data, H2OFrame):
       num_vecs = len(data._vecs)
@@ -550,9 +562,7 @@ class H2OFrame:
     elif isinstance(data, H2OVec):
       self._vecs.append(data)
     else:
-      raise ValueError("Data to append must be H2OVec or H2OFrame")
-
-    return self
+      raise ValueError("data to cbind must be H2OVec or H2OFrame")
 
   # ddply in h2o
   def ddply(self,cols,fun):
@@ -644,7 +654,7 @@ class H2OVec:
   def name(self):
     return self._name
 
-  def setName(self,name=None):
+  def setName(self,name):
     if name and isinstance(name,str):
       self._name = name
     else:
@@ -667,6 +677,38 @@ class H2OVec:
       pass
     self._expr.data().append(__x__)
     self._expr.set_len(self._expr.get_len() + 1)
+
+  # H2OVec non-mutating cbind
+  def cbind(self,data):
+    """
+    :param data: H2OFrame or H2OVec
+    :return: new H2OFrame with data cbinded to the end
+    """
+    # Check data type
+    vecs = []
+    if isinstance(data,H2OFrame):
+      vecs.append(self)
+      [vecs.append(vec) for vec in data._vecs]
+    elif isinstance(data,H2OVec):
+      vecs = [self, data]
+    else:
+      raise ValueError("data parameter must be H2OVec or H2OFrame")
+    names = [vec.name() for vec in vecs]
+
+    fr = H2OFrame.py_tmp_key()
+    cbind = "(= !" + fr + " (cbind %"
+    cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
+    h2o.rapids(cbind)
+
+    j = h2o.frame(fr)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_keys']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    result.setNames(names)
+    return result
 
   def show(self, noprint=False):
     """

@@ -25,7 +25,7 @@ def prep_airlines(ip,port):
     print "Dimensions of new dataset: {0}".format(noDepDelayedNAs.dim())
 
     minutesOfDelayWeTolerate = 15
-    noDepDelayedNAs.append(noDepDelayedNAs["DepDelay"] > minutesOfDelayWeTolerate)
+    noDepDelayedNAs.cbind(noDepDelayedNAs["DepDelay"] > minutesOfDelayWeTolerate)
     noDepDelayedNAs[numCols] = noDepDelayedNAs[numCols].asfactor()
     noDepDelayedNAs._vecs[numCols].setName(y_col)
 
