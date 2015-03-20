@@ -645,6 +645,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     ModelMetrics valid_metrics;
     double run_time;
 
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(model_summary.toString());
+      sb.append(scoring_history.toString());
+      if (variable_importances != null) sb.append(variable_importances.toString());
+      return sb.toString();
+    }
+
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
