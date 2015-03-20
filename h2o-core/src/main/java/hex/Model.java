@@ -667,9 +667,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions ) {
     assert data.numRows()==model_predictions.numRows();
-    Frame fr = null;
+    final Frame fr = new Frame(data);
     try {
-      fr = new Frame(data);
       String[] warns = adaptTestForTrain(fr,true);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
@@ -721,8 +720,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;
     } finally {
-      // Remove temp keys.  TODO: Really should use Scope but Scope does not
-      // currently allow nested-key-keepers.
+      // Remove temp keys.
       Vec[] vecs = fr.vecs();
       for( int i=0; i<vecs.length; i++ )
         if( data.find(vecs[i]) != -1 ) // Exists in the original frame?

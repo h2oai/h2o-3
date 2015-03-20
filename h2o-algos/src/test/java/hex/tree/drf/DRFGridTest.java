@@ -1,8 +1,7 @@
-package hex.tree.gbm;
+package hex.tree.drf;
 
 import hex.Grid;
 import hex.Model;
-import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.*;
@@ -11,11 +10,11 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-public class GBMGridTest extends TestUtil {
+public class DRFGridTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testCarsGrid() {
-    GBMGrid gbmg = null;
+    DRFGrid drfg = null;
     Frame fr = null;
     Vec old = null;
     try {
@@ -26,31 +25,30 @@ public class GBMGridTest extends TestUtil {
       DKV.put(fr);
 
       // Get the Grid for this modeling class and frame
-      gbmg = GBMGrid.get(fr);
+      drfg = DRFGrid.get(fr);
 
       // Setup hyperparameter search space
       HashMap<String,Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_ntrees",new Integer[]{5,10});
-      hyperParms.put("_loss",new Family[] {Family.multinomial});
-      hyperParms.put("_max_depth",new Integer[]{1,2,5});
-      hyperParms.put("_learn_rate",new Float[]{0.01f,0.1f,0.3f});
+      hyperParms.put("_ntrees",new Integer[]{20,40});
+      hyperParms.put("_max_depth",new Integer[]{10,20});
+      hyperParms.put("_mtries",new Integer[]{-1,4,5});
 
       // Fire off a grid search
-      Grid.GridSearch gs = gbmg.startGridSearch(hyperParms);
+      Grid.GridSearch gs = drfg.startGridSearch(hyperParms);
       Grid g2 = (Grid)gs.get();
-      assert g2==gbmg;
+      assert g2==drfg;
 
       // Print out the models from this grid search
       Model[] ms = gs.models();
       for( Model m : ms ) {
-        GBMModel gbm = (GBMModel)m;
-        System.out.println(gbm._output._mse_train[gbm._output._ntrees] + " " + Arrays.toString(g2.getHypers(gbm._parms)));
+        DRFModel drf = (DRFModel)m;
+        System.out.println(drf._output._mse_train[drf._output._ntrees] + " " + Arrays.toString(g2.getHypers(drf._parms)));
       }
 
     } finally {
       if( old != null ) old.remove();
       if( fr != null ) fr.remove();
-      if( gbmg != null ) gbmg.remove();
+      if( drfg != null ) drfg.remove();
     }
   }
 
