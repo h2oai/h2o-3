@@ -310,7 +310,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
-          ((LeafNode)tree.node(leafs[k]+i))._pred = g;
+          ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }
 
@@ -344,7 +344,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( ktrees[i] != null )
           ktrees[i]._leaves = ktrees[i].len() - leafs[i];
       // DEBUG: Print the generated K trees
-      //printGenerateTrees(ktrees);
+      printGenerateTrees(ktrees);
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
     }

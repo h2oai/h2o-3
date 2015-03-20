@@ -274,7 +274,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
                 LeafNode ln = new DRFLeafNode(tree,nid);
-                ln._pred = dn.pred(i);  // Set prediction into the leaf
+                ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
               }
             }

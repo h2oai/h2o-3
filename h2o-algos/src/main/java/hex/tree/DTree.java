@@ -504,7 +504,7 @@ public class DTree extends Iced {
   }
 
   public static abstract class LeafNode extends Node {
-    public double _pred;
+    public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
@@ -514,7 +514,7 @@ public class DTree extends Iced {
       return sb.append("pred=").append(_pred).append("\n");
     }
     public final double pred() { return _pred; }
-    public final void pred(double pred) { _pred = pred; }
+    public final void pred(double pred) { _pred = (float)pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }

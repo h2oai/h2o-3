@@ -135,7 +135,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   protected boolean binomialOpt() { return false; }
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
-    body.ip("java.util.Arrays.fill(preds,0f);").nl();
+    body.ip("java.util.Arrays.fill(preds,0);").nl();
     body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
     String mname = JCodeGen.toJavaId(_key.toString());
 
