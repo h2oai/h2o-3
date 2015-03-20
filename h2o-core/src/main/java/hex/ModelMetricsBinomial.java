@@ -18,7 +18,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public ModelMetricsBinomial(Model model, Frame frame, AUCData aucdata, double sigma, double mse) {
     super(model, frame);
     _aucdata = aucdata;
-    _cm = aucdata.CM();
+    _cm = aucdata != null ? aucdata.CM() : null;
     _sigma = sigma;
     _mse = mse;
   }
@@ -83,12 +83,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
-      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
+      if (sigma != 0.0) {
+        ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
+        for (int i = 0; i < cms.length; i++) cms[i] = new ConfusionMatrix(_cms[i], _domain);
 
-      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
-      double mse = _sumsqe / _count;
-      return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, sigma, mse));
+        AUCData aucdata = new AUC(cms, _thresholds, _domain).data();
+        double mse = _sumsqe / _count;
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, aucdata, sigma, mse));
+      } else {
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, null, Double.NaN, Double.NaN));
+      }
     }
   }
 }

@@ -449,7 +449,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else if(model_cat == ModelCategory.Multinomial)
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
-      if (cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) { //don't print table for regression
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -701,7 +701,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] pvecs = model_predictions.vecs();
     
       double features   [] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses()+1);
+      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int miss = 0;
