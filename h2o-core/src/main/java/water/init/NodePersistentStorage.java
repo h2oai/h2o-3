@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 public class NodePersistentStorage {
-  String NPS_DIR;
-  String NPS_SEPARATOR;
+  final String NPS_DIR;
+  final String NPS_SEPARATOR;
 
   public static class NodePersistentStorageEntry extends Iced {
     public String _category;
@@ -24,6 +24,12 @@ public class NodePersistentStorage {
   }
 
   public NodePersistentStorage(URI npsDirURI) {
+    if (npsDirURI == null) {
+      NPS_DIR = null;
+      NPS_SEPARATOR = null;
+      return;
+    }
+
     if (PersistManager.isHdfsPath(npsDirURI.toString())) {
       NPS_SEPARATOR = "/";
     }
@@ -32,6 +38,12 @@ public class NodePersistentStorage {
     }
 
     NPS_DIR = npsDirURI.toString();
+  }
+
+  private void validateGeneral() {
+    if (NPS_DIR == null) {
+      throw new IllegalArgumentException("NodePersistentStorage directory not specified (try setting -flow_dir)");
+    }
   }
 
   private void validateCategoryName(String categoryName) {
@@ -71,10 +83,15 @@ public class NodePersistentStorage {
     }
   }
 
+  public boolean getCanSave() {
+    return (NPS_DIR != null);
+  }
+
   public void put(String categoryName, String keyName, InputStream is) {
     Log.info("NPS put content category(" + categoryName + ") keyName(" + keyName + ")");
 
     // Error checking
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
@@ -148,6 +165,7 @@ public class NodePersistentStorage {
   }
 
   public void put(String categoryName, String keyName, String value) {
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
@@ -156,6 +174,7 @@ public class NodePersistentStorage {
   }
 
   public NodePersistentStorageEntry[] list(String categoryName) {
+    validateGeneral();
     validateCategoryName(categoryName);
 
     String dirName = NPS_DIR + NPS_SEPARATOR + categoryName;
@@ -173,6 +192,7 @@ public class NodePersistentStorage {
   }
 
   public String get_as_string(String categoryName, String keyName) {
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
@@ -180,9 +200,8 @@ public class NodePersistentStorage {
     InputStream is = H2O.getPM().open(fileName);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     byte[] buf = new byte[4096];
-    int off = 0;
     try {
-      int n = is.read(buf, off, buf.length);
+      int n = is.read(buf, 0, buf.length);
       while (true) {
         if (baos.size() > (1024L * 1024L * 1024L)) {
           throw new RuntimeException("File too big (" + fileName + ")");
@@ -193,8 +212,7 @@ public class NodePersistentStorage {
         }
 
         baos.write(buf, 0, n);
-        off += n;
-        n = is.read(buf, off, buf.length);
+        n = is.read(buf, 0, buf.length);
       }
     }
     catch (Exception e) {
@@ -203,6 +221,7 @@ public class NodePersistentStorage {
   }
 
   public long get_length(String categoryName, String keyName) {
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
@@ -215,6 +234,7 @@ public class NodePersistentStorage {
   }
 
   public InputStream get(String categoryName, String keyName, AtomicLong length) {
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 
@@ -227,6 +247,7 @@ public class NodePersistentStorage {
   }
 
   public void delete(String categoryName, String keyName) {
+    validateGeneral();
     validateCategoryName(categoryName);
     validateKeyName(keyName);
 

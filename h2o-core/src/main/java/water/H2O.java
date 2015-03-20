@@ -37,6 +37,19 @@ final public class H2O {
    * Print help about command line arguments.
    */
   private static void printHelp() {
+    String defaultFlowDirMessage;
+    if (DEFAULT_FLOW_DIR() == null) {
+      // If you start h2o on hadoop, you must set -flow_dir.
+      // H2O doesn't know how to guess a good one.
+      // user.home doesn't make sense.
+      defaultFlowDirMessage =
+      "          (The default is none; saving flows not available.)\n";
+    }
+    else {
+      defaultFlowDirMessage =
+      "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n";
+    }
+
     String s =
             "\n" +
             "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
@@ -75,7 +88,7 @@ final public class H2O {
             "\n" +
             "    -flow_dir <server side directory or hdfs directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
-            "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n" +
+            defaultFlowDirMessage +
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
@@ -711,8 +724,7 @@ final public class H2O {
   public static String DEFAULT_FLOW_DIR() {
     String flow_dir;
     if (ARGS.ga_hadoop_ver != null) {
-      // TODO:  Write somewhere to hdfs or disable writing entirely.
-      flow_dir = ICE_ROOT + File.separator + "h2oflows";
+      flow_dir = null;
     }
     else {
       flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
@@ -1114,6 +1126,8 @@ final public class H2O {
     // Initialize NPS
     {
       String flow_dir;
+      URI flow_uri = null;
+
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
       }
@@ -1121,15 +1135,15 @@ final public class H2O {
         flow_dir = DEFAULT_FLOW_DIR();
       }
 
-      flow_dir = flow_dir.replace("\\", "/");
-      Log.info("Flow dir: '" + flow_dir + "'");
+      if (flow_dir != null) {
+        flow_dir = flow_dir.replace("\\", "/");
+        Log.info("Flow dir: '" + flow_dir + "'");
 
-      URI flow_uri;
-      try {
-        flow_uri = new URI(flow_dir);
-      }
-      catch (Exception e) {
-        throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+        try {
+          flow_uri = new URI(flow_dir);
+        } catch (Exception e) {
+          throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+        }
       }
 
       NPS = new NodePersistentStorage(flow_uri);
