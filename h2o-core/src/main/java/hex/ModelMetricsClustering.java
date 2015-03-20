@@ -29,7 +29,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     private double[/*features*/] _colSumSq;  // Sum of squared values of each column
 
     public MetricBuilderClustering(int ncol, int nclust) {
-      _work = new float[ncol];
+      _work = new double[ncol];
       _size = new long[nclust];
       _within_sumsqe = new double[nclust];
       Arrays.fill(_size, 0);
@@ -43,10 +43,10 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
-    public float[] perRow(float[] preds, float[] dataRow, Model m) {
+    public double[] perRow(double[] preds, float[] dataRow, Model m) {
       assert m instanceof ClusteringModel;
-      if (Float.isNaN(preds[0])) return dataRow; // No errors if prediction  is missing
-      if (Float.isNaN(dataRow[0])) return dataRow; // No errors if actual is missing
+      if (Double.isNaN(preds  [0])) return preds; // No errors if prediction is missing
+      if (Float .isNaN(dataRow[0])) return preds; // No errors if actual is missing
 
       ClusteringModel clm = (ClusteringModel) m;
       final TwoDimTable centers = ((ClusteringOutput) clm._output)._centers; // De-standardized centers
@@ -66,7 +66,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       assert !Double.isNaN(_sumsqe);
       _size[clus]++;
       _count++;
-      return dataRow;                // Flow coding
+      return preds;                // Flow coding
     }
 
     @Override

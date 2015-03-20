@@ -270,7 +270,7 @@ public class ArrayUtils {
       if (from[i]>from[result]) result = i;
     return result;
   }
-  public static int maxIndex(float[] from) {
+  public static int maxIndex(double[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]>from[result]) result = i;

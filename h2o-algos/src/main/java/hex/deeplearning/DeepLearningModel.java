@@ -1858,7 +1858,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public float[] score0(double[] data, float[] preds) {
+  @Override public double[] score0(double[] data, double[] preds) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
@@ -1871,7 +1871,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
         preds[i + 1] = out[i];
-        if (Float.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
+        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
@@ -1879,7 +1879,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
         preds[0] = out[0];
-      if (Float.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
+      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
   }

@@ -30,8 +30,8 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
   // code preamble
   protected void preamble(SB sb, int subtree) throws RuntimeException {
     String subt = subtree>0?String.valueOf(subtree):"";
-    sb.ip("static final float score0").p(subt).p("(float[] data) {").nl().ii(1); // predict method for one tree
-    sb.ip("float pred = ");
+    sb.ip("static final double score0").p(subt).p("(double[] data) {").nl().ii(1); // predict method for one tree
+    sb.ip("double pred = ");
   }
 
   // close the code

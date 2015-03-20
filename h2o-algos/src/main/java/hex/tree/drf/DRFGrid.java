@@ -1,7 +1,9 @@
-package hex.kmeans;
+package hex.tree.drf;
 
 import hex.*;
+import hex.tree.SharedTreeGrid;
 import water.DKV;
+import water.util.ArrayUtils;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
@@ -11,25 +13,25 @@ import water.fvec.Frame;
  *  represents the potentially infinite variety of hyperparameters of a given
  *  model & dataset.
  *
- *  One subclass per kind of Model, e.g. KMeans or GLM or GBM or DL.  The Grid
+ *  One subclass per kind of Model, e.g. DRF or GLM or DRF or DL.  The Grid
  *  tracks Models and their hyperparameters, and will allow discovery of
  *  existing Models by hyperparameter, or building Models on demand by
  *  hyperparameter.  The Grid can manage a (simplistic) hyperparameter search
  *  space.
  *
  *  Hyperparameter values are limited to doubles in the API, but can be
- *  anything the subclass Grid desires internally.  E.g. the Grid for KMeans
+ *  anything the subclass Grid desires internally.  E.g. the Grid for DRF
  *  will convert the initial center selection Enum to and from a simple integer
  *  value internally.
  */
-public class KMeansGrid extends Grid<KMeansGrid> {
+public class DRFGrid<G extends DRFGrid<G>> extends SharedTreeGrid<G> {
 
-  public static final String MODEL_NAME = "KMeans";
+  public static final String MODEL_NAME = "DRF";
   /** @return Model name */
   @Override protected String modelName() { return MODEL_NAME; }
 
-  private static final String[] HYPER_NAMES    = new String[] {"_k", "_standardize",          "_init",                         "_seed" };
-  private static final double[] HYPER_DEFAULTS = new double[] {  0,          1     , KMeans.Initialization.PlusPlus.ordinal(),123456789L};
+  private static final String[] HYPER_NAMES    = ArrayUtils.append(SharedTreeGrid.HYPER_NAMES   ,new String[] { "_mtries", "_sample_rate"});
+  private static final double[] HYPER_DEFAULTS = ArrayUtils.append(SharedTreeGrid.HYPER_DEFAULTS,new double[] {    -1    ,     2f/3f     });
   /** @return hyperparameter names corresponding to a Model.Parameter field names */
   @Override protected String[] hyperNames() { return HYPER_NAMES; }
   /** @return hyperparameter defaults, aligned with the field names */
@@ -52,35 +54,34 @@ public class KMeansGrid extends Grid<KMeansGrid> {
   /** @param hypers A set of hyper parameter values
    *  @return A ModelBuilder, blindly filled with parameters.  Assumed to be
    *  cheap; used to check hyperparameter sanity or make models */
-  @Override protected KMeans getBuilder( double[] hypers ) {
-    KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-    parms._train = _fr._key;
-    parms._k = (int)hypers[0];
-    parms._standardize = hypers[1]!=0;
-    parms._init = KMeans.Initialization.values()[(int)hypers[2]];
-    parms._seed = (long)hypers[3];
-    return new KMeans(parms);
+  @Override protected DRF getBuilder( double[] hypers ) {
+    DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+    getBuilder(parms,hypers);
+    int slen = SharedTreeGrid.HYPER_NAMES.length;
+    parms._mtries      = (int)  hypers[slen  ];
+    parms._sample_rate = (float)hypers[slen+1];
+    return new DRF(parms);
   }
 
   /** @param parms Model parameters
    *  @return Gridable parameters pulled out of the parms */
   @Override public double[] getHypers( Model.Parameters parms ) {
-    double[] ds = new double[HYPER_NAMES.length];
-    KMeansModel.KMeansParameters kp = (KMeansModel.KMeansParameters)parms;
-    ds[0] = kp._k;
-    ds[1] = kp._standardize ? 1 : 0;
-    ds[2] = kp._init.ordinal();
-    ds[3] = kp._seed;
-    return ds;
+    DRFModel.DRFParameters drfp = (DRFModel.DRFParameters)parms;
+    double[] hypers = new double[HYPER_NAMES.length];
+    super.getHypers(drfp,hypers);
+    int slen = SharedTreeGrid.HYPER_NAMES.length;
+    hypers[slen  ] = drfp._mtries;
+    hypers[slen+1] = drfp._sample_rate;
+    return hypers;
   }
 
   // Factory for returning a grid based on an algorithm flavor
-  private KMeansGrid( Key key, Frame fr ) { super(key,fr); }
-  public static KMeansGrid get( Frame fr ) { 
+  private DRFGrid( Key key, Frame fr ) { super(key,fr); }
+  public static DRFGrid get( Frame fr ) { 
     Key k = Grid.keyName(MODEL_NAME, fr);
-    KMeansGrid kmg = DKV.getGet(k);
+    DRFGrid kmg = DKV.getGet(k);
     if( kmg != null ) return kmg;
-    kmg = new KMeansGrid(k,fr);
+    kmg = new DRFGrid(k,fr);
     DKV.put(kmg);
     return kmg;
   }

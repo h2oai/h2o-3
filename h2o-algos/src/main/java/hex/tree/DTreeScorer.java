@@ -33,13 +33,13 @@ public abstract class DTreeScorer<T extends DTreeScorer<T>> extends MRTask<T> {
   public final Chunk chk_tree(Chunk chks[], int c) { return chks[_ncols+1+c]; }
   public final Chunk chk_resp( Chunk chks[] ) { return chks[_ncols]; }
 
-  protected void score0(double data[], float preds[], CompressedTree[] ts) { scoreTree(data, preds, ts); }
+  protected void score0(double data[], double preds[], CompressedTree[] ts) { scoreTree(data, preds, ts); }
 
   /** Score given tree on the row of data.
    *  @param data row of data
    *  @param preds array to hold resulting prediction
    *  @param ts a tree representation (single regression tree, or multi tree)  */
-  public static void scoreTree(double data[], float preds[], CompressedTree[] ts) {
+  public static void scoreTree(double data[], double preds[], CompressedTree[] ts) {
     for( int c=0; c<ts.length; c++ )
       if( ts[c] != null )
         preds[ts.length==1?0:c+1] += ts[c].score(data);
