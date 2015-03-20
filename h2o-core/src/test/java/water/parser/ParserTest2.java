@@ -44,7 +44,7 @@ public class ParserTest2 extends TestUtil {
     };
 
     Key rkey = ParserTest.makeByteVec(data);
-    ParseSetup ps = new ParseSetup(true, 0, 1, null, ParserType.CSV, (byte)',', false, ParseSetup.HAS_HEADER, 9,
+    ParseSetup ps = new ParseSetup(true, 0, null, ParserType.CSV, (byte)',', false, ParseSetup.HAS_HEADER, 9,
             new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'", "'C8DChunk'", "'Categorical'"},
             ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
     Frame fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
