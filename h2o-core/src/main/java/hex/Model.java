@@ -713,11 +713,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions
-            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
-            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+            if (miss++ < 10)
+              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }
         }
       }
+      if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;
     } finally {
       // Remove temp keys.  TODO: Really should use Scope but Scope does not
