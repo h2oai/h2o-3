@@ -7,7 +7,7 @@ import water.H2O;
 
 public class RandomUtils {
   public enum RNGType { PCGRNG, MersenneTwisterRNG, JavaRNG, XorShiftRNG }
-  private static RNGType _rngType = RNGType.PCGRNG;
+  private static RNGType _rngType = RNGType.MersenneTwisterRNG;
 
   /* Returns the configured random generator */
   public static Random getRNG(long... seed) {
