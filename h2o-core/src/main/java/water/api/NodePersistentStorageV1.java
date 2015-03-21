@@ -29,6 +29,12 @@ public class NodePersistentStorageV1 extends Schema<Iced, NodePersistentStorageV
   @API(help="Value", required=false, direction=API.Direction.INOUT)
   String value;
 
+  @API(help="Configured", required=false, direction=API.Direction.OUTPUT)
+  boolean configured;
+
+  @API(help="Exists", required=false, direction=API.Direction.OUTPUT)
+  boolean exists;
+
   @API(help="List of entries", required=false, direction=API.Direction.OUTPUT)
   NodePersistentStorageEntryV1[] entries;
 }
