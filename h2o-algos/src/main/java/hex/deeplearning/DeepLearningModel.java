@@ -1330,7 +1330,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     void randomizeWeights() {
       for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getDeterRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
+        final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {

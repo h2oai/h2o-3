@@ -8,6 +8,25 @@ import java.util.UUID;
 
 public class NodePersistentStorageHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public NodePersistentStorageV1 configured(int version, NodePersistentStorageV1 s) {
+    NodePersistentStorage nps = H2O.getNPS();
+    s.configured = nps.configured();
+    return s;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public NodePersistentStorageV1 exists(int version, NodePersistentStorageV1 s) {
+    NodePersistentStorage nps = H2O.getNPS();
+    if (s.name != null) {
+      s.exists = nps.exists(s.category, s.name);
+    }
+    else {
+      s.exists = nps.exists(s.category);
+    }
+    return s;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public NodePersistentStorageV1 put(int version, NodePersistentStorageV1 s) {
     NodePersistentStorage nps = H2O.getNPS();
     UUID uuid = java.util.UUID.randomUUID();

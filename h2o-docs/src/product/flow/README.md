@@ -693,12 +693,30 @@ To confirm the name, click the checkmark to the right of the name field.
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click the flow name. To delete a saved flow, click the trashcan icon to the right of the flow name. 
 
  ![Flows](images/Flow_flows.png)
+
+## Finding Saved Flows on your Disk
  
- **NOTE**: Saved data, including flows and clips, are persistent as long as the same IP address is used for the cluster. If a new IP is used, previously saved flows and clips are not available. 
+By default, flows are saved to the `h2oflows` directory underneath your home directory.  The directory where flows are saved is printed to stdout:
+ 
+```
+03-20 14:54:20.945 172.16.2.39:54323     95667  main      INFO: Flow dir: '/Users/<UserName>/h2oflows'
+```
 
-Flows are saved to the home directory in "H2OFlows\notebook" (`Users\<user name>\H2OFlows\notebook`). To back up saved flows, copy this directory to your preferred backup location.  
+To back up saved flows, copy this directory to your preferred backup location.  
 
-If you are starting H2O on a Hadoop cluster, you can now save flows to an HDFS location. 
+To specify a different location for saved flows, use the command-line argument `-flow_dir` when launching H2O:
+
+`java -jar h2o.jar -flow_dir /<New>/<Location>/<For>/<Saved>/<Flows>`  
+
+where `/<New>/<Location>/<For>/<Saved>/<Flows>` represents the specified location.  If the directory does not exist it will be created the first time you save a flow.
+
+## Saving Flows on a Hadoop cluster
+
+**Caution**: If you are running H2O Flow on a Hadoop cluster, H2O has no default location to save flows. To save flows, you must specify a directory using the `-flow_dir` command-line argument when launching H2O:
+
+`hadoop jar h2odriver.jar -nodes 1 -mapperXmx 1g -output hdfsOutputDirName -flow_dir hdfs:///<Saved>/<Flows>/<Location>`  
+
+The specified flow_dir may be either an hdfs or regular filesystem directory.  If the directory does not exist it will be created the first time you save a flow.
 
 ## Duplicating Flows
 

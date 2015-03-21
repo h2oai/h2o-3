@@ -11,6 +11,7 @@ g_user = None
 g_pass = None
 g_sprint = None
 g_csv = False
+g_verbose = False
 
 
 class Person:
@@ -30,11 +31,12 @@ class Person:
         resolution = issue[u'fields'][u'resolution']
         if resolution is None:
             self.unresolved_story_points += story_points
+            self.unresolved_list.append(issue)
         else:
             self.resolved_story_points += story_points
+            self.resolved_list.append(issue)
 
     def emit(self):
-        global g_csv
         if g_csv:
             self._emit_csv()
         else:
@@ -47,7 +49,17 @@ class Person:
         print("")
         print("-----" + self.name + "-----")
         Person._printbar("  resolved", self.resolved_story_points, "R")
+        if (g_verbose):
+            print("")
+            for issue in self.resolved_list:
+                print("              " + issue[u'key'] + ": " + issue[u'fields'][u'summary'])
+        if (g_verbose):
+            print("")
         Person._printbar("unresolved", self.unresolved_story_points, "U")
+        if (g_verbose):
+            print("")
+            for issue in self.unresolved_list:
+                print("              " + issue[u'key'] + ": " + issue[u'fields'][u'summary'])
 
     @staticmethod
     def _printbar(label, value, char):
@@ -133,6 +145,7 @@ def parse_args(argv):
     global g_pass
     global g_sprint
     global g_csv
+    global g_verbose
 
     i = 1
     while (i < len(argv)):
@@ -153,8 +166,10 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_sprint = argv[i]
-        elif (s == "-csv"):
+        elif (s == "--csv"):
             g_csv = True
+        elif (s == "--verbose"):
+            g_verbose = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:
