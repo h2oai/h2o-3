@@ -252,7 +252,7 @@ class H2OFrame:
     if col >= self.ncol(): col = self.ncol() - 1
     vec = self._vecs[col]
     res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
-    print res["domain"][0]
+    return res["domain"][0]
 
   def setNames(self,names):
     if not names or not isinstance(names,list):
