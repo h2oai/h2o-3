@@ -554,11 +554,10 @@ h2o.specificity <- function(object, thresholds){
 #' perf <- h2o.performance(model, hex)
 #' # 0.46 is the F1 maximum threshold, used as the default prediction threshold
 #' h2o.confusionMatrix(perf, 0.46)
-h2o.confusionMatrix <- function(object, ...) {}
+setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
 setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
-
   delete <- !.is.eval(newdata)
   if(delete) {
     temp_key <- newdata@key
