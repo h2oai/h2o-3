@@ -10,7 +10,7 @@ def not_equal_factor(ip,port):
     # Connect to a pre-existing cluster
     h2o.init(ip,port)
 
-    air = h2o.import_frame(path="/Users/ece/0xdata/h2o-dev/smalldata/airlines/allyears2k_headers.zip")
+    air = h2o.import_frame(path=h2o.locate("smalldata/airlines/allyears2k_headers.zip"))
 
     # Print dataset size.
     rows, cols = air.dim()
