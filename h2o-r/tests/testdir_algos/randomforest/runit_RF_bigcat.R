@@ -23,7 +23,7 @@ test.DRF.bigcat <- function(conn) {
   Log.info("Expect DRF with Group Split to give Perfect Prediction in Single Iteration")
   drfperf <- h2o.performance(drfmodel)
   expect_equal(h2o.auc(drfperf), 1)
-  expect_equal(drfmodel@model$confusion[3,3], 0)
+  expect_equal(h2o.confusionMatrix(drfmodel,bigcat.hex)[3,"Error"], 0)
   testEnd()
 }
 
