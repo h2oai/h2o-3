@@ -1,5 +1,7 @@
 package hex.deeplearning;
 
+import water.util.RandomUtils;
+
 import java.util.Arrays;
 import java.util.Random;
 
@@ -30,7 +32,7 @@ public class Dropout {
 
   Dropout(int units) {
     _bits = new byte[(units+7)/8];
-    _rand = new Random(0);
+    _rand = new RandomUtils.PCGRNG(0,1);
     _rate = 0.5;
   }
 

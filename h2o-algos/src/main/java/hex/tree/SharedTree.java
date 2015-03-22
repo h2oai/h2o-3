@@ -422,5 +422,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Helper to unify use of M-T RNG
   public static Random createRNG(long seed) {
     return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
+//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
   }
 }

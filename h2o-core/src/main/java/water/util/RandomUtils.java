@@ -58,6 +58,14 @@ public class RandomUtils {
       _state += seed;
       nextInt();
     }
+
+    @Override public synchronized void setSeed(long seed) {
+      _state = 0;
+      nextInt();
+      _state += seed;
+      nextInt();
+    }
+
     // CNC: PCG expects the output to be an *unsigned* int which Java does not
     // support.  Instead we're returning a signed int, and the caller has to
     // figure out the sign-extension.
