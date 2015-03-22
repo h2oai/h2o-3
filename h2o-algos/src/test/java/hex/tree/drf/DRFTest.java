@@ -459,6 +459,7 @@ public class DRFTest extends TestUtil {
         parms._mtries = -1;
         parms._min_rows = 1;
         parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._balance_classes = true;
         parms._seed = (1L<<32)|2;
 
         // Build a first model; all remaining models should be equal
@@ -478,7 +479,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.206421137, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 }
