@@ -53,7 +53,10 @@ public class RandomUtils {
     // Seed the rng. Specified in two parts, state initializer and a sequence
     // selection constant (a.k.a. stream id)
     public PCGRNG(long seed, long seq) {
-      _state = 0;
+      //need to call a super-class constructor - ugly by-product of inheritance
+      //required for reproducibility - super() would call time-based setSeed() and modify _state to non-zero
+      super(0);
+      assert(_state == 0);
       _inc = (seq<<1)|1;
       nextInt();
       _state += seed;
