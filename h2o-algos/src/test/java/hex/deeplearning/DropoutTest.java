@@ -11,9 +11,9 @@ import java.util.Random;
 
 public class DropoutTest extends water.TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test @Ignore
+  @Test
   public void test() throws Exception {
     final int units = 1000;
 
