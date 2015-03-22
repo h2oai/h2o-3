@@ -32,7 +32,7 @@ public class Dropout {
 
   Dropout(int units) {
     _bits = new byte[(units+7)/8];
-    _rand = new RandomUtils.PCGRNG(0,1);
+    _rand = RandomUtils.getRNG(0);
     _rate = 0.5;
   }
 
