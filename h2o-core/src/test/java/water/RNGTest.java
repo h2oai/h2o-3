@@ -24,26 +24,33 @@ public class RNGTest extends TestUtil {
   };
 
   @Test public void JavaRandomBadSeed() {
+    Assert.assertTrue(new Random(0).nextLong() == new Random(0).nextLong());
     for (NumType t : types)
       Assert.assertTrue("JavaRandomBadSeed " + t + " failed.",
               ChiSquareTest(new Random(0), t));
   }
   @Test public void JavaRandom() {
+    Assert.assertTrue(new Random(seed[0]).nextLong() == new Random(seed[0]).nextLong());
     for (NumType t : types)
       Assert.assertTrue("JavaRandom " + t + " failed.",
               ChiSquareTest(new Random(seed[0]), t));
   }
   @Test public void MersenneTwister() {
+    Assert.assertTrue(
+            new RandomUtils.MersenneTwisterRNG(ArrayUtils.unpackInts(seed[0])).nextLong()
+            == new RandomUtils.MersenneTwisterRNG(ArrayUtils.unpackInts(seed[0])).nextLong());
     for (NumType t : types)
       Assert.assertTrue("MersenneTwister " + t + " failed.",
               ChiSquareTest(new RandomUtils.MersenneTwisterRNG(ArrayUtils.unpackInts(seed[0])), t));
   }
   @Test public void XorShift() {
+    Assert.assertTrue(new RandomUtils.XorShiftRNG(seed[0]).nextLong() == new RandomUtils.XorShiftRNG(seed[0]).nextLong());
     for (NumType t : types)
       Assert.assertTrue("XorShift " + t + " failed.",
               ChiSquareTest(new RandomUtils.XorShiftRNG(seed[0]), t));
   }
   @Test public void PCG() {
+    Assert.assertTrue(new RandomUtils.PCGRNG(seed[0], seed[1]).nextLong() == new RandomUtils.PCGRNG(seed[0], seed[1]).nextLong());
     for (NumType t : types)
       Assert.assertTrue("PCG " + t + " failed.",
               ChiSquareTest(new RandomUtils.PCGRNG(seed[0], seed[1]), t));
