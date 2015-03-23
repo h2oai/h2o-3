@@ -30,7 +30,7 @@ public class EnumWrappedVec extends WrappedVec {
   /** Main constructor: convert from one enum to another */
   public EnumWrappedVec(Key key, long[] espc, String[] toDomain, Key masterVecKey) {
     super(key, espc, masterVecKey);
-    computeMap(masterVec().domain(),toDomain);
+    computeMap(masterVec().domain(),toDomain,masterVec().isBad());
     DKV.put(this);
   }
 
@@ -38,7 +38,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  mixing enum columns */
   public EnumWrappedVec(String[] from, String[] to) {
     super(Vec.VectorGroup.VG_LEN1.addVec(),new long[]{0},null,null);
-    computeMap(from,to);
+    computeMap(from,to,false);
     DKV.put(this);
   }
 
@@ -66,7 +66,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  Extra values in the 'from' domain appear, in-order in the 'from' domain, at the end.
    *  @return mapping
    */
-  void computeMap( String[] from, String[] to ) {
+  void computeMap( String[] from, String[] to, boolean fromIsBad ) {
     // Identity? Build the cheapo non-map
     if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
@@ -78,11 +78,12 @@ public class EnumWrappedVec extends WrappedVec {
     // The to[] mapping has the set of unique numbers, we need to map
     // from those numbers to the index to the numbers.
     if( from==null ) {
+      setDomain(to);
+      if( fromIsBad ) { _map = new int[0]; return; }
       int max = Integer.valueOf(to[to.length-1])+1;
       _map = new int[max];
       for( int i=0; i<to.length; i++ )
         _map[Integer.valueOf(to[i])] = i;
-      setDomain(to);
       return;
     }
 
