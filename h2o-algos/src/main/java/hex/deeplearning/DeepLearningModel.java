@@ -631,6 +631,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
+    @Override public int nfeatures() {
+      return _names.length - (autoencoder ? 0 : 1);
+    }
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
@@ -1843,7 +1846,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       return super.scoreImpl(orig,adaptedFr,destination_key);
     } else {
       // Reconstruction
-
       final int len = model_info().data_info().fullN();
       String prefix = "reconstr_";
       assert(model_info().data_info()._responses == 0);
