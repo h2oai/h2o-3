@@ -322,6 +322,17 @@ public final class PersistHdfs extends Persist {
   // -------------------------------
 
   @Override
+  public String getHomeDirectory() {
+    try {
+      FileSystem fs = FileSystem.get(CONF);
+      return fs.getHomeDirectory().toString();
+    }
+    catch (Exception e) {
+      return null;
+    }
+  }
+
+  @Override
   public PersistEntry[] list(String path) {
     try {
       Path p = new Path(path);

@@ -37,7 +37,15 @@ public class NodePersistentStorage {
       NPS_SEPARATOR = File.separator;
     }
 
-    NPS_DIR = npsDirURI.toString();
+    String s = npsDirURI.toString();
+    if (s.startsWith("file://")) {
+      s = s.substring(7);
+    }
+    else if (s.startsWith("file:")) {
+      s = s.substring(5);
+    }
+
+    NPS_DIR = s;
   }
 
   private void validateGeneral() {
@@ -150,10 +158,9 @@ public class NodePersistentStorage {
 
     // Create tmp file
     String tmpf = tmpd + NPS_SEPARATOR + keyName;
-    boolean overwrite = true;
     OutputStream os = null;
     try {
-      os = pm.create(tmpf, overwrite);
+      os = pm.create(tmpf, true);
       copyStream(is, os);
     }
     finally {
