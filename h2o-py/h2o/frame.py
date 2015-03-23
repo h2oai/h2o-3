@@ -852,6 +852,12 @@ class H2OVec:
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
+  def isfactor(self):
+    """
+    :return: An eagered Expr that's boolean valued, which tells whether or not self is a factor.
+    """
+    return Expr("is.factor", self._expr, None, length=1).eager()
+
   def isna(self):
     """
     :return: Returns a new boolean H2OVec.
