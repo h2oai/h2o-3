@@ -34,11 +34,11 @@ public class ModelAdaptTest extends TestUtil {
     
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
-    String[] errs = am.adaptTestForTrain(adapt,true);
-    Assert.assertTrue(ArrayUtils.find(errs,"Validation column Feature_1 has levels not trained on: [D]")!= -1);
-    Assert.assertTrue(ArrayUtils.find(errs, "Validation set is missing training column Const: substituting in a column of NAs") != -1);
-    Assert.assertTrue(ArrayUtils.find(errs, "Validation set is missing training column Useless: substituting in a column of NAs") != -1);
-    Assert.assertTrue(ArrayUtils.find(errs, "Validation column Response has levels not trained on: [W]") != -1);
+    String[] warns = am.adaptTestForTrain(adapt,true);
+    Assert.assertTrue(ArrayUtils.find(warns,"Validation column Feature_1 has levels not trained on: [D]")!= -1);
+    Assert.assertTrue(ArrayUtils.find(warns, "Validation set is missing training column Const: substituting in a column of NAs") != -1);
+    Assert.assertTrue(ArrayUtils.find(warns, "Validation set is missing training column Useless: substituting in a column of NAs") != -1);
+    Assert.assertTrue(ArrayUtils.find(warns, "Validation column Response has levels not trained on: [W]") != -1);
     // Feature_1: merged test & train domains
     Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
     // Const: all NAs
@@ -46,7 +46,7 @@ public class ModelAdaptTest extends TestUtil {
     // Useless: all NAs
     Assert.assertTrue(adapt.vec("Useless").isBad());
     // Response: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"X","Y","Z","W"});
+    Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
 
     Vec[] vecs = adapt.vecs();
     for( int i=0; i<vecs.length; i++ )
@@ -72,10 +72,39 @@ public class ModelAdaptTest extends TestUtil {
     AModel am = new AModel(Key.make(),p,o);
     
     Frame tst = new Frame();
-    tst.add("cat",cat.makeCon(Double.NaN));
+    tst.add("cat", cat.makeCon(Double.NaN)); // All NAN/missing column
     Frame adapt = new Frame(tst);
-    String[] errs = am.adaptTestForTrain(adapt,true);
-    Assert.assertTrue(errs.length==0);
+    String[] warns = am.adaptTestForTrain(adapt,true);
+    Assert.assertTrue(warns.length == 0); // No errors during adaption
+
+    Vec[] vecs = adapt.vecs();
+    for( int i=0; i<vecs.length; i++ )
+      if( tst.find(vecs[i]) != -1 ) // Exists in the original frame?
+        vecs[i] = null;             // Do not delete it
+    adapt.delete();
+    tst.remove();
+  }
+
+  // If the train set has a categorical, and the test set column is numeric
+  // then convert it to a categorical
+  @Test public void testModelAdaptConvert() {
+    AModel.AParms p = new AModel.AParms();
+    AModel.AOutput o = new AModel.AOutput();
+
+    Frame trn = new Frame();
+    trn.add("dog",vec(new String[]{"A","B"},0,1,0,1));
+    o._names = trn.names();
+    o._domains = trn.domains();
+    trn.remove();
+    AModel am = new AModel(Key.make(),p,o);
+    
+    Frame tst = new Frame();
+    tst.add("dog",vec(2, 3, 2, 3));
+    Frame adapt = new Frame(tst);
+    boolean saw_iae = false;
+    try { am.adaptTestForTrain(adapt, true); }
+    catch( IllegalArgumentException iae ) { saw_iae = true; }
+    Assert.assertTrue(saw_iae);
 
     Vec[] vecs = adapt.vecs();
     for( int i=0; i<vecs.length; i++ )
