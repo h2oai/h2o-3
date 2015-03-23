@@ -212,7 +212,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
     params$destKeys <- .collapse(destination_keys)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
-  .h2o.__waitOnJob(data@conn, res$key$name)
+  # .h2o.__waitOnJob(data@conn, res$key$name)
 
   splitKeys <- res$dest_keys
   splits <- list()
