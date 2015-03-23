@@ -381,16 +381,18 @@ public class DTree extends Iced {
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.
       if(_split._equal == 0)
-        return d >= _splat ? 1 : 0; //NaN goes to 0
+        return d >= _splat ? 1 : 0; //NaN goes to 0 // >= goes right
       else if(_split._equal == 1)
         return d == _splat ? 1 : 0; //NaN goes to 0
       else
-        return _split._bs.contains((int)d) ? 1 : 0;
+        return _split._bs.contains((int)d) ? 1 : 0; // contains goes right
     }
 
     public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
 
-    public double pred( int nid ) { return nid==0 ? _split._p0 : _split._p1; }
+    public double pred( int nid ) {
+      return nid==0 ? _split._p0 : _split._p1;
+    }
 
     @Override public String toString() {
       if( _split._col == -1 ) return "Decided has col = -1";
@@ -401,11 +403,11 @@ public class DTree extends Iced {
           _tree._names[col]+" == "+_splat+"\n";
       else if( _split._equal == 2 || _split._equal == 3 )
         return
-          _tree._names[col]+" != "+_split._bs.toString()+"\n"+
-          _tree._names[col]+" == "+_split._bs.toString()+"\n";
+          _tree._names[col]+" not in "+_split._bs.toString()+"\n"+
+          _tree._names[col]+"  is in "+_split._bs.toString()+"\n";
       return
         _tree._names[col]+" < "+_splat+"\n"+
-        _splat+" <="+_tree._names[col]+"\n";
+        _splat+" >="+_tree._names[col]+"\n";
     }
 
     StringBuilder printChild( StringBuilder sb, int nid ) {
@@ -426,9 +428,13 @@ public class DTree extends Iced {
         if( _split._col < 0 ) sb.append("init");
         else {
           sb.append(_tree._names[_split._col]);
-          sb.append(_split._equal != 0
-                    ? (i==0 ? " != " : " == ")
-                    : (i==0 ? " <  " : " >= "));
+          if (_split._equal < 2) {
+            sb.append(_split._equal != 0
+                    ? (i == 0 ? " != " : " == ")
+                    : (i == 0 ? " <  " : " >= "));
+          } else {
+            sb.append(i == 0 ? " not in " : "  is in ");
+          }
           sb.append((_split._equal == 2 || _split._equal == 3) ? _split._bs.toString() : _splat).append("\n");
         }
         if( _nids[i] >= 0 && _nids[i] < _tree._len )
@@ -498,7 +504,7 @@ public class DTree extends Iced {
   }
 
   public static abstract class LeafNode extends Node {
-    public double _pred;
+    public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
@@ -508,7 +514,7 @@ public class DTree extends Iced {
       return sb.append("pred=").append(_pred).append("\n");
     }
     public final double pred() { return _pred; }
-    public final void pred(double pred) { _pred = pred; }
+    public final void pred(double pred) { _pred = (float)pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }

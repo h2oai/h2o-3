@@ -6,7 +6,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
 
-import static water.util.RandomUtils.getDeterRNG;
+import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
 public class ArrayUtils {
@@ -270,7 +270,7 @@ public class ArrayUtils {
       if (from[i]>from[result]) result = i;
     return result;
   }
-  public static int maxIndex(float[] from) {
+  public static int maxIndex(double[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
       if (from[i]>from[result]) result = i;
@@ -403,7 +403,7 @@ public class ArrayUtils {
    */
   public static int[] shuffleArray(int[] a, int n, int result[], long seed, int startIndex) {
     if (n<=0) return result;
-    Random random = getDeterRNG(seed);
+    Random random = getRNG(seed);
     if (result == null || result.length != n)
       result = new int[n];
     result[0] = a[startIndex];
@@ -419,7 +419,7 @@ public class ArrayUtils {
 
   public static void shuffleArray(long[] a, long seed) {
     int n = a.length;
-    Random random = getDeterRNG(seed);
+    Random random = getRNG(seed);
     random.nextInt();
     for (int i = 0; i < n; i++) {
       int change = i + random.nextInt(n - i);

@@ -24,9 +24,7 @@ import java.util.Random;
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
   @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Clustering
-    };
+    return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
   }
 
   public enum Initialization {
@@ -52,8 +50,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".
    *
-   *  Validate K, max_iterations and the number of rows.  Precompute the number of
-   *  categorical columns. */
+   *  Validate K, max_iterations and the number of rows. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6) error("_max_iterations", " max_iterations must be between 0 and 1e6");

@@ -167,4 +167,46 @@ public abstract class Persist {
     // now in kb we have the key name
     return Key.make(Arrays.copyOf(kb, j));
   }
+
+  // -------------------------------
+  // Node Persistent Storage helpers
+  // -------------------------------
+
+  public static class PersistEntry {
+    public String _name;
+    public long _size;
+    public long _timestamp_millis;
+  }
+
+  public PersistEntry[] list(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public boolean exists(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public long length(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public InputStream open(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public boolean mkdirs(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public boolean rename(String fromPath, String toPath) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public OutputStream create(String path, boolean overwrite) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  public boolean delete(String path) {
+    throw new RuntimeException("Not implemented");
+  }
 }

@@ -14,7 +14,7 @@ public class ResidualsCollector extends DTreeScorer<ResidualsCollector> {
 
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
-    float [] preds = new float[_nclass+1];
+    double [] preds = new double[_nclass+1];
     int ntrees = ntrees();
     Chunk cys   = chk_resp(chks);
     for( int tidx=0; tidx<ntrees; tidx++) { // tree

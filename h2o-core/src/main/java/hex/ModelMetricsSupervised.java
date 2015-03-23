@@ -27,10 +27,10 @@ public class ModelMetricsSupervised extends ModelMetrics {
       assert domain==null || domain.length >= nclasses; // Domain can be larger than the number of classes, if the score set includes "junk" levels
       _nclasses = nclasses;
       _domain = domain; 
-      _work = new float[_nclasses+1];
+      _work = new double[_nclasses+1];
     }
 
-    @Override public float[] perRow(float[] ds, float[] yact, Model m) {
+    @Override public double[] perRow(double[] ds, float[] yact, Model m) {
       throw H2O.unimpl("Subclasses must implement perRow.");
     }
 

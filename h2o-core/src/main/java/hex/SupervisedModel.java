@@ -45,8 +45,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
   public abstract static class SupervisedOutput extends Model.Output {
     // Includes the class distribution for all supervised models
     public long [/*nclass*/] _distribution;  // Count of rows-per-class
-    public float[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
-    public float[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
+    public double[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
+    public double[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
 
     public SupervisedOutput() { this(null); }
 
@@ -72,7 +72,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
         _priorClassDist = cdmt.rel_dist();
       } else {                    // Regression; only 1 "class"
         _distribution   = new long[] { b._train.numRows() };
-        _priorClassDist = new float[] { 1.0f };
+        _priorClassDist = new double[] { 1.0f };
       }
       _modelClassDist = _priorClassDist;
     }
@@ -96,11 +96,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length; // Last chunk is for the response
     for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
       tmp[i] = chks[i].atd(row_in_chunk);
-    float[] scored = score0(tmp,preds);
+    double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
     if( _output.isClassifier() && _output._priorClassDist != null && _output._modelClassDist != null) {

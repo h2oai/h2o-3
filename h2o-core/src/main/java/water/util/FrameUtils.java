@@ -143,7 +143,7 @@ public class FrameUtils {
       protected void compute2() {
         new MRTask() {
           @Override public void map (Chunk[]cs){
-            final Random rng = new Random();
+            final Random rng = RandomUtils.getRNG(0);
             for (int c = 0; c < cs.length; c++) {
               for (int r = 0; r < cs[c]._len; r++) {
                 rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));

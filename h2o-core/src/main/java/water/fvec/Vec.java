@@ -5,10 +5,7 @@ import water.nbhm.NonBlockingHashMapLong;
 import water.parser.Categorical;
 import water.parser.ParseTime;
 import water.parser.ValueString;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.PrettyPrint;
-import water.util.UnsafeUtils;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -461,7 +458,7 @@ public class Vec extends Keyed<Vec> {
     Vec randVec = makeZero();
     new MRTask() {
       @Override public void map(Chunk c){
-        Random rng = new Random(seed*(c.cidx()+1));
+        Random rng = RandomUtils.getRNG(seed * (c.cidx() + 1));
         for(int i = 0; i < c._len; ++i)
           c.set(i, rng.nextFloat());
       }

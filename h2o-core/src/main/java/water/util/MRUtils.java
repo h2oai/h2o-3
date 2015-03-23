@@ -1,6 +1,6 @@
 package water.util;
 
-import static water.util.RandomUtils.getDeterRNG;
+import static water.util.RandomUtils.getRNG;
 
 import water.*;
 import water.H2O.H2OCallback;
@@ -30,7 +30,7 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getDeterRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(seed + cs[0].cidx());
         int count = 0;
         for (int r = 0; r < cs[0]._len; r++)
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
@@ -92,10 +92,10 @@ public class MRUtils {
     public ClassDist(final Vec label) { super(label.domain().length); }
     public ClassDist(int n) { super(n); }
     public final long[] dist() { return _ys; }
-    public final float[] rel_dist() {
-      float[] rel = new float[_ys.length];
+    public final double[] rel_dist() {
+      double[] rel = new double[_ys.length];
       for (int i=0; i<_ys.length; ++i) rel[i] = (float)_ys[i];
-      final float sum = ArrayUtils.sum(rel);
+      final double sum = ArrayUtils.sum(rel);
       assert(sum != 0.);
       ArrayUtils.div(rel, sum);
       return rel;
@@ -204,7 +204,7 @@ public class MRUtils {
     Frame r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getDeterRNG(seed + cs[0].cidx());
+        final Random rng = getRNG(seed + cs[0].cidx());
         for (int r = 0; r < cs[0]._len; r++) {
           if (cs[labelidx].isNA(r)) continue; //skip missing labels
           final int label = (int)cs[labelidx].at8(r);

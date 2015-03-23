@@ -31,7 +31,7 @@ public class ModelUtils {
     0.91f, 0.92f, 0.93f, 0.94f, 0.95f, 0.96f, 0.97f, 0.98f, 0.99f, 1.00f
   };
 
-  public static int getPrediction(float[] preds, int row) {
+  public static int getPrediction(double[] preds, int row) {
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -43,7 +43,7 @@ public class ModelUtils {
     }
     if( tieCnt==0 ) return best-1; // Return zero-based best class
     // Tie-breaking logic
-    float res = preds[best];    // One of the tied best results
+    double res = preds[best];    // One of the tied best results
     int idx = row%(tieCnt+1);   // Which of the ties we'd like to keep
     for( best=1; best<preds.length; best++)
       if( res == preds[best] && --idx < 0 )
@@ -61,7 +61,7 @@ public class ModelUtils {
    * @param modelClassDist class distribution used for model building (e.g., data was oversampled)
    * @return corrected list of probabilities
    */
-  public static float[] correctProbabilities(float[] scored, float[] priorClassDist, float[] modelClassDist) {
+  public static double[] correctProbabilities(double[] scored, double[] priorClassDist, double[] modelClassDist) {
     double probsum=0;
     for( int c=1; c<scored.length; c++ ) {
       final double original_fraction = priorClassDist[c-1];
