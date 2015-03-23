@@ -3,8 +3,8 @@ package hex.tree.gbm;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Chunk;
+import water.util.ModelUtils;
 import water.util.SB;
-import water.H2O;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
@@ -43,6 +43,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       double fx = preds[1] + _output._initialPrediction;
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
+      ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
       return preds;
     }
@@ -56,6 +57,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       preds[2] = - preds[1];
     }
     hex.genmodel.GenModel.GBM_rescale(data, preds);
+    ModelUtils.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+    preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     return preds;
   }
 
@@ -68,6 +71,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("double fx = preds[1] + ").p(_output._initialPrediction).p(";").nl();
       body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
+      body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
       return;
     }
@@ -81,5 +85,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       body.ip("preds[2] = - preds[1];").nl();
     }
     body.ip("hex.genmodel.GenModel.GBM_rescale(data,preds);").nl();
+    body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
   }
 }
