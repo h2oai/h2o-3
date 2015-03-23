@@ -23,26 +23,7 @@ test.summary.numeric <- function(conn) {
   Log.info("summary(tail(arrests.hex))\n")
 
   print(summary(tail(arrests.hex)))
-
-  Log.info("Convert summaries to numeric lists")
-  summary_to_numeric <- function(s) {
-    lapply(s, function(x) {
-      val <- strsplit(x, ":")[[1]][2]
-      as.numeric(val)
-    })
-  }
-
-  Log.info("Compare R and H2O, accounting for binning error")
-  valR <- unlist(summary_to_numeric(summary_2))
-  valH2O <- unlist(summary_to_numeric(summary(tail(arrests.hex))))
-  for (i in 1:6)
-    expect_equal(valH2O, valR, 1)
-  for (i in 7:12)
-    expect_equal(valH2O, valR, 7)
-  for (i in 13:18)
-    expect_equal(valH2O, valR, 7)
-  for (i in 19:24)
-    expect_equal(valH2O, valR, 2.5)
+  checkSummary(summary(tail(arrests.hex)), summary_2)
 
   testEnd()
 }
