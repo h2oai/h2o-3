@@ -1,9 +1,3 @@
-#----------------------------------------------------------------------
-# Purpose:  Split Airlines dataset into train and validation sets.
-#           Build model and predict on a test Set.
-#           Print Confusion matrix and performance measures for test set
-#----------------------------------------------------------------------
-
 import sys
 sys.path.insert(1, "../../")
 import h2o
@@ -23,8 +17,6 @@ def rf_balance_classes(ip,port):
         print(perf.precision(thresholds=[0.5]))
         print(perf.accuracy(thresholds=[0.5]))
         print(perf.auc())
-
-    h2o.init()
 
     #uploading data file to h2o
     air = h2o.import_frame(path=h2o.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
