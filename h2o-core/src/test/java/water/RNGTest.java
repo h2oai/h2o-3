@@ -96,11 +96,13 @@ public class RNGTest extends TestUtil {
     int nonrandom = 0;
     for (int r=0;r<reps;r++) {
       //See http://www.math.umn.edu/~garrett/students/reu/pRNGs.pdf for statistical bounds
-      if (chi_2[r] > 37.57 || chi_2[r] < 8.26) { //should only happen 2% of the time
+      // outside 1-th or 99-th percentile - should only happen 2*1% of the time
+      if (chi_2[r] > 37.57 || chi_2[r] < 8.26) {
         nonrandom++;
 //        Log.warn("Non-Random RNG! chi^2 = " + chi_2[r]);
       }
-      else if (chi_2[r] > 31.41 || chi_2[r] < 10.85) { //should only happen 10% of the time
+      //between 1-th and 5-th or 95-th and 99-th percentile - should only happen 2*4% of the time
+      else if (chi_2[r] > 31.41 || chi_2[r] < 10.85) {
         suspect++;
 //        Log.warn("Suspect RNG! chi^2 = " + chi_2[r]);
       }
@@ -108,12 +110,12 @@ public class RNGTest extends TestUtil {
     Log.info((float)nonrandom/reps*100 + "% non-random sequences.");
     Log.info((float)suspect/reps*100 + "% suspect sequences.");
 
-    if (suspect > 0.1 * reps)
-      Log.warn("Too many (>10%) suspect (outside 5-th and 95-th percentile) RNG sequences found!");
+    if (suspect > 0.08 * reps)
+      Log.warn("Too many (>10%) suspect (between 1-th and 5-th and between 95-th and 99-th percentile) RNG sequences found!");
     if (nonrandom > 0.02 * reps)
       Log.warn("Too many (>2%) non-random (outside 1-th and 99-th percentile) RNG sequences found!");
 
-    // add 50% margin for small data sampling noise
-    return (suspect <= 0.15 * reps && nonrandom <= 0.03 * reps);
+    // add 50% extra margin for small data sampling noise
+    return (suspect <= 0.08 * 1.5 * reps && nonrandom <= 0.02 * 1.5 * reps);
   }
 }
