@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.zip.*;
 import water.fvec.ByteVec;
-import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.util.Log;
 import water.util.UnsafeUtils;
@@ -79,5 +78,26 @@ abstract class ZipUtil {
     }
 
     return bs;
+  }
+
+  static public int getFileCount(ByteVec bv) {
+    int cnt = 0;
+    byte[] zips = bv.getFirstBytes();
+    ZipUtil.Compression cpr = guessCompressionMethod(zips);
+    if (cpr == Compression.NONE || cpr == Compression.GZIP)
+      cnt = 1;
+    else { //ZIP archives allow multiple files in a single archive
+      try {
+        ZipInputStream zis = new ZipInputStream(bv.openStream(null));
+        ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
+        while (ze != null && !ze.isDirectory()) {
+          cnt++;
+          ze = zis.getNextEntry();
+        }
+      } catch(IOException ioe) {
+          throw new RuntimeException(ioe);
+      }
+    }
+    return cnt;
   }
 }
