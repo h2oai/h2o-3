@@ -75,6 +75,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   public static String getModelBuilderName(Class<? extends ModelBuilder> clz) {
+    // Check for unknown algo names, but if none are registered keep going; we're probably in JUnit.
+    if (_builders.isEmpty())
+      return "Unknown algo (should only happen under JUnit)";
+
     if (! _builders.containsValue(clz))
       throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
 
