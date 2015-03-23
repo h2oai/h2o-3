@@ -48,7 +48,7 @@ public class ParseTimeTest extends TestUtil {
 
   @Test public void testTimeParse2() {
     DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
-    DateTimeZone localTZ = DateTimeZone.getDefault();
+    DateTimeZone localTZ = DateTimeZone.forID("Indian/Mauritius");//DateTimeZone.getDefault();
     double[][] exp = new double[][] {  // These ms counts all presume PST
       d(1     ,     115200000L, 1136275200000L, 1136275200000L, 1 ),
       d(1500  ,  129625200000L, 1247641200000L, 1247641200000L, 0 ),
