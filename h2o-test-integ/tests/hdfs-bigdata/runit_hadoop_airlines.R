@@ -8,33 +8,16 @@ source('../h2o-runit-hadoop.R')
 ipPort <- get_args(commandArgs(trailingOnly = TRUE))
 myIP   <- ipPort[[1]]
 myPort <- ipPort[[2]]
+hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
+print(hdfs_name_node)
 
 library(RCurl)
 library(h2o)
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
-
-# Check if we are running inside the 0xdata network by seeing if we can touch
-# the HDP2.1 namenode. Update if using other clusters.
-# Note this should fail on home networks, since 176 is not likely to exist
-# also should fail in ec2.
-running_inside_hexdata = url.exists("http://mr-0xe3-precise1:50070", timeout=5)
-
-if (running_inside_hexdata) {
-    # hdp2.2 cluster
-    hdfs_name_node = "mr-0xe3-precise1"
-    hdfs_airlines_file = "/datasets/airlines_all.csv"
-} else {
-    stop("Not running on 0xdata internal network.  No access to HDFS.")
-}
-
-#----------------------------------------------------------------------
-
-
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+
+hdfs_airlines_file = "/datasets/airlines_all.csv"
 
 #----------------------------------------------------------------------
 # Single file cases.
@@ -43,13 +26,13 @@ conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 heading("Testing single file importHDFS")
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 airlines.hex <- h2o.importFile(conn, url)
-head(airlines.hex)
-tail(airlines.hex)
+
 n <- nrow(airlines.hex)
 print(n)
 if (n != 116695259) {
     stop("nrows is wrong")
 }
+
 if (class(airlines.hex) != "H2OFrame") {
     stop("airlines.hex is the wrong type")
 }
@@ -72,4 +55,5 @@ ArrY <- "IsDepDelayed"
 air.glm <- h2o.glm(x = myX, y = DepY, training_frame = airlines.hex, family = "binomial")
 air.dl  <- h2o.deeplearning(x = myX, y = DepY, training_frame = airlines.hex, epochs=1, hidden=c(50,50), loss = "CrossEntropy")
 air.gbm <- h2o.gbm(x = myX, y = DepY, training_frame = airlines.hex, loss = "bernoulli", ntrees=5)
+
 PASS_BANNER()

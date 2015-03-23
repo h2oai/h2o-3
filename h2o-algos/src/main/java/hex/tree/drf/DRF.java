@@ -61,8 +61,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       throw new IllegalArgumentException("Sample rate should be interval (0,1> but it is " + _parms._sample_rate);
     if (DEBUG_DETERMINISTIC && _parms._seed == -1) _parms._seed = 0x1321e74a0192470cL; // fixed version of seed
-    else if (_parms._seed == -1) _actual_seed = RandomUtils.getDeterRNG(0xd280524ad7fe0602L).nextLong();
+    else if (_parms._seed == -1) _actual_seed = RandomUtils.getRNG(0xd280524ad7fe0602L).nextLong();
     else _actual_seed = _parms._seed;
+    if( _parms._mtries < 1 && _parms._mtries != -1 ) error("_mtries", "mtries must be -1 (converted to sqrt(features)), or >= 1 but it is " + _parms._mtries);
+    if( _train != null ) {
+      int ncols = _train.numCols();
+      if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols))
+        error("_mtries","Computed mtries should be -1 or in interval <1,#cols> but it is " + _parms._mtries);
+    }
     if (_parms._sample_rate == 1f && _valid != null) {
       error("_sample_rate", "Sample rate is 100% {nd no validation dataset is specified. There are no OOB data to compute out-of-bag error estimation!");
     }
@@ -274,7 +280,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
                 LeafNode ln = new DRFLeafNode(tree,nid);
-                ln._pred = dn.pred(i);  // Set prediction into the leaf
+                ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
               }
             }
@@ -321,7 +327,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       final boolean importance = true;
       @Override public void map( Chunk[] chks ) {
         final Chunk    y       = importance ? chk_resp(chks) : null; // Response
-        final float [] rpred   = importance ? new float [1+_nclass] : null; // Row prediction
+        final double[] rpred   = importance ? new double[1+_nclass] : null; // Row prediction
         final double[] rowdata = importance ? new double[_ncols] : null; // Pre-allocated row data
         final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
         // Iterate over all rows
@@ -369,8 +375,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 int actuPred = (int) y.at8(row);
                 if (treePred==actuPred) rightVotes++; // No miss !
               } else { // regression
-                float  treePred = rpred[1];
-                float  actuPred = (float) y.atd(row);
+                double treePred = rpred[1];
+                double actuPred = y.atd(row);
                 sse += (actuPred-treePred)*(actuPred-treePred);
               }
               allRows++;
@@ -483,14 +489,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
-    float sum = 0;
+  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
+    double sum = 0;
     if (_nclass > 1) { //classification
       for (int k = 0; k < _nclass; k++)
-        sum += (fs[k+1] = (float) chk_tree(chks, k).atd(row));
+        sum += (fs[k+1] = chk_tree(chks, k).atd(row));
     } else { //regression
       // average per trees voted for this row (only trees which have row in "out-of-bag"
-      sum += (fs[0] = (float) chk_tree(chks, 0).atd(row) / (float)chk_oobt(chks).atd(row) );
+      sum += (fs[0] = chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row) );
       fs[1] = 0;
     }
     return sum;

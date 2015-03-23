@@ -11,6 +11,7 @@ g_user = None
 g_pass = None
 g_sprint = None
 g_csv = False
+g_verbose = False
 
 
 class Person:
@@ -22,19 +23,16 @@ class Person:
         self.unresolved_story_points = 0
 
     def add(self, issue):
-        story_points = issue[u'fields'][u'customfield_10004']
-        if story_points is None:
-            story_points = 0
-        else:
-            story_points = float(story_points)
+        story_points = Person._get_story_points(issue)
         resolution = issue[u'fields'][u'resolution']
         if resolution is None:
             self.unresolved_story_points += story_points
+            self.unresolved_list.append(issue)
         else:
             self.resolved_story_points += story_points
+            self.resolved_list.append(issue)
 
     def emit(self):
-        global g_csv
         if g_csv:
             self._emit_csv()
         else:
@@ -47,7 +45,19 @@ class Person:
         print("")
         print("-----" + self.name + "-----")
         Person._printbar("  resolved", self.resolved_story_points, "R")
+        if (g_verbose):
+            print("")
+            for issue in self.resolved_list:
+                story_points = Person._get_story_points(issue)
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
+        if (g_verbose):
+            print("")
         Person._printbar("unresolved", self.unresolved_story_points, "U")
+        if (g_verbose):
+            print("")
+            for issue in self.unresolved_list:
+                story_points = Person._get_story_points(issue)
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
 
     @staticmethod
     def _printbar(label, value, char):
@@ -62,6 +72,15 @@ class Person:
             num_bars -= 1
             i += 1
         sys.stdout.write("\n")
+
+    @staticmethod
+    def _get_story_points(issue):
+        story_points = issue[u'fields'][u'customfield_10004']
+        if story_points is None:
+            story_points = 0
+        else:
+            story_points = float(story_points)
+        return story_points
 
 
 class PeopleManager:
@@ -133,6 +152,7 @@ def parse_args(argv):
     global g_pass
     global g_sprint
     global g_csv
+    global g_verbose
 
     i = 1
     while (i < len(argv)):
@@ -153,8 +173,10 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_sprint = argv[i]
-        elif (s == "-csv"):
+        elif (s == "--csv"):
             g_csv = True
+        elif (s == "--verbose"):
+            g_verbose = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:

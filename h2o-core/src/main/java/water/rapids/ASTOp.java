@@ -9,9 +9,12 @@ import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
+import sun.misc.Unsafe;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashSet;
+import water.nbhm.UtilUnsafe;
 import water.parser.ParseTime;
 import water.parser.ValueString;
 import water.util.ArrayUtils;
@@ -150,7 +153,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTCosPi());
     putPrefix(new ASTSinPi());
     putPrefix(new ASTTanPi());
-    
+
 
     // More generic reducers
     putPrefix(new ASTMin ());
@@ -162,12 +165,13 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTMedian());
 
     // Misc
+    putPrefix(new ASTSetLevel());
     putPrefix(new ASTMatch ());
-    putPrefix(new ASTRename());  //TODO
-    putPrefix(new ASTSeq   ());  //TODO
-    putPrefix(new ASTSeqLen());  //TODO
-    putPrefix(new ASTRepLen());  //TODO
-    putPrefix(new ASTQtile ());  //TODO
+    putPrefix(new ASTRename());
+    putPrefix(new ASTSeq   ());
+    putPrefix(new ASTSeqLen());
+    putPrefix(new ASTRepLen());
+    putPrefix(new ASTQtile ());
     putPrefix(new ASTCbind ());
     putPrefix(new ASTRbind ());
     putPrefix(new ASTTable ());
@@ -175,7 +179,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTIfElse());
     putPrefix(new ASTApply ());
     putPrefix(new ASTSApply());
-    putPrefix(new ASTddply ());
+    putPrefix(new ASTddply());
     putPrefix(new ASTMerge ());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
@@ -1765,6 +1769,39 @@ class ASTRename extends ASTUniPrefixOp {
   }
 }
 
+class ASTSetLevel extends ASTUniPrefixOp {
+  private String _lvl;
+  ASTSetLevel() { super(new String[]{"setLevel", "x", "level"});}
+  @Override String opStr() { return "setLevel"; }
+  @Override ASTOp make() { return new ASTSetLevel(); }
+  ASTSetLevel parse_impl(Exec E) {
+    AST ary = E.parse();
+    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
+    _lvl = ((ASTString)E.parse())._s;
+    ASTSetLevel res = (ASTSetLevel) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env env) {
+    Frame fr = env.peekAry();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+    final int idx = Arrays.asList(doms).indexOf(_lvl);
+    if (idx == -1)
+      throw new IllegalArgumentException("Did not find level `" + _lvl + "` in the column.");
+
+    Frame fr2 = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(idx);
+      }
+    }.doAll(1, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
+    env.poppush(1, new ValFrame(fr2));
+  }
+}
+
 class ASTMatch extends ASTUniPrefixOp {
   protected static double _nomatch;
   protected static String[] _matches;
@@ -2287,7 +2324,7 @@ class ASTVar extends ASTUniPrefixOp {
             ss += (fr.vecs()[r].at(0) - xmean) * (y.vecs()[r].at(0) - ymean);
           }
         }
-        env.poppush(3, new ValNum(ss == Double.NaN ? ss : ss/divideby));
+        env.poppush(3, new ValNum(Double.isNaN(ss) ? ss : ss/divideby));
 
       } else {
 
@@ -2588,7 +2625,7 @@ class ASTTable extends ASTUniPrefixOp {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
-              cs[0].addNum(idx > max ? (idx -max) * -1 : idx);
+              cs[0].addNum(idx > max ? (idx-max)*-1 : idx);
               cs[1].addNum(cts[idx]);
             }
           }
@@ -2596,31 +2633,41 @@ class ASTTable extends ASTUniPrefixOp {
       }
 
     } else {
+
+      // 2 COLUMN CASE
       colnames = new String[]{fr.name(0), fr.name(1), "count"};
       long s = System.currentTimeMillis();
-      UniqueTwoColumnTask t = new UniqueTwoColumnTask().doAll(fr);
-      Log.info("Finished raw tabling in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
-      final NonBlockingHashMap m = t._cnts;
-      dataLayoutVec = Vec.makeCon(0, m.size());
+
+      // Strategy: Avoid doing NBHM reduces (which is way too slow).
+      //  1. Build NBHS of Groups (useful for
+      Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
+      Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
+      final long[] pairs = new long[u._s.size()];
+      int i=0;
+      for (Object o : u._s) pairs[i++] = (long) o;
+      dataLayoutVec = Vec.makeCon(0, pairs.length);
+
+      s = System.currentTimeMillis();
+      NewHashMap h = new NewHashMap(pairs).doAll(dataLayoutVec);
+      Log.info("Finished creating new HashMap in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
+      s = System.currentTimeMillis();
+      final long[] cnts = new CountUniq2ColTsk(h._s).doAll(fr)._cnts;
+      Log.info("Finished gathering counts in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
+
       d[0] = fr.vec(0).domain();
-      if (ncol == 2) {
-        d[1] = fr.vec(1).domain();
-      }
+      d[1] = fr.vec(1).domain();
 
       fr2 = new MRTask() {
         @Override
         public void map(Chunk[] c, NewChunk[] cs) {
-          Iterator it = m.keySet().iterator();
-          for (int j = 0; j < c[0].start(); ++j) it.next();  // stream forward...
+          int start = (int)c[0].start();
           for (int i = 0; i < c[0]._len; ++i) {
-            GroupPair g = (GroupPair) it.next();
-            cs[0].addNum(g._ls[0]);
-            if (ncol == 2) {
-              cs[1].addNum(g._ls[1]);
-              cs[2].addNum((int) m.get(g));
-            } else {
-              cs[1].addNum((int) m.get(g));
-            }
+            long[] g = unmix(pairs[i+start]);
+            cs[0].addNum(g[0]);
+            cs[1].addNum(g[1]);
+            cs[2].addNum(cnts[i+start]);
           }
         }
       }.doAll(ncol + 1, dataLayoutVec).outputFrame(colnames, d);
@@ -2664,70 +2711,98 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public void reduce(UniqueColumnCountTask t) { ArrayUtils.add(_cts, t._cts); }
   }
 
-  public static class GroupPair extends Iced {
-    public long _ls[];
-    public int _hash;
-    public GroupPair() { _ls = MemoryManager.malloc8(2);}
-    public void fill(int row, Chunk chks[]) {
-      _ls[0] = (long) chks[0].atd(row);
-      _ls[1] = (long) chks[1].atd(row);
-      _hash = hash();
+  private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
+    NonBlockingHashSet<Long> _s;
+    @Override public void setupLocal() { _s = new NonBlockingHashSet<>(); }
+    @Override public void map(Chunk[] c) {
+      for (int i=0;i<c[0]._len;++i)
+        _s.add(mix(c[0].at8(i), c[1].at8(i)));
     }
-    private int hash() {
-      long h=0;                 // hash is sum of field bits
-      for( long d : _ls ) h += Double.doubleToRawLongBits(d);
-      h ^= (h>>>20) ^ (h>>>12);
-      h ^= (h>>> 7) ^ (h>>> 4);
-      return (int)((h^(h>>32))&0x7FFFFFFF);
-    }
-    public boolean has(long ls[]) { return Arrays.equals(_ls, ls); }
-    @Override public boolean equals( Object o ) { return o instanceof GroupPair && Arrays.equals(_ls,((GroupPair)o)._ls); }
-    @Override public int hashCode() { return _hash; }
-    @Override public String toString() { return Arrays.toString(_ls); }
-  }
-
-  // avoids swapping when direct addressing with a long[][], but still slow
-  private static class UniqueTwoColumnTask extends MRTask<UniqueTwoColumnTask> {
-    NonBlockingHashMap<GroupPair, Integer> _cnts;
-    @Override public void map( Chunk[] c ) {
-      _cnts = new NonBlockingHashMap<>();
-      GroupPair g = new GroupPair();
-      for (int r = 0; r < c[0]._len; ++r) {
-        g.fill(r, c);
-        Integer o = _cnts.putIfAbsent(g,1);
-        if (o==null) { g = new GroupPair(); }
-        else {_cnts.put(g,o+1);}
-      }
-    }
-    @Override public void reduce(UniqueTwoColumnTask t) {
-      NonBlockingHashMap<GroupPair, Integer> l = _cnts;
-      NonBlockingHashMap<GroupPair, Integer> r = t._cnts;
-      if (l.size() < r.size()) { l = r; r = this._cnts; }
-      for (GroupPair g : r.keySet()) { //iterate over smaller HM
-        Integer lc = l.get(g);
-        Integer rc = r.get(g);
-        if (rc == null) { l.put(g, lc); }
-        else { l.put(g,rc+(lc==null?0:lc)); }
-      }
-      _cnts = l;
-      t._cnts = null;
-    }
+    @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
 
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      if( _cnts == null ) return ab.put4(0);
-      ab.put4(_cnts.size());
-      for( GroupPair g : _cnts.keySet() ) {ab.put(g); ab.put4(_cnts.get(g)); }
+      if( _s == null ) return ab.put4(0);
+      ab.put4(_s.size());
+      for( Long g : _s ) {ab.put8(g); }
       return ab;
     }
 
-    @Override public UniqueTwoColumnTask read_impl( AutoBuffer ab ) {
-      assert _cnts == null;
+    @Override public Uniq2ColTsk read_impl( AutoBuffer ab ) {
       int len = ab.get4();
       if( len == 0 ) return this;
-      _cnts = new NonBlockingHashMap<>();
-      for( int i=0; i<len; i++ ) { _cnts.put(ab.get(GroupPair.class), ab.get4());}
+      _s = new NonBlockingHashSet<>();
+      for( int i=0; i<len; i++ ) { _s.add(ab.get8());}
       return this;
     }
+  }
+
+  /** http://szudzik.com/ElegantPairing.pdf */
+  private static long mix(long A, long B) {
+    long a=A,b=B;
+    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
+    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
+    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
+    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
+  }
+
+  // always returns a long[] of length 2;
+  // long[0] -> A, long[1] -> B
+  private static long[] unmix(long z) {
+    long rflr = (long)Math.floor(Math.sqrt(z));
+    long rflr2=rflr*rflr;
+    long z_rflr2 = z-rflr2;
+    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
+  }
+
+  private static class NewHashMap extends MRTask<NewHashMap> {
+    NonBlockingHashMap<Long, Integer> _s;
+    final long[] _m;
+    NewHashMap(long[] m) { _m = m; }
+    @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
+    @Override public void map(Chunk[] c) {
+      int start = (int)c[0].start();
+      for (int i = 0; i < c[0]._len; ++i)
+        _s.put(_m[i + start], i+start);
+    }
+    @Override public void reduce(NewHashMap t) { if (_s != t._s) _s.putAll(t._s); }
+
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _s == null ) return ab.put4(0);
+      ab.put4(_s.size());
+      for( Long l : _s.keySet() ) {ab.put8(l); ab.put4(_s.get(l)); }
+      return ab;
+    }
+
+    @Override public NewHashMap read_impl( AutoBuffer ab ) {
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _s = new NonBlockingHashMap<>();
+      for( int i=0;i<len;i++ ) _s.put(ab.get8(), ab.get4());
+      return this;
+    }
+  }
+
+  private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
+    private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
+    final NonBlockingHashMap<Long, Integer> _m;
+    // out
+    long[] _cnts;
+    private static final int _b = _unsafe.arrayBaseOffset(long[].class);
+    private static final int _s = _unsafe.arrayIndexScale(long[].class);
+    private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
+
+    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
+    @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
+    @Override public void map(Chunk[] cs) {
+      for (int i=0; i < cs[0]._len; ++i) {
+        int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
+        long offset = ssid(h);
+        long c = _cnts[h];
+        while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
+          c = _cnts[h];
+      }
+    }
+    @Override public void reduce(CountUniq2ColTsk t) { if (_cnts != t._cnts) ArrayUtils.add(_cnts, t._cnts); }
   }
 }
 
@@ -3025,9 +3100,9 @@ class ASTAsNumeric extends ASTUniPrefixOp {
     Frame ary = env.peekAry();
     Vec[] nvecs = new Vec[ary.numCols()];
     for (int c = 0; c < ary.numCols(); ++c)
-      (nvecs[c] = ary.vecs()[c]).setDomain(null);
-    ary = new Frame(ary._names, nvecs);
-    env.poppush(1, new ValFrame(ary));
+      nvecs[c] = ary.vecs()[c].toInt();
+    Frame v = new Frame(ary._names, nvecs);
+    env.poppush(1, new ValFrame(v));
   }
 }
 
@@ -3047,7 +3122,7 @@ class ASTFactor extends ASTUniPrefixOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     env.pushAry(fr);
   }
 }
@@ -3068,7 +3143,7 @@ class ASTCharacter extends ASTUniPrefixOp {
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("character requires a single column");
     Vec v0 = ary.anyVec();
     Vec v1 = v0.isString() ? null : v0.toStringVec(); // toEnum() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy() : v1});
+    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
     env.pushAry(fr);
   }
 }

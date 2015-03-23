@@ -13,7 +13,7 @@ class ParseHandler extends Handler {
   // Entry point for parsing.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV2 parse(int version, ParseV2 parse) {
-    ParseSetup setup = new ParseSetup(true, 0, 0, null, parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, parse.column_names, ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
+    ParseSetup setup = new ParseSetup(true, 0, null, parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, parse.column_names, ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
 
     Key[] srcs = new Key[parse.source_keys.length];
     for (int i = 0; i < parse.source_keys.length; i++)

@@ -23,7 +23,7 @@ test.summary.numeric <- function(conn) {
   Log.info("summary(tail(arrests.hex))\n")
 
   print(summary(tail(arrests.hex)))
-  expect_that(summary(tail(arrests.hex)), equals(summary_2))
+  checkSummary(summary(tail(arrests.hex)), summary_2)
 
   testEnd()
 }

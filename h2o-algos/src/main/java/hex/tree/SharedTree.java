@@ -9,6 +9,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -82,7 +85,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // For classification, guess the largest class.
           _model = makeModel(_dest, _parms, 
                              initial_MSE(response(), response()), 
-                             initial_MSE(response(),vresponse())); // Make a fresh model
+                             _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
           _model._output._initialPrediction = _initialPrediction;
         }
@@ -94,26 +97,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
-        Frame fr = _train;
         if( _nclass>1 ) {       // Classification?
 
           // Handle imbalanced classes by stratified over/under-sampling.
           // initWorkFrame sets the modeled class distribution, and
           // model.score() corrects the probabilities back using the
           // distribution ratios
-          if( _parms._balance_classes ) {
-            float[] csf = _parms._class_sampling_factors;
-            if( csf != null && csf.length != domain.length )
-              throw new IllegalArgumentException("class_sampling_factors must have " + domain.length + " elements");
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(fr, fr.lastVec(), csf, (long)(_parms._max_after_balance_size*fr.numRows()), _parms._seed, true, false);
-            if (stratified != fr) {
-              throw H2O.unimpl();
-              //_parms._train = stratified._key;
-              //_response_key = _parms._response; // Reload from stratified data
-              //// Recompute distribution since the input frame was modified
-              //MRUtils.ClassDist cdmt2 = new MRUtils.ClassDist(_nclass).doAll(_response);
-              //_distribution = cdmt2.dist();
-              //_modelClassDist = cdmt2.rel_dist();
+          if(_model._output.isClassifier() && _parms._balance_classes ) {
+
+            float[] trainSamplingFactors = new float[_train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+            if (_parms._class_sampling_factors != null) {
+              if (_parms._class_sampling_factors.length != _train.lastVec().domain().length)
+                throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
+              trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
+            }
+            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            if (stratified != _train) {
+              _train = stratified;
+              _response = stratified.lastVec();
+              // Recompute distribution since the input frame was modified
+              MRUtils.ClassDist cdmt2 = new MRUtils.ClassDist(_nclass).doAll(_response);
+              _model._output._distribution = cdmt2.dist();
+              _model._output._modelClassDist = cdmt2.rel_dist();
             }
           }
           Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
@@ -127,19 +132,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Current forest values: results of summing the prior M trees
         for( int i=0; i<_nclass; i++ )
-          fr.add("Tree_"+domain[i], _response.makeZero());
+          _train.add("Tree_"+domain[i], _response.makeZero());
 
         // Initial work columns.  Set-before-use in the algos.
         for( int i=0; i<_nclass; i++ )
-          fr.add("Work_"+domain[i], _response.makeZero());
+          _train.add("Work_"+domain[i], _response.makeZero());
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
         for( int i=0; i<_nclass; i++ )
-          fr.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
+          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
 
         // Tag out rows missing the response column
-        new ExcludeNAResponse().doAll(fr);
+        new ExcludeNAResponse().doAll(_train);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -253,11 +258,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int tmax = _tree.len();   // Number of total splits in tree K
       for( int leaf=leafk; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-        //System.out.println((_nclass==1?"Regression":("Class "+_fr2.vecs()[_ncols].domain()[_k]))+",\n  Undecided node:"+udn);
+//        System.out.println((_st._nclass==1?"Regression":("Class "+_fr2.vecs()[_st._ncols].domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
-        //System.out.println("--> Decided node: " + dn +
-        //                   "  > Split: " + dn._split + " L/R:" + dn._split.rowsLeft()+" + "+dn._split.rowsRight());
+//        System.out.println("--> Decided node: " + dn +
+//                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
         if( dn._split.col() == -1 ) udn.do_not_split();
         else {
           _did_split = true;
@@ -304,14 +309,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  abstract protected float score1( Chunk chks[], float fs[/*nclass*/], int row );
+  abstract protected double score1( Chunk chks[], double fs[/*nclass*/], int row );
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
-  void score2(Chunk chks[], float fs[/*nclass*/], int row ) {
-    float sum = score1(chks, fs, row);
+  void score2(Chunk chks[], double fs[/*nclass*/], int row ) {
+    double sum = score1(chks, fs, row);
     if( isClassifier()) {
-      if( !Float.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
+      if( !Double.isInfinite(sum) && sum>0f ) ArrayUtils.div(fs, sum);
       ModelUtils.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
     }
   }
@@ -356,7 +361,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms.train(), _parms._response_column);
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(_model._output._treeStats._mean_leaves)+" nodes)");
+      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
@@ -381,12 +386,21 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     return training_r2;
   }
 
+  static int counter = 0;
   // helper for debugging
   @SuppressWarnings("unused")
   static protected void printGenerateTrees(DTree[] trees) {
     for( DTree dtree : trees )
-      if( dtree != null )
-        System.out.println(dtree.root().toString2(new StringBuilder(),0));
+      if( dtree != null ) {
+        try {
+          PrintWriter writer = new PrintWriter("/tmp/h2o-dev.tree" + ++counter + ".txt", "UTF-8");
+          writer.println(dtree.root().toString2(new StringBuilder(), 0));
+          writer.close();
+        } catch (FileNotFoundException|UnsupportedEncodingException e) {
+          e.printStackTrace();
+        }
+        System.out.println(dtree.root().toString2(new StringBuilder(), 0));
+      }
   }
 
   double initial_MSE( Vec train, Vec test ) {
@@ -410,5 +424,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Helper to unify use of M-T RNG
   public static Random createRNG(long seed) {
     return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
+//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
   }
 }

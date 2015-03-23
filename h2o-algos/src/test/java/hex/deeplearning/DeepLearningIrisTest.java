@@ -92,7 +92,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                   if (_train != null) _train.delete();
                                   if (_test  != null) _test .delete();
 
-                                  rand = RandomUtils.getDeterRNG(seed);
+                                  rand = RandomUtils.getRNG(seed);
 
                                   double[][] rows = new double[(int) frame.numRows()][frame.numCols()];
                                   String[] names = new String[frame.numCols()];
@@ -127,7 +127,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                 // use the same seed for the reference implementation
                                 DeepLearningMLPReference ref = new DeepLearningMLPReference();
-                                ref.init(activation, RandomUtils.getDeterRNG(seed), holdout_ratio, hidden);
+                                ref.init(activation, RandomUtils.getRNG(seed), holdout_ratio, hidden);
 
                                 DeepLearningParameters p = new DeepLearningParameters();
                                 p._train = _train._key;
@@ -271,8 +271,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
                                     // find the label
                                     // do the same as H2O here (compare float values and break ties based on row number)
-                                    float[] preds = new float[ref_preds.length + 1];
-                                    for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = (float) ref_preds[j];
+                                    double[] preds = new double[ref_preds.length + 1];
+                                    for (int j = 0; j < ref_preds.length; ++j) preds[j + 1] = ref_preds[j];
                                     preds[0] = getPrediction(preds, i);
 
                                     // compare predicted label

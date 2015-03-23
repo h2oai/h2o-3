@@ -2,11 +2,10 @@ package hex.tree.drf;
 
 
 import org.junit.*;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import static org.junit.Assert.assertEquals;
+import water.*;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -17,9 +16,9 @@ public class DRFTest extends TestUtil {
 
   abstract static class PrepData { abstract int prep(Frame fr); }
 
-  static final String[] s(String...arr)  { return arr; }
-  static final long[]   a(long ...arr)   { return arr; }
-  static final long[][] a(long[] ...arr) { return arr; }
+  static String[] s(String...arr)  { return arr; }
+  static long[]   a(long ...arr)   { return arr; }
+  static long[][] a(long[] ...arr) { return arr; }
 
   @Test public void testClassIris1() throws Throwable {
 
@@ -35,8 +34,8 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(25, 0, 0),
-                    a(0, 17, 1),
-                    a(1, 2, 15)),
+              a(0, 17, 1),
+              a(1, 2, 15)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -53,8 +52,8 @@ public class DRFTest extends TestUtil {
             },
             5,
             a(a(41, 0, 0),
-                    a(0, 39, 3),
-                    a(0, 4, 41)),
+              a(0, 39, 3),
+              a(0, 4, 41)),
             s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
 
@@ -71,10 +70,10 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(0, 0, 0, 0, 0),
-                    a(0, 62, 0, 7, 0),
-                    a(0, 1, 0, 0, 0),
-                    a(0, 0, 0, 31, 0),
-                    a(0, 0, 0, 0, 40)),
+              a(0, 62, 0, 7, 0),
+              a(0, 1, 0, 0, 0),
+              a(0, 0, 0, 31, 0),
+              a(0, 0, 0, 0, 40)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -89,11 +88,11 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            a(a(3, 0, 0, 0, 0),
-                    a(0, 173, 2, 9, 0),
-                    a(0, 1, 1, 0, 0),
-                    a(0, 2, 2, 68, 2),
-                    a(0, 0, 0, 2, 88)),
+            a(a(3,   0, 0,  0,  0),
+              a(0, 173, 2,  9,  0),
+              a(0,   1, 1,  0,  0),
+              a(0,   2, 2, 68,  2),
+              a(0,   0, 0,  2, 88)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -122,15 +121,10 @@ public class DRFTest extends TestUtil {
   @Ignore @Test public void testBadData() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/junit/drf_infinities.csv", "infinitys.hex",
-            new PrepData() {
-              @Override
-              int prep(Frame fr) {
-                return fr.find("DateofBirth");
-              }
-            },
+            new PrepData() { @Override int prep(Frame fr) { return fr.find("DateofBirth"); } },
             1,
             a(a(6, 0),
-                    a(9, 1)),
+              a(9, 1)),
             s("0", "1"));
   }
 
@@ -147,7 +141,7 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(46294, 202),
-                    a(3187, 107)),
+              a( 3187, 107)),
             s("0", "1"));
 
   }
@@ -164,7 +158,7 @@ public class DRFTest extends TestUtil {
             },
             1,
             a(a(0, 81),
-                    a(0, 53)),
+              a(0, 53)),
             s("0", "1"));
 
   }
@@ -180,7 +174,7 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
-            80.38636908313232
+            84.83960821204235
     );
 
   }
@@ -196,7 +190,7 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            60.63686017358242
+            62.34506879389341
     );
 
   }
@@ -212,12 +206,38 @@ public class DRFTest extends TestUtil {
               }
             },
             50,
-            47.62149404858757
+            48.16452593965962
     );
 
   }
+  @Test public void testAlphabet() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            a(a(664, 0),
+              a(0, 702)),
+            s("0", "1"));
+  }
+  @Test public void testAlphabetRegression() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            0.0);
+  }
 
-  @Ignore  //1-vs-5 node discrepancy
+  @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/airlines/allyears2k_headers.zip", "airlines.hex",
@@ -236,10 +256,10 @@ public class DRFTest extends TestUtil {
               }
             },
             7,
-            a(a(4051, 15612), //for 5-node
-              a(1397, 20322)),
-//            a(a(4396, 15269), //for 1-node
-//              a(1740, 19993)),
+            a(a(7958, 11707), //1-node
+              a(2709, 19024)),
+//          a(a(7841, 11822), //5-node
+//            a(2666, 19053)),
             s("NO", "YES"));
   }
 
@@ -345,6 +365,121 @@ public class DRFTest extends TestUtil {
       if( test != null ) test.delete();
       if( res != null ) res.delete();
       Scope.exit();
+    }
+  }
+
+  // HEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  @Test public void testReproducibility() {
+    Frame tfr=null;
+    final int N = 5;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+
+      // rebalance to 256 chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
+
+      for (int i=0; i<N; ++i) {
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "C55";
+        parms._nbins = 1000;
+        parms._ntrees = 1;
+        parms._max_depth = 8;
+        parms._mtries = -1;
+        parms._min_rows = 10;
+        parms._seed = 1234;
+
+        // Build a first model; all remaining models should be equal
+        DRF job = new DRF(parms);
+        DRFModel drf = job.trainModel().get();
+        assertEquals(drf._output._ntrees, parms._ntrees);
+
+        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        job.remove();
+        drf.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for(double mse : mses)
+      assertEquals(mse, mses[0], 1e-15);
+  }
+
+  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
+  @Test public void testReprodubilityAirline() {
+    Frame tfr=null;
+    final int N = 1;
+    double[] mses = new double[N];
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+
+      // rebalance to fixed number of chunks
+      Key dest = Key.make("df.rebalanced.hex");
+      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      H2O.submitTask(rb);
+      rb.join();
+      tfr.delete();
+      tfr = DKV.get(dest).get();
+//      Scope.track(tfr.replace(54, tfr.vecs()[54].toEnum())._key);
+//      DKV.put(tfr);
+      for (String s : new String[]{
+          "DepTime", "ArrTime", "ActualElapsedTime",
+          "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+          "CancellationCode", "CarrierDelay", "WeatherDelay",
+          "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      for (int i=0; i<N; ++i) {
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = tfr._key;
+        parms._response_column = "IsDepDelayed";
+        parms._nbins = 10;
+        parms._ntrees = 7;
+        parms._max_depth = 10;
+        parms._mtries = -1;
+        parms._min_rows = 1;
+        parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._balance_classes = true;
+        parms._seed = (1L<<32)|2;
+
+        // Build a first model; all remaining models should be equal
+        DRF job = new DRF(parms);
+        DRFModel drf = job.trainModel().get();
+        assertEquals(drf._output._ntrees, parms._ntrees);
+
+        mses[i] = drf._output._mse_train[drf._output._mse_train.length-1];
+        job.remove();
+        drf.delete();
+      }
+    } finally{
+      if (tfr != null) tfr.remove();
+    }
+    Scope.exit();
+    for (int i=0; i<mses.length; ++i) {
+      Log.info("trial: " + i + " -> mse: " + mses[i]);
+    }
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 }

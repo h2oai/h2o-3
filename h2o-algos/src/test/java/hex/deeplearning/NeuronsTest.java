@@ -12,6 +12,7 @@ import java.util.Random;
 public class NeuronsTest extends water.TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
+  @Ignore
   @Test
   public void matrixVecTest() {
     int rows = 2048;

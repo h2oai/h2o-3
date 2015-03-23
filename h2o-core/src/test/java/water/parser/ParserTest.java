@@ -768,8 +768,8 @@ public class ParserTest extends TestUtil {
 //              false
       }) {
         for (int check_header : new int[]{
-                0,
-//                1
+                ParseSetup.GUESS_HEADER,
+//              ParseSetup.HAS_HEADER
         }) {
           try {
             Log.info("Trying to parse " + f);

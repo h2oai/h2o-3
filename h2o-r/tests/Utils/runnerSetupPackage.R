@@ -29,22 +29,43 @@ if (! failed) {
 }
 
 h2o_r_package_file <- NULL
-raw_dir_to_search = "../../R/src/contrib"
-if (! file.exists(raw_dir_to_search)) {
-    stop("R build directory does not exist, you probably need to do a gradle build")
-}
-dir_to_search = normalizePath(raw_dir_to_search)
-files = dir(dir_to_search, pattern="h2o.*.gz")
-for (i in 1:length(files)) {
-    f = files[i]
-    arr = strsplit(f, '\\.')[[1]]
-    lastidx = length(arr)
-    suffix = arr[lastidx]
-    if (suffix == "gz") {
-        h2o_r_package_file = f
-        break
-    }
+
+args <- commandArgs(trailingOnly = TRUE)
+
+if( length(args) == 1) {
+  print("")
+  print("Got args:")
+  print(args)
+  print("")
+  arr = strsplit(args, '\\.')[[1]]
+  lastidx = length(arr)
+  suffix = arr[lastidx]
+  if (suffix == "gz") {
+    h2o_r_package_file = args
+  }
+  if( is.null(h2o_r_package_file) )
+    stop("Could not find the h2o R package file!")
+  install.packages(h2o_r_package_file, repos = NULL, type = "source")
+} else {
+
+  raw_dir_to_search = "../../R/src/contrib"
+
+  if (! file.exists(raw_dir_to_search)) {
+      stop("R build directory does not exist, you probably need to do a gradle build")
+  }
+  dir_to_search = normalizePath(raw_dir_to_search)
+  files = dir(dir_to_search, pattern="h2o.*.gz")
+  for (i in 1:length(files)) {
+      f = files[i]
+      arr = strsplit(f, '\\.')[[1]]
+      lastidx = length(arr)
+      suffix = arr[lastidx]
+      if (suffix == "gz") {
+          h2o_r_package_file = f
+          break
+      }
+  }
+  install.packages(paste(dir_to_search, h2o_r_package_file, sep="/"), repos = NULL, type = "source")
 }
 
-install.packages(paste(dir_to_search, h2o_r_package_file, sep="/"), repos = NULL, type = "source")
 library(h2o)

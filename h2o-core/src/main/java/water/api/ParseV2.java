@@ -4,7 +4,6 @@ import water.api.KeyV1.FrameKeyV1;
 import water.Iced;
 import water.Key;
 import water.api.KeyV1.VecKeyV1;
-import water.fvec.Vec;
 import water.parser.ParserType;
 import water.util.DocGen.HTML;
 

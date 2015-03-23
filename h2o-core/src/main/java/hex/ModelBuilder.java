@@ -75,6 +75,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   public static String getModelBuilderName(Class<? extends ModelBuilder> clz) {
+    // Check for unknown algo names, but if none are registered keep going; we're probably in JUnit.
+    if (_builders.isEmpty())
+      return "Unknown algo (should only happen under JUnit)";
+
     if (! _builders.containsValue(clz))
       throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
 
@@ -172,7 +176,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in
-    if( _parms._train == null ) { error("_train","Missing training frame"); return; }
+    if( _parms._train == null ) {
+      if (expensive)
+        error("_train","Missing training frame");
+      return;
+    }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
@@ -214,7 +222,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
     try {
       String[] msgs = Model.adaptTestForTrain(_train._names,_train.domains(),_valid,_parms.missingColumnsType(),expensive);
-      if( expensive ) for( String s : msgs ) Log.info(s);
+      if( expensive ) {
+        for( String s : msgs ) {
+          Log.info(s);
+          info("_valid", s);
+        }
+      }
     } catch( IllegalArgumentException iae ) {
       error("_valid",iae.getMessage());
     }

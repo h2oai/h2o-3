@@ -602,7 +602,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _valid != null) dl.error("_validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
       if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -644,6 +643,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     ModelMetrics train_metrics;
     ModelMetrics valid_metrics;
     double run_time;
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(model_summary.toString());
+      sb.append(scoring_history.toString());
+      if (variable_importances != null) sb.append(variable_importances.toString());
+      return sb.toString();
+    }
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1071,32 +1078,42 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       System.arraycopy(get_params()._hidden, 0, units, 1, layers);
       units[layers+1] = num_output;
 
-      if ((long)units[0] > 100000L) {
+      boolean printLevels = units[0] > 1000L;
+      boolean warn = units[0] > 100000L;
+      if (printLevels) {
         final String[][] domains = dinfo._adaptedFrame.domains();
         int[] levels = new int[domains.length];
         for (int i=0; i<levels.length; ++i) {
           levels[i] = domains[i] != null ? domains[i].length : 0;
         }
         Arrays.sort(levels);
-        Log.warn("===================================================================================================================================");
-        Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
+        if (warn) {
+          Log.warn("===================================================================================================================================");
+          Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
+        }
         if (levels[levels.length-1] > 0) {
           int levelcutoff = levels[levels.length-1-Math.min(10, levels.length)];
           int count = 0;
           for (int i=0; i<dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
             if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
-              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              if (warn) {
+                Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              } else {
+                Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              }
             }
             count++;
           }
         }
-        Log.warn("Suggestions:");
-        Log.warn(" *) Limit the size of the first hidden layer");
-        if (dinfo._cats > 0) {
-          Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
-          Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://learn.h2o.ai");
+        if (warn) {
+          Log.warn("Suggestions:");
+          Log.warn(" *) Limit the size of the first hidden layer");
+          if (dinfo._cats > 0) {
+            Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
+            Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://learn.h2o.ai");
+          }
+          Log.warn("===================================================================================================================================");
         }
-        Log.warn("===================================================================================================================================");
       }
 
       // weights (to connect layers)
@@ -1172,9 +1189,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
               "Status of Neuron Layers (" +
-                      (get_params()._autoencoder ? "Auto-Encoder" :
-                              _classification ? "Classification" : "Regression" )
-                      + ", Loss: " + get_params()._loss.toString() + ")",
+                  (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
+                      (get_params()._autoencoder ? "auto-encoder" :
+                              _classification ? (units[units.length-1] + "-class classification") : "regression" )
+                      + ", " + get_params()._loss.toString() + " loss)",
               new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
@@ -1322,7 +1340,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     void randomizeWeights() {
       for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getDeterRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
+        final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
@@ -1641,6 +1659,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             err.train_mse = l2.mean();
             mse_frame.delete();
           }
+          if (ftest != null) {
+            final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
+            final Vec l2 = mse_frame.anyVec();
+            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
+            err.valid_mse = l2.mean();
+            mse_frame.delete();
+          }
         } else {
           if (printme) Log.info("Scoring the model.");
           // compute errors
@@ -1844,11 +1869,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       int x=_output._names.length, y=adaptFrm.numCols();
       Frame f = adaptFrm.extractFrame(x, y); //this will call vec_impl() and we cannot call the delete() below just yet
 
-      if (destination_key != null) {
-        Key k = Key.make(destination_key);
-        f = new Frame(k, f.names(), f.vecs());
-        DKV.put(k, f);
-      }
+      f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+      DKV.put(f);
       makeMetricBuilder(null).makeModelMetrics(this, orig, Double.NaN);
       return f;
     }
@@ -1860,7 +1882,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public float[] score0(double[] data, float[] preds) {
+  @Override public double[] score0(double[] data, double[] preds) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
@@ -1873,7 +1895,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
         preds[i + 1] = out[i];
-        if (Float.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
+        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
@@ -1881,7 +1903,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
         preds[0] = out[0];
-      if (Float.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
+      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
   }

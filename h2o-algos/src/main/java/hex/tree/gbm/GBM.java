@@ -168,15 +168,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // wk.set(row, 1.0f/(1f+Math.exp(-tr.atd(row))) ); // Prob_1
             wk.set(row, 1.0f / (1f + Math.exp(tr.atd(row))));     // Prob_0
         } else if( _nclass > 1 ) {       // Classification
-          float fs[] = new float[_nclass+1];
+          double fs[] = new double[_nclass+1];
           for( int row=0; row<ys._len; row++ ) {
-            float sum = score1(chks,fs,row);
-            if( Float.isInfinite(sum) ) // Overflow (happens for constant responses)
+            double sum = score1(chks,fs,row);
+            if( Double.isInfinite(sum) ) // Overflow (happens for constant responses)
               for( int k=0; k<_nclass; k++ )
-                chk_work(chks,k).set(row,Float.isInfinite(fs[k+1])?1.0f:0.0f);
+                chk_work(chks,k).set(row,Double.isInfinite(fs[k+1])?1.0f:0.0f);
             else
               for( int k=0; k<_nclass; k++ ) // Save as a probability distribution
-                chk_work(chks,k).set(row,fs[k+1]/sum);
+                chk_work(chks,k).set(row,(float)(fs[k+1]/sum));
           }
         } else {                  // Regression
           Chunk tr = chk_tree(chks,0); // Prior tree sums
@@ -310,7 +310,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
-          ((LeafNode)tree.node(leafs[k]+i))._pred = g;
+          ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }
 
@@ -332,7 +332,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if( nid < 0 ) continue;
               // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
               // <tree_klazz> fields from tree prediction
-              ct.set(row, (float)(ct.atd(row) + (float) ((LeafNode)tree.node(nid))._pred));
+              ct.set(row, (float)(ct.atd(row) + ((LeafNode)tree.node(nid))._pred));
               nids.set(row, 0);
             }
           }
@@ -471,31 +471,31 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     GBMLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
     @Override protected int size() { return 4; }
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected float score1( Chunk chks[], float fs[/*nclass*/], int row ) {
+  @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
     if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
-      fs[1] = 1.0f/(float)(1f+Math.exp(chk_tree(chks,0).atd(row)));
-      fs[2] = 1f-fs[1];
-      return fs[1]+fs[2];
+      fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
+      fs[2] = 1.0-fs[1];
+      return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
     }
     if( _nclass == 1 ) // Regression
-      return fs[0]=(float)chk_tree(chks,0).atd(row);
+      return fs[0]=chk_tree(chks,0).atd(row);
     if( _nclass == 2 ) {        // The Boolean Optimization
       // This optimization assumes the 2nd tree of a 2-class system is the
       // inverse of the first.  Fill in the missing tree
-      fs[1] = (float)Math.exp(chk_tree(chks,0).atd(row));
-      fs[2] = 1.0f/fs[1]; // exp(-d) === 1/exp(d)
+      fs[1] = Math.exp(chk_tree(chks,0).atd(row));
+      fs[2] = 1.0/fs[1]; // exp(-d) === 1/exp(d)
       return fs[1]+fs[2];
     }
-    float sum=0;
+    double sum=0;
     for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
-      sum+=(fs[k+1]=(float)Math.exp(chk_tree(chks,k).atd(row)));
+      sum+=(fs[k+1]=Math.exp(chk_tree(chks,k).atd(row)));
     return sum;
   }
 

@@ -217,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
+      if( b == null ) return;
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
@@ -357,22 +358,31 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ArrayList<String> msgs = new ArrayList<>();
     Vec vvecs[] = new Vec[names.length];
     int good = 0;               // Any matching column names, at all?
+    int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
       Vec vec = test.vec(names[i]); // Search in the given validation set
       // If the training set is missing in the validation set, complain and
       // fill in with NAs.  If this is the response column for supervised
       // learners, it is still made.
       if( vec == null ) {
-        msgs.add("Validation set is missing training column "+names[i]);
+        String str = "Validation set is missing training column "+names[i];
         if( expensive ) {
+          str = str + ": substituting in a column of NAs";
           vec = test.anyVec().makeCon(missing);
           vec.setDomain(domains[i]);
+          convNaN++;
         }
+        msgs.add(str);
       }
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an enum
           if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same enum
-            EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            EnumWrappedVec evec;
+            try {
+              evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            } catch( NumberFormatException nfe ) {
+              throw new IllegalArgumentException("Validation set has a numeric column "+names[i]+" which is categorical in the training data");
+            }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if (ds.length > domains[i].length)
@@ -390,7 +400,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       vvecs[i] = vec;
     }
-    if( good == 0 )
+    if( good == convNaN )
       throw new IllegalArgumentException("Validation set has no columns in common with the training set");
     if( good == names.length )  // Only update if got something for all columns
       test.restructure(names,vvecs);
@@ -445,7 +455,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else if(model_cat == ModelCategory.Multinomial)
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
-      if (cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) { //don't print table for regression
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -506,10 +516,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
       int startcol = (_mb instanceof ModelMetricsSupervised.MetricBuilderSupervised ? chks.length-1 : 0); //columns of actual start here
-      float[] preds = _mb._work;  // Sized for the union of test and train classes
+      double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        float[] p = score0(chks, row, tmp, preds);
+        double[] p = score0(chks, row, tmp, preds);
         float[] actual = new float[chks.length-startcol];
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
@@ -528,7 +538,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  public float[] score0( Chunk chks[], int row_in_chunk, double[] tmp, float[] preds ) {
+  public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length;
     for( int i=0; i<_output._names.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
@@ -538,10 +548,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
-  protected abstract float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]);
+  protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
-  public double score(double [] data){ return ArrayUtils.maxIndex(score0(data, new float[_output.nclasses()]));  }
+  public double score(double[] data){ return ArrayUtils.maxIndex(score0(data, new double[_output.nclasses()]));  }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (_output._model_metrics != null)
@@ -563,14 +573,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *      // Jam predictions into the preds[] array; preds[0] is reserved for the
    *      // main prediction (class for classifiers or value for regression),
    *      // and remaining columns hold a probability distribution for classifiers.
-   *      float[] predict( double data[], float preds[] );
+   *      double[] predict( double data[], double preds[] );
    *      double[] map( HashMap &lt; String,Double &gt; row, double data[] );
    *      // Does the mapping lookup for every row, no allocation
-   *      float[] predict( HashMap &lt; String,Double &gt; row, double data[], float preds[] );
+   *      double[] predict( HashMap &lt; String,Double &gt; row, double data[], double preds[] );
    *      // Allocates a double[] for every row
-   *      float[] predict( HashMap &lt; String,Double &gt; row, float preds[] );
-   *      // Allocates a double[] and a float[] for every row
-   *      float[] predict( HashMap &lt; String,Double &gt; row );
+   *      double[] predict( HashMap &lt; String,Double &gt; row, double preds[] );
+   *      // Allocates a double[] and a double[] for every row
+   *      double[] predict( HashMap &lt; String,Double &gt; row );
    *    }
    *  </pre>
    */
@@ -647,7 +657,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ccsb.ip("// Jam predictions into the preds[] array; preds[0] is reserved for the").nl();
     ccsb.ip("// main prediction (class for classifiers or value for regression),").nl();
     ccsb.ip("// and remaining columns hold a probability distribution for classifiers.").nl();
-    ccsb.ip("public final float[] score0( double[] data, float[] preds ) {").nl();
+    ccsb.ip("public final double[] score0( double[] data, double[] preds ) {").nl();
     SB classCtxSb = new SB().ii(1);
     toJavaPredictBody(ccsb.ii(1), classCtxSb, file);
     ccsb.ip("return preds;").nl();
@@ -663,9 +673,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions ) {
     assert data.numRows()==model_predictions.numRows();
-    Frame fr = null;
+    final Frame fr = new Frame(data);
     try {
-      fr = new Frame(data);
       String[] warns = adaptTestForTrain(fr,true);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
@@ -686,7 +695,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       String java_text = toJava();
-//      System.out.println(java_text);
+      //System.out.println(java_text);
       GenModel genmodel;
       try { 
         Class clz = JCodeGen.compile(modelName,java_text);
@@ -696,8 +705,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
     
-      double features  [] = MemoryManager.malloc8d(genmodel._names.length);
-      float predictions[] = MemoryManager.malloc4f(genmodel.nclasses()+1);
+      double features   [] = MemoryManager.malloc8d(genmodel._names.length);
+      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int miss = 0;
@@ -709,15 +718,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions
-            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
-            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+            if (miss++ < 10)
+              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }
         }
       }
+      if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;
     } finally {
-      // Remove temp keys.  TODO: Really should use Scope but Scope does not
-      // currently allow nested-key-keepers.
+      // Remove temp keys.
       Vec[] vecs = fr.vecs();
       for( int i=0; i<vecs.length; i++ )
         if( data.find(vecs[i]) != -1 ) // Exists in the original frame?

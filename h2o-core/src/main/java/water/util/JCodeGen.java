@@ -36,10 +36,28 @@ public class JCodeGen {
     return sb.p("};").nl();
   }
 
+  public static SB toStaticVar(SB sb, String varname, double[] values, String comment) {
+    if (comment!=null) sb.ip("// ").p(comment).nl();
+    sb.ip("public static final double[] ").p(varname).p(" = ");
+    if (values == null) return sb.p("null;").nl();
+    sb.p("{").pj(values[0]);
+    for (int i = 1; i < values.length; ++i) sb.p(",").pj(values[i]);
+    return sb.p("};").nl();
+  }
+
   public static SB toStaticVar(SB sb, String varname, double[][] values, String comment) {
     if (comment!=null) sb.ip("// ").p(comment).nl();
     sb.ip("public static final double[][] ").p(varname).p(" = ");
     return sb.toJavaStringInit(values).p(';').nl();
+  }
+
+  public static SB toStaticVar(SB sb, String varname, boolean[] values, String comment) {
+    if (comment!=null) sb.ip("// ").p(comment).nl();
+    sb.ip("public static final boolean[] ").p(varname).p(" = ");
+    if (values == null) return sb.p("null;").nl();
+    sb.p("{").p(values[0]);
+    for (int i = 1; i < values.length; ++i) sb.p(",").p(values[i]);
+    return sb.p("};").nl();
   }
 
   /**
