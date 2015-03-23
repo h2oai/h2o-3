@@ -98,7 +98,7 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
    *  subclass scoring logic. */
   @Override public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     assert chks.length>=_output._names.length; // Last chunk is for the response
-    for( int i=0; i<_output._names.length-1; i++ ) // Do not include last value since it can contains a response
+    for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     double[] scored = score0(tmp,preds);
     // Correct probabilities obtained from training on oversampled data back to original distribution
