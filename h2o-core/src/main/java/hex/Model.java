@@ -217,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
+      if( b == null ) return;
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
