@@ -2,6 +2,73 @@
 
  >Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI
 
+##Launch H2O-Dev
+
+###Selecting the Operating System and Virtualization Type
+
+Select your operating system and the virtualization type of the prebuilt AMI on Amazon. If you are using Windows, you will need to use a hardware-assisted virtual machine (HVM). If you are using Linux, you can choose between para-virtualization (PV) and HVM. These selections determine the type of instances you can launch. 
+
+  ![EC2 Systems](images/ec2_system.png)
+
+For more information about virtualization types, refer to [Amazon](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html). 
+
+###Configuring the Instance
+
+0. Select the IAM role and policy to use to launch the instance. H2O detects the temporary access keys associated with the instance, so you don't need to copy your AWS credentials to the instances. 
+
+  ![EC2 Configuration](images/ec2_config.png)
+
+0. When launching the instance, select an accessible key pair. 
+
+  ![EC2 Key Pair](images/ec2_key_pair.png)
+
+####(Windows Users) Tunneling into the Instance
+
+For Windows users that do not have the ability to use `ssh` from the terminal, either download Cygwin or a Git Bash that has the capability to run `ssh`:
+
+`ssh -i amy_account.pem ec2-user@54.165.25.98`
+
+Otherwise, download PuTTY and follow these instructions:
+
+0. Launch the PuTTY Key Generator. 
+0. Load your downloaded AWS pem key file. 
+   **Note:** To see the file, change the browser file type to "All". 
+0. Save the private key as a .ppk file. 
+
+  ![Private Key](images/ec2_putty_key.png)
+
+0. Launch the PuTTY client. 
+0. In the *Session* section, enter the host name or IP address. For Ubuntu users, the default host name is `ubuntu@<ip-address>`. For Linux users, the default host name is `ec2-user@<ip-address>`.  
+
+  ![Configuring Session](images/ec2_putty_connect_1.png)
+
+0. Select *SSH*, then *Auth* in the sidebar, and click the **Browse** button to select the private key file for authentication. 
+
+  ![Configuring SSH](images/ec2_putty_connect_2.png)
+
+
+0. Start a new session and click the **Yes** button to confirm caching of the server's rsa2 key fingerprint and continue connecting. 
+
+  ![PuTTY Alert](images/ec2_putty_alert.png)
+
+###Downloading Java and H2O
+
+
+0. Download [Java](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+) (JDK 1.7 or later) if it is not already available on the instance. 
+0. To download H2O, run the `wget` command with the link to the zip file available on our [website](http://h2o.ai/download/) by copying the link associated with the **Download** button for the selected H2O-Dev build. 
+	
+		wget http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/index.html
+		unzip h2o-dev-0.2.1.1.zip
+		cd h2o-dev-0.2.1.1
+		java -Xmx4g -jar h2o.jar
+0. From your browser, navigate to `<Private_IP_Address>:54321` or `<Public_DNS>:54321` to use H2O's web interface. 
+
+
+
+##Launch H2O-Dev from the Command Line
+
+
 
 ##Important Notes
 
@@ -70,10 +137,3 @@ The user interface appears in your browser, and now H2O-Dev is ready to go.
 **WARNING**: 
   On Windows systems, Internet Explorer is frequently blocked due to
   security settings.  If you cannot reach http://localhost:54321, try using a different web browser, such as Firefox or Chrome.
-  
-#Launch H2O-Dev from AWS Console
-
-##  
-
-
-
