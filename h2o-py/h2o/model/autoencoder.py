@@ -11,7 +11,7 @@ class H2OAutoEncoderModel(ModelBase):
   def __init__(self, dest_key, model_json):
     super(H2OAutoEncoderModel, self).__init__(dest_key, model_json,H2OAutoEncoderModelMetrics)
 
-  def anomaly:
+  def anomaly(self):
   """
   Return the reconstruction error for an AutoEncoder models
   """
