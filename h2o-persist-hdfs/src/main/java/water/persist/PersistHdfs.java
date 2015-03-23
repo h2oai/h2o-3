@@ -316,4 +316,129 @@ public final class PersistHdfs extends Persist {
       throw new HDFSIOException(path, PersistHdfs.CONF.toString(), e);
     }
   }
+
+  // -------------------------------
+  // Node Persistent Storage helpers
+  // -------------------------------
+
+  @Override
+  public PersistEntry[] list(String path) {
+    try {
+      Path p = new Path(path);
+      URI uri = p.toUri();
+      FileSystem fs = FileSystem.get(uri, CONF);
+      FileStatus[] arr1 = fs.listStatus(p);
+      PersistEntry[] arr2 = new PersistEntry[arr1.length];
+      for (int i = 0; i < arr1.length; i++) {
+        arr2[i] = new PersistEntry();
+        arr2[i]._name = arr1[i].getPath().getName();
+        arr2[i]._size = arr1[i].getLen();
+        arr2[i]._timestamp_millis = arr1[i].getModificationTime();
+      }
+      return arr2;
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean exists(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.exists(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public long length(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.getFileStatus(p).getLen();
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public InputStream open(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.open(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean mkdirs(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.mkdirs(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean rename(String fromPath, String toPath) {
+    Path f = new Path(fromPath);
+    Path t = new Path(toPath);
+    URI uri = f.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      if (fs.exists(t)) {
+        boolean recursive = false;
+        boolean success = fs.delete(t, recursive);
+        if (! success) {
+          Log.info("PersistHdfs rename failed (" + fromPath + " -> " + toPath +")");
+          return false;
+        }
+      }
+      return fs.rename(f, t);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(toPath, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.create(p, overwrite);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean delete(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.delete(p, true);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
 }

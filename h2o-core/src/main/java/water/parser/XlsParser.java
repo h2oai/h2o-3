@@ -6,11 +6,12 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 import water.H2O;
+import water.exceptions.H2OParseException;
 import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps ) { super(ps); }
-  @Override DataOut parallelParse(int cidx, final DataIn din, final DataOut dout) { throw H2O.fail(); }
+  @Override DataOut parseChunk(int cidx, final DataIn din, final DataOut dout) { throw H2O.unimpl(); }
 
   // A Stream, might be a Zip stream
   private InputStream _is;
@@ -75,14 +76,16 @@ class XlsParser extends Parser {
 
   /** Try to parse the bytes as XLS format  */
   public static ParseSetup guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParseSetup(true, 0, 0, null, ParserType.XLS, ParseSetup.AUTO_SEP, false, 0, -1, null, null, null, null, null));
+    XlsParser p = new XlsParser(new ParseSetup(true, 0, null, ParserType.XLS, ParseSetup.GUESS_SEP, false,
+                                ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null));
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     InspectDataOut dout = new InspectDataOut();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
     return new ParseSetup(dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines,
-                                 dout._invalidLines, 0, dout.errors(), ParserType.XLS, ParseSetup.AUTO_SEP,
-                                 false,dout.colNames()==null?-1:1,dout._ncols,dout.colNames(), dout.guessTypes(),null,null,dout._data);
+                                 dout._invalidLines, dout.errors(), ParserType.XLS, ParseSetup.GUESS_SEP,
+                                 false,dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
+                                 dout.colNames(), dout.guessTypes(),null,null,dout._data);
   }
 
 
@@ -142,7 +145,7 @@ class XlsParser extends Parser {
     readAtLeast(IDENTIFIER_OLE.length);
     for( int i=0; i<IDENTIFIER_OLE.length; i++ ) 
       if( _buf[i] != IDENTIFIER_OLE[i] )
-        throw new IOException("not an XLS file");
+        throw new H2OParseException("Not a valid XLS file.","Tried to parse as XLS file, but lacks correct starting bits (aka magic number).");
 
     _numBigBlockDepotBlocks = get4(NUM_BIG_BLOCK_DEPOT_BLOCKS_POS);
     _sbdStartBlock = get4(SMALL_BLOCK_DEPOT_BLOCK_POS);

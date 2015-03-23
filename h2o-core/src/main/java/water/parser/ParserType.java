@@ -7,10 +7,10 @@ public enum ParserType {
   final boolean _parallelParseSupported;
   private ParserType( boolean par ) { _parallelParseSupported = par; }
   String toString( int ncols, byte separator ) {
-    if( this==AUTO ) return "";
+    if( this== AUTO) return "";
     StringBuilder sb = new StringBuilder(name());
     sb.append(" data with ").append(ncols).append(" columns");
-    if( this==CSV || this==ARFF  && separator != ParseSetup.AUTO_SEP) sb.append(" using '").append((char)separator).append("' (\\").append(separator).append("04d) as separator.");
+    if( this==CSV || this==ARFF  && separator != ParseSetup.GUESS_SEP) sb.append(" using '").append((char)separator).append("' (\\").append(separator).append("04d) as separator.");
     return sb.toString();
   }
 }

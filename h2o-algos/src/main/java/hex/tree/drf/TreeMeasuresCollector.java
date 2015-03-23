@@ -72,7 +72,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
 
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
-    float [] preds = new float[_nclasses+1];
+    double[] preds = new double[_nclasses+1];
     Chunk cresp = chk_resp(chks);
     int   nrows = cresp._len;
     int   [] oob = new int[2+Math.round((1f-_rate)*nrows*1.2f+0.5f)]; // preallocate
@@ -115,8 +115,8 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
           // - collect only correct votes
           if (pred == actu) _votes[tidx]++;
         } else { /* regression */
-          float pred = preds[0]; // Important!
-          float actu = (float) cresp.atd(row);
+          double pred = preds[0]; // Important!
+          double actu = cresp.atd(row);
           _sse[tidx] += (actu-pred)*(actu-pred);
         }
         // - collect rows which were used for voting
@@ -132,7 +132,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   public TreeVotes resultVotes() { return new TreeVotes(_votes, _nrows, _ntrees); }
   public TreeSSE   resultSSE  () { return new TreeSSE  (_sse,   _nrows, _ntrees); }
   /* This is a copy of score0 method from DTree:615 */
-  private void score0(double data[], float preds[], CompressedTree[] ts) {
+  private void score0(double data[], double preds[], CompressedTree[] ts) {
     scoreTree(data, preds, ts);
   }
 

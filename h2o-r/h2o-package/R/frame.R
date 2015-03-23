@@ -1148,9 +1148,17 @@ as.h2o <- function(object, conn = h2o.getConnection(), key = "") {
   if(!is.data.frame(object)) {
     object <- as.data.frame(object)
   }
+  types <- sapply(object, class)
+  types <- gsub("integer", "numeric", types)
+  types <- gsub("double", "numeric", types)
+  types <- gsub("complex", "numeric", types)
+  types <- gsub("logical", "enum", types)
+  types <- gsub("factor", "enum", types)
+  types <- gsub("character", "string", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(object, file = tmpf, quote = TRUE, row.names = FALSE, na = "")
-  h2f <- h2o.uploadFile(conn, tmpf, key = key)
+  h2f <- h2o.uploadFile(conn, tmpf, key = key, header = TRUE, col.types=types,
+                        col.names=colnames(object, do.NULL=FALSE, prefix="C"))
   file.remove(tmpf)
   h2f
 }
@@ -1288,6 +1296,23 @@ h2o.cbind <- function(...) {
   klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
   .h2o.nary_frame_op("cbind", ...)
+}
+
+#' Set a Factor Column to Level
+#'
+#' Sets the factor column to the level specified.
+#'
+#' @name h2o.setLevel
+NULL
+
+h2o.setLevel <- function(x, level) {
+  if( missing(level) ) stop("`level` is missing")
+  if( !is.character(level) ) stop("`level` must be a character")
+  mktmp <- !.is.eval(x)
+  if( mktmp ) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=x@mutable$ast, key=x@key)
+  }
+  .h2o.nary_frame_op("setLevel", x, level)
 }
 
 #' Combine H2O Datasets by Rows

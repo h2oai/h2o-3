@@ -67,7 +67,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _mse_train = new double[]{mse_train};
-      _mse_valid  = Double.isNaN(mse_valid) ? null : new double[]{mse_valid };
+      _mse_valid  = new double[]{mse_valid};
     }
 
     // Append next set of K trees
@@ -96,7 +96,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
 
-  @Override protected float[] score0(double data[/*ncols*/], float preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
     Arrays.fill(preds,0);
@@ -105,7 +105,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return preds;
   }
   // Score per line per tree
-  public void score0(double data[], float preds[], int treeIdx) {
+  public void score0(double data[], double preds[], int treeIdx) {
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ )
       if( keys[c] != null )
@@ -114,7 +114,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   // Numeric type used in generated code to hold predicted value between the
   // calls; i.e. the numerical precision of predictions.
-  static final String PRED_TYPE = "float";
+  static final String PRED_TYPE = "double";
 
   @Override protected Futures remove_impl( Futures fs ) {
     for( Key ks[] : _output._treeKeys)
@@ -135,16 +135,16 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   protected boolean binomialOpt() { return false; }
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
-    body.ip("java.util.Arrays.fill(preds,0f);").nl();
-    body.ip("float[] fdata = hex.genmodel.GenModel.SharedTree_fclean(data);").nl();
+    body.ip("java.util.Arrays.fill(preds,0);").nl();
+    body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
     String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for( int t=0; t < _output._treeKeys.length; t++ ) {
-      toJavaForestName(body,mname,t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
       file.nl();
       toJavaForestName(file.ip("class "),mname,t).p(" {").nl().ii(1);
-      file.ip("public static void score0(float[] fdata, float[] preds) {").nl().ii(1);
+      file.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
       for( int c=0; c<nclass; c++ )
         if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
           toJavaTreeName(file.ip("preds[").p(nclass==1?0:c+1).p("] += "),mname,t,c).p(".score0(fdata);").nl();

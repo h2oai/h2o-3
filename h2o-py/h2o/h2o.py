@@ -7,7 +7,7 @@ import re
 import urllib
 from connection import H2OConnection
 from job import H2OJob
-from frame import H2OFrame
+from frame import H2OFrame, H2OVec
 import h2o_model_builder
 
 
@@ -87,7 +87,7 @@ def parse(setup, h2o_name, first_line_is_header=(-1, 0, 1)):
         'remove_frame' : True
   }
   if isinstance(first_line_is_header, tuple):
-    first_line_is_header = 0
+    first_line_is_header = setup["check_header"] 
 
   if setup["column_names"]:
     setup["column_names"] = [_quoted(name) for name in setup["column_names"]]
@@ -177,6 +177,45 @@ def frame(key):
   :return: Meta information on the frame
   """
   return H2OConnection.get_json("Frames/" + key)
+
+
+# Non-Mutating cbind
+def cbind(left,right):
+  """
+  :param left: H2OFrame or H2OVec
+  :param right: H2OFrame or H2OVec
+  :return: new H2OFrame with left|right cbinded
+  """
+  # Check left and right data types
+  vecs = []
+  if isinstance(left,H2OFrame) and isinstance(right,H2OFrame):
+    vecs = left._vecs + right._vecs
+  elif isinstance(left,H2OFrame) and isinstance(right,H2OVec):
+    [vecs.append(vec) for vec in left._vecs]
+    vecs.append(right)
+  elif isinstance(left,H2OVec) and isinstance(right,H2OVec):
+    vecs = [left, right]
+  elif isinstance(left,H2OVec) and isinstance(right,H2OFrame):
+    vecs.append(left)
+    [vecs.append(vec) for vec in right._vecs]
+  else:
+    raise ValueError("left and right data must be H2OVec or H2OFrame")
+  names = [vec.name() for vec in vecs]
+
+  fr = H2OFrame.py_tmp_key()
+  cbind = "(= !" + fr + " (cbind %"
+  cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
+  rapids(cbind)
+
+  j = frame(fr)
+  fr = j['frames'][0]
+  rows = fr['rows']
+  veckeys = fr['vec_keys']
+  cols = fr['columns']
+  colnames = [col['label'] for col in cols]
+  result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+  result.setNames(names)
+  return result
 
 
 def init(ip="localhost", port=54321):

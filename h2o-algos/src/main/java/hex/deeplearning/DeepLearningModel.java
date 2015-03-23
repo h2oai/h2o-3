@@ -602,7 +602,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _valid != null) dl.error("_validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
       if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -644,6 +643,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     ModelMetrics train_metrics;
     ModelMetrics valid_metrics;
     double run_time;
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(model_summary.toString());
+      sb.append(scoring_history.toString());
+      if (variable_importances != null) sb.append(variable_importances.toString());
+      return sb.toString();
+    }
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1323,7 +1330,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     void randomizeWeights() {
       for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getDeterRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
+        final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
@@ -1642,6 +1649,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             err.train_mse = l2.mean();
             mse_frame.delete();
           }
+          if (ftest != null) {
+            final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
+            final Vec l2 = mse_frame.anyVec();
+            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
+            err.valid_mse = l2.mean();
+            mse_frame.delete();
+          }
         } else {
           if (printme) Log.info("Scoring the model.");
           // compute errors
@@ -1858,7 +1872,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
    * @return preds, can contain NaNs
    */
-  @Override public float[] score0(double[] data, float[] preds) {
+  @Override public double[] score0(double[] data, double[] preds) {
     if (model_info().unstable()) {
       Log.warn(unstable_msg);
       throw new UnsupportedOperationException("Trying to predict with an unstable model.");
@@ -1871,7 +1885,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
         preds[i + 1] = out[i];
-        if (Float.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
+        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
       }
       preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);
     } else {
@@ -1879,7 +1893,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         preds[0] = (float) (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
       else
         preds[0] = out[0];
-      if (Float.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
+      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
   }

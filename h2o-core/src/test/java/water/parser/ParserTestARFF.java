@@ -92,7 +92,7 @@ public class ParserTestARFF extends TestUtil {
    *  @return      Frame or NPE */
   private Frame parse_test_file_single_quotes( String fname ) {
     NFSFileVec nfs = NFSFileVec.make(find_test_file(fname));
-    return ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, true /*single quote*/, 0);
+    return ParseDataset.parse(Key.make(), new Key[]{nfs._key}, true, true /*single quote*/, ParseSetup.GUESS_HEADER);
   }
 
   // negative test to check the isBitIdentical

@@ -7,11 +7,13 @@ import water.util.ArrayUtils;
 public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
   public final ConfusionMatrix _cm;
+  public final double _logloss;
 
-  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, float[] hr, double sigma, double mse) {
+  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, float[] hr, double logloss, double sigma, double mse) {
     super(model, frame, sigma, mse);
     _cm = cm;
     _hit_ratios = hr;
+    _logloss = logloss;
   }
 
   @Override public ConfusionMatrix cm() {
@@ -31,11 +33,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static void updateHits(int iact, float[] ds, long[] hits ) {
+  public static void updateHits(int iact, double[] ds, long[] hits ) {
     int pred = (int)ds[0];
     if( iact == pred ) hits[0]++; // Top prediction is correct?
     else {                  // Else need to find how far down the correct guy is
-      float p = ds[pred+1]; // Prediction value which failed
+      double p = ds[pred+1]; // Prediction value which failed
       int tie=0;
       for( int k=1; k<hits.length; k++ ) {
         // Find largest prediction less than 'p', or for ties, the tie'th
@@ -64,6 +66,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     long[/*nclasses*/][/*nclasses*/] _cm;
     long[/*K*/] _hits;            // the number of hits for hitratio, length: K
     private int _K;               // TODO: Let user set K
+    double _logloss;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
@@ -74,16 +77,16 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public float[] perRow( float ds[], float [] yact, Model m ) {
-      if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
-      if( Float.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
+    @Override public double[] perRow( double ds[], float [] yact, Model m ) {
+      if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+      if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
 
       // Compute error
-      float sum = 0;          // Check for sane class distribution
-      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
+//      double sum = 0;          // Check for sane class distribution
+//      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
 //      assert Math.abs(sum-1.0f) < 1e-6;
-      float err = iact+1 < ds.length ? 1.0f-ds[iact+1] : 1.0f;  // Error: distance from predicting ycls as 1.0
+      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
       _sumsqe += err*err;           // Squared error
       assert !Double.isNaN(_sumsqe);
 
@@ -94,6 +97,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       // Compute hit ratio
       if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
+      // Compute log loss
+      if (iact+1 < ds.length) _logloss -= Math.log(Math.max(1e-15, ds[iact+1]));
+
       return ds;                // Flow coding
     }
 
@@ -102,21 +108,28 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       assert(((MetricBuilderMultinomial) mb)._K == _K);
       ArrayUtils.add(_cm, ((MetricBuilderMultinomial)mb)._cm);
       _hits = ArrayUtils.add(_hits, ((MetricBuilderMultinomial) mb)._hits);
+      _logloss += ((MetricBuilderMultinomial) mb)._logloss;
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
-      float[] hr = new float[_K];
-      double mse = Double.NaN;
-      if (_count != 0) {
-        if (_hits != null) {
-          for (int i = 0; i < hr.length; i++) {
-            hr[i] = _hits[i] / _count;
+      if (sigma != 0) {
+        ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
+        float[] hr = new float[_K];
+        double mse = Double.NaN;
+        double logloss = Double.NaN;
+        if (_count != 0) {
+          if (_hits != null) {
+            for (int i = 0; i < hr.length; i++) {
+              hr[i] = _hits[i] / _count;
+            }
           }
+          mse = _sumsqe / _count;
+          logloss = _logloss / _count;
         }
-        mse = _sumsqe / _count;
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, logloss, sigma, mse));
+      } else {
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, null, null, Double.NaN, Double.NaN, Double.NaN));
       }
-      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
     }
   }
 }
