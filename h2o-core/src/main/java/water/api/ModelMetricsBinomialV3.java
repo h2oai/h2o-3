@@ -10,6 +10,9 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
     @API(help="The ConfusionMatrix (for the threshold maximizing F1).", direction=API.Direction.OUTPUT)
     public ConfusionMatrixBase cm;
 
+    @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
+    public double logloss;
+
     @Override
     public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
         super.fillFromImpl(modelMetrics);

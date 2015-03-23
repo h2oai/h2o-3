@@ -605,6 +605,7 @@ public class GBMTest extends TestUtil {
         parms._max_depth = 10;
         parms._min_rows = 1;
         parms._loss = Family.bernoulli;
+        parms._balance_classes = true;
 
         // Build a first model; all remaining models should be equal
         GBM job = new GBM(parms);
@@ -624,7 +625,7 @@ public class GBMTest extends TestUtil {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.2055584688, mses[i], 1e-6); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.20753934108993594, mses[i], 1e-6); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
     }
   }
 

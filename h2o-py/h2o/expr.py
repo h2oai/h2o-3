@@ -52,7 +52,12 @@ class Expr(object):
     self._vecname = ""     # the name of the Vec, if any
     self._isslice = False  # if a slice, then return a new H2OVec from show
 
-    self._op, self._data = (op, None) if isinstance(op, str) else ("rawdata", op)
+    if isinstance(op, str):
+      self._op, self._data = (op, None)
+    elif not op and isinstance(left,str):
+      self._op, self._data = ("rawdata", left)
+    else:
+      self._op, self._data = ("rawdata", op)
     self._name = self._op  # Set an initial name, generally overwritten
 
     assert self._is_valid(), str(self._name) + str(self._data)
@@ -60,8 +65,8 @@ class Expr(object):
     self._left = left._expr if isinstance(left, frame.H2OVec) else left
     self._rite = rite._expr if isinstance(rite, frame.H2OVec) else rite
 
-    assert self._left is None or self._left._is_valid(), self._left.debug()
-    assert self._rite is None or self._rite._is_valid(), self._rite.debug()
+    assert self._left is None or isinstance(self._left, str) or self._left._is_valid(), self._left.debug()
+    assert self._rite is None or isinstance(self._rite, str) or self._rite._is_valid(), self._rite.debug()
 
     # Compute length eagerly
     if self.is_remote():   # Length must be provided for remote data
@@ -94,7 +99,7 @@ class Expr(object):
 
   def vecname(self): return self._vecname
 
-  def is_local(self): return isinstance(self._data, (list, int, float))
+  def is_local(self): return isinstance(self._data, (list, int, float, str))
 
   def is_remote(self): return isinstance(self._data, unicode)
 
@@ -251,7 +256,7 @@ class Expr(object):
         child._do_it()
       elif isinstance(child._data, (int, float)):
         __CMD__ += "#" + str(child._data)
-      elif isinstance(child._data, unicode):
+      elif isinstance(child._data, (str,unicode)):
         __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
         __CMD__ += \
@@ -299,16 +304,19 @@ class Expr(object):
     # Do not try/catch NotImplementedError - it blows the original stack trace
     # so then you can't see what's not implemented
 
-    if self._op in ["+", "&", "-", "*", "/", "==", "<", ">", ">=", "<="]:   # in self.BINARY_INFIX_OPS:
+    if self._op in ["+", "&", "-", "*", "/", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
+      rapids_dict = {"+":"+", "&":"&", "-":"-", "*":"*", "/":"/", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
+                     "L":"<="}
       #   num op num
       #   num op []
-      if isinstance(left._data, (int, float)):
-        if isinstance(rite._data, (int, float)):   self._data = eval("left " + self._op + " rite")
-        elif rite.is_local():                      self._data = eval("[left "+ self._op + " x for x in rite._data]")
+      if isinstance(left._data, (int, float,str)):
+        if isinstance(rite._data, (int, float,str)):   self._data = eval("left " + rapids_dict[self._op] + " rite")
+        elif rite.is_local():                      self._data = eval("[left "+ rapids_dict[self._op] +
+                                                                     " x for x in rite._data]")
         else:                                      pass
 
       #   [] op num
-      elif isinstance(rite._data, (int, float)):
+      elif isinstance(rite._data, (int, float,str)):
         if left.is_local():   self._data = eval("[x" + self._op + " rite for x in left._data]")
         else:                 pass
 

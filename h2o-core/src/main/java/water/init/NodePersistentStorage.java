@@ -37,7 +37,15 @@ public class NodePersistentStorage {
       NPS_SEPARATOR = File.separator;
     }
 
-    NPS_DIR = npsDirURI.toString();
+    String s = npsDirURI.toString();
+    if (s.startsWith("file://")) {
+      s = s.substring(7);
+    }
+    else if (s.startsWith("file:")) {
+      s = s.substring(5);
+    }
+
+    NPS_DIR = s;
   }
 
   private void validateGeneral() {
@@ -52,7 +60,7 @@ public class NodePersistentStorage {
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9]+", categoryName)) {
-      throw new IllegalArgumentException("NodePersistentStorage illegal category");
+      throw new IllegalArgumentException("NodePersistentStorage illegal category (" + categoryName + ")");
     }
   }
 
@@ -62,7 +70,7 @@ public class NodePersistentStorage {
     }
 
     if (! Pattern.matches("[\\-a-zA-Z0-9_ \\(\\)]+", keyName)) {
-      throw new IllegalArgumentException("NodePersistentStorage illegal name");
+      throw new IllegalArgumentException("NodePersistentStorage illegal name (" + keyName + ")");
     }
   }
 
@@ -83,8 +91,25 @@ public class NodePersistentStorage {
     }
   }
 
-  public boolean getCanSave() {
+  public boolean configured() {
     return (NPS_DIR != null);
+  }
+
+  public boolean exists(String categoryName) {
+    validateGeneral();
+    validateCategoryName(categoryName);
+
+    String dirName = NPS_DIR + NPS_SEPARATOR + categoryName;
+    return H2O.getPM().exists(dirName);
+  }
+
+  public boolean exists(String categoryName, String keyName) {
+    validateGeneral();
+    validateCategoryName(categoryName);
+    validateKeyName(keyName);
+
+    String fileName = NPS_DIR + NPS_SEPARATOR + categoryName + NPS_SEPARATOR + keyName;
+    return H2O.getPM().exists(fileName);
   }
 
   public void put(String categoryName, String keyName, InputStream is) {
@@ -133,10 +158,9 @@ public class NodePersistentStorage {
 
     // Create tmp file
     String tmpf = tmpd + NPS_SEPARATOR + keyName;
-    boolean overwrite = true;
     OutputStream os = null;
     try {
-      os = pm.create(tmpf, overwrite);
+      os = pm.create(tmpf, true);
       copyStream(is, os);
     }
     finally {

@@ -33,9 +33,9 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        a(a(48, 1, 1),
-            a(0, 28, 22),
-            a(0, 5, 45)),
+        a(a(0, 50, 0),
+            a(0, 8, 42),
+            a(0, 1, 49)),
         s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
 
   }
@@ -52,7 +52,7 @@ public class DeepLearningTest extends TestUtil {
         },
         5,
         a(a(50, 0, 0),
-            a(0, 30, 20),
+            a(0, 24, 26),
             a(0, 2, 48)),
         s("Iris-setosa", "Iris-versicolor", "Iris-virginica"));
   }
@@ -69,11 +69,11 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        a(a(0, 4, 0, 0, 0),
-            a(0, 205, 1, 1, 0),
-            a(0, 3, 0, 0, 0),
-            a(0, 24, 4, 54, 2),
-            a(18, 0, 0, 9, 81)),
+        a(a(0, 3, 0, 1, 0),
+            a(0, 191, 3, 13, 0),
+            a(0, 2, 1, 0, 0),
+            a(0, 57, 0, 27, 0),
+            a(0, 4, 0, 23, 81)),
         s("3", "4", "5", "6", "8"));
   }
 
@@ -89,9 +89,9 @@ public class DeepLearningTest extends TestUtil {
         },
         5,
         a(a(0, 4, 0, 0, 0),
-            a(0, 206, 0, 1, 0),
+            a(0, 205, 0, 2, 0),
             a(0, 2, 0, 1, 0),
-            a(0, 5, 0, 76, 3),
+            a(0, 14, 0, 69, 1),
             a(0, 0, 0, 5, 103)),
         s("3", "4", "5", "6", "8"));
   }
@@ -162,8 +162,8 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        a(a(147, 80),
-            a(43, 110)),
+        a(a(53, 174),
+            a(16, 137)),
         s("0", "1"));
 
   }
@@ -179,7 +179,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        51.69383473133053
+        50.64480876919069
     );
 
   }
@@ -195,7 +195,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         5,
-        43.07432016180254
+        43.18734176721084
     );
 
   }
@@ -211,7 +211,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         50,
-        38.73823674828305
+        39.28709126407967
     );
 
   }
@@ -239,7 +239,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         10,
-        0.03621841118234863);
+        0.07948414749187445);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)

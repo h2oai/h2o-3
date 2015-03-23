@@ -97,26 +97,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
-        Frame fr = _train;
         if( _nclass>1 ) {       // Classification?
 
           // Handle imbalanced classes by stratified over/under-sampling.
           // initWorkFrame sets the modeled class distribution, and
           // model.score() corrects the probabilities back using the
           // distribution ratios
-          if( _parms._balance_classes ) {
-            float[] csf = _parms._class_sampling_factors;
-            if( csf != null && csf.length != domain.length )
-              throw new IllegalArgumentException("class_sampling_factors must have " + domain.length + " elements");
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(fr, fr.lastVec(), csf, (long)(_parms._max_after_balance_size*fr.numRows()), _parms._seed, true, false);
-            if (stratified != fr) {
-              throw H2O.unimpl();
-              //_parms._train = stratified._key;
-              //_response_key = _parms._response; // Reload from stratified data
-              //// Recompute distribution since the input frame was modified
-              //MRUtils.ClassDist cdmt2 = new MRUtils.ClassDist(_nclass).doAll(_response);
-              //_distribution = cdmt2.dist();
-              //_modelClassDist = cdmt2.rel_dist();
+          if(_model._output.isClassifier() && _parms._balance_classes ) {
+
+            float[] trainSamplingFactors = new float[_train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+            if (_parms._class_sampling_factors != null) {
+              if (_parms._class_sampling_factors.length != _train.lastVec().domain().length)
+                throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
+              trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
+            }
+            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            if (stratified != _train) {
+              _train = stratified;
+              _response = stratified.lastVec();
+              // Recompute distribution since the input frame was modified
+              MRUtils.ClassDist cdmt2 = new MRUtils.ClassDist(_nclass).doAll(_response);
+              _model._output._distribution = cdmt2.dist();
+              _model._output._modelClassDist = cdmt2.rel_dist();
             }
           }
           Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
@@ -130,19 +132,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // Current forest values: results of summing the prior M trees
         for( int i=0; i<_nclass; i++ )
-          fr.add("Tree_"+domain[i], _response.makeZero());
+          _train.add("Tree_"+domain[i], _response.makeZero());
 
         // Initial work columns.  Set-before-use in the algos.
         for( int i=0; i<_nclass; i++ )
-          fr.add("Work_"+domain[i], _response.makeZero());
+          _train.add("Work_"+domain[i], _response.makeZero());
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
         for( int i=0; i<_nclass; i++ )
-          fr.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
+          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
 
         // Tag out rows missing the response column
-        new ExcludeNAResponse().doAll(fr);
+        new ExcludeNAResponse().doAll(_train);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
@@ -422,5 +424,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Helper to unify use of M-T RNG
   public static Random createRNG(long seed) {
     return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
+//    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
   }
 }

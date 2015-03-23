@@ -7,11 +7,13 @@ import water.util.ArrayUtils;
 public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
   public final ConfusionMatrix _cm;
+  public final double _logloss;
 
-  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, float[] hr, double sigma, double mse) {
+  public ModelMetricsMultinomial(Model model, Frame frame, ConfusionMatrix cm, float[] hr, double logloss, double sigma, double mse) {
     super(model, frame, sigma, mse);
     _cm = cm;
     _hit_ratios = hr;
+    _logloss = logloss;
   }
 
   @Override public ConfusionMatrix cm() {
@@ -64,6 +66,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     long[/*nclasses*/][/*nclasses*/] _cm;
     long[/*K*/] _hits;            // the number of hits for hitratio, length: K
     private int _K;               // TODO: Let user set K
+    double _logloss;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
@@ -94,6 +97,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       // Compute hit ratio
       if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
+      // Compute log loss
+      if (iact+1 < ds.length) _logloss -= Math.log(Math.max(1e-15, ds[iact+1]));
+
       return ds;                // Flow coding
     }
 
@@ -102,6 +108,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       assert(((MetricBuilderMultinomial) mb)._K == _K);
       ArrayUtils.add(_cm, ((MetricBuilderMultinomial)mb)._cm);
       _hits = ArrayUtils.add(_hits, ((MetricBuilderMultinomial) mb)._hits);
+      _logloss += ((MetricBuilderMultinomial) mb)._logloss;
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
@@ -109,6 +116,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
         float[] hr = new float[_K];
         double mse = Double.NaN;
+        double logloss = Double.NaN;
         if (_count != 0) {
           if (_hits != null) {
             for (int i = 0; i < hr.length; i++) {
@@ -116,10 +124,11 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             }
           }
           mse = _sumsqe / _count;
+          logloss = _logloss / _count;
         }
-        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, sigma, mse));
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, cm, hr, logloss, sigma, mse));
       } else {
-        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, null, null, Double.NaN, Double.NaN));
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, null, null, Double.NaN, Double.NaN, Double.NaN));
       }
     }
   }

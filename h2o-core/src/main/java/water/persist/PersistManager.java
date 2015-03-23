@@ -223,6 +223,14 @@ public class PersistManager {
 
   // Reads
 
+  public String getHdfsHomeDirectory() {
+    if (I[Value.HDFS] == null) {
+      return null;
+    }
+
+    return I[Value.HDFS].getHomeDirectory();
+  }
+
   public PersistEntry[] list(String path) {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
