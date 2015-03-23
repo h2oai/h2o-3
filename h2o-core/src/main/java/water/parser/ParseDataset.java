@@ -591,6 +591,11 @@ public final class ParseDataset extends Job<Frame> {
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            // check for more files in archive
+            ZipEntry ze2 = zis.getNextEntry();
+            if (ze2 != null && !ze.isDirectory()) {
+              Log.warn("Only single file zip archives are currently supported, only file: "+ze.getName()+" has been parsed.  Remaining files have been ignored.");
+            }
           else zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
