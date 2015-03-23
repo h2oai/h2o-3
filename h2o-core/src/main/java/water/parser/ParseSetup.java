@@ -11,6 +11,7 @@ import water.fvec.Vec;
 import water.fvec.UploadFileVec;
 import water.fvec.FileVec;
 import water.fvec.ByteVec;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -301,7 +302,18 @@ public final class ParseSetup extends Iced {
             _totalParseSize += bv.length() * decompRatio; // estimate file size
           else  // avoid numerical distortion of file size when not compressed
             _totalParseSize += bv.length();
-//        }
+
+        // report if multiple files exist in zip archive
+        if (ZipUtil.getFileCount(bv) > 1) {
+          if (_gblSetup._errors != null)
+            _gblSetup._errors = Arrays.copyOf(_gblSetup._errors, _gblSetup._errors.length + 1);
+          else
+            _gblSetup._errors = new String[1];
+
+          _gblSetup._errors[_gblSetup._errors.length - 1] = "Only single file zip " +
+                  "archives are currently supported, only the first file has been parsed.  " +
+                  "Remaining files have been ignored.";
+        }
       }
 
       // guesser chunk uses default
