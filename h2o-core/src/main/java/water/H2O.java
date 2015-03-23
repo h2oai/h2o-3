@@ -722,13 +722,29 @@ final public class H2O {
 
   // Place to store flows
   public static String DEFAULT_FLOW_DIR() {
-    String flow_dir;
-    if (ARGS.ga_hadoop_ver != null) {
-      flow_dir = null;
+    String flow_dir = null;
+
+    try {
+      if (ARGS.ga_hadoop_ver != null) {
+        PersistManager pm = getPM();
+        if (pm != null) {
+          String s = pm.getHdfsHomeDirectory();
+          if (pm.exists(s)) {
+            flow_dir = s;
+          }
+        }
+        if (flow_dir != null) {
+          flow_dir = flow_dir + "/h2oflows";
+        }
+      } else {
+        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+      }
     }
-    else {
-      flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+    catch (Exception ignore) {
+      // Never want this to fail, as it will kill program startup.
+      // Returning null is fine if it fails for whatever reason.
     }
+
     return flow_dir;
   }
 
