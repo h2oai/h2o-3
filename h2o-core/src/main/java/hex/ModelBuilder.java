@@ -172,7 +172,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // NOTE: allow re-init:
     clearInitState();
     assert _parms != null;      // Parms must already be set in
-    if( _parms._train == null ) { error("_train","Missing training frame"); return; }
+    if( _parms._train == null ) {
+      if (expensive)
+        error("_train","Missing training frame");
+      return;
+    }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());

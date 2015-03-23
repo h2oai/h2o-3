@@ -5,6 +5,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.Job;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
+import water.util.PojoUtils;
 
 abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
   /**
@@ -25,6 +26,10 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
 
     Job j = builder.trainModel();
     builderSchema.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
+
+    // copy warnings and infos; errors will cause an H2OModelBuilderIllegalArgumentException to be thrown above,
+    // resulting in an H2OErrorVx to be returned.
+    PojoUtils.copyProperties(builderSchema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "validation_error_count", "validation_messages" });
     builderSchema.setHttpStatus(HttpResponseStatus.OK.getCode());
     return builderSchema;
   }
