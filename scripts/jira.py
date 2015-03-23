@@ -23,11 +23,7 @@ class Person:
         self.unresolved_story_points = 0
 
     def add(self, issue):
-        story_points = issue[u'fields'][u'customfield_10004']
-        if story_points is None:
-            story_points = 0
-        else:
-            story_points = float(story_points)
+        story_points = Person._get_story_points(issue)
         resolution = issue[u'fields'][u'resolution']
         if resolution is None:
             self.unresolved_story_points += story_points
@@ -52,14 +48,16 @@ class Person:
         if (g_verbose):
             print("")
             for issue in self.resolved_list:
-                print("              " + issue[u'key'] + ": " + issue[u'fields'][u'summary'])
+                story_points = Person._get_story_points(issue)
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
         if (g_verbose):
             print("")
         Person._printbar("unresolved", self.unresolved_story_points, "U")
         if (g_verbose):
             print("")
             for issue in self.unresolved_list:
-                print("              " + issue[u'key'] + ": " + issue[u'fields'][u'summary'])
+                story_points = Person._get_story_points(issue)
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
 
     @staticmethod
     def _printbar(label, value, char):
@@ -74,6 +72,15 @@ class Person:
             num_bars -= 1
             i += 1
         sys.stdout.write("\n")
+
+    @staticmethod
+    def _get_story_points(issue):
+        story_points = issue[u'fields'][u'customfield_10004']
+        if story_points is None:
+            story_points = 0
+        else:
+            story_points = float(story_points)
+        return story_points
 
 
 class PeopleManager:
