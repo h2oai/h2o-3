@@ -15,6 +15,13 @@ print(hdfs_name_node)
 library(RCurl)
 library(h2o)
 
+running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
+
+if (!running_inside_hexdata) {
+    # hdp2.2 cluster
+    stop("0xdata internal test and data.")
+}
+
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort)
 
@@ -22,7 +29,7 @@ conn <- h2o.init(ip=myIP, port=myPort)
 # Parameters for the test.
 #----------------------------------------------------------------------
 
-data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
+data.hex <- h2o.uploadFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
 
 colNames = {}
 for(col in names(data.hex)) {
