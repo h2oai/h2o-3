@@ -30,7 +30,7 @@ def var_test(ip,port):
 
     for c in range(var_cov_h2o.ncol()):
         for r in range(var_cov_h2o.nrow()):
-            assert var_cov_h2o[c][r].eager() - var_cov_np[c][r], "expected equal (co)variances"
+            assert abs(var_cov_h2o[c][r].eager() - var_cov_np[c][r]) < 1e-10, "expected equal (co)variances"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, var_test)
