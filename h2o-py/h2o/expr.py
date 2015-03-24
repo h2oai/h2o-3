@@ -360,14 +360,14 @@ class Expr(object):
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
 
-    elif self._op == "sd":
+    elif self._op in ["var", "sd"]:
       if left.is_local():
         mean = sum(left._data) / len(left._data)
         sum_of_sq = sum((x-mean)**2 for x in left._data)
         num_obs = len(left._data)
         var = sum_of_sq / (num_obs - 1)
-        self._data = var**0.5
-      else:                 __CMD__ += " %TRUE"
+        self._data = var if self._op == "var" else var**0.5
+      else:                 __CMD__ += " \"null\" %TRUE \"everything\"" if self._op == "var" else " %TRUE"
 
     elif self._op == "is.factor":
       if left.is_local():   raise NotImplementedError

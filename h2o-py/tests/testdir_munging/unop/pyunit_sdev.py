@@ -20,7 +20,6 @@ def sdev(ip,port):
                           usecols=(0, 1, 2, 3))
 
   sd_np = np.std(iris_np, axis=0, ddof=1)
-  sd_h2o = []
   for i in range(4):
     sd_h2o = iris_h2o[i].sd()
     assert abs(sd_np[i] - sd_h2o) < 1e-10, "expected standard deviations to be the same"
