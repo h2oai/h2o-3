@@ -618,13 +618,31 @@ class H2OFrame:
     # Remove h2o temp frame after merge
     expr2 = "(, "+expr+" (del %"+lkey+" #0) (del %"+rkey+" #0) )"
 
-    h2o.rapids(expr2)      # merge in h2o
+    h2o.rapids(expr2)       # merge in h2o
     # Make backing H2OVecs for the remote h2o vecs
-    j = h2o.frame(tmp_key) # Fetch the frame as JSON
-    fr = j['frames'][0]    # Just the first (only) frame
-    rows = fr['rows']      # Row count
+    j = h2o.frame(tmp_key)  # Fetch the frame as JSON
+    fr = j['frames'][0]     # Just the first (only) frame
+    rows = fr['rows']       # Row count
     veckeys = fr['vec_keys']# List of h2o vec keys
-    cols = fr['columns']   # List of columns
+    cols = fr['columns']    # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+
+  def var(self):
+    """
+    :return: The covariance matrix of the columns in this H2OFrame.
+    """
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (var %{} \"null\" %FALSE \"everything\"))".format(tmp_key,key)
+    h2o.rapids(expr)
+    # Remove h2o temp frame after var
+    h2o.remove(key)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_keys']
+    cols = fr['columns']
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
@@ -839,6 +857,18 @@ class H2OVec:
     """
     return Expr("mean", self._expr, None, length=1)
 
+  def var(self):
+    """
+    :return: The variance of the values in this H2OVec.
+    """
+    return Expr("var", self._expr, None, length=1).eager()
+
+  def sd(self):
+    """
+    :return: The standard deviation of the values in this H2OVec.
+    """
+    return Expr("sd", self._expr, None, length=1).eager()
+
   def quantile(self,prob=None):
     """
     :return: A lazy Expr representing the quantiles of this H2OVec.
@@ -851,6 +881,12 @@ class H2OVec:
     :return: A transformed H2OVec from numeric to categorical.
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
+
+  def isfactor(self):
+    """
+    :return: An eagered Expr that's boolean valued, which tells whether or not self is a factor.
+    """
+    return Expr("is.factor", self._expr, None, length=1).eager()
 
   def isna(self):
     """

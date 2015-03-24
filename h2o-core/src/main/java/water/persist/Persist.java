@@ -178,6 +178,10 @@ public abstract class Persist {
     public long _timestamp_millis;
   }
 
+  public String getHomeDirectory() {
+    throw new RuntimeException("Not implemented");
+  }
+
   public PersistEntry[] list(String path) {
     throw new RuntimeException("Not implemented");
   }
