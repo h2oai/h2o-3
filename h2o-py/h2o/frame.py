@@ -839,6 +839,12 @@ class H2OVec:
     """
     return Expr("mean", self._expr, None, length=1)
 
+  def sd(self):
+    """
+    :return: The standard deviation of this H2OVec.
+    """
+    return Expr("sd", self._expr, None, length=1).eager()
+
   def quantile(self,prob=None):
     """
     :return: A lazy Expr representing the quantiles of this H2OVec.
