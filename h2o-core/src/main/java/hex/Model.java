@@ -606,7 +606,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileContext);
     toJavaPROB(sb);
-    toJavaSuper(modelName,sb); //
+    toJavaSuper(modelName, sb); //
     toJavaPredict(sb, fileContext);
     sb.p("}").nl().di(1);
     sb.p(fileContext).nl(); // Append file
@@ -665,7 +665,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // the built-in (interpreted) scoring on this dataset.  Returns true if all
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
-  public boolean testJavaScoring( Frame data, Frame model_predictions ) {
+  public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows()==model_predictions.numRows();
     final Frame fr = new Frame(data);
     try {
@@ -711,7 +711,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for( int col=0; col<pvecs.length; col++ ) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
-          if( predictions[col] != d ) {                   // Compare predictions
+          if( !MathUtils.compare(predictions[col],d,1e-15,rel_epsilon) ) {
             if (miss++ < 10)
               System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }

@@ -223,6 +223,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                         Frame pred = null, pred2 = null;
                                         try {
                                           pred = model2.score(valid);
+                                          // Build a POJO, validate same results
+                                          Assert.assertTrue(model2.testJavaScoring(valid,pred,1e-5));
+
                                           hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
                                           double error = 0;
                                           // binary
@@ -275,6 +278,12 @@ public class DeepLearningProstateTest extends TestUtil {
                                           if (pred2 != null) pred2.delete();
                                         }
                                       } //classifier
+                                      else {
+                                        Frame pred = model2.score(valid);
+                                        // Build a POJO, validate same results
+                                        Assert.assertTrue(model1.testJavaScoring(frame,pred,1e-5));
+                                        pred.delete();
+                                      }
                                       Log.info("Parameters combination " + count + ": PASS");
                                       testcount++;
                                     } catch (Throwable t) {
