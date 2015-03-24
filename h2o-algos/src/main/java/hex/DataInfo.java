@@ -609,10 +609,8 @@ public class DataInfo extends Keyed {
           assert false;
           row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         }
-        if (Double.isNaN(row.response[row.response.length - i])) {
-          assert false;
+        if (Double.isNaN(row.response[row.response.length - i]))
           row.bad = true;
-        }
       }
     }
     return rows;
