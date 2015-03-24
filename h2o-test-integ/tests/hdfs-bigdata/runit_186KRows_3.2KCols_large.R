@@ -12,6 +12,9 @@ myPort <- ipPort[[2]]
 hdfs_name_node <- Sys.getenv(c("NAME_NODE"))
 print(hdfs_name_node)
 
+library(RCurl)
+library(h2o)
+
 running_inside_hexdata = file.exists("/mnt/0xcustomer-datasets/c25/df_h2o.csv")
 
 if (!running_inside_hexdata) {
