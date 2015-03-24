@@ -49,8 +49,24 @@ public class PojoUtils {
    * @param field_naming Are the fields named consistently, or does one side have underscores?
    * @param skip_fields Array of origin or destination field names to skip
    */
-  // TODO: support automagic key-name <-> Model / Frame / Vec translation.
   public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields) {
+    copyProperties(dest, origin, field_naming, skip_fields, null);
+  }
+
+  /**
+   * Copy properties "of the same name" from one POJO to the other.  If the fields are
+   * named consistently (both sides have fields named "_foo" and/or "bar") this acts like
+   * Apache Commons PojoUtils.copyProperties(). If one side has leading underscores and
+   * the other does not then the names are conformed according to the field_naming
+   * parameter.
+   *
+   * @param dest Destination POJO
+   * @param origin Origin POJO
+   * @param field_naming Are the fields named consistently, or does one side have underscores?
+   * @param skip_fields Array of origin or destination field names to skip
+   * @param only_fields Array of origin or destination field names to include; ones not in this list will be skipped
+   */
+  public static void copyProperties(Object dest, Object origin, FieldNaming field_naming, String[] skip_fields, String[] only_fields) {
     if (null == dest || null == origin) return;
 
     Field[] dest_fields = Weaver.getWovenFields(dest  .getClass());
@@ -60,6 +76,9 @@ public class PojoUtils {
       String origin_name = orig_field.getName();
 
       if (skip_fields != null & ArrayUtils.contains(skip_fields, origin_name))
+        continue;
+
+      if (only_fields != null & !ArrayUtils.contains(only_fields, origin_name))
         continue;
 
       String dest_name = null;
@@ -72,6 +91,9 @@ public class PojoUtils {
       }
 
       if ( skip_fields != null & ArrayUtils.contains(skip_fields, dest_name) )
+        continue;
+
+      if (only_fields != null & !ArrayUtils.contains(only_fields, dest_name))
         continue;
 
       try {
