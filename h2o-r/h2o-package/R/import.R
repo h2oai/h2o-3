@@ -10,7 +10,7 @@
 #'
 #' Import an entire directory of files. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
-h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
+h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
   if (is(path, "H2OConnection")) {
     temp <- path
     path <- conn
@@ -51,7 +51,7 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key
 #'
 #' Import a single file. If the given path is relative, then it will be relative to the start location
 #' of the H2O instance. The default behavior is to pass-through to the parse phase automatically.
-h2o.importFile <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header, sep = "", col.names) {
+h2o.importFile <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header=NA, sep = "", col.names=NULL) {
   h2o.importFolder(path, conn, pattern = "", key, parse, header, sep, col.names)
 }
 
@@ -59,7 +59,7 @@ h2o.importFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
 #' Import A URL
 #'
 #' Import a data source from a URL.
-h2o.importURL <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header, sep = "", col.names) {
+h2o.importURL <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
   .Deprecated("h2o.importFolder")
   h2o.importFile(path, conn, key, parse, header, sep, col.names)
 }
@@ -68,7 +68,7 @@ h2o.importURL <- function(path, conn = h2o.getConnection(), key = "", parse = TR
 #' Import HDFS
 #'
 #' Import from an HDFS location.
-h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", key = "", parse = TRUE, header, sep = "", col.names) {
+h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", key = "", parse = TRUE, header = NA, sep = "", col.names = NULL) {
   .Deprecated("h2o.importFolder")
   h2o.importFolder(path, conn, pattern, key, parse, header, sep, col.names)
 }
@@ -77,7 +77,7 @@ h2o.importHDFS <- function(path, conn = h2o.getConnection(), pattern = "", key =
 #' Upload Data
 #'
 #' Upload local files to the H2O instance.
-h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header, sep = "", col.names) {
+h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = TRUE, header = NA, sep = "", col.names = NULL, col.types = NULL) {
   if (is(path, "H2OConnection")) {
     temp <- path
     path <- conn
@@ -99,7 +99,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
 
   rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)
   if (parse) {
-    h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
+    h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names, col.types=col.types)
   } else {
     rawData
   }

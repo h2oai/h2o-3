@@ -63,6 +63,7 @@ fi
 
 # Create target dir, which is uploaded to s3.
 mkdir target
+echo ${PROJECT_VERSION} > target/project_version
 
 # Create zip files and add them to target.
 make_zip

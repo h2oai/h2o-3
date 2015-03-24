@@ -190,6 +190,13 @@ class H2OFrame:
     """
     return len(self)
 
+  def dim(self):
+    """
+    Get the number of rows and columns in the H2OFrame.
+    :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
+    """
+    return [self.nrow(), self.ncol()]
+
   # Print [col, cols...]
   def show(self):
     if len(self) == 1:
@@ -245,7 +252,18 @@ class H2OFrame:
     if col >= self.ncol(): col = self.ncol() - 1
     vec = self._vecs[col]
     res = H2OConnection.get_json("Frames/{}/columns/{}/domain".format(vec._expr.eager(), "C1"))
-    print res["domain"][0]
+    return res["domain"][0]
+
+  def setNames(self,names):
+    if not names or not isinstance(names,list):
+      raise ValueError("names parameter must be a list of strings")
+    if len(names) != self.ncol():
+      raise ValueError("names parameter must be a list of ncol names")
+    for s in names:
+      if not isinstance(s,str):
+        raise ValueError("all names in names parameter must be strings")
+    for name, vec in zip(names,self._vecs):
+      vec._name = name
 
   def describe(self):
     """
@@ -531,6 +549,21 @@ class H2OFrame:
     if len(self) == 0: return self
     return H2OFrame(vecs=[vec.quantile(prob) for vec in self._vecs ])
 
+  # H2OFrame Mutating cbind
+  def cbind(self,data):
+    """
+    :param data: H2OFrame or H2OVec to cbind to self
+    :return: void
+    """
+    if isinstance(data, H2OFrame):
+      num_vecs = len(data._vecs)
+      for vidx in range(num_vecs):
+        self._vecs.append(data._vecs[vidx])
+    elif isinstance(data, H2OVec):
+      self._vecs.append(data)
+    else:
+      raise ValueError("data to cbind must be H2OVec or H2OFrame")
+
   # ddply in h2o
   def ddply(self,cols,fun):
     """
@@ -621,6 +654,12 @@ class H2OVec:
   def name(self):
     return self._name
 
+  def setName(self,name):
+    if name and isinstance(name,str):
+      self._name = name
+    else:
+        raise ValueError("name parameter must be a string")
+
   def get_expr(self):
     return self._expr
 
@@ -638,6 +677,38 @@ class H2OVec:
       pass
     self._expr.data().append(__x__)
     self._expr.set_len(self._expr.get_len() + 1)
+
+  # H2OVec non-mutating cbind
+  def cbind(self,data):
+    """
+    :param data: H2OFrame or H2OVec
+    :return: new H2OFrame with data cbinded to the end
+    """
+    # Check data type
+    vecs = []
+    if isinstance(data,H2OFrame):
+      vecs.append(self)
+      [vecs.append(vec) for vec in data._vecs]
+    elif isinstance(data,H2OVec):
+      vecs = [self, data]
+    else:
+      raise ValueError("data parameter must be H2OVec or H2OFrame")
+    names = [vec.name() for vec in vecs]
+
+    fr = H2OFrame.py_tmp_key()
+    cbind = "(= !" + fr + " (cbind %"
+    cbind += " %".join([vec._expr.eager() for vec in vecs]) + "))"
+    h2o.rapids(cbind)
+
+    j = h2o.frame(fr)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_keys']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    result = H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+    result.setNames(names)
+    return result
 
   def show(self, noprint=False):
     """
@@ -717,6 +788,7 @@ class H2OVec:
     if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
+    if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
     if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
@@ -733,13 +805,13 @@ class H2OVec:
   def __or__ (self, i):  return self._simple_bin_op(i,"|" )
   def __div__(self, i):  return self._simple_bin_op(i,"/" )
   def __mul__(self, i):  return self._simple_bin_op(i,"*" )
-  def __eq__ (self, i):  return self._simple_bin_op(i,"==")
-  def __neg__(self, i):  return self._simple_bin_op(i,"!=")
+  def __eq__ (self, i):  return self._simple_bin_op(i,"n")
+  def __ne__ (self, i):  return self._simple_bin_op(i,"N")
   def __pow__(self, i):  return self._simple_bin_op(i,"^" )
-  def __ge__ (self, i):  return self._simple_bin_op(i,">=")
-  def __gt__ (self, i):  return self._simple_bin_op(i,">" )
-  def __le__ (self, i):  return self._simple_bin_op(i,"<=")
-  def __lt__ (self, i):  return self._simple_bin_op(i,"<" )
+  def __ge__ (self, i):  return self._simple_bin_op(i,"G")
+  def __gt__ (self, i):  return self._simple_bin_op(i,"g" )
+  def __le__ (self, i):  return self._simple_bin_op(i,"L")
+  def __lt__ (self, i):  return self._simple_bin_op(i,"l" )
 
   def __radd__(self, i): return self.__add__(i)  # commutativity
   def __rsub__(self, i): return self._simple_bin_rop(i,"-")  # not commutative
@@ -779,6 +851,12 @@ class H2OVec:
     :return: A transformed H2OVec from numeric to categorical.
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
+
+  def isna(self):
+    """
+    :return: Returns a new boolean H2OVec.
+    """
+    return H2OVec("", Expr("is.na", self._expr, None))
 
   def month(self):
     """

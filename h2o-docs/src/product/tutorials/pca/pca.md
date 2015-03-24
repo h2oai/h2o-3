@@ -94,7 +94,7 @@ and R, it is recommended that standardization and cross validation
 either be turned off in H2O, or specified in R.
 
 
-![Image](PCAoutput.png)
+  > Output for PCA is currently in progress for H2O-dev. 
 
 
 

@@ -20,6 +20,7 @@ import water.util.Log;
 import hex.Model;
 import hex.word2vec.Word2VecModel.*;
 import hex.schemas.Word2VecModelV2;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -273,7 +274,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       _trainFrameSize = getTrainFrameSize(_parameters.train());
 
       //initialize weights to random values
-      Random rand = new Random();
+      Random rand = RandomUtils.getRNG(0xDECAF, 0xDA7A);
       _syn1 = new float[_parameters._vecSize * _vocabSize];
       _syn0 = new float[_parameters._vecSize * _vocabSize];
       for (int i = 0; i < _parameters._vecSize * _vocabSize; i++) _syn0[i] = (rand.nextFloat() - 0.5f) / _parameters._vecSize;

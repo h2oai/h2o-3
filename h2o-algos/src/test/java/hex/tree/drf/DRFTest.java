@@ -190,7 +190,7 @@ public class DRFTest extends TestUtil {
               }
             },
             5,
-            62.34506819058169
+            62.34506879389341
     );
 
   }
@@ -206,9 +206,35 @@ public class DRFTest extends TestUtil {
               }
             },
             50,
-            48.164526152604566
+            48.16452593965962
     );
 
+  }
+  @Test public void testAlphabet() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetClassification.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            a(a(664, 0),
+              a(0, 702)),
+            s("0", "1"));
+  }
+  @Test public void testAlphabetRegression() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            0.0);
   }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
@@ -230,10 +256,10 @@ public class DRFTest extends TestUtil {
               }
             },
             7,
-            a(a(4051, 15612), //for 5-node
-              a(1397, 20322)),
-//            a(a(4396, 15269), //for 1-node
-//              a(1740, 19993)),
+            a(a(7958, 11707), //1-node
+              a(2709, 19024)),
+//          a(a(7841, 11822), //5-node
+//            a(2666, 19053)),
             s("NO", "YES"));
   }
 
@@ -395,7 +421,6 @@ public class DRFTest extends TestUtil {
   }
 
   // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
-  @Ignore
   @Test public void testReprodubilityAirline() {
     Frame tfr=null;
     final int N = 1;
@@ -434,6 +459,7 @@ public class DRFTest extends TestUtil {
         parms._mtries = -1;
         parms._min_rows = 1;
         parms._sample_rate = 0.66667f;   // Simulated sampling with replacement
+        parms._balance_classes = true;
         parms._seed = (1L<<32)|2;
 
         // Build a first model; all remaining models should be equal
@@ -452,7 +478,8 @@ public class DRFTest extends TestUtil {
     for (int i=0; i<mses.length; ++i) {
       Log.info("trial: " + i + " -> mse: " + mses[i]);
     }
-    for( double mse : mses )
-      assertEquals(0.2273639898, mse, 1e-9); //check for the same result on 1 nodes and 5 nodes
+    for (int i=0; i<mses.length; ++i) {
+      assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+    }
   }
 }

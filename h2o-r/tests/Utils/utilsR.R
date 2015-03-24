@@ -54,3 +54,33 @@ function(seed = NULL, suppress = FALSE, userDefined=FALSE) {
     }
     Log.info(paste("USING SEED: ", SEED))
 }
+
+cleanSummary <- function(mysum, alphabetical = FALSE) {
+  # Returns string without leading or trailing whitespace
+  trim <- function(x) { gsub("^\\s+|\\s+$", "", x) }
+  lapply(1:ncol(mysum), { 
+    function(i) {
+      nams <- sapply(mysum[,i], function(x) { trim(unlist(strsplit(x, ":"))[1]) })
+      vals <- sapply(mysum[,i], function(x) { as.numeric(unlist(strsplit(x, ":"))[2]) })
+      
+      names(vals) <- nams
+      vals <- vals[!is.na(vals)]
+      if(alphabetical) vals <- vals[order(names(vals))]
+      return(vals)
+    }
+  })
+}
+
+checkSummary <- function(object, expected, tolerance = 1e-6) {
+  sumR <- cleanSummary(expected, alphabetical = TRUE)
+  sumH2O <- cleanSummary(object, alphabetical = TRUE)
+  
+  expect_equal(length(sumH2O), length(sumR))
+  lapply(1:length(sumR), function(i) {
+    vecR <- sumR[[i]]; vecH2O <- sumH2O[[i]]
+    expect_equal(length(vecH2O), length(vecR))
+    expect_equal(names(vecH2O), names(vecR))
+    for(j in 1:length(vecR))
+      expect_equal(vecH2O[j], vecR[j], tolerance = tolerance)
+  })
+}

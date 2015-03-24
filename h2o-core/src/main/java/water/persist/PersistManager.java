@@ -1,14 +1,15 @@
 package water.persist;
 
 import water.H2O;
+import water.Iced;
 import water.Key;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
 import water.util.Log;
+import water.persist.Persist.PersistEntry;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,6 +33,20 @@ public class PersistManager {
   private AtomicLong storeCount;
   private AtomicLong deleteCount;
   private AtomicLong loadCount;
+
+  public static boolean isHdfsPath(String path) {
+    String s = path.toLowerCase();
+    if (s.startsWith("hdfs:") || s.startsWith("s3n:") || s.startsWith("maprfs:")) {
+      return true;
+    }
+    return false;
+  }
+
+  private void validateHdfsConfigured() {
+    if (I[Value.HDFS] == null) {
+      throw new H2OIllegalArgumentException("HDFS and S3N support is not configured");
+    }
+  }
 
   public PersistManager(URI iceRoot) {
     I = new Persist[8];
@@ -199,5 +214,152 @@ public class PersistManager {
     }
 
     I[Value.NFS].importFiles(path, files, keys, fails, dels);
+  }
+
+
+  // -------------------------------
+  // Node Persistent Storage helpers
+  // -------------------------------
+
+  // Reads
+
+  public String getHdfsHomeDirectory() {
+    if (I[Value.HDFS] == null) {
+      return null;
+    }
+
+    return I[Value.HDFS].getHomeDirectory();
+  }
+
+  public PersistEntry[] list(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      PersistEntry[] arr = I[Value.HDFS].list(path);
+      return arr;
+    }
+
+    File dir = new File(path);
+    File[] files = dir.listFiles();
+    if (files == null) {
+      return new PersistEntry[0];
+    }
+
+    ArrayList<PersistEntry> arr = new ArrayList<>();
+    for (File f : files) {
+      PersistEntry entry = new PersistEntry();
+      entry._name = f.getName();
+      entry._size = f.length();
+      entry._timestamp_millis = f.lastModified();
+      arr.add(entry);
+    }
+
+    return arr.toArray(new PersistEntry[arr.size()]);
+  }
+
+  public boolean exists(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].exists(path);
+      return b;
+    }
+
+    File f = new File(path);
+    return f.exists();
+  }
+
+  public long length(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      long l = I[Value.HDFS].length(path);
+      return l;
+    }
+
+    File f = new File(path);
+    if (! f.exists()) {
+      throw new IllegalArgumentException("File not found (" + path + ")");
+    }
+
+    return f.length();
+  }
+
+  public InputStream open(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      InputStream os = I[Value.HDFS].open(path);
+      return os;
+    }
+
+    try {
+      File f = new File(path);
+      return new FileInputStream(f);
+    }
+    catch (FileNotFoundException e) {
+      throw new IllegalArgumentException("File not found (" + path + ")");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // Writes
+
+  public boolean mkdirs(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].mkdirs(path);
+      return b;
+    }
+
+    File f = new File(path);
+    boolean b = f.mkdirs();
+    return b;
+  }
+
+  public boolean rename(String fromPath, String toPath) {
+    if (isHdfsPath(fromPath) || isHdfsPath(toPath)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].rename(fromPath, toPath);
+      return b;
+    }
+
+    File f = new File(fromPath);
+    File t = new File(toPath);
+    boolean b = f.renameTo(t);
+    return b;
+  }
+
+  public OutputStream create(String path, boolean overwrite) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      return I[Value.HDFS].create(path, overwrite);
+    }
+
+    try {
+      if (! overwrite) {
+        File f = new File(path);
+        if (f.exists()) {
+          throw new IllegalArgumentException("File already exists (" + path + ")");
+        }
+      }
+
+      FileOutputStream fos;
+      fos = new FileOutputStream(path);
+      return fos;
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public boolean delete(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].delete(path);
+      return b;
+    }
+
+    File f = new File(path);
+    boolean b = f.delete();
+    return b;
   }
 }

@@ -16,7 +16,6 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OParseException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OParseException;
 import water.fvec.*;
 import water.fvec.Vec.VectorGroup;
 import water.nbhm.NonBlockingHashMap;
@@ -175,6 +174,7 @@ public final class ParseDataset extends Job<Frame> {
         ( (setup._column_names.length == 0) ||
           (setup._column_names.length == 1 && setup._column_names[0].isEmpty())) )
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
+    if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
     if( fkeys.length == 0) { job.cancel();  return;  }
 
     VectorGroup vg = getByteVec(fkeys[0]).group();
@@ -591,6 +591,11 @@ public final class ParseDataset extends Job<Frame> {
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            // check for more files in archive
+            ZipEntry ze2 = zis.getNextEntry();
+            if (ze2 != null && !ze.isDirectory()) {
+              Log.warn("Only single file zip archives are currently supported, only file: "+ze.getName()+" has been parsed.  Remaining files have been ignored.");
+            }
           else zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;

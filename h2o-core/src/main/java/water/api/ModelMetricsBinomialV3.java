@@ -7,10 +7,19 @@ public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetr
     @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
     public float[] hr;
 
+    @API(help="The ConfusionMatrix (for the threshold maximizing F1).", direction=API.Direction.OUTPUT)
+    public ConfusionMatrixBase cm;
+
+    @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
+    public double logloss;
+
     @Override
     public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
         super.fillFromImpl(modelMetrics);
         this.mse = modelMetrics._mse;
+
+        if (null != modelMetrics._cm)
+            this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
 
         if (null != modelMetrics._aucdata) {
             // Fill AUC

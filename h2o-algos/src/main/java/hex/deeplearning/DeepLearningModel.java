@@ -602,7 +602,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (!_autoencoder && _sparsity_beta != 0) dl.info("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
 
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
-      if (_autoencoder && _valid != null) dl.error("_validation_frame", "Cannot specify a validation dataset for auto-encoder.");
       if (_autoencoder && _activation == Activation.Maxout) dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
       if (_max_categorical_features < 1) dl.error("_max_categorical_features", "max_categorical_features must be at least 1.");
 
@@ -644,6 +643,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     ModelMetrics train_metrics;
     ModelMetrics valid_metrics;
     double run_time;
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(model_summary.toString());
+      sb.append(scoring_history.toString());
+      if (variable_importances != null) sb.append(variable_importances.toString());
+      return sb.toString();
+    }
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -1071,32 +1078,42 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       System.arraycopy(get_params()._hidden, 0, units, 1, layers);
       units[layers+1] = num_output;
 
-      if ((long)units[0] > 100000L) {
+      boolean printLevels = units[0] > 1000L;
+      boolean warn = units[0] > 100000L;
+      if (printLevels) {
         final String[][] domains = dinfo._adaptedFrame.domains();
         int[] levels = new int[domains.length];
         for (int i=0; i<levels.length; ++i) {
           levels[i] = domains[i] != null ? domains[i].length : 0;
         }
         Arrays.sort(levels);
-        Log.warn("===================================================================================================================================");
-        Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
+        if (warn) {
+          Log.warn("===================================================================================================================================");
+          Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
+        }
         if (levels[levels.length-1] > 0) {
           int levelcutoff = levels[levels.length-1-Math.min(10, levels.length)];
           int count = 0;
           for (int i=0; i<dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
             if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
-              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              if (warn) {
+                Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              } else {
+                Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              }
             }
             count++;
           }
         }
-        Log.warn("Suggestions:");
-        Log.warn(" *) Limit the size of the first hidden layer");
-        if (dinfo._cats > 0) {
-          Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
-          Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://learn.h2o.ai");
+        if (warn) {
+          Log.warn("Suggestions:");
+          Log.warn(" *) Limit the size of the first hidden layer");
+          if (dinfo._cats > 0) {
+            Log.warn(" *) Limit the total number of one-hot encoded features with the parameter 'max_categorical_features'");
+            Log.warn(" *) Run h2o.interaction(...,pairwise=F) on high-cardinality categorical columns to limit the factor count, see http://learn.h2o.ai");
+          }
+          Log.warn("===================================================================================================================================");
         }
-        Log.warn("===================================================================================================================================");
       }
 
       // weights (to connect layers)
@@ -1323,7 +1340,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     void randomizeWeights() {
       for (int w=0; w<dense_row_weights.length; ++w) {
-        final Random rng = water.util.RandomUtils.getDeterRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
+        final Random rng = water.util.RandomUtils.getRNG(get_params()._seed + 0xBAD5EED + w+1); //to match NeuralNet behavior
         final double range = Math.sqrt(6. / (units[w] + units[w+1]));
         for( int i = 0; i < get_weights(w).rows(); i++ ) {
           for( int j = 0; j < get_weights(w).cols(); j++ ) {
@@ -1640,6 +1657,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             err.train_mse = l2.mean();
+            mse_frame.delete();
+          }
+          if (ftest != null) {
+            final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
+            final Vec l2 = mse_frame.anyVec();
+            Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
+            err.valid_mse = l2.mean();
             mse_frame.delete();
           }
         } else {

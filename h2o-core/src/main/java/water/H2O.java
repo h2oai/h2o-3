@@ -37,6 +37,19 @@ final public class H2O {
    * Print help about command line arguments.
    */
   private static void printHelp() {
+    String defaultFlowDirMessage;
+    if (DEFAULT_FLOW_DIR() == null) {
+      // If you start h2o on hadoop, you must set -flow_dir.
+      // H2O doesn't know how to guess a good one.
+      // user.home doesn't make sense.
+      defaultFlowDirMessage =
+      "          (The default is none; saving flows not available.)\n";
+    }
+    else {
+      defaultFlowDirMessage =
+      "          (The default is '" + DEFAULT_FLOW_DIR() + "'.)\n";
+    }
+
     String s =
             "\n" +
             "Usage:  java [-Xmx<size>] -jar h2o.jar [options]\n" +
@@ -72,7 +85,10 @@ final public class H2O {
             "\n" +
             "    -ice_root <fileSystemPath>\n" +
             "          The directory where H2O spills temporary data to disk.\n" +
-            "          (The default is '" + ARGS.port + "'.)\n" +
+            "\n" +
+            "    -flow_dir <server side directory or hdfs directory>\n" +
+            "          The directory where H2O stores saved flows.\n" +
+            defaultFlowDirMessage +
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
@@ -704,6 +720,34 @@ final public class H2O {
     return "/tmp/h2o-" + u2;
   }
 
+  // Place to store flows
+  public static String DEFAULT_FLOW_DIR() {
+    String flow_dir = null;
+
+    try {
+      if (ARGS.ga_hadoop_ver != null) {
+        PersistManager pm = getPM();
+        if (pm != null) {
+          String s = pm.getHdfsHomeDirectory();
+          if (pm.exists(s)) {
+            flow_dir = s;
+          }
+        }
+        if (flow_dir != null) {
+          flow_dir = flow_dir + "/h2oflows";
+        }
+      } else {
+        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
+      }
+    }
+    catch (Exception ignore) {
+      // Never want this to fail, as it will kill program startup.
+      // Returning null is fine if it fails for whatever reason.
+    }
+
+    return flow_dir;
+  }
+
   /* Static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   public static HashSet<H2ONode> STATIC_H2OS = null;
@@ -1098,26 +1142,27 @@ final public class H2O {
     // Initialize NPS
     {
       String flow_dir;
+      URI flow_uri = null;
+
       if (ARGS.flow_dir != null) {
         flow_dir = ARGS.flow_dir;
       }
-      else if (ARGS.ga_hadoop_ver != null) {
-        // TODO:  Write somewhere to hdfs or disable writing entirely.
-        flow_dir = ICE_ROOT + File.separator + "h2oflows";
+      else {
+        flow_dir = DEFAULT_FLOW_DIR();
+      }
+
+      if (flow_dir != null) {
+        flow_dir = flow_dir.replace("\\", "/");
+        Log.info("Flow dir: '" + flow_dir + "'");
+
+        try {
+          flow_uri = new URI(flow_dir);
+        } catch (Exception e) {
+          throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+        }
       }
       else {
-        flow_dir = System.getProperty("user.home") + File.separator + "h2oflows";
-      }
-
-      flow_dir = flow_dir.replace("\\", "/");
-      Log.info("Flow dir: '" + flow_dir + "'");
-
-      URI flow_uri;
-      try {
-        flow_uri = new URI(flow_dir);
-      }
-      catch (Exception e) {
-        throw new RuntimeException("Invalid flow_dir: " + flow_dir + ", " + e.getMessage());
+        Log.info("Flow dir is undefined; saving flows not available");
       }
 
       NPS = new NodePersistentStorage(flow_uri);

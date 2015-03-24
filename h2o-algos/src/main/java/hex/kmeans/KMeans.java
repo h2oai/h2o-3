@@ -24,9 +24,7 @@ import java.util.Random;
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
   @Override public Model.ModelCategory[] can_build() {
-    return new Model.ModelCategory[]{
-            Model.ModelCategory.Clustering
-    };
+    return new Model.ModelCategory[]{ Model.ModelCategory.Clustering };
   }
 
   public enum Initialization {

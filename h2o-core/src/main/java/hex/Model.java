@@ -217,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
+      if( b == null ) return;
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
@@ -376,7 +377,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an enum
           if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same enum
-            EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            EnumWrappedVec evec;
+            try {
+              evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            } catch( NumberFormatException nfe ) {
+              throw new IllegalArgumentException("Validation set has a numeric column "+names[i]+" which is categorical in the training data");
+            }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if (ds.length > domains[i].length)
@@ -449,7 +455,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       else if(model_cat == ModelCategory.Multinomial)
         cm = ((ModelMetricsMultinomial)mm)._cm;
 
-      if (cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) { //don't print table for regression
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -667,9 +673,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions ) {
     assert data.numRows()==model_predictions.numRows();
-    Frame fr = null;
+    final Frame fr = new Frame(data);
     try {
-      fr = new Frame(data);
       String[] warns = adaptTestForTrain(fr,true);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
@@ -701,7 +706,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] pvecs = model_predictions.vecs();
     
       double features   [] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses()+1);
+      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int miss = 0;
@@ -713,15 +718,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if( col==0 && omap != null ) d = omap[(int)d];  // map enum response to scoring domain
           if( predictions[col] != d ) {                   // Compare predictions
-            System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
-            if( miss++ > 10 ) return false; // Too many mispredicts, stop after 10
+            if (miss++ < 10)
+              System.err.println("Predictions mismatch, row "+row+", col "+model_predictions._names[col]+", internal prediction="+d+", POJO prediction="+predictions[col]);
           }
         }
       }
+      if (miss != 0) System.err.println("Number of mismatches: " + miss);
       return miss==0;
     } finally {
-      // Remove temp keys.  TODO: Really should use Scope but Scope does not
-      // currently allow nested-key-keepers.
+      // Remove temp keys.
       Vec[] vecs = fr.vecs();
       for( int i=0; i<vecs.length; i++ )
         if( data.find(vecs[i]) != -1 ) // Exists in the original frame?

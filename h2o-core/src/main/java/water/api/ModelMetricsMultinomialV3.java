@@ -12,10 +12,14 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
   public ConfusionMatrixBase cm;
 
+  @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
+  public double logloss;
+
   @Override public ModelMetricsMultinomialV3 fillFromImpl(ModelMetricsMultinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
     this.mse = modelMetrics._mse;
     this.hit_ratios = modelMetrics._hit_ratios;
+    this.logloss = modelMetrics._logloss;
 
     if (null != modelMetrics._cm)
       this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
