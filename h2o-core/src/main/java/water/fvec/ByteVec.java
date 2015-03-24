@@ -38,7 +38,8 @@ public class ByteVec extends Vec {
           if( _cidx >= nChunks() ) return 0;
           _c0 = chunkForChunkIdx(_cidx++);
           _sz = C1NChunk._OFF;
-          Job.update(_c0._len,job_key);
+          if (job_key != null)
+            Job.update(_c0._len,job_key);
         }
         return _c0._len -_sz;
       }
