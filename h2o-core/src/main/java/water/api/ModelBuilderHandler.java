@@ -2,9 +2,10 @@ package water.api;
 
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import water.util.HttpResponseStatus;
-import water.api.JobsHandler.Jobs;
 import water.Job;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.util.HttpResponseStatus;
+import water.util.PojoUtils;
 
 abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
   /**
@@ -12,16 +13,25 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
    * parameters pass validation this returns a Job schema; if not it
    * returns a ModelParametersSchema containing the validation messages.
    */
-  public Schema do_train(int version, S builderSchema) {
+  public S do_train(int version, S builderSchema) {
+    // Note: the create can detect errors through init(false), OR the trainModel() call
+    // can throw an exception deep inside a ForkJoin task
+    // (cf. DeepLearningDriver.compute2()).  Both are to be handled here, the first by
+    // throwing if there are errors from the fill, and the second if the model build
+    // throws.
     B builder = builderSchema.createAndFillImpl();
     if (builder.error_count() > 0) {
-      S errors = (S) Schema.schema(version, builder).fillFromImpl(builder);
-      errors.setHttpStatus(HttpResponseStatus.BAD_REQUEST.getCode());
-      return errors;
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
     }
 
     Job j = builder.trainModel();
-    return new JobsV2().fillFromImpl(new Jobs(j)); // TODO: version
+    builderSchema.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
+
+    // copy warnings and infos; errors will cause an H2OModelBuilderIllegalArgumentException to be thrown above,
+    // resulting in an H2OErrorVx to be returned.
+    PojoUtils.copyProperties(builderSchema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "validation_error_count", "validation_messages" });
+    builderSchema.setHttpStatus(HttpResponseStatus.OK.getCode());
+    return builderSchema;
   }
 
   public S do_validate_parameters(int version, S builderSchema) {

@@ -683,14 +683,16 @@ class H2O(object):
             return result
         elif 'validation_error_count' in result and result['validation_error_count'] > 0:
             # parameters validation failure
-            # TODO: add schema_type and schema_version into all the schemas to make this clean to check
+            return result
+        elif result['__http_response']['status_code'] != 200:
             return result
         else:
-            job = result['jobs'][0]
+            assert 'job' in result, "FAIL: did not find job key in model build result: " + repr(result)
+            job = result['job']
             job_key = job['key']['name']
             H2O.verboseprint("model building job_key: " + repr(job_key))
             job_json = self.poll_job(job_key, timeoutSecs=timeoutSecs)
-            return job_json
+            return result
 
 
     '''

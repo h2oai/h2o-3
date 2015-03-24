@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -113,7 +114,7 @@ public class DeepLearningTest extends TestUtil {
           null,
           null);
       Assert.fail();
-    } catch( IllegalArgumentException iae ) {
+    } catch( H2OModelBuilderIllegalArgumentException iae ) {
     /*pass*/
     }
   }

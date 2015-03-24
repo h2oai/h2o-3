@@ -116,6 +116,8 @@
       if (is.na(type))
         stop("Cannot find type ", i$type, " in .type.map")
       if (scalar) { # scalar == TRUE
+        if (type == "H2OModel")
+            type <-  "character"
         if (!inherits(params[[i$name]], type))
           e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
@@ -146,6 +148,7 @@
     }
     e
   })
+
   if(any(nzchar(error)))
     stop(error)
 
@@ -174,11 +177,13 @@
     if(any(nzchar(warn))) warning(warn)
   }
 
+  #---------- Build! ----------#
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
-  job_key  <- res$job[[1L]]$key$name
-  dest_key <- res$jobs[[1L]]$dest$name
 
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
