@@ -47,7 +47,7 @@ check.deeplearning_autoencoder <- function(conn) {
      train_supervised_features <- h2o.deepfeatures(ae_model, train_supervised, layer=1)
      summary(train_supervised_features)
 
-     expect_equal(ncol(train_supervised_features), nfeatures, "Dimensionality of reconstruction is wrong!")
+     expect_equal(ncol(train_supervised_features), nfeatures)
 
      myX = c(1:nfeatures)
      myY = nfeatures+1
@@ -61,7 +61,6 @@ check.deeplearning_autoencoder <- function(conn) {
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     print(cm[length(cm),])
      expect_equal(cm[11, "Error"], 0.1056) #10% test set error
 
      testEnd()
