@@ -21,8 +21,8 @@ public class ADMM {
   }
 
   public static class L1Solver {
-    final static double RELTOL = 1e-4;
-    final static double ABSTOL = 1e-8;
+    final static double RELTOL = 1e-2;
+    final static double ABSTOL = 1e-4;
     double gerr;
     int iter;
     final double _eps;

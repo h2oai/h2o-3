@@ -155,18 +155,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           rho[map == null ? i : map[i]] = v.at(i);
       }
       if (dinfo._normMul != null) {
-        double normUB = 0, normLB = 0, normG = 0, normS = 0;
+        double normG = 0, normS = 0;
         for (int i = numoff; i < dinfo.fullN(); ++i) {
           double dd = dinfo._normMul[i - numoff];
           double d = 1.0 / dd;
-          if (betaUB != null && !Double.isInfinite(betaUB[i])) {
-            normUB += betaUB[i] * dd;
+          if (betaUB != null && !Double.isInfinite(betaUB[i]))
             betaUB[i] *= d;
-          }
-          if (betaLB != null && !Double.isInfinite(betaUB[i])) {
-            normLB += betaLB[i] * dd;
+          if (betaLB != null && !Double.isInfinite(betaUB[i]))
             betaLB[i] *= d;
-          }
           if (betaGiven != null) {
             normG += betaGiven[i] * dd;
             betaGiven[i] *= d;
@@ -178,10 +174,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         if (dinfo._intercept) {
           int n = dinfo.fullN();
-          if (betaUB != null && !Double.isInfinite(betaUB[n]))
-            betaUB[n] -= normUB;
-          if (betaLB != null && !Double.isInfinite(betaUB[n]))
-            betaLB[n] -= normLB;
           if (betaGiven != null)
             betaGiven[n] -= normG;
           if (betaStart != null)
@@ -632,7 +624,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
           final double bdiff = beta_diff(glmt._beta, newBeta);
-          if (_taskInfo._params._family == Family.gaussian || bdiff < _taskInfo._params._beta_epsilon || _iter >= _taskInfo._params._max_iter) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
+          if ((_taskInfo._params._family == Family.gaussian && _taskInfo._params._link == Link.identity) || bdiff < _taskInfo._params._beta_epsilon || _iter >= _taskInfo._params._max_iter) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
             int diff = (int) Math.log10(bdiff);
             int nzs = 0;
             for (int i = 0; i < newBeta.length; ++i)
@@ -998,8 +990,20 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double x = (beta_given != null && proxPen != null)
           ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
           :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
-        double rho = l1pen == 0?0:l1pen/x;
-        if(rho < 0)rho = -rho;
+        double [] rhoCandidates = new double[]{Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
+        double D = l1pen*(l1pen + 4*x);
+        if(D >= 0) {
+          D = Math.sqrt(D);
+          rhoCandidates[0] = .5*(-l1pen + D)/(2*x);
+          rhoCandidates[1] = .5*(-l1pen - D)/(2*x);
+        }
+        D = l1pen*(l1pen - 4*x);
+        if(D >= 0) {
+          D = Math.sqrt(D);
+          rhoCandidates[2] = -.5*(l1pen + D)/(2*x);
+          rhoCandidates[3] = -.5*(l1pen - D)/(2*x);
+        }
+        double rho = l1pen == 0?0:ArrayUtils.maxValue(rhoCandidates);
         if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
           rhos[i] = (l1pen > .1?l1pen:.1)/boundedXAbs(x,lb[i],ub[i]);
         } else {

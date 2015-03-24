@@ -7,6 +7,7 @@ import hex.DataInfo.Row;
 import java.util.Arrays;
 
 import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLMModel.GLMParameters.Link;
 import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
 import jsr166y.CountedCompleter;
@@ -745,7 +746,7 @@ public abstract class GLMTask  {
       final double w, eta, mu, var, z;
       final int numStart = _dinfo.numStart();
       double d = 1;
-      if( _glm._family == Family.gaussian){
+      if( _glm._family == Family.gaussian && _glm._link == Link.identity){
         w = 1;
         z = y;
         mu = 0;
