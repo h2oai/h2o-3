@@ -57,11 +57,11 @@ check.deeplearning_autoencoder <- function(conn) {
 
      # Now test the DRF model on the test set (first need to process into the reduced feature space)
      test_features <- h2o.deepfeatures(ae_model, test, layer=1)
-     test_features <- h2o.cbind(test_features,test_hex[,resp])
+     test_features <- h2o.cbind(test_features,test_labels)
      cm <- h2o.confusionMatrix(drf_model, test_features)
      print(cm)
 
-     expect_equal(cm[11, "Error"], 0.1056) #10% test set error
+     expect_equal(cm[11, "Error"], 0.1056, tolerance = 0.001) #10% test set error
 
      testEnd()
 }
