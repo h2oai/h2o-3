@@ -15,12 +15,7 @@ def binop_plus(ip,port):
     res_rows, res_cols = res.dim()
     h2o_sums = []
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    for c in range(cols-1):
-        col_sum = 0
-        for r in range(rows):
-            col_sum = col_sum + res[c][r].eager()
-        h2o_sums.append(col_sum)
-    for x, y in zip(h2o_sums, [1626.5, 1208.1, 1313.8, 929.8]):
+    for x, y in zip([sum([res[c][r].eager() for r in range(rows)]) for c in range(cols-1)], [1626.5, 1208.1, 1313.8, 929.8]):
         assert abs(x - y) < 1e-7,  "unexpected column sums."
 
     res = 5 + iris

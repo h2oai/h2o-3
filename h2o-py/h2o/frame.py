@@ -431,7 +431,7 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
-  # Addition
+  # Ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
   def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
