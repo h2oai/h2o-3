@@ -244,8 +244,12 @@ class Expr(object):
     if isinstance(self._data, unicode):
       pass  # Big Data Key is the result
     # Small data result pulled locally
+    elif j['num_rows']:
+      self._data = j['head']
+    elif j['result'] in [u'TRUE', u'FALSE']:
+      self._data = (j['result'] == u'TRUE')
     else:
-      self._data = j['head'] if j['num_rows'] else j['scalar']
+      self._data = j['scalar']
     return self._data
 
   def _do_child(self, child):
@@ -355,6 +359,19 @@ class Expr(object):
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
+
+    elif self._op in ["var", "sd"]:
+      if left.is_local():
+        mean = sum(left._data) / len(left._data)
+        sum_of_sq = sum((x-mean)**2 for x in left._data)
+        num_obs = len(left._data)
+        var = sum_of_sq / (num_obs - 1)
+        self._data = var if self._op == "var" else var**0.5
+      else:                 __CMD__ += " \"null\" %TRUE \"everything\"" if self._op == "var" else " %TRUE"
+
+    elif self._op == "is.factor":
+      if left.is_local():   raise NotImplementedError
+      else:                 pass
 
     elif self._op in ["as.factor", "h2o.runif", "is.na"]:
       if left.is_local():   self._data = map(str, left._data)

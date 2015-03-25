@@ -217,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
+      if( b == null ) return;
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
@@ -376,7 +377,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an enum
           if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same enum
-            EnumWrappedVec evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            EnumWrappedVec evec;
+            try {
+              evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
+            } catch( NumberFormatException nfe ) {
+              throw new IllegalArgumentException("Validation set has a numeric column "+names[i]+" which is categorical in the training data");
+            }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
             if (ds.length > domains[i].length)

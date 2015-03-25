@@ -206,9 +206,14 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
         else if (type == "numeric" && value == "-Infinity")
           value <- -Inf
 
-        # Prase frame information to a key
+        # Parse frame information to a key
         if (type == "H2OFrame")
           value <- value$name
+
+        # Parse model information to a key
+        if (type == "H2OModel") {
+          value <- value$name
+        }
 
         # Response column needs to be parsed
         if (name == "response_column")

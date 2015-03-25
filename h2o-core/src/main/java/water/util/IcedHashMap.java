@@ -1,17 +1,17 @@
 package water.util;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-
 import water.AutoBuffer;
 import water.Freezable;
 import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.DocGen.HTML;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
 /** Iced / Freezable NonBlockingHashMap.  Delegates to a NonBlockingHashMap for
  *  all its operations.  Inspired by water.parser.Categorical.
@@ -91,16 +91,22 @@ public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Clon
       V value = entry.getValue();
 
       assert entry.getKey() instanceof String;
-      assert value instanceof String || value instanceof Freezable;
+      assert value instanceof String || value instanceof String[] || value instanceof Integer || value instanceof Freezable || value instanceof Freezable[];
 
       if (first) { first = false; } else {ab.put1(',').put1(' '); }
       ab.putJSONName((String) key);
       ab.put1(':');
 
       if (value instanceof String)
-        ab.putJSONName((String)value);
+        ab.putJSONName((String) value);
+      else if (value instanceof String[])
+        ab.putJSONAStr((String[]) value);
+      else if (value instanceof Integer)
+        ab.putJSON4((Integer) value);
       else if (value instanceof Freezable)
         ab.putJSON((Freezable) value);
+      else if (value instanceof Freezable[])
+        ab.putJSONA((Freezable[]) value);
     }
     // ab.put1('}'); // NOTE: the serialization framework adds this automagically
     return ab;

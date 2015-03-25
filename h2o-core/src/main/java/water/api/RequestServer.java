@@ -1,5 +1,6 @@
 package water.api;
 
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -589,6 +590,14 @@ public class RequestServer extends NanoHTTPD {
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
+    }
+    catch (H2OModelBuilderIllegalArgumentException e) {
+      H2OModelBuilderError error = e.toH2OError(uri);
+
+      Log.warn("Caught exception: " + error.toString());
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(new H2OModelBuilderErrorV1().fillFromImpl(error), type);
     }
     catch (H2OAbstractRuntimeException e) {
       H2OError error = e.toH2OError(uri);
