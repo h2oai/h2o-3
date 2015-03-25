@@ -396,51 +396,62 @@ class H2OFrame:
     """
     return len(self._vecs)
 
+  def _simple_frames_bin_op(self, data, op):
+    if len(self) == 0: return self
+    self._len_check(data)
+
+    # Construct rapids expression
+    tmp_key = H2OFrame.py_tmp_key()
+    key1 = self.send_frame()
+    key2 = None
+    if isinstance(data, H2OFrame):
+      key2 = data.send_frame()
+      arg2 = "%" + str(key2)
+    elif isinstance(data, H2OVec):
+      tmp_frame = H2OFrame(vecs=[data])
+      key2 = tmp_frame.send_frame()
+      arg2 = "%" + str(key2)
+    elif isinstance(data, int):
+      arg2 = "#" + str(data)
+    elif isinstance(data, str):
+      arg2 = "\"" + data + "\""
+    else : raise NotImplementedError
+    expr = "(= !{} (".format(tmp_key) + op + " %{} {}))".format(key1,arg2)
+
+    h2o.rapids(expr)
+    # Remove h2o temp frames
+    h2o.remove(key1)
+    if key2: h2o.remove(key2)
+    # Construct H2OFrame result
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]
+    rows = fr['rows']
+    veckeys = fr['vec_keys']
+    cols = fr['columns']
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+
   # Addition
-  def __add__(self, i):
-    if len(self) == 0: return self
-    self._len_check(i)
-    if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x + y for x, y in zip(self._vecs, i._vecs)])
-    if isinstance(i, H2OVec):
-      return H2OFrame(vecs=[x + i for x in self._vecs])
-    if isinstance(i, int):
-      return H2OFrame(vecs=[x + i for x in self._vecs])
-    raise NotImplementedError
+  def __add__(self, i): return self._simple_frames_bin_op(i, "+")
+  def __and__(self, i): return self._simple_frames_bin_op(i, "&")
+  def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
+  def __sub__(self, i): return self._simple_frames_bin_op(i,"-" )
+  def __or__ (self, i): return self._simple_frames_bin_op(i,"|" )
+  def __div__(self, i): return self._simple_frames_bin_op(i,"/" )
+  def __mul__(self, i): return self._simple_frames_bin_op(i,"*" )
+  def __eq__ (self, i): return self._simple_frames_bin_op(i,"n")
+  def __ne__ (self, i): return self._simple_frames_bin_op(i,"N")
+  def __pow__(self, i): return self._simple_frames_bin_op(i,"^" )
+  def __ge__ (self, i): return self._simple_frames_bin_op(i,"G")
+  def __le__ (self, i): return self._simple_frames_bin_op(i,"L")
+  def __lt__ (self, i): return self._simple_frames_bin_op(i,"l" )
 
-  def __radd__(self, i):
-    """
-    Add is commutative, so call __add__
-    :param i: The value to add
-    :return: Return a new H2OFrame
-    """
-    return self.__add__(i)
-
-  def __and__(self, i):
-    if len(self) == 0: return self
-    self._len_check(i)
-    if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x & y for x, y in zip(self._vecs, i._vecs)])
-    if isinstance(i, H2OVec):
-      return H2OFrame(vecs=[x & i for x in self._vecs])
-    if isinstance(i, (int,bool)):
-      return H2OFrame(vecs=[x & i for x in self._vecs])
-    raise NotImplementedError
-
-  def __rand__(self, i):
-    return self.__and__(i)
-
-  # Division
-  def __div__(self, i):
-    if len(self) == 0: return self
-    self._len_check(i)
-    if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x / y for x, y in zip(self._vecs, i._vecs)])
-    if isinstance(i, H2OVec):
-      return H2OFrame(vecs=[x / i for x in self._vecs])
-    if isinstance(i, int):
-      return H2OFrame(vecs=[x / i for x in self._vecs])
-    raise NotImplementedError
+  def __radd__(self, i): return self.__add__(i)
+  def __rsub__(self, i): return self._simple_frames_bin_op(i,"-")
+  def __rand__(self, i): return self.__and__(i)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return self._simple_frames_bin_op(i,"/")
+  def __rmul__(self, i): return self.__mul__(i)
 
   @staticmethod
   def py_tmp_key():
@@ -805,7 +816,7 @@ class H2OVec:
 
   # Simple boolean operators, which auto-expand a right scalar argument
   def _simple_bin_op( self, i, op):
-    if isinstance(i, H2OFrame    ):  return H2OFrame(vecs=[H2OVec(self._name, Expr(op, self._len_check(v), v)) for v in i._vecs])
+    if isinstance(i, H2OFrame    ):  return i._simple_frames_bin_op(H2OFrame(vecs=[self]),op)
     if isinstance(i, H2OVec      ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
