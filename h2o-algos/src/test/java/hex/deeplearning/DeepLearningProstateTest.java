@@ -224,7 +224,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         try {
                                           pred = model2.score(valid);
                                           // Build a POJO, validate same results
-                                          Assert.assertTrue(model2.testJavaScoring(valid,pred,1e-3));
+                                          Assert.assertTrue(model2.testJavaScoring(valid,pred,1e-2));
 
                                           hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model2, valid);
                                           double error = 0;
@@ -281,7 +281,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       else {
                                         Frame pred = model2.score(valid);
                                         // Build a POJO, validate same results
-                                        Assert.assertTrue(model1.testJavaScoring(frame,pred,1e-3));
+                                        Assert.assertTrue(model1.testJavaScoring(frame,pred,1e-2));
                                         pred.delete();
                                       }
                                       Log.info("Parameters combination " + count + ": PASS");
