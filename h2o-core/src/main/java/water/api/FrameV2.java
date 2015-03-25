@@ -1,6 +1,7 @@
 package water.api;
 
-import water.*;
+import water.Key;
+import water.MemoryManager;
 import water.api.KeyV1.FrameKeyV1;
 import water.api.KeyV1.VecKeyV1;
 import water.fvec.*;
@@ -8,6 +9,7 @@ import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.PrettyPrint;
 
 // TODO: need a base (versionless) class!
@@ -250,8 +252,15 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
         vec_keys[i] = new VecKeyV1(keys[i]);
     }
     Vec[] vecs = _fr.vecs();
-    for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV2(_fr._names[i],vecs[i], row_offset, row_count, force_summary);
+    for( int i=0; i<columns.length; i++ ) {
+      try {
+        columns[i] = new ColV2(_fr._names[i], vecs[i], row_offset, row_count, force_summary);
+      }
+      catch (Exception e) {
+        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + _fr._names[i], e);
+        throw e;
+      }
+    }
     is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     chunk_summary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());
