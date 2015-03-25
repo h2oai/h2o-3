@@ -187,7 +187,7 @@ public class GBMTest extends TestUtil {
       fr2 = gbm.score(fr);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(fr,fr2));
+      Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
       Assert.assertTrue(job._state == water.Job.JobState.DONE); //HEX-1817
       //Assert.assertTrue(gbm._output._state == Job.JobState.DONE); //HEX-1817
@@ -269,7 +269,7 @@ public class GBMTest extends TestUtil {
       res = gbm.score(pred);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(pred,res));
+      Assert.assertTrue(gbm.testJavaScoring(pred,res,1e-15));
 
     } finally {
       parms._train.remove();
@@ -314,7 +314,7 @@ public class GBMTest extends TestUtil {
       Assert.assertTrue(mm.r2() > 0.5);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(v,res));
+      Assert.assertTrue(gbm.testJavaScoring(v,res,1e-15));
 
       res.remove();
 

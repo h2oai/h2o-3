@@ -355,7 +355,7 @@ public class DRFTest extends TestUtil {
       hex.ModelMetrics.getFromDKV(model, test);
 
       // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(test,res));
+      Assert.assertTrue(model.testJavaScoring(test,res,1e-15));
 
     } finally {
       if (frTrain!=null) frTrain.remove();

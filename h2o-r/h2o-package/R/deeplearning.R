@@ -129,22 +129,22 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
 )
 {
   dots <- list(...)
-  
+
   for(type in names(dots))
     if (is.environment(dots[[type]]))
     {
     dots$envir <- type
     type <- NULL
     } else {
-      stop(paste0("\n  unused argument (", type, " = ", dots[[type]], ")"))
+      stop(paste0("\n  unused argument (", type, " = ", deparse(dots[[type]]), ")"))
     }
-  if (is.null(dots$envir)) 
+  if (is.null(dots$envir))
     dots$envir <- parent.frame()
-  
+
   if( missing(x) ) stop("`x` is missing, with no default")
   if( missing(y) ) stop("`y` is missing, with no default")
   if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
-  
+
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -159,7 +159,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
 
   parms <- as.list(match.call(expand.dots = FALSE)[-1L])
   parms$... <- NULL
-  
+
   parms$y <- colargs$y
   parms$x <- colargs$x_ignore
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.deeplearning.map) ) i <- .deeplearning.map[[i]]; i })
@@ -229,7 +229,7 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   env <- parent.frame()
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
-  
+
   do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
 }
 
@@ -237,17 +237,17 @@ h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$key$name
-  
+
   h2o.getFrame(key)
 }
 
 h2o.deepfeatures <- function(object, data, layer) {
   index = layer - 1
-  
+
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
   key <- res$destination_key$name
-  
+
   h2o.getFrame(key)
 }
 

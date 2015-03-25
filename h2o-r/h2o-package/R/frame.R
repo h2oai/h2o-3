@@ -126,6 +126,12 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+h2o.rep_len <- function(x, length) {
+  if(length <= 0) return(NULL)
+
+  .h2o.nary_frame_op("rep_len", x, length)
+}
+
 #' Inserting Missing Values to an H2O DataFrame
 #'
 #' Randomly replaces a user-specified fraction of entries in a H2O dataset with
@@ -206,7 +212,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
     params$destKeys <- .collapse(destination_keys)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
-  .h2o.__waitOnJob(data@conn, res$key$name)
+  # .h2o.__waitOnJob(data@conn, res$key$name)
 
   splitKeys <- res$dest_keys
   splits <- list()

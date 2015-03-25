@@ -44,6 +44,43 @@ class ModelBase(object):
     # return a new H2OFrame object
     return H2OFrame(vecs=vecs)
 
+  def confusionMatrix(self, test_data):
+    """
+    Returns a confusion matrix based of H2O's default prediction threshold for a dataset
+    """
+    # cbind the test_data vecs together and produce a temp key
+    test_data_key = H2OFrame.send_frame(test_data)
+    # get the predictions
+    # this job call is blocking
+    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key)
+    # retrieve the confusion matrix
+    cm = j["model_metrics"][0]["cm"]["table"]
+    return cm
+
+  def deepfeatures(self, test_data, layer):
+    """
+    Return hidden layer details
+    :param test_data: Data to create a feature space on
+    :param layer: 0 index hidden layer
+    """
+    if not test_data: raise ValueError("Must specify test data")
+    # create test_data by cbinding vecs
+    test_data_key = H2OFrame.send_frame(test_data)
+    # get the deepfeatures of the dataset
+    j = H2OConnection.post_json("Predictions/models/" + self._key + "/frames/" + test_data_key, deep_features_hidden_layer=layer)
+    # retreive the frame data
+    deepfeatures_frame_key = j["destination_key"]["name"]
+    df_frame_meta = h2o.frame(deepfeatures_frame_key)["frames"][0]
+    # create vecs by extracting vec_keys, col length, and col names
+    vec_keys = df_frame_meta["vec_keys"]
+    rows = df_frame_meta["rows"]
+    cols = [col["label"] for col in df_frame_meta["columns"]]
+    vecs = H2OVec.new_vecs(zip(cols, vec_keys), rows)
+    # remove test data from kv
+    h2o.remove(test_data_key)
+    # finally return frame
+    return H2OFrame(vecs=vecs)
+
   def model_performance(self, test_data):
     """
     Generate model metrics for this model on test_data.

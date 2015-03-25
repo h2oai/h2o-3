@@ -15,13 +15,13 @@ expect_equal(55, dim(covtype.hex)[2])
 # execs
 ###########################################################
 
-m = function(x) { mean( x[,2]) }
+m <- function(x) { mean( x[,2]) }
 h2o.ddply(covtype.hex, c(2), m)
 
-s = function(x) { sd( x[,2]) }
+s <- function(x) { sd( x[,2]) }
 h2o.ddply(covtype.hex, c(2), s)
 
-q = function(x) { quantile(x[,2] , c(0.9) ) }
+q <- function(x) { quantile(x[,2] , c(0.9) ) }
 h2o.ddply(covtype.hex, c(2), q)
 
 h2o.ddply(covtype.hex, c(2), nrow)

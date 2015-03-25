@@ -58,9 +58,9 @@ perf.glm <- h2o.performance(air.glm, air.test)
 print(perf.glm)
 
 #Building confusion matrix for test set
-CM.gbm <- h2o.confusionMatrices(perf.gbm, 0.5)
+CM.gbm <- h2o.confusionMatrix(perf.gbm, 0.5)
 print(CM.gbm)
-CM.glm <- h2o.confusionMatrices(perf.glm, 0.5)
+CM.glm <- h2o.confusionMatrix(perf.glm, 0.5)
 print(CM.glm)
 
 #Plot ROC for test set

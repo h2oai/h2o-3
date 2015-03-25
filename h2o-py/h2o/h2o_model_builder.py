@@ -42,8 +42,8 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
   x = _check_frame(x,y,y)
   if validation_x:
     validation_x = _check_frame(validation_x,validation_y,y)
-      
-  # Send frame descriptions to H2O cluster  
+
+  # Send frame descriptions to H2O cluster
   train_key = x.send_frame()
   kwargs['training_frame']=train_key
   if validation_x:
@@ -77,7 +77,7 @@ def _model_build(x,y,validation_x,validation_y,algo_url,kwargs):
 
   elif model_type=="AutoEncoder":
     from model.autoencoder import H2OAutoEncoderModel
-    model = H2OAutoEncoderModel(job.dest_key,mode_json)
+    model = H2OAutoEncoderModel(job.dest_key,model_json)
 
   else:
     print model_type

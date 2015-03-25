@@ -1,6 +1,6 @@
 ######################################################################
 # Test for PUB-826
-# Check the nfold CM to see if there's clumping of the responses 
+# Check the nfold CM to see if there's clumping of the responses
 ######################################################################
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -24,7 +24,7 @@ test.pub.826 <- function(conn) {
   # Response
   Delayed        <- vars[31]         # "IsDepDelayed"
 
-  m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), type = "bigdata", y = Delayed, data = flights, nfold = 3)
+  m <- h2o.randomForest(x = c(FlightDate, ScheduledTimes, FlightInfo), y = Delayed, training_frame = flights, nfold = 3)
 
   show(m)
   testEnd()

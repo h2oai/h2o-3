@@ -3,9 +3,12 @@
 # 1. NAs in their own NA bucket
 #
 # 2. Train a model where feature F has no NAs.
-#    But has an NA in test data. 
+#    But has an NA in test data.
 #    Answer should be NA.
 #
+
+# In Dev superset factors shoudl be treated as NA
+# Prediction should still go through
 
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -27,19 +30,20 @@ pub35gbm <- function(conn){
   Log.info( head(df.h2) )
 
   Log.info("Training a GBM model")
-  m <- h2o.gbm(x = 1:3, 
-               y = 4, 
+  m <- h2o.gbm(x = 1:3,
+               y = 4,
                training_frame = df.h,
                ntrees = 10,
-               max_depth = 5,  
-               min_rows = 10, 
+               max_depth = 5,
+               min_rows = 10,
                learn_rate = 0.1,
                loss = "multinomial")
 
   preds <- as.data.frame(predict(m, df.h2))
 
   print(preds)
-  expect_that(is.na(preds[1,1]), equals(TRUE))
+  print(as.data.frame(df.h2))
+  expect_that(is.na(preds[1,1]), equals(FALSE))
 
   testEnd()
 }
