@@ -231,6 +231,10 @@ def init(ip="localhost", port=54321):
   H2OConnection(ip=ip, port=port)
   return None
 
+def export_file(frame,path,force=False):
+  fr = H2OFrame.send_frame(frame)
+  f = "true" if force else "false"
+  H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
 
 def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):
