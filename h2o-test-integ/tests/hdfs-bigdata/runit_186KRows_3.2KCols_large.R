@@ -28,7 +28,6 @@ conn <- h2o.init(ip=myIP, port=myPort)
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-
 data.hex <- h2o.uploadFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
 
 colNames = {}
@@ -37,7 +36,7 @@ for(col in names(data.hex)) {
     colNames = append(colNames, colName)
 }
 
-colNames
+colNames[1] <- "C1"
 names(data.hex) <- colNames
 
 myY = "C1"
