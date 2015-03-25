@@ -167,7 +167,8 @@ public class NetworkTest extends Iced {
   }
 
   public void fillTable() {
-    String tableHeader = "Network Test (launched from " + H2O.SELF._key + ")";
+    String tableHeader = "Network Test";
+    String tableDescription = "Launched from " + H2O.SELF._key;
     String[] rowHeaders = new String[H2O.CLOUD.size()+1];
     rowHeaders[0] = "all - collective bcast/reduce";
     for (int i = 0; i < H2O.CLOUD.size(); ++i) {
@@ -188,7 +189,7 @@ public class NetworkTest extends Iced {
     }
     String colHeaderForRowHeaders = "Destination / Message size";
 
-    table = new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    table = new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     for (int m = 0; m < msg_sizes.length; ++m) {
       table.set(0, m, PrettyPrint.usecs((long) microseconds_collective[m]) + ", " + PrettyPrint.bytesPerSecond((long) bandwidths_collective[m]));

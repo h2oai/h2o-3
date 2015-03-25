@@ -15,7 +15,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run1() {
     TwoDimTable table = new TwoDimTable(
-            "My foo bar table",
+            "My foo bar table", null,
             new String[]{"First row", "R2", "Row #3", "Last row is here:"},
             new String[]{"DoubleValue", "S2", "My Terrible Percent Value"},
             new String[]{"double", "string", "double"},
@@ -44,7 +44,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test(expected=IllegalArgumentException.class)
   public void run2() {
     TwoDimTable table = new TwoDimTable(
-            "My foo bar table",
+            "My foo bar table", null,
             new String[]{"First row", "R2", "Row #3", "Last row is here:"},
             new String[]{"DoubleValue", "S2", "My Terrible Percent Value"},
             new String[]{"double", "string", "double"},
@@ -66,7 +66,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run3() {
     TwoDimTable table = new TwoDimTable(
-            "My foo bar table",
+            "My foo bar table", "desc",
             new String[]{"First row", "R2", "Row #3", "Last row is here:"},
             new String[]{"DoubleValue", "S2", "My Terrible Percent Value"},
             new String[]{"double", "string", "double"},
@@ -95,7 +95,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run4() {
     TwoDimTable table = new TwoDimTable(
-            "All numbers",
+            "All numbers", "yada",
             new String[]{"R1", "R2", "R3", "R4"},
             new String[]{"Num1", "Num2", "Num3"},
             new String[]{"double", "double", "double"},
@@ -119,7 +119,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run5() {
     TwoDimTable table = new TwoDimTable(
-            "All strings",
+            "All strings", null,
             new String[]{"R1", "R2", "R3", "R4"},
             new String[]{"S1", "S2", "S3", "S4"},
             new String[]{"string", "string", "string", "string"},
@@ -143,7 +143,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run6() {
     TwoDimTable table = new TwoDimTable(
-            "Mixed",
+            "Mixed", "stuff",
             new String[]{"R0", "R1", "R2", "R3"},
             new String[]{"C0", "C1", "C2", "C3"},
             new String[]{"string", "string", "string", "string"},
@@ -172,7 +172,7 @@ public class TwoDimTableTest extends TestUtil {
   @Test
   public void run7() {
     TwoDimTable table = new TwoDimTable(
-            "Mixed",
+            "Mixed", "description",
             new String[]{"R0", "R1", "R2", "R3"},
             new String[]{"C0", "C1", "C2", "C3"},
             new String[]{"double", "float", "integer", "long"},

@@ -14,6 +14,7 @@ import java.util.Arrays;
  */
 public class TwoDimTable extends Iced {
   private String     tableHeader;
+  private String     tableDescription;
   private String[]   rowHeaders;
   private String[]   colHeaders;
   private String[]   colTypes;
@@ -36,16 +37,19 @@ public class TwoDimTable extends Iced {
   /**
    * Constructor for TwoDimTable (R rows, C columns)
    * @param tableHeader the table header
+   * @param tableDescription the table description
    * @param rowHeaders R-dim array for row headers
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
    * @param colFormats C-dim array with printf format strings for each column
    * @param colHeaderForRowHeaders column header for row headers
    */
-  public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
+  public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
                      String[] colFormats, String colHeaderForRowHeaders) {
     if (tableHeader == null)
       tableHeader = "";
+    if (tableDescription == null)
+      tableDescription = "";
     this.colHeaderForRowHeaders = colHeaderForRowHeaders;
 
     if (rowHeaders == null)
@@ -90,6 +94,7 @@ public class TwoDimTable extends Iced {
       throw new IllegalArgumentException("colFormats must have the same length as colHeaders");
 
     this.tableHeader = tableHeader;
+    this.tableDescription = tableDescription;
     this.rowHeaders = rowHeaders;
     this.colHeaders = colHeaders;
     this.colTypes = colTypes;
@@ -100,6 +105,7 @@ public class TwoDimTable extends Iced {
   /**
    * Constructor for TwoDimTable (R rows, C columns)
    * @param tableHeader the table header
+   * @param tableDescription the table description
    * @param rowHeaders R-dim array for row headers
    * @param colHeaders  C-dim array for column headers
    * @param colTypes  C-dim array for column types
@@ -108,9 +114,9 @@ public class TwoDimTable extends Iced {
    * @param strCellValues String[R][C] array for string cell values, can be null (can provide String[R][], for example)
    * @param dblCellValues double[R][C] array for double cell values, can be empty (marked with emptyDouble - happens when initialized with double[R][])
    */
-  public TwoDimTable(String tableHeader, String[] rowHeaders, String[] colHeaders, String[] colTypes,
+  public TwoDimTable(String tableHeader, String tableDescription, String[] rowHeaders, String[] colHeaders, String[] colTypes,
                      String[] colFormats, String colHeaderForRowHeaders, String[][] strCellValues, double[][] dblCellValues) {
-    this(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    this(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
 
     assert (isEmpty(emptyDouble));
     assert (!Arrays.equals(new AutoBuffer().put8d(emptyDouble).buf(), new AutoBuffer().put8d(Double.NaN).buf()));
@@ -175,49 +181,35 @@ public class TwoDimTable extends Iced {
    * @param col a column index
    * @return Object (either String or Double or Float or Integer or Long)
    */
-  public Object get(final int row, final int col) {
-    return cellValues[row][col] == null ? null : cellValues[row][col].get();
-  }
+  public Object get(final int row, final int col) { return cellValues[row][col] == null ? null : cellValues[row][col].get(); }
 
-  public String getTableHeader() {
-    return tableHeader;
-  }
+  public String getTableHeader() { return tableHeader; }
 
-  public String[] getRowHeaders() {
-    return rowHeaders;
-  }
+  public String getTableDescription() { return tableDescription; }
+
+  public String[] getRowHeaders() { return rowHeaders; }
 
   public String[] getColHeaders() { return colHeaders; }
 
   public String getColHeaderForRowHeaders() { return colHeaderForRowHeaders; }
 
-  public String[] getColTypes() {
-    return colTypes;
-  }
+  public String[] getColTypes() { return colTypes; }
 
-  public String[] getColFormats() {
-    return colFormats;
-  }
+  public String[] getColFormats() { return colFormats; }
 
-  public IcedWrapper[][] getCellValues() {
-    return cellValues;
-  }
+  public IcedWrapper[][] getCellValues() { return cellValues; }
 
   /**
    * Get row dimension
    * @return int
    */
-  public int getRowDim() {
-    return rowHeaders.length;
-  }
+  public int getRowDim() { return rowHeaders.length; }
 
   /**
    * Get row dimension
    * @return int
    */
-  public int getColDim() {
-    return colHeaders.length;
-  }
+  public int getColDim() { return colHeaders.length; }
 
   /**
    * Setter for table cells
@@ -309,8 +301,11 @@ public class TwoDimTable extends Iced {
     final StringBuilder sb = new StringBuilder();
     if (tableHeader.length() > 0) {
       sb.append(tableHeader);
-      sb.append(":\n");
     }
+    if (tableDescription.length() > 0) {
+      sb.append("\n").append(tableDescription);
+    }
+    sb.append(":\n");
     for (int r = 0; r <= rowDim; ++r) {
       int len = colLen[0];
       if (len > 0)

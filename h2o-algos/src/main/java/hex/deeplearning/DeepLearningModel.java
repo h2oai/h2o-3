@@ -936,7 +936,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
     final int rows = Math.min(size_limit, errors.length);
     TwoDimTable table = new TwoDimTable(
-            "Scoring History",
+            "Scoring History", null,
             new String[rows],
             colHeaders.toArray(new String[0]),
             colTypes.toArray(new String[0]),
@@ -1216,11 +1216,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public TwoDimTable createSummaryTable() {
       Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
       TwoDimTable table = new TwoDimTable(
-              "Status of Neuron Layers (" +
+              "Status of Neuron Layers",
                   (!get_params()._autoencoder ? ("predicting " + _train.lastVecName() + ", ") : "") +
                       (get_params()._autoencoder ? "auto-encoder" :
                               _classification ? (units[units.length-1] + "-class classification") : "regression" )
-                      + ", " + get_params()._loss.toString() + " loss)",
+                      + ", " + get_params()._loss.toString() + " loss",
               new String[neurons.length],
               new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
                       (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
