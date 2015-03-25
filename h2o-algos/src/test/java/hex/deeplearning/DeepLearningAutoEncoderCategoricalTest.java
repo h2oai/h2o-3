@@ -83,7 +83,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     // Create reconstruction
     Log.info("Creating full reconstruction.");
     final Frame recon_train = mymodel.score(train);
-    Assert.assertTrue(mymodel.testJavaScoring(train,recon_train,1e-4));
+    Assert.assertTrue(mymodel.testJavaScoring(train,recon_train,1e-3));
 
     Frame df1 = mymodel.scoreDeepFeatures(train, 0);
     Assert.assertTrue(df1.numCols() == 10);
