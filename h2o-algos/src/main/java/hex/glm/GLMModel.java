@@ -612,7 +612,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       String [] coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       coefficient_names[cnames.length] = "Intercept";
       _coefficients_table = new TwoDimTable(
-              "Best Lambda",
+              "Best Lambda", null,
               coefficient_names,
               new String []{"Coefficients", "Norm Coefficients"},
               colTypes,

@@ -37,9 +37,10 @@ h2o.ddplytest <- function(conn){
   df.h.4 <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn4)
 
   Log.info('testing all column address modes')
-  # df.h.4b <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn4)
+  df.h.4b <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn4)
   df.h.4c <- h2o.ddply(df.h, 1:2, fn4)
   # df.h.4d <- h2o.ddply(df.h, h2o..('colgroup', 'colgroup2'), fn4)
+  # .(list, of, objects) notation not supported
 
 
   Log.info('pulling data locally')
@@ -47,7 +48,7 @@ h2o.ddplytest <- function(conn){
   df.2 <- as.data.frame( df.h.2 )
   df.3 <- as.data.frame( df.h.3 )
   df.4 <- as.data.frame( df.h.4 )
-  # df.4b <- as.data.frame( df.h.4b )
+  df.4b <- as.data.frame( df.h.4b )
   df.4c <- as.data.frame( df.h.4c )
   # df.4d <- as.data.frame( df.h.4d )
 
@@ -63,8 +64,8 @@ h2o.ddplytest <- function(conn){
   df.4b$colgroup2 <- as.character(df.4b$colgroup2)
   df.4c$colgroup <- as.character(df.4c$colgroup)
   df.4c$colgroup2 <- as.character(df.4c$colgroup2)
-  df.4d$colgroup <- as.character(df.4d$colgroup)
-  df.4d$colgroup2 <- as.character(df.4d$colgroup2)
+  # df.4d$colgroup <- as.character(df.4d$colgroup)
+  # df.4d$colgroup2 <- as.character(df.4d$colgroup2)  # See above .notation
 
 
   # h2o doesnt sort
@@ -74,7 +75,7 @@ h2o.ddplytest <- function(conn){
   df.4 <- df.4[order(df.4$colgroup, df.4$colgroup2), ]
   df.4b <- df.4b[order(df.4b$colgroup, df.4b$colgroup2), ]
   df.4c <- df.4c[order(df.4c$colgroup, df.4c$colgroup2), ]
-  df.4d <- df.4d[order(df.4d$colgroup, df.4d$colgroup2), ]
+  # df.4d <- df.4d[order(df.4d$colgroup, df.4d$colgroup2), ]  # See above .notation
 
   Log.info('testing')
   expect_that( dim(df.1), equals( c(3,2) ) )
@@ -99,9 +100,9 @@ h2o.ddplytest <- function(conn){
   expect_that(df.4[,3], equals(c(3,7,18,11,11)) )
 
   # column addressing options
-  expect_that( all(df.4b == df.4), equals(T))
+  # expect_that( all(df.4b == df.4), equals(T))
   expect_that( all(df.4c == df.4), equals(T))
-  expect_that( all(df.4d == df.4), equals(T))
+  # expect_that( all(df.4d == df.4), equals(T))   # See above .notation
 
 
   testEnd()

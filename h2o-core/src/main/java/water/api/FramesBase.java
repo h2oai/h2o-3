@@ -21,6 +21,12 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends Schema<I,
   @API(help="Find and return compatible models?", json=false)
   public boolean find_compatible_models = false;
 
+  @API(help="File output path",json=false)
+  public String path;
+
+  @API(help="Overwrite existing fil",json=false)
+  public boolean force;
+
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
   FrameV2[] frames; // TODO: create interface or superclass (e.g., FrameBase) for FrameV2

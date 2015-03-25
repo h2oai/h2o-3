@@ -358,16 +358,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _timeLastScoreStart = now;
       // Score on training data
       Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
-      ModelMetricsSupervised mm = sc.makeModelMetrics(_model,_parms.train(), _parms._response_column);
+      ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
+      String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+mm.r2()+", mse is "+mm._mse+", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      Log.info("training r2 is "+(float)mm.r2()+", mse is "+(float)mm._mse+ train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
-        Log.info("validate r2 is "+mmv.r2()+", mse is "+mmv._mse);
+        String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
+        Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
       }
 
       if( out._ntrees > 0 )     // Compute variable importances
