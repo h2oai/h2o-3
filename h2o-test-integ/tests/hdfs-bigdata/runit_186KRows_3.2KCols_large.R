@@ -23,7 +23,7 @@ if (!running_inside_hexdata) {
 }
 
 heading("BEGIN TEST")
-conn <- h2o.init(ip=myIP, port=myPort)
+conn <- h2o.init(ip=myIP, port=myPort, startH2O = F)
 
 #----------------------------------------------------------------------
 # Parameters for the test.
