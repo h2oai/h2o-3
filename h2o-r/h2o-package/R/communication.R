@@ -569,59 +569,67 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
   }
 
   keepRunning <- TRUE
-  while (keepRunning) {
-    myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-    rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
-    jsonObject <- .h2o.fromJSON(rawResponse)
-    jobs <- jsonObject$jobs
-    if (length(jobs) > 1) {
-      stop("Job list has more than 1 entry")
-    } else if (length(jobs) == 0) {
-      stop("Job list is empty")
-    }
-
-    job = jobs[[1]]
-
-    key = job$key
-    name = key$name
-    if (name != job_key) {
-      message <- sprintf("Job %s not found in job list", job_key)
-      stop(message)
-    }
-
-    if (progressBar) {
-      progress = job$progress
-      if (is.numeric(progress)) {
-        setTxtProgressBar(pb, progress)
+  tryCatch({
+    while (keepRunning) {
+      myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
+      rawResponse <- .h2o.doSafeGET(conn,urlSuffix = myJobUrlSuffix)
+      jsonObject <- .h2o.fromJSON(rawResponse)
+      jobs <- jsonObject$jobs
+      if (length(jobs) > 1) {
+        stop("Job list has more than 1 entry")
+      } else if (length(jobs) == 0) {
+        stop("Job list is empty")
       }
-    }
 
-    status = job$status
-    stopifnot(is.character(status))
+      job = jobs[[1]]
 
-    if (status == "CANCELLED") {
-      stop("Job key ", job_key, " cancelled by user")
-    }
+      key = job$key
+      name = key$name
+      if (name != job_key) {
+        message <- sprintf("Job %s not found in job list", job_key)
+        stop(message)
+      }
 
-    if (status == "FAILED") {
-      stop("Job key ", job_key, " failed")
-    }
-
-    if ((status == "CREATED") || (status == "RUNNING")) {
-      # Do nothing, keep running...
-    } else {
-      stopifnot(status == "DONE")
-      keepRunning <- FALSE
-    }
-
-    if (keepRunning) {
-      Sys.sleep(pollInterval)
-    } else {
       if (progressBar) {
-        close(pb)
+        progress = job$progress
+        if (is.numeric(progress)) {
+          setTxtProgressBar(pb, progress)
+        }
+      }
+
+      status = job$status
+      stopifnot(is.character(status))
+
+      if (status == "CANCELLED") {
+        stop("Job key ", job_key, " cancelled by user")
+      }
+
+      if (status == "FAILED") {
+        stop("Job key ", job_key, " failed")
+      }
+
+      if ((status == "CREATED") || (status == "RUNNING")) {
+        # Do nothing, keep running...
+      } else {
+        stopifnot(status == "DONE")
+        keepRunning <- FALSE
+      }
+
+      if (keepRunning) {
+        Sys.sleep(pollInterval)
+      } else {
+        if (progressBar) {
+          close(pb)
+        }
       }
     }
-  }
+  },
+    interrupt = function(x) {
+      url.suf <- paste0(.h2o.__JOBS,"/",job_key,"/cancel")
+      .h2o.doSafePOST(conn,urlSuffix=url.suf)
+      message(paste0("\nJob ",job_key," was cancelled.\n"))
+      return()
+    })
 }
 
 #------------------------------------ Utilities ------------------------------------#
