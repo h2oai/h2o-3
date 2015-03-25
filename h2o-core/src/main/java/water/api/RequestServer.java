@@ -82,7 +82,7 @@ public class RequestServer extends NanoHTTPD {
 
   private static Pattern version_pattern = null;
   private static Pattern getVersionPattern() {
-    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+)/(.*)");
+    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+|EXPERIMENTAL)/(.*)");
     return version_pattern;
   }
 
@@ -247,6 +247,8 @@ public class RequestServer extends NanoHTTPD {
     register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/1/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
     register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+
+    register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
   }
 
   @Deprecated
@@ -360,9 +362,9 @@ public class RequestServer extends NanoHTTPD {
       if (!m.matches())
         throw H2O.fail("Route URL pattern must begin with a version: " + uri_pattern_raw);
 
-      int version = Integer.valueOf(m.group(1));
-      if (version > Schema.getHighestSupportedVersion())
-        throw H2O.fail("Route version is greater than the max supported of: " + Schema.getHighestSupportedVersion() + ": " + uri_pattern_raw);
+        int version = Integer.valueOf(m.group(1));
+        if (version > Schema.getHighestSupportedVersion() && version != Schema.getExperimentalVersion())
+          throw H2O.fail("Route version is greater than the max supported of: " + Schema.getHighestSupportedVersion() + ": " + uri_pattern_raw);
     }
 
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
@@ -548,7 +550,11 @@ public class RequestServer extends NanoHTTPD {
 
     Matcher m = getVersionPattern().matcher(uri);
     if (m.matches()) {
-      version = Integer.valueOf(m.group(1));
+      if ("EXPERIMENTAL".equals(m.group(1))) {
+        version = 99;
+      } else {
+        version = Integer.valueOf(m.group(1));
+      }
       String uripath = "/" + m.group(2);
       path = type.requestName(uripath); // Strip suffix type from middle of URI
       versioned_path = "/" + version + path;
