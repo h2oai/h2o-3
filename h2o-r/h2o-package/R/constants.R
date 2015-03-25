@@ -204,6 +204,16 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Model Builder Endpoint Generator
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo, '.json')
 
+#' Export Files Endpoint Generator
+.h2o.__EXPORT_FILES <- function(frame,path,force) {
+  tmp_data <- !.is.eval(frame)
+  if( tmp_data ) {
+    key  <- frame@key
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, key=key)
+  }
+  paste0("Frames.json/",frame@key,"/export/",path,"/overwrite/",force)
+}
+
 #' Model Endpoint
 .h2o.__MODELS         <- "Models.json"
 

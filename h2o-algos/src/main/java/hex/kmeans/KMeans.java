@@ -171,10 +171,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       Arrays.fill(colFormats, "%5f");
       if (model._parms._standardize) {
         model._output._centers_std_raw = centers;
-        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_std_raw);
+        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", null, rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_std_raw);
       }
       model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-      model._output._centers = new TwoDimTable("Cluster means", rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
+      model._output._centers = new TwoDimTable("Cluster means", null, rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
 
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;

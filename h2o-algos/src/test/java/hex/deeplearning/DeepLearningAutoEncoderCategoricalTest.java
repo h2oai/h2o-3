@@ -35,14 +35,15 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
 //    p._ignored_columns = new String[]{n[0],n[1],n[2],n[3],n[6],n[7],n[8],n[10]}; //Optional: ignore all categoricals
 //    p._ignored_columns = new String[]{train.names()[4], train.names()[5], train.names()[9]}; //Optional: ignore all numericals
     p._l1 = 1e-4;
-    p._activation = DeepLearningModel.DeepLearningParameters.Activation.Rectifier;
+    p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
     p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
     p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
-    p._epochs = 2;
+    p._epochs = 0.2;
     p._force_load_balance = true;
     p._score_training_samples = 0;
     p._score_validation_samples = 0;
+    p._reproducible = true;
 
     DeepLearning dl = new DeepLearning(p);
     DeepLearningModel mymodel = null;
