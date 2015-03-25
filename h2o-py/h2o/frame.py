@@ -49,7 +49,7 @@ class H2OFrame:
       veckeys = parse['vec_keys']
       print "Veckeys", veckeys
       rows = parse['rows']
-      cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)] 
+      cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(veckeys)+1)]
       self._vecs = H2OVec.new_vecs(zip(cols, veckeys), rows)
       print "Imported", remote_fname, "into cluster with", rows, "rows and", len(cols), "cols"
 
@@ -344,7 +344,7 @@ class H2OFrame:
     """
     #  b is a named column, fish out the H2OVec and its index
     ncols = len(self._vecs)
-    if isinstance(b, str):  
+    if isinstance(b, str):
       for i in xrange(ncols):
         if b == self._vecs[i]._name:
           break
@@ -387,7 +387,7 @@ class H2OFrame:
     elif isinstance(i, int):
       if i < 0 or i >= self.__len__():
         raise ValueError("Index out of range: 0 <= " + str(i) + " < " + str(self.__len__()))
-      return H2OFrame(vecs=[v for v in self._vecs if v != self._vecs[i]])
+      return H2OFrame(vecs=[v for v in self._vecs if v._name != self._vecs[i]._name])
     raise NotImplementedError
 
   def __len__(self):
@@ -574,7 +574,7 @@ class H2OFrame:
     # Confirm all names present in dataset; collect column indices
     colnums = [str(self._find_idx(name)) for name in cols]
     rapids_series = "{"+";".join(colnums)+"}"
-  
+
     # Eagerly eval and send the cbind'd frame over
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()

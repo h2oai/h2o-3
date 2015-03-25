@@ -29,8 +29,9 @@ test.DRF.smallcat <- function(conn) {
   # Check AUC and overall prediction error at least as good with group split than without
   Log.info("Expect DRF with Group Split to give Perfect Prediction in Single Iteration")
   drfperf <- h2o.performance(drfmodel)
+  print(h2o.confusionMatrix(drfmodel,alphabet.hex))
   expect_equal(h2o.auc(drfperf), 1)
-  expect_equal(drfmodel@model$confusion[3,3], 0)
+  expect_equal(h2o.confusionMatrix(drfmodel,alphabet.hex)[3,"Error"], 0)
 
   # Train R DRF Model:
   # Log.info("R DRF with same parameters:")
