@@ -369,7 +369,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
         String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
-        Log.info("validate r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
+        Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
       }
 
       if( out._ntrees > 0 )     // Compute variable importances

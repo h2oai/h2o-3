@@ -183,7 +183,7 @@
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 
-  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)     
+  new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
 }
 
 .h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
@@ -396,7 +396,7 @@ h2o.giniCoef <- function(object) {
 #' object.
 #'
 #' This function only supports \linkS4class{H2OBinomialMetrics},
-#' \linkS4class{H2OMultinomialMetrics}, and \linkS4class{linkS4class} objects.
+#' \linkS4class{H2OMultinomialMetrics}, and \linkS4class{H2ORegressionMetrics} objects.
 #'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
@@ -533,13 +533,17 @@ h2o.specificity <- function(object, thresholds){
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
 #'
-#' If no threshold is specified, all possible thresholds are selected.
+#' The \linkS4class{H2OModelMetrics} version of this function will only take
+#' \linkS4class{H2OBinomialMetrics} or \linkS4class{H2OMultinomialMetrics}
+#' objects. If no threshold is specified, all possible thresholds are selected.
 #'
 #' @param object Either an \linkS4class{H2OModel} object or an
-#'        \linkS4class{H2OBinomialMetrics} object that performs classification.
+#'        \linkS4class{H2OModelMetrics} object.
 #' @param newdata An \linkS4class{H2OFrame} object that can be scored on.
 #'        Requires a valid response column.
 #' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
+#'        This value is only used in the case of
+#'        \linkS4class{H2OBinomialMetrics} objects.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
 #'         confusion matrix corresponding to the \code{\link{predict}} function.
 #'         If used on an \linkS4class{H2OBinomialMetrics} object, returns a list
@@ -596,6 +600,8 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     else {
         object@metrics$confusion_matrices
     }
+  } else if(is(object, "H2OMultinomialMetrics")) {
+    object@metrics$cm$table
   }
   else{
     stop(paste0("No Confusion Matrices for ",class(object)))
