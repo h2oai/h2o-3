@@ -39,9 +39,8 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
-  force <- as.integer(force)
 
-  .h2o.__remoteSend(data@conn, .h2o.__PAGE_EXPORTFILES, src_key = data@key, path = path, force = force)
+  .h2o.__remoteSend(data@conn, .h2o.__EXPORT_FILES(data,path,force))
 }
 
 #'
@@ -52,15 +51,7 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 #' @param object an \linkS4class{H2OModel} class object.
 #' @param path The path to write the model to. Must include the driectory and 
 #'        filename.
-h2o.exportHDFS <- function(object, path) {
-  if(!is(object, "H2OModel"))
-    stop("`object` must be an H2OModel object")
-
-  if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
-    stop("`path` must be a non-empty character string")
-
-  .h2o.__remoteSend(object@data@conn, .h2o.__PAGE_EXPORTHDFS, source_key = object@key, path = path)
-}
+h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,force) }
 
 #' Download H2O Data to Disk
 #'
