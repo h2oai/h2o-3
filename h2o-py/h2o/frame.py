@@ -411,7 +411,7 @@ class H2OFrame:
       tmp_frame = H2OFrame(vecs=[data])
       key2 = tmp_frame.send_frame()
       arg2 = "%" + str(key2)
-    elif isinstance(data, int):
+    elif isinstance(data, (int, float)):
       arg2 = "#" + str(data)
     elif isinstance(data, str):
       arg2 = "\"" + data + "\""
