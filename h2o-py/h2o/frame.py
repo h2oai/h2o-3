@@ -417,16 +417,18 @@ class H2OFrame:
     return self.__add__(i)
 
   def __and__(self, i):
-    print "FRAME AND"
     if len(self) == 0: return self
     self._len_check(i)
     if isinstance(i, H2OFrame):
-      return H2OFrame(vecs=[x and y for x, y in zip(self._vecs, i._vecs)])
+      return H2OFrame(vecs=[x & y for x, y in zip(self._vecs, i._vecs)])
     if isinstance(i, H2OVec):
-      return H2OFrame(vecs=[x and i for x in self._vecs])
-    if isinstance(i, int,bool):
-      return H2OFrame(vecs=[x and i for x in self._vecs])
+      return H2OFrame(vecs=[x & i for x in self._vecs])
+    if isinstance(i, (int,bool)):
+      return H2OFrame(vecs=[x & i for x in self._vecs])
     raise NotImplementedError
+
+  def __rand__(self, i):
+    return self.__and__(i)
 
   # Division
   def __div__(self, i):
@@ -803,7 +805,8 @@ class H2OVec:
 
   # Simple boolean operators, which auto-expand a right scalar argument
   def _simple_bin_op( self, i, op):
-    if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
+    if isinstance(i, H2OFrame    ):  return H2OFrame(vecs=[H2OVec(self._name, Expr(op, self._len_check(v), v)) for v in i._vecs])
+    if isinstance(i, H2OVec      ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
