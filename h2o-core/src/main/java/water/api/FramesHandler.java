@@ -6,7 +6,11 @@ import water.api.ModelsHandler.Models;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.persist.PersistManager;
+import water.util.FileUtils;
+import water.util.Log;
 
+import java.io.*;
 import java.util.*;
 
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
@@ -218,6 +222,38 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
     return s;
   }
+
+  /** Export a single frame to the specified path. */
+  public FramesV3 export(int version, FramesV3 s) {
+    Frame fr = getFromDKV("key", s.key.key());
+
+    Log.info("ExportFiles processing (" + s.path + ")");
+    InputStream csv = (fr).toCSV(true,false);
+    export(csv,s.path, s.key.key().toString(),s.force);
+    return s;
+  }
+
+  // companion method to the export method
+  private void export(InputStream csv, String path, String frameName, boolean force) {
+    PersistManager pm = H2O.getPM();
+    OutputStream os = null;
+    try {
+      os = pm.create(path, force);
+      FileUtils.copyStream(csv, os, 4*1024*1024);
+    }
+    finally {
+      if (os != null) {
+        try {
+          os.close();
+          Log.info("Key '" + frameName +  "' was written to " + path + ".");
+        }
+        catch (Exception e) {
+          Log.err(e);
+        }
+      }
+    }
+  }
+
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
