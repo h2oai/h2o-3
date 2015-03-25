@@ -303,7 +303,7 @@ public class TwoDimTable extends Iced {
       sb.append(tableHeader);
     }
     if (tableDescription.length() > 0) {
-      sb.append("\n").append(tableDescription);
+      sb.append(" (").append(tableDescription).append(")");
     }
     sb.append(":\n");
     for (int r = 0; r <= rowDim; ++r) {
