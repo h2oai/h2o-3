@@ -70,16 +70,16 @@
       "input": "predict model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\", frame: \"ad.hex\", destination_key: \"prediction-d22fec39-e7ae-480a-8ab2-b4bb78ebc3b3\""
     },
     {
-      "type": "cs",
-      "input": "getFrame \"prediction-d22fec39-e7ae-480a-8ab2-b4bb78ebc3b3\""
+      "type": "md",
+      "input": "###Viewing the Confusion Matrix\n\nTo view the confusion matrix for the prediction, click the **Inspect** button in the **Prediction** cell. \nIn the **Data** cell, click the **Confusion Matrices** link. "
     },
     {
       "type": "cs",
-      "input": "inspect getFrame \"prediction-d22fec39-e7ae-480a-8ab2-b4bb78ebc3b3\""
+      "input": "inspect getPrediction model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\", frame: \"ad.hex\""
     },
     {
       "type": "cs",
-      "input": "grid inspect \"columns\", getFrame \"prediction-d22fec39-e7ae-480a-8ab2-b4bb78ebc3b3\""
+      "input": "grid inspect \"Confusion Matrices\", getPredictions model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\", frame: \"ad.hex\""
     }
   ]
 }
