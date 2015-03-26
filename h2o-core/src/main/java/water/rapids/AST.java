@@ -985,19 +985,19 @@ class ASTAssign extends AST {
         for (int i = 0; i < cs.length; i++) {
           int cidx = (int) cs[i];
           Vec rv = rvecs[rvecs.length == 1 ? 0 : i];
-          e.addVec(rv);
+//          e.addVec(rv);
           if (cidx == lhs_ary.numCols()) {
             if (!rv.group().equals(lhs_ary.anyVec().group())) {
-              e.subRef(rv);
+//              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
-              e.addVec(rv);
+//              e.addVec(rv);
             }
             lhs_ary.add("C" + String.valueOf(cidx + 1), rv);     // New column name created with 1-based index
           } else {
             if (!(rv.group().equals(lhs_ary.anyVec().group())) && rv.length() == lhs_ary.anyVec().length()) {
-              e.subRef(rv);
+//              e.subRef(rv);
               rv = lhs_ary.anyVec().align(rv);
-              e.addVec(rv);
+//              e.addVec(rv);
             }
             lhs_ary.replace(cidx, rv); // returns the new vec, but we don't care... (what happens to the old vec?)
           }
