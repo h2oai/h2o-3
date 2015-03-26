@@ -191,56 +191,63 @@ h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "names", "domains", "model_category"))]
   parameters <- list()
+  allparams  <- list()
   lapply(json$parameters, function(param) {
     if (!is.null(param$actual_value)) {
       name <- param$name
-      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
-      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
-        value <- param$actual_value
-        mapping <- .type.map[param$type,]
-        type    <- mapping[1L, 1L]
-        scalar  <- mapping[1L, 2L]
+      value <- param$actual_value
+      mapping <- .type.map[param$type,]
+      type    <- mapping[1L, 1L]
+      scalar  <- mapping[1L, 2L]
 
-        if (type == "numeric" && value == "Infinity")
-          value <- Inf
-        else if (type == "numeric" && value == "-Infinity")
-          value <- -Inf
+      if (type == "numeric" && value == "Infinity")
+        value <- Inf
+      else if (type == "numeric" && value == "-Infinity")
+        value <- -Inf
 
-        # Parse frame information to a key
-        if (type == "H2OFrame")
-          value <- value$name
-
-        # Parse model information to a key
-        if (type == "H2OModel") {
-          value <- value$name
-        }
-
-        # Response column needs to be parsed
-        if (name == "response_column")
-          value <- value$column_name
-        parameters[[name]] <<- value
+      # Parse frame information to a key
+      if (type == "H2OFrame")
+        value <- value$name
+      # Parse model information to a key
+      if (type == "H2OModel") {
+        value <- value$name
       }
+
+      # Response column needs to be parsed
+      if (name == "response_column")
+        value <- value$column_name
+      allparams[[name]] <<- value
+      # Store only user changed parameters into parameters
+      # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value))
+        parameters[[name]] <<- value
     }
   })
 
   # Convert ignored_columns/response_column to valid R x/y
   cols <- colnames(h2o.getFrame(conn, parameters$training_frame))
-  
+
   parameters$x <- setdiff(cols, parameters$ignored_columns)
+  allparams$x <- setdiff(cols, allparams$ignored_columns)
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
+    allparams$y <- allparams$response_column
     parameters$x <- setdiff(parameters$x, parameters$y)
+    allparams$x <- setdiff(allparams$x, allparams$y)
   }
 
+  allparams$ignored_columns <- NULL
+  allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
 
-  .newH2OObject(Class      = Class,
-                conn       = conn,
-                key        = json$key$name,
-                algorithm  = json$algo,
-                parameters = parameters,
-                model      = model,
-                linkToGC   = linkToGC)
+  .newH2OObject(Class         = Class,
+                conn          = conn,
+                key           = json$key$name,
+                algorithm     = json$algo,
+                parameters    = parameters,
+                allparameters = allparams,
+                model         = model,
+                linkToGC      = linkToGC)
 }
