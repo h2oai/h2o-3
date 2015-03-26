@@ -16,6 +16,7 @@ library(h2o)
 
 heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
+h2o.removeAll()
 
 hdfs_airlines_file = "/datasets/airlines_all.csv"
 
