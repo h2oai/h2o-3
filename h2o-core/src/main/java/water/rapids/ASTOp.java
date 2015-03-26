@@ -319,7 +319,7 @@ abstract class ASTUniOp extends ASTOp {
           }
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(Key.makeUserHidden(Key.make()), fr._names, null);
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
     env.pushAry(fr2);
   }
 }
@@ -1229,11 +1229,26 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot '|' Strings.");}
 }
 
+
+//abstract class ROp extends ASTOp {
+//  ROp() {super(null);}
+//  double op(double acc, double e) {throw H2O.unimpl();}
+//  String op(double acc, String e) {throw H2O.unimpl();}
+//  String op(String acc, String e) {throw H2O.unimpl();}
+//  String op(String acc, double e) {throw H2O.unimpl();}
+//  private void m(HashMap m, Chunk c, int row) {
+//  }
+//  private void exec() {
+//
+//  }
+//}
+
 // operate on a single vec
 // reduce the Vec
 //class ASTFoldCombine extends ASTOp {
-//  // (foldCombine
-//  protected ASTOp _op;
+//  // (foldCombine (reduce def) (combine def) vec)
+//  private ROp _red;     // operates on a single value
+//  private ASTOp _combine; // what to do with the _accum map
 //  ASTFoldCombine() { super(null); }
 //  @Override String opStr() { return "foldCombine"; }
 //  @Override ASTOp make() { return new ASTFoldCombine(); }
@@ -1242,7 +1257,13 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
 //
 //  }
 //  @Override void apply(Env e) {
+//    Frame f = e.popAry();
+//    final HashMap<String,Val> accum = new HashMap<>();
+//    new MRTask() {
+//      @Override public void map(Chunk cs) {
 //
+//      }
+//    }.doAll(f);
 //  }
 //}
 
