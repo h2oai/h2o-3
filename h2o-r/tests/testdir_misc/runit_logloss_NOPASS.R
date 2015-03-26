@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
 test.logloss <- function(conn) {
-    Log.info("Testing binomial logloss")
+   Log.info("Testing binomial logloss")
 
    train = h2o.importFile("smalldata/logreg/prostate.csv", key="train")
    test = h2o.importFile("smalldata/logreg/prostate.csv", key="test")
@@ -21,7 +21,7 @@ test.logloss <- function(conn) {
 
    ## Compute LogLoss explicitly from predictions on the test set
    LogLoss <- function(act, pred) {
-     for (i in 0:1) {
+     for (i in 0:max(act)) {
        act[,2+i] = act[,1]==i
      }
      ll <- act[,-1]*log(pred)
