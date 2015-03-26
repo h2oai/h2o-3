@@ -4,6 +4,15 @@
 #' Collected here are the various methods used by the h2o-R package to communicate with the H2O
 #' backend. There are methods for checking cluster health, polling, and inspecting objects in
 #' the H2O store.
+#' @import methods
+#' @import RCurl
+#' @importFrom graphics barplot lines
+#' @importFrom rjson fromJSON
+#' @importFrom stats binomial Gamma gaussian poisson runif
+#' @importFrom statmod tweedie
+#' @importFrom tools md5sum
+#' @importFrom utils download.file packageVersion read.csv
+#'           setTxtProgressBar txtProgressBar URLencode write.csv
 
 #-----------------------------------------------------------------------------------------------------------------------
 #   GET & POST
@@ -328,7 +337,7 @@
           all(unlist(lapply(x, function(y) !is.null(y) && is.atomic(y)))) &&
           (length(ncol <- unique(unlist(lapply(x, length)))) == 1L)) {
         x <- lapply(x, function(y) {
-          if (identical(y, "NaN")) NA_real_ 
+          if (identical(y, "NaN")) NA_real_
           else if (identical(y, "Infinity")) Inf
           else if (identical(y, "-Infinity")) -Inf
           else y
