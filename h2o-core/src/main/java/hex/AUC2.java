@@ -27,7 +27,8 @@ public class AUC2 extends Iced {
       long tmpf = _fps[i];  _fps[i] = _fps[nBins-1-i]; _fps[nBins-1-i] = tmpf;
     }
 
-    // Rollup counts, so that the rates are easier
+    // Rollup counts, so that computing the rates are easier.
+    // The AUC is TPR/FPR as thresholds roll about
     long tp=0, fp=0;
     for( int i=0; i<nBins; i++ ) { 
       tp += _tps[i]; _tps[i] = tp;
@@ -37,11 +38,13 @@ public class AUC2 extends Iced {
   }
 
 
+  // Compute an online histogram of the predicted probabilities, along with
+  // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {
     int _nBins;                 // Max Number of bins
-    double _ths[];
-    long   _tps[];
-    long   _fps[];
+    double _ths[];              // Histogram bins, center
+    long   _tps[];              // Histogram bins, true  positives
+    long   _fps[];              // Histogram bins, false positives
     AUC_Impl( int nBins ) { _nBins = nBins; }
 
     @Override public void map( Chunk ps, Chunk as ) {
@@ -50,22 +53,28 @@ public class AUC2 extends Iced {
       long   fps[] = new long  [_nBins+1];
       int n=0;
       for( int row = 0; row < ps._len; row++ ) {
+        // Insert the prediction into the set of histograms in sorted order, as
+        // if its a new histogram bin with 1 count.
         double pred  = ps.atd(row);
-        int act = (int)as.at8(row);
+        int act = (int)as.at8(row); // Actual better be 0 or 1
         int idx = Arrays.binarySearch(ths,0,n,pred);
-        if( idx >= 0 ) {        // Found already; merge results
+        if( idx >= 0 ) {        // Found already in histogram; merge results
           if( act==0 ) fps[idx]++; else tps[idx]++; // One more count
           continue;
         }
+        // Slide over to do the insert.  Horrible slowness.
         idx = -idx-1;           // Get index to insert at
         System.arraycopy(ths,idx,ths,idx+1,n-idx);
         System.arraycopy(tps,idx,tps,idx+1,n-idx);
         System.arraycopy(fps,idx,fps,idx+1,n-idx);
+        // Insert into the histogram
         ths[idx] = pred;
         if( act==0 ) fps[idx] = 1; else tps[idx] = 1;
         n++;
-        if( n <= _nBins ) continue; // No need to merge
-        // Must merge bins - find smallest bin difference
+        if( n <= _nBins ) continue; // No need to merge bins
+
+        // Too many bins; must merge bins.  Find smallest bin difference and
+        // merge these two bins.  Horrible slowness linear scan.
         double minV = Double.MAX_VALUE;
         int minI = -1;
         for( int i=0; i<_nBins; i++ ) {
@@ -73,19 +82,23 @@ public class AUC2 extends Iced {
           if( diff < minV ) { minI = i; minV = diff; }
         }
 
-        // Merge bins with smallest distance
+        // Merge two bins with smallest distance between them.  Classic bins
+        // merging by averaging the histogram centers based on counts.
         long k0 = tps[minI  ]+fps[minI  ];
         long k1 = tps[minI+1]+fps[minI+1];
         long k = k0+k1;
         double d = (ths[minI]*k0+ths[minI+1]*k1)/k;
+        // Setup the new merged bin at index minI
         ths[minI] = d;
         tps[minI] += tps[minI+1];
         fps[minI] += fps[minI+1];
+        // Slide over to crush the removed bin at index (minI+1)
         System.arraycopy(ths,minI+2,ths,minI+1,n-minI-2);
         System.arraycopy(tps,minI+2,tps,minI+1,n-minI-2);
         System.arraycopy(fps,minI+2,fps,minI+1,n-minI-2);
         n--;
       }
+      // Final results for this chunk
       _ths = ths;
       _tps = tps;
       _fps = fps;
