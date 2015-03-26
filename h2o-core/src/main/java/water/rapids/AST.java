@@ -132,7 +132,8 @@ class ASTId extends AST {
   final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
-    return new ASTId(_type, E.parseID());
+    String id = E.isQuoted(E.peek()) ? E.parseString(E.getQuote()) : E.parseID(); // allows for quoted ID here...
+    return new ASTId(_type, id);
   }
   @Override public String toString() { return _type+_id; }
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
