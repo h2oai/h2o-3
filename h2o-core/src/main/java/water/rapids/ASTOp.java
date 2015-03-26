@@ -319,7 +319,7 @@ abstract class ASTUniOp extends ASTOp {
           }
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
+    }.doAll(fr.numCols(),fr).outputFrame(Key.makeUserHidden(Key.make()), fr._names, null);
     env.pushAry(fr2);
   }
 }
