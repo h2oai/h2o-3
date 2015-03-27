@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -164,10 +165,18 @@ class ModelMetricsHandler extends Handler {
 
   /**
    * Score a frame with the given model and return just the metrics.
+   * <p>
+   * NOTE: ModelMetrics are now always being created by model.score. . .
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 score(int version, ModelMetricsListSchemaV3 s) {
-    // NOTE: ModelMetrics are now always being created by model.score. . .
+    // parameters checking:
+    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
+    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+
+    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+
     ModelMetricsList parms = s.createAndFillImpl();
     Frame fr = parms._model.score(parms._frame, parms._destination_key); // throw away predictions
     DKV.remove(fr._key);
@@ -190,7 +199,13 @@ class ModelMetricsHandler extends Handler {
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
-    // No caching for predict()
+    // parameters checking:
+    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
+    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+
+    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+
     ModelMetricsList parms = s.createAndFillImpl();
 
     Frame predictions;
