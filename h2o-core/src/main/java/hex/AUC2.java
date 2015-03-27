@@ -19,12 +19,91 @@ public class AUC2 extends Iced {
   double[] _ths;   // Thresholds
   long[] _tps;     // True  Positives
   long[] _fps;     // False Positives
-  long _tp, _fp;   // True positive, false positive counts
+  long _at, _af;   // Actual trues, falses
   double _auc;     // Actual AUC value
 
-  // Default bins, good answers on a highly unbalanced sorted (and reverse
-  // sorted) datasets
-  AUC2( Vec probs, Vec actls ) { this(256,probs,actls); }
+  /** Criteria for 2-class Confusion Matrices
+   *
+   *  This is an Enum class, with an exec() function to compute the criteria
+   *  from the basic parts, and from an AUC2 at a given threshold index.
+   */
+  public enum ThresholdCriterion {
+    f1() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        final double prec = precision.exec(tp,fp,fn,tn,at,af);
+        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+        return 2. * (prec * recl) / (prec + recl);
+      } },
+    f2() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        final double prec = precision.exec(tp,fp,fn,tn,at,af);
+        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+        return 5. * (prec * recl) / (4. * prec + recl);
+      } },
+    f0point5() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        final double prec = precision.exec(tp,fp,fn,tn,at,af);
+        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+        return 1.25 * (prec * recl) / (.25 * prec + recl);
+      } },
+    accuracy() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        return 1.0-((double)fn+fp)/(at+af);
+      } },
+    precision() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        return (double)tp/(tp+fp);
+      } },
+    recall() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        return (double)tp/(tp+fn);
+      } },
+    specificity() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        return (double)tn/(tn+fp);
+      } },
+    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+        return Math.abs(mcc);
+      } },
+    // minimize max-per-class-error by maximizing min-per-class-correct
+    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+        return Math.min((double)tp/at,(double)tn/af);
+      } },
+    ;
+
+    /** 
+     *  @param tp True  Positives (predicted  true, actual true )
+     *  @param fp False Positives (predicted  true, actual false)
+     *  @param fn False Negatives (predicted false, actual true )
+     *  @param tn True  Negatives (predicted false, actual false)
+     *  The sum of actual Trues and Falses is count of obs not missing either actual or prediction
+     *  @param at Actual Trues
+     *  @param af Actual Falses
+     *  @return criteria
+     */
+    abstract double exec( long tp, long fp, long fn, long tn, long at, long af );
+
+    public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx),auc._at,auc._af); }
+
+    // Convert a criterion into a threshold index that maximizes the criterion
+    public int max_criterion( AUC2 auc ) {
+      double md = -Double.MAX_VALUE;
+      int mx = -1;
+      for( int i=0; i<auc._nBins; i++ ) {
+        double d = exec(auc,i);
+        if( d > md ) { md = d; mx = i; }
+      }
+      return mx;
+    }
+  }
+
+  public double threshold( int idx ) { return _ths[idx]; }
+  public long tp( int idx ) { return _tps[idx]; }
+  public long fp( int idx ) { return _fps[idx]; }
+  public long tn( int idx ) { return _af-_fps[idx]; }
+  public long fn( int idx ) { return _at-_tps[idx]; }
+
+
+  /** Default bins, good answers on a highly unbalanced sorted (and reverse
+   *  sorted) datasets */
+  public AUC2( Vec probs, Vec actls ) { this(256,probs,actls); }
+
+  /** User-specified bin limits.  Time taken is product of nBins and rows;
+   *  large nBins can be very slow. */
   AUC2( int nBins, Vec probs, Vec actls ) { 
     _nBins = nBins;
     AUC_Impl auc = new AUC_Impl(nBins).doAll(probs,actls);
@@ -42,12 +121,12 @@ public class AUC2 extends Iced {
 
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
-    long tp=0, fp=0;
+    long at=0, af=0;
     for( int i=0; i<nBins; i++ ) { 
-      tp += _tps[i]; _tps[i] = tp;
-      fp += _fps[i]; _fps[i] = fp;
+      at += _tps[i]; _tps[i] = at;
+      af += _fps[i]; _fps[i] = af;
     }
-    _tp = tp;  _fp = fp;
+    _at = at;  _af = af;
     _auc = compute_auc();
   }
 
@@ -59,12 +138,20 @@ public class AUC2 extends Iced {
     long tp0 = 0, fp0 = 0;
     double area = 0;
     for( int i=0; i<_nBins; i++ ) {
-      area += tp0*(_fps[i]-fp0);
-      area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0;
+      area += tp0*(_fps[i]-fp0); // Trapezoid: Square + 
+      area += (_tps[i]-tp0)*(_fps[i]-fp0)/2.0; // Right Triangle
       tp0 = _tps[i];  fp0 = _fps[i];
     }
     // Descale
-    return area/_tp/_fp;
+    return area/_at/_af;
+  }
+
+  // Build a CM for a threshold index.
+  public long[/*actual*/][/*predicted*/] buildCM( int idx ) {
+    //  \ predicted:  0   1
+    //    actual  0: TN  FP
+    //            1: FN  TP
+    return new long[][]{{tn(idx),fp(idx)},{fn(idx),tp(idx)}};
   }
 
   // Compute an online histogram of the predicted probabilities, along with
@@ -87,7 +174,9 @@ public class AUC2 extends Iced {
         // Insert the prediction into the set of histograms in sorted order, as
         // if its a new histogram bin with 1 count.
         double pred  = ps.atd(row);
-        int act = (int)as.at8(row); // Actual better be 0 or 1
+        if( Double.isNaN(pred) || as.isNA(row) ) continue;
+        int act = (int)as.at8(row);
+        assert act==0 || act==1; // Actual better be 0 or 1
         int idx = Arrays.binarySearch(ths,0,n,pred);
         if( idx >= 0 ) {        // Found already in histogram; merge results
           if( act==0 ) fps[idx]++; else tps[idx]++; // One more count; no change in squared error
@@ -119,10 +208,10 @@ public class AUC2 extends Iced {
           if( sqe0 < minSQE ) {  minI = i;  minSQE = sqe0; }
         }
 
-        // Here is code for merging bins with keeping the bins balanced, but
-        // this leads to bad errors if the probabilities are sorted.  Also
-        // tried the original: merge bins with the least distance between bin
-        // centers.  Same problem for sorted data.
+        // Here is code for merging bins with keeping the bins balanced in
+        // size, but this leads to bad errors if the probabilities are sorted.
+        // Also tried the original: merge bins with the least distance between
+        // bin centers.  Same problem for sorted data.
 
         //long minV = Long.MAX_VALUE;
         //int minI = -1;
@@ -134,8 +223,8 @@ public class AUC2 extends Iced {
         //  }
         //}
 
-        // Merge two bins with smallest distance between them.  Classic bins
-        // merging by averaging the histogram centers based on counts.
+        // Merge two bins.  Classic bins merging by averaging the histogram
+        // centers based on counts.
         long k0 = tps[minI  ]+fps[minI  ];
         long k1 = tps[minI+1]+fps[minI+1];
         double d = (ths[minI]*k0+ths[minI+1]*k1)/(k0+k1);

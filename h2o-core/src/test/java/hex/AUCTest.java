@@ -18,22 +18,28 @@ public class AUCTest extends TestUtil {
 
     // Positives & Negatives
     int P = 0;
-    for( int i=0; i<actls.length; i++ ) P += (int)actls[i];
+    for( double a : actls ) P += (int)a;
     int N = actls.length - P;
     System.out.println("P="+P+", N="+N);
 
     // Compute TP & FP for all thresholds
     double thresh[] = new double[]{1e-1,1e-2,1e-3+1e-9,1e-3,1e-3-1e-9,1e-4,1e-5,1e-6,1e-7,1e-8,0};
     int tp[] = new int[thresh.length], fp[] = new int[thresh.length];
+    int tn[] = new int[thresh.length], fn[] = new int[thresh.length];
     for( int i=0; i<probs.length; i++ ) {
       for( int t=0; t<thresh.length; t++ ) {
         if( probs[i] >= thresh[t] ) // Not interested if below threshold
           if( actls[i]==0.0 ) fp[t]++; // False positive
           else tp[t]++;                // True  positive
+        else
+          if( actls[i]==0.0 ) tn[t]++; // True  negative
+          else fn[t]++;                // False negative
       }
     }
     System.out.println(Arrays.toString(tp));
     System.out.println(Arrays.toString(fp));
+    System.out.println(Arrays.toString(fn));
+    System.out.println(Arrays.toString(tn));
     for( int i=0; i<tp.length; i++ ) System.out.print("{"+((double)tp[i]/P)+","+((double)fp[i]/N)+"} ");
     System.out.println();
     // The AUC for this dataset, according to R's ROCR package, is 0.6363636363
@@ -47,11 +53,16 @@ public class AUCTest extends TestUtil {
 
     // Now from a large test file
     double ROCR_auc = 0.7244389;
-    Frame fr = parse_test_file("smalldata/junit/auc4.csv");
-    for( int i=10; i<1000; i+=10 )
-      System.out.println("bins="+i+", aucERR="+Math.abs(new AUC2(i,fr.vec("V1"),fr.vec("V2"))._auc-ROCR_auc)/ROCR_auc);
+    Frame fr = parse_test_file("smalldata/junit/auc.csv.gz");
+    // Slow; used to confirm the accuracy as we increase bin counts
+    //for( int i=10; i<1000; i+=10 ) {
+    //  AUC2 auc = new AUC2(i,fr.vec("V1"),fr.vec("V2"));
+    //  System.out.println("bins="+i+", aucERR="+Math.abs(auc._auc-ROCR_auc)/ROCR_auc);
+    //  Assert.assertEquals(fr.numRows(), auc._at+auc._af);
+    //}
 
-    Assert.assertEquals(ROCR_auc, new AUC2(fr.vec("V1"), fr.vec("V2"))._auc, 1e-4);
+    AUC2 auc = new AUC2(fr.vec("V1"), fr.vec("V2"));
+    Assert.assertEquals(ROCR_auc, auc._auc, 1e-4);
 
     fr.remove();
   }
@@ -63,7 +74,9 @@ public class AUCTest extends TestUtil {
     Frame fr = frame(new String[]{"probs","actls"},rows);
     AUC2 auc = new AUC2(fr.vec("probs"),fr.vec("actls"));
     fr.remove();
-    for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._tp)+","+((double)auc._fps[i]/auc._fp)+"} ");
+    for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._at)+","+((double)auc._fps[i]/auc._af)+"} ");
+    System.out.println();
+    for( int i=0; i<auc._nBins; i++ ) System.out.print(AUC2.ThresholdCriterion.minPerClassCorrect.exec(auc,i)+" ");
     System.out.println();
     return auc._auc;
   }
