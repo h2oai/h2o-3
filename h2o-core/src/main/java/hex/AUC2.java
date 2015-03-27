@@ -28,42 +28,42 @@ public class AUC2 extends Iced {
    *  from the basic parts, and from an AUC2 at a given threshold index.
    */
   public enum ThresholdCriterion {
-    f1() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
-        final double prec = precision.exec(tp,fp,fn,tn,p,n);
-        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
+    f1() { @Override double exec( long tp, long fp, long fn, long tn ) {
+        final double prec = precision.exec(tp,fp,fn,tn);
+        final double recl = recall   .exec(tp,fp,fn,tn);
         return 2. * (prec * recl) / (prec + recl);
       } },
-    f2() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
-        final double prec = precision.exec(tp,fp,fn,tn,p,n);
-        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
+    f2() { @Override double exec( long tp, long fp, long fn, long tn ) {
+        final double prec = precision.exec(tp,fp,fn,tn);
+        final double recl = recall   .exec(tp,fp,fn,tn);
         return 5. * (prec * recl) / (4. * prec + recl);
       } },
-    f0point5() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
-        final double prec = precision.exec(tp,fp,fn,tn,p,n);
-        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
+    f0point5() { @Override double exec( long tp, long fp, long fn, long tn ) {
+        final double prec = precision.exec(tp,fp,fn,tn);
+        final double recl = recall   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
-        return 1.0-((double)fn+fp)/(p+n);
+    accuracy() { @Override double exec( long tp, long fp, long fn, long tn ) {
+        return 1.0-((double)fn+fp)/(tp+fn+tn+fp);
       } },
-    precision() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+    precision() { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tp/(tp+fp);
       } },
-    recall() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+    recall() { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tp/(tp+fn);
       } },
-    specificity() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+    specificity() { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tn/(tn+fp);
       } },
-    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn ) {
         double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         return Math.abs(mcc);
       } },
     // minimize max-per-class-error by maximizing min-per-class-correct.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
-        return Math.min((double)tp/p,(double)tn/n);
+    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn ) {
+        return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
     ;
 
@@ -77,9 +77,9 @@ public class AUC2 extends Iced {
      *  @param n Actual Falses
      *  @return criteria
      */
-    abstract double exec( long tp, long fp, long fn, long tn, long p, long n );
+    abstract double exec( long tp, long fp, long fn, long tn );
 
-    public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx),auc._p,auc._n); }
+    public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx)); }
 
     public double max_criterion( AUC2 auc ) {
       return exec(auc,max_criterion_idx(auc));
