@@ -319,7 +319,7 @@ abstract class ASTUniOp extends ASTOp {
           }
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(Key.make(), fr._names, null);
+    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
     env.pushAry(fr2);
   }
 }
@@ -1228,6 +1228,45 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot '|' Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot '|' Strings.");}
 }
+
+
+//abstract class ROp extends ASTOp {
+//  ROp() {super(null);}
+//  double op(double acc, double e) {throw H2O.unimpl();}
+//  String op(double acc, String e) {throw H2O.unimpl();}
+//  String op(String acc, String e) {throw H2O.unimpl();}
+//  String op(String acc, double e) {throw H2O.unimpl();}
+//  private void m(HashMap m, Chunk c, int row) {
+//  }
+//  private void exec() {
+//
+//  }
+//}
+
+// operate on a single vec
+// reduce the Vec
+//class ASTFoldCombine extends ASTOp {
+//  // (foldCombine (reduce def) (combine def) vec)
+//  private ROp _red;     // operates on a single value
+//  private ASTOp _combine; // what to do with the _accum map
+//  ASTFoldCombine() { super(null); }
+//  @Override String opStr() { return "foldCombine"; }
+//  @Override ASTOp make() { return new ASTFoldCombine(); }
+//
+//  ASTFoldCombine parse_impl(Exec E) {
+//
+//  }
+//  @Override void apply(Env e) {
+//    Frame f = e.popAry();
+//    final HashMap<String,Val> accum = new HashMap<>();
+//    new MRTask() {
+//      @Override public void map(Chunk cs) {
+//
+//      }
+//    }.doAll(f);
+//  }
+//}
+
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
@@ -3134,8 +3173,12 @@ class ASTFactor extends ASTUniPrefixOp {
     Frame ary = env.popAry();
     if( ary.numCols() != 1 ) throw new IllegalArgumentException("factor requires a single column");
     Vec v0 = ary.anyVec();
-    Vec v1 = v0.isEnum() ? null : v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
-    Frame fr = new Frame(ary._names, new Vec[]{v1 == null ? v0.makeCopy(null) : v1});
+    if( v0.isEnum() ) {
+      env.pushAry(ary);
+      return;
+    }
+    Vec v1 = v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
+    Frame fr = new Frame(ary._names, new Vec[]{v1});
     env.pushAry(fr);
   }
 }

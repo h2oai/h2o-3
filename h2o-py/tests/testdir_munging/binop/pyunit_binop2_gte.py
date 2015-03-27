@@ -43,6 +43,13 @@ def binop_gt(ip,port):
     new_rows = iris[res].nrow()
     assert new_rows == 150, "wrong number of rows returned"
 
+    #vec/scaler
+    res = iris[0] >= 5
+    res_rows = len(res)
+    assert res_rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow()
+    assert new_rows == 128, "wrong number of rows returned"
+
     # frame/frame
     res = iris >= iris
     res_rows, res_cols = res.dim()
