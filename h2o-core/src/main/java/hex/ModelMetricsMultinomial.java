@@ -71,7 +71,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
       _cm = new long[domain.length][domain.length];
-      _K = Math.min(10,_nclasses-1);
+      _K = Math.min(10,_nclasses);
       _hits = new long[_K];
     }
 
@@ -120,7 +120,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         if (_count != 0) {
           if (_hits != null) {
             for (int i = 0; i < hr.length; i++) {
-              hr[i] = _hits[i] / _count;
+              hr[i] = (float)_hits[i] / _count;
+            }
+            for (int i = 1; i < hr.length; i++) {
+              hr[i] += hr[i-1];
             }
           }
           mse = _sumsqe / _count;

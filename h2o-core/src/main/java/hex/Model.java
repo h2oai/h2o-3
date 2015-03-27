@@ -452,10 +452,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ConfusionMatrix cm = mm.cm();
       if(model_cat == ModelCategory.Binomial)
         cm = ((ModelMetricsBinomial)mm)._cm;
-      else if(model_cat == ModelCategory.Multinomial)
-        cm = ((ModelMetricsMultinomial)mm)._cm;
+      else if(model_cat == ModelCategory.Multinomial) {
+        cm = ((ModelMetricsMultinomial) mm)._cm;
+        Log.info("HitRatios: ", Arrays.toString(((ModelMetricsMultinomial)mm)._hit_ratios));
+      }
 
-      if (cm != null && cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) {
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
