@@ -44,6 +44,11 @@ def binop_div(ip,port):
     res.show()
     assert abs(sum([res[i].eager() for i in range(rows)]) - 283.977) < 1e-4, "expected different sum"
 
+    #vec/scaler
+    res = iris[0] / 5
+    res.show()
+    assert abs(sum([res[i].eager() for i in range(rows)]) - 175.3) < 1e-7, "expected different column sum"
+
     # frame/frame
     res = iris / iris
     res_rows, res_cols = res.dim()

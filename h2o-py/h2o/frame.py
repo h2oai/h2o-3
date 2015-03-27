@@ -396,9 +396,9 @@ class H2OFrame:
     """
     return len(self._vecs)
 
-  def _simple_frames_bin_op(self, data, op):
+  def _simple_frames_bin_op(self, data, op, r=False):
     if len(self) == 0: return self
-    self._len_check(data)
+    if isinstance(data, (H2OVec, H2OFrame)): self._len_check(data)
 
     # Construct rapids expression
     tmp_key = H2OFrame.py_tmp_key()
@@ -407,16 +407,24 @@ class H2OFrame:
     if isinstance(data, H2OFrame):
       key2 = data.send_frame()
       arg2 = "%" + str(key2)
+
     elif isinstance(data, H2OVec):
       tmp_frame = H2OFrame(vecs=[data])
       key2 = tmp_frame.send_frame()
       arg2 = "%" + str(key2)
+
+    elif isinstance(data, Expr):
+      raise NotImplementedError
+
     elif isinstance(data, (int, float)):
       arg2 = "#" + str(data)
+
     elif isinstance(data, str):
       arg2 = "\"" + data + "\""
-    else : raise NotImplementedError
-    expr = "(= !{} (".format(tmp_key) + op + " %{} {}))".format(key1,arg2)
+
+    else: raise NotImplementedError
+    expr = "(= !{} (".format(tmp_key) + op + " %{} {}))".format(key1,arg2) if not r else \
+      "(= !{} (".format(tmp_key) + op + " {} %{}))".format(arg2,key1)
 
     h2o.rapids(expr)
     # Remove h2o temp frames
@@ -431,7 +439,7 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
-  # Ops
+  # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
   def __and__(self, i): return self._simple_frames_bin_op(i, "&")
   def __gt__ (self, i): return self._simple_frames_bin_op(i, "g")
@@ -446,12 +454,14 @@ class H2OFrame:
   def __le__ (self, i): return self._simple_frames_bin_op(i,"L")
   def __lt__ (self, i): return self._simple_frames_bin_op(i,"l" )
 
+  # rops
   def __radd__(self, i): return self.__add__(i)
-  def __rsub__(self, i): return self._simple_frames_bin_op(i,"-")
+  def __rsub__(self, i): return self._simple_frames_bin_op(i,"-",True)
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
-  def __rdiv__(self, i): return self._simple_frames_bin_op(i,"/")
+  def __rdiv__(self, i): return self._simple_frames_bin_op(i,"/",True)
   def __rmul__(self, i): return self.__mul__(i)
+  def __rpow__(self, i): return self._simple_frames_bin_op(i,"^",True)
 
   @staticmethod
   def py_tmp_key():
@@ -815,7 +825,7 @@ class H2OVec:
       raise NotImplementedError("Only vector replacement is currently supported.")
 
   # Simple boolean operators, which auto-expand a right scalar argument
-  def _simple_bin_op( self, i, op):
+  def _simple_vec_bin_op( self, i, op):
     if isinstance(i, H2OFrame    ):  return i._simple_frames_bin_op(H2OFrame(vecs=[self]),op)
     if isinstance(i, H2OVec      ):  return H2OVec(self._name, Expr(op, self._len_check(i), i))
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
@@ -824,34 +834,32 @@ class H2OVec:
     if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
-  def _simple_bin_rop(self, i, op):
-    if isinstance(i,  H2OVec     ):  return H2OVec(self._name, Expr(op, i, self._len_check(i)))
-    if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self))
-    if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, i, self))
+  def _simple_vec_bin_rop(self, i, op):
+    if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, Expr(i), self, length=len(self)))
     raise NotImplementedError
 
 
-  def __add__(self, i):  return self._simple_bin_op(i,"+" )
-  def __sub__(self, i):  return self._simple_bin_op(i,"-" )
-  def __and__(self, i):  return self._simple_bin_op(i,"&" )
-  def __or__ (self, i):  return self._simple_bin_op(i,"|" )
-  def __div__(self, i):  return self._simple_bin_op(i,"/" )
-  def __mul__(self, i):  return self._simple_bin_op(i,"*" )
-  def __eq__ (self, i):  return self._simple_bin_op(i,"n")
-  def __ne__ (self, i):  return self._simple_bin_op(i,"N")
-  def __pow__(self, i):  return self._simple_bin_op(i,"^" )
-  def __ge__ (self, i):  return self._simple_bin_op(i,"G")
-  def __gt__ (self, i):  return self._simple_bin_op(i,"g" )
-  def __le__ (self, i):  return self._simple_bin_op(i,"L")
-  def __lt__ (self, i):  return self._simple_bin_op(i,"l" )
+  def __add__(self, i):  return self._simple_vec_bin_op(i,"+" )
+  def __sub__(self, i):  return self._simple_vec_bin_op(i,"-" )
+  def __and__(self, i):  return self._simple_vec_bin_op(i,"&" )
+  def __or__ (self, i):  return self._simple_vec_bin_op(i,"|" )
+  def __div__(self, i):  return self._simple_vec_bin_op(i,"/" )
+  def __mul__(self, i):  return self._simple_vec_bin_op(i,"*" )
+  def __eq__ (self, i):  return self._simple_vec_bin_op(i,"n")
+  def __ne__ (self, i):  return self._simple_vec_bin_op(i,"N")
+  def __pow__(self, i):  return self._simple_vec_bin_op(i,"^" )
+  def __ge__ (self, i):  return self._simple_vec_bin_op(i,"G")
+  def __gt__ (self, i):  return self._simple_vec_bin_op(i,"g" )
+  def __le__ (self, i):  return self._simple_vec_bin_op(i,"L")
+  def __lt__ (self, i):  return self._simple_vec_bin_op(i,"l" )
 
   def __radd__(self, i): return self.__add__(i)  # commutativity
-  def __rsub__(self, i): return self._simple_bin_rop(i,"-")  # not commutative
+  def __rsub__(self, i): return self._simple_vec_bin_rop(i,"-")  # not commutative
   def __rand__(self, i): return self.__and__(i)  # commutativity (no short circuiting)
   def __ror__ (self, i): return self.__or__ (i)
-  def __rdiv__(self, i): return self._simple_bin_rop(i,"/")  # not commutative
+  def __rdiv__(self, i): return self._simple_vec_bin_rop(i,"/")  # not commutative
   def __rmul__(self, i): return self.__mul__(i)
-
+  def __rpow__(self, i): return self._simple_vec_bin_rop(i,"^")  # not commutative
 
   def __len__(self):
     """
