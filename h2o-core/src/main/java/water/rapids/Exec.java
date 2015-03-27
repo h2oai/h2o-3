@@ -209,7 +209,8 @@ public class Exec extends Iced {
   }
 
   boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '%' || c =='{'; }
-
+  boolean isQuoted(char c) { return c == '\"' || c == '\''; }
+  char getQuote() { return (char)_ast[_x++]; }
   String unparsed() { return new String(_ast,_x,_ast.length-_x); }
 
   static AST throwErr( String msg, Exec E) {

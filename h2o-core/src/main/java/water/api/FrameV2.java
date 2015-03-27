@@ -1,6 +1,7 @@
 package water.api;
 
-import water.*;
+import water.Key;
+import water.MemoryManager;
 import water.api.KeyV1.FrameKeyV1;
 import water.api.KeyV1.VecKeyV1;
 import water.fvec.*;
@@ -8,6 +9,7 @@ import water.fvec.Frame.VecSpecifier;
 import water.parser.ValueString;
 import water.util.DocGen.HTML;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.PrettyPrint;
 
 // TODO: need a base (versionless) class!
@@ -65,6 +67,9 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   }
 
   public static class ColV2 extends Schema<Vec, ColV2> {
+
+    static final boolean FORCE_SUMMARY = true;
+    static final boolean NO_SUMMARY = false;
 
     public ColV2() {}
 
@@ -125,15 +130,30 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     transient Vec _vec;
 
     ColV2(String name, Vec vec, long off, int len) {
+      this(name, vec, off, len, NO_SUMMARY);
+    }
+
+    ColV2(String name, Vec vec, long off, int len, boolean force_summary) {
       label=name;
-      missing_count = vec.naCnt();
-      zero_count = vec.length()-vec.nzCnt()- missing_count;
-      positive_infinity_count = vec.pinfs();
-      negative_infinity_count = vec.ninfs();
-      mins  = vec.mins();
-      maxs  = vec.maxs();
-      mean  = vec.mean();
-      sigma = vec.sigma();
+
+      if (force_summary) {
+        missing_count = vec.naCnt();
+        zero_count = vec.length() - vec.nzCnt() - missing_count;
+        positive_infinity_count = vec.pinfs();
+        negative_infinity_count = vec.ninfs();
+        mins = vec.mins();
+        maxs = vec.maxs();
+        mean = vec.mean();
+        sigma = vec.sigma();
+
+        // Histogram data is only computed on-demand.  By default here we do NOT
+        // compute it, but will return any prior computed & cached histogram.
+        histogram_bins = vec.lazy_bins();
+        histogram_base = histogram_bins ==null ? 0 : vec.base();
+        histogram_stride = histogram_bins ==null ? 0 : vec.stride();
+        percentiles = histogram_bins ==null ? null : vec.pctiles();
+      }
+
       type  = vec.isEnum() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       domain = vec.domain();
       len = (int)Math.min(len,vec.length()-off);
@@ -158,12 +178,6 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
       if (len > 0)  // len == 0 is presumed to be a header file
         precision = vec.chunkForRow(0).precision();
 
-      // Histogram data is only computed on-demand.  By default here we do NOT
-      // compute it, but will return any prior computed & cached histogram.
-      histogram_bins = vec.lazy_bins();
-      histogram_base = histogram_bins ==null ? 0 : vec.base();
-      histogram_stride = histogram_bins ==null ? 0 : vec.stride();
-      percentiles = histogram_bins ==null ? null : vec.pctiles();
     }
 
     public void clearBinsField() {
@@ -212,8 +226,12 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   //==========================
   // Custom adapters go here
 
-  // Version&Schema-specific filling from the impl
   @Override public FrameV2 fillFromImpl(Frame f) {
+    return fillFromImpl(f, ColV2.NO_SUMMARY);
+  }
+
+  // Version&Schema-specific filling from the impl
+  public FrameV2 fillFromImpl(Frame f, boolean force_summary) {
     this._fr = f;
     this.key = new FrameKeyV1(f._key);
     this.checksum = _fr.checksum();
@@ -234,8 +252,15 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
         vec_keys[i] = new VecKeyV1(keys[i]);
     }
     Vec[] vecs = _fr.vecs();
-    for( int i=0; i<columns.length; i++ )
-      columns[i] = new ColV2(_fr._names[i],vecs[i], row_offset, row_count);
+    for( int i=0; i<columns.length; i++ ) {
+      try {
+        columns[i] = new ColV2(_fr._names[i], vecs[i], row_offset, row_count, force_summary);
+      }
+      catch (Exception e) {
+        Log.err("Caught exception processing FrameV2(", f._key.toString(), "): Vec: " + _fr._names[i], e);
+        throw e;
+      }
+    }
     is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     chunk_summary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(f).toTwoDimTable());

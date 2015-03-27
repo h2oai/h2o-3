@@ -269,12 +269,13 @@ setClass("H2OW2V", representation(train.data="H2OFrame"), contains="H2OObject")
 #' @slot finalizers A \code{list} object containing environments with finalizers that
 #'                  remove keys from the H2O key-value store.
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
-#' @slot parameters A \code{list} containing the parameter settings that were used to fit the model.
+#' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
+#' @slot allparameters A \code{list} containg all parameters used to fit the model.
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 setClass("H2OModel",
-         representation(algorithm="character", parameters="list", model="list"),
-         contains=c("VIRTUAL", "H2OObject"))
+         representation(algorithm="character", parameters="list", allparameters="list", model="list"),
+                        contains=c("VIRTUAL", "H2OObject"))
 
 #' @rdname H2OModel-class
 setMethod("show", "H2OModel", function(object) {
@@ -304,7 +305,7 @@ setClass("H2OAutoEncoderModel", contains="H2OModel")
 #' @rdname H2OModel-class
 setClass("H2ODimReductionModel", contains="H2OModel")
 
-#' 
+#'
 #' The H2OModelMetrics Object.
 #'
 #' A class for constructing performance measures of H2O models.
@@ -334,7 +335,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     }
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")    
+    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
     print(object@metrics$max_criteria_and_metric_scores)
 })
 
