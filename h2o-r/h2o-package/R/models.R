@@ -422,6 +422,20 @@ h2o.mse <- function(object) {
   }
 }
 
+
+#' Retrieve the Log Loss Value
+#'
+#' Retrieves the log loss output for a \linkS4class{H2OBinomialMetrics} or
+#' \linkS4class{H2OMultinomialMetrics} object
+#'
+#' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
+h2o.logloss <- function(object) {
+  if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics"))
+    object@metrics$logloss
+  else
+    stop(paste("No log loss for",class(object)))
+}
+
 #' H2O Model Metric Accessor Functions
 #'
 #' A series of functions that retrieve model metric details.
