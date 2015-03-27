@@ -72,9 +72,6 @@ public class AUC2 extends Iced {
      *  @param fp False Positives (predicted  true, actual false)
      *  @param fn False Negatives (predicted false, actual true )
      *  @param tn True  Negatives (predicted false, actual false)
-     *  The sum of actual Trues and Falses is count of obs not missing either actual or prediction
-     *  @param p Actual Trues
-     *  @param n Actual Falses
      *  @return criteria
      */
     abstract double exec( long tp, long fp, long fn, long tn );
