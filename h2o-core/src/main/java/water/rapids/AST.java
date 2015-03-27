@@ -1,7 +1,10 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,7 +135,8 @@ class ASTId extends AST {
   final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
-    return new ASTId(_type, E.parseID());
+    String id = E.isQuoted(E.peek()) ? E.parseString(E.getQuote()) : E.parseID(); // allows for quoted ID here...
+    return new ASTId(_type, id);
   }
   @Override public String toString() { return _type+_id; }
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
@@ -620,9 +624,12 @@ class ASTAssign extends AST {
     AST l;
     if (E.isSpecial(E.peek())) {
       boolean putkv = E.peek() == '!';
-      if (putkv) E._x++; // skip the !
+      E._x++; // skip the special char...
       l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
-    } else l = E.parse();
+    } else {
+      if( E.peek() == '(' ) l = E.parse();
+      else l = new ASTId('&', E.parseID());
+    }
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();
