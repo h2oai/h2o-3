@@ -186,6 +186,17 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     parms$y <- args$y
     parms$beta_constraint <- beta_constraint
     names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
+    m <- .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+    m@model$coefficients <- m@model$coefficients_table[,2]
+    names(m@model$coefficients) <- m@model$coefficients_table[,1]
+    m
+}
 
-    .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+h2o.makeGLMModel <- function(model,beta) {  
+   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))   
+   m <- h2o.getModel(key=res$key$name) 
+   m@model$coefficients <- m@model$coefficients_table[,2]
+   names(m@model$coefficients) <- m@model$coefficients_table[,1]
+   m
 }

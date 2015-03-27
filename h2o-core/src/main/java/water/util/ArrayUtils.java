@@ -670,6 +670,13 @@ public class ArrayUtils {
     assert i == aIds.length && j == bIds.length;
   }
 
+  public static String[] select(String[] ary, int[] idxs) {
+    String [] res  = new String[idxs.length];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
   // Sort an indirection array (ints) without making zillions of Integers.
   // Painful simple O(n^2) insertion sort, suitable for small arrays only.
   public interface IntComparator { public int compare(int a, int b); }

@@ -198,6 +198,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Frame Manipulation
 .h2o.__CREATE_FRAME   <- "CreateFrame.json"
 
+.h2o.__GLMMakeModel <- "MakeGLMModel.json"
+
 #' Rapids Endpoint
 .h2o.__RAPIDS         <- "Rapids.json"
 
