@@ -13,7 +13,6 @@ def binop_star(ip,port):
     #frame/scaler
     res = iris * 99
     res_rows, res_cols = res.dim()
-    h2o_sums = []
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for x, y in zip([sum([res[c][r].eager() for r in range(rows)]) for c in range(cols-1)], [86773.5, 45351.9, 55816.2, 17800.2]):
         assert abs(x - y) < 1e-7,  "unexpected column sums."

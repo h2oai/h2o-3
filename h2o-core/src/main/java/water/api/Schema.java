@@ -86,6 +86,7 @@ import java.util.regex.Pattern;
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected transient Class<I> _impl_class = getImplClass(); // see getImplClass()
   private static final int HIGHEST_SUPPORTED_VERSION = 3;
+  private static final int EXPERIMENTAL_VERSION = 99;
 
   public static final class Meta extends Iced {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,9 +192,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public final static int getLatestVersion() {
     return latest_version;
   }
+
   // Bound the version search if we haven't yet registered all schemas
   public final static int getHighestSupportedVersion() {
     return HIGHEST_SUPPORTED_VERSION;
+  }
+
+  public final static int getExperimentalVersion() {
+    return EXPERIMENTAL_VERSION;
   }
 
   /** Register the given schema class. */
