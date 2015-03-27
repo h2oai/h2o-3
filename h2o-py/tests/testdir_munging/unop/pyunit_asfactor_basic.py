@@ -20,7 +20,7 @@ def asfactor_basic(ip,port):
   meow.show()
 
   foo = h2oframe["cylinders"].isfactor()
-  assert not foo, "expected the foo H2OVec to be a not factor"
+  assert not foo.eager(), "expected the foo H2OVec to be a not factor"
 
   h2oframe["cylinders"] = h2oframe['cylinders'].asfactor()
   h2oframe.show()
