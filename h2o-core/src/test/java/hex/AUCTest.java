@@ -58,11 +58,19 @@ public class AUCTest extends TestUtil {
     //for( int i=10; i<1000; i+=10 ) {
     //  AUC2 auc = new AUC2(i,fr.vec("V1"),fr.vec("V2"));
     //  System.out.println("bins="+i+", aucERR="+Math.abs(auc._auc-ROCR_auc)/ROCR_auc);
-    //  Assert.assertEquals(fr.numRows(), auc._at+auc._af);
+    //  Assert.assertEquals(fr.numRows(), auc._p+auc._n);
     //}
 
     AUC2 auc = new AUC2(fr.vec("V1"), fr.vec("V2"));
     Assert.assertEquals(ROCR_auc, auc._auc, 1e-4);
+
+    Assert.assertEquals(1.0, AUC2.ThresholdCriterion.precision.max_criterion(auc), 1e-4);
+
+    double ROCR_max_abs_mcc = 0.4553512;
+    Assert.assertEquals(ROCR_max_abs_mcc, AUC2.ThresholdCriterion.absolute_MCC.max_criterion(auc), 1e-3);
+
+    double ROCR_f1 = 0.9920445; // same as ROCR "f" with alpha=0, or alternative beta=1
+    Assert.assertEquals(ROCR_f1, AUC2.ThresholdCriterion.f1.max_criterion(auc), 1e-4);
 
     fr.remove();
   }
@@ -74,7 +82,7 @@ public class AUCTest extends TestUtil {
     Frame fr = frame(new String[]{"probs","actls"},rows);
     AUC2 auc = new AUC2(fr.vec("probs"),fr.vec("actls"));
     fr.remove();
-    for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._at)+","+((double)auc._fps[i]/auc._af)+"} ");
+    for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._p)+","+((double)auc._fps[i]/auc._n)+"} ");
     System.out.println();
     for( int i=0; i<auc._nBins; i++ ) System.out.print(AUC2.ThresholdCriterion.minPerClassCorrect.exec(auc,i)+" ");
     System.out.println();

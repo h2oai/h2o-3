@@ -19,7 +19,7 @@ public class AUC2 extends Iced {
   double[] _ths;   // Thresholds
   long[] _tps;     // True  Positives
   long[] _fps;     // False Positives
-  long _at, _af;   // Actual trues, falses
+  long _p, _n;     // Actual trues, falses
   double _auc;     // Actual AUC value
 
   /** Criteria for 2-class Confusion Matrices
@@ -28,40 +28,42 @@ public class AUC2 extends Iced {
    *  from the basic parts, and from an AUC2 at a given threshold index.
    */
   public enum ThresholdCriterion {
-    f1() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
-        final double prec = precision.exec(tp,fp,fn,tn,at,af);
-        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+    f1() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+        final double prec = precision.exec(tp,fp,fn,tn,p,n);
+        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
         return 2. * (prec * recl) / (prec + recl);
       } },
-    f2() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
-        final double prec = precision.exec(tp,fp,fn,tn,at,af);
-        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+    f2() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+        final double prec = precision.exec(tp,fp,fn,tn,p,n);
+        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
         return 5. * (prec * recl) / (4. * prec + recl);
       } },
-    f0point5() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
-        final double prec = precision.exec(tp,fp,fn,tn,at,af);
-        final double recl = recall   .exec(tp,fp,fn,tn,at,af);
+    f0point5() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+        final double prec = precision.exec(tp,fp,fn,tn,p,n);
+        final double recl = recall   .exec(tp,fp,fn,tn,p,n);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
-        return 1.0-((double)fn+fp)/(at+af);
+    accuracy() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+        return 1.0-((double)fn+fp)/(p+n);
       } },
-    precision() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+    precision() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
         return (double)tp/(tp+fp);
       } },
-    recall() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+    recall() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
         return (double)tp/(tp+fn);
       } },
-    specificity() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+    specificity() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
         return (double)tn/(tn+fp);
       } },
-    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
+    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
         double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         return Math.abs(mcc);
       } },
-    // minimize max-per-class-error by maximizing min-per-class-correct
-    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn, long at, long af ) {
-        return Math.min((double)tp/at,(double)tn/af);
+    // minimize max-per-class-error by maximizing min-per-class-correct.
+    // Report from max_criterion is the smallest correct rate for both classes.
+    // The max min-error-rate is 1.0 minus that.
+    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn, long p, long n ) {
+        return Math.min((double)tp/p,(double)tn/n);
       } },
     ;
 
@@ -71,16 +73,20 @@ public class AUC2 extends Iced {
      *  @param fn False Negatives (predicted false, actual true )
      *  @param tn True  Negatives (predicted false, actual false)
      *  The sum of actual Trues and Falses is count of obs not missing either actual or prediction
-     *  @param at Actual Trues
-     *  @param af Actual Falses
+     *  @param p Actual Trues
+     *  @param n Actual Falses
      *  @return criteria
      */
-    abstract double exec( long tp, long fp, long fn, long tn, long at, long af );
+    abstract double exec( long tp, long fp, long fn, long tn, long p, long n );
 
-    public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx),auc._at,auc._af); }
+    public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx),auc._p,auc._n); }
+
+    public double max_criterion( AUC2 auc ) {
+      return exec(auc,max_criterion_idx(auc));
+    }
 
     // Convert a criterion into a threshold index that maximizes the criterion
-    public int max_criterion( AUC2 auc ) {
+    public int max_criterion_idx( AUC2 auc ) {
       double md = -Double.MAX_VALUE;
       int mx = -1;
       for( int i=0; i<auc._nBins; i++ ) {
@@ -94,8 +100,8 @@ public class AUC2 extends Iced {
   public double threshold( int idx ) { return _ths[idx]; }
   public long tp( int idx ) { return _tps[idx]; }
   public long fp( int idx ) { return _fps[idx]; }
-  public long tn( int idx ) { return _af-_fps[idx]; }
-  public long fn( int idx ) { return _at-_tps[idx]; }
+  public long tn( int idx ) { return _n-_fps[idx]; }
+  public long fn( int idx ) { return _p-_tps[idx]; }
 
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
@@ -121,12 +127,12 @@ public class AUC2 extends Iced {
 
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
-    long at=0, af=0;
+    long p=0, n=0;
     for( int i=0; i<nBins; i++ ) { 
-      at += _tps[i]; _tps[i] = at;
-      af += _fps[i]; _fps[i] = af;
+      p += _tps[i]; _tps[i] = p;
+      n += _fps[i]; _fps[i] = n;
     }
-    _at = at;  _af = af;
+    _p = p;  _n = n;
     _auc = compute_auc();
   }
 
@@ -143,7 +149,7 @@ public class AUC2 extends Iced {
       tp0 = _tps[i];  fp0 = _fps[i];
     }
     // Descale
-    return area/_at/_af;
+    return area/_p/_n;
   }
 
   // Build a CM for a threshold index.
