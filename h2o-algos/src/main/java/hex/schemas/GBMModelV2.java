@@ -12,10 +12,17 @@ public class GBMModelV2 extends SharedTreeModelV2<GBMModel,
 
   public static final class GBMModelOutputV2 extends SharedTreeModelV2.SharedTreeModelOutputV2<GBMModel.GBMOutput, GBMModelOutputV2> {
     // Output fields; input fields are in the parameters list
-    @API(help="Mean Square Error for Train Frame")
+    @API(help="Mean Square Errors for Training Frame from 1 to N trees")
     public double mse_train[];           // Total MSE, variance
-    @API(help="Mean Square Error for Validation Frame")
+    @API(help="Mean Square Errors for Validation Frame from 1 to N trees")
     public double mse_valid[];           // Total MSE, variance
+
+    @Override
+    public GBMModelOutputV2 fillFromImpl(GBMModel.GBMOutput impl) {
+      GBMModelOutputV2 gbmmo = super.fillFromImpl(impl);
+      gbmmo.mse = impl._mse_train[impl._mse_train.length-1];
+      return gbmmo;
+    }
   } // GBMModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

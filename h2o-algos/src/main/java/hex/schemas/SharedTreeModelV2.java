@@ -16,10 +16,9 @@ public abstract class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
 
   public static class SharedTreeModelOutputV2<O extends SharedTreeModel.SharedTreeOutput, SO extends SharedTreeModelOutputV2<O,SO>> extends ModelOutputSchema<O, SO> {
     // Output fields; input fields are in the parameters list
-    @API(help="Mean Square Error")
+    @API(help="Mean Square Error for Training Frame")
     public double mse;           // Total MSE, variance
     @API(help="Variable Importances")
     public TwoDimTableV1 variable_importances;
-
   } // SharedTreeModelOutputV2
 }
