@@ -132,7 +132,7 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = column_names if column_names and not parse["column_names"] else parse['column_names']
+    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_keys'])+1)]
     # set the rows
     rows = parse['rows']
     # set the vector keys
