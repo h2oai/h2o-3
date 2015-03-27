@@ -480,6 +480,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if( s.equals("null") || s.length() == 0) return null;
       read(s,    0       ,'[',fclz);
       read(s,s.length()-1,']',fclz);
+
       String inside = s.substring(1,s.length() -1).trim();
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
       if (inside.length() == 0)
@@ -502,8 +503,21 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         if (String.class == afclz || KeyV1.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
-          if (stripped.length() >= 2)
-            stripped = stripped.substring(1, stripped.length() - 1);
+
+          if ("null".equals(stripped)) {
+            a[i] = null;
+          } else if (! stripped.startsWith("\"") || ! stripped.endsWith("\"")) {
+            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be quoted, but the client sent: " + stripped;
+
+            IcedHashMap values = new IcedHashMap<String, Object>();
+            values.put("function", fclz.getSimpleName() + ".fillFromParms()");
+            values.put("argument", field_name);
+            values.put("value", stripped);
+
+            throw new H2OIllegalArgumentException(msg, msg, values);
+          }
+
+          stripped = stripped.substring(1, stripped.length() - 1);
           a[i] = (E) parse(field_name, stripped, afclz, required);
         } else {
           a[i] = (E) parse(field_name, splits[i].trim(), afclz, required);
