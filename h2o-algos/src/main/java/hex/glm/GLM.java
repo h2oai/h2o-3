@@ -960,10 +960,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     double _addedL2;
     double  [] _rho;
 
-    private static double boundedXAbs(double x, double lb, double ub) {
+    private static double boundedX(double x, double lb, double ub) {
       if(x < lb)x = lb;
       if(x > ub)x = ub;
-      return x >= 0?x:-x;
+      return x;
     }
 
     public GramSolver(Gram gram, double [] xy, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho, double [] lb, double [] ub) {
@@ -1005,7 +1005,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         double rho = l1pen == 0?0:ArrayUtils.maxValue(rhoCandidates);
         if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
-          rhos[i] = (l1pen > .1?l1pen:.1)/boundedXAbs(x,lb[i],ub[i]);
+          double xx = x - boundedX(x, lb[i], ub[i]);
+          rhos[i] = Math.max(rho,xx == 0?1e-4:1);//Math.max(1e-5,Math.max(rho,xx/x));
         } else {
           rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
         }
@@ -1013,7 +1014,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       // do the intercept separate as l1pen does not apply to it
       if(lb != null && !Double.isInfinite(lb[icptCol])|| ub != null && !Double.isInfinite(ub[icptCol])) {
         int icpt = xy.length-1;
-        rhos[icpt] = (xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
+        rhos[icpt] = 1;//(xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
       }
       if(l2pen > 0)
         gram.addDiag(l2pen);

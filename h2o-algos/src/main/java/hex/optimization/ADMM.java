@@ -113,6 +113,14 @@ public class ADMM {
             icpt = lb[idx];
           if (ub != null && icpt > ub[idx])
             icpt = ub[idx];
+          double r = x[idx] - icpt;
+          double s = icpt - z[idx];
+          u[idx] += r;
+          beta_given[idx] = icpt - u[idx];
+          rnorm += r * r;
+          snorm += s * s;
+          xnorm += icpt * icpt;
+          unorm += rho[idx] * rho[idx] * u[idx] * u[idx];
           z[idx] = icpt;
         }
         if (solver.hasGradient() || rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
