@@ -30,7 +30,8 @@ h2o.removeAll()
 # Parameters for the test.
 #----------------------------------------------------------------------
 
-data.hex <- h2o.uploadFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
+#data.hex <- h2o.uploadFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
+data.hex <- h2o.importFile(conn, "/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T)
 
 colNames = {}
 for(col in names(data.hex)) {
