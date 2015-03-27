@@ -126,7 +126,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
               hr[i] += hr[i-1];
             }
             if (hr.length == _nclasses) {
-              assert(Math.abs(hr[hr.length-1]-1) < 1e-4);
+              // this might not be true due to tie-breaking, force it to be true below
+              // assert(Math.abs(hr[hr.length-1]-1) < 1e-4);
               hr[hr.length-1] = 1.0f;
             }
           }
