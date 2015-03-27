@@ -737,8 +737,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     // classification
     public ConfusionMatrix train_confusion_matrix;
     public ConfusionMatrix valid_confusion_matrix;
-    public double train_err = 1;
-    public double valid_err = 1;
+    public double train_err = Double.NaN;
+    public double valid_err = Double.NaN;
     public double train_logloss = Double.NaN;
     public double valid_logloss = Double.NaN;
     public AUCData trainAUC;
