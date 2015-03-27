@@ -454,7 +454,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         cm = ((ModelMetricsBinomial)mm)._cm;
       else if(model_cat == ModelCategory.Multinomial) {
         cm = ((ModelMetricsMultinomial) mm)._cm;
-        Log.info("HitRatios: ", Arrays.toString(((ModelMetricsMultinomial)mm)._hit_ratios));
+        float[] hr = ((ModelMetricsMultinomial)mm)._hit_ratios;
+        if (hr != null && hr.length > 0)
+          Log.info("Top-" + hr.length + " HitRatios: ", Arrays.toString(hr));
       }
 
       if (cm != null && cm.domain != null) {

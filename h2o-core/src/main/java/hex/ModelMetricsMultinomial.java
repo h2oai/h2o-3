@@ -125,6 +125,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
             for (int i = 1; i < hr.length; i++) {
               hr[i] += hr[i-1];
             }
+            if (hr.length == _nclasses) {
+              assert(Math.abs(hr[hr.length-1]-1) < 1e-4);
+              hr[hr.length-1] = 1.0f;
+            }
           }
           mse = _sumsqe / _count;
           logloss = _logloss / _count;
