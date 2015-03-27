@@ -195,12 +195,41 @@ class Expr(object):
     #return j['scalar']
     raise NotImplementedError
 
-  # Small-data add; result of a (lazy but small) Expr vs a plain int/float
-  def __add__(self, i):
-    return self.eager() + i
+  def _simple_expr_bin_op( self, i, op):
+    if isinstance(i, h2o.H2OFrame):  return i._simple_frames_bin_op(self,op)
+    if isinstance(i, h2o.H2OVec  ):  return i._simple_vec_bin_op(self,op)
+    if isinstance(i, Expr)        :
+      e = self.eager()
+      return  Expr(op, Expr(e), i) if isinstance(e, (int,float)) else Expr(op, self, i)
+    if isinstance(i, (int, float)):  return Expr(op, self, Expr(i))
+    if isinstance(i, str)         :  return Expr(op, self, Expr(None,i))
+    raise NotImplementedError
 
-  def __radd__(self, i):
-    return self + i  # Add is commutative
+  def _simple_expr_bin_rop(self, i, op):
+    if isinstance(i, (int, float)):  return Expr(op, Expr(i), self)
+    raise NotImplementedError
+
+  def __add__(self, i):  return self._simple_expr_bin_op(i,"+" )
+  def __sub__(self, i):  return self._simple_expr_bin_op(i,"-" )
+  def __and__(self, i):  return self._simple_expr_bin_op(i,"&" )
+  def __or__ (self, i):  return self._simple_expr_bin_op(i,"|" )
+  def __div__(self, i):  return self._simple_expr_bin_op(i,"/" )
+  def __mul__(self, i):  return self._simple_expr_bin_op(i,"*" )
+  def __eq__ (self, i):  return self._simple_expr_bin_op(i,"n")
+  def __ne__ (self, i):  return self._simple_expr_bin_op(i,"N")
+  def __pow__(self, i):  return self._simple_expr_bin_op(i,"^" )
+  def __ge__ (self, i):  return self._simple_expr_bin_op(i,"G")
+  def __gt__ (self, i):  return self._simple_expr_bin_op(i,"g" )
+  def __le__ (self, i):  return self._simple_expr_bin_op(i,"L")
+  def __lt__ (self, i):  return self._simple_expr_bin_op(i,"l" )
+
+  def __radd__(self, i): return self.__add__(i)
+  def __rsub__(self, i): return self._simple_expr_bin_rop(i,"-")
+  def __rand__(self, i): return self.__and__(i)
+  def __ror__ (self, i): return self.__or__ (i)
+  def __rdiv__(self, i): return self._simple_expr_bin_rop(i,"/")
+  def __rmul__(self, i): return self.__mul__(i)
+  def __rpow__(self, i): return self._simple_expr_bin_rop(i,"^")
 
   def __del__(self):
     # Dead pending op or local data; nothing to delete
@@ -308,8 +337,8 @@ class Expr(object):
     # Do not try/catch NotImplementedError - it blows the original stack trace
     # so then you can't see what's not implemented
 
-    if self._op in ["+", "&", "-", "*", "/", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
-      rapids_dict = {"+":"+", "&":"&", "-":"-", "*":"*", "/":"/", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
+    if self._op in ["+", "&", "|", "-", "*", "/", "^", "n", "N", "g", "G", "l", "L"]:   # in self.BINARY_INFIX_OPS:
+      rapids_dict = {"+":"+", "&":"&", "|":"|", "-":"-", "*":"*", "/":"/", "^":"**", "n":"==", "N":"!=", "g":">", "G":">=", "l":"<",
                      "L":"<="}
       #   num op num
       #   num op []
