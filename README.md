@@ -390,6 +390,20 @@ val d = new java.net.URI(path)
 val f = new DataFrame(d)
 ```
 
+
+##Generate REST API documentation 
+
+To generate the REST API documentation, use the following commands: 
+
+    cd ~/h2o-dev
+    cd py
+    python ./generate_rest_api_docs.py  # to generate Markdown only
+    python ./generate_rest_api_docs.py --generate_html  --github_user GITHUB_USER --github_password GITHUB_PASSWORD # to generate Markdown and HTML
+
+The default location for the generated documentation is `build/docs/REST`. 
+
+
+
 Community
 ---------------------------------
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
@@ -413,7 +427,6 @@ Amy Wang
 Max Schloemer
 Ray Peck
 Prithvi Prabhu
-Patrick Aboyoun
 Brandon Hill
 Jeff Gambera
 Ariel Rao
@@ -429,6 +442,8 @@ Erik Eckstrand
 James Dean
 Neeraja Madabhusi
 Sebastian Vidrio
+Ben Sabrin
+Matt Dowle
 
 ```
 
@@ -461,4 +476,5 @@ Ash Bhardwaj
 Rakesh Mathur
 Michael Marks
 Egbert Bierman
+Rajesh Ambati
 ```
