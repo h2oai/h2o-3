@@ -126,6 +126,12 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+h2o.rep_len <- function(x, length) {
+  if(length <= 0) return(NULL)
+
+  .h2o.nary_frame_op("rep_len", x, length)
+}
+
 #' Inserting Missing Values to an H2O DataFrame
 #'
 #' Randomly replaces a user-specified fraction of entries in a H2O dataset with
@@ -194,7 +200,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if(!is(data, "H2OFrame")) stop("`data` must be an H2OFrame object")
   ## -- Force evaluate temporary ASTs -- ##
   delete <- !.is.eval(data)
-  if (delete) {
+  if( delete ) {
     temp_key <- data@key
     .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = temp_key)
   }
@@ -206,14 +212,11 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
     params$destKeys <- .collapse(destination_keys)
 
   res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
-  .h2o.__waitOnJob(data@conn, res$key$name)
 
-  splitKeys <- res$dest_keys
-  splits <- list()
-  splits <- lapply(splitKeys, function(split) h2o.getFrame(split$name))
-
-  if(delete)
+  if( delete )
     h2o.rm(temp_key)
+
+  splits <- lapply(res$dest_keys, function(s) h2o.getFrame(s$name))
 }
 
 #h2o.ignoreColumns <- function(data, max_na = 0.2) {

@@ -1609,7 +1609,7 @@ public final class AutoBuffer {
   public AutoBuffer putJSONAA8( String name, long ary[][] ) { return putJSONStr(name).put1(':').putJSONAA8(ary); }
   public AutoBuffer putJSONAAA8( String name, long ary[][][] ) { return putJSONStr(name).put1(':').putJSONAAA8(ary); }
 
-  AutoBuffer putJSON4 ( int i ) { return putJStr(Integer.toString(i)); }
+  public AutoBuffer putJSON4(int i) { return putJStr(Integer.toString(i)); }
   AutoBuffer putJSONA4( int[] a) {
     if( a == null ) return putJNULL();
     put1('[');

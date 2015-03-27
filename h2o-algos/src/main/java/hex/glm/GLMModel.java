@@ -718,7 +718,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = _submodels[l].validation.aic();
         _auc = _submodels[l].validation.auc();
       }
-      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_names.length);
+      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
       int j = 0;
       for(int i:_submodels[l].idxs)

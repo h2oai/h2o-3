@@ -8,6 +8,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHa
 import hex.schemas.DeepLearningV2;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -72,7 +73,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         _parms.read_lock_frames(DeepLearning.this);
         init(true);
         if (error_count() > 0)
-          throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
         buildModel();
         done();                 // Job done!
 //      if (n_folds > 0) CrossValUtils.crossValidate(this);

@@ -166,8 +166,10 @@ def rapids(expr):
   :param expr: The rapids expression (ascii string).
   :return: The JSON response of the Rapids execution
   """
-  return H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
-
+  result = H2OConnection.post_json("Rapids", ast=urllib.quote(expr))
+  if result['error'] is not None:
+    raise EnvironmentError("rapids expression not evaluated: {0}".format(str(result['error'])))
+  return result
 
 def frame(key):
   """
@@ -229,6 +231,10 @@ def init(ip="localhost", port=54321):
   H2OConnection(ip=ip, port=port)
   return None
 
+def export_file(frame,path,force=False):
+  fr = H2OFrame.send_frame(frame)
+  f = "true" if force else "false"
+  H2OConnection.get_json("Frames/"+str(fr)+"/export/"+path+"/overwrite/"+f)
 
 
 def deeplearning(x,y,validation_x=None,validation_y=None,**kwargs):

@@ -10,21 +10,23 @@ source('../h2o-runit.R')
 test.pub.767 <- function(conn) {
   Log.info('Importing the altered prostatetype data from smalldata.')
   prostate <- h2o.importFile(conn, normalizePath(locate('smalldata/logreg/prostate.csv')), 'prostate')
-  
+
   Log.info('Print head of dataset')
   Log.info(head(prostate))
+  prostate[,2] <- as.factor(prostate[,2]) # convert to Enum for classification
 
-  m <- h2o.randomForest(x = 3:8, y = 2, data = prostate, ntree = 500, depth = 100) 
+  m <- h2o.randomForest(x = 3:8, y = 2, training_frame = prostate, ntrees = 500,
+                        max_depth = 100)
 
   Log.info("Number of rows in the confusion matrix for AUC:")
-  print(sum(m@model$confusion[3,1:2]))
-  
-  print("Number of rows in the prostate dataset:")
-  print(dim(prostate))
-  
+  p <- h2o.performance(m)
+  print(h2o.confusionMatrices(p, 0.1))
 
-  expect_that(sum(m@model$confusion[3,1:2]), equals(dim(prostate)[1]))
-  show(m)  
+  print("Number of rows in the prostate dataset:")
+  print(nrow(prostate))
+
+
+  expect_equal(sum(m@model$confusion[3,1:2]), nrow(prostate))
   testEnd()
 }
 

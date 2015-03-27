@@ -56,6 +56,19 @@ task buildDist(type: Exec) {
     commandLine getOsSpecificCommandLine(["python", "setup.py", "bdist_wheel"])
 }
 
+def testsPath = new File("./tests")
+
+task smokeTest(type: Exec) {
+    dependsOn build
+    println "PyUnit smoke test (run.py --wipeall --testsize s)..."
+    workingDir testsPath
+    commandLine 'pwd'
+    commandLine 'python', '../../scripts/run.py', '--wipeall', '--testsize', 's'
+}
+
+task cleanUpSmokeTest << {
+    new File([T, "tests/results"].join(File.separator)).deleteDir()
+}
 
 task cleaner << {
     println "Cleaning..."
@@ -65,7 +78,7 @@ task cleaner << {
     new File([getProjectDir().toString(), " build/"].join(File.separator)).deleteDir()
 }
 
-clean.dependsOn cleaner
+clean.dependsOn cleaner, cleanUpSmokeTest
 upgradeOrInstallWheel.dependsOn cleaner
 // buildDist.dependsOn upgradeOrInstallTabulate
 // buildDist.dependsOn upgradeOrInstallWheel

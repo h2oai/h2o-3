@@ -6,7 +6,11 @@ import water.api.ModelsHandler.Models;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.persist.PersistManager;
+import water.util.FileUtils;
+import water.util.Log;
 
+import java.io.*;
 import java.util.*;
 
 class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
@@ -176,12 +180,13 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       throw new H2OColumnNotFoundArgumentException("column", s.key.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
-    if (!vec.isString())
-    vec.bins();
+    if (!vec.isString()) {
+      vec.bins();
+    }
 
     // Cons up our result
     s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2().fillFromImpl(new Frame(new String[] {s.column }, new Vec[] { vec }));
+    s.frames[0] = new FrameV2().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), true);
     return s;
   }
 
@@ -193,18 +198,24 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
+    FramesV3 frames = doFetch(version, s, FrameV2.ColV2.NO_SUMMARY);
+
+    // Summary data is big, and not always there: null it out here.  You have to call columnSummary
+    // to force computation of the summary data.
+    for (FrameV2 a_frame: frames.frames) {
+      a_frame.clearBinsField();
+    }
+
+    return frames;
+  }
+
+  private FramesV3 doFetch(int version, FramesV3 s, boolean force_summary) {
     Frames f = s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
     s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2(frame, s.row_offset, s.row_count).fillFromImpl(frame);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV2(frame, s.row_offset, s.row_count).fillFromImpl(frame, force_summary);  // TODO: Refactor with FrameBase
 
-    // Summary data is big, and not always there: null it out here.  You have to call columnSummary
-    // to force computation of the summary data.
-    for (FrameV2 a_frame: s.frames) {
-      a_frame.clearBinsField();
-
-    }
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
       s.compatible_models = new ModelSchema[compatible.length];
@@ -217,6 +228,51 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       }
     }
     return s;
+  }
+
+  /** Export a single frame to the specified path. */
+  public FramesV3 export(int version, FramesV3 s) {
+    Frame fr = getFromDKV("key", s.key.key());
+
+    Log.info("ExportFiles processing (" + s.path + ")");
+    InputStream csv = (fr).toCSV(true,false);
+    export(csv,s.path, s.key.key().toString(),s.force);
+    return s;
+  }
+
+  // companion method to the export method
+  private void export(InputStream csv, String path, String frameName, boolean force) {
+    PersistManager pm = H2O.getPM();
+    OutputStream os = null;
+    try {
+      os = pm.create(path, force);
+      FileUtils.copyStream(csv, os, 4*1024*1024);
+    }
+    finally {
+      if (os != null) {
+        try {
+          os.close();
+          Log.info("Key '" + frameName +  "' was written to " + path + ".");
+        }
+        catch (Exception e) {
+          Log.err(e);
+        }
+      }
+    }
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public FramesV3 summary(int version, FramesV3 s) {
+    Frame frame = getFromDKV("key", s.key.key()); // safe
+
+    for (Vec vec : frame.vecs()) {
+      // Compute second pass of rollups: the histograms.
+      if (!vec.isString()) {
+        vec.bins();
+      }
+    }
+
+    return doFetch(version, s, FrameV2.ColV2.FORCE_SUMMARY);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */

@@ -3,11 +3,12 @@ source('../../h2o-runit.R')
 
 test.gbm.imbalanced <- function(conn) {
   covtype <- h2o.uploadFile(conn, locate("smalldata/covtype/covtype.20k.data"))
+  covtype[,55] <- as.factor(covtype[,55])
 
-  hh_imbalanced<-h2o.gbm.cv(x=c(1:54),y=55,ntrees=50,training_frame=covtype,loss="multinomial",balance_classes=F,nfolds=10)
+  hh_imbalanced<-h2o.gbm(x=c(1:54),y=55,ntrees=50,training_frame=covtype,loss="multinomial",balance_classes=F)
   hh_imbalanced_metrics <- h2o.performance(hh_imbalanced)
   print(hh_imbalanced_metrics)
-  hh_balanced<-h2o.gbm.cv(x=c(1:54),y=55,ntrees=50,training_frame=covtype,loss="multinomial",balance_classes=T,nfolds=10)
+  hh_balanced<-h2o.gbm(x=c(1:54),y=55,ntrees=50,training_frame=covtype,loss="multinomial",balance_classes=T)
   hh_balanced_metrics <- h2o.performance(hh_balanced)
   # print(hh_balanced_metrics)
 
@@ -18,21 +19,14 @@ test.gbm.imbalanced <- function(conn) {
   class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$prediction_error_by_class[6]
   class_6_err_balanced <- hh_balanced_metrics@metrics$cm$prediction_error_by_class[6]
 
-  if (class_6_err_imbalanced < class_6_err_balanced) {
-      print("--------------------")
-      print("")
-      print("FAIL, balanced error greater than imbalanced error")
-      print("")
-      print("")
-      print("class_6_err_imbalanced")
-      print(class_6_err_imbalanced)
-      print("")
-      print("class_6_err_balanced")
-      print(class_6_err_balanced)
-      print("")
-      print("--------------------")
-  }
-  checkTrue(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
+
+  print("class_6_err_imbalanced")
+  print(class_6_err_imbalanced)
+  print("")
+  print("class_6_err_balanced")
+  print(class_6_err_balanced)
+
+  expect_true(class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!")
 
   testEnd()
 }
