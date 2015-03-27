@@ -29,6 +29,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _defaultThresholds = thresholds;
   }
 
+  public DataInfo dinfo() { return _dinfo; }
   float [] _defaultThresholds;
 
   public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
@@ -103,7 +104,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
   }
 
-  public double [] beta(){ return _output._global_beta;}
+  public double [] beta() { return _output._global_beta;}
+  public String [] names(){ return _output._names;}
 
   public GLMValidation validation(){
     return _output._submodels[_output._best_lambda_idx].validation;
@@ -195,6 +197,25 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public void validate(GLM glm) {
+      if(_beta_constraint != null) {
+        Frame f = _beta_constraint.get();
+        if(f == null) glm.error("beta_constraint","Missing frame for beta constraints");
+        Vec v = f.vec("names");
+        if(v == null)glm.error("beta_constraint","Beta constraints parameter must have names column with valid coefficient names");
+        // todo: check the coefficient names
+        v = f.vec("upper_bounds");
+        if(v != null && !v.isNumeric())
+          glm.error("beta_constraint","upper_bounds must be numeric if present");v = f.vec("upper_bounds");
+        v = f.vec("lower_bounds");
+        if(v != null && !v.isNumeric())
+          glm.error("beta_constraint","lower_bounds must be numeric if present");
+        v = f.vec("beta_given");
+        if(v != null && !v.isNumeric())
+          glm.error("beta_constraint","beta_given must be numeric if present");v = f.vec("upper_bounds");
+        v = f.vec("beta_start");
+        if(v != null && !v.isNumeric())
+          glm.error("beta_constraint","beta_start must be numeric if present");
+      }
       if(_family == Family.binomial) {
         Frame frame = DKV.getGet(_train);
         if (frame != null) {
@@ -510,10 +531,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     GLMValidation validation;
     GLMValidation xvalidation;
     final int rank;
-    final int [] idxs;
+    public final int [] idxs;
     final boolean sparseCoef;
-    double []  beta;
-    double []  norm_beta;
+    public double []  beta;
+    public double []  norm_beta;
 
     public Submodel(double lambda , double [] beta, double [] norm_beta, long run_time, int iteration, boolean sparseCoef){
       this.lambda_value = lambda;
@@ -585,39 +606,39 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
     Submodel [] _submodels;
+    String [] _coefficient_names;
     int         _best_lambda_idx;
     float       _threshold;
     double   [] _global_beta;
-//    String   [] _coefficient_names;
-    TwoDimTable _coefficients_table;
-    TwoDimTable _coefficients_magnitude;
-    double 		  _residual_deviance;
-    double 		  _null_deviance;
-    double 		  _residual_degrees_of_freedom;
-    double		  _null_degrees_of_freedom;
-    double      _aic;
-    double      _auc;
-    boolean _binomial;
-    public int rank() {return rank(_submodels[_best_lambda_idx].lambda_value);}
+    double 		  _residual_deviance = Double.NaN;
+    double 		  _null_deviance = Double.NaN;
+    double 		  _residual_degrees_of_freedom = Double.NaN;
+    double		  _null_degrees_of_freedom = Double.NaN;
+    double      _aic = Double.NaN;
+    double      _auc = Double.NaN;
+    public boolean     _binomial;
+    public int rank() { return _submodels[_best_lambda_idx].rank; }
+    public boolean isNormalized(){
+      return _submodels != null && _submodels[_best_lambda_idx].norm_beta != null;
+    }
+    public String [] coefficientNames(){return _coefficient_names;}
 
+    public GLMOutput(String [] column_names, String [][] domains, String [] coefficient_names, double [] coefficients, float threshold, boolean binomial){
+      _names = column_names;
+      _domains = domains;
+      _global_beta = coefficients;
+      _coefficient_names = coefficient_names;
+      _submodels = new Submodel[]{new Submodel(-1,coefficients,null,-1,-1,false)};
+      _threshold = threshold;
+      _binomial = binomial;
+    }
     public GLMOutput() { }
     public GLMOutput(SupervisedModelBuilder b, DataInfo dinfo, boolean binomial){
       super(b);
       String [] cnames = dinfo.coefNames();
-      String [] pnames = dinfo._adaptedFrame.names();
-      String [] colTypes = new String[2];
-      String [] colFormat = new String[2];
-      Arrays.fill(colTypes, "double");
-      Arrays.fill(colFormat, "%5f");
-      String [] coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
-      coefficient_names[cnames.length] = "Intercept";
-      _coefficients_table = new TwoDimTable(
-              "Best Lambda",
-              coefficient_names,
-              new String []{"Coefficients", "Norm Coefficients"},
-              colTypes,
-              colFormat,
-              "Column");
+      _names = dinfo._adaptedFrame.names();
+      _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
+      _coefficient_names[cnames.length] = "Intercept";
       _binomial = binomial;
     }
 
@@ -631,9 +652,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     void addNullSubmodel(double lmax,double icept, GLMValidation val){
       assert _submodels == null;
-      double [] beta = MemoryManager.malloc8d(_coefficients_table.getRowDim());
+      double [] beta = MemoryManager.malloc8d(_names.length);
       beta[beta.length-1] = icept;
-      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_coefficients_table.getRowDim() > 750)};
+      _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_names.length > 750)};
       _submodels[0].validation = val;
     }
     public int  submodelIdForLambda(double lambda){
@@ -697,33 +718,15 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = _submodels[l].validation.aic();
         _auc = _submodels[l].validation.auc();
       }
-      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(this._coefficients_table.getRowDim());
+      if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_names.length);
       else Arrays.fill(_global_beta,0);
-
       int j = 0;
-      for(int i:_submodels[l].idxs) {
-        _global_beta[i] = _submodels[l].beta[j];
-        _coefficients_table.set(i, 0, _submodels[l].beta[j]);
-        if(_submodels[l].norm_beta != null)
-          _coefficients_table.set(i, 1, _submodels[l].norm_beta[j++]);
-        else
-          j++;
-      }
-
-      if(_submodels[l].norm_beta == null)
-        _coefficients_magnitude = null;
-      else {
-        j = 0;
-        String[] coef_names = new String[_coefficients_table.getRowDim()-1];
-        double[] coef_scaled = new double[_coefficients_table.getRowDim()-1];
-        for(int i = 0; i < _submodels[l].idxs.length-1; i++) {
-          coef_names[j] = _coefficients_table.getRowHeaders()[j];
-          coef_scaled[_submodels[l].idxs[i]] = Math.abs(_submodels[l].norm_beta[j++]);
-        }
-        _coefficients_magnitude = ModelMetrics.calcVarImp(coef_scaled, coef_names,
-                "Normalized Coefficient Magnitudes", new String[] { "Magnitude", "Scaled", "Percentage" });
-      }
+      for(int i:_submodels[l].idxs)
+        _global_beta[i] = _submodels[l].beta[j++];
     }
+
+    public double [] beta() { return _global_beta;}
+    public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
   }
 
   public static void setXvalidation(H2OCountedCompleter cmp, Key modelKey, final double lambda, final GLMValidation val){
@@ -748,7 +751,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public HashMap<String,Double> coefficients(){
     HashMap<String, Double> res = new HashMap<String, Double>();
     final double [] b = beta();
-    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficients_table.getRowHeaders()[i],b[i]);
+    if(b != null) for(int i = 0; i < b.length; ++i)res.put(_output._coefficient_names[i],b[i]);
     return res;
   }
 
