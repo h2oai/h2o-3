@@ -87,6 +87,7 @@ public class ADMM {
         solver.solve(beta_given, x);
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
+        boolean allzeros = true;
         for (int j = 0; j < N - ii; ++j) {
           double xj = x[j];
           double zjold = z[j];
@@ -105,6 +106,7 @@ public class ADMM {
           xnorm += xj * xj;
           unorm += rho[j] * rho[j] * u[j] * u[j];
           z[j] = zj;
+          allzeros &= zj == 0;
         }
         if (hasIntercept) { // TODO update unorm and so on
           int idx = x.length - 1;
@@ -126,7 +128,7 @@ public class ADMM {
         if (solver.hasGradient() || rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
           computeErr(z, solver.gradient(z), lambda, lb, ub);
-          if (gerr > _eps && Math.abs(oldGerr - gerr) > _eps * .5) {
+          if (gerr > _eps && (allzeros || Math.abs(oldGerr - gerr) > _eps * 0.5)) {
             Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             // try gg to improve the solution...
             abstol *= .1;

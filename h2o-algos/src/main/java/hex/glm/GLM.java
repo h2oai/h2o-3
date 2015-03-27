@@ -990,23 +990,23 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double x = (beta_given != null && proxPen != null)
           ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
           :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
-        double [] rhoCandidates = new double[]{Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
-        double D = l1pen*(l1pen + 4*x);
-        if(D >= 0) {
+        double rho = 0;
+        if(x >= 0) {
+          double D = l1pen*(l1pen + 4*x);
+          assert D >= 0;
           D = Math.sqrt(D);
-          rhoCandidates[0] = .5*(-l1pen + D)/(2*x);
-          rhoCandidates[1] = .5*(-l1pen - D)/(2*x);
-        }
-        D = l1pen*(l1pen - 4*x);
-        if(D >= 0) {
+          rho = .25*(l1pen + D)/(2*x);
+        } else {
+          double D = l1pen * (l1pen - 4 * x);
+          assert D >= 0;
           D = Math.sqrt(D);
-          rhoCandidates[2] = -.5*(l1pen + D)/(2*x);
-          rhoCandidates[3] = -.5*(l1pen - D)/(2*x);
+          rho = -.25*(l1pen + D) / (2 * x);
         }
-        double rho = l1pen == 0?0:ArrayUtils.maxValue(rhoCandidates);
         if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
-          double xx = x - boundedX(x, lb[i], ub[i]);
-          rhos[i] = Math.max(rho,xx == 0?1e-4:1);//Math.max(1e-5,Math.max(rho,xx/x));
+          double lx = (x - lb[i]);
+          double ux = (ub[i] - x);
+          double xx = Math.min(lx,ux);
+          rhos[i] = Math.max(rho,xx <= .5*x?1:1e-4);
         } else {
           rhos[i] = rho; // Math.min(avg*1e2,Math.max(avg*1e-2,y));
         }

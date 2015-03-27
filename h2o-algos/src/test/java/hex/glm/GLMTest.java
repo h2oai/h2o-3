@@ -561,12 +561,12 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < names.length; ++i){
         for(int j = 0; j < betaConstraints.numRows();++j) {
           if(betaConstraints.vec("names").atStr(vs,j).toString().equals(names[i])) {
-            if(beta[i] == betaConstraints.vec("lower_bounds").at(j) || beta[i] == betaConstraints.vec("upper_bounds").at(j)) {
+            if(Math.abs(beta[i] - betaConstraints.vec("lower_bounds").at(j)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vec("upper_bounds").at(j)) < 1e-4) {
               continue outer;
             }
           }
         }
-        assertEquals(grad[i],0,1e-3);
+        assertEquals(0,grad[i],1e-2);
       }
     } finally {
       fr.delete();
