@@ -206,6 +206,10 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSecond());
     putPrefix(new ASTMillis());
     putPrefix(new ASTMktime());
+    putPrefix(new ASTFoldCombine());
+    putPrefix(new COp());
+    putPrefix(new ROp());
+    putPrefix(new O());
 
 //    // Time series operations
 //    putPrefix(new ASTDiff  ());
@@ -279,9 +283,17 @@ public abstract class ASTOp extends AST {
   }
 }
 
-abstract class ASTUniOp extends ASTOp {
-  ASTUniOp() { super(VARS1); }
+abstract class ASTUniOrBinOp extends ASTOp {
+  ASTUniOrBinOp(String[] vars) { super(vars); }
   double op( double d ) { throw H2O.fail(); }
+  double op(double d0, double d1) { throw H2O.fail(); }
+  String op( String s0, double d1 ) { throw H2O.fail(); }
+  String op( double d0, String s1 ) { throw H2O.fail(); }
+  String op( String s0, String s1 ) { throw H2O.fail(); }
+}
+
+abstract class ASTUniOp extends ASTUniOrBinOp {
+  ASTUniOp() { super(VARS1); }
   protected ASTUniOp( String[] vars) { super(vars); }
   ASTUniOp parse_impl(Exec E) {
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
@@ -982,7 +994,7 @@ class ASTMktime extends ASTUniPrefixOp {
  *  This covers the class of operations that produce an array, scalar, or string from the cartesian product
  *  of the set E = {x | x is a string, scalar, or array}.
  */
-abstract class ASTBinOp extends ASTOp {
+abstract class ASTBinOp extends ASTUniOrBinOp {
 
   ASTBinOp() { super(VARS2); } // binary ops are infix ops
 
@@ -995,11 +1007,6 @@ abstract class ASTBinOp extends ASTOp {
     res._asts = new AST[]{l,r};
     return res;
   }
-
-  abstract double op( double d0, double d1 );
-  abstract String op( String s0, double d1 );
-  abstract String op( double d0, String s1 );
-  abstract String op( String s0, String s1 );
 
   @Override void apply(Env env) {
     // Expect we can broadcast across all functions as needed.
@@ -1229,44 +1236,194 @@ class ASTLO extends ASTBinOp { public ASTLO() { super(); } @Override String opSt
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot '|' Strings.");}
 }
 
+class O extends ASTOp {
+  // example (O "a" "sum" "b" "null" (+ %a %b))
+  // this is (O _accName _acc _elemName _elem AST)
+  String _accName; // the name of the accumulator variable
+  String _acc;     // the accumulator
+  String _elemName; // the name of the element variable
+  String _elem; // the new element, if null, then use the chunk.at(i) value.
+  O() { super(null); }
+  @Override String opStr() { return "O"; }
+  @Override ASTOp make() { return new O(); }
+  O parse_impl(Exec E) {
+    _accName = E.parseString(E.peekPlus()); E.skipWS();
+    _acc     = E.parseString(E.peekPlus()); E.skipWS();
+    _elemName= E.parseString(E.peekPlus()); E.skipWS();
+    AST elem = E.parse();
+    if( elem instanceof ASTNum) _elem=""+((ASTNum)elem)._d;
+    else if(elem instanceof ASTString) _elem=((ASTString)elem)._s;
+    if( _elem.equals("null")) _elem=null;
+    AST ast = E.parse();
+    O res = (O)clone();
+    res._asts = new AST[]{ast};
+    return res;
+  }
+  @Override void apply(Env e) { }
+  void exec(NonBlockingHashMap<String,Val> m, Chunk c, int row) {
+    Env e = (new Env(null)).capture();
+    Val v = m.get(_acc);
+    // if v is not null use the type, otherwise use the type of the elem!
+    if( v!=null ) e._local.put(_accName, v.type(), v.value());
+    int t=Env.NULL;
+    if( _elem==null ) {
+      if (c.vec().isNumeric())
+        e._local.put(_elemName, t=Env.NUM, ""+c.atd(row));
+      else if (c.vec().isString())
+        e._local.put(_elemName, t=Env.STR, c.atStr(new ValueString(), row).toString());
+    } else {
+      int type;
+      try {
+        Double.valueOf(_elem);
+        type=Env.NUM;
+      } catch(Exception ex) { type=Env.STR; }
+      e._local.put(_elemName, t=type, _elem);
+    }
+    if( v==null )
+      e._local.put(_accName, t, t==Env.STR?"":"0");  // currently expects only Strings or Nums...
+    _asts[0].treeWalk(e);
+    m.put(_acc,e.pop());
+  }
+  void reduce(NonBlockingHashMap<String,Val> thiz, NonBlockingHashMap<String,Val> that) {
+    Env e =(new Env(null)).capture();
+    Val l = thiz.get(_acc);
+    Val r = that.get(_acc);
+    e._local.put(_accName, l.type(),l.value());
+    e._local.put(_elemName,r.type(),r.value());
+    _asts[0].treeWalk(e);
+    thiz.put(_acc,e.pop());
+  }
+}
 
-//abstract class ROp extends ASTOp {
-//  ROp() {super(null);}
-//  double op(double acc, double e) {throw H2O.unimpl();}
-//  String op(double acc, String e) {throw H2O.unimpl();}
-//  String op(String acc, String e) {throw H2O.unimpl();}
-//  String op(String acc, double e) {throw H2O.unimpl();}
-//  private void m(HashMap m, Chunk c, int row) {
-//  }
-//  private void exec() {
-//
-//  }
-//}
+class ROp extends ASTOp {
+  HashMap<String, O> _ops;
+  // parse_impl: (R #N accum1 O accum2 O ...)
+  ROp() {super(null); _ops=new HashMap<>(); }
+  @Override String opStr() { return "R"; }
+  @Override ASTOp make() { return new ROp(); }
+  ROp parse_impl(Exec E) {
+    double n = ((ASTNum)(E.parse()))._d;
+    for(int i=0;i<n;++i) {
+      E.skipWS();
+      String acc = E.parseString(E.peekPlus()); E.skipWS();
+      O o = (O)E.parse();
+      _ops.put(acc,o);
+    }
+    return (ROp)clone();
+  }
+  void map(NonBlockingHashMap<String,Val> m, Chunk c, int row) {
+    for( String s:_ops.keySet() )
+      _ops.get(s).exec(m,c,row);
+  }
+  void reduce(NonBlockingHashMap<String,Val> thiz, NonBlockingHashMap<String,Val> that) {
+    for( String s:_ops.keySet())
+      _ops.get(s).reduce(thiz,that);
+  }
+  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    if( _ops==null ) return ab.put4(0);
+    ab.put4(_ops.size());
+    for( String s:_ops.keySet()) { ab.putStr(s); ab.put(_ops.get(s)); }
+    return ab;
+  }
+  @Override public ROp read_impl(AutoBuffer ab) {
+    int len = ab.get4();
+    if( len==0 ) return this;
+    _ops = new HashMap<>();
+    for( int i=0;i<len;++i)
+      _ops.put(ab.getStr(), ab.get(O.class));
+    return this;
+  }
+  @Override void exec(Env e) {}
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+  @Override public void apply(Env e) {}
+}
+
+class COp extends ASTOp {
+  COp() {super(null);}
+  @Override String opStr() { return "C"; }
+  @Override ASTOp make() { return new COp(); }
+  // parse_impl: (C (AST))
+  COp parse_impl(Exec E) {
+    AST ast = E.parse();
+    COp res = (COp)clone();
+    res._asts = new AST[]{ast};
+    return res;
+  }
+  Val combine(NonBlockingHashMap<String,Val> m) {
+    Env e = (new Env(null)).capture();
+    for( String s:m.keySet() ) {
+      e._local.put(s,m.get(s).type(),m.get(s).value());
+    }
+    _asts[0].treeWalk(e);
+    return e.pop();
+  }
+  @Override void exec(Env e) {}
+  @Override String value() { return null; }
+  @Override int type() { return 0; }
+  @Override public void apply(Env e) {}
+}
 
 // operate on a single vec
 // reduce the Vec
-//class ASTFoldCombine extends ASTOp {
-//  // (foldCombine (reduce def) (combine def) vec)
-//  private ROp _red;     // operates on a single value
-//  private ASTOp _combine; // what to do with the _accum map
-//  ASTFoldCombine() { super(null); }
-//  @Override String opStr() { return "foldCombine"; }
-//  @Override ASTOp make() { return new ASTFoldCombine(); }
-//
-//  ASTFoldCombine parse_impl(Exec E) {
-//
-//  }
-//  @Override void apply(Env e) {
-//    Frame f = e.popAry();
-//    final HashMap<String,Val> accum = new HashMap<>();
-//    new MRTask() {
-//      @Override public void map(Chunk cs) {
-//
-//      }
-//    }.doAll(f);
-//  }
-//}
+class ASTFoldCombine extends ASTUniPrefixOp {
+  // (RC (R ...) (C ...) vec)
+  private ROp _red;     // operates on a single value
+  private COp _combine; // what to do with the _accum map
+  ASTFoldCombine() { super(null); }
+  @Override String opStr() { return "RC"; }
+  @Override ASTOp make() { return new ASTFoldCombine(); }
+  ASTFoldCombine parse_impl(Exec E) {
+    _red = (ROp)E.parse();
+    _combine = (COp)E.parse();
+    AST ary =  E.parse();
+    ASTFoldCombine res = (ASTFoldCombine) clone();
+    res._asts = new AST[]{ary};
+    return res;
+  }
+  @Override void apply(Env e) {
+    Frame f = e.popAry();
+    if( f.numCols() != 1 )
+      throw new IllegalArgumentException("Expected one column, got "+f.numCols());
 
+    // apply _red across the frame f and fetch out _accum
+    NonBlockingHashMap<String,Val> accum = new RTask(_red).doAll(f.anyVec())._accum;
+
+    // then apply the _combine operator on the accum...
+    e.push(_combine.combine(accum));
+  }
+
+  private static class RTask extends MRTask<RTask> {
+    NonBlockingHashMap<String,Val> _accum;
+    private ROp _red;
+    RTask(ROp red) { _red=red; }
+    @Override public void setupLocal() {_accum=new NonBlockingHashMap<>();}
+    @Override public void map(Chunk cs) {
+      for( int i=0;i<cs._len;++i)
+        _red.map(_accum,cs,i);
+    }
+    @Override public void reduce(RTask t) { _red.reduce(_accum,t._accum); }
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      ab.put(_red);
+      if( _accum == null ) return ab.put4(0);
+      ab.put4(_accum.size());
+      for( String s:_accum.keySet() ) {
+        ab.putStr(s);
+        ab.put(_accum.get(s));
+      }
+      return ab;
+    }
+    @Override public RTask read_impl(AutoBuffer ab) {
+      _red = ab.get(ROp.class);
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _accum = new NonBlockingHashMap<>();
+      for( int i=0;i<len;++i )
+        _accum.put(ab.getStr(), ab.get(Val.class));
+      return this;
+    }
+  }
+}
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
