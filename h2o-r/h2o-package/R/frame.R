@@ -1392,9 +1392,6 @@ h2o.setLevel <- function(x, level) {
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' prostate.cbind <- h2o.rbind(prostate.hex, prostate.hex)
 #' head(prostate.cbind)
-NULL
-
-#' @rdname h2o.rbind
 #' @export
 h2o.rbind <- function(...) {
   l <- unlist(list(...))
@@ -1409,6 +1406,27 @@ h2o.rbind <- function(...) {
   }
 }
 
+#' Merge Two H2O Data Frames
+#'
+#' Merges two \linkS4class{H2OFrame} objects by shared column names. Unlike the
+#' base R implementation, \code{h2o.merge} only supports merging through shared
+#' column names.
+#'
+#' In order for \code{h2o.merge} to work in multinode clusters, one of the
+#' datasets must be small enough to exist in every node. Currently, this
+#' function only supports \code{all.x = TRUE}. All other permutations will fail.
+#'
+#' @param x
+#' @param y
+#' @param all.x
+#' @param all.y
+#' @export
+h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
+  x_temp <- x[1:nrow(x),]
+  y_temp <- y[1:nrow(y),]
+  out <- .h2o.nary_frame_op("merge", x_temp, y_temp, all.x, all.y)
+  out
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
