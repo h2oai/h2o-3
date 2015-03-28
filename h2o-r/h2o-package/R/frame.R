@@ -127,11 +127,20 @@ h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, 
   h2o.getFrame(dest_key, conn)
 }
 
+#' Replicate Elements of Vectors or Lists into H2O
+#'
+#' \code{h2o.rep} performs just as \code{rep} does. It replicates the values in
+#' \code{x} in the H2O backend.
+#'
+#' @param x a vector (of any mode including a list) or a factor
+#' @param length.out non negative integer. The desired length of the output
+#'        vector.
+#' @return Creates a \linkS4class{H2OFrame} vector of the same type as x
 #' @export
-h2o.rep_len <- function(x, length) {
-  if(length <= 0) return(NULL)
-
-  .h2o.nary_frame_op("rep_len", x, length)
+h2o.rep_len <- function(x, length.out) {
+  if (length.out <= 0)
+    return(NULL)
+  .h2o.nary_frame_op("rep_len", x, length.out)
 }
 
 #' Inserting Missing Values to an H2O DataFrame
