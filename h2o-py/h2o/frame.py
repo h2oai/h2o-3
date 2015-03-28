@@ -132,7 +132,7 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = column_names if column_names and not parse["column_names"] else parse['column_names']
+    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_keys'])+1)]
     # set the rows
     rows = parse['rows']
     # set the vector keys
@@ -881,15 +881,15 @@ class H2OVec:
 
   def var(self):
     """
-    :return: The variance of the values in this H2OVec.
+    :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr, None, length=1).eager()
+    return Expr("var", self._expr, None, length=1)
 
   def sd(self):
     """
-    :return: The standard deviation of the values in this H2OVec.
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("sd", self._expr, None, length=1).eager()
+    return Expr("sd", self._expr, None, length=1)
 
   def quantile(self,prob=None):
     """
@@ -900,15 +900,15 @@ class H2OVec:
 
   def asfactor(self):
     """
-    :return: A transformed H2OVec from numeric to categorical.
+    :return: A lazy Expr representing this vec converted to a factor
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
   def isfactor(self):
     """
-    :return: An eagered Expr that's boolean valued, which tells whether or not self is a factor.
+    :return: A lazy Expr representing the truth of whether or not this vec is a factor.
     """
-    return Expr("is.factor", self._expr, None, length=1).eager()
+    return Expr("is.factor", self._expr, None, length=1)
 
   def isna(self):
     """
