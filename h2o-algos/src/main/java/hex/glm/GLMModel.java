@@ -20,32 +20,21 @@ import java.util.HashMap;
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
     super(selfKey, parms, output);
     _ymu = ymu;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
-    _defaultThresholds = thresholds;
   }
-
-  float [] _defaultThresholds;
 
   public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
     double _resDev;
     double _nullDev;
 
-    public GLMMetricsBuilderBinomial(String[] domain, float[] thresholds) {
-      super(domain == null?new String[]{"0","1"}:domain, thresholds);
+    public GLMMetricsBuilderBinomial(String[] domain) {
+      super(domain == null?new String[]{"0","1"}:domain);
     }
-
-    private int rank(double [] beta) {
-      int res = 0;
-      for(double d:beta)
-        if(d != 0) ++res;
-      return res;
-    }
-
 
     @Override
     public double[] perRow(double[] ds, float[] yact, Model m) {
@@ -68,12 +57,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
-      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
-      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
-      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
-      double mse = _sumsqe / _count;
-      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, aucdata, sigma, mse, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
-      return m._output.addModelMetrics(res);
+      AUC2 auc = null;
+      throw H2O.unimpl();
+      //double mse = _sumsqe / _count;
+      //ModelMetrics res = new ModelMetricsBinomialGLM(m, f, mse, _domain, mse, auc, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
+      //return m._output.addModelMetrics(res);
     }
   }
   public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
@@ -97,7 +85,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial: return new GLMMetricsBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Binomial: return new GLMMetricsBuilderBinomial(domain);
       case Regression: return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -550,7 +538,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       @Override
       public GLMModel atomic(GLMModel old) {
         if(old == null)return old; // job could've been cancelled!
-        if(val != null)old._defaultThresholds = val.thresholds;
         if(old._output._submodels == null){
           old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};

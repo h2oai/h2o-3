@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.ConfusionMatrix;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
@@ -232,10 +231,10 @@ public class GBMTest extends TestUtil {
       }
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
-      double auc = mm._aucdata.AUC();
+      double auc = mm._auc._auc;
       Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
-      ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(315, 78), ar(27, 80)), cmf1.confusion_matrix);
+      long[][] cm = mm._auc.defaultCM();
+      Assert.assertArrayEquals(ar(ar(315, 78), ar(27, 80)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -655,7 +654,7 @@ public class GBMTest extends TestUtil {
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.train());
-        double auc = mm._aucdata.AUC();
+        double auc = mm._auc._auc;
         Assert.assertTrue(1 == auc);
 
         mses[i] = gbm._output._mse_train[gbm._output._mse_train.length-1];

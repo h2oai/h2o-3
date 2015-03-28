@@ -4,10 +4,8 @@ package hex.glm;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.ConfusionMatrix;
-import hex.AUC;
 import water.Iced;
 import water.Key;
-import water.util.ModelUtils;
 
 /**
  * Class for GLMValidation.
@@ -26,14 +24,12 @@ public class GLMValidation extends Iced {
   double aic;// internal aic used only for poisson family!
   private double _aic2;// internal aic used only for poisson family!
   final Key dataKey;
-  public final float [] thresholds;
-  ConfusionMatrix[] _cms;
   final GLMModel.GLMParameters _glm;
   final private int _rank;
 
   public static class GLMXValidation extends GLMValidation {
     public GLMXValidation(GLMModel mainModel, GLMModel [] xvalModels, GLMValidation [] xvals, double lambda, long nobs, float [] thresholds) {
-      super(mainModel._key, mainModel._ymu, mainModel._parms, mainModel.rank(lambda),thresholds);
+      super(mainModel._key, mainModel._ymu, mainModel._parms, mainModel.rank(lambda));
       xval_models = new Key[xvalModels.length];
       for(int i = 0; i < xval_models.length; ++i)
         xval_models[i] = xvalModels[i]._key;
@@ -48,28 +44,15 @@ public class GLMValidation extends Iced {
       this.nobs = nobs;
     }
   }
-  public GLMValidation(Key dataKey, double ymu, GLMModel.GLMParameters glm, int rank){
-    this(dataKey, ymu, glm, rank,glm._family == Family.binomial?ModelUtils.DEFAULT_THRESHOLDS:null);
-  }
-  public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
+  public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank){
     _rank = rank;
     _ymu = ymu;
     _glm = glm;
-    if(_glm._family == Family.binomial){
-      _cms = new ConfusionMatrix[thresholds.length];
-      for(int i = 0; i < _cms.length; ++i)
-        _cms[i] = new ConfusionMatrix(new long[2][2], null);
-    }
     this.dataKey = dataKey;
-    this.thresholds = thresholds;
   }
 
-  public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make());}
   public void add(double yreal, double eta, double ymodel){
     null_deviance += _glm.deviance(yreal, eta, _ymu);
-    if(_glm._family == Family.binomial) // classification -> update confusion matrix too
-      for(int i = 0; i < thresholds.length; ++i)
-        _cms[i].add((int)yreal, (ymodel >= thresholds[i])?1:0);
     residual_deviance  += _glm.deviance(yreal, eta, ymodel);
     ++nobs;
 
@@ -86,8 +69,6 @@ public class GLMValidation extends Iced {
     null_deviance += v.null_deviance;
     nobs += v.nobs;
     _aic2 += v._aic2;
-    if(_cms == null)_cms = v._cms;
-    else for(int i = 0; i < _cms.length; ++i)_cms[i].add(v._cms[i]);
   }
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
@@ -119,10 +100,11 @@ public class GLMValidation extends Iced {
 
   protected void computeAUC(){
     if(_glm._family == Family.binomial){
-      for(ConfusionMatrix cm:_cms)cm.reComputeErrors();
-      AUC auc = new AUC(_cms,thresholds,/*TODO: add CM domain*/null);
-      this.auc = auc.data().AUC();
-      best_threshold = auc.data().threshold();
+      throw water.H2O.unimpl();
+      //for(ConfusionMatrix cm:_cms)cm.reComputeErrors();
+      //AUC auc = new AUC(_cms,thresholds,/*TODO: add CM domain*/null);
+      //this.auc = auc.data().AUC();
+      //best_threshold = auc.data().threshold();
     }
   }
   @Override

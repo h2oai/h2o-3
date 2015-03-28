@@ -4,14 +4,12 @@ import water.H2O;
 import water.fvec.Frame;
 
 public class ModelMetricsSupervised extends ModelMetrics {
-  public double _sigma;   // stddev of the response (if any)
+  public final String[] _domain;// Name of classes
+  public final double _sigma;   // stddev of the response (if any)
 
-  public ModelMetricsSupervised(Model model, Frame frame) {
-    super(model, frame);
-    _sigma = Double.NaN;
-  }
-  public ModelMetricsSupervised(Model model, Frame frame, double sigma, double mse) {
+  public ModelMetricsSupervised(Model model, Frame frame, double mse, String[] domain, double sigma) {
     super(model, frame, mse);
+    _domain = domain;
     _sigma = sigma;
   }
   public final double r2() {
@@ -19,7 +17,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     return 1.0-(_mse/var);
   }
 
-  public static class MetricBuilderSupervised extends MetricBuilder {
+  public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {
     protected final String[] _domain;
     protected final int _nclasses;
 

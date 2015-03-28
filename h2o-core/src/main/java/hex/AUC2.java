@@ -15,12 +15,18 @@ import water.MRTask;
  *  thresholds; these define the (X,Y) coordinates of the AUC.
  */
 public class AUC2 extends Iced {
-  int _nBins;      // Max number of bins; can be less if there are fewer points
-  double[] _ths;   // Thresholds
-  long[] _tps;     // True  Positives
-  long[] _fps;     // False Positives
-  long _p, _n;     // Actual trues, falses
-  double _auc;     // Actual AUC value
+  public final int _nBins; // Max number of bins; can be less if there are fewer points
+  public final double[] _ths;   // Thresholds
+  public final long[] _tps;     // True  Positives
+  public final long[] _fps;     // False Positives
+  public final long _p, _n;     // Actual trues, falses
+  public final double _auc;     // Actual AUC value
+  public final int _max_idx;    // Threshold that maximizes the default criterion
+
+  public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
+  // Default bins, good answers on a highly unbalanced sorted (and reverse
+  // sorted) datasets
+  public static final int NBINS = 256;
 
   /** Criteria for 2-class Confusion Matrices
    *
@@ -100,37 +106,40 @@ public class AUC2 extends Iced {
   public long tn( int idx ) { return _n-_fps[idx]; }
   public long fn( int idx ) { return _p-_tps[idx]; }
 
+  /** @return maximum F1 */
+  public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
    *  sorted) datasets */
-  public AUC2( Vec probs, Vec actls ) { this(256,probs,actls); }
+  public AUC2( Vec probs, Vec actls ) { this(NBINS,probs,actls); }
 
   /** User-specified bin limits.  Time taken is product of nBins and rows;
    *  large nBins can be very slow. */
-  AUC2( int nBins, Vec probs, Vec actls ) { 
-    _nBins = nBins;
-    AUC_Impl auc = new AUC_Impl(nBins).doAll(probs,actls);
+  AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
+
+  AUC2( AUCBuilder bldr ) { 
     // Copy result arrays into base object, shrinking to match actual bins
-    _nBins = nBins = auc._nBins;
-    _ths = Arrays.copyOf(auc._ths,nBins);
-    _tps = Arrays.copyOf(auc._tps,nBins);
-    _fps = Arrays.copyOf(auc._fps,nBins);
+    _nBins = bldr._nBins;
+    _ths = Arrays.copyOf(bldr._ths,_nBins);
+    _tps = Arrays.copyOf(bldr._tps,_nBins);
+    _fps = Arrays.copyOf(bldr._fps,_nBins);
     // Reverse everybody; thresholds from 1 down to 0, easier to read
-    for( int i=0; i<((nBins)>>1); i++ ) {
-      double tmp= _ths[i];  _ths[i] = _ths[nBins-1-i]; _ths[nBins-1-i] = tmp ;
-      long tmpt = _tps[i];  _tps[i] = _tps[nBins-1-i]; _tps[nBins-1-i] = tmpt;
-      long tmpf = _fps[i];  _fps[i] = _fps[nBins-1-i]; _fps[nBins-1-i] = tmpf;
+    for( int i=0; i<((_nBins)>>1); i++ ) {
+      double tmp= _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
+      long tmpt = _tps[i];  _tps[i] = _tps[_nBins-1-i]; _tps[_nBins-1-i] = tmpt;
+      long tmpf = _fps[i];  _fps[i] = _fps[_nBins-1-i]; _fps[_nBins-1-i] = tmpf;
     }
 
     // Rollup counts, so that computing the rates are easier.
     // The AUC is (TPR,FPR) as the thresholds roll about
     long p=0, n=0;
-    for( int i=0; i<nBins; i++ ) { 
+    for( int i=0; i<_nBins; i++ ) { 
       p += _tps[i]; _tps[i] = p;
       n += _fps[i]; _fps[i] = n;
     }
     _p = p;  _n = n;
     _auc = compute_auc();
+    _max_idx = DEFAULT_CM.max_criterion_idx(this);
   }
 
   // Compute the Area Under the Curve, where the curve is defined by (TPR,FPR)
@@ -157,103 +166,152 @@ public class AUC2 extends Iced {
     return new long[][]{{tn(idx),fp(idx)},{fn(idx),tp(idx)}};
   }
 
+  /** @return the default CM */
+  public long[/*actual*/][/*predicted*/] defaultCM( ) { return buildCM(_max_idx); }
+  /** @return the default threshold; threshold that maximizes the default criterion */
+  public double defaultThreshold( ) { return _ths[_max_idx]; }
+  /** @return the error of the default CM */
+  public double defaultErr( ) { return ((double)fp(_max_idx)+fn(_max_idx))/(_p+_n); }
+
+
+
   // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {
-    int _nBins;                 // Max Number of bins
+    final int _nBins;
+    AUCBuilder _bldr;
+    AUC_Impl( int nBins ) { _nBins = nBins; }
+    @Override public void map( Chunk ps, Chunk as ) {
+      AUCBuilder bldr = _bldr = new AUCBuilder(_nBins);
+      for( int row = 0; row < ps._len; row++ )
+        if( !ps.isNA(row) && !as.isNA(row) )
+          bldr.perRow(ps.atd(row),(int)as.at8(row));
+    }
+    @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
+  }
+
+  public static class AUCBuilder {
+    final int _nBins;
+    int _n;                     // Current number of bins
     double _ths[];              // Histogram bins, center
     double _sqe[];              // Histogram bins, squared error
     long   _tps[];              // Histogram bins, true  positives
     long   _fps[];              // Histogram bins, false positives
-    AUC_Impl( int nBins ) { _nBins = nBins; }
+    AUCBuilder(int nBins) {
+      _nBins = nBins;
+      _ths = new double[nBins+1]; // Threshold; also the mean for this bin
+      _sqe = new double[nBins+1]; // Squared error (variance) in this bin
+      _tps = new long  [nBins+1]; // True  positives
+      _fps = new long  [nBins+1]; // False positives
+    }    
 
-    @Override public void map( Chunk ps, Chunk as ) {
-      double ths[] = new double[_nBins+1]; // Threshold; also the mean for this bin
-      double sqe[] = new double[_nBins+1]; // Squared error (variance) in this bin
-      long   tps[] = new long  [_nBins+1]; // True  positives
-      long   fps[] = new long  [_nBins+1]; // False positives
-      int n=0;
-      for( int row = 0; row < ps._len; row++ ) {
-        // Insert the prediction into the set of histograms in sorted order, as
-        // if its a new histogram bin with 1 count.
-        double pred  = ps.atd(row);
-        if( Double.isNaN(pred) || as.isNA(row) ) continue;
-        int act = (int)as.at8(row);
-        assert act==0 || act==1; // Actual better be 0 or 1
-        int idx = Arrays.binarySearch(ths,0,n,pred);
-        if( idx >= 0 ) {        // Found already in histogram; merge results
-          if( act==0 ) fps[idx]++; else tps[idx]++; // One more count; no change in squared error
-          continue;
-        }
-        // Slide over to do the insert.  Horrible slowness.
-        idx = -idx-1;           // Get index to insert at
-        System.arraycopy(ths,idx,ths,idx+1,n-idx);
-        System.arraycopy(sqe,idx,sqe,idx+1,n-idx);
-        System.arraycopy(tps,idx,tps,idx+1,n-idx);
-        System.arraycopy(fps,idx,fps,idx+1,n-idx);
-        // Insert into the histogram
-        ths[idx] = pred;        // New histogram center
-        sqe[idx] = 0;           // Only 1 point, so no squared error
-        if( act==0 ) { tps[idx]=0; fps[idx]=1; }
-        else         { tps[idx]=1; fps[idx]=0; }
-        n++;
-        if( n <= _nBins ) continue; // No need to merge bins
-
-        // Too many bins; must merge bins.  Merge into bins with least total
-        // squared error.  Horrible slowness linear scan.  
-        double minSQE = Double.MAX_VALUE;
-        int minI = -1;
-        for( int i=0; i<_nBins; i++ ) {
-          long k0 = tps[i  ]+fps[i  ];
-          long k1 = tps[i+1]+fps[i+1];
-          double delta = ths[i+1]-ths[i];
-          double sqe0 = sqe[i]+sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
-          if( sqe0 < minSQE ) {  minI = i;  minSQE = sqe0; }
-        }
-
-        // Here is code for merging bins with keeping the bins balanced in
-        // size, but this leads to bad errors if the probabilities are sorted.
-        // Also tried the original: merge bins with the least distance between
-        // bin centers.  Same problem for sorted data.
-
-        //long minV = Long.MAX_VALUE;
-        //int minI = -1;
-        //for( int i=0; i<_nBins; i++ ) {
-        //  long sum = tps[i]+fps[i]+tps[i+1]+fps[i+1];
-        //  if( sum < minV ||
-        //      (sum==minV && ths[i+1]-ths[i] < ths[minI+1]-ths[minI]) ) {
-        //    minI = i;  minV = sum; 
-        //  }
-        //}
-
-        // Merge two bins.  Classic bins merging by averaging the histogram
-        // centers based on counts.
-        long k0 = tps[minI  ]+fps[minI  ];
-        long k1 = tps[minI+1]+fps[minI+1];
-        double d = (ths[minI]*k0+ths[minI+1]*k1)/(k0+k1);
-        // Setup the new merged bin at index minI
-        ths[minI] = d;
-        sqe[minI] = minSQE;
-        tps[minI] += tps[minI+1];
-        fps[minI] += fps[minI+1];
-        // Slide over to crush the removed bin at index (minI+1)
-        System.arraycopy(ths,minI+2,ths,minI+1,n-minI-2);
-        System.arraycopy(sqe,minI+2,sqe,minI+1,n-minI-2);
-        System.arraycopy(tps,minI+2,tps,minI+1,n-minI-2);
-        System.arraycopy(fps,minI+2,fps,minI+1,n-minI-2);
-        n--;
+    public void perRow(double pred, int act ) {
+      // Insert the prediction into the set of histograms in sorted order, as
+      // if its a new histogram bin with 1 count.
+      assert !Double.isNaN(pred);
+      assert act==0 || act==1; // Actual better be 0 or 1
+      int idx = Arrays.binarySearch(_ths,0,_n,pred);
+      if( idx >= 0 ) {        // Found already in histogram; merge results
+        if( act==0 ) _fps[idx]++; else _tps[idx]++; // One more count; no change in squared error
+        return;
       }
-      // Final results for this chunk
-      _ths = ths;
-      _sqe = sqe;
-      _tps = tps;
-      _fps = fps;
-      _nBins = n;
+      // Slide over to do the insert.  Horrible slowness.
+      idx = -idx-1;           // Get index to insert at
+      System.arraycopy(_ths,idx,_ths,idx+1,_n-idx);
+      System.arraycopy(_sqe,idx,_sqe,idx+1,_n-idx);
+      System.arraycopy(_tps,idx,_tps,idx+1,_n-idx);
+      System.arraycopy(_fps,idx,_fps,idx+1,_n-idx);
+      // Insert into the histogram
+      _ths[idx] = pred;         // New histogram center
+      _sqe[idx] = 0;            // Only 1 point, so no squared error
+      if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
+      else         { _tps[idx]=1; _fps[idx]=0; }
+      _n++;
+      if( _n <= _nBins ) return; // No need to merge bins
+
+      // Too many bins; must merge bins.  Merge into bins with least total
+      // squared error.  Horrible slowness linear scan.  
+      double minSQE = Double.MAX_VALUE;
+      int minI = -1;
+      for( int i=0; i<_nBins; i++ ) {
+        long k0 = _tps[i  ]+_fps[i  ];
+        long k1 = _tps[i+1]+_fps[i+1];
+        double delta = _ths[i+1]-_ths[i];
+        double sqe0 = _sqe[i]+_sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
+        if( sqe0 < minSQE ) {  minI = i;  minSQE = sqe0; }
+      }
+
+      // Here is code for merging bins with keeping the bins balanced in
+      // size, but this leads to bad errors if the probabilities are sorted.
+      // Also tried the original: merge bins with the least distance between
+      // bin centers.  Same problem for sorted data.
+
+      //long minV = Long.MAX_VALUE;
+      //int minI = -1;
+      //for( int i=0; i<_nBins; i++ ) {
+      //  long sum = _tps[i]+_fps[i]+_tps[i+1]+_fps[i+1];
+      //  if( sum < minV ||
+      //      (sum==minV && _ths[i+1]-_ths[i] < _ths[minI+1]-_ths[minI]) ) {
+      //    minI = i;  minV = sum; 
+      //  }
+      //}
+
+      // Merge two bins.  Classic bins merging by averaging the histogram
+      // centers based on counts.
+      long k0 = _tps[minI  ]+_fps[minI  ];
+      long k1 = _tps[minI+1]+_fps[minI+1];
+      double d = (_ths[minI]*k0+_ths[minI+1]*k1)/(k0+k1);
+      // Setup the new merged bin at index minI
+      _ths[minI] = d;
+      _sqe[minI] = minSQE;
+      _tps[minI] += _tps[minI+1];
+      _fps[minI] += _fps[minI+1];
+      // Slide over to crush the removed bin at index (minI+1)
+      System.arraycopy(_ths,minI+2,_ths,minI+1,_n-minI-2);
+      System.arraycopy(_sqe,minI+2,_sqe,minI+1,_n-minI-2);
+      System.arraycopy(_tps,minI+2,_tps,minI+1,_n-minI-2);
+      System.arraycopy(_fps,minI+2,_fps,minI+1,_n-minI-2);
+      _n--;
     }
 
-    @Override public void reduce( AUC_Impl auc ) {
+    void reduce( AUCBuilder bldr ) {
+      // Get or make a double-sized set of arrays
+      double ths[], sqe[];
+      long   tps[], fps[];
+      final int n = _n+bldr._n;
+      if( _ths.length >= n ) {
+        ths =      _ths; sqe =      _sqe; tps =      _tps; fps =      _fps;
+      } else if( bldr._ths.length >= n ) {
+        ths = bldr._ths; sqe = bldr._sqe; tps = bldr._tps; fps = bldr._fps;
+      } else {
+        ths = new double[n];
+        sqe = new double[n];
+        tps = new long  [n];
+        fps = new long  [n];
+      }
+      // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
+      // half of the double-sized array is unused, but the front half is
+      // probably a source.  Merge into the back.
+      int x=     _n-1;
+      int y=bldr._n-1;
+      while( x+y+1 >= 0 ) {
+        if( y < 0 || (x >= 0 && _ths[x] >= bldr._ths[y]) ) {
+          ths[x+y+1] = _ths[x];
+          sqe[x+y+1] = _sqe[x];
+          tps[x+y+1] = _tps[x];
+          fps[x+y+1] = _fps[x];  x--;
+        } else {
+          ths[x+y+1] = bldr._ths[y];
+          sqe[x+y+1] = bldr._sqe[y];
+          tps[x+y+1] = bldr._tps[y];
+          fps[x+y+1] = bldr._fps[y];  y--;
+        }
+      }
+
+...      
+
+
       throw H2O.unimpl();
     }
-
   }
 }

@@ -4,11 +4,8 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
-  public ModelMetricsRegression(Model model, Frame frame) {
-    super(model, frame);
-  }
-  public ModelMetricsRegression(Model model, Frame frame, double sigma, double mse) {
-    super(model, frame, sigma, mse);
+  public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma) {
+    super(model, frame, mse, null, sigma);
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {

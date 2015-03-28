@@ -23,14 +23,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   transient Model _model;
   transient Frame _frame;
 
-  public double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
+  public final double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
   public ModelMetrics(Model model, Frame frame, double mse) {
-    this(model, frame);
-    _mse = mse;
-  }
-
-  public ModelMetrics(Model model, Frame frame) {
     super(buildKey(model, frame));
     _modelKey = model._key;
     _frameKey = frame._key;
@@ -39,7 +34,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _frame = frame;
     _model_checksum = model.checksum();
     _frame_checksum = frame.checksum();
-    _mse = Double.NaN;
+    _mse = mse;
 
     DKV.put(this);
   }
@@ -50,7 +45,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public double mse() { return _mse; }
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
-  public AUCData auc() { return null; }
+  public AUC2 auc() { return null; }
 
   public static TwoDimTable calcVarImp(VarImp vi) {
     if (vi == null) return null;
@@ -137,13 +132,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
    *  the {@code reduce} method called once per MRTask.reduce, and the {@code
    *  <init>} called once per MRTask.map.
    */
-  public static abstract class MetricBuilder extends Iced {
+  public static abstract class MetricBuilder<T extends MetricBuilder<T>> extends Iced {
     public double _sumsqe;      // Sum-squared-error
     transient public double[] _work;
     public long _count;
 
     abstract public double[] perRow( double ds[], float yact[], Model m);
-    public void reduce( MetricBuilder mb ) {
+    public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
     }

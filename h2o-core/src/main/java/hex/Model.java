@@ -448,18 +448,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
 //      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-      ModelCategory model_cat = this._output.getModelCategory();
       ConfusionMatrix cm = mm.cm();
-      if(model_cat == ModelCategory.Binomial)
-        cm = ((ModelMetricsBinomial)mm)._cm;
-      else if(model_cat == ModelCategory.Multinomial)
-        cm = ((ModelMetricsMultinomial)mm)._cm;
-
-      if (cm != null && cm.domain != null) { //don't print table for regression
-//        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
-        cm.table = cm.toTable();
-        if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-          water.util.Log.info(cm.table.toString(1));
+      if (cm != null && cm._domain != null) { //don't print table for regression
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+          water.util.Log.info(cm.table().toString(1));
       }
 
       Vec actual = fr.vec(_output.responseName());

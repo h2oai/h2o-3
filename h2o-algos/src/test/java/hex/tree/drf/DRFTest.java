@@ -339,8 +339,8 @@ public class DRFTest extends TestUtil {
       res = model.score(test);
 
       if (classification) {
-        Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm().confusion_matrix),
-                Arrays.deepEquals(mm.cm().confusion_matrix, expCM));
+        Assert.assertTrue("Expected: " + Arrays.deepToString(expCM) + ", Got: " + Arrays.deepToString(mm.cm()._cm),
+                Arrays.deepEquals(mm.cm()._cm, expCM));
 
         String[] cmDom = model._output._domains[model._output._domains.length - 1];
         Assert.assertArrayEquals("CM domain differs!", expRespDom, cmDom);
