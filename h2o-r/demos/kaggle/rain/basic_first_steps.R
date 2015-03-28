@@ -2,10 +2,13 @@
 ## First steps Kaggle Will it Rain competition
 #####################################################
 
+## Point to directory where the Kaggle data is
+dir <- paste0(path.expand("~"), "/h2o-kaggle/rain/")
+
 library(data.table)
 # Just load RR1 column, the benchmark
-system.time(train<-fread("train_2013.csv")[,.(RR1,Expected)]) # 76s
-system.time(train<-fread("train_2013.csv",select=c("RR1","Expected"))) # 10s
+system.time(train<-fread(paste0(dir,"train_2013.csv"))[,.(RR1,Expected)]) # 76s
+system.time(train<-fread(paste0(dir,"train_2013.csv"),select=c("RR1","Expected"))) # 10s
 train # auto-print copy now fixed in R-devel thanks to Luke Tierney (TBC)
 print(train)
 
