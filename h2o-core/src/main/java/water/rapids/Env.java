@@ -4,7 +4,6 @@ import water.*;
 import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashMap;
 import water.util.IcedInt;
 import water.util.Log;
 
@@ -248,7 +247,7 @@ public class Env extends Iced {
   // MUST be called in conjunction w/ push(frame) or addRef
   void addKeys(Frame fr) { for (Vec v : fr.vecs()) _locked.add(v._key); }
 
-  void addVec(Vec v) { _locked.add(v._key);  addRef(v); }
+  void addVec(Vec v) { /*_locked.add(v._key);*/  addRef(v); }
   static Futures removeVec(Vec v, Futures fs) {
     if (fs == null) {
       fs = new Futures();

@@ -11,46 +11,59 @@ def binop_pipe(ip,port):
     iris.show()
 
     # frame/scaler
-    amp_res = 5 | iris
-    amp_rows, amp_cols = amp_res.dim()
-    assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
+    res = 5 | iris
+    rows, cols = res.dim()
+    assert rows == rows and cols == cols, "dimension mismatch"
 
-    amp_res = iris | 1
-    amp_rows, amp_cols = amp_res.dim()
-    assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
+    res = iris | 1
+    rows, cols = res.dim()
+    assert rows == rows and cols == cols, "dimension mismatch"
     for c in range(cols-1):
         for r in range(rows):
-            assert amp_res[c][r].eager(), "value error"
+            assert res[c][r].eager(), "value error"
 
     # vec/vec
-    amp_res = iris[0] | iris[1]
-    amp_rows = len(amp_res)
-    assert amp_rows == rows, "dimension mismatch"
+    res = iris[0] | iris[1]
+    rows = len(res)
+    assert rows == rows, "dimension mismatch"
+
+    # vec/scaler
+    res = iris[0] | 1
+    rows = len(res)
+    assert rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow()
+    assert new_rows == rows, "wrong number of rows returned"
+
+    res = 1 | iris[1]
+    rows = len(res)
+    assert rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow()
+    assert new_rows == rows, "wrong number of rows returned"
 
     # frame/vec
     try:
-        amp_res = iris | iris[0]
+        res = iris | iris[0]
         assert False, "expected error. objects of different dimensions not supported."
     except EnvironmentError:
         pass
 
     try:
-        amp_res = iris[3] | iris
+        res = iris[3] | iris
         assert False, "expected error. objects of different dimensions not supported."
     except EnvironmentError:
         pass
 
     # frame/frame
-    amp_res = iris | iris
-    amp_rows, amp_cols = amp_res.dim()
-    assert amp_rows == rows and amp_cols == cols, "dimension mismatch"
+    res = iris | iris
+    rows, cols = res.dim()
+    assert rows == rows and cols == cols, "dimension mismatch"
 
-    amp_res = iris[0:2] | iris[1:3]
-    amp_rows, amp_cols = amp_res.dim()
-    assert amp_rows == rows and amp_cols == 2, "dimension mismatch"
+    res = iris[0:2] | iris[1:3]
+    rows, cols = res.dim()
+    assert rows == rows and cols == 2, "dimension mismatch"
 
     try:
-        amp_res = iris | iris[0:3]
+        res = iris | iris[0:3]
         assert False, "expected error. frames are different dimensions."
     except EnvironmentError:
         pass
