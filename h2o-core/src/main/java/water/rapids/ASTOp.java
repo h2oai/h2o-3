@@ -78,6 +78,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("del", new ASTDelete());
     SYMBOLS.put("x", new ASTMMult());
     SYMBOLS.put("t", new ASTTranspose());
+    SYMBOLS.put("agg",new ASTGroupBy.AGG());
 
     //TODO: Have `R==` type methods (also `py==`, `js==`, etc.)
 
@@ -181,6 +182,7 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTSApply());
     putPrefix(new ASTddply());
     putPrefix(new ASTMerge ());
+    putPrefix(new ASTGroupBy());
 //    putPrefix(new ASTUnique());
     putPrefix(new ASTXorSum());
     putPrefix(new ASTRunif ());
