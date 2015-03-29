@@ -34,6 +34,9 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
    *  classes.   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    if (! _parms._balance_classes)
+      hide("_max_after_balance_size","Balance classes is false, hide max_after_balance_size");
+
     if( _parms._max_after_balance_size <= 0.0 )
       error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
