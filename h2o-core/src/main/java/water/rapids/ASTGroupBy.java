@@ -103,15 +103,17 @@ import java.util.concurrent.atomic.AtomicInteger;
           for(int a=0; a<agg.length;++a) {
             byte type = agg[a]._type;
             switch( type ) {
-              case AGG.T_N:  ncs[j++].addNum(g._N);     break;
-              case AGG.T_ND: ncs[j++].addNum(g._ND[a]); break;
-              case AGG.T_F:  ncs[j++].addNum(g._f[a]);  break;
-              case AGG.T_L:  ncs[j++].addNum(g._l[a]);  break;
-              case AGG.T_MIN:ncs[j++].addNum(g._min[a]); break;
-              case AGG.T_MAX:ncs[j++].addNum(g._max[a]); break;
-              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]); break;
-              case AGG.T_SUM:ncs[j++].addNum(g._sum[a]); break;
-              case AGG.T_SS :ncs[j++].addNum(g._ss [a]); break;
+              case AGG.T_N:  ncs[j++].addNum(g._N);        break;
+              case AGG.T_ND: ncs[j++].addNum(g._ND[a]);    break;
+              case AGG.T_F:  ncs[j++].addNum(g._f[a]);     break;
+              case AGG.T_L:  ncs[j++].addNum(g._l[a]);     break;
+              case AGG.T_MIN:ncs[j++].addNum(g._min[a]);   break;
+              case AGG.T_MAX:ncs[j++].addNum(g._max[a]);   break;
+              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]);   break;
+              case AGG.T_VAR:ncs[j++].addNum(g._vars[a]);  break;
+              case AGG.T_SD :ncs[j++].addNum(g._sdevs[a]); break;
+              case AGG.T_SUM:ncs[j++].addNum(g._sum[a]);   break;
+              case AGG.T_SS :ncs[j++].addNum(g._ss [a]);   break;
               default:
                 throw new IllegalArgumentException("Unsupported aggregation type: " + type);
             }
