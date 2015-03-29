@@ -50,7 +50,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow( double ds[], float[] yact, Model m ) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m, int row) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];

@@ -528,7 +528,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual, Model.this);
+        _mb.perRow(preds, actual, Model.this, row);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }

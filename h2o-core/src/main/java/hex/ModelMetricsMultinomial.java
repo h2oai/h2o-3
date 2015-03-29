@@ -3,6 +3,9 @@ package hex;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.ModelUtils;
+
+import java.util.Arrays;
 
 public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
@@ -33,31 +36,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static void updateHits(int iact, double[] ds, long[] hits ) {
-    int pred = (int)ds[0];
-    if( iact == pred ) hits[0]++; // Top prediction is correct?
-    else {                  // Else need to find how far down the correct guy is
-      double p = ds[pred+1]; // Prediction value which failed
-      int tie=0;
-      for( int k=1; k<hits.length; k++ ) {
-        // Find largest prediction less than 'p', or for ties, the tie'th
-        int best = 0;
-        int tiebreak=0;
-        for( int i=1; i<ds.length; i++ ) {
-          if( i != pred+1 && (ds[i] < p || (ds[i]==p && tie < tiebreak)) ) {
-            if( best==0 || ds[i] > ds[best] )
-              best = i;
-          }
-        }
-        if( best == 0 ) return; // prediction not in top K
-        if( ds[best] < p ) {
-          p = ds[best]; tie=0;
-        } else {
-          assert ds[best]==p;
-          tie++;
-        }
-        if( best==iact+1 ) { hits[k]++; return; }
-      }
+  public static void updateHits(int iact, double[] ds, long[] hits, int row) {
+    // Use getPrediction logic to see which top K labels we would have predicted
+    // Pick largest prob, assign label, then set prob to 0, find next-best label, etc.
+    double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
+    for (int k=0; k<hits.length; ++k) {
+      final int pred_labels = ModelUtils.getPrediction(ds_copy, row); //use tie-breaking of getPrediction
+      ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
+      if (pred_labels==iact) hits[k]++;
     }
   }
 
@@ -77,7 +63,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow( double ds[], float [] yact, Model m ) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m, int row) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
@@ -95,7 +81,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _count++;
 
       // Compute hit ratio
-      if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
+      if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits,row);
 
       // Compute log loss
       if (iact+1 < ds.length) _logloss -= Math.log(Math.max(1e-15, ds[iact+1]));
