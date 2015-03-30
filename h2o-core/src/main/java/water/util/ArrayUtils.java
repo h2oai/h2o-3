@@ -288,10 +288,13 @@ public class ArrayUtils {
       if (from[i]<from[result]) result = i;
     return result;
   }
-  public static double maxValue(double[] from) {
-    double result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
+  public static double maxValue(double[] ary) {
+    return maxValue(ary,0,ary.length);
+  }
+  public static double maxValue(double[] ary, int from, int to) {
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
+      if (ary[i]>result) result = ary[i];
     return result;
   }
   public static float maxValue(float[] ary) {
