@@ -37,13 +37,36 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   public static void updateHits(int iact, double[] ds, long[] hits, int row) {
-    // Use getPrediction logic to see which top K labels we would have predicted
-    // Pick largest prob, assign label, then set prob to 0, find next-best label, etc.
-    double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
-    for (int k=0; k<hits.length; ++k) {
-      final int pred_labels = ModelUtils.getPrediction(ds_copy, row); //use tie-breaking of getPrediction
-      ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
-      if (pred_labels==iact) hits[k]++;
+    if (iact == ds[0]) {
+      hits[0]++;
+      return;
+    }
+    else {
+      long before = ArrayUtils.sum(hits);
+      // Use getPrediction logic to see which top K labels we would have predicted
+      // Pick largest prob, assign label, then set prob to 0, find next-best label, etc.
+      double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
+      assert(ArrayUtils.sum(ds_copy)-ds_copy[0] <= 1.0);
+
+      ds_copy[1+(int)ds[0]] = 0;
+      for (int k=1; k<hits.length; ++k) {
+        final int pred_labels = ModelUtils.getPrediction(ds_copy, row); //use tie-breaking of getPrediction
+        if (k==0) {
+          assert(pred_labels == ds_copy[0]);
+        }
+        assert(ArrayUtils.minValue(ds_copy) >= 0);
+        assert(ArrayUtils.maxValue(ds_copy, 1, ds_copy.length) <= 1.0);
+        ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
+        if (pred_labels==iact) {
+          hits[k]++;
+          break;
+        }
+      }
+      long after = ArrayUtils.sum(hits);
+      // must find at least one hit if K == n_classes
+      if (hits.length == ds.length-1) {
+        if (after == before) hits[hits.length-1]++; //assume worst case
+      }
     }
   }
 
