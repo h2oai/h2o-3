@@ -22,7 +22,7 @@ test <- function(conn) {
         print(elapsedTime)
 
     print("Assert runtime less than 30 seconds")
-        stopifnot(elapsedTime < 30)
+        stopifnot(elapsedTime < 60)  # should finish in less than a minute.
 
   testEnd()
 }
