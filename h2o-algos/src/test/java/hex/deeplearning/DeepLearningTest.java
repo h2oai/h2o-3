@@ -170,8 +170,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(53, 174),
-                    a(16, 137)),
+            a(a(57, 170),
+              a(16, 137)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Rectifier);
   }
@@ -187,8 +187,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(4, 223),
-                    a(0, 153)),
+            a(a(5, 222),
+              a(0, 153)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout);
 
@@ -205,8 +205,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(131, 96),
-                    a(25, 128)),
+            a(a(147,  80),
+              a( 32, 121)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Tanh);
   }
@@ -222,8 +222,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(55, 172),
-                    a(12, 141)),
+            a(a(58, 169),
+              a(12, 141)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout);
   }
@@ -239,8 +239,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(58, 169),
-                    a(12, 141)),
+            a(a(56, 171),
+              a( 8, 145)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.Maxout);
   }
@@ -256,8 +256,8 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            a(a(38, 189),
-                    a(7, 146)),
+            a(a(58, 169),
+              a(13, 140)),
             s("0", "1"),
             DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout);
   }
