@@ -126,7 +126,8 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              average_activation,
                              sparsity_beta,
                              max_categorical_features,
-                             reproducible=FALSE
+                             reproducible=FALSE,
+                             export_weights_and_biases=FALSE
 )
 {
   dots <- list(...)
@@ -224,7 +225,8 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 average_activation,
                                 sparsity_beta,
                                 max_categorical_features,
-                                reproducible
+                                reproducible,
+                                export_weights_and_biases
                             )
 {
   env <- parent.frame()
