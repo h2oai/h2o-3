@@ -9,10 +9,13 @@
 #record the starting time
 start<-Sys.time()
 
+## Point to directory where the Kaggle data is
+dir <- paste0(path.expand("~"), "/h2o-kaggle/rain/")
+
 ## read in a fixed number of rows (increase/decrease based on memory footprint)
 ## you can use read.csv in place of data.table; it's just much slower
 library(data.table) 
-train<-fread("train_2013.csv",select="Expected")
+train<-fread(paste0(dir,"train_2013.csv"), select="Expected")
 gc()
 
 ## collect the probability it will rain 0mm, 1mm, 2mm...9mm
@@ -25,7 +28,7 @@ if(i>1){avgRainRate<-c(avgRainRate,train[,mean(ifelse(Expected<=(i-1),1,0))])}
 avgRainRate<-c(avgRainRate,rep(1,60))
 
 ## now construct a prediction by using the matrix as a lookup table to the first 10 prediction levels
-test<-fread("test_2014.csv",select="Id")
+test<-fread(paste0(dir,"test_2014.csv"),select="Id")
 gc()
 predictions<-as.data.frame(cbind(test$Id,as.data.frame(t(avgRainRate))))
 colnames(predictions)<-c("Id",paste0("Predicted",(seq(1:70)-1)))

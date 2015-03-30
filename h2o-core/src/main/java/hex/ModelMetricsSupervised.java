@@ -30,7 +30,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
       _work = new double[_nclasses+1];
     }
 
-    @Override public double[] perRow(double[] ds, float[] yact, Model m) {
+    @Override public double[] perRow(double[] ds, float[] yact, Model m, int row) {
       throw H2O.unimpl("Subclasses must implement perRow.");
     }
 

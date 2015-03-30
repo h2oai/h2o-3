@@ -43,7 +43,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
-    public double[] perRow(double[] preds, float[] dataRow, Model m) {
+    public double[] perRow(double[] preds, float[] dataRow, Model m, int row) {
       assert m instanceof ClusteringModel;
       if (Double.isNaN(preds  [0])) return preds; // No errors if prediction is missing
       if (Float .isNaN(dataRow[0])) return preds; // No errors if actual is missing

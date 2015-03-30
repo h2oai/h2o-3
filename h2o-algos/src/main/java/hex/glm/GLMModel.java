@@ -48,8 +48,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
 
     @Override
-    public double[] perRow(double[] ds, float[] yact, Model m) {
-      double [] res = super.perRow(ds,yact,m);
+    public double[] perRow(double[] ds, float[] yact, Model m, int row) {
+      double [] res = super.perRow(ds,yact,m, row);
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
       _resDev += gm._parms.deviance(yact[0], (float)ds[2]);
