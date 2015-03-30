@@ -15,13 +15,15 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
-
-    if (! (mm instanceof ModelMetricsBinomial))
+    if( !(mm instanceof ModelMetricsBinomial) )
       throw new H2OIllegalArgumentException("Expected to find a Binomial ModelMetrics for model: " + model._key.toString() + " and frame: " + frame._key.toString(),
               "Expected to find a ModelMetricsBinomial for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
-
     return (ModelMetricsBinomial) mm;
   }
+
+  @Override public AUC2 auc() { return _auc; }
+  @Override public ConfusionMatrix cm() { return new ConfusionMatrix(_auc.defaultCM(), _domain); }
+
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     double _logloss;

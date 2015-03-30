@@ -16,9 +16,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _logloss = logloss;
   }
 
-  @Override public ConfusionMatrix cm() {
-    return _cm;
-  }
+  @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() {
     return _hit_ratios;
   }

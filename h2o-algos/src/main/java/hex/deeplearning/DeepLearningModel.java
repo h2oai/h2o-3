@@ -1702,14 +1702,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           trainPredict.delete();
 
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
-          err.train_confusion_matrix = mm1.cm();
-          err.train_err = err.train_confusion_matrix.err();
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
             err.trainAUC = mm._auc;
+            err.train_confusion_matrix = mm.cm();
+            err.train_err = err.train_confusion_matrix.err();
+            err.train_logloss = mm._logloss;
           }
           else if (mm1 instanceof ModelMetricsMultinomial) {
             ModelMetricsMultinomial mm = (ModelMetricsMultinomial)(mm1);
+            err.train_confusion_matrix = mm.cm();
+            err.train_err = err.train_confusion_matrix.err();
             err.train_logloss = mm._logloss;
             err.train_hitratio = mm._hit_ratios;
           }
@@ -1723,14 +1726,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             validPred.delete();
             hex.ModelMetricsSupervised mm2 = (ModelMetricsSupervised)hex.ModelMetrics.getFromDKV(this, ftest);
             if (mm2 != null) {
-              err.valid_confusion_matrix = mm2.cm();
-              err.valid_err = err.valid_confusion_matrix.err();
               if (mm2 instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial) (mm2);
-                err.valid_logloss = mm._logloss;
                 err.validAUC = mm._auc;
+                err.valid_confusion_matrix = mm.cm();
+                err.valid_logloss = mm._logloss;
+                err.valid_err = err.valid_confusion_matrix.err();
               } else if (mm2 instanceof ModelMetricsMultinomial) {
                 ModelMetricsMultinomial mm = (ModelMetricsMultinomial) (mm2);
+                err.valid_confusion_matrix = mm.cm();
+                err.valid_err = err.valid_confusion_matrix.err();
                 err.valid_logloss = mm._logloss;
                 err.valid_hitratio = mm._hit_ratios;
               }
