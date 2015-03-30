@@ -1961,9 +1961,9 @@ class ASTRename extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    Frame fr2 = new Frame(Key.make(_newname), fr.names(), fr.deepSlice(null,null).vecs());
-    DKV.put(Key.make(_newname), fr2);
-    e.pushAry(fr2);  // the vecs have not changed and their refcnts remain the same
+    Frame fr2 = fr.deepCopy(_newname);
+    DKV.put(fr2._key, fr2);
+    e.pushAry(fr2);
   }
 }
 
