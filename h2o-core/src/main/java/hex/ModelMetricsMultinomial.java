@@ -4,6 +4,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -61,6 +62,24 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         if (after == before) hits[hits.length-1]++; //assume worst case
       }
     }
+  }
+
+  public static TwoDimTable getHitRatioTable(float[] hits) {
+    String tableHeader = "Top-" + hits.length + " Hit Ratios";
+    String tableDescription = null;
+    String[] rowHeaders = new String[hits.length];
+    for (int k=0; k<hits.length; ++k) {
+      rowHeaders[k] = new Integer(k+1).toString();
+    }
+    String[] colHeaders = new String[]{"Hit Ratio"};
+    String[] colTypes = new String[]{"float"};
+    String[] colFormats = new String[]{"%f"};
+    String colHeaderForRowHeaders = "K";
+    TwoDimTable table = new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    for (int k=0; k<hits.length; ++k) {
+      table.set(k, 0, new Float(hits[k]));
+    }
+    return table;
   }
 
 
