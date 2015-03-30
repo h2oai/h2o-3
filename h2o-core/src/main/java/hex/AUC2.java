@@ -199,10 +199,10 @@ public class AUC2 extends Iced {
     long   _fps[];              // Histogram bins, false positives
     AUCBuilder(int nBins) {
       _nBins = nBins;
-      _ths = new double[nBins+1]; // Threshold; also the mean for this bin
-      _sqe = new double[nBins+1]; // Squared error (variance) in this bin
-      _tps = new long  [nBins+1]; // True  positives
-      _fps = new long  [nBins+1]; // False positives
+      _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
+      _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
+      _tps = new long  [nBins<<1]; // True  positives
+      _fps = new long  [nBins<<1]; // False positives
     }    
 
     public void perRow(double pred, int act ) {
@@ -227,18 +227,63 @@ public class AUC2 extends Iced {
       if( act==0 ) { _tps[idx]=0; _fps[idx]=1; }
       else         { _tps[idx]=1; _fps[idx]=0; }
       _n++;
-      if( _n <= _nBins ) return; // No need to merge bins
+      if( _n > _nBins )         // Merge as needed back down to nBins
+        mergeOneBin();
+    }
 
+    void reduce( AUCBuilder bldr ) {
+      // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
+      // half of the double-sized array is unused, but the front half is
+      // probably a source.  Merge into the back.
+      //assert sorted();
+      //assert bldr.sorted();
+      int x=     _n-1;
+      int y=bldr._n-1;
+      while( x+y+1 >= 0 ) {
+        boolean self_is_larger = y < 0 || (x >= 0 && _ths[x] >= bldr._ths[y]);
+        AUCBuilder b = self_is_larger ? this : bldr;
+        int      idx = self_is_larger ?   x  :   y ;
+        _ths[x+y+1] = b._ths[idx];
+        _sqe[x+y+1] = b._sqe[idx];
+        _tps[x+y+1] = b._tps[idx];
+        _fps[x+y+1] = b._fps[idx];
+        if( self_is_larger ) x--; else y--;
+      }
+      _n += bldr._n;
+      //assert sorted();
+
+      // Merge elements with least squared-error increase until we get fewer
+      // than _nBins and no duplicates.
+      boolean dups = true;
+      while( (dups && _n > 1) || _n > _nBins )
+        dups = mergeOneBin();
+    }
+
+//    private boolean sorted() {
+//      double t = _ths[0];
+//      for( int i=1; i<_n; i++ ) {
+//        if( _ths[i] < t )
+//          return false;
+//        t = _ths[i];
+//      }
+//      return true;
+//    }
+
+    private boolean mergeOneBin() {
       // Too many bins; must merge bins.  Merge into bins with least total
       // squared error.  Horrible slowness linear scan.  
+      boolean dups = false;
       double minSQE = Double.MAX_VALUE;
       int minI = -1;
-      for( int i=0; i<_nBins; i++ ) {
+      for( int i=0; i<_n-1; i++ ) {
         long k0 = _tps[i  ]+_fps[i  ];
         long k1 = _tps[i+1]+_fps[i+1];
         double delta = _ths[i+1]-_ths[i];
         double sqe0 = _sqe[i]+_sqe[i+1]+delta*delta*k0*k1 / (k0+k1);
-        if( sqe0 < minSQE ) {  minI = i;  minSQE = sqe0; }
+        if( sqe0 < minSQE || delta==0 ) {  
+          minI = i;  minSQE = sqe0; 
+          if( delta==0 ) { dups = true; break; }
+        }
       }
 
       // Here is code for merging bins with keeping the bins balanced in
@@ -248,7 +293,7 @@ public class AUC2 extends Iced {
 
       //long minV = Long.MAX_VALUE;
       //int minI = -1;
-      //for( int i=0; i<_nBins; i++ ) {
+      //for( int i=0; i<_n; i++ ) {
       //  long sum = _tps[i]+_fps[i]+_tps[i+1]+_fps[i+1];
       //  if( sum < minV ||
       //      (sum==minV && _ths[i+1]-_ths[i] < _ths[minI+1]-_ths[minI]) ) {
@@ -272,44 +317,7 @@ public class AUC2 extends Iced {
       System.arraycopy(_tps,minI+2,_tps,minI+1,_n-minI-2);
       System.arraycopy(_fps,minI+2,_fps,minI+1,_n-minI-2);
       _n--;
-    }
-
-    void reduce( AUCBuilder bldr ) {
-      // Get or make a double-sized set of arrays
-      double ths[], sqe[];
-      long   tps[], fps[];
-      final int n = _n+bldr._n;
-      if( _ths.length >= n ) {
-        ths =      _ths; sqe =      _sqe; tps =      _tps; fps =      _fps;
-      } else if( bldr._ths.length >= n ) {
-        ths = bldr._ths; sqe = bldr._sqe; tps = bldr._tps; fps = bldr._fps;
-      } else {
-        ths = new double[n];
-        sqe = new double[n];
-        tps = new long  [n];
-        fps = new long  [n];
-      }
-      // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
-      // half of the double-sized array is unused, but the front half is
-      // probably a source.  Merge into the back.
-      int x=     _n-1;
-      int y=bldr._n-1;
-      while( x+y+1 >= 0 ) {
-        if( y < 0 || (x >= 0 && _ths[x] >= bldr._ths[y]) ) {
-          ths[x+y+1] = _ths[x];
-          sqe[x+y+1] = _sqe[x];
-          tps[x+y+1] = _tps[x];
-          fps[x+y+1] = _fps[x];  x--;
-        } else {
-          ths[x+y+1] = bldr._ths[y];
-          sqe[x+y+1] = bldr._sqe[y];
-          tps[x+y+1] = bldr._tps[y];
-          fps[x+y+1] = bldr._fps[y];  y--;
-        }
-      }
-
-
-      throw H2O.unimpl();
+      return dups;
     }
   }
 }

@@ -43,7 +43,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
       // Compute log loss
       final double eps = 1e-15;
-      _logloss -= Math.log(Math.max(eps, Math.min(1-eps, ds[iact+1])));
+      _logloss += -Math.log(Math.max(eps,ds[iact+1]));
 
       _auc.perRow(ds[2],iact);
 
@@ -52,8 +52,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     @Override public void reduce( T mb ) {
       super.reduce(mb); // sumseq, count
+      _logloss += mb._logloss;
       _auc.reduce(mb._auc);
-      throw water.H2O.unimpl(); // logloss?
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
@@ -61,7 +61,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         double mse = _sumsqe / _count;
         double logloss = _logloss / _count;
         AUC2 auc = new AUC2(_auc);
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, sigma, _domain, mse, auc, logloss));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc, logloss));
       } else {
         return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, Double.NaN, null, Double.NaN, null, Double.NaN));
       }

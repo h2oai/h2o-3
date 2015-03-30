@@ -231,7 +231,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
       long[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ar(ar(315, 78), ar(27, 80)), cm);
+      Assert.assertArrayEquals(ar(ar(315, 78), ar(26, 81)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
