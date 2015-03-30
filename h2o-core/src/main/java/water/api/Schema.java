@@ -369,20 +369,23 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     // Get passed-in fields, assign into Schema
 
     Map<String, Field> fields = new HashMap<>();
+    Field current = null; // declare here so we can print in catch{}
     try {
       Class clz = getClass();
       do {
         Field[] some_fields = clz.getDeclaredFields();
 
-        for (Field f : some_fields)
+        for (Field f : some_fields) {
+          current = f;
           if (null == fields.get(f.getName()))
             fields.put(f.getName(), f);
+        }
 
         clz = clz.getSuperclass();
       } while (Iced.class.isAssignableFrom(clz.getSuperclass()));
     }
     catch (SecurityException e) {
-        throw H2O.fail("Exception accessing fields: " + e);
+        throw H2O.fail("Exception accessing field: " + current + " in class: " + this.getClass() + ": " + e);
     }
 
     for( String key : parms.stringPropertyNames() ) {
@@ -394,14 +397,20 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         }
 
         int mods = f.getModifiers();
-        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) )
+        if( Modifier.isTransient(mods) || Modifier.isStatic(mods) ) {
           // Attempting to set a transient or static; treat same as junk fieldname
-          throw H2O.fail("Unknown argument (transient or static): " + key);
+          throw new H2OIllegalArgumentException(
+                  "Bad parameter for field: " + key + " for class: " + this.getClass().toString(),
+                  "Bad parameter definition for field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was declared static or transient)");
+        }
         // Only support a single annotation which is an API, and is required
         API api = (API)f.getAnnotations()[0];
         // Must have one of these set to be an input field
-        if( api.direction() == API.Direction.OUTPUT )
-          throw H2O.fail("Attempting to set output field: " + key);
+        if( api.direction() == API.Direction.OUTPUT ) {
+          throw new H2OIllegalArgumentException(
+                  "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
+                  "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
+        }
 
         // Primitive parse by field type
         Object parse_result = parse(key, parms.getProperty(key),f.getType(), api.required());

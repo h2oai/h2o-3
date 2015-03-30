@@ -1,5 +1,6 @@
 package water.api;
 
+import water.exceptions.H2OFailException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.*;
@@ -598,6 +599,18 @@ public class RequestServer extends NanoHTTPD {
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
+    }
+    catch (H2OFailException e) {
+      H2OError error = e.toH2OError(uri);
+
+      Log.warn("Caught exception (fatal to the cluster): " + error.toString());
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      Log.warn(wrap(new H2OErrorV1().fillFromImpl(error), type));
+      System.exit(-1);
+
+      // unreachable, but the compiler doesn't know it:
+      return wrap(new H2OErrorV1().fillFromImpl(error), type);
     }
     catch (H2OModelBuilderIllegalArgumentException e) {
       H2OModelBuilderError error = e.toH2OError(uri);
