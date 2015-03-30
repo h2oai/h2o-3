@@ -19,7 +19,7 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
       _work = new double[dims];
     }
 
-    @Override public double[] perRow( double ds[], float yact[], Model m) {
+    @Override public double[] perRow(double ds[], float yact[], Model m, int row) {
       throw H2O.unimpl();
     }
 
