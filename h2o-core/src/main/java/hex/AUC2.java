@@ -119,7 +119,7 @@ public class AUC2 extends Iced {
 
   AUC2( AUCBuilder bldr ) { 
     // Copy result arrays into base object, shrinking to match actual bins
-    _nBins = bldr._nBins;
+    _nBins = bldr._n;
     _ths = Arrays.copyOf(bldr._ths,_nBins);
     _tps = Arrays.copyOf(bldr._tps,_nBins);
     _fps = Arrays.copyOf(bldr._fps,_nBins);
@@ -190,7 +190,7 @@ public class AUC2 extends Iced {
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
 
-  public static class AUCBuilder {
+  static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
     double _ths[];              // Histogram bins, center

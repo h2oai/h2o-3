@@ -22,7 +22,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   }
 
   @Override public AUC2 auc() { return _auc; }
-  @Override public ConfusionMatrix cm() { return new ConfusionMatrix(_auc.defaultCM(), _domain); }
+  @Override public ConfusionMatrix cm() { return _auc == null ? null : new ConfusionMatrix(_auc.defaultCM(), _domain); }
 
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
@@ -58,8 +58,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       _auc.reduce(mb._auc);
     }
 
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      if (sigma != 0.0) {
+    @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+      if (sigma != 0.0 && _count > 0 ) {
         double mse = _sumsqe / _count;
         double logloss = _logloss / _count;
         AUC2 auc = new AUC2(_auc);
