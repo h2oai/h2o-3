@@ -312,7 +312,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
       for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
-      model._output._eigenvectors = new TwoDimTable("Rotation", _train.names(),
+      model._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
               colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._eigenvectors_raw);
 
       // Calculate standard deviations from \Sigma
@@ -336,7 +336,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         prop_var[i] = pcvar[i] / tot_var;
         cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
       }
-      model._output._pc_importance = new TwoDimTable("Importance of components",
+      model._output._pc_importance = new TwoDimTable("Importance of components", null,
               new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
               colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
     }

@@ -29,6 +29,9 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
   @API(help="Table Name", direction=API.Direction.OUTPUT)
   public String name;
 
+  @API(help="Table Description", direction=API.Direction.OUTPUT)
+  public String description;
+
   @API(help="Column Specification", direction=API.Direction.OUTPUT)
   public ColumnSpecsV1[] columns;
 
@@ -45,6 +48,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
    */
   @Override public TwoDimTableV1 fillFromImpl(TwoDimTable t) {
     name = t.getTableHeader();
+    description = t.getTableDescription();
     final int cols = t.getColDim()+1;
     final int rows = t.getRowDim();
     rowcount = rows;
@@ -86,6 +90,7 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
     assert(rows == rowcount);
     final int cols = data.length+1;
     String tableHeader = name;
+    String tableDescription = description;
     String colHeaderForRowHeaders = columns[0].name;
     String[] rowHeaders = new String[rows];
     for (int r=0; r<rows; ++r) {
@@ -132,13 +137,15 @@ public class TwoDimTableV1 extends Schema<TwoDimTable, TwoDimTableV1> {
         }
       }
     }
-    return new TwoDimTable(tableHeader, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders, strCellValues, dblCellValues);
+    return new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders, strCellValues, dblCellValues);
   }
 
   @Override
   public AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.put1(',');
     ab.putJSONStr("name",name);
+    ab.put1(',');
+    ab.putJSONStr("description",description);
     ab.put1(',');
     ab.putJSONStr("columns").put1(':');
     ab.put1('[');

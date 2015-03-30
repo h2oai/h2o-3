@@ -22,7 +22,7 @@ def var_test(ip,port):
     var_np = np.var(iris_np, axis=0, ddof=1)
     for i in range(4):
         var_h2o = iris_h2o[i].var()
-        assert abs(var_np[i] - var_h2o) < 1e-10, "expected standard deviations to be the same"
+        assert abs(var_np[i] - var_h2o.eager()) < 1e-10, "expected standard deviations to be the same"
 
 
     var_cov_h2o = iris_h2o[0:4].var()

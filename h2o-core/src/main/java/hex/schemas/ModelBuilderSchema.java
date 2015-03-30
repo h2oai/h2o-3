@@ -30,7 +30,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
-  JobV2 job;
+  public JobV2 job;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
   public ValidationMessageBase validation_messages[];
@@ -39,7 +39,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public int validation_error_count;
 
   @API(help="HTTP status to return for this build.", json = false)
-  private int __http_status; // The handler sets this to 400 if we're building and validation_error_count > 0, else 200.
+  public int __http_status; // The handler sets this to 400 if we're building and validation_error_count > 0, else 200.
 
   public ModelBuilderSchema() {
     this.parameters = createParametersSchema();
@@ -120,6 +120,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
     this.validation_error_count = builder.error_count();
     parameters = createParametersSchema();
     parameters.fillFromImpl(builder._parms);
+    // parameters.destination_key = new KeyV1.ModelKeyV1(builder._dest);
     return (S)this;
   }
 

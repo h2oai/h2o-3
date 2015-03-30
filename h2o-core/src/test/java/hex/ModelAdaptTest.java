@@ -6,9 +6,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-//import static org.junit.Assert.assertEquals;
-//import static org.junit.Assert.assertTrue;
-
 public class ModelAdaptTest extends TestUtil {
 
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }

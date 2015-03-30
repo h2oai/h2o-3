@@ -284,7 +284,7 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
 
-      Assert.assertTrue(kmm.testJavaScoring(fr,fr2));
+      Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
 
     } finally {
       if( fr  != null ) fr .remove();

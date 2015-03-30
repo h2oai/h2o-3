@@ -32,19 +32,20 @@ options(echo=TRUE)
 source('../h2o-runit.R')
 
 test.pub.767 <- function(conn) {
-  Log.info('Importing the altered covtype data from smalldata.')
+  Log.info('Importing the altered covtype training_data from smalldata.')
   cov <- h2o.importFile(conn, normalizePath(locate('smalldata/jira/covtype.altered.gz')), 'cov')
-  
+
   Log.info('Print head of dataset')
   Log.info(head(cov))
 
   Log.info("Show the counts of each response level")
   cnts <- h2o.ddply(cov, "V55", nrow)
   print(as.data.frame(cnts))
- 
-  m <- h2o.randomForest(x = 1:54, y = 55, data = cov, ntree = 10, depth = 100) 
 
-  print(m)  
+  m <- h2o.randomForest(x = 1:54, y = 55, training_frame = cov, ntrees = 10,
+                        max_depth = 100)
+
+  print(m)
   testEnd()
 }
 

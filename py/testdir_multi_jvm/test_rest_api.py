@@ -112,11 +112,8 @@ def validate_model_builder_result(result, original_params, model_name):
         pp.pprint(result)
         assert result['validation_error_count'] == 0, "FAIL: Non-zero validation_error_count for model: " + model_name
 
-    assert 'jobs' in result, "FAIL: Failed to find jobs key for model: " + model_name + ": " + pp.pprint(result)
-    jobs = result['jobs']
-    assert type(jobs) is list, "FAIL: Jobs element for model is not a list: " + model_name + ": " + pp.pprint(result)
-    assert len(jobs) == 1, "FAIL: Jobs list for model is not 1 long: " + model_name + ": " + pp.pprint(result)
-    job = jobs[0]
+    assert 'job' in result, "FAIL: Failed to find job key for model: " + model_name + ": " + pp.pprint(result)
+    job = result['job']
     assert type(job) is dict, "FAIL: Job element for model is not a dict: " + model_name + ": " + pp.pprint(result)
     assert 'key' in job, "FAIL: Failed to find key in job for model: " + model_name + ": " + pp.pprint(result)
 
@@ -683,8 +680,6 @@ assert first['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of
 assert second['rows'] == 190, 'FAIL: 50/50 SplitFrame yielded the wrong number of rows.  Expected: 190; got: ' + second['rows']
 # TODO: validate_job_exists(splits['key']['name'])
 
-print('Terminating test before model-building')   # TODO: Remove after Deep Learning has been updated to remove do_classification
-sys.exit(0)
 ####################################################################################################
 # Build and do basic validation checks on models
 ####################################################################################################
@@ -697,13 +692,13 @@ models_to_build = [
     # TODO: Crashes: ModelSpec('glm_airlines_binomial', 'glm', 'airlines_binomial', {'response_column': 'IsDepDelayed', 'do_classification': True, 'family': 'binomial'}, 'Binomial'),
     # Multinomial doesn't make sense for glm: ModelSpec('glm_iris_multinomial', 'glm', iris_multinomial, {'response_column': 'class', 'do_classification': True, 'family': 'gaussian'}, 'Regression'),
 
-    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1 } ),
-    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20] } ),
-    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10] } ),
-    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1 } ),
+    ModelSpec.for_dataset('deeplearning_prostate_regression', 'deeplearning', datasets['prostate_regression'], { 'epochs': 1, 'loss': 'MeanSquare' } ),
+# TODO: add toEnum of the response column and put back:    ModelSpec.for_dataset('deeplearning_prostate_binomial', 'deeplearning', datasets['prostate_binomial'], { 'epochs': 1, 'hidden': [20, 20], 'loss': 'CrossEntropy' } ),
+    ModelSpec.for_dataset('deeplearning_airlines_binomial', 'deeplearning', datasets['airlines_binomial'], { 'epochs': 1, 'hidden': [10, 10], 'loss': 'CrossEntropy' } ),
+    ModelSpec.for_dataset('deeplearning_iris_multinomial', 'deeplearning', datasets['iris_multinomial'], { 'epochs': 1, 'loss': 'CrossEntropy' } ),
 
     ModelSpec.for_dataset('gbm_prostate_regression', 'gbm', datasets['prostate_regression'], { 'ntrees': 5, 'loss': 'gaussian' } ),
-    ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
+# TODO: add toEnum of the response column and put back:        ModelSpec.for_dataset('gbm_prostate_binomial', 'gbm', datasets['prostate_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
     ModelSpec.for_dataset('gbm_airlines_binomial', 'gbm', datasets['airlines_binomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
     ModelSpec.for_dataset('gbm_iris_multinomial', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'loss': 'multinomial' } ),
 ]
@@ -734,12 +729,11 @@ for algo, model_builder in model_builders.iteritems():
     assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
 
-    expected_count = 1
+    expected_count = 0
     if expected_count != parameters_validation['validation_error_count']:
-       print "validation errors: "
-       pp.pprint(parameters_validation)
+        print "validation errors: "
+        pp.pprint(parameters_validation)
     assert expected_count == parameters_validation['validation_error_count'], "FAIL: " + str(expected_count) + " != validation_error_count in good-parameters parameters validation result."
-    assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
 
 
 #######################################
@@ -753,22 +747,20 @@ dl_test_parameters = {value['name'] : value['default_value'] for value in dl_tes
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-if 1 != parameters_validation['validation_error_count']:
+if 0 != parameters_validation['validation_error_count']:
     print "validation errors: "
     pp.pprint(parameters_validation)
-assert 1 == parameters_validation['validation_error_count'], "FAIL: 1 != validation_error_count in good-parameters parameters validation result."
-assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
+assert 0 == parameters_validation['validation_error_count'], "FAIL: 0 != validation_error_count in good-parameters parameters validation result."
 
 # Good parameters (note: testing with null training_frame):
 dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in good-parameters parameters validation result."
 h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
-if 1 != parameters_validation['validation_error_count']:
+if 0 != parameters_validation['validation_error_count']:
     print "validation errors: "
     pp.pprint(parameters_validation)
-assert 1 == parameters_validation['validation_error_count'], "FAIL: 1 != validation_error_count in good-parameters parameters validation result."
-assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
+assert 0 == parameters_validation['validation_error_count'], "FAIL: 0 != validation_error_count in good-parameters parameters validation result."
 
 # Bad parameters (hidden is null):
 # (note: testing with null training_frame)
@@ -776,8 +768,7 @@ dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'i
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (input_dropout_ratio)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 2 == parameters_validation['validation_error_count'], "FAIL: 2 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
-assert 'training_frame' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
+assert 0 != parameters_validation['validation_error_count'], "FAIL: 0 == validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
 
 found_expected_error = False
 for validation_message in parameters_validation['validation_messages']:
@@ -790,8 +781,7 @@ dl_test_parameters = {'hidden': "[10, 20, 10]" }
 parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
 assert 'validation_error_count' in parameters_validation, "FAIL: Failed to find validation_error_count in bad-parameters parameters validation result (response_column)."
 h2o.H2O.verboseprint("Good params validation messages: ", repr(parameters_validation))
-assert 1 == parameters_validation['validation_error_count'], "FAIL: 1 != validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
-assert 'response_column' == parameters_validation['validation_messages'][0]['field_name'], "FAIL: First validation message is about missing training frame."
+assert 0 != parameters_validation['validation_error_count'], "FAIL: 0 == validation_error_count in bad-parameters parameters validation result: " + repr(parameters_validation)
 
 
 #######################################
@@ -800,8 +790,11 @@ if verbose: print 'About to try to build a DeepLearning model with bad parameter
 dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
 parameters_validation = a_node.build_model(algo='deeplearning', destination_key='deeplearning_prostate_binomial_bad', training_frame='prostate_binomial', parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
 validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
-assert parameters_validation['__http_response']['status_code'] == requests.codes.bad_request, "FAIL: expected 400 Bad Request from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
+assert parameters_validation['__http_response']['status_code'] == requests.codes.precondition_failed, "FAIL: expected 412 Precondition Failed from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
 if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
+
+print("WARNING: Terminating test before the end because we don't have as.factor yet. . .")   # TODO: Remove after deeplearning_prostate_binomial is updated
+sys.exit(0)
 
 ###################################
 # Compute and check ModelMetrics for 'deeplearning_prostate_binomial'

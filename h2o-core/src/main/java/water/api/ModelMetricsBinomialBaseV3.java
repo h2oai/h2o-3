@@ -45,7 +45,7 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
             }
             String[] metrics = new String[]{"F1", "F2", "F0point5", "accuracy", "error", "precision", "recall", "specificity", "mcc", "max_per_class_error"};
             TwoDimTable thresholdsByMetrics = new TwoDimTable(
-                    "Thresholds x Metric Scores",
+                    "Thresholds x Metric Scores", null,
                     thresholds,
                     metrics,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
@@ -99,7 +99,7 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
                     "minimizing max per class Error"};
             String[] columnNames = new String[]{"threshold", "F1", "F2", "F0point5", "accuracy", "error", "precision", "recall", "specificity", "mcc", "max_per_class_error"};
             TwoDimTable criteriaByThresholdAndScore = new TwoDimTable(
-                    "Max Criteria x Metric Scores",
+                    "Max Criteria x Metric Scores", null,
                     criteria,
                     columnNames,
                     new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},

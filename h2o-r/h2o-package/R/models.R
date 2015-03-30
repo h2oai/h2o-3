@@ -116,6 +116,8 @@
       if (is.na(type))
         stop("Cannot find type ", i$type, " in .type.map")
       if (scalar) { # scalar == TRUE
+        if (type == "H2OModel")
+            type <-  "character"
         if (!inherits(params[[i$name]], type))
           e <- paste0("\"", i$name , "\" must be of type ", type, ", but got ", class(params[[i$name]]), ".\n")
         else if ((length(i$values) > 1L) && !(params[[i$name]] %in% i$values)) {
@@ -146,6 +148,7 @@
     }
     e
   })
+
   if(any(nzchar(error)))
     stop(error)
 
@@ -174,9 +177,11 @@
     if(any(nzchar(warn))) warning(warn)
   }
 
+  #---------- Build! ----------#
   res <- .h2o.__remoteSend(conn, method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values)
-  job_key  <- res$job[[1L]]$key$name
-  dest_key <- res$jobs[[1L]]$dest$name
+
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
 
   new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
 }
@@ -330,10 +335,24 @@ h2o.performance <- function(model, data=NULL) {
 
 #' Retrieve an H2O AUC metric
 #'
+#' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.
+#'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.giniCoef}} for the GINI coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
-#'          various threshold metrics.
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.auc(perf)
 h2o.auc <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
@@ -343,12 +362,26 @@ h2o.auc <- function(object) {
   }
 }
 
-#' Retrieve the GINI Coeficcient
+#' Retrieve the GINI Coefficcient
+#'
+#' Retrieves the GINI coefficient from an \linkS4class{H2OBinomialMetrics}.
 #'
 #' @param object an \linkS4class{H2OBinomialMetrics} object.
 #' @seealso \code{\link{h2o.auc}} for AUC,  \code{\link{h2o.giniCoef}} for the
-#'          GINI coefficient, and \code{\link{h2o.metric}} for the various
+#'          GINI coefficient, and \code{\link{h2o.metric}} for the various. See
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
 #'          threshold metrics.
+#' @examples
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.giniCoef(perf)
 h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$Gini
@@ -359,9 +392,27 @@ h2o.giniCoef <- function(object) {
 }
 #' Retrieves Mean Squared Error Value
 #'
+#' Retrieves the mean squared error value from an \linkS4class{H2OModelMetrics}
+#' object.
+#'
+#' This function only supports \linkS4class{H2OBinomialMetrics},
+#' \linkS4class{H2OMultinomialMetrics}, and \linkS4class{H2ORegressionMetrics} objects.
+#'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for MSE, and
-#'          \code{\link{h2o.metric}} for the various threshold metrics.
+#'          \code{\link{h2o.metric}} for the various threshold metrics. See
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
+#' @examples
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.mse(perf)
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$mse
@@ -369,6 +420,20 @@ h2o.mse <- function(object) {
   else{
     stop(paste0("No MSE for ",class(object)))
   }
+}
+
+
+#' Retrieve the Log Loss Value
+#'
+#' Retrieves the log loss output for a \linkS4class{H2OBinomialMetrics} or
+#' \linkS4class{H2OMultinomialMetrics} object
+#'
+#' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
+h2o.logloss <- function(object) {
+  if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics"))
+    object@metrics$logloss
+  else
+    stop(paste("No log loss for",class(object)))
 }
 
 #' H2O Model Metric Accessor Functions
@@ -380,12 +445,27 @@ h2o.mse <- function(object) {
 #' return all possible values. Otherwise, the function will return the value for
 #' the indicated threshold.
 #'
+#' Currently, the these functions are only supported by
+#' \linkS4class{H2OBinomialMetrics} objects.
+#'
 #' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
-#' @param thresholds A value between 0.0 and 1.0.
+#' @param thresholds A value or a list of values between 0.0 and 1.0.
 #' @param metric A specified paramter to retrieve.
 #' @return Returns either a single value, or a list of values.
 #' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.giniCoef}} for the
-#'          GINI coefficient, and \code{\link{h2o.mse}} for MSE.
+#'          GINI coefficient, and \code{\link{h2o.mse}} for MSE. See
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
+#' @examples
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.F1(perf, c(0.3,0.4,0.5,0.6))
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
@@ -462,8 +542,62 @@ h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "specificity")
 }
 
-#' @rdname h2o.metric
-h2o.confusionMatrices <- function(object, thresholds) {
+
+#' Access H2O Confusion Matrices
+#'
+#' Retrieve either a single or many confusion matrices from H2O objects.
+#'
+#' The \linkS4class{H2OModelMetrics} version of this function will only take
+#' \linkS4class{H2OBinomialMetrics} or \linkS4class{H2OMultinomialMetrics}
+#' objects. If no threshold is specified, all possible thresholds are selected.
+#'
+#' @param object Either an \linkS4class{H2OModel} object or an
+#'        \linkS4class{H2OModelMetrics} object.
+#' @param newdata An \linkS4class{H2OFrame} object that can be scored on.
+#'        Requires a valid response column.
+#' @param thresholds (Optional) A value or a list of values between 0.0 and 1.0.
+#'        This value is only used in the case of
+#'        \linkS4class{H2OBinomialMetrics} objects.
+#' @return Calling this function on \linkS4class{H2OModel} objects returns a
+#'         confusion matrix corresponding to the \code{\link{predict}} function.
+#'         If used on an \linkS4class{H2OBinomialMetrics} object, returns a list
+#'         of matrices corresponding to the number of thresholds specified.
+#' @seealso \code{\link{predict}} for generating prediction frames,
+#'          \code{\link{h2o.performance}} for creating
+#'          \linkS4class{H2OModelMetrics}.
+#' @examples
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' h2o.confusionMatrix(model, hex)
+#' # Generating a ModelMetrics object
+#' perf <- h2o.performance(model, hex)
+#' # 0.46 is the F1 maximum threshold, used as the default prediction threshold
+#' h2o.confusionMatrix(perf, 0.46)
+setGeneric("h2o.confusionMatrix", function(object, ...) {})
+
+#' @rdname h2o.confusionMatrix
+setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
+  delete <- !.is.eval(newdata)
+  if(delete) {
+    temp_key <- newdata@key
+    .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, key = temp_key)
+  }
+
+  url <- paste0("Predictions.json/models/",object@key, "/frames/", newdata@key)
+  res <- .h2o.__remoteSend(object@conn, url, method="POST")
+
+  if(delete)
+    h2o.rm(temp_key)
+
+  res$model_metrics[[1L]]$cm$table
+})
+
+#' @rdname h2o.confusionMatrix
+setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds) {
   if(is(object, "H2OBinomialMetrics")){
     names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholds_and_metric_scores)
     if(!missing(thresholds)) {
@@ -480,11 +614,13 @@ h2o.confusionMatrices <- function(object, thresholds) {
     else {
         object@metrics$confusion_matrices
     }
+  } else if(is(object, "H2OMultinomialMetrics")) {
+    object@metrics$cm$table
   }
   else{
     stop(paste0("No Confusion Matrices for ",class(object)))
   }
-}
+})
 
 plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
   # TODO: add more types (i.e. cutoffs)

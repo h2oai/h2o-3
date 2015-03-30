@@ -1,10 +1,9 @@
-H2O
-========
+# H2O
 
 H2O makes Hadoop do math! H2O scales statistics, machine learning and math over BigData. H2O is extensible and users can build blocks using simple math legos in the core. H2O keeps familiar interfaces like R, Excel & JSON so that BigData enthusiasts & experts can explore, munge, model and score datasets using a range of simple to advanced algorithms. Data collection is easy. Decision making is hard. H2O makes it fast and easy to derive insights from your data through faster and better predictive modeling. H2O has a vision of online scoring and modeling in a single platform.
 
-Product Vision for first cut
-------------------------------
+## 1. Product Vision for first cut
+
 H2O product, the Analytics Engine will scale Classification and Regression.
 - RandomForest, Gradient Boosted Methods (GBM), Generalized Linear Modeling (GLM), Deep Learning and K-Means available over R / REST / JSON-API
 - Basic Linear Algebra as building blocks for custom algorithms
@@ -19,29 +18,38 @@ Data Sources
 Console provides Adhoc Data Analytics at scale via R-like Parser on BigData
  - Able to pass and evaluate R-like expressions, slicing and filters make this the most powerful web calculator on BigData
 
-Users
---------------------------------
+### Users
+
 Primary users are Data Analysts looking to wield a powerful tool for Data Modeling in the Real-Time. Microsoft Excel, R, SAS wielding Data Analysts and Statisticians.
 Hadoop users with data in HDFS will have a first class citizen for doing Math in Hadoop ecosystem.
 Java and Math engineers can extend core functionality by using and extending legos in a simple java that reads like math. See package hex.
 Extensibility can also come from writing R expressions that capture your domain.
 
-Design
---------------------------------
+### Design
 
 We use the best execution framework for the algorithm at hand. For first cut parallel algorithms: Map Reduce over distributed fork/join framework brings fine grain parallelism to distributed algorithms.
 Our algorithms are cache oblivious and fit into the heterogeneous datacenter and laptops to bring best performance.
 Distributed Arraylets & Data Partitioning to preserve locality.
 Move code, not data, not people.
 
-Extensions
----------------------------------
+### Extensions
 
 One of our first powerful extension will be a small tool belt of stats and math legos for Fraud Detection. Dealing with Unbalanced Datasets is a key focus for this.
 Users will use JSON/REST-api via H2O.R through connects the Analytics Engine into R-IDE/RStudio.
 
-Using H2O Dev Artifacts
---------------------------------
+-----
+
+## 2. Downloading H2O Dev
+
+While most of this README is oriented towards developers who do their own builds, most H2O users just download and use a pre-built version.  If that's you, just follow these steps:
+
+1.  Point to <http://h2o.ai>
+1.  Click on Download
+1.  Scroll down to find the section for H2O Dev
+1.  Click on the version you want (generally the latest numbered release)
+
+## 3. Using H2O Dev Artifacts
+
 Every nightly build publishes R, python, java and scala artifacts to a per-build repository.  In particular, you can find java artifacts in the maven/repo directory.
 
 Here is an example snippet of a gradle build file using h2o-dev as a dependency.  Replace x, y, z, and nnnn with valid numbers.
@@ -73,26 +81,60 @@ See the [h2o-droplets github repository](https://github.com/h2oai/h2o-droplets) 
 
 > Note: Stable H2O Dev artifacts are periodically published to Maven Central ([click here to search](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)) but may lag substantially behind H2O Dev Bleeding Edge nightly builds.
 
-Building H2O Dev
---------------------------------
+-----
+
+## 4. Building H2O Dev
 
 Getting started with H2O development requires JDK 1.7, Node.js, and Gradle.  We use the Gradle wrapper (called `gradlew`) to ensure an up-to-date local version of Gradle and other dependencies are installed in your development directory.
 
-##Making a clean build
+### 4.1. Building from the command line (Quick Start)
 
-Making a clean build is strongly recommended if: 
+The assumption is the setup steps described in section 4.2 and beyond have been followed.
 
-- the gradle build fails
-- there have been many changes in the last pull
-- source files have been renamed or deleted
+#### Recipe 1:  Fresh clone and build, skipping tests, and run h2o
 
-If you try to create a gradle build using `./gradlew build` and any of the conditions listed above apply, the build is likely to fail. 
+```
+# Build H2O
+git clone https://github.com/h2oai/h2o-dev.git
+cd h2o-dev
+./gradlew build -x test
 
-Creating a build using `./gradlew clean`, then `./gradlew build` takes more time to complete but is the best way to ensure all files are current. Run `./gradlew clean` first, then run `./gradlew build` as two separate commands. We strongly recommend using `./gradlew clean` after every `git pull`. 
+# Start H2O
+java -jar build/h2o.jar
 
-While using `./gradlew clean` is not required, it helps to prevent errors due to missing or outdated files during the build process. However, due to the increased time required for this method, we recommend using `./gradlew clean` only for integrating recent changes or troubleshooting failed builds.  
+# Point browser to http://localhost:54321
 
-### For all Platforms:
+```
+
+#### Recipe 2:  Fresh clone and build, running tests
+
+```
+git clone https://github.com/h2oai/h2o-dev.git
+cd h2o-dev
+./gradlew syncSmalldata
+./gradlew build
+```
+
+Note: Running tests starts 5 test JVMs that form an H2O cluster, and requires at least 8GB of RAM.  Preferably 16GB of RAM.
+
+#### Recipe 3:  Pull, clean and build, running tests
+
+```
+git pull
+./gradlew syncSmalldata
+./gradlew clean
+./gradlew build
+```
+
+#### Notes
+
+A 'clean' is recommended after each git pull.
+
+Skip tests by putting '-x test' at the end the gradle build command line.  Tests typically run for 7-10 minutes on a Macbook Pro laptop with 4 CPUs (8 hyperthreads) and 16 GB of RAM.
+
+Syncing smalldata is not strictly required after each pull, but if tests fail due to missing data files then this is the first troubleshooting step to try.  Syncing smalldata grabs data files from AWS S3 to the smalldata directory in your workspace.  The sync is incremental.  Do not check these files in.  The smalldata directory is in .gitignore.  If you do not run any tests, you do not need the smalldata directory.
+
+### 4.2. Setup on all Platforms
 
 ##### Install required python packages (using `sudo` if necessary)
 
@@ -100,7 +142,7 @@ While using `./gradlew clean` is not required, it helps to prevent errors due to
     `pip install tabulate`
     `pip install wheel`
 
-### For Windows
+### 4.3. Setup on Windows
 
 ##### Step 1: Download and install [Python](https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi) for Windows. 
   From the command line, validate `python` is using the newly-installed package. [Update the Environment variable](https://docs.python.org/2/using/windows.html#excursus-setting-environment-variables) with the Python path.
@@ -182,7 +224,7 @@ Download and update h2o-dev source codes:
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
 
-### Setup on OS X
+### 4.4. Setup on OS X
 
 If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It makes package management for OS X easy.
 
@@ -238,7 +280,7 @@ OS X should have with Git installed. To download and update h2o-dev source codes
 
 > If you encounter errors run again with `--stacktrace` for more instructions on missing dependencies.
 
-### Setup on Ubuntu 14.04
+### 4.5. Setup on Ubuntu 14.04
 
 ##### Step 1. Install Node.js, npm, and bower:
 
@@ -271,7 +313,7 @@ Download and update h2o-dev source codes:
 
 > Make sure that you are not running as root, since `bower` will reject such a run.
 
-### Setup on Ubuntu 13.10
+### 4.6. Setup on Ubuntu 13.10
 
 ##### Step 1. Install Node.js, npm, and bower
 
@@ -286,7 +328,7 @@ On Ubuntu 13.10, the default Node.js (v0.10.15) is sufficient, but the default n
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04
 
-### Setting up your preferred build environment
+### 4.7. Setting up your preferred IDE environment
 
 For users of Intellij's IDEA, generate project files with:
 
@@ -297,30 +339,21 @@ For users of Eclipse, generate project files with:
     ./gradlew eclipse
 
 
-Launching H2O from a build
---------------------------
+## 5. Launching H2O after building
 
-After creating the build, launch your build of H2O using either 
-
-    cd build
-    java -jar h2o.jar
-    
-  -or-
-  
     java -jar build/h2o.jar
 
 
+## 6. Building H2O on Hadoop
 
-H2O on Hadoop
--------------
+Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2o.ai/download).  Each Hadoop distribution version has a separate zip file in h2o-dev.
 
-To build H2O with Hadoop support, do the following from the top-level h2o-dev directory:
+To build H2O with Hadoop support yourself, do the following from the top-level h2o-dev directory:
 
     (export BUILD_HADOOP=1; ./gradlew build -x test)
     ./gradlew dist
 
-
-This will create a directory called 'target' and generate zip files there.    
+This will create a directory called 'target' and generate zip files there.  Note that BUILD_HADOOP is the default behavior when the username is 'jenkins' (see settings.gradle); otherwise you have to ask for it, as shown above.
 
 
 ### Adding support for a new version of Hadoop
@@ -334,64 +367,37 @@ You need to:
 3.  Add the new hadoop version to HADOOP_VERSIONS in make-dist.sh
 4.  Add the new hadoop version to wget list in h2o-dist/index.html
 
+-----
 
+## 7. Sparkling Water
 
-Sparkling Water
----------------------------------
-Sparkling Water combines two open source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest, accessible from Spark workflows. Spark users are provided with options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Sparks’ RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
+Sparkling Water combines two open source technologies: Apache Spark and H2O, our machine learning engine.  It makes H2O’s library of Advanced Algorithms, including Deep Learning, GLM, GBM, KMeans, PCA, and Random Forest, accessible from Spark workflows. Spark users are provided with options to select the best features from either platforms to meet their Machine Learning needs.  Users can combine Spark's RDD API and Spark MLLib with H2O’s machine learning algorithms, or use H2O independent of Spark in the model building process and post-process the results in Spark. 
 
-### Prerequisites
+Here are links to resources for Sparkling Water:
 
-Spark 1.2 for Sparkling Water v0.2.4-65+
-Spark 1.1 for older versions
+* [Download page for pre-built packages](http://h2o.ai/download/) (Scroll down for Sparkling Water)
+* [Sparkling Water github repository](https://github.com/h2oai/sparkling-water)
+* [README](https://github.com/h2oai/sparkling-water/blob/master/README.md)
+* [Developer documentaton](https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md)
 
-### Sparkling Water on Hadoop
+## 8. Documentation
 
-Compatiable Hadoop Distributions: CDH4, CDH5, and HDP2.1.
+### Generate REST API documentation 
 
-#### Install on Hadoop
+To generate the REST API documentation, use the following commands: 
 
-- To install on your Hadoop Cluster clone the git repository and make a build:
+    cd ~/h2o-dev
+    cd py
+    python ./generate_rest_api_docs.py  # to generate Markdown only
+    python ./generate_rest_api_docs.py --generate_html  --github_user GITHUB_USER --github_password GITHUB_PASSWORD # to generate Markdown and HTML
 
-```
-git clone https://github.com/0xdata/sparkling-water.git 
-cd sparkling-water
-./gradlew build
-```
+The default location for the generated documentation is `build/docs/REST`. 
 
-- Then set MASTER to the IP address of where your Spark Master Node is launched and set SPARK_HOME to the location of your Spark installation. In the example below the path for SPARK_HOME is the default location of Spark preinstalled on a CDH5 cluster. Please change MASTER below:
+-----
+-----
 
-```
-export MASTER="spark://mr-0xd9-precise1.0xdata.loc:7077"
-export SPARK_HOME="/opt/cloudera/parcels/CDH-5.2.0-1.cdh5.2.0.p0.11/lib/spark"
-```
+## Community
 
-- Launch Sparkling Shell:
-
-```
-./bin/sparkling-shell
-```
-
-#### Import Data from HDFS
-
-The initialization of H2O remains the same with the exception of importing data from a HDFS path. Please change path variable below to one suitable for your data.
-
-```scala
-import org.apache.spark.h2o._
-import org.apache.spark.examples.h2o._
-// Create H2O context
-val h2oContext = new H2OContext(sc).start()
-// Export H2O context to the 
-import h2oContext._
-
-// URI to access HDFS file
-val path = "hdfs://mr-0xd6-precise1.0xdata.loc:8020/datasets/airlines_all.05p.csv"
-val d = new java.net.URI(path)
-val f = new DataFrame(d)
-```
-
-Community
----------------------------------
 We will breathe & sustain a vibrant community with the focus of taking software engineering approach to data science and empower everyone interested in data to be able to hack data using math and algorithms.
 Join us on google groups [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
 
@@ -413,7 +419,6 @@ Amy Wang
 Max Schloemer
 Ray Peck
 Prithvi Prabhu
-Patrick Aboyoun
 Brandon Hill
 Jeff Gambera
 Ariel Rao
@@ -427,13 +432,15 @@ Allison Washburn
 Amy Wang
 Erik Eckstrand
 James Dean
-Neeraja Madabhusi
+Neeraja Madabhushi
 Sebastian Vidrio
+Ben Sabrin
+Matt Dowle
 
 ```
 
-Advisors
---------------------------------
+## Advisors
+
 Scientific Advisory Council
 
 ```
@@ -450,8 +457,7 @@ Chris Pouliot
 Dhruba Borthakur
 ```
 
-Investors
---------------------------------
+## Investors
 
 ```
 Jishnu Bhattacharjee, Nexus Venture Partners
@@ -461,4 +467,5 @@ Ash Bhardwaj
 Rakesh Mathur
 Michael Marks
 Egbert Bierman
+Rajesh Ambati
 ```

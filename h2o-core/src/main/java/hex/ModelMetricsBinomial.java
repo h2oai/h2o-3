@@ -50,7 +50,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow( double ds[], float[] yact, Model m ) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m, int row) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
@@ -73,11 +73,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
       // Compute log loss
       final double eps = 1e-15;
-      if (iact == 0) {
-        _logloss -= Math.log(1-Math.min(1-eps, ds[0]));
-      } else {
-        _logloss -= Math.log(Math.max(eps, ds[1]));
-      }
+      _logloss -= Math.log(Math.max(eps, Math.min(1-eps, ds[iact+1])));
 
       _count++;
       return ds;                // Flow coding

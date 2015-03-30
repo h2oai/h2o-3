@@ -2,10 +2,10 @@ package water.init;
 
 import water.H2O;
 import water.Iced;
-import water.persist.PersistManager;
-import water.util.Log;
 import water.persist.Persist.PersistEntry;
-
+import water.persist.PersistManager;
+import water.util.FileUtils;
+import water.util.Log;
 
 import java.io.*;
 import java.net.URI;
@@ -71,23 +71,6 @@ public class NodePersistentStorage {
 
     if (! Pattern.matches("[\\-a-zA-Z0-9_ \\(\\)]+", keyName)) {
       throw new IllegalArgumentException("NodePersistentStorage illegal name (" + keyName + ")");
-    }
-  }
-
-  private static void copyStream(InputStream is, OutputStream os) {
-    final int buffer_size=1024;
-    try {
-      byte[] bytes=new byte[buffer_size];
-      for(;;)
-      {
-        int count=is.read(bytes, 0, buffer_size);
-        if(count==-1)
-          break;
-        os.write(bytes, 0, count);
-      }
-    }
-    catch(Exception ex) {
-      throw new RuntimeException(ex);
     }
   }
 
@@ -161,7 +144,7 @@ public class NodePersistentStorage {
     OutputStream os = null;
     try {
       os = pm.create(tmpf, true);
-      copyStream(is, os);
+      FileUtils.copyStream(is, os, 1024);
     }
     finally {
       if (os != null) {
@@ -174,11 +157,19 @@ public class NodePersistentStorage {
       }
     }
 
-    // Move tmp file to final spot
+    // Make final spot available if needed, and move tmp file to final spot.
+    boolean success;
     String realf = d2 + NPS_SEPARATOR + keyName;
-    boolean success = pm.rename(tmpf, realf);
+    if (pm.exists(realf)) {
+      success = pm.delete(realf);
+      if (! success) {
+        throw new RuntimeException("NodePersistentStorage delete failed (" + realf + ")");
+      }
+    }
+
+    success = pm.rename(tmpf, realf);
     if (! success) {
-      throw new RuntimeException("NodePersistentStorage move failed (" + tmpf + " -> " + realf + ")");
+      throw new RuntimeException("NodePersistentStorage rename failed (" + tmpf + " -> " + realf + ")");
     }
 
     if (! pm.exists(realf)) {

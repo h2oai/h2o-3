@@ -109,7 +109,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     String [] col_formats = new String[3];
     Arrays.fill(col_types, "double");
     Arrays.fill(col_formats, "%5f");
-    return new TwoDimTable(table_header, sorted_names, col_headers, col_types, col_formats, "Variable",
+    return new TwoDimTable(table_header, null, sorted_names, col_headers, col_types, col_formats, "Variable",
             new String[rel_imp.length][], sorted_imp);
   }
 
@@ -142,7 +142,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     transient public double[] _work;
     public long _count;
 
-    abstract public double[] perRow( double ds[], float yact[], Model m);
+    abstract public double[] perRow(double ds[], float yact[], Model m, int row);
     public void reduce( MetricBuilder mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

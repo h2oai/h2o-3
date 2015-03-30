@@ -48,8 +48,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
 
     @Override
-    public double[] perRow(double[] ds, float[] yact, Model m) {
-      double [] res = super.perRow(ds,yact,m);
+    public double[] perRow(double[] ds, float[] yact, Model m, int row) {
+      double [] res = super.perRow(ds,yact,m, row);
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
       _resDev += gm._parms.deviance(yact[0], (float)ds[2]);
@@ -612,7 +612,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       String [] coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       coefficient_names[cnames.length] = "Intercept";
       _coefficients_table = new TwoDimTable(
-              "Best Lambda",
+              "Best Lambda", null,
               coefficient_names,
               new String []{"Coefficients", "Norm Coefficients"},
               colTypes,

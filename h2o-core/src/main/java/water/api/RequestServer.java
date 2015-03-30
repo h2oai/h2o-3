@@ -1,5 +1,6 @@
 package water.api;
 
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.*;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -81,7 +82,7 @@ public class RequestServer extends NanoHTTPD {
 
   private static Pattern version_pattern = null;
   private static Pattern getVersionPattern() {
-    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+)/(.*)");
+    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+|EXPERIMENTAL)/(.*)");
     return version_pattern;
   }
 
@@ -147,7 +148,8 @@ public class RequestServer extends NanoHTTPD {
 
     register("/2/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
-
+    register("/3/Frames/(?<key>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"key", "path", "force"},
+            "Export a Frame to the given path with optional overwrite.");
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/summary","GET"   ,FramesHandler.class, "columnSummary", "columnSummaryDocs", new String[] {"key", "column"},
       "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
     register("/3/Frames/(?<key>.*)/columns/(?<column>.*)/domain" ,"GET"   ,FramesHandler.class, "columnDomain",                       new String[] {"key", "column"},
@@ -156,6 +158,8 @@ public class RequestServer extends NanoHTTPD {
       "Return the specified column from a Frame.");
     register("/3/Frames/(?<key>.*)/columns"                      ,"GET"   ,FramesHandler.class, "columns",                            new String[] {"key"},
       "Return all the columns from a Frame.");
+    register("/3/Frames/(?<key>.*)/summary"                      ,"GET"   ,FramesHandler.class, "summary",                            new String[] {"key"},
+      "Return a Frame, including the histograms, after forcing computation of rollups.");
     register("/3/Frames/(?<key>.*)"                              ,"GET"   ,FramesHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
@@ -166,7 +170,6 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
       "Delete all Frames from the H2O distributed K/V store.");
-
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
@@ -244,6 +247,8 @@ public class RequestServer extends NanoHTTPD {
     register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/1/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
     register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+
+    register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
   }
 
   @Deprecated
@@ -357,9 +362,9 @@ public class RequestServer extends NanoHTTPD {
       if (!m.matches())
         throw H2O.fail("Route URL pattern must begin with a version: " + uri_pattern_raw);
 
-      int version = Integer.valueOf(m.group(1));
-      if (version > Schema.getHighestSupportedVersion())
-        throw H2O.fail("Route version is greater than the max supported of: " + Schema.getHighestSupportedVersion() + ": " + uri_pattern_raw);
+        int version = Integer.valueOf(m.group(1));
+        if (version > Schema.getHighestSupportedVersion() && version != Schema.getExperimentalVersion())
+          throw H2O.fail("Route version is greater than the max supported of: " + Schema.getHighestSupportedVersion() + ": " + uri_pattern_raw);
     }
 
     assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
@@ -545,7 +550,11 @@ public class RequestServer extends NanoHTTPD {
 
     Matcher m = getVersionPattern().matcher(uri);
     if (m.matches()) {
-      version = Integer.valueOf(m.group(1));
+      if ("EXPERIMENTAL".equals(m.group(1))) {
+        version = 99;
+      } else {
+        version = Integer.valueOf(m.group(1));
+      }
       String uripath = "/" + m.group(2);
       path = type.requestName(uripath); // Strip suffix type from middle of URI
       versioned_path = "/" + version + path;
@@ -589,6 +598,14 @@ public class RequestServer extends NanoHTTPD {
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
+    }
+    catch (H2OModelBuilderIllegalArgumentException e) {
+      H2OModelBuilderError error = e.toH2OError(uri);
+
+      Log.warn("Caught exception: " + error.toString());
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      return wrap(new H2OModelBuilderErrorV1().fillFromImpl(error), type);
     }
     catch (H2OAbstractRuntimeException e) {
       H2OError error = e.toH2OError(uri);
