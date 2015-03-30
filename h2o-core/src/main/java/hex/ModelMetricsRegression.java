@@ -40,7 +40,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       double mse = _sumsqe / _count;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, sigma, mse));
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
     }
   }
 }

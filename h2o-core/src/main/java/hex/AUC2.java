@@ -308,8 +308,6 @@ public class AUC2 extends Iced {
         }
       }
 
-...      
-
 
       throw H2O.unimpl();
     }
