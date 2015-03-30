@@ -313,7 +313,6 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
             return formatCell(c.data==null?0:c.data[row],c.string_data ==null?null:c.string_data[row],c,0); }
         } );
     }
-
     ab.arrayTail();
 
     return ab.bodyTail();
