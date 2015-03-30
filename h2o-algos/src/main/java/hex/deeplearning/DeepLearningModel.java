@@ -769,7 +769,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         sb.append("Training LogLoss: " + train_logloss + "\n");
         sb.append("Training " + train_confusion_matrix.table().toString(1));
         sb.append("Training Misclassification"
-                + (trainAUC != null ? " [using threshold for " + trainAUC.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
+                + (trainAUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
                 + String.format("%.2f", 100 * train_err) + "%");
         if (trainAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * trainAUC._auc) + "%");
       }
@@ -783,7 +783,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           sb.append("Validation LogLoss: " + valid_logloss + "\n");
           sb.append("Validation " + valid_confusion_matrix.table().toString(1));
           sb.append("Validation Misclassification"
-                  + (validAUC != null ? " [using threshold for " + validAUC.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
+                  + (validAUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
                   + String.format("%.2f", (100 * valid_err)) + "%");
           if (validAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * validAUC._auc) + "%");
         }
