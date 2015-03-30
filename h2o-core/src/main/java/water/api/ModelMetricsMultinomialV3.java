@@ -12,7 +12,7 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   public float[] hit_ratios;
 
   @API(help="The hit ratio table for this scoring run.", direction=API.Direction.OUTPUT)
-  public TwoDimTableV1 hit_ratio_table;
+  public TwoDimTableBase hit_ratio_table;
 
   @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
   public ConfusionMatrixBase cm;
@@ -28,7 +28,7 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
 
     if (hit_ratios != null) {
       TwoDimTable table = getHitRatioTable(hit_ratios);
-      hit_ratio_table = (TwoDimTableV1)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+      hit_ratio_table = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
     if (null != modelMetrics._cm)
