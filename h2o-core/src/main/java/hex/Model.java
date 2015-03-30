@@ -21,13 +21,13 @@ import hex.genmodel.GenModel;
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
-  public abstract interface DeepFeatures {
-    public Frame scoreAutoEncoder(Frame frame, Key destination_key);
-    public Frame scoreDeepFeatures(Frame frame, final int layer);
+  public interface DeepFeatures {
+    Frame scoreAutoEncoder(Frame frame, Key destination_key);
+    Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
   /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
-  public static enum ModelCategory {
+  public enum ModelCategory {
     Unknown,
     Binomial,
     Multinomial,

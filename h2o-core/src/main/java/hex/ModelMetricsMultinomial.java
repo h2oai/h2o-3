@@ -109,18 +109,15 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       _logloss += ((MetricBuilderMultinomial) mb)._logloss;
     }
 
-    public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
+    @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       if (sigma != 0) {
         ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
         float[] hr = new float[_K];
         double mse = Double.NaN;
         double logloss = Double.NaN;
         if (_count != 0) {
-          if (_hits != null) {
-            for (int i = 0; i < hr.length; i++) {
-              hr[i] = _hits[i] / _count;
-            }
-          }
+          if (_hits != null)
+            for (int i = 0; i < hr.length; i++)  hr[i] = _hits[i] / _count;
           mse = _sumsqe / _count;
           logloss = _logloss / _count;
         }
