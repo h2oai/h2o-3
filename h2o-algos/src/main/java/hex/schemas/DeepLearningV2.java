@@ -507,5 +507,8 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
 
     @API(help = "Force reproducibility on small data (will be slow - only uses 1 thread)", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean reproducible;
+
+    @API(help = "Whether to export Neural Network weights and biases to H2O Frames", level = API.Level.expert, direction=API.Direction.INOUT)
+    public boolean export_weights_and_biases;
   }
 }
