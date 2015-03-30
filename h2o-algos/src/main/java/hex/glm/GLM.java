@@ -795,7 +795,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               }
               if(lambdas.length > 1) {
                 GLMValidation val = new GLMValidation(_dinfo._adaptedFrame._key,ymut._ymu,_parms,0);
-                val.auc = .5;
+                val._auc = null;
                 double nullDev = gLmaxTsk._objVal * ymut._nobs;
                 val.null_deviance = nullDev;
                 val.residual_deviance = nullDev;

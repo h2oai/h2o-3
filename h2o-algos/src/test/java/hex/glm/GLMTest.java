@@ -7,7 +7,6 @@ import hex.glm.GLMTask.GLMLineSearchTask;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import hex.AUCData;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
@@ -18,7 +17,6 @@ import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -677,7 +675,7 @@ public class GLMTest  extends TestUtil {
       System.out.println("beta = " + Arrays.toString(beta));
       assertEquals(model.validation().auc(), 1, 1e-4);
       GLMValidation val = model.validation();
-      assertEquals(1,val.auc,1e-2);
+      assertEquals(1,val.auc(),1e-2);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);

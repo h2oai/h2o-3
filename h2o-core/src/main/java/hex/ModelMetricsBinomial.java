@@ -27,7 +27,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     double _logloss;
-    AUC2.AUCBuilder _auc;
+    protected AUC2.AUCBuilder _auc;
     public MetricBuilderBinomial( String[] domain ) { super(2,domain); _auc = new AUC2.AUCBuilder(AUC2.NBINS); }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class

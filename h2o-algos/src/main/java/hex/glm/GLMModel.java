@@ -10,7 +10,6 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -28,7 +27,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     _dinfo = dinfo;
   }
 
-  public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
+  public static class GLMMetricsBuilderBinomial<T extends GLMMetricsBuilderBinomial<T>> extends MetricBuilderBinomial<T> {
     double _resDev;
     double _nullDev;
 
@@ -46,22 +45,26 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return res;
     }
 
-    @Override public void reduce( MetricBuilder mb ) {
+    @Override public void reduce( T mb ) {
       super.reduce(mb);
-      GLMMetricsBuilderBinomial mg = (GLMMetricsBuilderBinomial)mb;
-      _resDev += mg._resDev;
-      _nullDev += mg._nullDev;
+      _resDev += mb._resDev;
+      _nullDev += mb._nullDev;
     }
 
-    @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+    private static int rank(double [] beta) {
+      int res = 0;
+      for(double d:beta)
+        if(d != 0) ++res;
+      return res;
+    }
+
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
-      AUC2 auc = null;
-      throw H2O.unimpl();
-      //double mse = _sumsqe / _count;
-      //ModelMetrics res = new ModelMetricsBinomialGLM(m, f, mse, _domain, mse, auc, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
-      //return m._output.addModelMetrics(res);
+      AUC2 auc = new AUC2(_auc);
+      double mse = _sumsqe / _count;
+      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, mse, _domain, sigma, auc, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
+      return m._output.addModelMetrics(res);
     }
   }
   public static class GetScoringModelTask extends DTask.DKeyTask<GetScoringModelTask,GLMModel> {
@@ -573,7 +576,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public static class GLMOutput extends SupervisedModel.SupervisedOutput {
     Submodel [] _submodels;
     int         _best_lambda_idx;
-    float       _threshold;
+    double      _threshold;
     double   [] _global_beta;
 //    String   [] _coefficient_names;
     TwoDimTable _coefficients_table;
@@ -657,7 +660,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xvalidation : _submodels[i].validation;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.auc > bestVal.auc) || val.residual_deviance < bestVal.residual_deviance) {
+          if ((useAuc && val.auc() > bestVal.auc()) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
             bestId = i;
           }
@@ -676,7 +679,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = Double.NaN;
         _auc = Double.NaN;
       } else {
-        _threshold = _submodels[l].validation.best_threshold;
+        _threshold = _submodels[l].validation.bestThreshold();
         _residual_deviance = _submodels[l].validation.residualDeviance();
         _null_deviance = _submodels[l].validation.nullDeviance();
         _residual_degrees_of_freedom = _submodels[l].validation.resDOF();

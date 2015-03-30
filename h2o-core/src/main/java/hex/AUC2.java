@@ -117,7 +117,7 @@ public class AUC2 extends Iced {
    *  large nBins can be very slow. */
   AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
 
-  AUC2( AUCBuilder bldr ) { 
+  public AUC2( AUCBuilder bldr ) { 
     // Copy result arrays into base object, shrinking to match actual bins
     _nBins = bldr._n;
     _ths = Arrays.copyOf(bldr._ths,_nBins);
@@ -190,14 +190,14 @@ public class AUC2 extends Iced {
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }
 
-  static class AUCBuilder extends Iced {
+  public static class AUCBuilder extends Iced {
     final int _nBins;
     int _n;                     // Current number of bins
     double _ths[];              // Histogram bins, center
     double _sqe[];              // Histogram bins, squared error
     long   _tps[];              // Histogram bins, true  positives
     long   _fps[];              // Histogram bins, false positives
-    AUCBuilder(int nBins) {
+    public AUCBuilder(int nBins) {
       _nBins = nBins;
       _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
       _sqe = new double[nBins<<1]; // Squared error (variance) in this bin
@@ -231,7 +231,7 @@ public class AUC2 extends Iced {
         mergeOneBin();
     }
 
-    void reduce( AUCBuilder bldr ) {
+    public void reduce( AUCBuilder bldr ) {
       // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
       // half of the double-sized array is unused, but the front half is
       // probably a source.  Merge into the back.
