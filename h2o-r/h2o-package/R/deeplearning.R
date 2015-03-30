@@ -26,7 +26,7 @@
 #' @param momentum_start Initial momentum at the beginning of traning (try 0.5)
 #' @param momentum_ramp Number of training samples for which momentum increases
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
-#' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (reccomended)
+#' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (recommended)
 #' @param input_dropout_ratios Input layer dropout ration (can improve generalization) specify one value per hidden layer, defaults to 0.5
 #' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to become 0)
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small)
@@ -100,7 +100,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              max_w2 = Inf,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
-                             loss = "Automatic",
+                             loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,
