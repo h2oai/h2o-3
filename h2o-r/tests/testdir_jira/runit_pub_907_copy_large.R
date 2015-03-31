@@ -21,8 +21,8 @@ test <- function(conn) {
         elapsedTime = endTime - startTime
         print(elapsedTime)
 
-    print("Assert runtime less than 30 seconds")
-        stopifnot(elapsedTime < 60)  # should finish in less than a minute.
+    print("Assert runtime less than 120 seconds")
+        stopifnot(elapsedTime < 120)  # should finish in less than two minutes.
 
   testEnd()
 }
