@@ -24,8 +24,8 @@
 #'  @param sentSampleRate - Sampling rate in sentences to generate new n-grams
 #'  @param initLearningRate - Starting alpha value.  This tempers the effect of progressive information as learning progresses.
 #'  @param epochs - Number of iterations data is run through.
-h2o.word2vec<-
-function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
+#' @export
+h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
@@ -69,6 +69,7 @@ function(trainingFrame, minWordFreq, wordModel, normModel, negExCnt = NULL,
 #'  @param target: A single word, or a vector of words.
 #'  @param count: The top `count` synonyms will be returned.
 #'
+#' @export
 h2o.synonym<-
 function(word2vec, target, count) {
   if (!is(word2vec, "H2OW2V")) stop("`word2vec` must be an H2O word2vec object. See h2o.word2vec")

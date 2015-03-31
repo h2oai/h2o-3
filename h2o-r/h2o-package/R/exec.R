@@ -280,5 +280,5 @@ function(x, scalarAsFrame = TRUE) {
 .h2o.post.function<-
 function(fun.ast) {
   expr <- .fun.visitor(fun.ast)
-  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse(expr), method = "POST")
+  .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, funs=.collapse.char(expr), method = "POST")
 }

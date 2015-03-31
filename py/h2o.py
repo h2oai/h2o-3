@@ -190,8 +190,11 @@ class H2O(object):
                         array_str = '['
                         for val in v:
                             if not first: array_str += ', '
-                            if isinstance(val, basestring):
-                                array_str += "'" + str(val) + "'"
+
+                            if val is None:
+                                array_str += 'null'
+                            elif isinstance(val, basestring):
+                                array_str += "\"" + str(val) + "\""
                             else:
                                 array_str += str(val)
                             first  = False

@@ -11,6 +11,7 @@ import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 import sun.misc.Unsafe;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashSet;
@@ -3097,7 +3098,7 @@ class ASTIfElse extends ASTUniPrefixOp {
         res = env.popAry();
         res.unlock_all();
       } catch (Exception e) {
-        throw H2O.fail();
+        throw new H2OIllegalArgumentException("Bad expression Rapids: " + sb.toString(), "Bad expression Rapids: " + sb.toString() + "; exception: " + e.toString());
       } finally {
         if (env!=null)env.unlock();
       }
