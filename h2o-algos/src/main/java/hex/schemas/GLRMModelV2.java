@@ -4,7 +4,6 @@ import hex.glrm.GLRMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
 
 public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.GLRMParameters, GLRMV2.GLRMParametersV2, GLRMModel.GLRMOutput, GLRMModelV2.GLRMModelOutputV2> {
   public static final class GLRMModelOutputV2 extends ModelOutputSchema<GLRMModel.GLRMOutput, GLRMModelOutputV2> {
