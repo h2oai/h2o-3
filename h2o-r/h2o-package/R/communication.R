@@ -462,7 +462,7 @@ h2o.clusterIsUp <- function(conn = h2o.getConnection()) {
 
   rv = .h2o.doRawGET(conn = conn, urlSuffix = "")
 
-  !rv$curlError && (rv$httpStatusCode == 200)
+  !rv$curlError && ((rv$httpStatusCode == 200) || (rv$httpStatusCode == 301))
 }
 
 #' Print H2O cluster info
