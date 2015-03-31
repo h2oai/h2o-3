@@ -2,6 +2,7 @@ package hex;
 
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -80,13 +81,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       return "Unknown algo (should only happen under JUnit)";
 
     if (! _builders.containsValue(clz))
-      throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+      throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
 
     for (Map.Entry<String, Class<? extends ModelBuilder>> entry : _builders.entrySet())
       if (entry.getValue().equals(clz))
         return entry.getKey();
     // Note: unreachable:
-    throw H2O.fail("Failed to find ModelBuilder class in registry: " + clz);
+    throw new H2OIllegalArgumentException("Failed to find ModelBuilder class in registry: " + clz, "Failed to find ModelBuilder class in registry: " + clz);
   }
 
   /**

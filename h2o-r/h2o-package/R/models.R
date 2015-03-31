@@ -210,6 +210,7 @@
   m
 }
 
+#' @export
 predict.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
@@ -231,6 +232,7 @@ predict.H2OModel <- function(object, newdata, ...) {
 }
 
 #' Cross Validate an H2O Model
+#' @export
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
 {
   output <- data.frame()
@@ -304,6 +306,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, data=prostate.hex)
+#' @export
 h2o.performance <- function(model, data=NULL) {
   # Some parameter checking
   if(!is(model, "H2OModel")) stop("`model` must an H2OModel object")
@@ -353,6 +356,7 @@ h2o.performance <- function(model, data=NULL) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.auc(perf)
+#' @export
 h2o.auc <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$AUC
@@ -382,6 +386,7 @@ h2o.auc <- function(object) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.giniCoef(perf)
+#' @export
 h2o.giniCoef <- function(object) {
   if(is(object, "H2OBinomialMetrics")){
     object@metrics$Gini
@@ -413,6 +418,7 @@ h2o.giniCoef <- function(object) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.mse(perf)
+#' @export
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
     object@metrics$mse
@@ -429,6 +435,7 @@ h2o.mse <- function(object) {
 #' \linkS4class{H2OMultinomialMetrics} object
 #'
 #' @param object a \linkS4class{H2OModelMetrics} object of the correct type.
+#' @export
 h2o.logloss <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics"))
     object@metrics$logloss
@@ -466,6 +473,7 @@ h2o.logloss <- function(object) {
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.F1(perf, c(0.3,0.4,0.5,0.6))
+#' @export
 h2o.metric <- function(object, thresholds, metric) {
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) {
@@ -493,51 +501,61 @@ h2o.metric <- function(object, thresholds, metric) {
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.F0point5 <- function(object, thresholds){
   h2o.metric(object, thresholds, "F0point5")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.F1 <- function(object, thresholds){
   h2o.metric(object, thresholds, "F1")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.F2 <- function(object, thresholds){
   h2o.metric(object, thresholds, "F2")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.accuracy <- function(object, thresholds){
   h2o.metric(object, thresholds, "accuracy")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.error <- function(object, thresholds){
   h2o.metric(object, thresholds, "error")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.maxPerClassError <- function(object, thresholds){
   h2o.metric(object, thresholds, "max_per_class_error")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.mcc <- function(object, thresholds){
   h2o.metric(object, thresholds, "mcc")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.precision <- function(object, thresholds){
   h2o.metric(object, thresholds, "precision")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.recall <- function(object, thresholds){
   h2o.metric(object, thresholds, "recall")
 }
 
 #' @rdname h2o.metric
+#' @export
 h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "specificity")
 }
@@ -577,9 +595,11 @@ h2o.specificity <- function(object, thresholds){
 #' perf <- h2o.performance(model, hex)
 #' # 0.46 is the F1 maximum threshold, used as the default prediction threshold
 #' h2o.confusionMatrix(perf, 0.46)
+#' @export
 setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
+#' @export
 setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
   delete <- !.is.eval(newdata)
   if(delete) {
@@ -597,6 +617,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
 })
 
 #' @rdname h2o.confusionMatrix
+#' @export
 setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds) {
   if(is(object, "H2OBinomialMetrics")){
     names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholds_and_metric_scores)
@@ -622,6 +643,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   }
 })
 
+#' @export
 plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc")) stop("type must be 'roc'")

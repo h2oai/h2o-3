@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import org.joda.time.DateTime;
 
 import water.*;
@@ -456,7 +457,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         cm = ((ModelMetricsMultinomial) mm)._cm;
         float[] hr = ((ModelMetricsMultinomial)mm)._hit_ratios;
         if (hr != null && hr.length > 0)
-          Log.info("Top-" + hr.length + " HitRatios: ", Arrays.toString(hr));
+          Log.info(getHitRatioTable(hr));
       }
 
       if (cm != null && cm.domain != null) {

@@ -52,6 +52,17 @@ public class H2OError extends Iced {
     this._http_status = http_status;
     this._values = values;
 
+    if (null == this._msg) {
+      // It's crazy, but some Java exceptions like NullPointerException do not have a message!
+      if (null != e) {
+        this._msg = "Caught exception: " + e.getClass().getCanonicalName();
+        this._dev_msg = this._msg + " from: " + e.getStackTrace()[0];
+      } else {
+        this._msg = "Unknown error";
+        this._dev_msg = this._msg;
+      }
+    }
+
     if (null != e) {
       this._exception_type = e.getClass().getCanonicalName();
       this._exception_msg = e.getMessage();

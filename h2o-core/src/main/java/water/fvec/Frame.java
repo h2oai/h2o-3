@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -1005,6 +1006,55 @@ public class Frame extends Lockable<Frame> {
         }
         rlo = rhi;
         if (_rows == null) break;
+      }
+    }
+  }
+
+  /**
+   * Create a copy of the input Frame and return that copied Frame. All Vecs in this are copied in parallel.
+   * Caller mut do the DKV.put
+   * @param keyName Key for resulting frame. If null, no key will be given.
+   * @return The fresh copy of fr.
+   */
+  public Frame deepCopy(String keyName) {
+    ParallelVecCopy t;
+    H2O.submitTask(t=new ParallelVecCopy(this)).join();
+    return keyName==null ? new Frame(names(),t._vecs) : new Frame(Key.make(keyName),names(),t._vecs);
+  }
+
+  private static class VecCopyTask extends H2O.H2OCountedCompleter<VecCopyTask> {
+    private final Vec _from;
+    private final Vec[] _vecs;
+    private final int _i;
+    VecCopyTask(H2O.H2OCountedCompleter cc, Vec from, Vec[] vecs, int i) { super(cc); _from=from; _vecs=vecs; _i=i; }
+
+    @Override protected void compute2() {
+      _vecs[_i] = _from.makeCopy(_from.domain());
+      tryComplete();
+    }
+  }
+
+  private static class ParallelVecCopy extends H2O.H2OCountedCompleter<ParallelVecCopy> {
+    private final Frame _fr;
+    private final AtomicInteger _ctr;
+    private final int _maxP=1000;
+
+    //out
+    private Vec[] _vecs;
+    ParallelVecCopy(Frame fr) { _fr=fr; _ctr=new AtomicInteger(_maxP-1); }
+
+    @Override protected void compute2() {
+      addToPendingCount(_fr.numCols()-1);
+      _vecs = new Vec[_fr.numCols()];
+      for( int i=0;i<Math.min(_maxP,_fr.numCols());++i) forkVecTask(i);
+    }
+    private void forkVecTask(final int i) { new VecCopyTask(new Callback(), _fr.vec(i), _vecs, i).fork(); }
+    private class Callback extends H2O.H2OCallback {
+      public Callback(){super(ParallelVecCopy.this);}
+      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
+        int i = _ctr.incrementAndGet();
+        if(i < _vecs.length)
+          forkVecTask(i);
       }
     }
   }

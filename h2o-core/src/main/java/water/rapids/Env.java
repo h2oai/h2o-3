@@ -1,6 +1,8 @@
 package water.rapids;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.EnumWrappedVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -390,7 +392,7 @@ public class Env extends Iced {
       case SERIES: return o.toString();
       case SPAN: return o.toString();
       case NULL: return "null";
-      default: throw H2O.fail("Bad value on the stack");
+      default: throw H2O.fail("Bad value on the stack: " + type);
     }
   }
 
@@ -677,7 +679,7 @@ public class Env extends Iced {
     if (res == NULL && _parent != null) res = _parent.getType(name, false); // false -> don't keep looking in the global env.
 
     // Fail if the variable does not exist in any table!
-    if (res == NULL) throw H2O.fail("Failed lookup of variable: "+name);
+    if (res == NULL) throw new H2OIllegalArgumentException("Failed lookup of variable: " + name, "Failed lookup of variable: " + name + " in: " + this);
     return res;
   }
 
@@ -754,7 +756,7 @@ class ValFrame extends Val {
   ValFrame(Frame fr, boolean isVec, boolean g) { _key = null; _fr = fr; _isVec = isVec; _g = g; }
   ValFrame(String key) {
     Key<Frame> k = Key.make(key);
-    if (DKV.get(k) == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    if (DKV.get(k) == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
     _fr = k.get();
     _g = true;
