@@ -1,5 +1,6 @@
 package water.api;
 
+import water.exceptions.H2OFailException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.HttpResponseStatus;
 import water.*;
@@ -115,7 +116,6 @@ public class RequestServer extends NanoHTTPD {
 
     // Help and Tutorials get all the rest...
     addToNavbar(register("/1/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
-    register("/"                         ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."); // TODO: this should hit tutorials if .html, but REST info otherwise.  We currently don't switch type on anything other than suffix, though. . .
 
     initializeNavBar();
 
@@ -565,6 +565,10 @@ public class RequestServer extends NanoHTTPD {
     // Load resources, or dispatch on handled requests
     try {
       // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
+      if (method.equals("GET") && uri.equals("/")) {
+        maybeLogRequest(method, uri, "", parms, header);
+        return redirectToFlow();
+      }
       if (method.equals("GET") && uri.endsWith("/Logs/download")) {
         maybeLogRequest(method, uri, "", parms, header);
         return downloadLogs();
@@ -598,6 +602,18 @@ public class RequestServer extends NanoHTTPD {
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
         return wrap(handle(type,route,version,parms),type);
       }
+    }
+    catch (H2OFailException e) {
+      H2OError error = e.toH2OError(uri);
+
+      Log.warn("Caught exception (fatal to the cluster): " + error.toString());
+
+      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+      Log.warn(wrap(new H2OErrorV1().fillFromImpl(error), type));
+      System.exit(-1);
+
+      // unreachable, but the compiler doesn't know it:
+      return wrap(new H2OErrorV1().fillFromImpl(error), type);
     }
     catch (H2OModelBuilderIllegalArgumentException e) {
       H2OModelBuilderError error = e.toH2OError(uri);
@@ -924,6 +940,13 @@ public class RequestServer extends NanoHTTPD {
     NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_DEFAULT_BINARY, is);
     res.addHeader("Content-Length", Long.toString(length.get()));
     res.addHeader("Content-Disposition", "attachment; filename="+keyName + ".flow");
+    return res;
+  }
+
+  private Response redirectToFlow() {
+    StringBuilder sb = new StringBuilder();
+    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_REDIRECT, NanoHTTPD.MIME_PLAINTEXT, sb.toString());
+    res.addHeader("Location", "/flow/index.html");
     return res;
   }
 }

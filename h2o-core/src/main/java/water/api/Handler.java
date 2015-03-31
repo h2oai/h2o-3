@@ -3,7 +3,6 @@ package water.api;
 import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Iced;
-import water.exceptions.H2ONotFoundArgumentException;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -54,7 +53,9 @@ public class Handler extends H2OCountedCompleter {
     // NOTE! The handler method is free to modify the input schema and hand it back.
     _t_start = System.currentTimeMillis();
     Schema result = null;
-    try { result = (Schema)route._handler_method.invoke(this, version, schema); }
+    try {
+      result = (Schema)route._handler_method.invoke(this, version, schema);
+    }
     // Exception throws out of the invoked method turn into InvocationTargetException
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {

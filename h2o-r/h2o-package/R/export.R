@@ -14,10 +14,10 @@ NULL
 #'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
-#' 
+#'
 #' @param An \linkS4class{H2OFrame} data frame.
 #' @param path The path to write the file to. Must include the directory and
-#'        filename. May be prefaced with hdfs:// or s3n://. Each row of data 
+#'        filename. May be prefaced with hdfs:// or s3n://. Each row of data
 #'        appears as line of the file.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @examples
@@ -26,10 +26,11 @@ NULL
 #' localH2O <- h2o.init()
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
-#' 
+#'
 #' h2o.exportFile(iris.hex, path = "/path/on/h2o/server/filesystem/iris.csv")
 #' h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
 #' h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
+#' @export
 h2o.exportFile <- function(data, path, force = FALSE) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
@@ -49,8 +50,9 @@ h2o.exportFile <- function(data, path, force = FALSE) {
 #' Exports an \linkS4class{H2OModel} to HDFS.
 #'
 #' @param object an \linkS4class{H2OModel} class object.
-#' @param path The path to write the model to. Must include the driectory and 
+#' @param path The path to write the model to. Must include the driectory and
 #'        filename.
+#' @export
 h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,force) }
 
 #' Download H2O Data to Disk
@@ -72,6 +74,7 @@ h2o.exportHDFS <- function(object, path,force=FALSE) { h2o.exportFile(data,path,
 #' h2o.downloadCSV(iris.hex, myFile)
 #' file.info(myFile)
 #' file.remove(myFile)
+#' @export
 h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
@@ -101,7 +104,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' Save an H2O Model Object to Disk
 #'
 #' Save an \linkS4class{H2OModel} to disk.
-#' 
+#'
 #' In the case of existing files \code{forse = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
@@ -120,6 +123,7 @@ h2o.downloadCSV <- function(data, filename) {
 #'   data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
 #' h2o.saveModel(object = prostate.glm, dir = "/Users/UserName/Desktop", save_cv = TRUE, force = TRUE)
 #' }
+#' @export
 h2o.saveModel <- function(object, dir="", name="", filename="", force=FALSE) {
   if(!is(object, "H2OModel"))
     stop("`object` must be an H2OModel object")

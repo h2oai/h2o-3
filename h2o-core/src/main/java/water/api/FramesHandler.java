@@ -51,7 +51,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     /**
      * For a given frame return an array of the compatible models.
      *
-     * @param frame The frame to fetch the compatible models for.
+     * @param frame The frame for which we should fetch the compatible models.
      * @param all_models An array of all the Models in the DKV.
      * @return
      */

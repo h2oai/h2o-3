@@ -44,6 +44,7 @@ public class h2odriver extends Configured implements Tool {
   static String network = null;
   static boolean disown = false;
   static String clusterReadyFileName = null;
+  static String hadoopJobID = "";
   static int cloudFormationTimeoutSeconds = DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS;
   static int nthreads = -1;
   static int basePort = -1;
@@ -183,11 +184,13 @@ public class h2odriver extends Configured implements Tool {
 
     private void createClusterReadyFile(String ip, int port) throws Exception {
       String fileName = clusterReadyFileName + ".tmp";
-      String text = ip + ":" + port + "\n";
+      String text1 = ip + ":" + port + "\n";
+      String text2 = hadoopJobID + "\n";
       try {
         File file = new File(fileName);
         BufferedWriter output = new BufferedWriter(new FileWriter(file));
-        output.write(text);
+        output.write(text1);
+        output.write(text2);
         output.flush();
         output.close();
 
@@ -987,7 +990,8 @@ public class h2odriver extends Configured implements Tool {
     job.submit();
     System.out.println("Job name '" + jobtrackerName + "' submitted");
     System.out.println("JobTracker job ID is '" + job.getJobID() + "'");
-    String applicationID = job.getJobID().toString().replace("job_", "application_");
+    hadoopJobID = job.getJobID().toString();
+    String applicationID = hadoopJobID.replace("job_", "application_");
     System.out.println("For YARN users, logs command is 'yarn logs -applicationId " + applicationID + "'");
 
     // Register ctrl-c handler to try to clean up job when possible.

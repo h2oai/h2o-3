@@ -4,7 +4,7 @@ import hex.naivebayes.NaiveBayesModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
+import water.api.TwoDimTableBase;
 
 public class NaiveBayesModelV2 extends ModelSchema<NaiveBayesModel, NaiveBayesModelV2, NaiveBayesModel.NaiveBayesParameters, NaiveBayesV2.NaiveBayesParametersV2, NaiveBayesModel.NaiveBayesOutput, NaiveBayesModelV2.NaiveBayesModelOutputV2> {
   public static final class NaiveBayesModelOutputV2 extends ModelOutputSchema<NaiveBayesModel.NaiveBayesOutput, NaiveBayesModelOutputV2> {
@@ -16,10 +16,10 @@ public class NaiveBayesModelV2 extends ModelSchema<NaiveBayesModel, NaiveBayesMo
     public String[] levels;
 
     @API(help = "A-priori probabilities of the response")
-    public TwoDimTableV1 apriori;
+    public TwoDimTableBase apriori;
 
     @API(help = "Conditional probabilities of the predictors")
-    public TwoDimTableV1[] pcond;
+    public TwoDimTableBase[] pcond;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
