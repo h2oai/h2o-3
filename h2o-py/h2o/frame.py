@@ -400,44 +400,14 @@ class H2OFrame:
     if len(self) == 0: return self
     if isinstance(data, (H2OVec, H2OFrame)): self._len_check(data)
 
-    # Construct rapids expression
-    tmp_key = H2OFrame.py_tmp_key()
-    key1 = self.send_frame()
-    key2 = None
-    if isinstance(data, H2OFrame):
-      key2 = data.send_frame()
-      arg2 = "%" + str(key2)
-
-    elif isinstance(data, H2OVec):
-      tmp_frame = H2OFrame(vecs=[data])
-      key2 = tmp_frame.send_frame()
-      arg2 = "%" + str(key2)
-
-    elif isinstance(data, Expr):
-      raise NotImplementedError
-
-    elif isinstance(data, (int, float)):
-      arg2 = "#" + str(data)
-
-    elif isinstance(data, str):
-      arg2 = "\"" + data + "\""
-
+    if isinstance(data, H2OFrame):       return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                     Expr(data.send_frame(), length=data.nrow()))
+    elif isinstance(data, H2OVec):       return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                     Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
+    elif isinstance(data, Expr):         return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
+    elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
+    elif isinstance(data, str):          return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
     else: raise NotImplementedError
-    expr = "(= !{} (".format(tmp_key) + op + " %{} {}))".format(key1,arg2) if not r else \
-      "(= !{} (".format(tmp_key) + op + " {} %{}))".format(arg2,key1)
-
-    h2o.rapids(expr)
-    # Remove h2o temp frames
-    h2o.remove(key1)
-    if key2: h2o.remove(key2)
-    # Construct H2OFrame result
-    j = h2o.frame(tmp_key)
-    fr = j['frames'][0]
-    rows = fr['rows']
-    veckeys = fr['vec_keys']
-    cols = fr['columns']
-    colnames = [col['label'] for col in cols]
-    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")

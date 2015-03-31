@@ -119,6 +119,17 @@ class Expr(object):
     """
     return self._len
 
+  def dim(self):
+    """
+    Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+    :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
+    """
+    self.eager()
+    if isinstance(self._data, unicode):
+      frame = h2o.frame(self._data)
+      return [frame['frames'][0]['rows'], len(frame['frames'][0]['columns'])]
+    raise ValueError("data must be a (unicode) key")
+
   def debug(self):
     """
     :return: The structure of this object without evaluating.
