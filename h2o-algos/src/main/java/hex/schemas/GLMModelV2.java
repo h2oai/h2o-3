@@ -18,8 +18,8 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     @API(help="bets lambda if doing lambda search")
     int         best_lambda_idx;
 
-    @API(help="The decision threshold to be used in classification")
-    float       threshold;
+    @API(help="The decision threshold to be used in classification; defaults to maximum_F1")
+    double      threshold;
 
 //    @API(help="fill me in GLMModelOutputV2")
 //    double   [] global_beta;

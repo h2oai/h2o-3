@@ -20,7 +20,7 @@ public class AUC2 extends Iced {
   public final long[] _tps;     // True  Positives
   public final long[] _fps;     // False Positives
   public final long _p, _n;     // Actual trues, falses
-  public final double _auc;     // Actual AUC value
+  public final double _auc, _gini; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -98,6 +98,7 @@ public class AUC2 extends Iced {
       }
       return mx;
     }
+    public static final ThresholdCriterion[] VALUES = values();
   }
 
   public double threshold( int idx ) { return _ths[idx]; }
@@ -139,6 +140,7 @@ public class AUC2 extends Iced {
     }
     _p = p;  _n = n;
     _auc = compute_auc();
+    _gini = 2*_auc-1;
     _max_idx = DEFAULT_CM.max_criterion_idx(this);
   }
 

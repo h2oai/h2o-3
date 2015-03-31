@@ -1,146 +1,85 @@
 package water.api;
 
+import hex.AUC2;
 import hex.ConfusionMatrix;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
-public class ModelMetricsBinomialV3 extends ModelMetricsBinomialBaseV3<ModelMetricsBinomial, ModelMetricsBinomialV3> {
-  @API(help = "The HitRatio object for this scoring run.", direction = API.Direction.OUTPUT)
-    public float[] hr;
-
-  @API(help="The ConfusionMatrix (for the threshold maximizing F1).", direction=API.Direction.OUTPUT)
-    public ConfusionMatrixBase cm;
+public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>> extends ModelMetricsBase<I,S> {
+  @API(help="The standard deviation of the training response.", direction=API.Direction.OUTPUT)
+    public double sigma; // Belongs in a mythical ModelMetricsSupervisedV3
 
   @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
     public double logloss;
 
+  @API(help="The AUC for this scoring run.", direction=API.Direction.OUTPUT)
+    public double AUC;
+
+  @API(help="The Gini score for this run.", direction=API.Direction.OUTPUT)
+    public double Gini;
+
+  @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
+    public TwoDimTableV1 thresholds_and_metric_scores;
+
+  @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
+    public TwoDimTableV1 max_criteria_and_metric_scores;
+
   @Override
     public ModelMetricsBinomialV3 fillFromImpl(ModelMetricsBinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
-    this.mse = modelMetrics._mse;
+    this.sigma = modelMetrics._sigma;
+    this.logloss = modelMetrics._logloss;
 
-    ConfusionMatrix cm = new ConfusionMatrix(modelMetrics._auc.defaultCM(), modelMetrics._domain);
-    this.cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), cm).fillFromImpl(cm);
+    AUC2 auc = modelMetrics._auc;
+    if (null != auc) {
+      this.AUC  = auc._auc;
+      this.Gini = auc._gini;
+      
+      // Fill TwoDimTable
+      String[] thresholds = new String[auc._nBins];
+      for( int i=0; i<auc._nBins; i++ )
+        thresholds[i] = Double.toString(auc._ths[i]);
+      String[] colHeaders = new String[2+AUC2.ThresholdCriterion.VALUES.length];
+      String[] types      = new String[2+AUC2.ThresholdCriterion.VALUES.length];
+      String[] formats    = new String[2+AUC2.ThresholdCriterion.VALUES.length];
+      colHeaders[0] = "True Positives";  types[0] = "long";  formats[0] = "%d";
+      colHeaders[1] = "False Positives"; types[1] = "long";  formats[1] = "%d";
+      for( int i=0; i<AUC2.ThresholdCriterion.VALUES.length; i++ ) {
+        colHeaders[i+2] = AUC2.ThresholdCriterion.VALUES[i].toString();
+        types     [i+2] = "double";
+        formats   [i+2] = "%f";
+      }
+      TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
+      for( int i=0; i<auc._nBins; i++ ) {
+        thresholdsByMetrics.set(i,0,auc._tps[i]);
+        thresholdsByMetrics.set(i,1,auc._fps[i]);
+        for( int j=0; j<AUC2.ThresholdCriterion.VALUES.length; j++ )
+          thresholdsByMetrics.set(i,j+2,AUC2.ThresholdCriterion.VALUES[j].exec(auc,i));
+      }
+      this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
+      
+      // Fill TwoDimTable
+      TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, colHeaders,
+                                               new String[]{"Threshold","Metric","idx"},
+                                               new String[]{"double",   "double","long"},
+                                               new String[]{"%f",       "%f",    "%d"},
+                                               "Metric" );
+      maxMetrics.set(0,0,auc._ths[auc._nBins-1]);
+      maxMetrics.set(0,1,auc._tps[auc._nBins-1]);
+      maxMetrics.set(0,2,auc._nBins-1);
+      
+      maxMetrics.set(1,0,auc._ths[auc._nBins-1]);
+      maxMetrics.set(1,1,auc._fps[auc._nBins-1]);
+      maxMetrics.set(1,2,auc._nBins-1);
 
-    if (null != modelMetrics._auc) {
-      throw water.H2O.unimpl();
-      //// Fill AUC
-      //this.AUC = modelMetrics._aucdata.AUC;
-      //
-      //// Fill Gini
-      //this.Gini = modelMetrics._aucdata.Gini;
-      //
-      //// Fill confusion matrices
-      //this.confusion_matrices = modelMetrics._aucdata.confusion_matrices;
-      //
-      //// Fill TwoDimTable thresholdsByMetrics
-      //int numThresholds = modelMetrics._aucdata.thresholds.length;
-      //String[] thresholds = new String[numThresholds];
-      //for(int i=0; i<numThresholds; i++){
-      //  thresholds[i] = Float.toString(modelMetrics._aucdata.thresholds[i]);
-      //}
-      //String[] metrics = new String[]{"F1", "F2", "F0point5", "accuracy", "error", "precision", "recall", "specificity", "mcc", "max_per_class_error"};
-      //TwoDimTable thresholdsByMetrics = new TwoDimTable(
-      //                                                  "Thresholds x Metric Scores", null,
-      //                                                  thresholds,
-      //                                                  metrics,
-      //                                                  new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-      //                                                  new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
-      //for(int row = 0; row<thresholds.length; ++row) {
-      //  int col = 0;
-      //  for(String metric : metrics) {
-      //    switch(metric) {
-      //    case "F1":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.F1[row]);
-      //      break;
-      //    case "F2":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.F2[row]);
-      //      break;
-      //    case "F0point5":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.F0point5[row]);
-      //      break;
-      //    case "accuracy":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.accuracy[row]);
-      //      break;
-      //    case "error":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.errorr[row]);
-      //      break;
-      //    case "precision":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.precision[row]);
-      //      break;
-      //    case "recall":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.recall[row]);
-      //      break;
-      //    case "specificity":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.specificity[row]);
-      //      break;
-      //    case "mcc":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.mcc[row]);
-      //      break;
-      //    case "max_per_class_error":
-      //      thresholdsByMetrics.set(row, col, modelMetrics._aucdata.max_per_class_error[row]);
-      //      break;
-      //    }
-      //    col++;
-      //  }
-      //}
-      //this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
-      //
-      //
-      //// Fill TwoDimTable criteriaByThresholdAndScore
-      //String[] criteria = new String[]{"maximum F1", "maximum F2", "maximum F0point5", "maximum Accuracy",
-      //                                 "maximum Precision", "maximum Recall", "maximum Specificity", "maximum absolute MCC",
-      //                                 "minimizing max per class Error"};
-      //String[] columnNames = new String[]{"threshold", "F1", "F2", "F0point5", "accuracy", "error", "precision", "recall", "specificity", "mcc", "max_per_class_error"};
-      //TwoDimTable criteriaByThresholdAndScore = new TwoDimTable(
-      //                                                          "Max Criteria x Metric Scores", null,
-      //                                                          criteria,
-      //                                                          columnNames,
-      //                                                          new String[]{"double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-      //                                                          new String[]{"%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f", "%f"}, "");
-      //for(int row=0; row<criteria.length; ++row) {
-      //  for(int col=0; col<columnNames.length;++col) {
-      //    if(col==0){
-      //      criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.threshold_for_criteria[row]);
-      //    }
-      //    else {
-      //      switch(col) {
-      //      case 1:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F1_for_criteria[row]);
-      //        break;
-      //      case 2:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F2_for_criteria[row]);
-      //        break;
-      //      case 3:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.F0point5_for_criteria[row]);
-      //        break;
-      //      case 4:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.accuracy_for_criteria[row]);
-      //        break;
-      //      case 5:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.accuracy_for_criteria[row]);
-      //        break;
-      //      case 6:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.precision_for_criteria[row]);
-      //        break;
-      //      case 7:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.recall_for_criteria[row]);
-      //        break;
-      //      case 8:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.specificity_for_criteria[row]);
-      //        break;
-      //      case 9:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.mcc_for_criteria[row]);
-      //        break;
-      //      case 10:
-      //        criteriaByThresholdAndScore.set(row, col, modelMetrics._aucdata.max_per_class_error_for_criteria[row]);
-      //        break;
-      //      }
-      //    }
-      //    col++;
-      //  }
-      //}
-      //this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(criteriaByThresholdAndScore);
+      for( int i=0; i<auc._nBins; i++ ) {
+        int idx = AUC2.ThresholdCriterion.VALUES[i].max_criterion_idx(auc);
+        maxMetrics.set(i+2,0,auc._ths[idx]);
+        maxMetrics.set(i+2,1,AUC2.ThresholdCriterion.VALUES[i].exec(auc,idx));
+        maxMetrics.set(i+2,2,idx);
+      }
+      
+      this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(maxMetrics);
     }
     return this;
   }

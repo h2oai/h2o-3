@@ -3,7 +3,7 @@ package water.api;
 import hex.ModelMetricsBinomialGLM;
 import water.api.API.Direction;
 
-public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialBaseV3<ModelMetricsBinomialGLM, ModelMetricsBinomialGLMV3> {
+public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetricsBinomialGLM, ModelMetricsBinomialGLMV3> {
   @API(help="residual deviance",direction = Direction.OUTPUT)
   public double residual_deviance;
 
