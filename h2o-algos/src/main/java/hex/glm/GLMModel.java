@@ -197,6 +197,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
     public void validate(GLM glm) {
+      if(_n_folds < 0) glm.error("n_folds","must be >= 0");
+      if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
+      if(_lambda_search && _nlambdas == -1)
+        _nlambdas = 100;
       if(_beta_constraint != null) {
         Frame f = _beta_constraint.get();
         if(f == null) glm.error("beta_constraint","Missing frame for beta constraints");
@@ -633,13 +637,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       _binomial = binomial;
     }
     public GLMOutput() { }
-    public GLMOutput(SupervisedModelBuilder b, DataInfo dinfo, boolean binomial){
-      super(b);
-      String [] cnames = dinfo.coefNames();
-      _names = dinfo._adaptedFrame.names();
+    public GLMOutput(GLM glm){
+      super(glm);
+      String [] cnames = glm._dinfo.coefNames();
+      _names = glm._dinfo._adaptedFrame.names();
       _coefficient_names = Arrays.copyOf(cnames,cnames.length+1);
       _coefficient_names[cnames.length] = "Intercept";
-      _binomial = binomial;
+      _binomial = glm._parms._family == Family.binomial;
     }
 
     @Override

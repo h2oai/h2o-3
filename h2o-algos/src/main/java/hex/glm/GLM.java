@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.DataInfo;
-import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.glm.GLMModel.FinalizeAndUnlockTsk;
@@ -21,13 +20,14 @@ import hex.schemas.GLMV2;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.fvec.*;
 import water.H2O.H2OCallback;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.*;
 import water.H2O.H2OCountedCompleter;
 import water.parser.ValueString;
 import water.util.*;
 import water.util.MRUtils.ParallelTasks;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,8 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * GLMModel currently never returns Binomial as its ModelCategory.
  */
 public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
-  private static final double LINE_SEARCH_STEP = .5;
-  private static final int NUM_LINE_SEARCH_STEPS = 16;
+  static final double LINE_SEARCH_STEP = .5;
+  static final int NUM_LINE_SEARCH_STEPS = 16;
   @Override
   public Model.ModelCategory[] can_build() {
     return new Model.ModelCategory[]{
@@ -53,224 +53,363 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   public GLM(Key dest, String desc, GLMModel.GLMParameters parms) { super(dest, desc, parms); init(false); }
   public GLM(GLMModel.GLMParameters parms) { super("GLM", parms); init(false); }
 
-  private static class TooManyPredictorsException extends RuntimeException {}
+  static class TooManyPredictorsException extends RuntimeException {}
+
+  private BetaConstraint _bc = new BetaConstraint();
+  private GLMValidation _nullValidation;
+  private GradientInfo _nullGradient;
+  DataInfo _dinfo;
+  private Vec _rowFilter;
+  private transient GLMTaskInfo [] _tInfos;
+  private int _lambdaId;
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if(expensive) {
-      if(_parms._link == Link.family_default)
-        _parms._link = _parms._family.defaultLink;
-    }
     _parms.validate(this);
-
+    if (expensive) {
+      if (_parms._link == Link.family_default)
+        _parms._link = _parms._family.defaultLink;
+      _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      DKV.put(_dinfo._key, _dinfo);
+      // handle BetaConstraints if I got them
+      double[] betaStart = null;
+      double[] betaGiven = null;
+      double[] betaLB = null;
+      double[] betaUB = null;
+      double[] rho = null;
+      if (_parms._beta_constraint != null) {
+        Frame beta_constraints = _parms._beta_constraint.get();
+        Vec v = beta_constraints.vec("names");
+        String[] dom;
+        int[] map;
+        if (v.isString()) {
+          dom = new String[(int) v.length()];
+          map = new int[dom.length];
+          ValueString vs = new ValueString();
+          for (int i = 0; i < dom.length; ++i) {
+            dom[i] = v.atStr(vs, i).toString();
+            map[i] = i;
+          }
+        } else if (v.isEnum()) {
+          dom = v.domain();
+          map = FrameUtils.asInts(v);
+        } else
+          throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
+        // for now only enums allowed here
+        String[] names = ArrayUtils.append(_dinfo.coefNames(), "Intercept");
+        if (!Arrays.deepEquals(dom, names)) { // need mapping
+          HashMap<String, Integer> m = new HashMap<String, Integer>();
+          for (int i = 0; i < names.length; ++i)
+            m.put(names[i], i);
+          int[] newMap = MemoryManager.malloc4(dom.length);
+          for (int i = 0; i < map.length; ++i) {
+            Integer I = m.get(dom[map[i]]);
+            if (I == null)
+              throw new IllegalArgumentException("Unrecognized coefficient name in beta-constraint file, unknown name '" + dom[map[i]] + "'");
+            newMap[i] = I == null ? -1 : I;
+          }
+          map = newMap;
+        }
+        final int numoff = _dinfo.numStart();
+        if ((v = beta_constraints.vec("beta_start")) != null) {
+          betaStart = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
+          for (int i = 0; i < (int) v.length(); ++i)
+            betaStart[map == null ? i : map[i]] = v.at(i);
+        }
+        if ((v = beta_constraints.vec("beta_given")) != null) {
+          betaGiven = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
+          for (int i = 0; i < (int) v.length(); ++i)
+            betaGiven[map == null ? i : map[i]] = v.at(i);
+          if (betaStart == null)
+            betaStart = betaGiven;
+        }
+        if ((v = beta_constraints.vec("upper_bounds")) != null) {
+          betaUB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
+          Arrays.fill(betaUB, Double.POSITIVE_INFINITY);
+          for (int i = 0; i < (int) v.length(); ++i)
+            betaUB[map == null ? i : map[i]] = v.at(i);
+        }
+        if ((v = beta_constraints.vec("lower_bounds")) != null) {
+          betaLB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
+          Arrays.fill(betaLB, Double.NEGATIVE_INFINITY);
+          for (int i = 0; i < (int) v.length(); ++i)
+            betaLB[map == null ? i : map[i]] = v.at(i);
+        }
+        if ((v = beta_constraints.vec("rho")) != null) {
+          rho = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
+          for (int i = 0; i < (int) v.length(); ++i)
+            rho[map == null ? i : map[i]] = v.at(i);
+        }
+        if (_dinfo._normMul != null) {
+          double normG = 0, normS = 0;
+          for (int i = numoff; i < _dinfo.fullN(); ++i) {
+            double dd = _dinfo._normMul[i - numoff];
+            double d = 1.0 / dd;
+            if (betaUB != null && !Double.isInfinite(betaUB[i]))
+              betaUB[i] *= d;
+            if (betaLB != null && !Double.isInfinite(betaUB[i]))
+              betaLB[i] *= d;
+            if (betaGiven != null) {
+              normG += betaGiven[i] * dd;
+              betaGiven[i] *= d;
+            }
+            if (betaStart != null) {
+              normS += betaStart[i] * dd;
+              betaStart[i] *= d;
+            }
+          }
+          if (_dinfo._intercept) {
+            int n = _dinfo.fullN();
+            if (betaGiven != null)
+              betaGiven[n] -= normG;
+            if (betaStart != null)
+              betaStart[n] -= normS;
+          }
+        }
+        _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
+      }
+      _tInfos = new GLMTaskInfo[_parms._n_folds + 1];
+      H2O.submitTask(new InitTsk(0, null)).join();
+      if (_parms._lambda != null) { // check the lambdas
+        ArrayUtils.mult(_parms._lambda, -1);
+        Arrays.sort(_parms._lambda);
+        ArrayUtils.mult(_parms._lambda, -1);
+        int i = 0;
+        while (i < _parms._lambda.length && _parms._lambda[i] > _tInfos[0]._lambdaMax) ++i;
+        if (i == _parms._lambda.length)
+          error("lambda", "All passed lambda values are > lambda_max = " + _tInfos[0]._lambdaMax + ", nothing to compute.");
+        if (i > 0) {
+          _parms._lambda = Arrays.copyOfRange(_parms._lambda, i, _parms._lambda.length);
+          warn("lambda", "removed " + i + " lambda values which were greater than lambda_max = " + _tInfos[0]._lambdaMax);
+        }
+      } else { // fill in the default lambda(s)
+        if (_parms._lambda_search) {
+          if (_parms._nlambdas == 1)
+            error("nlambdas", "Number of lambdas must be > 1 when running with lambda_search!");
+          if (_parms._lambda_min_ratio == -1)
+            _parms._lambda_min_ratio = _tInfos[0]._nobs > 25 * _dinfo.fullN() ? 1e-4 : 1e-2;
+          final double d = Math.pow(_parms._lambda_min_ratio, 1.0 / (_parms._nlambdas - 1));
+          _parms._lambda = MemoryManager.malloc8d(_parms._nlambdas);
+          _parms._lambda[0] = _tInfos[0]._lambdaMax;
+          for (int i = 1; i < _parms._lambda.length; ++i)
+            _parms._lambda[i] = _parms._lambda[i - 1] * d;
+        } else
+          _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
+      }
+      new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs, ModelUtils.DEFAULT_THRESHOLDS).delete_and_lock(GLM.this._key);
+    }
   }
 
+
+  private class InitTsk extends H2OCountedCompleter {
+    final int _foldId;
+    public InitTsk(int foldId, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId;}
+
+    @Override
+    protected void compute2() {
+      // get filtered dataset's mean and number of observations
+      new YMUTask(_dinfo, _response.makeZero(), new H2OCallback<YMUTask>() {
+        @Override
+        public void callback(final YMUTask ymut) {
+          _rowFilter = ymut._fVec;
+          if (ymut._nobs == 0) // can happen if all rows have missing value and we're filtering missing out
+            error("training_frame", "Got no data to run on after filtering out the rows with missing values.");
+          if (ymut._yMin == ymut._yMax)
+            error("response", "Can not run glm on dataset with constant response. Response == " + ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + ymut._nobs + " of rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
+          long nobs = ymut._nobs;
+          if (ymut._nobs < _dinfo._adaptedFrame.numRows() >> 1) { // running less than half of rows?
+            warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
+          }
+          final double[] beta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+          // fixme: only if intercept is true
+          beta[beta.length-1] = _parms.link(ymut._ymu);
+          if (_bc._betaStart == null)
+            _bc.setBetaStart(beta);
+          // compute the lambda_max
+          // todo: skip this if got no regularization?
+          GLMGradientTask gt = new GLMTask.GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / nobs, new H2OCallback<GLMGradientTask>(InitTsk.this){
+            @Override
+            public void callback(GLMGradientTask gt) {
+              double lmax = lmax(gt);
+              if(beta == _bc._betaStart)
+                _tInfos[_foldId] = new GLMTaskInfo(_dest,0,ymut._nobs,ymut._ymu,lmax,_bc._betaStart, new GradientInfo(gt._objVal,gt._gradient), gt._objVal);
+              else // have warm start beta, no gradient nor objective value though, leave it to later
+                _tInfos[_foldId] = new GLMTaskInfo(_dest,0,ymut._nobs,ymut._ymu,lmax,_bc._betaStart, null, Double.POSITIVE_INFINITY);
+            }
+          }).dfork(_dinfo._adaptedFrame);
+        }
+      }).dfork(_dinfo._adaptedFrame);
+    }
+  }
   @Override
   public ModelBuilderSchema schema() {
     return new GLMV2();
   }
 
 
-  private transient double [] _betaStart;
-  private transient double [] _betaGiven;
-  private transient double [] _betaLB;
-  private transient double [] _betaUB;
-  private transient double [] _rho;
   @Override
   public Job<GLMModel> trainModel() {
-//    Key k = Key.make("rebalanced");
-//    H2O.submitTask(new RebalanceDataSet(_parms.train(), k, 512)).join();
-//    Key oldK = _parms._train;
-//    _parms._train = k;
-//    _train.delete();
-//    DKV.remove(oldK);
-//    _train = DKV.getGet(k);
-//    Log.info(FrameUtils.chunkSummary(_train).toString());
     _parms.read_lock_frames(this);
-    init(true);                 // Expensive tests & conversions
-    DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-    DKV.put(dinfo._key,dinfo);
-    double [] betaStart = null;
-    double [] betaGiven = null;
-    double [] betaLB    = null;
-    double [] betaUB    = null;
-    double [] rho       = null;
-    if(_parms._beta_constraint != null) {
-      Frame beta_constraints = _parms._beta_constraint.get();
-      Vec v = beta_constraints.vec("names");
-      String[] dom;
-      int[] map;
-      if(v.isString()) {
-        dom = new String[(int)v.length()];
-        map = new int[dom.length];
-        ValueString vs = new ValueString();
-        for(int i = 0 ; i < dom.length; ++i) {
-          dom[i] = v.atStr(vs,i).toString();
-          map[i] = i;
-        }
-      } else if(v.isEnum()) {
-        dom = v.domain();
-        map = FrameUtils.asInts(v);
-      } else
-        throw new IllegalArgumentException("Illegal beta constraints file, names column expected to contain column names (strings)");
-      // for now only enums allowed here
-      String[] names = ArrayUtils.append(dinfo.coefNames(), "Intercept");
-      if (!Arrays.deepEquals(dom, names)) { // need mapping
-        HashMap<String, Integer> m = new HashMap<String, Integer>();
-        for (int i = 0; i < names.length; ++i)
-          m.put(names[i], i);
-        int[] newMap = MemoryManager.malloc4(dom.length);
-        for (int i = 0; i < map.length; ++i) {
-          Integer I = m.get(dom[map[i]]);
-          newMap[i] = I == null ? -1 : I;
-        }
-        map = newMap;
-      }
-      final int numoff = dinfo.numStart();
-      if ((v = beta_constraints.vec("beta_start")) != null) {
-        betaStart = MemoryManager.malloc8d(dinfo.fullN() + (dinfo._intercept ? 1 : 0));
-        for (int i = 0; i < (int) v.length(); ++i)
-          betaStart[map == null ? i : map[i]] = v.at(i);
-      }
-      if ((v = beta_constraints.vec("beta_given")) != null) {
-        betaGiven = MemoryManager.malloc8d(dinfo.fullN() + (dinfo._intercept ? 1 : 0));
-        for (int i = 0; i < (int) v.length(); ++i)
-          betaGiven[map == null ? i : map[i]] = v.at(i);
-      }
-      if ((v = beta_constraints.vec("upper_bounds")) != null) {
-        betaUB = MemoryManager.malloc8d(dinfo.fullN() + (dinfo._intercept ? 1 : 0));
-        Arrays.fill(betaUB, Double.POSITIVE_INFINITY);
-        for (int i = 0; i < (int) v.length(); ++i)
-          betaUB[map == null ? i : map[i]] = v.at(i);
-      }
-      if ((v = beta_constraints.vec("lower_bounds")) != null) {
-        betaLB = MemoryManager.malloc8d(dinfo.fullN() + (dinfo._intercept ? 1 : 0));
-        Arrays.fill(betaLB, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < (int) v.length(); ++i)
-          betaLB[map == null ? i : map[i]] = v.at(i);
-      }
-      if ((v = beta_constraints.vec("rho")) != null) {
-        rho = MemoryManager.malloc8d(dinfo.fullN() + (dinfo._intercept ? 1 : 0));
-        for (int i = 0; i < (int) v.length(); ++i)
-          rho[map == null ? i : map[i]] = v.at(i);
-      }
-      if (dinfo._normMul != null) {
-        double normG = 0, normS = 0;
-        for (int i = numoff; i < dinfo.fullN(); ++i) {
-          double dd = dinfo._normMul[i - numoff];
-          double d = 1.0 / dd;
-          if (betaUB != null && !Double.isInfinite(betaUB[i]))
-            betaUB[i] *= d;
-          if (betaLB != null && !Double.isInfinite(betaUB[i]))
-            betaLB[i] *= d;
-          if (betaGiven != null) {
-            normG += betaGiven[i] * dd;
-            betaGiven[i] *= d;
-          }
-          if (betaStart != null) {
-            normS += betaStart[i] * dd;
-            betaStart[i] *= d;
-          }
-        }
-        if (dinfo._intercept) {
-          int n = dinfo.fullN();
-          if (betaGiven != null)
-            betaGiven[n] -= normG;
-          if (betaStart != null)
-            betaStart[n] -= normS;
-        }
-      }
-      _betaGiven = betaGiven;
-      _betaStart = betaStart;
-      _betaLB = betaLB;
-      _betaUB = betaUB;
-      _rho = rho;
-
-    }
-    H2OCountedCompleter cmp = new H2OCountedCompleter(){
-      AtomicBoolean _gotException = new AtomicBoolean(false);
-      @Override public void compute2(){}
-      @Override public void onCompletion(CountedCompleter cc){
-        _parms.read_unlock_frames(GLM.this);
-        done();
-      }
-      @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
-        if(!_gotException.getAndSet(true)) {
-          Job thisJob = DKV.getGet(_key);
-          if (thisJob._state != JobState.CANCELLED) {
-             failed(ex);
-          }
-          _parms.read_unlock_frames(GLM.this);
-          return true;
-        }
-        return false;
-      }
-    };
-    if(_parms._lambda_search)
-      _parms._max_iter *= 5;
-    start(cmp, _parms._max_iter);
-    H2O.submitTask(new GLMDriver(cmp, dinfo));
+    start(new GLMDriver(null), _parms._max_iter);
     return this;
   }
 
-  private static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.
-  private static final int MAX_ITERATIONS_PER_LAMBDA = 10;
+  static double GLM_GRAD_EPS = 1e-4; // done (converged) if subgrad < this value.
+  static final int MAX_ITERATIONS_PER_LAMBDA = 10;
   private static final int MAX_ITER = 50;
-  private static final int sparseCoefThreshold = 750;
+  static final int sparseCoefThreshold = 750;
   private static final double beta_epsilon = 1e-4;
+
+  public static class BetaConstraint extends Iced {
+    double [] _betaStart;
+    double [] _betaGiven;
+    double [] _rho;
+    double [] _betaLB;
+    double [] _betaUB;
+    public BetaConstraint setLowerBounds(double [] lb) {_betaLB = lb; return this;}
+    public BetaConstraint setUpperBounds(double [] ub) {_betaUB = ub; return this;}
+    public BetaConstraint setBetaStart  (double [] bs) {_betaStart = bs; return this;}
+    public BetaConstraint setProximalPenalty  (double [] bGiven, double [] rho) {
+      _betaGiven = bGiven;
+      _rho = rho;
+      return this;
+    }
+  }
 
   /**
    * Encapsulates state of the computation.
    */
   public static final class GLMTaskInfo extends Iced {
-    final long      _nobs;     // number of observations in our dataset
-
-    final double    _ymu;      // actual mean of the response
-    final double    _lambdaMax;// lambda max of the current dataset
-    double [] _beta;     // full solution at previous lambda (or null)
-    GradientInfo    _ginfo;
-    double          _objVal;
+    final int       _foldId;
+    final long      _nobs;       // number of observations in our dataset
+    final double    _ymu;        // actual mean of the response
+    final double    _lambdaMax;  // lambda max of the current dataset
+    double []       _beta;       // full - solution at previous lambda (or null)
+    GradientInfo    _ginfo;      // gradient and penalty of glm + L2 pen.
+    double          _objVal;     // full objective value including L1 pen
     int             _iter;
-//    private double _lastLambda;
-    float        [] _thresholds;
-
     // these are not strictly state variables
     // I put them here to have all needed info in state object (so I only need to keep State[] info when doing xval)
     final Key             _dstKey;
-    final DataInfo        _dinfo;
-    final GLMParameters   _params;
-    final double [] _betaGiven;
-    final double [] _rho;
-    final double [] _betaLB;
-    final double [] _betaUB;
 
-    L_BFGS _lbfgs;      // lbfgs solver if we use lbfgs or null
-    GradientInfo _gOld; // gradient info of the last returned result
-
-    public GLMTaskInfo(Key dstKey, DataInfo dinfo, GLMParameters params, long nobs, double ymu, double lmax, double[] beta, double [] betaGiven, double [] rho, double [] lb, double [] ub, GradientInfo ginfo){
+    public GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, GradientInfo ginfo, double objVal){
       _dstKey = dstKey;
-      _dinfo = dinfo;
-      _params = params;
+      _foldId = foldId;
       _nobs = nobs;
       _ymu = ymu;
       _lambdaMax = lmax;
-      _betaGiven = betaGiven;
-      _rho = rho;
-      _betaLB = lb;
-      _betaUB = ub;
-//      _lastLambda = lambda;
       _beta = beta;
       _ginfo = ginfo;
-      if(_params._family == Family.binomial)
-        _thresholds = ModelUtils.DEFAULT_THRESHOLDS;
     }
 
-    public void adjustToNewLambda( double currentLambda, double newLambda) {
+    public void adjustToNewLambda( double currentLambda, double newLambda, double alpha, boolean intercept) {
       assert newLambda < currentLambda:"newLambda = " + newLambda + ", last lambda = " + currentLambda;
-      double l2diff = (newLambda - currentLambda) * (1 - _params._alpha[0]);
-      for(int i = 0; i < _ginfo._gradient.length - (_dinfo._intercept?1:0); ++i)
+      double l2diff = (newLambda - currentLambda) * (1 - alpha);
+      for(int i = 0; i < _ginfo._gradient.length - (intercept?1:0); ++i)
         _ginfo._gradient[i] += l2diff * _beta[i];
-      _ginfo = new GradientInfo(_ginfo ._likelihood + .5 * l2diff * ArrayUtils.l2norm2(_beta,_dinfo._intercept), _ginfo._gradient);
+      _ginfo = new GradientInfo(_ginfo ._objVal + .5 * l2diff * ArrayUtils.l2norm2(_beta, intercept), _ginfo._gradient);
+      _objVal = _ginfo._objVal + newLambda * alpha * ArrayUtils.l1norm(_beta,intercept);
+    }
+  }
+
+  private final double lmax(GLMGradientTask gLmax) {
+    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-3,_parms._alpha[0]);
+  }
+
+  /**
+   * Encapsulates state needed for line search i.e. previous solution and it's gradient and objective value.
+   */
+  private static final class IterationInfo {
+    final double[] _beta;
+    final double _likelihood;
+
+    final int _iter;
+
+    public IterationInfo(int iter, double[] beta, double likelihood) {
+      _iter = iter;
+      _beta = beta;
+      _likelihood = likelihood;
+    }
+  }
+
+  /**
+   * Contains implementation of the glm algo.
+   * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
+   */
+  public final class GLMDriver extends DTask<GLMDriver> {
+    transient AtomicBoolean _gotException = new AtomicBoolean();
+
+    public GLMDriver(H2OCountedCompleter cmp){ super(cmp);}
+
+    private void doCleanup(){
+      _parms.read_unlock_frames(GLM.this);
+      DKV.remove(_dinfo._key);
+      if(_rowFilter != null)
+        _rowFilter.remove();
+    }
+    @Override public void onCompletion(CountedCompleter cc){
+      new FinalizeAndUnlockTsk(null, _dest, _key).invokeTask();
+      doCleanup();
+      done();
+    }
+
+    @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
+      if(!_gotException.getAndSet(true)){
+        if(ex instanceof TooManyPredictorsException){
+          // TODO add a warning
+          tryComplete();
+          return false;
+        }
+        doCleanup();
+        new RemoveCall(null, _dest).invokeTask();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    protected void compute2() {
+      init(true);
+      // GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
+      if (error_count() > 0)
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+      if(_parms._n_folds != 0)
+        throw H2O.unimpl();
+      //todo: fill in initialization for n-folds
+      new GLMSingleLambdaTsk(new LambdaSearchIteration(this),_tInfos[0]).fork();
+    }
+
+    private class LambdaSearchIteration extends H2O.H2OCallback {
+      public LambdaSearchIteration(H2OCountedCompleter cmp){super(cmp); }
+      @Override
+      public void callback(H2OCountedCompleter h2OCountedCompleter) {
+        double currentLambda = _parms._lambda[_lambdaId];
+        if(_parms._n_folds > 1){
+          // copy the state over
+          ParallelTasks<GLMSingleLambdaTsk> t = (ParallelTasks<GLMSingleLambdaTsk>)h2OCountedCompleter;
+          for(int i = 0; i < t._tasks.length; ++i)
+            _tInfos[i] = t._tasks[i]._taskInfo;
+          // launch xval-task to compute validations of xval models
+          // getCompleter().addToPendingCount(1);
+          // TODO ...
+        }
+        // launch the next lambda
+        if(++_lambdaId  < _parms._lambda.length) {
+          double nextLambda = _parms._lambda[_lambdaId+1];
+          getCompleter().addToPendingCount(1);
+          if(_parms._n_folds > 1){
+            GLMSingleLambdaTsk[] tasks = new GLMSingleLambdaTsk[_tInfos.length];
+            H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter());
+            cmp.addToPendingCount(tasks.length-1);
+            for(int i = 0; i < tasks.length; ++i)
+              tasks[i] = new GLMSingleLambdaTsk(cmp,_tInfos[i]);
+            new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter()),tasks).fork();
+          } else {
+            _tInfos[0].adjustToNewLambda(currentLambda,nextLambda, _parms._alpha[0], _dinfo._intercept);
+            new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()),  _tInfos[0]).fork();
+          }
+        }
+      }
     }
   }
 
@@ -283,126 +422,103 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
    * The performs iterative reweighted least squares algorithm with elastic net penalty.
    *
    */
-  public static final class GLMLambdaTask extends DTask<GLMLambdaTask>{
+  public final class GLMSingleLambdaTsk extends DTask<GLMSingleLambdaTsk> {
     DataInfo _activeData;
     GLMTaskInfo _taskInfo;
-    final double _currentLambda;
-    final double _lastLambda;
-    int _iter;
-    final Key _jobKey;
-    Key _progressKey;
+
     long _start_time;
-    double _addedL2;
-    final boolean _forceLBFGS;
-    public GLMLambdaTask(H2OCountedCompleter cmp, Key jobKey, Key progressKey, GLMTaskInfo state, double lastLambda, double currentLambda, boolean forceLBFGS){
+
+    public GLMSingleLambdaTsk(H2OCountedCompleter cmp, GLMTaskInfo state) {
       super(cmp);
       _taskInfo = state;
-      assert DKV.get(_taskInfo._dinfo._key) != null;
-      _currentLambda = currentLambda;
-      _lastLambda = lastLambda;
-      _jobKey = jobKey;
-      _progressKey = progressKey;
-      _forceLBFGS = forceLBFGS;
+      assert DKV.get(_dinfo._key) != null;
     }
 
-    private String LogInfo(String msg){
-      msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _iter + ", lambda = " + _currentLambda + "]: " + msg;
+    private String LogInfo(String msg) {
+      msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
       Log.info(msg);
       return msg;
     }
 
-    double objVal(double likelihood, double [] beta) {
-      double alpha = _taskInfo._params._alpha[0];
+    double objVal(double likelihood, double[] beta) {
+      double alpha = _parms._alpha[0];
       double proximalPen = 0;
-      if(_taskInfo._betaGiven != null) {
-        for(int i  = 0; i < _taskInfo._betaGiven.length; ++i){
-          double diff = beta[i] - _taskInfo._betaGiven[i];
-          proximalPen += diff*diff*_taskInfo._rho[i]*.5;
+      if (_bc._betaGiven != null) {
+        for (int i = 0; i < _bc._betaGiven.length; ++i) {
+          double diff = beta[i] - _bc._betaGiven[i];
+          proximalPen += diff * diff * _bc._rho[i] * .5;
         }
       }
       return likelihood / _taskInfo._nobs
-        +  proximalPen
-        + _currentLambda * (alpha * ArrayUtils.l1norm(beta,_activeData._intercept)
-        + (1-alpha)*.5*ArrayUtils.l2norm2(beta,_activeData._intercept));
+        + proximalPen
+        + _parms._lambda[_lambdaId] * (alpha * ArrayUtils.l1norm(beta, _activeData._intercept)
+        + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, _activeData._intercept));
     }
 
-    int [] _activeCols;
+    int[] _activeCols;
 
     boolean _allIn;
+
     /**
      * Apply strong rules to filter out expected innactive (with zero coefficient) predictors.
+     *
      * @return indeces of expected active predictors.
      */
-    private int [] activeCols(final double l1, final double l2, final double [] grad) {
-      if(_allIn)return null;
+    private int[] activeCols(final double l1, final double l2, final double[] grad) {
+      if (_allIn) return null;
       int selected = 0;
-      int [] cols = null;
-      if (_taskInfo._params._alpha[0] > 0) {
-        final double rhs = _taskInfo._params._alpha[0] * (2 * l1 - l2);
-        cols = MemoryManager.malloc4(_taskInfo._dinfo.fullN());
+      int[] cols = null;
+      if (_parms._alpha[0] > 0) {
+        final double rhs = _parms._alpha[0] * (2 * l1 - l2);
+        cols = MemoryManager.malloc4(_dinfo.fullN());
         int j = 0;
         if (_activeCols == null) _activeCols = new int[]{-1};
-        for (int i = 0; i < _taskInfo._dinfo.fullN(); ++i)
+        for (int i = 0; i < _dinfo.fullN(); ++i)
           if ((j < _activeCols.length && i == _activeCols[j]) || grad[i] > rhs || grad[i] < -rhs) {
             cols[selected++] = i;
             if (j < _activeCols.length && i == _activeCols[j]) ++j;
           }
       }
-      if(_taskInfo._params._alpha[0] == 0 || selected == _taskInfo._dinfo.fullN()){
+      if (_parms._alpha[0] == 0 || selected == _dinfo.fullN()) {
         _activeCols = null;
         _allIn = true;
-        _activeData = _taskInfo._dinfo;
-        selected = _taskInfo._dinfo.fullN();
+        _activeData = _dinfo;
+        selected = _dinfo.fullN();
       } else {
         _activeCols = Arrays.copyOf(cols, selected);
-        _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
+        _activeData = _dinfo.filterExpandedColumns(_activeCols);
         assert DKV.get(_activeData._key) != null;
       }
-      LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _taskInfo._dinfo.fullN() + " total.");
-      assert _activeCols == null || _activeData.fullN() == _activeCols.length:LogInfo("mismatched number of cols, got " + _activeCols.length + " active cols, but data info claims " + _activeData.fullN());
+      LogInfo("strong rule at lambda_value=" + l1 + ", got " + selected + " active cols out of " + _dinfo.fullN() + " total.");
+      assert _activeCols == null || _activeData.fullN() == _activeCols.length : LogInfo("mismatched number of cols, got " + _activeCols.length + " active cols, but data info claims " + _activeData.fullN());
       return _activeCols;
     }
 
-    /**
-     * Encapsulates state needed for line search i.e. previous solution and it's gradient and objective value.
-     */
-    private static final class IterationInfo {
-      final double [] _beta;
-      final double _likelihood;
+//    private transient IterationInfo _lastResult;
 
-      final int       _iter;
-      public IterationInfo(int iter, double [] beta, double likelihood){
-        _iter = iter;
-        _beta = beta;
-        _likelihood = likelihood;
+    private double[] setSubmodel(final double[] newBeta, GLMValidation val, H2OCountedCompleter cmp) {
+      double[] fullBeta = (_activeCols == null || newBeta == null) ? newBeta : expandVec(newBeta, _activeCols, _dinfo.fullN() + 1);
+      if (fullBeta == null) {
+        fullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+        fullBeta[fullBeta.length - 1] = _parms.linkInv(_taskInfo._ymu);
       }
-    }
-    private transient IterationInfo _lastResult;
-
-    private double [] setSubmodel(final double[] newBeta, GLMValidation val, H2O.H2OCountedCompleter cmp){
-      double [] fullBeta = (_activeCols == null || newBeta == null)?newBeta:expandVec(newBeta,_activeCols, _taskInfo._dinfo.fullN()+1);
-      if(fullBeta == null){
-        fullBeta = MemoryManager.malloc8d(_taskInfo._dinfo.fullN()+1);
-        fullBeta[fullBeta.length-1] = _taskInfo._params.linkInv(_taskInfo._ymu);
-      }
-      final double [] newBetaDeNorm;
-      if(_taskInfo._dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
+      final double[] newBetaDeNorm;
+      if (_dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
         newBetaDeNorm = fullBeta.clone();
         double norm = 0.0;        // Reverse any normalization on the intercept
         // denormalize only the numeric coefs (categoricals are not normalized)
-        final int numoff = _taskInfo._dinfo.numStart();
-        for( int i=numoff; i< fullBeta.length-1; i++ ) {
-          double b = newBetaDeNorm[i]* _taskInfo._dinfo._normMul[i-numoff];
-          norm += b* _taskInfo._dinfo._normSub[i-numoff]; // Also accumulate the intercept adjustment
+        final int numoff = _dinfo.numStart();
+        for (int i = numoff; i < fullBeta.length - 1; i++) {
+          double b = newBetaDeNorm[i] * _dinfo._normMul[i - numoff];
+          norm += b * _dinfo._normSub[i - numoff]; // Also accumulate the intercept adjustment
           newBetaDeNorm[i] = b;
         }
-        newBetaDeNorm[newBetaDeNorm.length-1] -= norm;
+        newBetaDeNorm[newBetaDeNorm.length - 1] -= norm;
       } else
         newBetaDeNorm = null;
-      GLMModel.setSubmodel(cmp, _taskInfo._dstKey, _currentLambda, newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta, (_iter + 1), System.currentTimeMillis() - _start_time, _taskInfo._dinfo.fullN() >= sparseCoefThreshold, val);
+      GLMModel.setSubmodel(cmp, _taskInfo._dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta, (_taskInfo._iter + 1), System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, val);
       return fullBeta;
     }
-
 
 
     /**
@@ -411,48 +527,50 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
      * then they are added into the active set and solution is recomputed (rare), otherwise we just update the model in the K/V with this new solution
      * and finish.
      *
-     * @param newBeta - computed solution
+     * @param newBeta          - computed solution
      * @param failedLineSearch - boolean flag if we're already comming from failed line-search (unable to proceed) - in that case line search is never performed.
      */
-    protected void checkKKTAndComplete(final double [] newBeta, final boolean failedLineSearch){
-      H2O.H2OCountedCompleter cmp = (H2O.H2OCountedCompleter)getCompleter();
+    protected void checkKKTAndComplete(final double[] newBeta, final boolean failedLineSearch) {
+      H2OCountedCompleter cmp = (H2OCountedCompleter) getCompleter();
       cmp.addToPendingCount(1);
-      final double [] fullBeta;
-      if(newBeta == null){
-        fullBeta = MemoryManager.malloc8d(_taskInfo._dinfo.fullN()+1);
-        fullBeta[fullBeta.length-1] = _taskInfo._params.linkInv(_taskInfo._ymu);
+      final double[] fullBeta;
+      if (newBeta == null) {
+        fullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+        fullBeta[fullBeta.length - 1] = _parms.linkInv(_taskInfo._ymu);
       } else
-        fullBeta = expandVec(newBeta,_activeCols, _taskInfo._dinfo.fullN()+1);
+        fullBeta = expandVec(newBeta, _activeCols, _dinfo.fullN() + 1);
 
-      // TODO swap for gradient task!
       // now we need full gradient (on all columns) using this beta
       // GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
-      new GLMTask.GLMGradientTask(_taskInfo._dinfo, _taskInfo._params, _currentLambda * (1-_taskInfo._params._alpha[0]), fullBeta, 1.0/ _taskInfo._nobs, new H2O.H2OCallback<GLMGradientTask>(cmp) {
-        @Override public String toString(){
-          return "checkKKTAndComplete.Callback, completer = " + getCompleter() == null?"null":getCompleter().toString();
+      new GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), fullBeta, 1.0 / _taskInfo._nobs, new H2O.H2OCallback<GLMGradientTask>(cmp) {
+        @Override
+        public String toString() {
+          return "checkKKTAndComplete.Callback, completer = " + getCompleter() == null ? "null" : getCompleter().toString();
         }
+
         @Override
         public void callback(final GLMGradientTask glrt) {
           // first check KKT conditions!
-          final double [] grad = glrt._gradient;
-          if(ArrayUtils.hasNaNsOrInfs(grad)){
-            if(!failedLineSearch) {
+          final double[] grad = glrt._gradient;
+          if (ArrayUtils.hasNaNsOrInfs(grad)) {
+            if (!failedLineSearch) {
               LogInfo("Check KKT got NaNs. Invoking line search");
               getCompleter().addToPendingCount(1);
-              new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params,1.0/_taskInfo._nobs,_lastResult._beta,ArrayUtils.subtract( contractVec(fullBeta, _activeCols),_lastResult._beta),LINE_SEARCH_STEP,NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);;
-//              new GLMGradientTask(_activeData, _taskInfo._params, _currentLambda * (1-_taskInfo._params._alpha[0]),, NUM_LINE_SEARCH_STEPS, LINE_SEARCH_STEP), 1.0/_taskInfo._nobs, new LineSearchIteration(getCompleter(), ArrayUtils.subtract(newBeta, _lastResult._beta) )).asyncExec(_activeData._adaptedFrame);
+              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta, ArrayUtils.subtract(contractVec(fullBeta, _activeCols), _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+              ;
+  //              new GLMGradientTask(_activeData, _parms, _currentLambda * (1-_parms._alpha[0]),, NUM_LINE_SEARCH_STEPS, LINE_SEARCH_STEP), 1.0/_taskInfo._nobs, new LineSearchIteration(getCompleter(), ArrayUtils.subtract(newBeta, _lastResult._beta) )).asyncExec(_activeData._adaptedFrame);
               return;
             } else {
               // TODO: add warning and break the lambda search? Or throw Exception?
-              LogInfo("got NaNs/Infs in gradient at lambda " + _currentLambda);
+              LogInfo("got NaNs/Infs in gradient at lambda " + _parms._lambda[_lambdaId]);
             }
           }
           // check the KKT conditions and filter data for the next lambda_value
           // check the gradient
           double[] subgrad = grad.clone();
-          ADMM.subgrad(_taskInfo._params._alpha[0]*_currentLambda, fullBeta, subgrad);
+          ADMM.subgrad(_parms._alpha[0] * _parms._lambda[_lambdaId], fullBeta, subgrad);
           double err = GLM_GRAD_EPS;
-          if (!failedLineSearch &&_activeCols != null) {
+          if (!failedLineSearch && _activeCols != null) {
             for (int c : _activeCols)
               if (subgrad[c] > err) err = subgrad[c];
               else if (subgrad[c] < -err) err = -subgrad[c];
@@ -468,47 +586,45 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             }
             if (fcnt > 0) {
               final int n = _activeCols.length;
-              int [] oldCols = _activeCols;
+              int[] oldCols = _activeCols;
               _activeCols = Arrays.copyOf(_activeCols, _activeCols.length + fcnt);
               for (int i = 0; i < fcnt; ++i)
                 _activeCols[n + i] = failedCols[i];
-              if(_lastResult != null)
-                _lastResult = new IterationInfo(_lastResult._iter, resizeVec(_lastResult._beta, _activeCols, oldCols, _taskInfo._dinfo.fullN() + 1),_lastResult._likelihood);
+
+//              if (_lastResult != null)
+//                _lastResult = new IterationInfo(_lastResult._iter, resizeVec(_lastResult._beta, _activeCols, oldCols, _dinfo.fullN() + 1), _lastResult._objVal);
               Arrays.sort(_activeCols);
-              LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_activeCols.length > 100?"lost":Arrays.toString(_activeCols)));
-              _activeData = _taskInfo._dinfo.filterExpandedColumns(_activeCols);
+              _taskInfo._beta = contractVec(glrt._beta,_activeCols);
+              LogInfo(fcnt + " variables failed KKT conditions check! Adding them to the model and continuing computation.(grad_eps = " + err + ", activeCols = " + (_activeCols.length > 100 ? "lost" : Arrays.toString(_activeCols)));
+              _activeData = _dinfo.filterExpandedColumns(_activeCols);
               // NOTE: tricky completer game here:
               // We expect 0 pending in this method since this is the end-point, ( actually it's racy, can be 1 with pending 1 decrement from the original Iteration callback, end result is 0 though)
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
               getCompleter().addToPendingCount(1);
-              new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, contractVec(glrt._beta, _activeCols), _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),false)).asyncExec(_activeData._adaptedFrame);
+              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, contractVec(glrt._beta, _activeCols), _taskInfo._ymu, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), false)).asyncExec(_activeData._adaptedFrame);
               return;
             }
           }
           // update the state
           _taskInfo._beta = glrt._beta;
           _taskInfo._ginfo = new GradientInfo(glrt._objVal, glrt._gradient);
-          _taskInfo._objVal = glrt._objVal + (1 - _taskInfo._params._alpha[0]) * ArrayUtils.l1norm(glrt._beta,_activeData._intercept);
-          _taskInfo._iter = _iter;
-          int diff = MAX_ITERATIONS_PER_LAMBDA - _iter + _taskInfo._iter;
-          if(diff > 0)
-            new Job.ProgressUpdate(diff).fork(_progressKey); // update progress
-          setSubmodel(newBeta, glrt._val,(H2O.H2OCountedCompleter)getCompleter().getCompleter());
+          _taskInfo._objVal = glrt._objVal + (1 - _parms._alpha[0]) * ArrayUtils.l1norm(glrt._beta, _activeData._intercept);
+          setSubmodel(newBeta, glrt._val, (H2OCountedCompleter) getCompleter().getCompleter());
         }
-      }).setValidate(_taskInfo._ymu,true).asyncExec(_taskInfo._dinfo._adaptedFrame);
+      }).setValidate(_taskInfo._ymu, true).asyncExec(_dinfo._adaptedFrame);
     }
 
-    private static final boolean isSparse(water.fvec.Frame f) {
+    private final boolean isSparse(Frame f) {
       int scount = 0;
-      for(water.fvec.Vec v:f.vecs())
-        if((v.nzCnt() << 3) > v.length())
+      for (Vec v : f.vecs())
+        if ((v.nzCnt() << 3) > v.length())
           scount++;
       return (f.numCols() >> 1) < scount;
     }
 
-    private GradientInfo adjustL2(GradientInfo ginfo, double [] coefs, double lambdaDiff) {
-      for(int i = 0; i < coefs.length-1; ++i)
+    private GradientInfo adjustL2(GradientInfo ginfo, double[] coefs, double lambdaDiff) {
+      for (int i = 0; i < coefs.length - 1; ++i)
         ginfo._gradient[i] += lambdaDiff * coefs[i];
       return ginfo;
     }
@@ -516,441 +632,205 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     protected void compute2() {
       _start_time = System.currentTimeMillis();
-      assert _currentLambda < _taskInfo._lambdaMax;
-      _iter = _taskInfo._iter;
-      LogInfo("lambda = " + _currentLambda + "\n");
-      int [] activeCols = activeCols(_currentLambda, _lastLambda, _taskInfo._ginfo._gradient);
-      int n = activeCols == null?_taskInfo._dinfo.fullN():activeCols.length;
-      if(n > _taskInfo._params._max_active_predictors)
+      LogInfo("lambda = " + _parms._lambda[_lambdaId] + "\n");
+      int[] activeCols = activeCols(_parms._lambda[_lambdaId], _lambdaId == 0?_taskInfo._lambdaMax:_parms._lambda[_lambdaId-1], _taskInfo._ginfo._gradient);
+      int n = activeCols == null ? _dinfo.fullN() : activeCols.length;
+      if (n > _parms._max_active_predictors)
         throw new TooManyPredictorsException();
-      double [] beta = contractVec(_taskInfo._beta, _activeCols);
-      boolean LBFGS = _forceLBFGS;
-      if(beta == null) {
-        beta = MemoryManager.malloc8d(_activeData.fullN() + (_activeData._intercept?1:0));
-        if(_activeData._intercept)
-          beta[beta.length-1] = _taskInfo._params.link(_taskInfo._ymu);
+      double[] beta = contractVec(_taskInfo._beta, _activeCols);
+      boolean LBFGS = _parms._solver == Solver.L_BFGS;
+      if (beta == null) {
+        beta = MemoryManager.malloc8d(_activeData.fullN() + (_activeData._intercept ? 1 : 0));
+        if (_activeData._intercept)
+          beta[beta.length - 1] = _parms.link(_taskInfo._ymu);
       }
-      _lastResult = null;
-      if(LBFGS) { // TODO add L1 pen handling!
-        if(_taskInfo._params._alpha[0] > 0 || _activeCols != null)
+      if (LBFGS) { // TODO add L1 pen handling!
+        if (_parms._alpha[0] > 0 || _activeCols != null)
           throw H2O.unimpl();
-        Log.info("current lambda = " + _currentLambda);
-        GradientSolver solver = new GLMGradientSolver(_taskInfo._params,_activeData, _currentLambda * (1-_taskInfo._params._alpha[0]),_taskInfo._ymu,_taskInfo._nobs, _taskInfo._betaGiven, _taskInfo._rho,0);
+        GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._nobs, _bc._betaGiven, _bc._rho, 0);
         final long t1 = System.currentTimeMillis();
-        if(_taskInfo._lbfgs == null)
-          _taskInfo._lbfgs = new L_BFGS().setMaxIter(_taskInfo._params._max_iter);
-        GradientInfo gOld = _taskInfo._gOld == null
-          ?solver.getGradient(beta)
-          :_taskInfo._ginfo;
-        L_BFGS.Result r = _taskInfo._lbfgs.solve(solver, beta, gOld, new ProgressMonitor() {
+        L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iter);
+        Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
           @Override
-          public boolean progress(double [] beta, GradientInfo ginfo) {
-            if((_iter & 7) == 0) {
-              update(8, "iteration " + (_iter + 1) + ", objective value = " + ginfo._likelihood, _jobKey);
-              LogInfo("LBFGS: objval = " + ginfo._likelihood);
+          public boolean progress(double[] beta, GradientInfo ginfo) {
+            if ((_taskInfo._iter & 7) == 0) {
+              update(8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
+              LogInfo("LBFGS: objval = " + ginfo._objVal);
             }
-            ++_iter;
-            // todo update the model here wo we can show intermediate results
-            return Job.isRunning(_jobKey);
+            ++_taskInfo._iter;
+            // todo update the model here so we can show intermediate results
+            return isRunning(GLM.this._key);
           }
         });
         long t2 = System.currentTimeMillis();
-        Log.info("L_BFGS (k = " + _taskInfo._lbfgs.k() + ") done after " + r.iter + " iterations and " + ((t2-t1)/1000) + " seconds, objval = " + r.ginfo._likelihood + ", penalty = " + (_currentLambda * .5 * ArrayUtils.l2norm2(beta,true)) + ",  gradient norm2 = " + (MathUtils.l2norm2(r.ginfo._gradient)));
-        _taskInfo._gOld = r.ginfo;
-        double [] newBeta = r.coefs;
+        Log.info("L_BFGS (k = " + lbfgs.k() + ") done after " + r.iter + " iterations and " + ((t2 - t1) / 1000) + " seconds, objval = " + r.ginfo._objVal + ", penalty = " + (_parms._lambda[_lambdaId] * .5 * ArrayUtils.l2norm2(beta, true)) + ",  gradient norm2 = " + (MathUtils.l2norm2(r.ginfo._gradient)));
+        _taskInfo._ginfo = r.ginfo;
+        double[] newBeta = r.coefs;
         // update the state
         _taskInfo._beta = newBeta;
-        _taskInfo._iter = (_iter += r.iter);
-        setSubmodel(newBeta,null,this);
+        _taskInfo._iter += r.iter;
+        setSubmodel(newBeta, null, this);
         tryComplete();
       } else // fork off ADMM iteration
-        new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]),_taskInfo._params,false, beta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(this,false)).asyncExec(_activeData._adaptedFrame);
+        new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, beta, _taskInfo._ymu, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
     }
+
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
       public final long _iterationStartTime;
       final boolean _countIteration;
       public final boolean _doLinesearch;
 
-      public Iteration(CountedCompleter cmp, boolean doLinesearch){ this(cmp, doLinesearch, true);}
-      public Iteration(CountedCompleter cmp, boolean doLinesearch, boolean countIteration){
-        super((H2O.H2OCountedCompleter)cmp);
+      public Iteration(CountedCompleter cmp, boolean doLinesearch) {
+        this(cmp, doLinesearch, true);
+      }
+
+      public Iteration(CountedCompleter cmp, boolean doLinesearch, boolean countIteration) {
+        super((H2OCountedCompleter) cmp);
         _countIteration = countIteration;
         _iterationStartTime = System.currentTimeMillis();
         _doLinesearch = doLinesearch;
       }
 
-      @Override public void callback(final GLMIterationTask glmt){
-        if(_jobKey != null && !isRunning(_jobKey) )  throw new JobCancelledException();
-        assert _activeCols == null || glmt._beta == null || glmt._beta.length == (_activeCols.length+1):LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _activeCols.length);
+      @Override
+      public void callback(final GLMIterationTask glmt) {
+        if (!isRunning(GLM.this._key)) throw new JobCancelledException();
+        assert _activeCols == null || glmt._beta == null || glmt._beta.length == (_activeCols.length + 1) : LogInfo("betalen = " + glmt._beta.length + ", activecols = " + _activeCols.length);
         assert _activeCols == null || _activeCols.length == _activeData.fullN();
-        double reg = 1.0/_taskInfo._nobs;
+        double reg = 1.0 / _taskInfo._nobs;
         glmt._gram.mul(reg);
-        ArrayUtils.mult(glmt._xy,reg);
-        if (_countIteration) ++_iter;
+        ArrayUtils.mult(glmt._xy, reg);
+        if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
-        double objVal = objVal(glmt._likelihood,glmt._beta);
-        double lastObjVal = _lastResult == null?Double.POSITIVE_INFINITY:objVal(_lastResult._likelihood,_lastResult._beta);
+        double objVal = objVal(glmt._likelihood, glmt._beta);
+        double lastObjVal = _taskInfo._ginfo._objVal;
         LogInfo("gram computed in " + (callbackStart - _iterationStartTime) + "ms");
         double logl = glmt._likelihood;
-        LogInfo("-log(l) = " + logl +  ", obj = " + objVal);
-
-        if(_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))){
+        LogInfo("-log(l) = " + logl + ", obj = " + objVal);
+        if (_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))) {
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search");
-          new GLMTask.GLMLineSearchTask(_activeData, _taskInfo._params, 1.0/_taskInfo._nobs, _lastResult._beta.clone(), ArrayUtils.subtract(glmt._beta, _lastResult._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
-        } else if(_lastResult == null || lastObjVal > objVal)
-          _lastResult = new IterationInfo(_iter, glmt._beta, glmt._likelihood);
-
-        if(glmt._newThresholds != null) {
-          _taskInfo._thresholds = ArrayUtils.join(glmt._newThresholds[0], glmt._newThresholds[1]);
-          Arrays.sort(_taskInfo._thresholds);
+        } else if (lastObjVal > objVal) {
+          ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
+          _taskInfo._beta = glmt._beta;
+          _taskInfo._ginfo = new GradientInfo(objVal,null);
         }
-        final double [] newBeta = MemoryManager.malloc8d(glmt._xy.length);
-        double l2pen = _currentLambda * (1-_taskInfo._params._alpha[0]);
-        double l1pen = _currentLambda * _taskInfo._params._alpha[0];
-        double defaultRho = _taskInfo._betaLB != null || _taskInfo._betaUB != null?_taskInfo._lambdaMax*1e-2:0;
+
+        final double[] newBeta = MemoryManager.malloc8d(glmt._xy.length);
+        double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]);
+        double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+        double defaultRho = _bc._betaLB != null || _bc._betaUB != null ? _taskInfo._lambdaMax * 1e-2 : 0;
         // l1pen or upper/lower bounds require ADMM solver
-        if(l1pen > 0 || _taskInfo._betaLB != null || _taskInfo._betaUB != null){
-          // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_taskInfo._params._alpha[0],_currentLambda*_taskInfo._params._alpha[0]);
-          long tx= System.currentTimeMillis();
-          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen, l1pen /*, rho*/, _taskInfo._betaGiven, _taskInfo._rho, defaultRho, _taskInfo._betaLB, _taskInfo._betaUB);
+        if (l1pen > 0 || _bc._betaLB != null || _bc._betaUB != null) {
+          // double rho = Math.max(1e-4*_taskInfo._lambdaMax*_parms._alpha[0],_currentLambda*_parms._alpha[0]);
+          long tx = System.currentTimeMillis();
+          GramSolver gslvr = new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen, l1pen /*, rho*/, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB);
           long ty = System.currentTimeMillis();
-          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _taskInfo._betaLB, _taskInfo._betaUB);
-          LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (tx-ty) + "ms");
+          new ADMM.L1Solver(1e-4, 5000).solve(gslvr, newBeta, l1pen, _activeData._intercept, _bc._betaLB, _bc._betaUB);
+          LogInfo("ADMM done in " + (System.currentTimeMillis() - tx) + "ms, cholesky took " + (tx - ty) + "ms");
         } else
-          new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen /*, 0*/,l1pen,  _taskInfo._betaGiven, _taskInfo._rho, defaultRho, _taskInfo._betaLB, _taskInfo._betaUB).solve(null,newBeta);
+          new GramSolver(glmt._gram, glmt._xy, _activeData._intercept, l2pen /*, 0*/, l1pen, _bc._betaGiven, _bc._rho, defaultRho, _bc._betaLB, _bc._betaUB).solve(null, newBeta);
         if (ArrayUtils.hasNaNsOrInfs(newBeta)) {
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
           final double bdiff = beta_diff(glmt._beta, newBeta);
-          if ((_taskInfo._params._family == Family.gaussian && _taskInfo._params._link == Link.identity) || bdiff < _taskInfo._params._beta_epsilon || _iter >= _taskInfo._params._max_iter) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
+          if ((_parms._family == Family.gaussian && _parms._link == Link.identity) || bdiff < _parms._beta_epsilon || _taskInfo._iter >= _parms._max_iter) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
             int diff = (int) Math.log10(bdiff);
             int nzs = 0;
             for (int i = 0; i < newBeta.length; ++i)
               if (newBeta[i] != 0) ++nzs;
             LogInfo("converged (reached a fixed point with ~ 1e" + diff + " precision), got " + nzs + " nzs");
-            double [] beta = _taskInfo._params._family == Family.gaussian?newBeta:glmt._beta;
+            double[] beta = _parms._family == Family.gaussian ? newBeta : glmt._beta;
             checkKKTAndComplete(beta, false);
             return;
           } else { // not done yet, launch next iteration
             if (glmt._beta != null)
-              setSubmodel(glmt._beta, glmt._val, (H2O.H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
-            final boolean validate = (_iter % 5) == 0;
+              setSubmodel(glmt._beta, glmt._val, (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
+            final boolean validate = (_taskInfo._iter % 5) == 0;
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(_jobKey,_activeData,_currentLambda * (1-_taskInfo._params._alpha[0]),glmt._glm, validate, newBeta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),true)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _taskInfo._ymu, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
           }
         }
       }
     }
+
     private class LineSearchIteration extends H2O.H2OCallback<GLMLineSearchTask> {
-      LineSearchIteration(CountedCompleter cmp){
-        super((H2O.H2OCountedCompleter)cmp);
+      LineSearchIteration(CountedCompleter cmp) {
+        super((H2OCountedCompleter) cmp);
       }
-      @Override public void callback(final GLMLineSearchTask lst) {
+
+      @Override
+      public void callback(final GLMLineSearchTask lst) {
         double t = 1;
-        double lastObjVal = objVal(_lastResult._likelihood, _lastResult._beta);
-        for(int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
-          double[] beta = ArrayUtils.wadd(_lastResult._beta.clone(), lst._direction, t);
-          if(lastObjVal > objVal(lst._likelihoods[i],beta)){
+        for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
+          double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
+          if (_taskInfo._objVal > objVal(lst._likelihoods[i], beta)) {
             assert t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + lst._likelihoods[i]);
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, beta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),true, false)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _taskInfo._ymu, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
             return;
           }
         }
         // no line step worked => converge
-        LogInfo("Line search did not find feasible step, converged at objval = " + lastObjVal);
-        checkKKTAndComplete(lst._beta,true);
+        LogInfo("Line search did not find feasible step, converged at objval = " + _taskInfo._objVal);
+        checkKKTAndComplete(lst._beta, true);
       }
+    }
+
+    private final double beta_diff(double[] b1, double[] b2) {
+      if (b1 == null) return Double.MAX_VALUE;
+      double res = b1[0] >= b2[0] ? b1[0] - b2[0] : b2[0] - b1[0];
+      for (int i = 1; i < b1.length; ++i) {
+        double diff = b1[i] - b2[i];
+        if (diff > res)
+          res = diff;
+        else if (-diff > res)
+          res = -diff;
+      }
+      return res;
+    }
+
+    private final double[] expandVec(double[] beta, final int[] activeCols, int fullN) {
+      assert beta != null;
+      if (activeCols == null) return beta;
+      double[] res = MemoryManager.malloc8d(fullN);
+      int i = 0;
+      for (int c : activeCols)
+        res[c] = beta[i++];
+      res[res.length - 1] = beta[beta.length - 1];
+      return res;
+    }
+    private final double[] contractVec(double[] beta, final int[] activeCols) {
+      if (beta == null) return null;
+      if (activeCols == null) return beta.clone();
+      double[] res = MemoryManager.malloc8d(activeCols.length + 1);
+      int i = 0;
+      for (int c : activeCols)
+        res[i++] = beta[c];
+      res[res.length - 1] = beta[beta.length - 1];
+      return res;
+    }
+    private final double[] resizeVec(double[] beta, final int[] activeCols, final int[] oldActiveCols, int fullN) {
+      if (beta == null || Arrays.equals(activeCols, oldActiveCols)) return beta;
+      double[] full = expandVec(beta, oldActiveCols, fullN);
+      if (activeCols == null) return full;
+      return contractVec(full, activeCols);
+    }
+    protected double l1norm(double[] beta) {
+      if (beta == null) return 0;
+      double l1 = 0;
+      for (int i = 0; i < beta.length - 1; ++i)
+        l1 += beta[i] < 0 ? -beta[i] : beta[i];
+      return l1;
     }
   }
 
-  private final double lmax(GLMGradientTask gLmax) {
-    return Math.max(ArrayUtils.maxValue(gLmax._gradient),-ArrayUtils.minValue(gLmax._gradient))/Math.max(1e-3,_parms._alpha[0]);
-  }
   /**
-   * Contains implementation of the glm algo.
-   * It's a DTask so it can be computed on other nodes (to distributed single node part of the computation).
+   * Created by tomasnykodym on 3/30/15.
    */
-  public final class GLMDriver extends DTask<GLMDriver> {
-    final DataInfo _dinfo;
-    transient ArrayList<DataInfo> _foldInfos = new ArrayList<DataInfo>();
-
-    double [] lambdas;
-    final GLMTaskInfo[] _state;
-    int             _lambdaId;
-    int   _maxLambda;
-    transient AtomicBoolean _gotException = new AtomicBoolean();
-
-    public GLMDriver(H2OCountedCompleter cmp, DataInfo dinfo){
-      super(cmp);
-      _dinfo = dinfo;
-      _state = _parms._n_folds > 1?new GLMTaskInfo[_parms._n_folds +1]:new GLMTaskInfo[1];
-    }
-
-    private double [] nullBeta(DataInfo dinfo, GLMParameters params, double ymu){
-      double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-      beta[beta.length-1] = params.linkInv(ymu);
-      return beta;
-    }
-
-    private void doCleanup(){
-      DKV.remove(_dinfo._key);
-      for(DataInfo dinfo:_foldInfos)
-        DKV.remove(dinfo._key);
-    }
-    @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
-      doCleanup();
-      if(!_gotException.getAndSet(true)){
-        if(ex instanceof TooManyPredictorsException){
-          // TODO add a warning
-          _maxLambda = _lambdaId;
-          tryComplete();
-          return false;
-        }
-        new RemoveCall(null, _dest).invokeTask();
-        return true;
-      }
-      return false;
-    }
-    @Override public void onCompletion(CountedCompleter cc){
-      doCleanup();
-      H2OCountedCompleter cmp = (H2OCountedCompleter)getCompleter();
-      cmp.addToPendingCount(1);
-      new FinalizeAndUnlockTsk(cmp, _dest, _key).fork();
-    }
-    @Override
-    protected void compute2() {
-      if(_parms._alpha.length > 1){ // just fork off grid search
-        return;
-      }
-      // compute lambda max
-      // if this is cross-validated task, don't do actual computation,
-      // just fork off the nfolds+1 tasks and wait for the results
-
-      if(_parms._nlambdas == -1)_parms._nlambdas = 100;
-      if(_parms._lambda_search && _parms._nlambdas <= 1)
-        throw new IllegalArgumentException("GLM2(" + _dest + ") nlambdas must be > 1 when running with lambda search.");
-      Futures fs = new Futures();
-      new YMUTask(_dinfo, new H2O.H2OCallback<YMUTask>(this) {
-        @Override
-        public String toString(){
-          return "YMUTask callback. completer = " + getCompleter() != null?"null":getCompleter().toString();
-        }
-        @Override
-        public void callback(final YMUTask ymut) {
-          if (ymut._yMin == ymut._yMax)
-            throw new IllegalArgumentException("GLM2(" + _dest + "): attempted to run with constant response. Response == " + ymut._yMin + " for all rows in the training set.");
-          final double gYmu;
-          final long nobs;
-          gYmu = ymut._ymu;
-          nobs = ymut._nobs;
-
-          H2O.H2OCountedCompleter cmp = (H2O.H2OCountedCompleter)getCompleter();
-          cmp.addToPendingCount(1);
-          double [] beta = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept?1:0));
-          if(_dinfo._intercept)
-            beta[beta.length-1] = _parms.link(gYmu);
-          new GLMTask.GLMGradientTask( _dinfo, _parms, 0, beta, 1.0/nobs, new H2OCallback<GLMGradientTask>(cmp){
-            @Override
-            public String toString(){
-              return "LMAXTask callback. completer = " + (getCompleter() != null?"NULL":getCompleter().toString());
-            }
-            @Override public void callback(final GLMGradientTask gLmaxTsk){
-              // public GLMModel(Key selfKey, String[] names, String[][] domains, GLMParameters parms, GLMOutput output) {
-              GLMOutput glmOutput = new GLMOutput(GLM.this,_dinfo,_parms._family == Family.binomial);
-              String warning = null;
-              final double gLmax = lmax(gLmaxTsk);
-              if(_parms._lambda_search) {
-                assert !Double.isNaN(gLmax) : "running lambda_value search, but don't know what is the lambda_value max!";
-                if (_parms._lambda_min_ratio == -1)
-                  _parms._lambda_min_ratio = nobs > 25 * _dinfo.fullN() ? 1e-4 : 1e-2;
-                  final double d = Math.pow(_parms._lambda_min_ratio, 1.0 / (_parms._nlambdas - 1));
-                  lambdas = new double[_parms._nlambdas];
-                  lambdas[0] =gLmax;
-                  if (_parms._nlambdas == 1)
-                    throw new IllegalArgumentException("Number of lambdas must be > 1 when running with lambda_search!");
-                  for (int i = 1; i < lambdas.length; ++i)
-                    lambdas[i] = lambdas[i - 1] * d;
-              } else {
-                if(_parms._lambda == null || _parms._lambda.length == 0)
-                  lambdas = new double[]{1e-2*gLmax};
-                else
-                  lambdas = _parms._lambda;
-                int i = 0;
-                while(i < lambdas.length && lambdas[i] >= gLmax)++i;
-                if(i == lambdas.length)
-                  throw new IllegalArgumentException("Given lambda(s) are all > lambda_max = " + gLmax + ", have nothing to run with. lambda = " + Arrays.toString(lambdas));
-                if(i > 0) {
-                  warning = "Removed " + i + " lambdas greater than lambda_max.";
-                }
-                lambdas = ArrayUtils.append(new double[]{gLmax},Arrays.copyOfRange(lambdas,i,lambdas.length));
-              }
-              if(lambdas.length > 1) {
-                GLMValidation val = new GLMValidation(_dinfo._adaptedFrame._key,ymut._ymu,_parms,0);
-                val.auc = .5;
-                double nullDev = gLmaxTsk._objVal * ymut._nobs;
-                val.null_deviance = nullDev;
-                val.residual_deviance = nullDev;
-                glmOutput.addNullSubmodel(gLmax, _parms.link(gYmu), val); // todo add null validation
-              }
-              _maxLambda = lambdas.length;
-              GLMModel model = new GLMModel(_dest, _parms, glmOutput, _dinfo, gYmu,gLmax,nobs, ModelUtils.DEFAULT_THRESHOLDS);
-              if(warning != null)
-                model.addWarning(warning);
-              model.delete_and_lock(_key);
-              _state[0] = new GLMTaskInfo(_dest,_dinfo,_parms,ymut._nobs,ymut._ymu,gLmax,_betaStart, _betaGiven, _rho, _betaLB, _betaUB, new GradientInfo(gLmaxTsk._objVal,gLmaxTsk._gradient));
-              _state[0]._objVal = gLmaxTsk._objVal;
-              getCompleter().addToPendingCount(1);
-              if(_parms._n_folds > 1){
-                final H2OCountedCompleter cmp = new H2OCallback((H2OCountedCompleter)getCompleter()) {
-                  @Override
-                  public void callback(H2OCountedCompleter h2OCountedCompleter) {
-                    GLMLambdaTask [] tasks = new GLMLambdaTask[_state.length];
-                    for(int i = 0; i < tasks.length; ++i)
-                      tasks[i] = new GLMLambdaTask(null, _key,_progressKey,_state[i],gLmax, lambdas[_lambdaId], _parms._solver == Solver.L_BFGS);
-                    // now we have computed lmax for all n_folds model and solution for global lmax (lmax on the whole dataset) for all n_folds
-                    // just start tasks to compute the first lambda in parallel for all n_folds.
-                    getCompleter().addToPendingCount(1);
-                    new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter(), _parms._solver == Solver.L_BFGS),tasks).fork();
-                  }
-                };
-                cmp.addToPendingCount(_state.length-2);
-                for(int i = 1; i < _state.length; ++i){
-                  final int fi = i;
-                  final GLMParameters params = (GLMParameters)_parms.clone();
-                  params._n_folds = 0;
-                  final DataInfo dinfo = _dinfo.getFold(i-1,_parms._n_folds);
-                  _foldInfos.add(dinfo);
-                  DKV.put(dinfo._key, dinfo);
-                  Log.info("inserted dinfo for fold " + i + " under key " + dinfo._key);
-                  if(i != 0){
-                    // public LMAXTask(Key jobKey, DataInfo dinfo, GLMModel.GLMParameters glm, double ymu, long nobs, double alpha, float [] thresholds, H2OCountedCompleter cmp) {
-                    // LMAXTask(DataInfo dinfo, GLMModel.GLMParameters params, double ymu, long nobs, H2OCountedCompleter cmp) {
-                    double [] beta = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept?1:0));
-                    if(_dinfo._intercept)
-                      beta[beta.length-1] = _parms.link(ymut.ymu(fi-1));
-                    new GLMGradientTask(dinfo, params, 0, beta, ymut.nobs(fi-1), new H2OCallback<GLMGradientTask>(cmp) {
-                      @Override
-                      public String toString(){
-                        return "Xval LMAXTask callback., completer = " + getCompleter() == null?"null":getCompleter().toString();
-                      }
-                      @Override
-                      public void callback(GLMGradientTask lLmaxTsk) {
-                        // long nobs, double ymu, double lmax, double [] beta, double [] gradient
-                        final double lLmax = lmax(lLmaxTsk);
-                        Key dstKey = Key.make(_dest.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
-                        _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,ymut.nobs(fi-1),ymut.ymu(fi-1),lLmax, _betaStart == null?nullBeta(dinfo,params,ymut.ymu(fi-1)):_betaStart, _betaGiven, _rho, _betaLB, _betaUB, new GradientInfo(lLmaxTsk._objVal,lLmaxTsk._gradient));
-                        assert DKV.get(dinfo._key) != null;
-                        new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_parms._family == Family.binomial), dinfo, ymut.ymu(fi-1), gLmax, nobs, ModelUtils.DEFAULT_THRESHOLDS).delete_and_lock(_key);
-                        if(lLmax > gLmax){
-                          getCompleter().addToPendingCount(1);
-                          // lambda max for this n_fold is > than global lambda max -> it has non-trivial solution for global lambda max, need to compute it first.
-                          new GLMLambdaTask((H2OCountedCompleter)getCompleter(), _key,_progressKey,_state[fi],gLmax,gLmax, _parms._solver == Solver.L_BFGS).fork();
-                        }
-                      }
-                    }).asyncExec(dinfo._adaptedFrame);
-                  }
-                }
-              } else {
-                new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter(), _parms._solver == Solver.L_BFGS), _key, _progressKey, _state[0], gLmax, lambdas[++_lambdaId], _parms._solver == Solver.L_BFGS).fork();
-              }
-            }
-          }).asyncExec(_dinfo._adaptedFrame);
-        }
-      }).asyncExec(_dinfo._adaptedFrame);
-    }
-
-    private class LambdaSearchIteration extends H2O.H2OCallback {
-      final boolean _forceLBFGS;
-      public LambdaSearchIteration(H2OCountedCompleter cmp, boolean forceLBFGS){super(cmp); _forceLBFGS = forceLBFGS; }
-
-      @Override
-      public void callback(H2OCountedCompleter h2OCountedCompleter) {
-        double currentLambda = lambdas[_lambdaId];
-        if(_parms._n_folds > 1){
-          // copy the state over
-          ParallelTasks<GLMLambdaTask> t = (ParallelTasks<GLMLambdaTask>)h2OCountedCompleter;
-          for(int i = 0; i < t._tasks.length; ++i)
-            _state[i] = t._tasks[i]._taskInfo;
-          // launch xval-task to compute validations of xval models
-          // getCompleter().addToPendingCount(1);
-          // TODO ...
-        }
-        // now launch the next lambda
-
-        if(++_lambdaId  < _maxLambda){
-          getCompleter().addToPendingCount(1);
-          double nextLambda = lambdas[_lambdaId];
-          if(_parms._n_folds > 1){
-            GLMLambdaTask [] tasks = new GLMLambdaTask[_state.length];
-            H2OCountedCompleter cmp = new LambdaSearchIteration((H2OCountedCompleter)getCompleter(), _forceLBFGS);
-            cmp.addToPendingCount(tasks.length-1);
-            for(int i = 0; i < tasks.length; ++i) {
-              tasks[i] = new GLMLambdaTask(cmp, _key, _progressKey, _state[i], currentLambda, nextLambda, _forceLBFGS);
-            }
-            new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter(), _forceLBFGS),tasks).fork();
-          } else {
-            _state[0].adjustToNewLambda(currentLambda,nextLambda);
-            new GLMLambdaTask(new LambdaSearchIteration((H2OCountedCompleter) getCompleter(), _forceLBFGS), _key, _progressKey, _state[0], currentLambda, nextLambda, _forceLBFGS).fork();
-          }
-        }
-      }
-    }
-  }
-  private static final double beta_diff(double[] b1, double[] b2) {
-    if(b1 == null)return Double.MAX_VALUE;
-    double res = b1[0] >= b2[0]?b1[0] - b2[0]:b2[0] - b1[0];
-    for( int i = 1; i < b1.length; ++i ) {
-      double diff = b1[i] - b2[i];
-      if(diff > res)
-        res = diff;
-      else if( -diff > res)
-        res = -diff;
-    }
-    return res;
-  }
-  private static final double [] expandVec(double [] beta, final int [] activeCols, int fullN){
-    assert beta != null;
-    if (activeCols == null) return beta;
-    double[] res = MemoryManager.malloc8d(fullN);
-    int i = 0;
-    for (int c : activeCols)
-      res[c] = beta[i++];
-    res[res.length - 1] = beta[beta.length - 1];
-    return res;
-  }
-  private static final double [] contractVec(double [] beta, final int [] activeCols){
-    if(beta == null)return null;
-    if(activeCols == null)return beta.clone();
-    double [] res = MemoryManager.malloc8d(activeCols.length+1);
-    int i = 0;
-    for(int c:activeCols)
-      res[i++] = beta[c];
-    res[res.length-1] = beta[beta.length-1];
-    return res;
-  }
-  private static final double [] resizeVec(double[] beta, final int[] activeCols, final int[] oldActiveCols, int fullN){
-    if(beta == null || Arrays.equals(activeCols,oldActiveCols))return beta;
-    double [] full = expandVec(beta, oldActiveCols,fullN);
-    if(activeCols == null)return full;
-    return contractVec(full,activeCols);
-  }
-
-
-  protected static double l1norm(double[] beta){
-    if(beta == null)return 0;
-    double l1 = 0;
-    for (int i = 0; i < beta.length-1; ++i)
-      l1 += beta[i] < 0?-beta[i]:beta[i];
-    return l1;
-  }
-
-
-
-  public final static class GramSolver implements ProximalSolver {
+  public static final class GramSolver implements ProximalSolver {
     private final Gram _gram;
     private Cholesky _chol;
 
@@ -966,7 +846,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return x;
     }
 
-    public GramSolver(Gram gram, double [] xy, boolean intercept, double l2pen, double l1pen, double [] beta_given, double [] proxPen, double default_rho, double [] lb, double [] ub) {
+    public GramSolver(Gram gram, double[] xy, boolean intercept, double l2pen, double l1pen, double[] beta_given, double[] proxPen, double default_rho, double[] lb, double[] ub) {
       if(ub != null && lb != null)
         for(int i = 0; i < ub.length; ++i) {
           assert ub[i] >= lb[i]:i + ": ub < lb, ub = " + Arrays.toString(ub) + ", lb = " + Arrays.toString(lb) ;
@@ -1033,7 +913,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         l2 *= 10;
         _chol = _gram.cholesky(_chol);
       }
-      gram.addDiag(ArrayUtils.mult(rhos,-1));
+      gram.addDiag(ArrayUtils.mult(rhos, -1));
       ArrayUtils.mult(rhos, -1);
       _rho = rhos;
       _xy = xy;
@@ -1075,7 +955,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public boolean canSetRho() { return false; }
   }
 
-  public final static class GLMGradientSolver extends GradientSolver implements ProximalSolver {
+  /**
+   * Gradient and line search computation for L_BFGS and also L_BFGS solver wrapper (for ADMM)
+   */
+  public static final class GLMGradientSolver extends GradientSolver implements ProximalSolver {
     final GLMParameters _glmp;
     final DataInfo _dinfo;
     final double _ymu;
@@ -1160,7 +1043,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _betaGiven = beta_given.clone();
       else
         System.arraycopy(beta_given, 0, _betaGiven, 0, beta_given.length);
-      L_BFGS.Result r = new L_BFGS().solve(this, _beta);
+      Result r = new L_BFGS().solve(this, _beta);
       System.arraycopy(r.coefs, 0, _beta, 0, r.coefs.length);
       if (_gradient == null)
         _gradient = r.ginfo._gradient.clone();
@@ -1181,4 +1064,5 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     public boolean canSetRho() { return true;}
   }
+
 }
