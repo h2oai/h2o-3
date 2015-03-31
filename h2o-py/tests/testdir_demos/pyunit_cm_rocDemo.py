@@ -56,9 +56,9 @@ def demo_cm_roc(ip,port):
     glm_perf.show()
 
     #Building confusion matrix for test set
-    gbm_CM = gbm_perf.confusion_matrices([0.5])
+    gbm_CM = gbm_perf.confusion_matrices()
     print(gbm_CM)
-    glm_CM = glm_perf.confusion_matrices([0.5])
+    glm_CM = glm_perf.confusion_matrices()
     print(glm_CM)
 
     #Plot ROC for test set

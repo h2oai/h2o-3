@@ -34,61 +34,65 @@ public class AUC2 extends Iced {
    *  from the basic parts, and from an AUC2 at a given threshold index.
    */
   public enum ThresholdCriterion {
-    f1() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f1(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = recall   .exec(tp,fp,fn,tn);
         return 2. * (prec * recl) / (prec + recl);
       } },
-    f2() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f2(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = recall   .exec(tp,fp,fn,tn);
         return 5. * (prec * recl) / (4. * prec + recl);
       } },
-    f0point5() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    f0point5(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         final double prec = precision.exec(tp,fp,fn,tn);
         final double recl = recall   .exec(tp,fp,fn,tn);
         return 1.25 * (prec * recl) / (.25 * prec + recl);
       } },
-    accuracy() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return 1.0-((double)fn+fp)/(tp+fn+tn+fp);
       } },
-    precision() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    precision(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tp/(tp+fp);
       } },
-    recall() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    recall(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tp/(tp+fn);
       } },
-    specificity() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    specificity(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return (double)tn/(tn+fp);
       } },
-    absolute_MCC() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    absolute_MCC(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         return Math.abs(mcc);
       } },
     // minimize max-per-class-error by maximizing min-per-class-correct.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    minPerClassCorrect() { @Override double exec( long tp, long fp, long fn, long tn ) {
+    minPerClassCorrect(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
+    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {
+        return tp;
+      } },
+    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {
+        return fp;
+      } },
     ;
+    public final boolean _isInt; // Integral-Valued data vs Real-Valued
+    ThresholdCriterion(boolean isInt) { _isInt = isInt; }
 
-    /** 
-     *  @param tp True  Positives (predicted  true, actual true )
+    /** @param tp True  Positives (predicted  true, actual true )
      *  @param fp False Positives (predicted  true, actual false)
      *  @param fn False Negatives (predicted false, actual true )
      *  @param tn True  Negatives (predicted false, actual false)
-     *  @return criteria
-     */
+     *  @return criteria */
     abstract double exec( long tp, long fp, long fn, long tn );
-
     public double exec( AUC2 auc, int idx ) { return exec(auc.tp(idx),auc.fp(idx),auc.fn(idx),auc.tn(idx)); }
+    public double max_criterion( AUC2 auc ) { return exec(auc,max_criterion_idx(auc)); }
 
-    public double max_criterion( AUC2 auc ) {
-      return exec(auc,max_criterion_idx(auc));
-    }
-
-    // Convert a criterion into a threshold index that maximizes the criterion
+    /** Convert a criterion into a threshold index that maximizes the criterion
+     *  @return Threshold index that maximizes the criterion
+     */
     public int max_criterion_idx( AUC2 auc ) {
       double md = -Double.MAX_VALUE;
       int mx = -1;

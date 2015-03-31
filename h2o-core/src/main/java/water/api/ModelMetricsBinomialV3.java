@@ -1,7 +1,6 @@
 package water.api;
 
 import hex.AUC2;
-import hex.ConfusionMatrix;
 import hex.ModelMetricsBinomial;
 import water.util.TwoDimTable;
 
@@ -39,23 +38,21 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       String[] thresholds = new String[auc._nBins];
       for( int i=0; i<auc._nBins; i++ )
         thresholds[i] = Double.toString(auc._ths[i]);
-      String[] colHeaders = new String[2+AUC2.ThresholdCriterion.VALUES.length];
-      String[] types      = new String[2+AUC2.ThresholdCriterion.VALUES.length];
-      String[] formats    = new String[2+AUC2.ThresholdCriterion.VALUES.length];
-      colHeaders[0] = "True Positives";  types[0] = "long";  formats[0] = "%d";
-      colHeaders[1] = "False Positives"; types[1] = "long";  formats[1] = "%d";
-      for( int i=0; i<AUC2.ThresholdCriterion.VALUES.length; i++ ) {
-        colHeaders[i+2] = AUC2.ThresholdCriterion.VALUES[i].toString();
-        types     [i+2] = "double";
-        formats   [i+2] = "%f";
+      AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
+      String[] colHeaders = new String[crits.length];
+      String[] types      = new String[crits.length];
+      String[] formats    = new String[crits.length];
+      for( int i=0; i<crits.length; i++ ) {
+        colHeaders[i] = crits[i].toString();
+        types     [i] = crits[i]._isInt ? "long" : "double";
+        formats   [i] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
-      for( int i=0; i<auc._nBins; i++ ) {
-        thresholdsByMetrics.set(i,0,auc._tps[i]);
-        thresholdsByMetrics.set(i,1,auc._fps[i]);
-        for( int j=0; j<AUC2.ThresholdCriterion.VALUES.length; j++ )
-          thresholdsByMetrics.set(i,j+2,AUC2.ThresholdCriterion.VALUES[j].exec(auc,i));
-      }
+      for( int i=0; i<auc._nBins; i++ )
+        for( int j=0; j<crits.length; j++ ) {
+          double d = crits[j].exec(auc,i); // Note: casts to Object are NOT redundant
+          thresholdsByMetrics.set(i,j,crits[j]._isInt ? (Object)new Long((long)d) : (Object)new Double(d));
+        }
       this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
       
       // Fill TwoDimTable
@@ -64,19 +61,11 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
                                                new String[]{"double",   "double","long"},
                                                new String[]{"%f",       "%f",    "%d"},
                                                "Metric" );
-      maxMetrics.set(0,0,auc._ths[auc._nBins-1]);
-      maxMetrics.set(0,1,auc._tps[auc._nBins-1]);
-      maxMetrics.set(0,2,auc._nBins-1);
-      
-      maxMetrics.set(1,0,auc._ths[auc._nBins-1]);
-      maxMetrics.set(1,1,auc._fps[auc._nBins-1]);
-      maxMetrics.set(1,2,auc._nBins-1);
-
-      for( int i=0; i<auc._nBins; i++ ) {
-        int idx = AUC2.ThresholdCriterion.VALUES[i].max_criterion_idx(auc);
-        maxMetrics.set(i+2,0,auc._ths[idx]);
-        maxMetrics.set(i+2,1,AUC2.ThresholdCriterion.VALUES[i].exec(auc,idx));
-        maxMetrics.set(i+2,2,idx);
+      for( int i=0; i<crits.length; i++ ) {
+        int idx = crits[i].max_criterion_idx(auc);
+        maxMetrics.set(i,0,auc._ths[idx]);
+        maxMetrics.set(i,1,crits[i].exec(auc,idx));
+        maxMetrics.set(i,2,idx);
       }
       
       this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(maxMetrics);

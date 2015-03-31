@@ -81,12 +81,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       final int iact = (int)yact[0];
 
       // Compute error
-//      double sum = 0;          // Check for sane class distribution
-//      for( int i=1; i<ds.length; i++ ) { assert 0 <= ds[i] && ds[i] <= 1; sum += ds[i]; }
-//      assert Math.abs(sum-1.0f) < 1e-6;
       double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
-      _sumsqe += err*err;           // Squared error
-      assert !Double.isNaN(_sumsqe);
+      assert !Double.isNaN(err); // No NaNs in the predictions please
+      _sumsqe += err*err;        // Squared error
 
       // Plain Olde Confusion Matrix
       _cm[iact][(int)ds[0]]++; // actual v. predicted
@@ -96,7 +93,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
       // Compute log loss
-      if (iact+1 < ds.length) _logloss -= Math.log(Math.max(1e-15, ds[iact+1]));
+      _logloss -= Math.log(Math.max(1e-15, 1-err));
 
       return ds;                // Flow coding
     }
