@@ -58,7 +58,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   public enum Initialization {
-    PlusPlus, User
+    SVD, PlusPlus, User
   }
 
   // Called from an http request
@@ -85,6 +85,10 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
+
+    // Currently, SVD initialization is unimplemented
+    if (_parms._init == Initialization.SVD) throw H2O.unimpl();
+
     // Currently, does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
@@ -595,8 +599,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
-      double[] xrow = new double[_ncolX];
       assert (_ncolX + _ncolA) == cs.length;
+      double[] xrow = new double[_ncolX];
       CholeskyDecomposition _chol = PCA.regularizedCholesky(_ygram_init);
 
       for(int row = 0; row < cs[0]._len; row++) {
