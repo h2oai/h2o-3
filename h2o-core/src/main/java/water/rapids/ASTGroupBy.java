@@ -160,7 +160,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       }
     }
     @Override public void reduce(GBTask t) {
-      if(_g!=t._g) {
+      if( _g!=t._g ) {
         NonBlockingHashSet<G> l = _g;
         NonBlockingHashSet<G> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
@@ -168,15 +168,16 @@ import java.util.concurrent.atomic.AtomicInteger;
         // loop over the smaller set of grps
         for( G rg:r ) {
           G lg = l.get(rg);
-          if( lg == null) l.add(rg); // not in left, so put it and continue...
-          else {                     // found the group, CAS in the row counts
-            // cas in COUNT
-            long R=lg._N;
-            while(!G.CAS_N(lg, R, R + rg._N))
-              R=lg._N;
+          if( !l.add(rg) ) {
+            assert lg!=null;
+            long R = lg._N;
+            while (!G.CAS_N(lg, R, R + rg._N))
+              R = lg._N;
             reduceGroup(_agg, lg, rg);
           }
         }
+        _g=l;
+        t._g=null;
       }
     }
     @Override public void closeLocal() {}
@@ -225,7 +226,7 @@ import java.util.concurrent.atomic.AtomicInteger;
           continue;
         }
 
-        switch (type) {
+        switch( type ) {
           case AGG.T_F:   setFirst(g,vals[0],i);   break;
           case AGG.T_L:   setLast( g,vals[1],i);   break;
           case AGG.T_MIN: setMin(  g,vals[2],i);   break;
