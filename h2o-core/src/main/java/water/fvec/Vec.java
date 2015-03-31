@@ -337,6 +337,7 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAll(this);
     v._domain = domain;
+    v._type = _type;
     DKV.put(v._key, v);
     return v;
   }

@@ -26,7 +26,7 @@
 #' @param momentum_start Initial momentum at the beginning of traning (try 0.5)
 #' @param momentum_ramp Number of training samples for which momentum increases
 #' @param momentum_stable Final momentum after ther amp is over (try 0.99)
-#' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (reccomended)
+#' @param nesterov_accelarated_gradient \code{Logical}. Use Nesterov accelerated gradient (recommended)
 #' @param input_dropout_ratios Input layer dropout ration (can improve generalization) specify one value per hidden layer, defaults to 0.5
 #' @param l1 L1 regularization (can add stability and improve generalization, cause many weights to become 0)
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small)
@@ -60,6 +60,7 @@
 #' @param sparsity_beta Sparsity regularization (Experimental)
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing (Experimental)
 #' @param reproducible Force reproducibility on small data (will be slow - only uses 1 thread)
+#' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O Frames"
 #' @seealso \code{\link{predict.H2ODeepLearningModel}} for prediction.
 #' @examples
 #' library(h2o)
@@ -68,7 +69,7 @@
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
-
+#' @export
 h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
                              n_folds = 0,
@@ -99,7 +100,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              max_w2 = Inf,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
-                             loss = "Automatic",
+                             loss = c("Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,
@@ -125,7 +126,8 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              average_activation,
                              sparsity_beta,
                              max_categorical_features,
-                             reproducible=FALSE
+                             reproducible=FALSE,
+                             export_weights_and_biases=FALSE
 )
 {
   dots <- list(...)
@@ -169,6 +171,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
 }
 
 # Function call for R sided cross validation of h2o objects
+#' @export
 h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 key = "",
                                 override_with_best_model,
@@ -223,7 +226,8 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 average_activation,
                                 sparsity_beta,
                                 max_categorical_features,
-                                reproducible
+                                reproducible,
+                                export_weights_and_biases
                             )
 {
   env <- parent.frame()
@@ -233,6 +237,11 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
 }
 
+#' Anomaly Detection
+#'
+#' Returns the reconstruction error for an autoecnoder model.
+#'
+#' @export
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
@@ -241,6 +250,7 @@ h2o.anomaly <- function(object, data) {
   h2o.getFrame(key)
 }
 
+#' @export
 h2o.deepfeatures <- function(object, data, layer) {
   index = layer - 1
 

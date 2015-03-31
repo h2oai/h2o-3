@@ -412,14 +412,6 @@ public final class PersistHdfs extends Persist {
     URI uri = f.toUri();
     try {
       FileSystem fs = FileSystem.get(uri, CONF);
-      if (fs.exists(t)) {
-        boolean recursive = false;
-        boolean success = fs.delete(t, recursive);
-        if (! success) {
-          Log.info("PersistHdfs rename failed (" + fromPath + " -> " + toPath +")");
-          return false;
-        }
-      }
       return fs.rename(f, t);
     }
     catch (IOException e) {

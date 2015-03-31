@@ -1,7 +1,12 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,7 +94,8 @@ abstract public class AST extends Iced {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
-        throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
+        throw new H2OIllegalArgumentException("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.",
+                "Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'." + " AST: " + this);
       }
 
 
@@ -115,7 +121,7 @@ abstract public class AST extends Iced {
             this instanceof ASTDelete )
       { this.exec(e); }
 
-    else { throw H2O.fail("Unknown AST: " + this.getClass());}
+    else { throw H2O.fail("Unknown AST class: " + this.getClass());}
     return e;
   }
 
@@ -132,7 +138,8 @@ class ASTId extends AST {
   final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
   ASTId parse_impl(Exec E) {
-    return new ASTId(_type, E.parseID());
+    String id = E.isQuoted(E.peek()) ? E.parseString(E.getQuote()) : E.parseID(); // allows for quoted ID here...
+    return new ASTId(_type, id);
   }
   @Override public String toString() { return _type+_id; }
   @Override void exec(Env e) { e.push(new ValId(_type, _id)); } // should this be H2O.fail() ??
@@ -167,7 +174,7 @@ class ASTFrame extends AST {
   ASTFrame(String key) {
     Key k = Key.make(key);
     Keyed val = DKV.getGet(k);
-    if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
     _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
     _g = true;
@@ -620,9 +627,12 @@ class ASTAssign extends AST {
     AST l;
     if (E.isSpecial(E.peek())) {
       boolean putkv = E.peek() == '!';
-      if (putkv) E._x++; // skip the !
+      E._x++; // skip the special char...
       l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
-    } else l = E.parse();
+    } else {
+      if( E.peek() == '(' ) l = E.parse();
+      else l = new ASTId('&', E.parseID());
+    }
     if (!E.hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
     AST r = E.skipWS().parse();   // parse double, String, or Frame on the right
     ASTAssign res = (ASTAssign)clone();

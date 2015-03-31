@@ -4,7 +4,7 @@ import hex.tree.SharedTreeModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
+import water.api.TwoDimTableBase;
 
 public abstract class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
                                         S extends SharedTreeModelV2<M, S, P, PS, O, OS>,
@@ -19,6 +19,6 @@ public abstract class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
     @API(help="Mean Square Error for Training Frame")
     public double mse;           // Total MSE, variance
     @API(help="Variable Importances")
-    public TwoDimTableV1 variable_importances;
+    public TwoDimTableBase variable_importances;
   } // SharedTreeModelOutputV2
 }

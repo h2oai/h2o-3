@@ -49,6 +49,19 @@ def binop_eq(ip,port):
     new_rows = iris[res].nrow()
     assert new_rows == 150, "wrong number of rows returned"
 
+    #vec/scaler
+    res = iris[0] == 4.7
+    res_rows = len(res)
+    assert res_rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow()
+    assert new_rows == 2, "wrong number of rows returned"
+
+    res = 3.5 == iris[1]
+    res_rows = len(res)
+    assert res_rows == rows, "dimension mismatch"
+    new_rows = iris[res].nrow()
+    assert new_rows == 6, "wrong number of rows returned"
+
     # frame/frame
     res = iris == iris
     res_rows, res_cols = res.dim()

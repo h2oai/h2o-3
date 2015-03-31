@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import org.joda.time.DateTime;
 
 import water.*;
@@ -452,10 +453,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ConfusionMatrix cm = mm.cm();
       if(model_cat == ModelCategory.Binomial)
         cm = ((ModelMetricsBinomial)mm)._cm;
-      else if(model_cat == ModelCategory.Multinomial)
-        cm = ((ModelMetricsMultinomial)mm)._cm;
+      else if(model_cat == ModelCategory.Multinomial) {
+        cm = ((ModelMetricsMultinomial) mm)._cm;
+        float[] hr = ((ModelMetricsMultinomial)mm)._hit_ratios;
+        if (hr != null && hr.length > 0)
+          Log.info(getHitRatioTable(hr));
+      }
 
-      if (cm != null && cm.domain != null) { //don't print table for regression
+      if (cm != null && cm.domain != null) {
 //        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
         cm.table = cm.toTable();
         if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
@@ -524,7 +529,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual, Model.this);
+        _mb.perRow(preds, actual, Model.this, row);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }

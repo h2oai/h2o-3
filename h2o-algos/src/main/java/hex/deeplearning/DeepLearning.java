@@ -201,16 +201,18 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       List<Key> keep = new ArrayList<>();
       keep.add(dest());
       if (cp._output._model_metrics.length != 0) keep.add(cp._output._model_metrics[cp._output._model_metrics.length-1]);
-      for (Key k : Arrays.asList(cp._output.weights)) {
-        keep.add(k);
-        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
-          keep.add(vk._key);
+      if (cp._output.weights != null && cp._output.biases != null) {
+        for (Key k : Arrays.asList(cp._output.weights)) {
+          keep.add(k);
+          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            keep.add(vk._key);
+          }
         }
-      }
-      for (Key k : Arrays.asList(cp._output.biases)) {
-        keep.add(k);
-        for (Vec vk : ((Frame)DKV.getGet(k)).vecs()) {
-          keep.add(vk._key);
+        for (Key k : Arrays.asList(cp._output.biases)) {
+          keep.add(k);
+          for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            keep.add(vk._key);
+          }
         }
       }
       Scope.exit(keep.toArray(new Key[0]));

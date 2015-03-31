@@ -1,12 +1,12 @@
 package hex.schemas;
 
 import hex.glm.GLMModel;
-import org.apache.commons.math3.filter.MeasurementModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
+
 import water.util.ArrayUtils;
+import water.api.TwoDimTableBase;
 import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
@@ -33,10 +33,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 //    String   [] coefficient_names;
 
     @API(help="Table of coefficients")
-    TwoDimTableV1 coefficients_table;
+    TwoDimTableBase coefficients_table;
 
     @API(help="Coefficient magnitudes")
-    TwoDimTableV1 coefficients_magnitude;
+    TwoDimTableBase coefficients_magnitude;
 
     @API(help="Residual Deviance - Training")
     double      residual_deviance;
@@ -82,8 +82,8 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
       String [] cnames = impl.coefficientNames();
       System.out.println("CNAMES = " + Arrays.toString(cnames));
       String [] names = sm.idxs == null?impl.coefficientNames().clone():ArrayUtils.select(impl.coefficientNames(), sm.idxs);
-      coefficients_table = new TwoDimTableV1();
-      coefficients_magnitude = new TwoDimTableV1();
+      coefficients_table = new TwoDimTableBase();
+      coefficients_magnitude = new TwoDimTableBase();
       if(sm.norm_beta != null){
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double","double"};

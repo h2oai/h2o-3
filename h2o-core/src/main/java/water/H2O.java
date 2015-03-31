@@ -4,6 +4,7 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
+import water.exceptions.H2OFailException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
@@ -472,9 +473,9 @@ final public class H2O {
   // TODO: throw an exception that will cause H2O to shut down (but tests can catch)
   public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
   public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
-  public static RuntimeException fail() { return new RuntimeException("do not call"); }  // Internal H2O fail; only interesting thing is the stack-trace
-  public static RuntimeException fail(String msg) { return new RuntimeException(msg); }  // Internal H2O fail; only interesting thing is the stack-trace
-  public static RuntimeException fail(String msg, Throwable cause) { return new RuntimeException(msg, cause); }
+  public static H2OFailException fail() { throw new H2OFailException("Unknown code failure"); }  // Internal H2O fail; only interesting thing is the stack-trace
+  public static H2OFailException fail(String msg) { return new H2OFailException(msg); }  // Internal H2O fail; only interesting thing is the stack-trace
+  public static H2OFailException fail(String msg, Throwable cause) { return new H2OFailException(msg, cause); }
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.
