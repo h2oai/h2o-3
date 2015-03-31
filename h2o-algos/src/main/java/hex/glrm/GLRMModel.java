@@ -1,6 +1,5 @@
 package hex.glrm;
 
-import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
