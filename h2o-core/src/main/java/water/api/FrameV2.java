@@ -11,6 +11,7 @@ import water.util.DocGen.HTML;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 // TODO: need a base (versionless) class!
 public class FrameV2 extends Schema<Frame, FrameV2> {
@@ -51,7 +52,7 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
   public VecKeyV1[] vec_keys;
 
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
-  public TwoDimTableV1 chunk_summary;
+  public TwoDimTableBase chunk_summary;
 
   public static class ColSpecifierV2 extends Schema<VecSpecifier, ColSpecifierV2> {
     public ColSpecifierV2() { }
@@ -220,7 +221,8 @@ public class FrameV2 extends Schema<Frame, FrameV2> {
     is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
     default_percentiles = Vec.PERCENTILES;
     this.checksum = fr.checksum();
-    chunk_summary = new TwoDimTableV1().fillFromImpl(FrameUtils.chunkSummary(fr).toTwoDimTable());
+    TwoDimTable table = FrameUtils.chunkSummary(fr).toTwoDimTable();
+    chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
   }
 
   //==========================

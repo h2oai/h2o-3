@@ -17,10 +17,10 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
     public double Gini;
 
     @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 thresholds_and_metric_scores;
+    public TwoDimTableBase thresholds_and_metric_scores;
 
     @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT)
-    public TwoDimTableV1 max_criteria_and_metric_scores;
+    public TwoDimTableBase max_criteria_and_metric_scores;
 
     @Override
     public S fillFromImpl(I modelMetrics) {
@@ -90,7 +90,7 @@ abstract public class ModelMetricsBinomialBaseV3<I extends ModelMetricsBinomial,
                 }
                 row = row + 1;
             }
-            this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
+            thresholds_and_metric_scores = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), thresholdsByMetrics).fillFromImpl(thresholdsByMetrics);
 
 
             // Fill TwoDimTable criteriaByThresholdAndScore
