@@ -157,11 +157,19 @@ public class NodePersistentStorage {
       }
     }
 
-    // Move tmp file to final spot
+    // Make final spot available if needed, and move tmp file to final spot.
+    boolean success;
     String realf = d2 + NPS_SEPARATOR + keyName;
-    boolean success = pm.rename(tmpf, realf);
+    if (pm.exists(realf)) {
+      success = pm.delete(realf);
+      if (! success) {
+        throw new RuntimeException("NodePersistentStorage delete failed (" + realf + ")");
+      }
+    }
+
+    success = pm.rename(tmpf, realf);
     if (! success) {
-      throw new RuntimeException("NodePersistentStorage move failed (" + tmpf + " -> " + realf + ")");
+      throw new RuntimeException("NodePersistentStorage rename failed (" + tmpf + " -> " + realf + ")");
     }
 
     if (! pm.exists(realf)) {

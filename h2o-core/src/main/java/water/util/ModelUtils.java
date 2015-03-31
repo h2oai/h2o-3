@@ -17,7 +17,7 @@ import water.H2O;
  */
 public class ModelUtils {
 
-  public static int getPrediction(double[] preds, int row) {
+  public static int getPrediction(double[] preds) {
     int best=1, tieCnt=0;   // Best class; count of ties
     for( int c=2; c<preds.length; c++) {
       if( preds[best] < preds[c] ) {
@@ -29,8 +29,8 @@ public class ModelUtils {
     }
     if( tieCnt==0 ) return best-1; // Return zero-based best class
     // Tie-breaking logic
-    double res = preds[best];    // One of the tied best results
-    int idx = row%(tieCnt+1);   // Which of the ties we'd like to keep
+    double res = preds[best];   // One of the tied best results
+    int idx = (int)Double.doubleToRawLongBits(res)%(tieCnt+1);   // Which of the ties we'd like to keep
     for( best=1; best<preds.length; best++)
       if( res == preds[best] && --idx < 0 )
         return best-1;          // Return best

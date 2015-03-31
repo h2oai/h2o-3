@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tabulate, tempfile, uuid
+import collections, csv, itertools, os, re, tabulate, tempfile, uuid, copy
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -132,7 +132,7 @@ class H2OFrame:
     # blocking parse, first line is always a header (since "we" wrote the data out)
     parse = h2o.parse(setup, H2OFrame.py_tmp_key(), first_line_is_header=1)
     # a hack to get the column names correct since "parse" does not provide them
-    cols = column_names if column_names and not parse["column_names"] else parse['column_names']
+    cols = parse['column_names'] if parse["column_names"] else ["C" + str(x) for x in range(1,len(parse['vec_keys'])+1)]
     # set the rows
     rows = parse['rows']
     # set the vector keys
@@ -614,6 +614,50 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
+  def groupby(self,cols,a):
+    """
+    GroupBy
+    :param cols: The columns to group on.
+    :param a: A dictionary of aggregates having the following shape:
+              {"colname":[aggregate, column, naMethod]}
+              e.g.: {"bikes":["count", 0, "all"]}
+
+              The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
+              NAs that appear in columns that are being aggregated.
+
+              "all" - include NAs
+              "rm"  - exclude NAs
+              "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    :return: The group by frame.
+    """
+    colnums = [str(self._find_idx(name)) for name in cols]
+    rapids_series = "{"+";".join(colnums)+"}"
+    aggregates = copy.deepcopy(a)
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+
+    nAggs = len(aggregates)
+    aggs = []
+
+    # transform cols in aggregates to their indices...
+    for k in aggregates:
+      if isinstance(aggregates[k][1],str):
+        aggregates[k][1] = '#'+str(self._find_idx(aggregates[k][1]))
+      else:
+        aggregates[k][1] = '#'+str(aggregates[k][1])
+      aggs+=["\"{1}\" {2} \"{3}\" \"{0}\"".format(str(k),*aggregates[k])]
+    aggs = "(agg #{} {})".format(nAggs, " ".join(aggs))
+
+    expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
+    h2o.rapids(expr)  # group by
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]    # Just the first (only) frame
+    rows = fr['rows']      # Row count
+    veckeys = fr['vec_keys']# List of h2o vec keys
+    cols = fr['columns']   # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+
   def merge(self, other, allLeft=False, allRite=False):
     """
     Merge two datasets based on common column names
@@ -881,15 +925,15 @@ class H2OVec:
 
   def var(self):
     """
-    :return: The variance of the values in this H2OVec.
+    :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr, None, length=1).eager()
+    return Expr("var", self._expr, None, length=1)
 
   def sd(self):
     """
-    :return: The standard deviation of the values in this H2OVec.
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("sd", self._expr, None, length=1).eager()
+    return Expr("sd", self._expr, None, length=1)
 
   def quantile(self,prob=None):
     """
@@ -900,15 +944,15 @@ class H2OVec:
 
   def asfactor(self):
     """
-    :return: A transformed H2OVec from numeric to categorical.
+    :return: A lazy Expr representing this vec converted to a factor
     """
     return H2OVec(self._name, Expr("as.factor", self._expr, None))
 
   def isfactor(self):
     """
-    :return: An eagered Expr that's boolean valued, which tells whether or not self is a factor.
+    :return: A lazy Expr representing the truth of whether or not this vec is a factor.
     """
-    return Expr("is.factor", self._expr, None, length=1).eager()
+    return Expr("is.factor", self._expr, None, length=1)
 
   def isna(self):
     """

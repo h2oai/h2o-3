@@ -39,7 +39,7 @@ library(h2o)
 h2oServer = h2o.init(nthreads=-1)
 
 ## Point to directory where the Kaggle data is
-dir <- "/users/arno/h2o-kaggle/otto/"
+dir <- paste0(path.expand("~"), "/h2o-kaggle/otto/")
 
 ## For Spark/Hadoop/YARN/Standalone operation on a cluster, follow instructions on http://h2o.ai/download/
 ## Then connect to any cluster node from R

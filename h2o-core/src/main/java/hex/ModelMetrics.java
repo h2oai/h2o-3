@@ -133,11 +133,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
    *  <init>} called once per MRTask.map.
    */
   public static abstract class MetricBuilder<T extends MetricBuilder<T>> extends Iced {
-    public double _sumsqe;      // Sum-squared-error
     transient public double[] _work;
+    public double _sumsqe;      // Sum-squared-error
     public long _count;
 
-    abstract public double[] perRow( double ds[], float yact[], Model m);
+    abstract public double[] perRow(double ds[], float yact[], Model m);
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

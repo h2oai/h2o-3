@@ -166,6 +166,10 @@ public class ArrayUtils {
     for (int i=0; i<ds.length; i++) div(ds[i],n[i]);
     return ds;
   }
+  public static double[] div(double[] ds, long[] n) {
+    for (int i=0; i<ds.length; i++) ds[i]/=n[i];
+    return ds;
+  }
   public static float[] mult(float[] nums, float n) {
     assert !Float.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
@@ -288,10 +292,13 @@ public class ArrayUtils {
       if (from[i]<from[result]) result = i;
     return result;
   }
-  public static double maxValue(double[] from) {
-    double result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
+  public static double maxValue(double[] ary) {
+    return maxValue(ary,0,ary.length);
+  }
+  public static double maxValue(double[] ary, int from, int to) {
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
+      if (ary[i]>result) result = ary[i];
     return result;
   }
   public static float maxValue(float[] ary) {

@@ -40,7 +40,7 @@ for(col in names(data.hex)) {
 colNames[1] <- "C1"
 names(data.hex) <- colNames
 
-myY = "Leads"
+myY = colNames[1] 
 myX = setdiff(names(data.hex), myY)
 
 # Start modeling

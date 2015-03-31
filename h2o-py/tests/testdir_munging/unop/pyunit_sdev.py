@@ -22,16 +22,16 @@ def sdev(ip,port):
   sd_np = np.std(iris_np, axis=0, ddof=1)
   for i in range(4):
     sd_h2o = iris_h2o[i].sd()
-    assert abs(sd_np[i] - sd_h2o) < 1e-10, "expected standard deviations to be the same"
+    assert abs(sd_np[i] - sd_h2o.eager()) < 1e-10, "expected standard deviations to be the same"
 
   try:
-    iris_h2o[4].sd()
+    iris_h2o[4].sd().eager()
     assert False, "expected an error. column is categorical."
   except EnvironmentError:
     assert True
 
   try:
-    iris_h2o[0:2].sd()
+    iris_h2o[0:2].sd().eager()
     assert False, "expected an error. more than one column."
   except AttributeError:
     assert True

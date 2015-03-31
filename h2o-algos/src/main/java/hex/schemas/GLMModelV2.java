@@ -4,7 +4,7 @@ import hex.glm.GLMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
+import water.api.TwoDimTableBase;
 import water.util.ModelUtils;
 //import water.util.DocGen.HTML;
 
@@ -28,10 +28,10 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
 //    String   [] coefficient_names;
 
     @API(help="Table of coefficients")
-    TwoDimTableV1 coefficients_table;
+    TwoDimTableBase coefficients_table;
 
     @API(help="Coefficient magnitudes")
-    TwoDimTableV1 coefficients_magnitude;
+    TwoDimTableBase coefficients_magnitude;
 
     @API(help="Residual Deviance - Training")
     double      residual_deviance;

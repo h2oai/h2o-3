@@ -3,6 +3,10 @@ package hex;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.ModelUtils;
+import water.util.TwoDimTable;
+
+import java.util.Arrays;
 
 public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
@@ -31,32 +35,44 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return (ModelMetricsMultinomial) mm;
   }
 
-  public static void updateHits(int iact, double[] ds, long[] hits ) {
-    int pred = (int)ds[0];
-    if( iact == pred ) hits[0]++; // Top prediction is correct?
-    else {                  // Else need to find how far down the correct guy is
-      double p = ds[pred+1]; // Prediction value which failed
-      int tie=0;
-      for( int k=1; k<hits.length; k++ ) {
-        // Find largest prediction less than 'p', or for ties, the tie'th
-        int best = 0;
-        int tiebreak=0;
-        for( int i=1; i<ds.length; i++ ) {
-          if( i != pred+1 && (ds[i] < p || (ds[i]==p && tie < tiebreak)) ) {
-            if( best==0 || ds[i] > ds[best] )
-              best = i;
-          }
-        }
-        if( best == 0 ) return; // prediction not in top K
-        if( ds[best] < p ) {
-          p = ds[best]; tie=0;
-        } else {
-          assert ds[best]==p;
-          tie++;
-        }
-        if( best==iact+1 ) { hits[k]++; return; }
+  public static void updateHits(int iact, double[] ds, long[] hits) {
+    if (iact == ds[0]) { hits[0]++; return; }
+    long before = ArrayUtils.sum(hits);
+    // Use getPrediction logic to see which top K labels we would have predicted
+    // Pick largest prob, assign label, then set prob to 0, find next-best label, etc.
+    double[] ds_copy = Arrays.copyOf(ds, ds.length); //don't modify original ds!
+    ds_copy[1+(int)ds[0]] = 0;
+    for (int k=1; k<hits.length; ++k) {
+      final int pred_labels = ModelUtils.getPrediction(ds_copy); //use tie-breaking of getPrediction
+      ds_copy[1+pred_labels] = 0; //next iteration, we'll find the next-best label
+      if (pred_labels==iact) {
+        hits[k]++;
+        break;
       }
     }
+    // must find at least one hit if K == n_classes
+    if (hits.length == ds.length-1) {
+      long after = ArrayUtils.sum(hits);
+      if (after == before) hits[hits.length-1]++; //assume worst case
+    }
+  }
+
+  public static TwoDimTable getHitRatioTable(float[] hits) {
+    String tableHeader = "Top-" + hits.length + " Hit Ratios";
+    String tableDescription = null;
+    String[] rowHeaders = new String[hits.length];
+    for (int k=0; k<hits.length; ++k) {
+      rowHeaders[k] = new Integer(k+1).toString();
+    }
+    String[] colHeaders = new String[]{"Hit Ratio"};
+    String[] colTypes = new String[]{"float"};
+    String[] colFormats = new String[]{"%f"};
+    String colHeaderForRowHeaders = "K";
+    TwoDimTable table = new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    for (int k=0; k<hits.length; ++k) {
+      table.set(k, 0, new Float(hits[k]));
+    }
+    return table;
   }
 
 
@@ -69,13 +85,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
       _cm = new long[domain.length][domain.length];
-      _K = Math.min(10,_nclasses-1);
+      _K = Math.min(10,_nclasses);
       _hits = new long[_K];
     }
 
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
-    @Override public double[] perRow( double ds[], float [] yact, Model m ) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m) {
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds  [0]) ) return ds; // No errors if prediction is missing
       final int iact = (int)yact[0];
@@ -113,8 +129,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         double mse = Double.NaN;
         double logloss = Double.NaN;
         if (_count != 0) {
-          if (_hits != null)
+          if (_hits != null) {
             for (int i = 0; i < hr.length; i++)  hr[i] = _hits[i] / _count;
+            for (int i = 1; i < hr.length; i++)  hr[i] += hr[i-1];
+          }
           mse = _sumsqe / _count;
           logloss = _logloss / _count;
         }

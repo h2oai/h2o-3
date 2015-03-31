@@ -4,7 +4,7 @@ import hex.pca.PCAModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
-import water.api.TwoDimTableV1;
+import water.api.TwoDimTableBase;
 
 public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAParameters, PCAV2.PCAParametersV2, PCAModel.PCAOutput, PCAModelV2.PCAModelOutputV2> {
   public static final class PCAModelOutputV2 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV2> {
@@ -22,10 +22,10 @@ public class PCAModelV2 extends ModelSchema<PCAModel, PCAModelV2, PCAModel.PCAPa
     public double[] std_deviation;
 
     @API(help = "Principal components matrix")
-    public TwoDimTableV1 eigenvectors;
+    public TwoDimTableBase eigenvectors;
 
     @API(help = "Importance of each principal component")
-    public TwoDimTableV1 pc_importance;
+    public TwoDimTableBase pc_importance;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

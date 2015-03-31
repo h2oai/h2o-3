@@ -3,8 +3,8 @@ package water;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.api.TwoDimTableV1;
-import water.util.AtomicUtils;
+import water.api.Schema;
+import water.api.TwoDimTableBase;
 import water.util.Log;
 import water.util.TwoDimTable;
 import static water.util.TwoDimTable.emptyDouble;
@@ -36,7 +36,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -86,7 +86,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -109,7 +109,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -132,7 +132,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -159,7 +159,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(1, 2).equals(1.2));
     assertTrue(table.get(1, 3) == null);
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
 
   }
@@ -211,7 +211,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(2, 3).equals(0L));
     assertTrue(table.get(3, 3).equals(-0L));
 
-    String json = new TwoDimTableV1().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
     Log.info(json);
 
   }

@@ -11,7 +11,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     DeepLearningScoringV2 errors;
 
     @API(help="Model summary")
-    TwoDimTableV1 model_summary;
+    TwoDimTableBase model_summary;
 
     @API(help="Whether the model is an autoencoder")
     boolean autoencoder;
@@ -23,7 +23,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     KeyV1[] biases;
 
     @API(help="Scoring history")
-    TwoDimTableV1 scoring_history;
+    TwoDimTableBase scoring_history;
 
     @API(help="Training data model metrics")
     ModelMetricsBase train_metrics;
@@ -32,7 +32,7 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     ModelMetricsBase valid_metrics;
 
     @API(help="Variable Importances")
-    TwoDimTableV1 variable_importances;
+    TwoDimTableBase variable_importances;
 
     @API(help="Training time (seconds)")
     double run_time;

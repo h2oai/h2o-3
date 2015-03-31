@@ -12,8 +12,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.TwoDimTable;
 
-import java.util.Arrays;
-
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
 
   public static class PCAParameters extends Model.Parameters {

@@ -404,6 +404,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      */
     public boolean _reproducible = false;
 
+    public boolean _export_weights_and_biases = false;
+
     public enum MissingValuesHandling {
       Skip, MeanImputation
     }
@@ -1529,13 +1531,18 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
    * @param destKey
    */
   private void makeWeightsBiases(Key destKey) {
-    _output.weights = new Key[model_info.get_params()._hidden.length + 1];
-    for (int i = 0; i < _output.weights.length; ++i) {
-      _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
-    }
-    _output.biases = new Key[model_info.get_params()._hidden.length + 1];
-    for (int i = 0; i < _output.biases.length; ++i) {
-      _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
+    if (!model_info.get_params()._export_weights_and_biases) {
+      _output.weights = null;
+      _output.biases = null;
+    } else {
+      _output.weights = new Key[model_info.get_params()._hidden.length + 1];
+      for (int i = 0; i < _output.weights.length; ++i) {
+        _output.weights[i] = Key.makeUserHidden(Key.make(destKey + ".weights." + i));
+      }
+      _output.biases = new Key[model_info.get_params()._hidden.length + 1];
+      for (int i = 0; i < _output.biases.length; ++i) {
+        _output.biases[i] = Key.makeUserHidden(Key.make(destKey + ".biases." + i));
+      }
     }
   }
 
@@ -1765,13 +1772,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         _output.errors = last_scored();
         water.util.Timer t = new Timer();
         // store weights and matrices to Frames
-        for (int i=0; i<_output.weights.length; ++i) {
-          model_info.get_weights(i).toFrame(_output.weights[i]);
+        if (_output.weights != null && _output.biases != null) {
+          for (int i = 0; i < _output.weights.length; ++i) {
+            model_info.get_weights(i).toFrame(_output.weights[i]);
+          }
+          for (int i = 0; i < _output.biases.length; ++i) {
+            model_info.get_biases(i).toFrame(_output.biases[i]);
+          }
+          Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         }
-        for (int i=0; i<_output.biases.length; ++i) {
-          model_info.get_biases(i).toFrame(_output.biases[i]);
-        }
-        Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         _output.scoring_history = createScoringHistoryTable(errors);
         _output.variable_importances = calcVarImp(last_scored().variable_importances);
         _output.model_summary = model_info.createSummaryTable();
@@ -2121,11 +2130,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   @Override public void delete() {
-    for (Key k : _output.weights) {
-      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
-    }
-    for (Key k : _output.biases) {
-      if (DKV.getGet(k) != null) ((Frame)DKV.getGet(k)).delete();
+    if (_output.weights != null && _output.biases != null) {
+      for (Key k : _output.weights) {
+        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
+      }
+      for (Key k : _output.biases) {
+        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
+      }
     }
     super.delete();
   }
