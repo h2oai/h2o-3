@@ -15,6 +15,9 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 /**
  * Created by tomasnykodym on 8/27/14.
  */
@@ -182,7 +185,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public final double _tweedie_variance_power;
     public final double _tweedie_link_power;
     public double [] _alpha;
-    public double [] _lambda;
+    public double [] _lambda = null;
     public double _prior = -1;
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
@@ -273,7 +276,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       assert _link == Link.family_default;
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
-    public GLMParameters(Family f, Link l){this(f,l,new double[]{1e-5},new double[]{.5});}
+    public GLMParameters(Family f, Link l){this(f,l,null,new double[]{.5});}
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha){
       this._family = f;
       this._lambda = lambda;
@@ -570,11 +573,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public static void setSubmodel(H2O.H2OCountedCompleter cmp, Key modelKey, final double lambda, double[] beta, double[] norm_beta, final int iteration, long runtime, boolean sparseCoef, final GLMValidation val){
     final Submodel sm = new Submodel(lambda,beta, norm_beta, runtime, iteration,sparseCoef);
     sm.validation = val;
-    cmp.addToPendingCount(1);
-    new TAtomic<GLMModel>(cmp){
+    if(cmp != null)
+      cmp.addToPendingCount(1);
+    Future f = new TAtomic<GLMModel>(cmp){
       @Override
       public GLMModel atomic(GLMModel old) {
-        if(old == null)return old; // job could've been cancelled!
+        if(old == null)
+          return old; // job could've been cancelled!
         if(val != null)old._defaultThresholds = val.thresholds;
         if(old._output._submodels == null){
           old._output = (GLMOutput)old._output.clone();
@@ -599,6 +604,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         return old;
       }
     }.fork(modelKey);
+    if(cmp == null && f != null) try {
+      f.get();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    }
   }
 
   public int rank(double lambda){return -1;}

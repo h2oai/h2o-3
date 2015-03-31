@@ -869,6 +869,7 @@ public class GLMTest  extends TestUtil {
       Scope.enter();
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
+      params._lambda = null;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._lambda_search = true;
@@ -909,6 +910,7 @@ public class GLMTest  extends TestUtil {
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
       params = new GLMParameters(Family.gaussian);
       // params._response = 0;
+      params._lambda = null;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._lambda_search = true;

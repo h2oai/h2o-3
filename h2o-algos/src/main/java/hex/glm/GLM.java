@@ -169,7 +169,20 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _bc.setBetaStart(betaStart).setLowerBounds(betaLB).setUpperBounds(betaUB).setProximalPenalty(betaGiven, rho);
       }
       _tInfos = new GLMTaskInfo[_parms._n_folds + 1];
-      H2O.submitTask(new InitTsk(0, null)).join();
+      InitTsk itsk = new InitTsk(0, _dinfo._intercept, null);
+      H2O.submitTask(itsk).join();
+      if (itsk._ymut._nobs == 0) // can happen if all rows have missing value and we're filtering missing out
+        error("training_frame", "Got no data to run on after filtering out the rows with missing values.");
+      if (itsk._ymut._yMin == itsk._ymut._yMax)
+        error("response", "Can not run glm on dataset with constant response. Response == " + itsk._ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + itsk._ymut._nobs + " of rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
+      if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
+        warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
+      }
+      // GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, GradientInfo ginfo, double objVal){
+      GLMGradientTask gtBetastart = itsk._gtBetaStart != null?itsk._gtBetaStart:itsk._gtNull;
+      double lmax =  lmax(itsk._gtNull);
+      double l1pen = _parms._alpha[0] * lmax * ArrayUtils.l1norm(_bc._betaStart, _dinfo._intercept);
+      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, new GradientInfo(gtBetastart._objVal,gtBetastart._gradient),gtBetastart._objVal + l1pen);
       if (_parms._lambda != null) { // check the lambdas
         ArrayUtils.mult(_parms._lambda, -1);
         Arrays.sort(_parms._lambda);
@@ -197,14 +210,19 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
       new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs, ModelUtils.DEFAULT_THRESHOLDS).delete_and_lock(GLM.this._key);
+      if(_parms._lambda_search)
+        setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null);
     }
   }
 
 
   private class InitTsk extends H2OCountedCompleter {
     final int _foldId;
-    public InitTsk(int foldId, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId;}
-
+    final boolean _intercept;
+    public InitTsk(int foldId, boolean intercept, H2OCountedCompleter cmp) { super(cmp); _foldId = foldId; _intercept = intercept; }
+    YMUTask _ymut;
+    GLMGradientTask _gtNull;
+    GLMGradientTask _gtBetaStart;
     @Override
     protected void compute2() {
       // get filtered dataset's mean and number of observations
@@ -212,31 +230,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         @Override
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
-          if (ymut._nobs == 0) // can happen if all rows have missing value and we're filtering missing out
-            error("training_frame", "Got no data to run on after filtering out the rows with missing values.");
-          if (ymut._yMin == ymut._yMax)
-            error("response", "Can not run glm on dataset with constant response. Response == " + ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + ymut._nobs + " of rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
-          long nobs = ymut._nobs;
-          if (ymut._nobs < _dinfo._adaptedFrame.numRows() >> 1) { // running less than half of rows?
-            warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
-          }
+          _ymut = ymut;
           final double[] beta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-          // fixme: only if intercept is true
-          beta[beta.length-1] = _parms.link(ymut._ymu);
+          if(_intercept)
+            beta[beta.length-1] = _parms.link(ymut._ymu);
           if (_bc._betaStart == null)
             _bc.setBetaStart(beta);
           // compute the lambda_max
-          // todo: skip this if got no regularization?
-          GLMGradientTask gt = new GLMTask.GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / nobs, new H2OCallback<GLMGradientTask>(InitTsk.this){
-            @Override
-            public void callback(GLMGradientTask gt) {
-              double lmax = lmax(gt);
-              if(beta == _bc._betaStart)
-                _tInfos[_foldId] = new GLMTaskInfo(_dest,0,ymut._nobs,ymut._ymu,lmax,_bc._betaStart, new GradientInfo(gt._objVal,gt._gradient), gt._objVal);
-              else // have warm start beta, no gradient nor objective value though, leave it to later
-                _tInfos[_foldId] = new GLMTaskInfo(_dest,0,ymut._nobs,ymut._ymu,lmax,_bc._betaStart, null, Double.POSITIVE_INFINITY);
-            }
-          }).dfork(_dinfo._adaptedFrame);
+          _gtNull = new GLMTask.GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs,InitTsk.this).dfork(_dinfo._adaptedFrame);
+          if(beta != _bc._betaStart) {
+            InitTsk.this.addToPendingCount(1);
+            _gtBetaStart = new GLMTask.GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs,InitTsk.this).dfork(_dinfo._adaptedFrame);
+          }
         }
       }).dfork(_dinfo._adaptedFrame);
     }
@@ -300,7 +305,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _lambdaMax = lmax;
       _beta = beta;
       _ginfo = ginfo;
+      _objVal = objVal;
     }
+
 
     public void adjustToNewLambda( double currentLambda, double newLambda, double alpha, boolean intercept) {
       assert newLambda < currentLambda:"newLambda = " + newLambda + ", last lambda = " + currentLambda;
@@ -347,10 +354,21 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       if(_rowFilter != null)
         _rowFilter.remove();
     }
+
     @Override public void onCompletion(CountedCompleter cc){
-      new FinalizeAndUnlockTsk(null, _dest, _key).invokeTask();
-      doCleanup();
-      done();
+      getCompleter().addToPendingCount(1);
+      new FinalizeAndUnlockTsk(new H2OCallback((H2OCountedCompleter)getCompleter()) {
+        @Override
+        public void callback(H2OCountedCompleter h2OCountedCompleter) {
+          doCleanup();
+          done();
+        }
+        @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc) {
+          doCleanup();
+          new RemoveCall(null, _dest).invokeTask();
+          return true;
+        }
+      }, _dest, _key).fork();
     }
 
     @Override public boolean onExceptionalCompletion(final Throwable ex, CountedCompleter cc){
@@ -395,7 +413,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         // launch the next lambda
         if(++_lambdaId  < _parms._lambda.length) {
-          double nextLambda = _parms._lambda[_lambdaId+1];
+          double nextLambda = _parms._lambda[_lambdaId];
           getCompleter().addToPendingCount(1);
           if(_parms._n_folds > 1){
             GLMSingleLambdaTsk[] tasks = new GLMSingleLambdaTsk[_tInfos.length];
@@ -413,6 +431,24 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
   }
 
+
+  private void setSubmodel(Key dstKey, int iter, final double[] fullBeta, GLMValidation val, H2OCountedCompleter cmp) {
+    final double[] newBetaDeNorm;
+    if (_dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
+      newBetaDeNorm = fullBeta.clone();
+      double norm = 0.0;        // Reverse any normalization on the intercept
+      // denormalize only the numeric coefs (categoricals are not normalized)
+      final int numoff = _dinfo.numStart();
+      for (int i = numoff; i < fullBeta.length - 1; i++) {
+        double b = newBetaDeNorm[i] * _dinfo._normMul[i - numoff];
+        norm += b * _dinfo._normSub[i - numoff]; // Also accumulate the intercept adjustment
+        newBetaDeNorm[i] = b;
+      }
+      newBetaDeNorm[newBetaDeNorm.length - 1] -= norm;
+    } else
+      newBetaDeNorm = null;
+    GLMModel.setSubmodel(cmp, dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta,iter, System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, val);
+  }
 
   /**
    * Task to compute GLM solution for a particular (single) lambda value.
@@ -502,21 +538,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         fullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
         fullBeta[fullBeta.length - 1] = _parms.linkInv(_taskInfo._ymu);
       }
-      final double[] newBetaDeNorm;
-      if (_dinfo._predictor_transform == DataInfo.TransformType.STANDARDIZE) {
-        newBetaDeNorm = fullBeta.clone();
-        double norm = 0.0;        // Reverse any normalization on the intercept
-        // denormalize only the numeric coefs (categoricals are not normalized)
-        final int numoff = _dinfo.numStart();
-        for (int i = numoff; i < fullBeta.length - 1; i++) {
-          double b = newBetaDeNorm[i] * _dinfo._normMul[i - numoff];
-          norm += b * _dinfo._normSub[i - numoff]; // Also accumulate the intercept adjustment
-          newBetaDeNorm[i] = b;
-        }
-        newBetaDeNorm[newBetaDeNorm.length - 1] -= norm;
-      } else
-        newBetaDeNorm = null;
-      GLMModel.setSubmodel(cmp, _taskInfo._dstKey, _parms._lambda[_lambdaId], newBetaDeNorm == null ? fullBeta : newBetaDeNorm, newBetaDeNorm == null ? null : fullBeta, (_taskInfo._iter + 1), System.currentTimeMillis() - _start_time, _dinfo.fullN() >= sparseCoefThreshold, val);
+      GLM.this.setSubmodel(_taskInfo._dstKey, _taskInfo._iter, fullBeta, val, cmp);
       return fullBeta;
     }
 
@@ -702,7 +724,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
         double objVal = objVal(glmt._likelihood, glmt._beta);
-        double lastObjVal = _taskInfo._ginfo._objVal;
+        double lastObjVal = _taskInfo._objVal;
         LogInfo("gram computed in " + (callbackStart - _iterationStartTime) + "ms");
         double logl = glmt._likelihood;
         LogInfo("-log(l) = " + logl + ", obj = " + objVal);

@@ -64,7 +64,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     public double[] alpha;
 
     @API(help = "regularization strength", level = Level.secondary, required = false)
-    public double[] lambda;
+    public double[] lambda = null;
 
     @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior1;

@@ -585,7 +585,8 @@ public class DataInfo extends Keyed {
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
     Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;
     for (int i = 0; i < rows.length; ++i) {
-      if(filterChunk != null && filterChunk.at8(i) == 1)
+      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);
+      if(filterChunk == null || filterChunk.at8(i) == 1)
         rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
     }
     // categoricals
