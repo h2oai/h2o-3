@@ -69,7 +69,7 @@
 #' irisPath <- system.file("extdata", "iris.csv", package = "h2o")
 #' iris.hex <- h2o.uploadFile(localH2O, path = irisPath)
 #' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex)
-
+#' @export
 h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              override_with_best_model,
                              n_folds = 0,
@@ -171,6 +171,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
 }
 
 # Function call for R sided cross validation of h2o objects
+#' @export
 h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 key = "",
                                 override_with_best_model,
@@ -236,6 +237,11 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
 }
 
+#' Anomaly Detection
+#'
+#' Returns the reconstruction error for an autoecnoder model.
+#'
+#' @export
 h2o.anomaly <- function(object, data) {
   url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
@@ -244,6 +250,7 @@ h2o.anomaly <- function(object, data) {
   h2o.getFrame(key)
 }
 
+#' @export
 h2o.deepfeatures <- function(object, data, layer) {
   index = layer - 1
 
