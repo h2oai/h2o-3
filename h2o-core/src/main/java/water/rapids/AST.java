@@ -5,6 +5,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,7 +94,8 @@ abstract public class AST extends Iced {
         e.put(((ASTId) this)._id, Env.ID, "");
         id.exec(e);
       } else {
-        throw H2O.fail("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.");
+        throw new H2OIllegalArgumentException("Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'.",
+                "Got a bad identifier: '" + id.value() + "'. It has no type '!' or '$'." + " AST: " + this);
       }
 
 
@@ -118,7 +121,7 @@ abstract public class AST extends Iced {
             this instanceof ASTDelete )
       { this.exec(e); }
 
-    else { throw H2O.fail("Unknown AST: " + this.getClass());}
+    else { throw H2O.fail("Unknown AST class: " + this.getClass());}
     return e;
   }
 
@@ -171,7 +174,7 @@ class ASTFrame extends AST {
   ASTFrame(String key) {
     Key k = Key.make(key);
     Keyed val = DKV.getGet(k);
-    if (val == null) throw H2O.fail("Key "+ key +" no longer exists in the KV store!");
+    if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
     _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
     _g = true;

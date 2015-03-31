@@ -39,6 +39,7 @@
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(localH2O, path = prosPath)
 #' h2o.ls(localH2O)
+#' @export
 h2o.ls <- function(conn = h2o.getConnection()) {
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
@@ -64,8 +65,8 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.ls(localH2O)
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
-h2o.removeAll<-
-function(conn = h2o.getConnection()) {
+#' @export
+h2o.removeAll <- function(conn = h2o.getConnection()) {
   invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE"))
 }
 
@@ -77,6 +78,7 @@ function(conn = h2o.getConnection()) {
 #' @param keys The hex key associated with the object to be removed.
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @export
 h2o.rm <- function(keys, conn = h2o.getConnection()) {
   if (is(keys, "H2OConnection")) {
     temp <- keys
@@ -130,6 +132,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' @param data An \linkS4class{H2OFrame} object
 #' @param key The hex key to be associated with the H2O parsed data object
 #'
+#' @export
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
   .key.validate(key)
@@ -148,6 +151,7 @@ h2o.assign <- function(data, key) {
 #'             of the server running H2O.
 #' @param linkToGC a logical value indicating whether to remove the underlying key
 #'        from the H2O cluster when the R proxy object is garbage collected.
+#' @export
 h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key
@@ -176,6 +180,7 @@ h2o.getFrame <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
 #' iris.hex <- as.h2o(iris, localH2O, "iris.hex")
 #' key <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.hex)@@key
 #' model.retrieved <- h2o.getModel(key, localH2O)
+#' @export
 h2o.getModel <- function(key, conn = h2o.getConnection(), linkToGC = FALSE) {
   if (is(key, "H2OConnection")) {
     temp <- key

@@ -43,7 +43,7 @@
 #' # If not found, start a local H2O instance from R that uses 5 gigabytes of memory.
 #' localH2O = h2o.init(max_mem_size = "5g")
 #' }
-#'
+#' @export
 h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = FALSE, Xmx,
                      beta = FALSE, assertion = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
@@ -151,6 +151,7 @@ h2o.init <- function(ip = "127.0.0.1", port = 54321, startH2O = TRUE, forceDL = 
   conn
 }
 
+
 h2o.getConnection <- function() {
   conn <- get("SERVER", .pkg.env)
   if (is.null(conn)) {
@@ -169,7 +170,7 @@ h2o.getConnection <- function() {
   conn
 }
 
-#' Shut Down H2O Instance 
+#' Shut Down H2O Instance
 #'
 #' Shut down the specified instance. All data will be lost.
 #'
@@ -187,7 +188,7 @@ h2o.getConnection <- function() {
 #' localH2O = h2o.init()
 #' h2o.shutdown(localH2O)
 #' }
-#'
+#' @export
 h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be an H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
@@ -200,11 +201,11 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
   } else {
     temp = "y"
   }
-  
+
   if(temp == "Y" || temp == "y") {
     .h2o.doSafePOST(conn = conn, urlSuffix = .h2o.__SHUTDOWN)
   }
-  
+
   if((conn@ip == "localhost" || conn@ip == "127.0.0.1") && .h2o.startedH2O()) {
     pid_file <- .h2o.getTmpFile("pid")
     if(file.exists(pid_file)) file.remove(pid_file)
@@ -217,6 +218,8 @@ h2o.shutdown <- function(conn = h2o.getConnection(), prompt = TRUE) {
 # but if a user tries to do any remoteSend, they will get a "cloud sick warning"
 # Suggest cribbing the code from Internal.R that checks cloud status (or just call it here?)
 
+#' Return the status of the cluster
+#' @export
 h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   if(!is(conn, "H2OConnection")) stop("`conn` must be a H2OConnection object")
   if(!h2o.clusterIsUp(conn))  stop("There is no H2O instance running at ", h2o.getBaseURL(conn))
@@ -228,7 +231,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   cat("Cloud size:", res$cloud_size, "\n")
   if(res$locked) cat("Cloud is locked\n\n") else cat("Accepting new members\n\n")
   if(is.null(res$nodes) || length(res$nodes) == 0L) stop("No nodes found")
-  
+
   # Calculate how many seconds ago we last contacted cloud
   cur_time <- Sys.time()
   for(i in seq_len(length(res$nodes))) {
@@ -256,7 +259,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 
 .onLoad <- function(lib, pkg) {
   .h2o.pkg.path <<- file.path(lib, pkg)
-  
+
   # installing RCurl requires curl and curl-config, which is typically separately installed
   rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0L
   if(!rcurl_package_is_installed) {
@@ -289,7 +292,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     "\n",
     "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
-  
+
   # Shut down local H2O when user exits from R
   pid_file <- .h2o.getTmpFile("pid")
   if(file.exists(pid_file)) file.remove(pid_file)
@@ -342,7 +345,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   stdout <- .h2o.getTmpFile("stdout")
   stderr <- .h2o.getTmpFile("stderr")
   write(Sys.getpid(), .h2o.getTmpFile("pid"), append = FALSE)   # Write PID to file to track if R started H2O
-  
+
   jar_file <- .h2o.downloadJar(overwrite = forceDL)
   jar_file <- paste0('"', jar_file, '"')
 
@@ -450,13 +453,13 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     for(prog in prog_folder) {
       prog_path <- file.path("C:", prog, "Java")
       jdk_folder <- list.files(prog_path, pattern = "jdk")
-      
+
       for(jdk in jdk_folder) {
         path <- file.path(prog_path, jdk, "bin", "java.exe")
         if(file.exists(path)) return(path)
       }
     }
-    
+
     # Check for existence of JRE and warn user
     for(prog in prog_folder) {
       path <- file.path("C:", prog, "Java", "jre7", "bin", "java.exe")
@@ -496,12 +499,12 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
   dest_folder <- file.path(pkg_path, "java")
   if(!file.exists(dest_folder)) dir.create(dest_folder)
   dest_file <- file.path(dest_folder, "h2o.jar")
-  
+
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
   if(overwrite || !file.exists(dest_file)) {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
-    
+
     # Get MD5 checksum
     md5_url <- paste("http:/", base_url, "h2o.jar.md5", sep = "/")
     # ttt <- getURLContent(md5_url, binary = FALSE)
@@ -513,7 +516,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
     md5_check <- readLines(md5_file, n = 1L)
     if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
     unlink(md5_file)
-    
+
     # Save to temporary file first to protect against incomplete downloads
     temp_file <- paste(dest_file, "tmp", sep = ".")
     cat("Performing one-time download of h2o.jar from\n")
@@ -540,8 +543,9 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 }
 
 #' View Network Traffic Speed
+#' @export
 h2o.networkTest <- function(conn = h2o.getConnection()) {
   res <- .h2o.__remoteSend(conn = conn, "NetworkTest.json", method = "GET")
-  
+
   res$table
 }

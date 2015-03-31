@@ -75,8 +75,6 @@ for num in range(len(endpoints)):
     # create dirs without race:
     try:
         os.makedirs(save_dir_md)
-        if args.generate_html:
-            os.makedirs(save_dir_html)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
@@ -86,6 +84,12 @@ for num in range(len(endpoints)):
 
     # use grip to render the .md to .html
     if args.generate_html:
+        try:
+            os.makedirs(save_dir_html)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+
         # https://github.com/joeyespo/grip
         # Transform GitHub-flavored Markdown to HTML
         from grip import export
@@ -121,8 +125,6 @@ for schema in all_schemas:
     # create dirs without race:
     try:
         os.makedirs(save_dir_md)
-        if args.generate_html:
-            os.makedirs(save_dir_html)
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             raise
@@ -132,6 +134,12 @@ for schema in all_schemas:
 
     # use grip to render the .md to .html
     if args.generate_html:
+        try:
+            os.makedirs(save_dir_html)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+
         # https://github.com/joeyespo/grip
         # Transform GitHub-flavored Markdown to HTML
         from grip import export

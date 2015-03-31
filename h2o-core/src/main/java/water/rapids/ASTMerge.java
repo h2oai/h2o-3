@@ -119,6 +119,7 @@ public class ASTMerge extends ASTOp {
     String[][] domains= Arrays.copyOfRange(small.domains(),ncols,small._names.length-ncols+1);
     Frame res = new DoJoin(ncols,uniq,enum_maps,_allLeft).doAll(small.numCols()-ncols,large).outputFrame(names,domains);
     Frame res2 = large.add(res);
+    env.addVec(res.anyVec());     // !!HACK!!
     System.out.println(res2);
     env.push(new ValFrame(res2));
   }
