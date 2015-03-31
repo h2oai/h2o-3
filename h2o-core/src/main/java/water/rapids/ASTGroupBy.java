@@ -213,8 +213,8 @@ import java.util.concurrent.atomic.AtomicInteger;
           if( c[col].isNA(chkRow) ) continue;
           bits = Double.doubleToRawLongBits(c[col].atd(chkRow));
         }
-        vals[0] = c==null ? that._f[col] : chkRow+rowOffset;
-        vals[1] = c==null ? that._l[col] : chkRow+rowOffset;
+        vals[0] = c==null ? that._f[i] : chkRow+rowOffset;
+        vals[1] = c==null ? that._l[i] : chkRow+rowOffset;
         vals[2] = c==null ? Double.doubleToRawLongBits(that._min[i]) : bits;
         vals[3] = c==null ? Double.doubleToRawLongBits(that._max[i]) : bits;
         vals[4] = c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits;
@@ -286,7 +286,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       ab.putA8(_gbCols);
       ab.put4(_agg.length);
-      for(int i=0;i<_agg.length;++i) ab.put(_agg[i]);
+      for (AGG a_agg : _agg) ab.put(a_agg);
       if( _g == null ) return ab.put4(0);
       ab.put4(_g.size());
       for( G g: _g) ab.put(g);
