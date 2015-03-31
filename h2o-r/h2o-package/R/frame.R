@@ -1428,6 +1428,78 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
   out
 }
 
+
+h2o.groupBy <- function(data, columns, aggregates=list()) {
+  if( !is(data, "H2OFrame") )
+    stop("`data` must be of type H2OFrame")
+
+  # handle the data
+  mktmp <- !.is.eval(data)
+  if( mktmp ) {
+    .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, key=data@key)
+  }
+
+  # handle the columns
+  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
+  if(is.character(columns)) {
+    vars <- match(columns, colnames(data))
+    if (any(is.na(vars)))
+      stop('No column named ', columns, ' in ', substitute(data), '.')
+  } else if(is.integer(columns)) {
+    vars <- columns
+  } else if(is.numeric(columns)) {   # this will happen eg c(1,2,3)
+    vars <- as.integer(columns)
+  }
+  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
+  vars <- vars - 1L
+  if(vars < 0L || vars > (ncol(data)-1L))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+
+  # handle the aggregates list
+  # aggregates is a list of lists:
+  #  example: aggregates = list(min_col1 = list("min", "col1", "ignore"), maxCol2 = list("max", "col2", "all"))
+
+  # two things to do: 1. each sublist must be exactly length 3; and 2. if the second arg in a sublist is a character, then swap it out for the column index in the data frame.
+  # aggs now looks like this: list( list(agg,col,na,name), ...)
+  nAggs <- length(aggregates)
+  aggs <- lapply(seq_along(aggregates), function(idx) {
+    l <- aggregates[[idx]]
+    if( length(l) != 3 )
+      stop("Poorly specified aggregation: must be of shape list(`agg`, `column`, `na.method`)")
+    if( is.character(l[[2]]) ) {
+      colname <- l[[2]]
+      l[[2]] <- match(colname, colnames(data)) - 1  # 1 -> 0 based index
+      if( is.na(l[[2]]) )
+        stop("No such column found: ", colname)
+    } else {
+      cid <- l[[2]]
+      l[[2]] <- as.numeric(l[[2]]) - 1
+      if( l[[2]] < 0 || l[[2]] > ncol(data) )
+        stop("No such column found at index: ", cid)
+    }
+    name <- names(aggregates)[idx]
+    if( is.null(name) ) name <- ""
+    if( is.na(name) ) name <- ""
+    c(l,name)
+  })
+
+  # create the AGG AST
+  op <- new("ASTApply", op="agg")
+  children <- list(c(paste0('#',nAggs), unlist(lapply(aggs, function(l) { .args.to.ast(.args=l)}))))
+  AGG <- new("ASTNode", root=op, children=children)
+
+  # create the group by AST
+  op <- new("ASTApply", op="GB")
+  vars <- .args.to.ast(vars)
+  GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG))
+
+  mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+  finalizers <- data@finalizers
+  conn <- h2o.getConnection()
+  .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "group_by"),
+                finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+}
+
 #-----------------------------------------------------------------------------------------------------------------------
 # *ply methods: ddply, apply, lapply, sapply,
 #-----------------------------------------------------------------------------------------------------------------------
