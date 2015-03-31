@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.AutoBuffer;
 import water.H2O;
+import water.MemoryManager;
 
 /** A simple chunk for boolean values. In fact simple bit vector.
  *  Each boolean is represented by 2bits since we need to represent NA.
@@ -13,6 +14,24 @@ public class CBSChunk extends Chunk {
   public byte bpv() { return _bpv; } //bits per value
   private byte _gap;// number of trailing unused bits in the end (== _len % 8, we allocate bytes, but our length i generally not multiple of 8)
   public byte gap() { return _gap; } //number of trailing unused bits in the end
+
+  public CBSChunk(boolean [] vals) {
+    int gap = vals.length % 8;
+    int n = (vals.length >> 3) + (gap == 0?0:1);
+    byte [] bytes = MemoryManager.malloc1(n);
+    for(int i = 0; i < vals.length; ++i){
+      if(vals[i]) {
+        int j = i / 8;
+        int k = i % 8;
+        bytes[j] |= (1 << k);
+      }
+    }
+    _mem = bytes;
+    _start = -1;
+    _gap = (byte)gap;
+    _bpv = 1;
+    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
+  }
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
     _mem = bs; _start = -1; _gap = gap; _bpv = bpv;

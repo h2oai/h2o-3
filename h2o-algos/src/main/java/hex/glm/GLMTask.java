@@ -13,10 +13,9 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.*;
-import water.fvec.Chunk;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
-import water.util.Log;
 
 /**
  * All GLM related distributed tasks:
@@ -34,8 +33,17 @@ public abstract class GLMTask  {
    double _ymu;
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long   _nobs;
+   final Vec _fVec; // boolean row filter
 
-   public YMUTask(DataInfo dinfo, H2OCountedCompleter cmp){super(cmp);}
+   public YMUTask(DataInfo dinfo, Vec mVec, H2OCountedCompleter cmp){
+     super(cmp);
+     _fVec = mVec;
+   }
+
+   @Override public void setupLocal(){
+     if(_fVec != null)
+       _fVec.preWriting();
+   }
 
    @Override public void map(Chunk [] chunks) {
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
@@ -59,8 +67,16 @@ public abstract class GLMTask  {
          ++_nobs;
        }
      }
+     if(_fVec != null)
+       DKV.put(_fVec.chunkKey(chunks[0].cidx()), new CBSChunk(skip));
    }
-   @Override public void postGlobal() { _ymu /= _nobs;}
+   @Override public void postGlobal() {
+     _ymu /= _nobs;
+     if(_fVec != null) {
+       Futures fs = new Futures();
+       _fVec.postWrite(fs); // we just overwrote the vec
+     }
+   }
    @Override public void reduce(YMUTask ymt) {
      if(_nobs > 0 && ymt._nobs > 0) {
        _ymu += ymt._ymu;
@@ -101,6 +117,7 @@ public abstract class GLMTask  {
       _params = params;
     }
 
+    long _nobs;
     double [] _likelihoods; // result
 
 //    private final double beta(int i, int j) {
@@ -110,71 +127,6 @@ public abstract class GLMTask  {
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
-//      Chunk responseChunk = chks[chks.length-1];
-//      boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
-//      double [][] eta = new double[_nSteps][];
-//      for(int i = 0; i < eta.length; ++i)
-//        eta[i] = MemoryManager.malloc8d(chks[0]._len);
-//
-//      // categoricals
-//      for(int i = 0; i < _dinfo._cats; ++i) {
-//        Chunk c = chks[i];
-//        for(int r = 0; r < c._len; ++r) { // categoricals can not be sparse
-//          if(skip[r] || c.isNA(r)) {
-//            skip[r] = true;
-//            continue;
-//          }
-//          int off = _dinfo.getCategoricalId(i,(int)c.at8(r));
-//          if(off != -1)
-//            for(int j = 0; j < eta.length; ++j)
-//              eta[j][r] += beta(j,off);
-//        }
-//      }
-//
-//      // compute default eta offset for 0s
-//      final int numStart = _dinfo.numStart();
-//      if(_dinfo._normMul != null && _dinfo._normSub != null) {
-//        for (int j = 0; j < eta.length; ++j) {
-//          double off = 0;
-//          for (int i = 0; i < _dinfo._nums; ++i)
-//            off -= beta(j, numStart + i) * _dinfo._normSub[i] * _dinfo._normMul[i];
-//          for (int r = 0; r < chks[0]._len; ++r)
-//            eta[j][r] += off;
-//        }
-//      }
-//      // non-zero numbers
-//      for (int i = 0; i < _dinfo._nums; ++i) {
-//        Chunk c = chks[i + _dinfo._cats];
-//        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-//          if(skip[r] || c.isNA(r)) {
-//            skip[r] = true;
-//            continue;
-//          }
-//          double d = c.atd(r);
-//          if (_dinfo._normMul != null)
-//            d *= _dinfo._normMul[i];
-//          for (int j = 0; j < eta.length; ++j)
-//            eta[j][r] += beta(j,numStart + i) * d;
-//        }
-//      }
-//      _likelihoods = MemoryManager.malloc8d(_nSteps);
-//      for(int r = 0; r < chks[0]._len; ++r){
-//        if(skip[r] || responseChunk.isNA(r))
-//          continue;
-//        double off = 0; //(_dinfo._offset?offsetChunk.atd(r):0);
-//        double y = responseChunk.atd(r);
-//        double yy = -1 + 2*y;
-//        for(int i = 0; i < eta.length; ++i) {
-//          double offset = off + (_dinfo._intercept ? beta(i,_beta.length-1): 0);
-////          if(_params._family == Family.binomial) {
-////            _likelihoods[i] += Math.log(1 + Math.exp(-yy*(eta[i][r] + offset)));
-////          } else {
-//            double mu = _params.linkInv(eta[i][r] + offset);
-//            _likelihoods[i] += _params.likelihood(y, eta[i][r] + offset, mu);
-////          }
-//        }
-//      }
-
       Chunk responseChunk = chks[chks.length-1];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
       double [][] eta = new double[responseChunk._len][_nSteps];
@@ -201,7 +153,6 @@ public abstract class GLMTask  {
       final int numStart = _dinfo.numStart();
       double [] off = new double[_nSteps];
       if(_dinfo._normMul != null && _dinfo._normSub != null) {
-
         for (int i = 0; i < _dinfo._nums; ++i) {
           double b = beta[numStart+i];
           double s = pk[numStart+i];
@@ -233,7 +184,7 @@ public abstract class GLMTask  {
       for(int r = 0; r < chks[0]._len; ++r){
         if(skip[r] || responseChunk.isNA(r))
           continue;
-
+        _nobs++;
         double y = responseChunk.atd(r);
         double yy = -1 + 2*y;
         double b = 0, s = 0;
@@ -244,6 +195,7 @@ public abstract class GLMTask  {
         for(int i = 0; i < _nSteps; ++i, s*= _step) {
           double e = eta[r][i] + off[i] + b + s;
           if(_params._family == Family.binomial) {
+            double mu = _params.linkInv(e);
             _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
           } else {
             double mu = _params.linkInv(e);
@@ -254,6 +206,7 @@ public abstract class GLMTask  {
     }
     @Override public void reduce(GLMLineSearchTask glt){
       ArrayUtils.add(_likelihoods,glt._likelihoods);
+      _nobs += glt._nobs;
     }
   }
   static class GLMGradientTask extends MRTask<GLMGradientTask> {
@@ -296,7 +249,7 @@ public abstract class GLMTask  {
 //        double eta = row.innerProduct(b);
 //        double mu =  1.0 / (Math.exp(-eta) + 1.0);
 //        double l = y == mu?0:-y * eta - Math.log(1 - mu);
-//        _likelihood += l;
+//        _objVal += l;
 //        double var = mu * (1 - mu);//_params.variance(mu);
 //        if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
 //        double d = (mu * (1 - mu));
