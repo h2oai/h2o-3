@@ -73,7 +73,7 @@ class Expr(object):
       assert length is not None
       self._len = length
     elif self.is_local():  # Local data, grab length by inspection
-      self._len = len(self._data) if isinstance(self._data, list) else 1
+      self._len = len(self._data) if isinstance(self._data, (list, tuple)) else 1
     elif self.is_slice():
       self._len = self._data.stop - self._data.start
     else:
@@ -99,7 +99,7 @@ class Expr(object):
 
   def vecname(self): return self._vecname
 
-  def is_local(self): return isinstance(self._data, (list, int, float, str))
+  def is_local(self): return isinstance(self._data, (list, tuple, int, float, str))
 
   def is_remote(self): return isinstance(self._data, unicode)
 
@@ -198,12 +198,15 @@ class Expr(object):
 
   # Basic indexed or sliced lookup
   def __getitem__(self, i):
-    x = self.eager()
-    if self.is_local(): return x[i]
-    if not isinstance(i, int): raise NotImplementedError  # need a bigdata slice here
-    # ([ %vec #row #0)
-    #j = H2OCONN.Rapids("([ %"+str(self._data)+" #"+str(i)+" #0)")
-    #return j['scalar']
+    if isinstance(i, int):
+      x = self.eager()
+      if self.is_local(): return x[i]
+
+    # multi-dimensional slicing via 2-tuple
+    if isinstance(i, tuple):
+      l = 1 if isinstance(i[0], int) else i[0].stop - i[0].start
+      return Expr("[", self, Expr((i[0], i[1])), length=l)
+
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
@@ -307,6 +310,17 @@ class Expr(object):
             "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
             + ")"
         child._data = None  # trigger GC now
+      # multi-dimensional slice
+      elif self._op == "[" and isinstance(child._data, tuple):
+        r, c = (child._data[0], child._data[1])
+        if isinstance(r,int) and isinstance(c,int)      : __CMD__ += "#"+str(r)+" #"+str(c)
+        elif isinstance(r,int) and isinstance(c,slice)  : __CMD__ += "#"+str(r)+" (: #"+str(c.start)+" #"+str(c.stop)+")"
+        elif isinstance(r,slice) and isinstance(c,int)  : __CMD__ += "(: #"+str(r.start)+" #"+str(r.stop)+")"+" #"+str(c)
+        elif isinstance(r,slice) and isinstance(c,slice): __CMD__ += "(: #"+str(r.start)+" #"+str(r.stop)+")"+ \
+                                                                     " (: #"+str(c.start)+" #"+str(c.stop)+")"
+        else:
+          raise NotImplementedError
+        return child
       else:
         pass
     __CMD__ += " "
@@ -375,6 +389,8 @@ class Expr(object):
 
       #   [] = []
       if left.is_local():    self._data = left._data[rite._data]
+      #   multi-dimensional slice
+      elif isinstance(rite._data, tuple): pass
       #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
       else:                  __CMD__ += ' "null"'
 
@@ -440,8 +456,12 @@ class Expr(object):
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead
-    self._left = None  # Trigger GC/ref-cnt of temps
-    self._rite = None
+    # Keep children alive for multi-dimensional slice
+    if self._op == "[" and not left.is_local() and isinstance(rite._data, tuple):
+      pass
+    else:
+      self._left = None  # Trigger GC/ref-cnt of temps
+      self._rite = None
 
     # Keep LHS alive
     if assign_vec:

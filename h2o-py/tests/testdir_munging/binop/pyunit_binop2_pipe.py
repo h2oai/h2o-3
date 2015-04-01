@@ -18,9 +18,9 @@ def binop_pipe(ip,port):
     res = iris | 1
     rows, cols = res.dim()
     assert rows == rows and cols == cols, "dimension mismatch"
-    #for c in range(cols-1):
-    #    for r in range(rows):
-    #        assert res[r,c].eager(), "value error"
+    for c in range(cols-1):
+        for r in range(rows):
+            assert res[r,c].eager(), "value error"
 
     # vec/vec
     res = iris[0] | iris[1]

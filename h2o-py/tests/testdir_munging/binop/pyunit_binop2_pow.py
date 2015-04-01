@@ -16,8 +16,8 @@ def binop_pow(ip,port):
     res = 2 ** iris
     res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    #for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [10211.96, 1304.952, 3676.173, 393.1384]):
-    #    assert abs(x.eager() - y) < 1e-2,  "expected same values"
+    for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [10211.96, 1304.952, 3676.173, 393.1384]):
+        assert abs(x.eager() - y) < 1e-2,  "expected same values"
 
     # LHS: scaler, RHS: H2OVec
     res = 2 ** iris[1]
@@ -130,8 +130,8 @@ def binop_pow(ip,port):
     res = iris ** 2
     res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    #for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [5223.85, 1427.05, 2583, 302.3]):
-    #    assert abs(x.eager() - y) < 1e-2,  "expected same values"
+    for x, y in zip([sum([res[r,c] for r in range(rows)]) for c in range(cols-1)], [5223.85, 1427.05, 2583, 302.3]):
+        assert abs(x.eager() - y) < 1e-2,  "expected same values"
 
     ###################################################################
 

@@ -314,6 +314,7 @@ class H2OFrame:
 
   # Column selection via integer, string (name) returns a Vec
   # Column selection via slice returns a subset Frame
+  # Multi-dimensional slicing via 2-tuple
   def __getitem__(self, i):
     if isinstance(i, int):   return self._vecs[i]
     if isinstance(i, str):   return self._find(i)
@@ -324,14 +325,21 @@ class H2OFrame:
       self._len_check(i)
       return H2OFrame(vecs=[x.row_select(i) for x in self._vecs])
 
-    # have a list of numbers or strings
-    if isinstance(i, (list,tuple)):
+    # have a list/tuple of numbers or strings
+    if isinstance(i, list) or (isinstance(i, tuple) and len(i) != 2):
       vecs = []
       for it in i:
         if isinstance(it, int):    vecs.append(self._vecs[it])
         elif isinstance(it, str):  vecs.append(self._find(it))
         else:                      raise NotImplementedError
       return H2OFrame(vecs=vecs)
+
+    # multi-dimensional slicing via 2-tuple
+    if isinstance(i, tuple):
+      rows, cols = self.dim()
+      l = 1 if isinstance(i[0], int) else i[0].stop - i[0].start
+      e = Expr(self.send_frame(), length=rows)
+      return Expr("[", e, Expr((i[0], i[1])), length=l)
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
@@ -400,14 +408,25 @@ class H2OFrame:
     if len(self) == 0: return self
     if isinstance(data, (H2OVec, H2OFrame)): self._len_check(data)
 
-    if isinstance(data, H2OFrame):       return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                     Expr(data.send_frame(), length=data.nrow()))
-    elif isinstance(data, H2OVec):       return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                     Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
-    elif isinstance(data, Expr):         return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
-    elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
-    elif isinstance(data, str):          return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
-    else: raise NotImplementedError
+    if not r:
+      if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                       Expr(data.send_frame(), length=data.nrow()))
+      elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                       Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
+      elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
+      elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
+      elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
+      else: raise NotImplementedError
+    else:
+      if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), \
+                                                  Expr(self.send_frame(), length=self.nrow()))
+      elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), \
+                                                       Expr(self.send_frame(), length=self.nrow()))
+      elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
+      elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), \
+                                                       length=self.nrow())
+      elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
+      else: raise NotImplementedError
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")

@@ -129,9 +129,9 @@ def binop_amp(ip,port):
     res = iris & 0
     res_rows, res_cols = res.dim()
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    #for c in range(cols-1):
-    #    for r in range(rows):
-    #        assert not res[r,c].eager(),  "expected False"
+    for c in range(cols-1):
+        for r in range(rows):
+            assert not res[r,c].eager(),  "expected False"
 
     ###################################################################
 
