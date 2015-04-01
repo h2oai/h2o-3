@@ -219,10 +219,20 @@ class ASTSpan extends AST {
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
-    if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    if( _min <= 0 && _max <= 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+        if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
-    if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
+    if( _min < 0 && _max < 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+      if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan parse_impl(Exec E) {
     AST l = E.parse();
@@ -247,7 +257,7 @@ class ASTSpan extends AST {
     for (int i = 0; i < res.length; ++i) res[i] = min++;
     return res;
   }
-  boolean all_neg() { return _min < 0; }
+  boolean all_neg() { return _min<0||_max<0; }
   boolean all_pos() { return !all_neg(); }
   boolean isNum() { return _min == _max; }
   long toNum() { return _min; }
@@ -1152,7 +1162,7 @@ class ASTSlice extends AST {
         ? new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(-i)) cs.set((int) (i - cs.start() - 1), 0); // -1 for indexing
+                if (a0.contains(-i)) cs.set((int) (i - cs.start()), 0);
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {

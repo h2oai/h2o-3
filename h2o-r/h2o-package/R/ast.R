@@ -148,10 +148,14 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 
   # Create a new ASTSpan
   if (identical(expr[[1L]], quote(`:`))) {
+    if( eval(expr[[2L]]) < 0 ) {
+      neg <- TRUE
+      if( eval(expr[[3L]]) >= 0) stop("Index range must not include positive and negative values.")
+    }
     if (neg)
       return(new("ASTNode", root = new("ASTApply", op = ":"),
-                 children = list(paste0('#-', eval(expr[[2L]], envir = envir)),
-                                 paste0('#-', eval(expr[[3L]], envir = envir)))))
+                 children = list(paste0('#', eval(expr[[2L]], envir = envir)+1L),
+                                 paste0('#', eval(expr[[3L]], envir = envir)+1L))))
     else
       return(new("ASTNode", root = new("ASTApply", op = ":"),
                  children = list(paste0('#', eval(expr[[2L]], envir = envir) - 1L),
@@ -159,6 +163,9 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
+    neg <- expr[1] < 0
+    sub_one <- !neg
+    if( neg ) { expr <- expr + 1 }
     children <- lapply(expr, .ast.walker, envir, neg, sub_one)
     return(new("ASTSeries", op="{", children = children))
   }

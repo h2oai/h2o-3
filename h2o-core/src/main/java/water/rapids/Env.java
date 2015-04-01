@@ -822,15 +822,16 @@ class ValSeries extends Val {
 
   ValSeries(long[] idxs, ASTSpan[] spans) {
     _idxs = idxs;
+    if( _idxs!=null ) Arrays.sort(_idxs);
     _spans = spans;
   }
 
-  boolean contains(long a) {
+  boolean contains(final long a) {
     if (_spans != null)
-      for (ASTSpan s : _spans) if (s.contains(a)) return true;
-    if (_idxs != null)
-      for (long l : _idxs) if (l == a) return true;
-    return false;
+      for (ASTSpan s : _spans)
+        if (s.contains(a))
+          return true;
+    return _idxs != null && Arrays.binarySearch(_idxs, a) >= 0;
   }
 
   boolean isColSelector() { return _isCol; }
@@ -841,17 +842,9 @@ class ValSeries extends Val {
     _isCol = col;
   }
 
-  @Override String value() {
-    return null;
-  }
-
-  @Override
-  int type() {
-    return Env.SERIES;
-  }
-
-  @Override
-  public String toString() {
+  @Override String value() { return null; }
+  @Override int type() { return Env.SERIES; }
+  @Override public String toString() {
     String res = "c(";
     if (_spans != null) {
       for (ASTSpan s : _spans) {
@@ -861,9 +854,12 @@ class ValSeries extends Val {
       if (_idxs == null) res = res.substring(0, res.length() - 1); // remove last comma?
     }
     if (_idxs != null) {
-      for (long l : _idxs) {
-        res += l;
-        res += ",";
+      if( _idxs.length > 20) res += "too many ";
+      else {
+        for (long l : _idxs) {
+          res += l;
+          res += ",";
+        }
       }
       res = res.substring(0, res.length() - 1); // remove last comma.
     }
@@ -925,7 +921,7 @@ class ValSeries extends Val {
     throw new IllegalArgumentException("Could not convert ASTSeries to a single number.");
   }
 
-  boolean all_neg() { return (_idxs != null && _idxs.length > 0) ?_idxs[0] < 0 : _spans[0].all_neg(); }
+  boolean all_neg() { return (_idxs != null && _idxs.length > 2) ?_idxs[1] < 0 : _spans[0].all_neg(); }
   boolean all_pos() { return !all_neg(); }
 }
 
