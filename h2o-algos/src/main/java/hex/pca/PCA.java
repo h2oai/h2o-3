@@ -368,7 +368,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         assert c == xvecs.length;
         Frame fr = new Frame(null, vecs);
-        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
+        dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true, 0 /*no row weights*/);
         DKV.put(dinfo._key, dinfo);
 
         // Output standardization vectors for use in scoring later
@@ -382,7 +382,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // Create separate reference to X for Gram task
         x = new Frame(_parms._loading_key, null, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /*no row weights*/);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
 

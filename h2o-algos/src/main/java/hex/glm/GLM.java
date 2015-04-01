@@ -88,7 +88,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 //    Log.info(FrameUtils.chunkSummary(_train).toString());
     _parms.read_lock_frames(this);
     init(true);                 // Expensive tests & conversions
-    DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+    DataInfo dinfo = new DataInfo(Key.make(),_train,_valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /*no row _weights*/);
     DKV.put(dinfo._key,dinfo);
     double [] betaStart = null;
     double [] betaGiven = null;

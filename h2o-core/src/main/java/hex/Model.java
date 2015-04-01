@@ -197,8 +197,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
     /** Returns number of input features (OK for most unsupervised methods, need to override for supervised!) */
-    public int nfeatures() { return _names.length - nrowweights(); }
-    public int nrowweights() { return 1; }
+    public int nfeatures() { return _names.length; }
 
     /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
      *  Columns match the post-init cleanup columns.  The last column holds the
@@ -546,8 +545,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
-    assert chks.length>=_output._names.length;
-    for( int i=0; i<_output._names.length; i++ )
+    assert chks.length>=_output.nfeatures();
+    for( int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     return score0(tmp,preds);
   }

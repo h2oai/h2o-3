@@ -41,7 +41,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
     if( _train == null ) return; // Nothing more to check
-    if( _train.numCols()-1 <= 1 ) //subtract the row weights (they are in by now)
+    if( _train.numCols() <= 1 )
       error("_train", "Training data must have at least 2 features (incl. response).");
 
     if (!isSupervised()) {

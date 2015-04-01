@@ -15,8 +15,7 @@ public class DataInfo extends Keyed {
   public int [] _activeCols;
   public Frame _adaptedFrame;
   public int _responses; // number of responses
-
-
+  public int _row_weights; // number of row weights
 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -197,10 +196,11 @@ public class DataInfo extends Keyed {
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, int row_weights) {
     super(selfKey);
     assert predictor_transform != null;
     assert  response_transform != null;
+    _row_weights = row_weights;
     _skipMissing = skipMissing;
     _nfolds = _foldId = 0;
     _predictor_transform = predictor_transform;
@@ -212,7 +212,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses-1 /*weights*/;
+    final int n = tvecs.length-_responses-_row_weights;
     assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
@@ -279,10 +279,12 @@ public class DataInfo extends Keyed {
     }
 
     // row weights
-    names[ncats+nnums]  =   train._names[ncats+nnums]; //row weights
-    if (valid != null)
-      vvecs2[ncats+nnums] = vvecs[ncats+nnums];
-    tvecs2[ncats+nnums] = tvecs[ncats+nnums];
+    for (int i=0; i<_row_weights; ++i) {
+      names[ncats + nnums + i] = train._names[ncats + nnums + i];
+      if (valid != null)
+        vvecs2[ncats + nnums + i] = vvecs[ncats + nnums + i];
+      tvecs2[ncats + nnums + i] = tvecs[ncats + nnums + i];
+    }
 
     // Compute the mean/sigma for each response
     if (_responses > 0) {
@@ -295,9 +297,9 @@ public class DataInfo extends Keyed {
       default:        throw H2O.unimpl();
       }
       for(int i = 0; i < _responses; ++i){
-        names[ncats+nnums+i+1]  =   train._names[ncats+nnums+i+1];
-        if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
-        Vec v = (tvecs2[ncats+nnums+i+1] = tvecs[ncats+nnums+i+1]);
+        names[ncats+nnums+_row_weights+i]  =   train._names[ncats+nnums+_row_weights+i];
+        if (valid != null) vvecs2         [ncats+nnums+_row_weights+i] = vvecs[ncats+nnums+_row_weights+i];
+        Vec v = (tvecs2[ncats+nnums+_row_weights+i] = tvecs[ncats+nnums+_row_weights+i]);
         double vs = (v.sigma()      ) == 0 ? 1.0 : 1.0/(v.sigma()      );
         double vm = (v.max()-v.min()) == 0 ? 1.0 : 1.0/(v.max()-v.min());
         switch( response_transform ) {

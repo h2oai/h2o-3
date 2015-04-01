@@ -248,10 +248,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_row_weights_column", "Row weights column is all NAs!");
       if (!_row_weights.isNumeric())
         error("_row_weights_column", "Row weights column is not numeric!");
-      _train.add(row_weights_name, _row_weights);
+//      _train.add(row_weights_name, _row_weights);
       _row_weights_key = _row_weights._key;
       if (_valid != null) {
-        _valid.add(row_weights_name, _vrow_weights);
+//        _valid.add(row_weights_name, _vrow_weights);
         _vrow_weights_key = _vrow_weights._key;
       }
     }
@@ -273,6 +273,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_valid",iae.getMessage());
     }
     assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
+  }
+  @Override public void cleanup() {
+    super.cleanup();
+    row_weights().remove();
+    if (_vrow_weights_key != null)
+      vrow_weights().remove();
   }
 
   abstract class FilterCols {

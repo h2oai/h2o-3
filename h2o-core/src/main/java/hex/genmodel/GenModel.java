@@ -27,8 +27,7 @@ public abstract class GenModel {
 
   // Base methods are correct for unsupervised models.  All overridden in GenSupervisedModel
   public boolean isSupervised() { return false; }  // Overridden in GenSupervisedModel
-  public int nfeatures() { return _names.length - nrowweights(); } // Overridden in GenSupervisedModel
-  public int nrowweights() { return 1; } // Overridden in GenSupervisedModel
+  public int nfeatures() { return _names.length; } // Overridden in GenSupervisedModel
   public int nclasses() { return 0; }              // Overridden in GenSupervisedModel
 
   abstract public ModelCategory getModelCategory();

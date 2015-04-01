@@ -213,7 +213,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless", fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /* no row weights */);
       DKV.put(dinfo._key, dinfo);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
@@ -261,7 +261,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       fr.add("Useless",fr.remove("Useless"));
 
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /* no row weights */);
       DKV.put(dinfo._key,dinfo);
       double ymu = 0;
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
@@ -276,7 +276,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
       params._use_all_factor_levels = false;
       dinfo.remove();
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /* no row weights */);
       DKV.put(dinfo._key,dinfo);
       beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(1987654321);
@@ -294,7 +294,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._use_all_factor_levels = true;
-      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, 0 /* no row weights */);
       DKV.put(dinfo._key,dinfo);
       ymu = 0;
       beta = MemoryManager.malloc8d(dinfo.fullN()+1);

@@ -1592,7 +1592,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     boolean classification = train.lastVec().isEnum();
     final DataInfo dinfo = new DataInfo(Key.make(), train, valid, parms._autoencoder ? 0 : 1, parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-            classification    ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip);
+            classification    ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip,
+            1 /*row weights*/);
     output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     output._domains= train.domains();
     DKV.put(dinfo._key,dinfo);
@@ -1602,7 +1603,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
-      errors[0].validation = (parms._valid != null);
+      errors[0].validation = (valid != null);
       errors[0].num_folds = parms._n_folds;
       _output.errors = last_scored();
       _output.scoring_history = createScoringHistoryTable(errors);
