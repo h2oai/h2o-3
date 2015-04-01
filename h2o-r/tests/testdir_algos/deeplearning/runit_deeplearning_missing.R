@@ -38,7 +38,7 @@ check.deeplearning_missing <- function(conn) {
     # train = splits[[1]]
     # test  = splits[[2]]
 
-    hh=h2o.deeplearning(x=3:22,y=24,training_frame=train,validation=test,
+    hh=h2o.deeplearning(x=3:22,y=24,training_frame=train,validation=test,epochs=5,reproducible=T,seed=12345,
                         activation='RectifierWithDropout',l1=1e-5,input_dropout_ratio=0.2)
 
     errors[i] = hh@model$errors$valid_err
