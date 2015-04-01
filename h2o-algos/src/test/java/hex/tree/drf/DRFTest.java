@@ -482,4 +482,141 @@ public class DRFTest extends TestUtil {
       assertEquals(0.20462305452536414, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
+
+  @Test public void testNoRowWeights() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._seed = 0xdecaf;
+      parms._ntrees = 1;
+      parms._mtries = 4;
+      parms._min_rows = 1;
+      parms._max_depth = 2;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+
+      drf.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = drf._output._mse_train;
+      assertEquals(0, mse[mse.length-1], 1e-6);
+      job.remove();
+      drf.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test public void testNoRowWeightsShuffled() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._seed = 0xdecaf;
+      parms._ntrees = 1;
+      parms._mtries = 4;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+
+      drf.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = drf._output._mse_train;
+      assertEquals(0.007518775420551756, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      drf.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test public void testRowWeightsOne() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._row_weights_column = "weight";
+      parms._seed = 0xdecaf;
+      parms._ntrees = 1;
+      parms._mtries = 4;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+
+      drf.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = drf._output._mse_train;
+      assertEquals(0.3955084146938792, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      drf.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Ignore
+  @Test public void testRowWeights() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._row_weights_column = "weight";
+      parms._seed = 0xdecaf;
+      parms._ntrees = 1;
+      parms._mtries = 4;
+
+      // Build a first model; all remaining models should be equal
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+
+      drf.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = drf._output._mse_train;
+      assertEquals(0.3955084146938792, mse[mse.length-1], 1e-6);
+      job.remove();
+      drf.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
 }

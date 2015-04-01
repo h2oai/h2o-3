@@ -517,7 +517,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/row_weights/no_weights.csv");
+      tfr = parse_test_file("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
       DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
       parms._train = tfr._key;
@@ -551,7 +551,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/row_weights/no_weights_shuffled.csv");
+      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
       DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
       parms._train = tfr._key;
@@ -585,7 +585,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/row_weights/weights_all_ones.csv");
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
       DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
       parms._train = tfr._key;
@@ -621,7 +621,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/row_weights/weights.csv");
+      tfr = parse_test_file("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
       parms._train = tfr._key;

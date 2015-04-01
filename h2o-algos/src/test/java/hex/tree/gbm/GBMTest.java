@@ -675,4 +675,140 @@ public class GBMTest extends TestUtil {
     }
   }
 
+
+  @Test public void testNoRowWeights() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._loss = Family.bernoulli;
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      gbm.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = gbm._output._mse_train;
+      assertEquals(0.202649429311526, mse[mse.length-1], 1e-6);
+      job.remove();
+      gbm.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test public void testNoRowWeightsShuffled() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._loss = Family.bernoulli;
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      gbm.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = gbm._output._mse_train;
+      assertEquals(0.202649429311526, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      gbm.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Test public void testRowWeightsOne() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._row_weights_column = "weight";
+      parms._loss = Family.bernoulli;
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      gbm.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = gbm._output._mse_train;
+      assertEquals(0.202649429311526, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      job.remove();
+      gbm.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
+  @Ignore
+  @Test public void testRowWeights() {
+    Frame tfr=null, vfr=null;
+
+    Scope.enter();
+    try {
+      tfr = parse_test_file("smalldata/junit/weights.csv");
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "response";
+      parms._row_weights_column = "weight";
+      parms._loss = Family.bernoulli;
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      // Build a first model; all remaining models should be equal
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      gbm.score(parms.train());
+      hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
+      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+
+      double mse[] = gbm._output._mse_train;
+      assertEquals(0.202649429311526, mse[mse.length-1], 1e-6);
+      job.remove();
+      gbm.delete();
+    } finally{
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+    }
+    Scope.exit();
+  }
+
 }
