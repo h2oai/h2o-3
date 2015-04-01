@@ -872,7 +872,7 @@ public class GLMTest  extends TestUtil {
       params._lambda_search = true;
       params._nlambdas = 35;
       params._lambda_min_ratio = 0.18;
-      params._max_active_predictors = 200;
+      params._max_active_predictors = 215;
       params._alpha = new double[]{1};
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
