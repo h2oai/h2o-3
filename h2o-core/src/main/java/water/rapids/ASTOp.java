@@ -2420,7 +2420,7 @@ class ASTRunif extends ASTUniPrefixOp {
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     // parse the seed
     try {
-      _seed = (long) E.nextDbl();
+      _seed = (long) E.parse().treeWalk(new Env(null)).popDbl();
     } catch (ClassCastException e) {
       e.printStackTrace();
       throw new IllegalArgumentException("Argument `seed` expected to be a number.");
