@@ -493,11 +493,10 @@ public class DRFTest extends TestUtil {
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
-      parms._seed = 0xdecaf;
+      parms._seed = 1;
       parms._ntrees = 1;
-      parms._mtries = 4;
+      parms._mtries = 1;
       parms._min_rows = 1;
-      parms._max_depth = 2;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -505,10 +504,10 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
 
       double mse[] = drf._output._mse_train;
-      assertEquals(0, mse[mse.length-1], 1e-6);
+      assertEquals(0.3, mse[mse.length-1], 1e-6);
       job.remove();
       drf.delete();
     } finally{
@@ -528,9 +527,10 @@ public class DRFTest extends TestUtil {
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
-      parms._seed = 0xdecaf;
+      parms._seed = 1;
       parms._ntrees = 1;
-      parms._mtries = 4;
+      parms._min_rows = 1;
+      parms._mtries = 1;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -538,10 +538,10 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
 
       double mse[] = drf._output._mse_train;
-      assertEquals(0.007518775420551756, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      assertEquals(0.3, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
       job.remove();
       drf.delete();
     } finally{
@@ -561,10 +561,10 @@ public class DRFTest extends TestUtil {
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
-      parms._row_weights_column = "weight";
-      parms._seed = 0xdecaf;
+      parms._seed = 1;
       parms._ntrees = 1;
-      parms._mtries = 4;
+      parms._min_rows = 1;
+      parms._mtries = 1;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -572,10 +572,10 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
 
       double mse[] = drf._output._mse_train;
-      assertEquals(0.3955084146938792, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
+      assertEquals(0.3, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
       job.remove();
       drf.delete();
     } finally{
@@ -596,10 +596,10 @@ public class DRFTest extends TestUtil {
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
       parms._response_column = "response";
-      parms._row_weights_column = "weight";
-      parms._seed = 0xdecaf;
+      parms._seed = 1;
       parms._ntrees = 1;
-      parms._mtries = 4;
+      parms._min_rows = 1;
+      parms._mtries = 1;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -607,10 +607,10 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
 
       double mse[] = drf._output._mse_train;
-      assertEquals(0.3955084146938792, mse[mse.length-1], 1e-6);
+      assertEquals(0.3, mse[mse.length-1], 1e-6);
       job.remove();
       drf.delete();
     } finally{
