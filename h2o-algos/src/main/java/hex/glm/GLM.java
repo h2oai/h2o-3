@@ -894,16 +894,20 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
           :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
         double rho = 0;
-        if(x >= 0) {
+        if(x > 0) {
           double D = l1pen*(l1pen + 4*x);
-          assert D >= 0;
-          D = Math.sqrt(D);
-          rho = .25*(l1pen + D)/(2*x);
-        } else {
+          if(D > 0) {
+            D = Math.sqrt(D);
+            rho = .25 * (l1pen + D) / (2 * x);
+          } else rho = l1pen/x;
+        } else if(x < 0) {
           double D = l1pen * (l1pen - 4 * x);
-          assert D >= 0;
-          D = Math.sqrt(D);
-          rho = -.25*(l1pen + D) / (2 * x);
+          if(D > 0) {
+            D = Math.sqrt(D);
+            rho = -.25 * (l1pen + D) / (2 * x);
+          } else rho = l1pen/x;
+        } else {
+          rho = Math.max(Math.abs(xy[i]),1e-6); // last resort hard-coded constant
         }
         if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
           double lx = (x - lb[i]);
