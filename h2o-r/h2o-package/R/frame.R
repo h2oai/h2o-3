@@ -1558,19 +1558,6 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   if(vars < 0L || vars > (ncol(.data)-1L))
     stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
 
-  # FUN <- deparse(substitute(.fun), width.cutoff = 500L)
-  # if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
-  # .FUN <- get(FUN)
-  # if( !is.function(.FUN) ) stop("FUN must be an R function
-  if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun), width.cutoff = 500L)
-  else FUN <- .fun
-  .FUN <- NULL
-  if (is.character(FUN)) .FUN <- get(FUN, envir = envir)
-  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function")
-  else if(is.null(.FUN) && !is.function(FUN))
-    stop("FUN must be an R function")
-  if (!is.null(.FUN)) FUN <- as.name(FUN)
-
   l <- list(...)
   if(length(l) > 0L) {
     tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "numeric", "character", "logical") } )
@@ -1588,12 +1575,14 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
+  FUN <- .fun
+  if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
   myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
     # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
+    fun.ast <- .fun.to.ast(.fun, "anon")
     a <- invisible(.h2o.post.function(fun.ast))
     if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
   # else named function get the ast
@@ -1610,17 +1599,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-
-#  if(length(l) == 0)
-#    ast <- .h2o.nary_op("apply", X, MARGIN, fun.ast)
-#  else
-#    ast <- .h2o.nary_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-#  ast
-
-#  vars <- paste0('{', paste(vars, collapse = ";"), '}')
-
   .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
-#  .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 }
 
 
