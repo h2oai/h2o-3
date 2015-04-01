@@ -2,7 +2,6 @@ package hex.schemas;
 
 import hex.DataInfo;
 import hex.glrm.GLRM;
-import hex.glrm.GLRMModel;
 import hex.glrm.GLRMModel.GLRMParameters;
 import water.api.API;
 import water.api.KeyV1;
@@ -11,13 +10,19 @@ import water.api.ModelParametersSchema;
 public class GLRMV2 extends ModelBuilderSchema<GLRM,GLRMV2,GLRMV2.GLRMParametersV2> {
 
   public static final class GLRMParametersV2 extends ModelParametersSchema<GLRMParameters, GLRMParametersV2> {
-    static public String[] own_fields = new String[] { "transform", "k", "gamma", "max_iterations", "seed", "init", "user_points" };
+    static public String[] own_fields = new String[] { "transform", "k", "loss", "regularization", "gamma", "max_iterations", "seed", "init", "user_points" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
 
     @API(help = "Rank of matrix approximation", required = true)
     public int k;
+
+    @API(help = "Loss function", values = { "L2", "L1", "Huber", "Poisson", "Hinge", "Logistic" }) // TODO: pull out of enum class
+    public GLRMParameters.Loss loss;
+
+    @API(help = "Regularization function", values = { "L2", "L1" }) // TODO: pull out of enum class
+    public GLRMParameters.Regularizer regularization;
 
     @API(help = "Regularization weight")
     public double gamma;

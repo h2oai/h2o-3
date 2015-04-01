@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.DataInfo;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
@@ -11,10 +12,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   public static class GLRMParameters extends Model.Parameters {
     public int _k = 1;                            // Number of principal components
     public int _max_iterations = 1000;            // Max iterations
-    public final Loss _loss = Loss.L2;            // Loss function
+    public Loss _loss = Loss.L2;            // Loss function
+    public Regularizer _regularization = Regularizer.L2;   // Regularization function
     public double _gamma = 0;                     // Regularization weight
-    public final Regularizer _regularization = Regularizer.L2;   // Regularization function
     public long _seed = System.nanoTime(); // RNG seed
+    public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;
     public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
