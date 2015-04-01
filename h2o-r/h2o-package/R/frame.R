@@ -437,6 +437,7 @@ NULL
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
+  browser()
   missingI <- missing(i)
   missingJ <- missing(j)
 
@@ -550,6 +551,7 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
+  browser()
   missingI <- missing(i)
   missingJ <- missing(j)
 
@@ -560,14 +562,37 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
     stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
-  if (missingI && missingJ)
+  if (missingI && missingJ) {
     sub <- x
-  else if (missingI)
-    sub <- x[,j]
-  else if (missingJ)
+  } else if (missingI) {
+    j <- match(j, colnames(x))
+    if( any(is.na(j)) ) {
+      j <- .eval(ncol(x)+1,parent.frame())
+      op  <- new("ASTApply", op = "[")
+      ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
+      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+      finalizers <- x@finalizers
+      sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+    } else {
+      sub <- x[,j]
+    }
+  } else if (missingJ) {
     sub <- x[i,]
-  else
-    sub <- x[i, j]
+  } else {
+    j <- match(j, colnames(x))
+    if( any(is.na(j)) ) {
+          j <- .eval(ncol(x)+1,parent.frame())
+          op  <- new("ASTApply", op = "[")
+          ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i), j))
+          mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+          finalizers <- x@finalizers
+          sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                          finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+    } else {
+      sub <- x[i, j]
+    }
+  }
 
   lhs <- .get(sub)
   finalizers <- sub@finalizers
@@ -1604,8 +1629,7 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-  df <- .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
-  return(.h2o.eval.frame(conn=h2o.getConnection(), ast=df@mutable$ast, key=df@key))
+  .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
 }
 
 
