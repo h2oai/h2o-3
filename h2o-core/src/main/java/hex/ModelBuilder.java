@@ -35,7 +35,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
-  protected transient String row_weights_name;
+  protected transient boolean _have_dummy_weights;
+  protected transient String _row_weights_name;
   protected transient Vec _row_weights; // training row weights column
   public Key _row_weights_key; // training row weights key
   public Vec row_weights() { return _row_weights == null ? (_row_weights = DKV.getGet(_row_weights_key)) : _row_weights; }
@@ -228,18 +229,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // place row weights at the end (and if not specified, make one consisting of all 1.0s)
     if (expensive) {
-      row_weights_name = _parms._row_weights_column == null ?
+      _row_weights_name = _parms._row_weights_column == null ?
               "_default_row_weights_all_ones_" : _parms._row_weights_column;
 
-      int weight_idx = _train.find(row_weights_name);
+      int weight_idx = _train.find(_row_weights_name);
       if (weight_idx == -1) {
+        _have_dummy_weights = true;
         _row_weights = _train.lastVec().makeCon(1.0);
         if (_valid != null)
           _vrow_weights = _valid.lastVec().makeCon(1.0);
       } else {
         _row_weights = _train.remove(weight_idx);
         if (_valid != null) {
-          if (_valid.find(row_weights_name) == -1)
+          if (_valid.find(_row_weights_name) == -1)
             error("_row_weights_column", "Row weights column is missing in the validation set!");
           _vrow_weights = _valid.remove(weight_idx);
         }
@@ -248,10 +250,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_row_weights_column", "Row weights column is all NAs!");
       if (!_row_weights.isNumeric())
         error("_row_weights_column", "Row weights column is not numeric!");
-//      _train.add(row_weights_name, _row_weights);
+//      _train.add(_row_weights_name, _row_weights);
       _row_weights_key = _row_weights._key;
       if (_valid != null) {
-//        _valid.add(row_weights_name, _vrow_weights);
+//        _valid.add(_row_weights_name, _vrow_weights);
         _vrow_weights_key = _vrow_weights._key;
       }
     }
@@ -276,9 +278,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   @Override public void cleanup() {
     super.cleanup();
-    row_weights().remove();
-    if (_vrow_weights_key != null)
-      vrow_weights().remove();
+    if (_have_dummy_weights) {
+      row_weights().remove();
+      if (_vrow_weights_key != null)
+        vrow_weights().remove();
+    }
   }
 
   abstract class FilterCols {
@@ -286,7 +290,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     void doIt( Frame f, String msg, boolean expensive ) {
       boolean any=false;
       for( int i = 0; i < f.vecs().length; i++ ) {
-        if( filter(f.vecs()[i]) && f._names[i] != row_weights_name ) {
+        if( filter(f.vecs()[i]) && f._names[i] != _row_weights_name) {
           if( any ) msg += ", "; // Log dropped cols
           any = true;
           msg += f._names[i];

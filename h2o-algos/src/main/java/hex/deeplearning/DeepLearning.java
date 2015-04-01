@@ -132,14 +132,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
       Frame tra_fr = new Frame(_train._key, _train.names(), _train.vecs());
       Vec resp = tra_fr.remove(_parms._response_column);
-      tra_fr.add(row_weights_name, row_weights());
+      tra_fr.add(_row_weights_name, row_weights());
       tra_fr.add(_parms._response_column, resp);
 
       Frame val_fr = null;
       if (_valid != null) {
         val_fr = new Frame(_valid._key, _valid.names(), _valid.vecs());
         resp = val_fr.remove(_parms._response_column);
-        val_fr.add(row_weights_name, vrow_weights());
+        val_fr.add(_row_weights_name, vrow_weights());
         val_fr.add(_parms._response_column, resp);
         assert(val_fr.numCols() == tra_fr.numCols());
       }
@@ -255,14 +255,14 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         Frame tra_fr = new Frame(_train._key, _train.names(), _train.vecs());
         Vec resp = tra_fr.remove(mp._response_column);
-        tra_fr.add(row_weights_name, row_weights());
+        tra_fr.add(_row_weights_name, row_weights());
         tra_fr.add(mp._response_column, resp);
 
         Frame val_fr = null;
         if (_valid != null) {
           val_fr = new Frame(_valid._key, _valid.names(), _valid.vecs());
           resp = val_fr.remove(mp._response_column);
-          val_fr.add(row_weights_name, vrow_weights());
+          val_fr.add(_row_weights_name, vrow_weights());
           val_fr.add(mp._response_column, resp);
           assert(val_fr.numCols() == tra_fr.numCols());
         }
