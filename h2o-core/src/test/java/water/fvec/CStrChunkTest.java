@@ -55,6 +55,30 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }
+
+  @Test
+  public void test_writer(){
+    stall_till_cloudsize(1);
+    Frame frame = null;
+    try {
+      frame = parse_test_file("smalldata/junit/iris.csv");
+
+      //Create a label vector
+      byte[] typeArr = {Vec.T_STR};
+      Vec labels = frame.lastVec().makeCons(1, 0, null, typeArr)[0];
+      Vec.Writer writer = labels.open();
+      int rowCnt = (int)frame.lastVec().length();
+      for (int r = 0; r < rowCnt; r++) // adding labels in reverse order
+        writer.set(rowCnt-r-1, "Foo"+(r+1));
+      writer.close();
+
+      //Append label vector and spot check
+      frame.add("Labels", labels);
+      Assert.assertTrue("Failed to create a new String based label column", frame.lastVec().atStr(new ValueString(), 42).compareTo(new ValueString("Foo108"))==0);
+    } finally {
+      if (frame != null) frame.delete();
+    }
+  }
 }
 
 
