@@ -21,9 +21,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   @Override public ConfusionMatrix cm() { return _cm; }
-  @Override public float[] hr() {
-    return _hit_ratios;
-  }
+  @Override public float[] hr() { return _hit_ratios; }
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);
