@@ -85,7 +85,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
-      double logloss = Double.NaN;
+      double logloss;
       if (sigma != 0.0) {
         ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
         for (int i = 0; i < cms.length; i++) cms[i] = new ConfusionMatrix(_cms[i], _domain);
