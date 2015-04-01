@@ -148,9 +148,9 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 
   # Create a new ASTSpan
   if (identical(expr[[1L]], quote(`:`))) {
-    if( eval(expr[[2L]]) < 0 ) {
+    if( eval(expr[[2L]],envir) < 0 ) {
       neg <- TRUE
-      if( eval(expr[[3L]]) >= 0) stop("Index range must not include positive and negative values.")
+      if( eval(expr[[3L]],envir) >= 0) stop("Index range must not include positive and negative values.")
     }
     if (neg)
       return(new("ASTNode", root = new("ASTApply", op = ":"),
