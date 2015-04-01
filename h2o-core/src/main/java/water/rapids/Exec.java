@@ -62,6 +62,7 @@ public class Exec extends Iced {
     env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
     env.put("NA",  Env.NUM, Double.toString(Double.NaN));
     env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+    env.put("-Inf",Env.NUM, Double.toString(Double.NEGATIVE_INFINITY));
 
     try {
       Exec ex = new Exec(str, env);
@@ -105,9 +106,9 @@ public class Exec extends Iced {
   protected AST parse() {
     skipWS();
     // Parse a token --> look for a function or a special char.
-    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    if (!hasNext()) throw new IllegalASTException("End of input unexpected. Badly formed AST.");
     String tok = parseID();
-    if (!hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
+    if (!hasNext()) throw new IllegalASTException("End of input unexpected. Badly formed AST.");
     //lookup of the token
     AST ast = lookup(tok);
     return ast.parse_impl(this);
@@ -243,3 +244,6 @@ public class Exec extends Iced {
     _inited = true;
   }
 }
+
+
+class IllegalASTException extends IllegalArgumentException { IllegalASTException(String s) {super(s);} }

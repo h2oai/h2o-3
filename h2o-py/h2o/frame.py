@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # import numpy    no numpy cuz windoz
-import collections, csv, itertools, os, re, tabulate, tempfile, uuid
+import collections, csv, itertools, os, re, tabulate, tempfile, uuid, copy
 import h2o
 from connection import H2OConnection
 from expr import Expr
@@ -607,6 +607,50 @@ class H2OFrame:
     h2o.remove(key)
     # Make backing H2OVecs for the remote h2o vecs
     j = h2o.frame(tmp_key) # Fetch the frame as JSON
+    fr = j['frames'][0]    # Just the first (only) frame
+    rows = fr['rows']      # Row count
+    veckeys = fr['vec_keys']# List of h2o vec keys
+    cols = fr['columns']   # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+
+  def groupby(self,cols,a):
+    """
+    GroupBy
+    :param cols: The columns to group on.
+    :param a: A dictionary of aggregates having the following shape:
+              {"colname":[aggregate, column, naMethod]}
+              e.g.: {"bikes":["count", 0, "all"]}
+
+              The naMethod is one of "all", "ignore", or "rm", which specifies how to handle
+              NAs that appear in columns that are being aggregated.
+
+              "all" - include NAs
+              "rm"  - exclude NAs
+              "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
+    :return: The group by frame.
+    """
+    colnums = [str(self._find_idx(name)) for name in cols]
+    rapids_series = "{"+";".join(colnums)+"}"
+    aggregates = copy.deepcopy(a)
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+
+    nAggs = len(aggregates)
+    aggs = []
+
+    # transform cols in aggregates to their indices...
+    for k in aggregates:
+      if isinstance(aggregates[k][1],str):
+        aggregates[k][1] = '#'+str(self._find_idx(aggregates[k][1]))
+      else:
+        aggregates[k][1] = '#'+str(aggregates[k][1])
+      aggs+=["\"{1}\" {2} \"{3}\" \"{0}\"".format(str(k),*aggregates[k])]
+    aggs = "(agg #{} {})".format(nAggs, " ".join(aggs))
+
+    expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
+    h2o.rapids(expr)  # group by
+    j = h2o.frame(tmp_key)
     fr = j['frames'][0]    # Just the first (only) frame
     rows = fr['rows']      # Row count
     veckeys = fr['vec_keys']# List of h2o vec keys

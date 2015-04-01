@@ -45,6 +45,7 @@ NULL
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,0,e2))
 
 #' @describeIn H2OFrame For \code{'H2OFrame','missing'}
@@ -52,6 +53,7 @@ setMethod("Ops", signature(e1="missing",   e2="H2OFrame" ), function(e1,e2) .h2o
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,0))
 
 #' @describeIn H2OFrame For \code{'H2OFrame','H2OFrame'}
@@ -59,62 +61,70 @@ setMethod("Ops", signature(e1="H2OFrame",  e2="missing"  ), function(e1,e2) .h2o
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="H2OFrame",  e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
 
 #' @describeIn H2OFrame For \code{'numeric','H2OFrame'}
-#' 
+#'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="numeric",   e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
 
 #' @describeIn H2OFrame For \code{'H2OFrame','numeric'}
-#' 
+#'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="H2OFrame",  e2="numeric"  ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
 
 #' @describeIn H2OFrame For \code{'H2OFrame','character'}
-#' 
+#'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="H2OFrame",  e2="character"), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
 
 #' @describeIn H2OFrame For \code{'character','H2OFrame'}
-#' 
+#'
 #' \code{"+"}, \code{"-"}, \code{"*"}, \code{"^"}, \code{"\%\%"}, \code{"\%/\%"}, \code{"/"}
 #' \code{"=="}, \code{">"}, \code{"<"}, \code{"!="}, \code{"<="}, \code{">="},
 #' \code{"&"}, \code{"|"}, \code{"**"}
+#' @export
 setMethod("Ops", signature(e1="character", e2="H2OFrame" ), function(e1,e2) .h2o.binary_row_op(.Generic,e1,e2))
 
 # Math Generics
 #
 #' @describeIn H2OFrame Generics
-#' 
+#'
 #'             \code{"abs"}, \code{"sign"}, \code{"sqrt"}, \code{"ceiling"}, \code{"floor"},
-#'             \code{"trunc"}, \code{"cummax"}, \code{"cummin"}, \code{"cumprod"}, \code{"cumsum"}, 
-#'             \code{"log"}, \code{"log10"}, \code{"log2"}, \code{"log1p"}, \code{"acos"}, \code{"acosh"}, 
-#'             \code{"asin"}, \code{"asinh"}, \code{"atan"}, \code{"atanh"}, \code{"exp"}, \code{"expm1"}, 
-#'             \code{"cos"}, \code{"cosh"}, \code{"cospi"}, \code{"sin"}, \code{"sinh"}, \code{"sinpi"}, 
-#'             \code{"tan"}, \code{"tanh"}, \code{"tanpi"}, 
+#'             \code{"trunc"}, \code{"cummax"}, \code{"cummin"}, \code{"cumprod"}, \code{"cumsum"},
+#'             \code{"log"}, \code{"log10"}, \code{"log2"}, \code{"log1p"}, \code{"acos"}, \code{"acosh"},
+#'             \code{"asin"}, \code{"asinh"}, \code{"atan"}, \code{"atanh"}, \code{"exp"}, \code{"expm1"},
+#'             \code{"cos"}, \code{"cosh"}, \code{"cospi"}, \code{"sin"}, \code{"sinh"}, \code{"sinpi"},
+#'             \code{"tan"}, \code{"tanh"}, \code{"tanpi"},
 #'             \code{"gamma"}, \code{"lgamma"}, \code{"digamma"}, \code{"trigamma"}
+#' @export
 setMethod("Math", signature(x = "H2OFrame"), function(x) { .h2o.unary_row_op(.Generic,x) })
 
 # Math2 Generics
 #
 #' @describeIn H2OFrame Generics
-#' 
+#'
 #'             \code{"round"}, \code{"signif"}
+#' @export
 setMethod("Math2", signature(x = "H2OFrame"), function(x, digits) .h2o.nary_row_op(.Generic,x,digits))
 
 
 # Summary Generics:
 
 #' @describeIn H2OFrame Generics
-#' 
+#'
 #'             \code{"max"}, \code{"min"}, \code{"range"}, \code{"prod"}, \code{"sum"}, \code{"any"}, \code{"all"}
+#' @export
 setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) {
   .h2o.nary_scalar_op(.Generic, x, ..., na.rm)
 })
@@ -129,14 +139,20 @@ setMethod("Summary", signature(x = "H2OFrame"), function(x, ..., na.rm = FALSE) 
 NULL
 
 #' @describeIn H2OFrame Generic \code{"!"}
+#' @export
 setMethod("!",     "H2OFrame", function(x) .h2o.unary_row_op("!", x))
 #' @describeIn H2OFrame Generic \code{"is.na"}
+#' @export
 setMethod("is.na", "H2OFrame", function(x) .h2o.unary_row_op("is.na", x) )
 #' @describeIn H2OFrame Generic \code{"t"}
+#' @export
 setMethod("t",     "H2OFrame", function(x) .h2o.unary_frame_op("t", x) )
 #' @describeIn H2OFrame Generic \code{"log"}
+#' @export
 setMethod("log",   "H2OFrame", function(x, ...) .h2o.nary_row_op("log", x, ...))
 #' @describeIn H2OFrame Generic \code{"trunc"}
+#' @export
 setMethod("trunc", "H2OFrame", function(x, ...) .h2o.nary_row_op("trunc", x, ...))
 
+#' @export
 setMethod("%*%", c("H2OFrame", "H2OFrame"), function(x,y) .h2o.binary_frame_op("%*%",x,y))
