@@ -437,7 +437,6 @@ NULL
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
-  browser()
   missingI <- missing(i)
   missingJ <- missing(j)
 
@@ -551,9 +550,18 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 #' @rdname H2OFrame-Extract
 #' @export
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
-  browser()
   missingI <- missing(i)
   missingJ <- missing(j)
+  if( !missingJ && is.na(j) ) j <- as.list(match.call())$j
+
+  updateColName <- FALSE
+  idx <- 0
+  name <- ""
+  if( !missingI && is.character(i) && missingJ ) {  ## case where fr["baz"] <- qux
+    missingI <- TRUE
+    missingJ <- FALSE
+    j <- i
+  }
 
   if(!missingI && !is.numeric(i))
     stop("`i` must be missing or a numeric vector")
@@ -565,9 +573,12 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if (missingI && missingJ) {
     sub <- x
   } else if (missingI) {
+    name <- j
     j <- match(j, colnames(x))
     if( any(is.na(j)) ) {
-      j <- .eval(ncol(x)+1,parent.frame())
+      updateColName <- TRUE
+      idx <- ncol(x)+1
+      j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
@@ -580,15 +591,18 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   } else if (missingJ) {
     sub <- x[i,]
   } else {
+    name <- j
     j <- match(j, colnames(x))
     if( any(is.na(j)) ) {
-          j <- .eval(ncol(x)+1,parent.frame())
-          op  <- new("ASTApply", op = "[")
-          ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i), j))
-          mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
-          finalizers <- x@finalizers
-          sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
-                          finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+      updateColName <- TRUE
+      idx <- ncol(x)+1
+      j <- .eval(idx,parent.frame())
+      op  <- new("ASTApply", op = "[")
+      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i), j))
+      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+      finalizers <- x@finalizers
+      sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
     } else {
       sub <- x[i, j]
     }
@@ -604,7 +618,10 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
+  res <- .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
+
+  if( updateColName ) { colnames(res)[idx] <- name }
+  res
 })
 
 #' @rdname H2OFrame-Extract
