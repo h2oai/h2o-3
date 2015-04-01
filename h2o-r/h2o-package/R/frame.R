@@ -1590,16 +1590,22 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
     if (.is.op(substitute(FUN))) {
       fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
     } else {
-      fun_name <- as.character(FUN)
-      fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(fun, fun_name)
-      a <- invisible(.h2o.post.function(fun.ast))
-      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      if( is(FUN, "standardGeneric")) {
+        fun_name <- FUN@generic[[1]]
+        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
+      } else {
+        fun_name <- as.character(substitute(FUN))
+        fun <- match.fun(FUN)
+        fun.ast <- .fun.to.ast(fun, fun_name)
+        a <- invisible(.h2o.post.function(fun.ast))
+        if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      }
     }
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-  .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
+  df <- .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
+  return(.h2o.eval.frame(conn=h2o.getConnection(), ast=df@mutable$ast, key=df@key))
 }
 
 
