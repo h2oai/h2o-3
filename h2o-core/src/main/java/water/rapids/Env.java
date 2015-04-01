@@ -921,7 +921,7 @@ class ValSeries extends Val {
     throw new IllegalArgumentException("Could not convert ASTSeries to a single number.");
   }
 
-  boolean all_neg() { return (_idxs != null && _idxs.length > 2) ?_idxs[1] < 0 : _spans[0].all_neg(); }
+  boolean all_neg() { return (_idxs != null && _idxs.length > 0) ?_idxs[0] < 0 : _spans[0].all_neg(); }
   boolean all_pos() { return !all_neg(); }
 }
 
