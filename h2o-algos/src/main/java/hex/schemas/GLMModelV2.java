@@ -100,7 +100,8 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
         tdt = new TwoDimTable("Coefficient Magnitudes","(standardized) coefficient magnitudes", names, new String[]{"Coefficients"},new String[]{"double"},new String[]{"%5f"},"names");
         for(int i = 0; i < sm.beta.length; ++i)
           tdt.set(i, 0, magnitudes[i]);
-        // coefficients_magnitude.fillFromImpl();
+        coefficients_magnitude = new TwoDimTableBase();
+        coefficients_magnitude.fillFromImpl(tdt);
       } else {
         // coefficients_table = new TwoDimTable("Coefficients",impl._names,impl.isNormalized()? new String[]{"Coefficients, Normalized Coefficients"}: new String[]{"Coefficients"});
         String [] colTypes = new String[]{"double"};
@@ -115,6 +116,7 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
         tdt = new TwoDimTable("Coefficient Magnitudes","coefficient magnitudes", names, new String[]{"Coefficients"},colTypes,colFormats,"names");
         for(int i = 0; i < sm.beta.length; ++i)
           tdt.set(i, 0, magnitudes[i]);
+        coefficients_magnitude = new TwoDimTableBase();
         coefficients_magnitude.fillFromImpl(tdt);
       }
       return this;
