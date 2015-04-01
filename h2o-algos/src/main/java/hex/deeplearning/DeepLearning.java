@@ -130,19 +130,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       Scope.enter();
       DeepLearningModel cp = null;
 
-      Frame tra_fr = new Frame(_train._key, _train.names(), _train.vecs());
-      Vec resp = tra_fr.remove(_parms._response_column);
-      tra_fr.add(_row_weights_name, row_weights());
-      tra_fr.add(_parms._response_column, resp);
-
-      Frame val_fr = null;
-      if (_valid != null) {
-        val_fr = new Frame(_valid._key, _valid.names(), _valid.vecs());
-        resp = val_fr.remove(_parms._response_column);
-        val_fr.add(_row_weights_name, vrow_weights());
-        val_fr.add(_parms._response_column, resp);
-        assert(val_fr.numCols() == tra_fr.numCols());
-      }
+      Frame tra_fr = addRowWeights(_train);
+      Frame val_fr = _valid == null ? null : addRowWeights(_valid);
 
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), tra_fr, val_fr);
@@ -253,19 +242,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
 
-        Frame tra_fr = new Frame(_train._key, _train.names(), _train.vecs());
-        Vec resp = tra_fr.remove(mp._response_column);
-        tra_fr.add(_row_weights_name, row_weights());
-        tra_fr.add(mp._response_column, resp);
-
-        Frame val_fr = null;
-        if (_valid != null) {
-          val_fr = new Frame(_valid._key, _valid.names(), _valid.vecs());
-          resp = val_fr.remove(mp._response_column);
-          val_fr.add(_row_weights_name, vrow_weights());
-          val_fr.add(mp._response_column, resp);
-          assert(val_fr.numCols() == tra_fr.numCols());
-        }
+        Frame tra_fr = addRowWeights(_train);
+        Frame val_fr = _valid == null ? null : addRowWeights(_valid);
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));

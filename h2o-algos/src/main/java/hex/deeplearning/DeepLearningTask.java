@@ -55,7 +55,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       seed = new Random().nextLong();
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    Log.info("row weight: " + r.row_weight);
+//    Log.info("row weight: " + r.row_weight);
 
     // Handle integer portion of row_weight -> repeat fprop + bprop (as if the point were repeated in order)
     for (int i=0; i<r.row_weight; ++i) {

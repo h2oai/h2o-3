@@ -1,6 +1,7 @@
 package hex;
 
 import water.*;
+import water.fvec.Frame;
 import water.fvec.Vec;
 
 abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P extends SupervisedModel.SupervisedParameters, O extends SupervisedModel.SupervisedOutput> extends ModelBuilder<M,P,O> {
@@ -22,6 +23,19 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   //public SupervisedModelBuilder(P parms) { super(parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(String desc, P parms) { super(desc,parms);  /*only call init in leaf classes*/ }
   public SupervisedModelBuilder(Key dest, String desc, P parms) { super(dest,desc,parms);  /*only call init in leaf classes*/ }
+
+  /**
+   * Insert the (user-given, otherwise all 1s) row weights just before the response column (2nd last Vec)
+   * @param fr
+   * @return
+   */
+  @Override public Frame addRowWeights(Frame fr) {
+    Frame frw = new Frame(fr._key, fr.names(), fr.vecs());
+    Vec resp = frw.remove(_parms._response_column);
+    frw.add(_row_weights_name, row_weights());
+    frw.add(_parms._response_column, resp);
+    return frw;
+  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
