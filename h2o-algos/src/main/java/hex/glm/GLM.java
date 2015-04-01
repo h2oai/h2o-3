@@ -642,15 +642,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           _taskInfo._objVal = glrt._objVal + (1 - _parms._alpha[0]) * ArrayUtils.l1norm(glrt._beta, _activeData._intercept);
           // todo get validation on the validation set here
           if(_valid != null) {
-            cmp.addToPendingCount(1);
+            cmp.addToPendingCount(2);
             assert cmp.getPendingCount() > 0;
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
             new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], glrt._beta, 1.0 / _taskInfo._nobs, new H2OCallback<GLMGradientTask>(cmp) {
               @Override
               public void callback(GLMGradientTask gt) {
                 assert _lambdaId == 0;
-//                setSubmodel(newBeta, glrt._val, gt._val, cmp);
-//                cmp.tryComplete();
+                setSubmodel(newBeta, glrt._val, gt._val, cmp);
+                cmp.tryComplete();
               }
             }).setValidate(_taskInfo._ymu,true).dfork(_validDinfo._adaptedFrame);
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
