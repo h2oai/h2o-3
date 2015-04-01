@@ -503,19 +503,19 @@ h2o.metric <- function(object, thresholds, metric) {
 #' @rdname h2o.metric
 #' @export
 h2o.F0point5 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F0point5")
+  h2o.metric(object, thresholds, "f0point5")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F1 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F1")
+  h2o.metric(object, thresholds, "f1")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F2 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F2")
+  h2o.metric(object, thresholds, "f2")
 }
 
 #' @rdname h2o.metric
@@ -533,13 +533,13 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  h2o.metric(object, thresholds, "max_per_class_error")
+  h2o.metric(object, thresholds, "minPerClassCorrect")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.mcc <- function(object, thresholds){
-  h2o.metric(object, thresholds, "mcc")
+  h2o.metric(object, thresholds, "absolute_MCC")
 }
 
 #' @rdname h2o.metric

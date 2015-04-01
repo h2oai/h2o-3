@@ -51,7 +51,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       for( int i=0; i<auc._nBins; i++ )
         for( int j=0; j<crits.length; j++ ) {
           double d = crits[j].exec(auc,i); // Note: casts to Object are NOT redundant
-          thresholdsByMetrics.set(i,j,crits[j]._isInt ? (Object)new Long((long)d) : (Object)new Double(d));
+          thresholdsByMetrics.set(i,j,crits[j]._isInt ? (Object)((long)d) : d);
         }
       this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
       
@@ -63,8 +63,8 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
                                                "Metric" );
       for( int i=0; i<crits.length; i++ ) {
         int idx = crits[i].max_criterion_idx(auc);
-        maxMetrics.set(i,0,auc._ths[idx]);
-        maxMetrics.set(i,1,crits[i].exec(auc,idx));
+        maxMetrics.set(i,0,idx==-1 ? Double.NaN : auc._ths[idx]);
+        maxMetrics.set(i,1,idx==-1 ? Double.NaN : crits[i].exec(auc,idx));
         maxMetrics.set(i,2,idx);
       }
       

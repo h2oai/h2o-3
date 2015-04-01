@@ -172,8 +172,8 @@ public class AUC2 extends Iced {
     return new long[][]{{tn(idx),fp(idx)},{fn(idx),tp(idx)}};
   }
 
-  /** @return the default CM */
-  public long[/*actual*/][/*predicted*/] defaultCM( ) { return buildCM(_max_idx); }
+  /** @return the default CM, or null for an empty AUC */
+  public long[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
   /** @return the default threshold; threshold that maximizes the default criterion */
   public double defaultThreshold( ) { return _ths[_max_idx]; }
   /** @return the error of the default CM */
