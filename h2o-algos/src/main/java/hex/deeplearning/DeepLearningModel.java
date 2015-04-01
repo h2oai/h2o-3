@@ -634,7 +634,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public static class DeepLearningModelOutput extends SupervisedModel.SupervisedOutput {
     @Override public int nfeatures() {
-      return _names.length - (autoencoder ? 0 : 1);
+      return super.nfeatures() + (autoencoder ? 1 : 0);
     }
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }

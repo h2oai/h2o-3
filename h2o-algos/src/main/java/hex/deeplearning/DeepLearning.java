@@ -159,7 +159,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
 
         try {
           final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
-                                              _parms._autoencoder ? 0 : 1, 
+                                              _parms._autoencoder ? 0 : 1,
                                               _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
                                               _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
                                               isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);

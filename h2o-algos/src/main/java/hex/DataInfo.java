@@ -78,29 +78,6 @@ public class DataInfo extends Keyed {
         _etaOffset -= _normSub[i] * _normMul[i];
   }
 
-
-//  public DataInfo(Key selfKey, Frame train, Frame valid, int hasResponses, boolean useAllFactorLvls, double[] normSub, double[] normMul, TransformType predictor_transform, double[] normRespSub, double[] normRespMul){
-//    this(selfKey, train, valid, hasResponses,useAllFactorLvls,
-//      normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
-//      normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
-//    assert predictor_transform != null;
-//    assert (normSub == null) == (normMul == null);
-//    assert (normRespSub == null) == (normRespMul == null);
-//    if(normSub != null) {
-//      System.arraycopy(normSub, 0, _normSub, 0, normSub.length);
-//      System.arraycopy(normMul, 0, _normMul, 0, normMul.length);
-//    }
-//    if(normRespSub != null) {
-//      System.arraycopy(normRespSub, 0, _normRespSub, 0, normRespSub.length);
-//      System.arraycopy(normRespMul, 0, _normRespMul, 0, normRespMul.length);
-//    }
-//  }
-//
-//
-//  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
-//    this(selfKey, train, valid, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
-//  }
-
   //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
   public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, int foldId, int nfolds){
     super(selfKey);
@@ -235,7 +212,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses;
+    final int n = tvecs.length-_responses-1 /*weights*/;
     assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
@@ -301,6 +278,12 @@ public class DataInfo extends Keyed {
       }
     }
 
+    // row weights
+    names[ncats+nnums]  =   train._names[ncats+nnums]; //row weights
+    if (valid != null)
+      vvecs2[ncats+nnums] = vvecs[ncats+nnums];
+    tvecs2[ncats+nnums] = tvecs[ncats+nnums];
+
     // Compute the mean/sigma for each response
     if (_responses > 0) {
       switch(response_transform){
@@ -312,9 +295,9 @@ public class DataInfo extends Keyed {
       default:        throw H2O.unimpl();
       }
       for(int i = 0; i < _responses; ++i){
-        names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
+        names[ncats+nnums+i+1]  =   train._names[ncats+nnums+i+1];
         if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
-        Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
+        Vec v = (tvecs2[ncats+nnums+i+1] = tvecs[ncats+nnums+i+1]);
         double vs = (v.sigma()      ) == 0 ? 1.0 : 1.0/(v.sigma()      );
         double vm = (v.max()-v.min()) == 0 ? 1.0 : 1.0/(v.max()-v.min());
         switch( response_transform ) {
@@ -423,6 +406,7 @@ public class DataInfo extends Keyed {
     public double [] response;
     public int    [] numIds;
     public int    [] binIds;
+    public double row_weight;
 
     public int       nBins;
     public int       nNums;
@@ -517,6 +501,7 @@ public class DataInfo extends Keyed {
         d = (d - _normSub[i]) * _normMul[i];
       row.numVals[i] = d;
     }
+    row.row_weight = chunks[_cats + _nums].atd(rid);
     for (int i = 0; i < _responses; ++i) {
       row.response[i] = chunks[chunks.length - _responses + i].atd(rid);
       if (_normRespMul != null)

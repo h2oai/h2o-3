@@ -6,6 +6,7 @@ import water.H2O;
 import water.H2O.H2OCountedCompleter;
 import water.Key;
 import water.util.Log;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -17,6 +18,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final public hex.deeplearning.DeepLearningModel.DeepLearningModelInfo model_info() { return _output; }
 
   transient Neurons[] _neurons;
+  transient Random _row_weight_rng;
 
   int _chunk_node_count = 1;
 
@@ -36,6 +38,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _output = _input; //faster, good enough in this case (since the input was freshly deserialized by the Weaver)
     _input = null;
     _output.set_processed_local(0l);
+    _row_weight_rng = RandomUtils.getRNG(0xDECAF ^ _output.get_params()._seed);
   }
 
   // create local workspace (neurons)
@@ -52,7 +55,19 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       seed = new Random().nextLong();
     }
     ((Neurons.Input)_neurons[0]).setInput(seed, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _output, _training, r.response);
+//    Log.info("row weight: " + r.row_weight);
+
+    // Handle integer portion of row_weight -> repeat fprop + bprop (as if the point were repeated in order)
+    for (int i=0; i<r.row_weight; ++i) {
+      step(seed, _neurons, _output, _training, r.response);
+    }
+
+    // Handle fractional row weights probabilistically
+    // TODO: Alert the user if mean(row_weight) is < 1
+    double remainder = r.row_weight-(int)r.row_weight;
+    if (remainder > 0 && _row_weight_rng.nextDouble() < remainder) {
+      step(seed, _neurons, _output, _training, r.response);
+    }
   }
 
   @Override protected void chunkDone(long n) {

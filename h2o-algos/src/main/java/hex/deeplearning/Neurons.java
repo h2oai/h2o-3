@@ -10,6 +10,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import static water.fvec.Vec.makeCon;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 import water.util.RandomUtils;
 
