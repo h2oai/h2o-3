@@ -11,7 +11,6 @@ import hex.glm.GLMTask.GLMLineSearchTask;
 import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import hex.AUCData;
@@ -23,10 +22,8 @@ import hex.utils.MSETsk;
 import water.*;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.parser.ParseSetup;
 import water.parser.ValueString;
 import water.util.ModelUtils;
 
@@ -458,7 +455,7 @@ public class GLMTest  extends TestUtil {
 //      HashMap<String, Double> coefs = model.coefficients();
 //      for(int i = 0; i < cfs1.length; ++i)
 //        assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
-//      GLMValidation val = model.validation();
+//      GLMValidation val = model.trainVal();
 ////      assertEquals(512.3, val.nullDeviance(),1e-1);
 ////      assertEquals(378.3, val.residualDeviance(),1e-1);
 ////      assertEquals(396.3, val.aic(),1e-1);
@@ -888,7 +885,7 @@ public class GLMTest  extends TestUtil {
       Submodel sm = model._output._submodels[model._output._best_lambda_idx];
       double l1norm = 0;
       for(double d:sm.norm_beta) l1norm += Math.abs(d);
-      double objval = sm.validation.residual_deviance / sm.validation.nobs + sm.lambda_value*l1norm;
+      double objval = sm.trainVal.residual_deviance / sm.trainVal.nobs + sm.lambda_value*l1norm;
       assertEquals(0.32922849120947384,objval,1e-3);
       // test scoring on several submodels
       GLMModel m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
@@ -899,7 +896,7 @@ public class GLMTest  extends TestUtil {
       // try scoring another model
       model._output.setSubmodelIdx(model._output._submodels.length>>1);
       sm = model._output._submodels[model._output._best_lambda_idx];
-      val = model._output._submodels[model._output._best_lambda_idx].validation;
+      val = model._output._submodels[model._output._best_lambda_idx].trainVal;
       m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
       score = m.score(fr);
       mse = new MSETsk().doAll(score.anyVec(), fr.vec(m._output.responseName()));

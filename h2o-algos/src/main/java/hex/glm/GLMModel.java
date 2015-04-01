@@ -11,7 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ModelUtils;
-import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -111,7 +110,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
   public String [] names(){ return _output._names;}
 
   public GLMValidation validation(){
-    return _output._submodels[_output._best_lambda_idx].validation;
+    return _output._submodels[_output._best_lambda_idx].trainVal;
   }
 
   @Override
@@ -533,10 +532,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     final double lambda_value;
     final int        iteration;
     final long       run_time;
-//    GLMValidation training;    TODO this needs be taken care of for training set AND validation set
-//    GLMValidation xtraining;
-    GLMValidation validation;
-    GLMValidation xvalidation;
+
+    GLMValidation trainVal;   // training set validation
+    GLMValidation holdOutVal; // hold-out set validation
+    GLMValidation xVal;       // x-validation
     final int rank;
     public final int [] idxs;
     final boolean sparseCoef;
@@ -570,9 +569,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       this.sparseCoef = sparseCoef;
     }
   }
-  public static void setSubmodel(H2O.H2OCountedCompleter cmp, Key modelKey, final double lambda, double[] beta, double[] norm_beta, final int iteration, long runtime, boolean sparseCoef, final GLMValidation val){
+  public static void setSubmodel(H2O.H2OCountedCompleter cmp, Key modelKey, final double lambda, double[] beta, double[] norm_beta, final int iteration, long runtime, boolean sparseCoef, final GLMValidation trainVal, final GLMValidation holdOutval){
     final Submodel sm = new Submodel(lambda,beta, norm_beta, runtime, iteration,sparseCoef);
-    sm.validation = val;
+    sm.trainVal = trainVal;
+    sm.holdOutVal = holdOutval;
     if(cmp != null)
       cmp.addToPendingCount(1);
     Future f = new TAtomic<GLMModel>(cmp){
@@ -580,7 +580,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       public GLMModel atomic(GLMModel old) {
         if(old == null)
           return old; // job could've been cancelled!
-        if(val != null)old._defaultThresholds = val.thresholds;
+        if(trainVal != null)old._defaultThresholds = trainVal.thresholds;
         if(old._output._submodels == null){
           old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};
@@ -671,7 +671,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       double [] beta = MemoryManager.malloc8d(_names.length);
       beta[beta.length-1] = icept;
       _submodels = new Submodel[]{new Submodel(lmax,beta,beta,0,0,_names.length > 750)};
-      _submodels[0].validation = val;
+      _submodels[0].trainVal = val;
     }
     public int  submodelIdForLambda(double lambda){
       if(lambda >= _submodels[0].lambda_value) return 0;
@@ -696,16 +696,19 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       int bestId = _submodels.length-1;
       if(_submodels.length > 2) {
         boolean xval = false;
+        boolean hval = false;
         GLMValidation bestVal = null;
-        for(Submodel sm:_submodels) {
-          if(sm.xvalidation != null) {
-            xval = true;
-            bestVal = sm.xvalidation;
-          }
+        if(_submodels[1].xVal != null) { // skip null model
+          xval = true;
+          bestVal = _submodels[1].xVal;
         }
-        if(!xval) bestVal = _submodels[0].validation;
+        else if(_submodels[1].holdOutVal != null) {
+          hval = true;
+          bestVal = _submodels[1].holdOutVal;
+        } else
+          bestVal = _submodels[0].trainVal;
         for (int i = 1; i < _submodels.length; ++i) {
-          GLMValidation val = xval ? _submodels[i].xvalidation : _submodels[i].validation;
+          GLMValidation val = xval ? _submodels[i].xVal : hval?_submodels[i].holdOutVal:_submodels[i].trainVal;
           if (val == null || val == bestVal) continue;
           if ((useAuc && val.auc > bestVal.auc) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
@@ -717,7 +720,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     public void setSubmodelIdx(int l){
       _best_lambda_idx = l;
-      if (_submodels[l].validation == null) {
+      if (_submodels[l].trainVal == null) {
         _threshold = 0.5f;
         _residual_deviance = Double.NaN;
         _null_deviance = Double.NaN;
@@ -726,13 +729,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = Double.NaN;
         _auc = Double.NaN;
       } else {
-        _threshold = _submodels[l].validation.best_threshold;
-        _residual_deviance = _submodels[l].validation.residualDeviance();
-        _null_deviance = _submodels[l].validation.nullDeviance();
-        _residual_degrees_of_freedom = _submodels[l].validation.resDOF();
-        _null_degrees_of_freedom = _submodels[l].validation.nullDOF();
-        _aic = _submodels[l].validation.aic();
-        _auc = _submodels[l].validation.auc();
+        _threshold = _submodels[l].trainVal.best_threshold;
+        _residual_deviance = _submodels[l].trainVal.residualDeviance();
+        _null_deviance = _submodels[l].trainVal.nullDeviance();
+        _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();
+        _null_degrees_of_freedom = _submodels[l].trainVal.nullDOF();
+        _aic = _submodels[l].trainVal.aic();
+        _auc = _submodels[l].trainVal.auc();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
@@ -754,8 +757,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         old._output._submodels = old._output._submodels.clone();
         int id = old._output.submodelIdForLambda(lambda);
         old._output._submodels[id] = (Submodel)old._output._submodels[id].clone();
-        old._output._submodels[id].xvalidation = val;
+        old._output._submodels[id].xVal = val;
         old._output.pickBestModel(false);
+
         return old;
       }
     }.fork(modelKey);
@@ -773,14 +777,21 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   static class FinalizeAndUnlockTsk extends DKeyTask<FinalizeAndUnlockTsk,GLMModel> {
     final Key _jobKey;
-    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey){
+    final Key _validFrame;
+    public FinalizeAndUnlockTsk(H2OCountedCompleter cmp, Key modelKey, Key jobKey, Key validFrame){
       super(cmp, modelKey);
       _jobKey = jobKey;
+      _validFrame = validFrame;
     }
     @Override
     protected void map(GLMModel glmModel) {
       glmModel._output.pickBestModel(false);
       glmModel.update(_jobKey);
+      if(_validFrame != null){
+        Frame f = DKV.getGet(_validFrame);
+        glmModel.score(f);
+        // todo: assert we got the same score as the best model
+      }
       glmModel.unlock(_jobKey);
     }
   }
