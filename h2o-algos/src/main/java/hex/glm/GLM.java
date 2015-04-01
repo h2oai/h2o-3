@@ -380,6 +380,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         }
         doCleanup();
         new RemoveCall(null, _dest).invokeTask();
+        failed(ex);
         return true;
       }
       return false;
