@@ -630,8 +630,9 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
   if(delete)
     h2o.rm(temp_key)
 
-  bmetrics <- new("H2OBinomialMetrics", algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
-  h2o.confusionMatrix(bmetrics)
+  # Make the correct class of metrics object
+  metrics <- new(sub("Model", "Metrics", class(object)), algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
+  h2o.confusionMatrix(metrics)
 })
 
 #' @rdname h2o.confusionMatrix
