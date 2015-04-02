@@ -1372,6 +1372,10 @@ setMethod("as.numeric", "H2OFrame", function(x)
 setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no)
   .h2o.nary_row_op("ifelse", test, yes, no))
 
+#' @export
+setMethod("ifelse", signature(test="ANY",yes="H2OFrame", no="H2OFrame"), function(test,yes,no)
+  .h2o.nary_frame_op("ifelse", test, yes, no))
+
 #' Combine H2O Datasets by Columns
 #'
 #' Takes a sequence of H2O data sets and combines them by column

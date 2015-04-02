@@ -854,18 +854,18 @@ class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @
 class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
 class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
 class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
-class ASTMonth extends ASTTimeOp { 
+class ASTMonth extends ASTTimeOp {
   static private final String[][] FACTORS = new String[][]{{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}};
   @Override protected String[][] factors() { return FACTORS; }
-  @Override String opStr(){ return "month"; } 
-  @Override ASTOp make() {return new ASTMonth ();} 
+  @Override String opStr(){ return "month"; }
+  @Override ASTOp make() {return new ASTMonth ();}
   @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}
 }
-class ASTDayOfWeek extends ASTTimeOp { 
+class ASTDayOfWeek extends ASTTimeOp {
   static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
   @Override protected String[][] factors() { return FACTORS; }
-  @Override String opStr(){ return "dayOfWeek"; } 
-  @Override ASTOp make() {return new ASTDayOfWeek();} 
+  @Override String opStr(){ return "dayOfWeek"; }
+  @Override ASTOp make() {return new ASTDayOfWeek();}
   @Override long op(MutableDateTime dt) { return dt.getDayOfWeek()-1;}
 }
 
@@ -873,7 +873,7 @@ class ASTDayOfWeek extends ASTTimeOp {
 class ASTMktime extends ASTUniPrefixOp {
   ASTMktime() { super(new String[]{"","year","month","day","hour","minute","second","msec"}); }
   @Override String opStr() { return "mktime"; }
-  @Override ASTMktime make() {return new ASTMktime();} 
+  @Override ASTMktime make() {return new ASTMktime();}
   @Override ASTMktime parse_impl(Exec E) {
     AST yr = E.parse();  if( yr instanceof ASTId) yr = Env.staticLookup((ASTId)yr);
     AST mo = E.parse();  if( mo instanceof ASTId) mo = Env.staticLookup((ASTId)mo);
@@ -897,13 +897,13 @@ class ASTMktime extends ASTUniPrefixOp {
       else                          is[i] =(int)env.popDbl();
 
     if( x==null ) {                            // Single point
-      long msec = new MutableDateTime(is[6],   // year   
-                                      is[5]+1, // month  
-                                      is[4]+1, // day    
-                                      is[3],   // hour   
-                                      is[2],   // minute 
-                                      is[1],   // second 
-                                      is[0])   // msec   
+      long msec = new MutableDateTime(is[6],   // year
+                                      is[5]+1, // month
+                                      is[4]+1, // day
+                                      is[3],   // hour
+                                      is[2],   // minute
+                                      is[1],   // second
+                                      is[0])   // msec
         .getMillis();
       env.poppush(1, new ValNum(msec));
       return;
@@ -927,13 +927,13 @@ class ASTMktime extends ASTUniPrefixOp {
         NewChunk n = nchks[0];
         int rlen = chks[0]._len;
         for( int r=0; r<rlen; r++ ) {
-          dt.setDateTime((int)chks[6].at8(r),  // year   
-                         (int)chks[5].at8(r)+1,// month  
-                         (int)chks[4].at8(r)+1,// day    
-                         (int)chks[3].at8(r),  // hour   
-                         (int)chks[2].at8(r),  // minute 
-                         (int)chks[1].at8(r),  // second 
-                         (int)chks[0].at8(r)); // msec   
+          dt.setDateTime((int)chks[6].at8(r),  // year
+                         (int)chks[5].at8(r)+1,// month
+                         (int)chks[4].at8(r)+1,// day
+                         (int)chks[3].at8(r),  // hour
+                         (int)chks[2].at8(r),  // minute
+                         (int)chks[1].at8(r),  // second
+                         (int)chks[0].at8(r)); // msec
           n.addNum(dt.getMillis());
         }
       }
@@ -1541,10 +1541,10 @@ abstract class ASTReducerOp extends ASTOp {
   }
 }
 
-class ASTSum extends ASTReducerOp { 
-  ASTSum() {super(0);} 
-  @Override String opStr(){ return "sum";} 
-  @Override ASTOp make() {return new ASTSum();} 
+class ASTSum extends ASTReducerOp {
+  ASTSum() {super(0);}
+  @Override String opStr(){ return "sum";}
+  @Override ASTOp make() {return new ASTSum();}
   @Override double op(double d0, double d1) { return d0+d1;}
   @Override void apply(Env env) {
     double sum=_init;
@@ -3120,8 +3120,10 @@ class ASTIfElse extends ASTUniPrefixOp {
   }
 
   @Override void apply(Env env) {
-    if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
-    Frame tst = env.popAry();
+    Frame tst;
+    if( env.isNum() ) { tst = new Frame(new String[]{"tst"},new Vec[]{Vec.makeCon(env.popDbl(), 1)}); }
+    else if (!env.isAry()) throw new IllegalArgumentException("`test` argument must be a frame: ifelse(`test`, `yes`, `no`)");
+    else tst = env.popAry();
     if (tst.numCols() != 1)
       throw new IllegalArgumentException("`test` has "+tst.numCols()+" columns. `test` must have exactly 1 column.");
     Frame yes=null; double dyes=0;
@@ -3139,30 +3141,38 @@ class ASTIfElse extends ASTUniPrefixOp {
       if (no.numCols() != 1)
         throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + 1 + "; `no` has " + no.numCols() + ".");
     }
+    Frame fr2;
+    if( tst.numRows()==1 && tst.numCols()==1 ) {
+      if( tst.anyVec().at(0) != 0 ) // any number other than 0 means true... R semantics
+        fr2 = new Frame(new String[]{"C1"}, new Vec[]{yes==null?Vec.makeCon(dyes,1):yes.vecs()[0]});
+      else
+        fr2 = new Frame(new String[]{"C1"}, new Vec[]{no==null?Vec.makeCon(dno,1):no.vecs()[0]});
+    } else {
+      Frame a_yes = yes == null ? adaptToTst(dyes, tst) : adaptToTst(yes, tst);
+      Frame a_no = no == null ? adaptToTst(dno, tst) : adaptToTst(no, tst);
+      Frame frtst = (new Frame(tst)).add(a_yes).add(a_no);
+      final int ycols = a_yes.numCols();
 
-    Frame a_yes = yes == null ? adaptToTst(dyes, tst) : adaptToTst(yes,tst);
-    Frame a_no  = no == null ? adaptToTst(dno, tst) : adaptToTst(no, tst);
-    Frame frtst = (new Frame(tst)).add(a_yes).add(a_no);
-    final int ycols = a_yes.numCols();
-
-    // Run a selection picking true/false across the frame
-    Frame fr2 = new MRTask() {
-      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-        int rows = chks[0]._len;
-        int cols = chks.length;
-        Chunk pred = chks[0];
-        for (int r=0;r < rows;++r) {
-          for (int c = (pred.atd(r) != 0 ? 1 : ycols + 1), col = 0; c < (pred.atd(r) != 0 ?ycols+1:cols); ++c) {
-            if (chks[c].vec().isUUID())
-              nchks[col++].addUUID(chks[c], r);
-            else if (chks[c].vec().isString())
-              nchks[col++].addStr(chks[c].atStr(new ValueString(), r));
-            else
-              nchks[col++].addNum(chks[c].atd(r));
+      // Run a selection picking true/false across the frame
+      fr2 = new MRTask() {
+        @Override
+        public void map(Chunk chks[], NewChunk nchks[]) {
+          int rows = chks[0]._len;
+          int cols = chks.length;
+          Chunk pred = chks[0];
+          for (int r = 0; r < rows; ++r) {
+            for (int c = (pred.atd(r) != 0 ? 1 : ycols + 1), col = 0; c < (pred.atd(r) != 0 ? ycols + 1 : cols); ++c) {
+              if (chks[c].vec().isUUID())
+                nchks[col++].addUUID(chks[c], r);
+              else if (chks[c].vec().isString())
+                nchks[col++].addStr(chks[c].atStr(new ValueString(), r));
+              else
+                nchks[col++].addNum(chks[c].atd(r));
+            }
           }
         }
-      }
-    }.doAll(yes==null?1:yes.numCols(),frtst).outputFrame(yes==null?(new String[]{"C1"}):yes.names(),null/*same as R: no domains*/);
+      }.doAll(yes == null ? 1 : yes.numCols(), frtst).outputFrame(yes == null ? (new String[]{"C1"}) : yes.names(), null/*same as R: no domains*/);
+    }
     env.pushAry(fr2);
   }
 }

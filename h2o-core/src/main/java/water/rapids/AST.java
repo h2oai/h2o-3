@@ -1089,7 +1089,23 @@ class ASTSlice extends AST {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
         } else env.push(new ValNum(ary.vecs()[col].at(row)));
       } catch (ArrayIndexOutOfBoundsException e) {
-        if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
+        if( col < 0 ) {
+          int rm_col = -1*col - 1;  // 1 -> 0 idx...
+          // really want to do all columns BUT this one... so not a single scalar result => recurse
+          long[] columns = new long[ary.numCols()-1];
+          int v=0;
+          for(int i=0;i<columns.length;++i) {
+            if (i == rm_col) v++;
+            columns[i] = v++;
+          }
+          ValSeries vs = new ValSeries(columns,null);
+          vs.setSlice(false,true);  // make it a column selector...
+          env.pushAry(ary);
+          env.push(rows);
+          env.push(vs);
+          this.exec(env);
+          return;
+        }
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
     } else {

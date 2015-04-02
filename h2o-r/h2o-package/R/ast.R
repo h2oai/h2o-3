@@ -113,7 +113,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 
       # disallow binary ops here
       if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
-        stop("Unimplemented: binary operations (+, -, *, /) within a slice.")
+        return(.eval(eval(expr,envir)))
       }
 
       new_expr <- as.list(expr[-1L])[[1L]]
@@ -142,6 +142,8 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
                children = list(paste0('#-', eval(new_expr[[1L]][[2L]], envir = envir)),
                                paste0('#-', eval(new_expr[[1L]][[3L]], envir = envir)))))
       }
+    } else if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
+      return(.eval(eval(expr,envir),envir))
     }
     # end negative expression cases
   }
