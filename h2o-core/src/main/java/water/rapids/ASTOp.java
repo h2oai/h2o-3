@@ -1865,11 +1865,13 @@ class ASTMedian extends ASTReducerOp {
     if (!fr.anyVec().isNumeric())
       throw new IllegalArgumentException("`median` expects a single numeric column from a Frame.");
 
-    //Quantiles q = new Quantiles();
-    //Quantiles[] qbins = new Quantiles.BinningTask(q._max_qbins, fr.anyVec().min(), fr.anyVec().max()).doAll(fr.anyVec())._qbins;
-    //qbins[0].finishUp(fr.anyVec(), new double[]{0.5}, q._interpolation_type, true);
-    //env.push(new ValNum(qbins[0]._pctile[0]));
-    throw H2O.unimpl();
+    QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+    parms._probs = new double[]{0.5};
+    parms._train = fr._key;
+    QuantileModel q = new Quantile(parms).trainModel().get();
+    double median = q._output._quantiles[0][0];
+    q.delete();
+    env.push(new ValNum(median));
   }
 }
 
