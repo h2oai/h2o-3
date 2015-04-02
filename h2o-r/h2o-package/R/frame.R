@@ -1689,6 +1689,9 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
       if( is(FUN, "standardGeneric")) {
         fun_name <- FUN@generic[[1]]
         fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
+      } else if( is.primitive(FUN) ) {
+        fun_name <- gsub("\\\"\\)","",gsub(".Primitive\\(\\\"","",deparse(FUN)))
+        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
       } else {
         fun_name <- as.character(substitute(FUN))
         fun <- match.fun(FUN)
