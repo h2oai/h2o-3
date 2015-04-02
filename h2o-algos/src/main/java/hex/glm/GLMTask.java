@@ -96,9 +96,10 @@ public abstract class GLMTask  {
     final int _nSteps;
     final GLMParameters _params;
     final double _reg;
+    Vec _rowFilter;
 
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps ){this(dinfo, params, reg, beta, direction, step, nsteps, null);}
-    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, CountedCompleter cc) {
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter){this(dinfo, params, reg, beta, direction, step, nsteps, rowFilter, null);}
+    public GLMLineSearchTask(DataInfo dinfo, GLMParameters params, double reg, double [] beta, double [] direction, double step, int nsteps, Vec rowFilter, CountedCompleter cc) {
       super ((H2OCountedCompleter)cc);
       _dinfo = dinfo;
       _reg = reg;
@@ -107,6 +108,7 @@ public abstract class GLMTask  {
       _step = step;
       _nSteps = nsteps;
       _params = params;
+      _rowFilter = rowFilter;
     }
 
     long _nobs;
@@ -119,12 +121,16 @@ public abstract class GLMTask  {
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     @Override
     public void map(Chunk [] chks) {
+      Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):null;
+
       Chunk responseChunk = chks[chks.length-1];
       boolean[] skip = MemoryManager.mallocZ(chks[0]._len);
+      if(rowFilter != null)
+        for(int r = 0; r < skip.length; ++r)
+          skip[r] = rowFilter.at8(r) == 1;
       double [][] eta = new double[responseChunk._len][_nSteps];
       double [] beta = _beta;
       double [] pk = _direction;
-
       // categoricals
       for(int i = 0; i < _dinfo._cats; ++i) {
         Chunk c = chks[i];

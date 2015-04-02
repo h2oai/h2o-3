@@ -174,6 +174,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       H2O.submitTask(itsk).join();
       assert itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean();
       _rowFilter = itsk._ymut._fVec;
+      assert _rowFilter.nChunks() == _dinfo._adaptedFrame.anyVec().nChunks();
       assert (_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length()) == itsk._ymut._nobs:"unexpected nobs, expected " + itsk._ymut._nobs + ", but got " + _rowFilter.mean() * _rowFilter.length();
       assert _rowFilter != null;
       if (itsk._ymut._nobs == 0) // can happen if all rows have missing value and we're filtering missing out
@@ -236,7 +237,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     protected void compute2() {
       // get filtered dataset's mean and number of observations
-      new YMUTask(_dinfo, _response.makeZero(), new H2OCallback<YMUTask>() {
+      new YMUTask(_dinfo, _dinfo._adaptedFrame.anyVec().makeZero(), new H2OCallback<YMUTask>() {
         @Override
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
@@ -247,13 +248,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           if (_bc._betaStart == null)
             _bc.setBetaStart(beta);
           // compute the lambda_max
-          _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).dfork(_dinfo._adaptedFrame);
+          _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).asyncExec(_dinfo._adaptedFrame);
           if(beta != _bc._betaStart) {
             InitTsk.this.addToPendingCount(1);
-            _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).dfork(_dinfo._adaptedFrame);
+            _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).asyncExec(_dinfo._adaptedFrame);
           }
         }
-      }).dfork(_dinfo._adaptedFrame);
+      }).asyncExec(_dinfo._adaptedFrame);
     }
   }
   @Override
@@ -594,7 +595,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (!failedLineSearch) {
               LogInfo("Check KKT got NaNs. Invoking line search");
               getCompleter().addToPendingCount(1);
-              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta, ArrayUtils.subtract(contractVec(fullBeta, _taskInfo._activeCols), _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+              new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta, ArrayUtils.subtract(contractVec(fullBeta, _taskInfo._activeCols), _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
   //              new GLMGradientTask(_activeData, _parms, _currentLambda * (1-_parms._alpha[0]),, NUM_LINE_SEARCH_STEPS, LINE_SEARCH_STEP), 1.0/_taskInfo._nobs, new LineSearchIteration(getCompleter(), ArrayUtils.subtract(newBeta, _lastResult._beta) )).asyncExec(_activeData._adaptedFrame);
               return;
             } else {
@@ -649,14 +650,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             cmp.addToPendingCount(2);
             assert cmp.getPendingCount() > 0;
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
-            new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], glrt._beta, 1.0 / _taskInfo._nobs, _rowFilter, new H2OCallback<GLMGradientTask>(cmp) {
+            new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], glrt._beta, 1.0 / _taskInfo._nobs, null /* no rowf filter for validation dataset */, new H2OCallback<GLMGradientTask>(cmp) {
               @Override
               public void callback(GLMGradientTask gt) {
-                assert _lambdaId == 0;
                 setSubmodel(newBeta, glrt._val, gt._val, cmp);
                 cmp.tryComplete();
               }
-            }).setValidate(_taskInfo._ymu,true).dfork(_validDinfo._adaptedFrame);
+            }).setValidate(_taskInfo._ymu,true).asyncExec(_validDinfo._adaptedFrame);
             // public GLMGradientTask(DataInfo dinfo, GLMParameters params, double lambda, double[] beta, double reg, H2OCountedCompleter cc){
 //            new GLMTask.GLMGradientTask(_dinfo,_parms,_parms._lambda[_lambdaId],)
           } else
@@ -769,7 +769,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         if (_doLinesearch && (glmt.hasNaNsOrInf() || !(lastObjVal > objVal))) {
           getCompleter().addToPendingCount(1);
           LogInfo("invoking line search, objval = " + objVal + ", lastObjVal = " + lastObjVal); // todo: get gradient here?
-          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
+          new GLMLineSearchTask(_activeData, _parms, 1.0 / _taskInfo._nobs, _taskInfo._beta.clone(), ArrayUtils.subtract(glmt._beta, _taskInfo._beta), LINE_SEARCH_STEP, NUM_LINE_SEARCH_STEPS, _rowFilter, new LineSearchIteration(getCompleter())).asyncExec(_activeData._adaptedFrame);
           return;
         } else if (lastObjVal > objVal) {
           ++_taskInfo._iter; // =new IterationInfo(_iter, glmt._beta, glmt._objVal);
@@ -824,7 +824,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
       @Override
       public void callback(final GLMLineSearchTask lst) {
-        assert lst._nobs == _taskInfo._nobs;
+        assert lst._nobs == _taskInfo._nobs:lst._nobs + " != " + _taskInfo._nobs  + ", filtervec = " + (lst._rowFilter == null);
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
@@ -1080,7 +1080,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     public double[] getObjVals(double[] beta, double[] direction) {
       double reg = 1.0 / _nobs;
-      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, _stepDec, _nsteps).doAll(_dinfo._adaptedFrame)._likelihoods;
+      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, _stepDec, _nsteps, _rowFilter).doAll(_dinfo._adaptedFrame)._likelihoods;
       double step = 1;
       for (int i = 0; i < objs.length; ++i, step *= _stepDec) {
         objs[i] *= reg;
