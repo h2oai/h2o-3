@@ -71,6 +71,12 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         for( int n=0; n<vecs.length; n++ ) {
           if( !isRunning() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
+          if (vec.isBad()) {
+            model._output._quantiles[n] = new double[_parms._probs.length];
+            Arrays.fill(model._output._quantiles[n], Double.NaN);
+            continue;
+          }
+
           // Compute top-level histogram
           Histo h1 = new Histo(vec.min(),vec.max(),0,vec.length(),vec.isInt()).doAll(vec);
 

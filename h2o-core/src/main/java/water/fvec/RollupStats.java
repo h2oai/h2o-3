@@ -58,18 +58,20 @@ class RollupStats extends Iced {
   private boolean isReady() { return _naCnt>=0; }
 
   private RollupStats() {
+    _mins = new double[5];  Arrays.fill(_mins, Double.NaN);
+    _maxs = new double[5];  Arrays.fill(_maxs, Double.NaN);
     _mean = _sigma = Double.NaN;
     _size = _naCnt = 0;
   }
 
-  private RollupStats( int mode ) { _naCnt = mode; }
+  private RollupStats( int mode ) { this(); _naCnt = mode; }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
-    _mins = new double[5];  Arrays.fill(_mins, Double.MAX_VALUE);
-    _maxs = new double[5];  Arrays.fill(_maxs,-Double.MAX_VALUE);
+    Arrays.fill(_mins, Double.MAX_VALUE);
+    Arrays.fill(_maxs,-Double.MAX_VALUE);
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
     ValueString vs = new ValueString();
