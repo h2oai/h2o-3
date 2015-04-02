@@ -396,7 +396,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
   }
 }
 
-class ASTasDate extends ASTOp {
+class ASTasDate extends ASTUniPrefixOp {
   protected static String _format;
   ASTasDate() { super(new String[]{"as.Date", "x", "format"}); }
   @Override String opStr() { return "as.Date"; }
@@ -420,12 +420,14 @@ class ASTasDate extends ASTOp {
 
     Frame fr = env.popAry();
 
-    if( fr.vecs().length != 1 || !fr.vecs()[0].isEnum() )
-      throw new IllegalArgumentException("as.Date requires a single column of factors");
+    if( fr.vecs().length != 1 || !(fr.vecs()[0].isEnum() || fr.vecs()[0].isString()))
+      throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
     Frame fr2 = new MRTask() {
       @Override public void map( Chunk chks[], NewChunk nchks[] ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
+        final boolean isStr = chks[0] instanceof CStrChunk;
+        String date = null;
         DateTimeFormatter dtf = ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone());
         for( int i=0; i<nchks.length; i++ ) {
           NewChunk n =nchks[i];
@@ -433,7 +435,8 @@ class ASTasDate extends ASTOp {
           int rlen = c._len;
           for( int r=0; r<rlen; r++ ) {
             if (!c.isNA(r)) {
-              String date = c.vec().domain()[(int)c.atd(r)];
+              if (isStr) date = c.atStr(new ValueString(), r).toString();
+              else date = c.vec().domain()[(int)c.atd(r)];
               n.addNum(DateTime.parse(date, dtf).getMillis(), 0);
             } else n.addNA();
           }
@@ -861,7 +864,7 @@ class ASTMonth extends ASTTimeOp {
   @Override ASTOp make() {return new ASTMonth ();}
   @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}
 }
-class ASTDayOfWeek extends ASTTimeOp {
+class ASTDayOfWeek extends ASTTimeOp { 
   static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
   @Override protected String[][] factors() { return FACTORS; }
   @Override String opStr(){ return "dayOfWeek"; }

@@ -134,7 +134,7 @@ datetest <- function(conn){
   c11 = strftime(c1dt, formats[11], tz="America/Los_Angeles")
   
   ldf = data.frame(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)
-  hdf = as.h2o(conn, ldf, "hdf", TRUE)
+  hdf = as.h2o(conn, ldf, "hdf")
   hdf$c1 = as.Date(hdf$c1, formats[1])
   hdf$c2 = as.Date(hdf$c2, formats[2])
   hdf$c3 = as.Date(hdf$c3, formats[3])
@@ -148,7 +148,6 @@ datetest <- function(conn){
   hdf$c11 = as.Date(hdf$c11, formats[11])
                    
   lmillis = data.frame(as.vector(unclass(as.POSIXct(c1dt, formats[1], tz="America/Los_Angeles")) * 1000))
-  #res = h2o.getFrame(conn, "hdf")
   res = as.data.frame(hdf)
   expect_that(lmillis[,1], equals(res[,1]))
   expect_that(lmillis[,1], equals(res[,2]))
