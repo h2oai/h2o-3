@@ -15,9 +15,6 @@ check.deeplearning_imbalanced <- function(conn) {
   class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$Error[6]
   class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$Error[6]
 
-  class_6_err_imbalanced <- hh_imbalanced@model$errors$train_confusion_matrix$table$Error[6]
-  class_6_err_balanced   <- hh_balanced  @model$errors$train_confusion_matrix$table$Error[6]
-
   if (class_6_err_imbalanced < class_6_err_balanced) {
       print("--------------------")
       print("")
