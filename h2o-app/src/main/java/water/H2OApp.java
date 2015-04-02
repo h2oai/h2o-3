@@ -54,6 +54,7 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("glm", GLM.class);
     H2O.registerPOST("/3/ModelBuilders/glm", GLMBuilderHandler.class, "train",                                                        "Train a GLM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
+    H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model","make a new GLM model based on existing one");
 
     ModelBuilder.registerModelBuilder("pca", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
