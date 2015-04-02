@@ -16,6 +16,7 @@ import java.net.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.lang.reflect.Method;
 
 /**
  * Driver class to start a Hadoop mapreduce job which wraps an H2O cluster launch.
@@ -737,6 +738,8 @@ public class h2odriver extends Configured implements Tool {
     return s;
   }
 
+  private final int CLUSTER_ERROR_TIMEOUT = 3;
+
   private int waitForClusterToComeUp() throws Exception {
     long startMillis = System.currentTimeMillis();
     while (true) {
@@ -767,7 +770,7 @@ public class h2odriver extends Configured implements Tool {
             System.out.println("NOTE: Typical usage is:  -network a.b.c.d/24");
           }
           job.killJob();
-          return 3;
+          return CLUSTER_ERROR_TIMEOUT;
         }
       }
 
@@ -867,6 +870,7 @@ public class h2odriver extends Configured implements Tool {
     Configuration conf = getConf();
 
     // Set memory parameters.
+    long processTotalPhysicalMemoryMegabytes;
     {
       Pattern p = Pattern.compile("([1-9][0-9]*)([mgMG])");
       Matcher m = p.matcher(mapperXmx);
@@ -888,7 +892,7 @@ public class h2odriver extends Configured implements Tool {
       // YARN will kill the application if the RSS of the process is larger than
       // mapreduce.map.memory.mb.
       long jvmInternalMemoryMegabytes = (long) ((double)megabytes * ((double)extraMemPercent)/100.0);
-      long processTotalPhysicalMemoryMegabytes = megabytes + jvmInternalMemoryMegabytes;
+      processTotalPhysicalMemoryMegabytes = megabytes + jvmInternalMemoryMegabytes;
       conf.set("mapreduce.job.ubertask.enable", "false");
       String mapreduceMapMemoryMb = Long.toString(processTotalPhysicalMemoryMegabytes);
       conf.set("mapreduce.map.memory.mb", mapreduceMapMemoryMb);
@@ -907,40 +911,19 @@ public class h2odriver extends Configured implements Tool {
               + (enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : "")
               + (enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : "")
               ;
-      conf.set("mapred.child.java.opts", mapChildJavaOpts);
-      conf.set("mapred.map.child.java.opts", mapChildJavaOpts);       // MapR 2.x requires this.
+      conf.set("mapreduce.map.java.opts", mapChildJavaOpts);
 
       System.out.println("Memory Settings:");
-      System.out.println("    mapred.child.java.opts:      " + mapChildJavaOpts);
-      System.out.println("    mapred.map.child.java.opts:  " + mapChildJavaOpts);
+      System.out.println("    mapreduce.map.java.opts:     " + mapChildJavaOpts);
       System.out.println("    Extra memory percent:        " + extraMemPercent);
       System.out.println("    mapreduce.map.memory.mb:     " + mapreduceMapMemoryMb);
     }
 
-    // Sometimes for debugging purposes, it helps to jam stuff in to the Java command
-    // of the mapper child.
-    //
-    //        conf.set("mapred.child.java.opts", "-Dh2o.FINDME=ignored");
-    //        conf.set("mapred.map.child.java.opts", "-Dh2o.FINDME2=ignored");
-    //        conf.set("mapred.map.child.java.opts", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8999");
-
-    // This is really silly, but without this line, the following ugly warning
-    // gets emitted as the very first line of output, which is confusing for
-    // the user.
-    // Generic options parser is used automatically by ToolRunner, but somehow
-    // that framework is not smart enough to disable the warning.
-    //
-    // Eliminates this runtime warning!
-    // "WARN mapred.JobClient: Use GenericOptionsParser for parsing the arguments. Applications should implement Tool for the same."
-    conf.set("mapred.used.genericoptionsparser", "true");
-
-    // We don't want hadoop launching extra nodes just to shoot them down.
-    // Not good for in-memory H2O processing!
+    conf.set("mapreduce.client.genericoptionsparser.used", "true");
     conf.set("mapreduce.map.speculative", "false");
-    conf.set("mapred.map.tasks.speculative.execution", "false");
+    conf.set("mapreduce.map.maxattempts", "1");
+    conf.set("mapreduce.job.jvm.numtasks", "1");
 
-    conf.set("mapred.map.max.attempts", "1");
-    conf.set("mapred.job.reuse.jvm.num.tasks", "1");
     conf.set(h2omapper.H2O_JOBTRACKERNAME_KEY, jobtrackerName);
 
     conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackIp);
@@ -1000,7 +983,31 @@ public class h2odriver extends Configured implements Tool {
 
     System.out.printf("Waiting for H2O cluster to come up...\n");
     int rv = waitForClusterToComeUp();
-    if (rv != 0) {
+    if (rv == CLUSTER_ERROR_TIMEOUT) {
+      // Try to print YARN diagnostics.
+      try {
+        Class clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
+        if (clazz != null) {
+          Method method = clazz.getMethod("diagnose", String.class, int.class, int.class);
+          String queueName;
+          queueName = conf.get("mapreduce.job.queuename");
+          if (queueName == null) {
+            queueName = conf.get("mapred.job.queue.name");
+          }
+          if (queueName == null) {
+            queueName = "default";
+          }
+          method.invoke(null, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes);
+        }
+
+        return rv;
+      }
+      catch (Exception ignore) {}
+
+      System.out.println("ERROR: H2O cluster failed to come up");
+      return rv;
+    }
+    else if (rv != 0) {
       System.out.println("ERROR: H2O cluster failed to come up");
       return rv;
     }
