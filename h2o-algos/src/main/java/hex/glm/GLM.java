@@ -223,6 +223,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _validDinfo = new DataInfo(Key.make(), _valid, null, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       if(_parms._lambda_search) // todo add xval/hval for null model?
         setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null,null);
+      if(_parms._max_iter == -1)
+        _parms._max_iter = _parms._lambda_search?6*_parms._nlambdas:50;
     }
   }
 
@@ -433,7 +435,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // TODO ...
         }
         // launch the next lambda
-        if(++_lambdaId  < _parms._lambda.length) {
+        if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iter) {
           double nextLambda = _parms._lambda[_lambdaId];
           getCompleter().addToPendingCount(1);
           if(_parms._n_folds > 1){
@@ -653,6 +655,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             new GLMTask.GLMGradientTask(_dinfo, _parms, _parms._lambda[_lambdaId], glrt._beta, 1.0 / _taskInfo._nobs, null /* no rowf filter for validation dataset */, new H2OCallback<GLMGradientTask>(cmp) {
               @Override
               public void callback(GLMGradientTask gt) {
+                LogInfo("hold-out set validation: \n" + gt._val.toString());
                 setSubmodel(newBeta, glrt._val, gt._val, cmp);
                 cmp.tryComplete();
               }
