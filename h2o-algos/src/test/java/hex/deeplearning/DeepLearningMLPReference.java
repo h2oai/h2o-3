@@ -1,7 +1,5 @@
 package hex.deeplearning;
 
-import static water.util.ModelUtils.getPrediction;
-
 import org.junit.Ignore;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;

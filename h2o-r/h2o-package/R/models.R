@@ -503,19 +503,19 @@ h2o.metric <- function(object, thresholds, metric) {
 #' @rdname h2o.metric
 #' @export
 h2o.F0point5 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F0point5")
+  h2o.metric(object, thresholds, "f0point5")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F1 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F1")
+  h2o.metric(object, thresholds, "f1")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.F2 <- function(object, thresholds){
-  h2o.metric(object, thresholds, "F2")
+  h2o.metric(object, thresholds, "f2")
 }
 
 #' @rdname h2o.metric
@@ -533,13 +533,13 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  h2o.metric(object, thresholds, "max_per_class_error")
+  1.0-h2o.metric(object, thresholds, "minPerClassCorrect")
 }
 
 #' @rdname h2o.metric
 #' @export
 h2o.mcc <- function(object, thresholds){
-  h2o.metric(object, thresholds, "mcc")
+  h2o.metric(object, thresholds, "absolute_MCC")
 }
 
 #' @rdname h2o.metric
@@ -560,6 +560,23 @@ h2o.specificity <- function(object, thresholds){
   h2o.metric(object, thresholds, "specificity")
 }
 
+#
+#
+h2o.find_threshold_by_max_metric <- function(object, metric) {
+  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
+  max_metrics <- object@metrics$max_criteria_and_metric_scores
+  max_metrics[match(metric,max_metrics$Metric),"Threshold"]
+}
+
+#
+# No duplicate thresholds allowed
+h2o.find_row_by_threshold <- function(object, threshold) {
+  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
+  tmp <- object@metrics$thresholds_and_metric_scores
+  res <- tmp[abs(as.numeric(tmp$Thresholds) - threshold) < 1e-8,]
+  if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
+  res
+}
 
 #' Access H2O Confusion Matrices
 #'
@@ -613,34 +630,31 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
   if(delete)
     h2o.rm(temp_key)
 
-  res$model_metrics[[1L]]$cm$table
+  bmetrics <- new("H2OBinomialMetrics", algorithm=object@algorithm, metrics= res$model_metrics[[1L]])
+  h2o.confusionMatrix(bmetrics)
 })
 
 #' @rdname h2o.confusionMatrix
 #' @export
 setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds) {
-  if(is(object, "H2OBinomialMetrics")){
-    names(object@metrics$confusion_matrices) <- rownames(object@metrics$thresholds_and_metric_scores)
-    if(!missing(thresholds)) {
-      t <- as.character(thresholds)
-      t[t=="0"] <- "0.0"
-      t[t=="1"] <- "1.0"
-      if(!all(t %in% rownames(object@metrics$thresholds_and_metric_scores))) {
-        stop(paste0("User-provided thresholds: ", paste(t,collapse=', '), ", are not a subset of the available thresholds: ", paste(rownames(object@metrics$thresholds_and_metric_scores), collapse=', ')))
-      }
-      else {
-        object@metrics$confusion_matrices[t]
-      }
-    }
-    else {
-        object@metrics$confusion_matrices
-    }
-  } else if(is(object, "H2OMultinomialMetrics")) {
-    object@metrics$cm$table
-  }
-  else{
+  if( !is(object, "H2OBinomialMetrics") ) {
+    if( is(object, "H2OMultinomialMetrics") )
+      return(object@metrics$cm$table)
     stop(paste0("No Confusion Matrices for ",class(object)))
   }
+  # H2OBinomial case
+  if( missing(thresholds) )
+    thresholds <- list(h2o.find_threshold_by_max_metric(object,"f1"))
+  thresh2d <- object@metrics$thresholds_and_metric_scores
+  max_metrics <- object@metrics$max_criteria_and_metric_scores
+  p <- max_metrics[match("tps",max_metrics$Metric),3]
+  n <- max_metrics[match("fps",max_metrics$Metric),3]
+  lapply(thresholds,function(t) {
+    row <- h2o.find_row_by_threshold(object,t)
+    tps <- row$tps
+    fps <- row$fps
+    matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
+  })
 })
 
 #' @export

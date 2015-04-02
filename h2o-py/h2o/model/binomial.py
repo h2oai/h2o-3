@@ -3,8 +3,6 @@ Binomial Models should be comparable.
 """
 
 from model_base import ModelBase
-from auc_data import ThresholdCriterion
-from auc_data import AUCData
 from h2o.model.confusion_matrix import ConfusionMatrix
 
 class H2OBinomialModel(ModelBase):
@@ -17,98 +15,105 @@ class H2OBinomialModel(ModelBase):
 
 class H2OBinomialModelMetrics(object):
   """
-  This class is essentially an API for the AUCData object.
+  This class is essentially an API for the AUC object.
   This class contains methods for inspecting the AUC for different criteria.
   To input the different criteria, use the static variable `criteria`
   """
-  theCriteria = ThresholdCriterion()
   def __init__(self, metric_json):
+    if metric_json is None:
+      raise ValueError("Missing data for `raw_auc`.")
     self._metric_json = metric_json
-    self._auc_data = AUCData(metric_json)  # AUC Information
 
   def show(self):
     print
-    print "Overall AUC (independent of criterion): " + str(self._auc_data.AUC)
-    print "Overall Gini (independent of criterion): " + str(self._auc_data.Gini)
+    print "Overall AUC (independent of criterion): " + str(self.auc())
+    print "Overall Gini (independent of criterion): " + str(self.giniCoef())
     print
-    # print self._auc_data. thresholds_and_metric_scores
-    print self._auc_data.max_criteria_and_metric_scores
-    # print self._auc_data.confusion_matrices
+    print self._metric_json["max_criteria_and_metric_scores"]
 
   def auc(self):
-    return self._auc_data.AUC
+    return self._metric_json['AUC']
 
   def giniCoef(self):
-    return self._auc_data.Gini
+    return self._metric_json['Gini']
 
   def mse(self):
     return self._metric_json['mse']
 
   def F1(self, thresholds=None):
-    return self.metric(metric="F1", thresholds=thresholds)
+    return self.metric("f1", thresholds=thresholds)
 
   def F2(self, thresholds=None):
-    return self.metric(metric="F2", thresholds=thresholds)
+    return self.metric("f2", thresholds=thresholds)
 
   def F0point5(self, thresholds=None):
-    return self.metric(metric="F0point5", thresholds=thresholds)
+    return self.metric("f0point5", thresholds=thresholds)
 
   def accuracy(self, thresholds=None):
-    return self.metric(metric="accuracy", thresholds=thresholds)
+    return self.metric("accuracy", thresholds=thresholds)
 
   def error(self, thresholds=None):
-    return self.metric(metric="error", thresholds=thresholds)
+    return self.metric("error", thresholds=thresholds)
 
   def precision(self, thresholds=None):
-    return self.metric(metric="precision", thresholds=thresholds)
+    return self.metric("precision", thresholds=thresholds)
 
   def recall(self, thresholds=None):
-    return self.metric(metric="recall", thresholds=thresholds)
+    return self.metric("recall", thresholds=thresholds)
 
   def specificity(self, thresholds=None):
-    return self.metric(metric="specificity", thresholds=thresholds)
+    return self.metric("specificity", thresholds=thresholds)
 
   def mcc(self, thresholds=None):
-    return self.metric(metric="mcc", thresholds=thresholds)
+    return self.metric("absolute_MCC", thresholds=thresholds)
 
   def max_per_class_error(self, thresholds=None):
-    return self.metric(metric="max_per_class_error", thresholds=thresholds)
+    return 1-self.metric("minPerClassCorrect", thresholds=thresholds)
 
-  def metric(self, metric='accuracy', thresholds=None):
-    available_metrics = self._metric_json['thresholds_and_metric_scores'].col_header[1:]
-    if(metric not in available_metrics):
-      raise ValueError("metric parameter must be one of: " + ", ".join(available_metrics))
-
-    metric_col = self._metric_json['thresholds_and_metric_scores'].col_header.index(metric)
-    thresh_and_metrics = []
-    if(thresholds is not None):
-      if not isinstance(thresholds,list):
-        raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
-
-      for e in self._metric_json['thresholds_and_metric_scores'].cell_values:
-          if float(e[0]) in thresholds:
-            thresh_and_metrics.append([float(e[0]),e[metric_col]])
-    else:
-      for e in self._metric_json['thresholds_and_metric_scores'].cell_values:
-        thresh_and_metrics.append([float(e[0]),e[metric_col]])
-
-    return thresh_and_metrics
+  def metric(self, metric, thresholds=None):
+    if not thresholds: thresholds=[self.find_threshold_by_max_metric(metric)]
+    if not isinstance(thresholds,list):
+      raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
+    thresh2d = self._metric_json['thresholds_and_metric_scores']
+    midx = thresh2d.col_header.index(metric)
+    metrics = []
+    for t in thresholds:
+      idx = self.find_idx_by_threshold(t)
+      row = thresh2d.cell_values[idx]
+      metrics.append([t,row[midx]])
+    return metrics
 
   def confusion_matrices(self, thresholds=None):
-    cms = ConfusionMatrix.read_cms(self._metric_json['confusion_matrices'])
-    available_thresholds = [float(e[0]) for e in self._metric_json['thresholds_and_metric_scores'].cell_values]
-    threshs_and_cms = zip(available_thresholds,cms)
+    if not thresholds: thresholds=[self.find_threshold_by_max_metric("f1")]
+    if not isinstance(thresholds,list):
+      raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
+    thresh2d = self._metric_json['thresholds_and_metric_scores']
+    tidx = thresh2d.col_header.index('tps')
+    fidx = thresh2d.col_header.index('fps')
+    p = self._metric_json['max_criteria_and_metric_scores'].cell_values[tidx-1][2]
+    n = self._metric_json['max_criteria_and_metric_scores'].cell_values[fidx-1][2]
+    cms = []
+    for t in thresholds:
+      idx = self.find_idx_by_threshold(t)
+      row = thresh2d.cell_values[idx]
+      tps = row[tidx]
+      fps = row[fidx]
+      cms.append([[n-fps,fps],[p-tps,tps]])
+    return cms
 
-    result =[]
-    if(thresholds is not None):
-      if not isinstance(thresholds,list):
-        raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
+  def find_threshold_by_max_metric(self,metric):
+    crit2d = self._metric_json['max_criteria_and_metric_scores']
+    for e in crit2d.cell_values:
+      if e[0]==metric:
+        return e[1]
+    raise ValueError("No metric "+str(metric))
 
-      for tcm in threshs_and_cms:
-        if tcm[0] in thresholds:
-          result.append([tcm[0],tcm[1]])
-    else:
-      for tcm in threshs_and_cms:
-        result.append([tcm[0],tcm[1]])
-
-    return result
+  def find_idx_by_threshold(self,threshold):
+    if not isinstance(threshold,float):
+      raise ValueError("Expected a float but got a "+type(threshold))
+    thresh2d = self._metric_json['thresholds_and_metric_scores']
+    for i,e in enumerate(thresh2d.cell_values):
+      t = float(e[0])
+      if abs(t-threshold) < 0.00000001 * max(t,threshold):
+        return i
+    raise ValueError("No threshold "+str(threshold))
