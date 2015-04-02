@@ -416,6 +416,21 @@ public class Vec extends Keyed<Vec> {
     return vs;
   }
 
+  /** A Vec from an array of doubles
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec makeCon(double ...rows) { 
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( double r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
   public static Vec makeSeq( long len) {

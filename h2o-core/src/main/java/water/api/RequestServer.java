@@ -245,7 +245,6 @@ public class RequestServer extends NanoHTTPD {
     register("/1/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/1/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
-    register("/1/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
     register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");

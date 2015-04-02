@@ -71,10 +71,6 @@ public class H2OApp {
     // H2O.registerPOST("/3/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
     // H2O.registerPOST("/3/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
 
-    ModelBuilder.registerModelBuilder("quantile", Quantile.class);
-    H2O.registerPOST("/3/ModelBuilders/quantile", QuantileBuilderHandler.class, "train",                                              "Train a Quantile model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
-
     // ModelBuilder.registerModelBuilder("grep", Grep.class);
     // H2O.registerPOST("/3/ModelBuilders/grep", GrepBuilderHandler.class, "train",                                                      "Search a raw text file for matches");
     // H2O.registerPOST("/3/ModelBuilders/grep/parameters", GrepBuilderHandler.class, "validate_parameters",                             "Validate a set of Grep parameters.");
