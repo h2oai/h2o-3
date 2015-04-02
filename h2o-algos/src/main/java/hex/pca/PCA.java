@@ -88,7 +88,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     // Currently, does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) throw H2O.unimpl();
+      if (!vecs[i].isNumeric()) throw H2O.unimpl("PCA currently only works on numeric data");
     }
   }
 
