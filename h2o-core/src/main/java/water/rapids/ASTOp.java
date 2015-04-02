@@ -1808,7 +1808,7 @@ class ASTCbind extends ASTUniPrefixOp {
       }
       else { broke = true; break; }
     }
-    if (broke) {
+    if( broke ) {
       if(a==null) E.rewind();
       else        E.rewind(a);
     }

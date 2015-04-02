@@ -211,13 +211,14 @@ public class Exec extends Iced {
 
   Exec rewind(AST a) {
     String s = a.opStr();
+    if( s.equals("\"") || s.equals("\'") ) _x--;
     int len=s.length();
     int idx=len-1;
     while( true ) {
       if( _x<=0 ) { _x=0;break; }
       if( idx<0 ) break;
       if( ppeek() != s.charAt(idx) ) { _x--; idx=len-1; continue; }
-      idx--;
+      idx--; _x--;
     }
     return this;
   }
