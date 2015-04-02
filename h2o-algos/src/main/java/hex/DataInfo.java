@@ -503,9 +503,13 @@ public class DataInfo extends Keyed {
         d = (d - _normSub[i]) * _normMul[i];
       row.numVals[i] = d;
     }
-    row.row_weight = chunks[_cats + _nums].atd(rid);
+
+    if (_row_weights > 1) throw H2O.unimpl();
+    for (int i=0; i<_row_weights; ++i)
+      row.row_weight = chunks[_cats + _nums + i].atd(rid);
+
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[chunks.length - _responses + i].atd(rid);
+      row.response[i] = chunks[_cats + _nums + _row_weights + i].atd(rid);
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
@@ -579,11 +583,14 @@ public class DataInfo extends Keyed {
         row.addNum(cid + numStart + _bins, d);
       }
     }
+
+    if (_row_weights > 0) throw H2O.unimpl();
+
     // response(s)
     for (int r = 0; r < chunks[0]._len; ++r) {
       Row row = rows[r];
       for (int i = 1; i <= _responses; ++i) {
-        row.response[row.response.length - i] = chunks[chunks.length - 1].atd(r);
+        row.response[row.response.length - i] = chunks[chunks.length - i].atd(r);
         if (_normRespMul != null)
           row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         if (Double.isNaN(row.response[row.response.length - i]))
