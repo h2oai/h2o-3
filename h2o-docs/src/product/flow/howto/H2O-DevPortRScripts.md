@@ -4,6 +4,16 @@ This document outlines how to port R scripts written in H2O for compatibility wi
 
 The original R script for H2O is listed first, followed by the updated script for H2O-Dev. 
 
+**Table of Contents**
+- [GBM](#GBM)
+- [GLM](#GLM)
+- [K-Means](#Kmeans)
+- [Deep Learning](#DL)
+- [Distributed Random Forest](#DRF)
+
+
+
+<a name="GBM"></a>
 ##GBM
 
 The following parameters have been renamed, but retain the same functions: 
@@ -63,6 +73,7 @@ H2O  | H2O-Dev
 
 ---
 
+<a name="GLM"></a>
 ##GLM
 
 The following parameters have been renamed, but retain the same functions:
@@ -139,6 +150,7 @@ H2O  | H2O-Dev
 
 ---
 
+<a name="Kmeans"></a>
 ##K-Means
 
 The following parameters have been renamed, but retain the same functions: 
@@ -178,6 +190,7 @@ H2O  | H2O-Dev
 
 ---
 
+<a name="DL"></a>
 ##Deep Learning
 
 The following parameters have been renamed, but retain the same functions: 
@@ -263,7 +276,8 @@ H2O  | H2O-Dev
  
  ---
 
-##Random Forest
+<a name="DRF"></a>
+##Distributed Random Forest
 
 The following parameters have been renamed, but retain the same functions: 
 
