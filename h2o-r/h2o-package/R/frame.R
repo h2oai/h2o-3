@@ -351,23 +351,65 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 #-----------------------------------------------------------------------------------------------------------------------
 
 # TODO: s4 year, month impls as well?
-#h2o.year <- function(x){
-#  if( missing(x) ) stop('must specify x')
-#  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-#  res1 <- .h2o.unary_op('year', x)
-#  .h2o.binary_op("-", res1, 1900)
-#}
-#
-#h2o.month <- function(x){
-#  if( missing(x) ) stop('must specify x')
-#  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
-#  .h2o.unary_op('month', x)
-#}
-#
-#year <- function(x) UseMethod('year', x)
-#year.H2OFrame <- h2o.year
-#month <- function(x) UseMethod('month', x)
-#month.H2OFrame <- h2o.month
+#' @export
+h2o.year <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  res1 <- .h2o.unary_frame_op('year', x)
+  .h2o.binary_frame_op("-", res1, 1900)
+}
+
+#' @export
+h2o.month <- function(x){
+  if( missing(x) ) stop('must specify x')
+  if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
+  .h2o.unary_frame_op('month', x)
+}
+#' @export
+year <- function(x) UseMethod('year', x)
+#' @export
+year.H2OFrame <- h2o.year
+#' @export
+month <- function(x) UseMethod('month', x)
+#' @export
+month.H2OFrame <- h2o.month
+
+#' @export
+as.Date.H2OFrame <- function(x, format, ...) {
+  if(!is.character(format)) stop("format must be a string")
+
+  expr = paste("as.Date(", paste(x@key, deparse(eval(format, envir = parent.frame())), sep = ","), ")", sep = "")
+  .h2o.nary_frame_op("as.Date", x, format, ...)
+  #res = .h2o.__exec2(x@h2o, expr)
+  #res <- .h2o.exec2(res$dest_key, h2o = x@h2o, res$dest_key)
+  #res@logic <- FALSE
+  #return(res)
+}
+
+#' @export
+h2o.setTimezone <- function(client, tz) {
+  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+  if (!is.character(tz)) stop('tz must be a string')
+
+  res = .h2o.__remoteSend(client, .h2o.__PAGE_SETTIMEZONE, tz = tz)
+  res$tz
+}
+
+#' @export
+h2o.getTimezone <- function(client) {
+  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+
+  res = .h2o.__remoteSend(client, .h2o.__PAGE_GETTIMEZONE)
+  res$tz
+}
+
+#' @export
+h2o.listTimezones <- function(client) {
+  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+
+  res = .h2o.__remoteSend(client, .h2o.__PAGE_LISTTIMEZONES)
+  cat(res$tzlist)
+}
 #
 #diff.H2OFrame <- function(x, lag = 1, differences = 1, ...) {
 #  if(!is.numeric(lag)) stop("lag must be numeric")
