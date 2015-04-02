@@ -666,9 +666,9 @@ class ASTAnyNA extends ASTUniPrefixOp {
 //}
 
 class ASTScale extends ASTUniPrefixOp {
-  boolean _center;
+  boolean _center=true;  //default
   double[] _centers;
-  boolean _scale;
+  boolean _scale=true;  //default
   double[] _scales;
   ASTScale() { super(new String[]{"ary", "center", "scale"});}
   @Override String opStr() { return "scale"; }
@@ -683,7 +683,7 @@ class ASTScale extends ASTUniPrefixOp {
     return res;
   }
   private void parseArg(Exec E, boolean center) {
-    if (center) {
+    if( center ) {
       if (!E.skipWS().hasNext()) throw new IllegalArgumentException("End of input unexpected. Badly formed AST.");
       String[] centers = E.peek() == '{' ? E.xpeek('{').parseString('}').split(";") : null;
       if (centers == null) {
