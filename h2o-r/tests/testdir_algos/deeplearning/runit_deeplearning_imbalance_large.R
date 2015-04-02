@@ -12,8 +12,8 @@ check.deeplearning_imbalanced <- function(conn) {
   print(hh_balanced)
 
   #compare error for class 6 (difficult minority)
-  class_6_err_imbalanced <- hh_imbalanced@model$errors$train_confusion_matrix$prediction_error_by_class[6]
-  class_6_err_balanced <- hh_balanced@model$errors$train_confusion_matrix$prediction_error_by_class[6]
+  class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$Error[6]
+  class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$Error[6]
 
   if (class_6_err_imbalanced < class_6_err_balanced) {
       print("--------------------")

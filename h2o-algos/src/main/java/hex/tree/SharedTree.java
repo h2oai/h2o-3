@@ -374,8 +374,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
-      ConfusionMatrix cm = (mm instanceof ModelMetricsBinomial) ? ((ModelMetricsBinomial)mm)._cm :
-        ((mm instanceof ModelMetricsMultinomial) ? ((ModelMetricsMultinomial)mm)._cm : null);
+      ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
         Log.info(cm.toASCII());
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");

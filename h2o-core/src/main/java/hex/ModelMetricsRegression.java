@@ -4,11 +4,8 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
-  public ModelMetricsRegression(Model model, Frame frame) {
-    super(model, frame);
-  }
-  public ModelMetricsRegression(Model model, Frame frame, double sigma, double mse) {
-    super(model, frame, sigma, mse);
+  public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma) {
+    super(model, frame, mse, null, sigma);
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
@@ -28,7 +25,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     // ds[0] has the prediction and ds[1] is ignored
-    @Override public double[] perRow(double ds[], float[] yact, Model m, int row) {
+    @Override public double[] perRow(double ds[], float[] yact, Model m) {
       if( Float.isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if( Double.isNaN(ds[0])) return ds; // No errors if prediction is missing
 
@@ -43,7 +40,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
       double mse = _sumsqe / _count;
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, sigma, mse));
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, sigma));
     }
   }
 }

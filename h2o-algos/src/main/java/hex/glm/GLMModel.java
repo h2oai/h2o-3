@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.*;
-import hex.ModelMetrics.MetricBuilder;
 import hex.ModelMetricsBinomial.MetricBuilderBinomial;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
@@ -10,8 +9,6 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ModelUtils;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
@@ -22,37 +19,27 @@ import java.util.concurrent.Future;
  */
 public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   final DataInfo _dinfo;
-  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs, float [] thresholds) {
+  public GLMModel(Key selfKey, GLMParameters parms, GLMOutput output, DataInfo dinfo, double ymu, double lambda_max, long nobs) {
     super(selfKey, parms, output);
     _ymu = ymu;
     _lambda_max = lambda_max;
     _nobs = nobs;
     _dinfo = dinfo;
-    _defaultThresholds = thresholds;
   }
 
   public DataInfo dinfo() { return _dinfo; }
-  float [] _defaultThresholds;
 
-  public static class GLMMetricsBuilderBinomial extends MetricBuilderBinomial {
+  public static class GLMMetricsBuilderBinomial<T extends GLMMetricsBuilderBinomial<T>> extends MetricBuilderBinomial<T> {
     double _resDev;
     double _nullDev;
 
-    public GLMMetricsBuilderBinomial(String[] domain, float[] thresholds) {
-      super(domain == null?new String[]{"0","1"}:domain, thresholds);
+    public GLMMetricsBuilderBinomial(String[] domain) {
+      super(domain == null?new String[]{"0","1"}:domain);
     }
-
-    private int rank(double [] beta) {
-      int res = 0;
-      for(double d:beta)
-        if(d != 0) ++res;
-      return res;
-    }
-
 
     @Override
-    public double[] perRow(double[] ds, float[] yact, Model m, int row) {
-      double [] res = super.perRow(ds,yact,m, row);
+    public double[] perRow(double[] ds, float[] yact, Model m) {
+      double [] res = super.perRow(ds,yact,m);
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
       _resDev += gm._parms.deviance(yact[0], (float)ds[2]);
@@ -60,22 +47,25 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       return res;
     }
 
-    @Override public void reduce( MetricBuilder mb ) {
+    @Override public void reduce( T mb ) {
       super.reduce(mb);
-      GLMMetricsBuilderBinomial mg = (GLMMetricsBuilderBinomial)mb;
-      _resDev += mg._resDev;
-      _nullDev += mg._nullDev;
+      _resDev += mb._resDev;
+      _nullDev += mb._nullDev;
     }
 
-    @Override
-    public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
+    private static int rank(double [] beta) {
+      int res = 0;
+      for(double d:beta)
+        if(d != 0) ++res;
+      return res;
+    }
+
+    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
       GLMModel gm = (GLMModel)m;
       assert gm._parms._family == Family.binomial;
-      ConfusionMatrix[] cms = new ConfusionMatrix[_cms.length];
-      for( int i=0; i<cms.length; i++ ) cms[i] = new ConfusionMatrix(_cms[i], _domain);
-      AUCData aucdata = new AUC(cms,_thresholds,_domain).data();
+      AUC2 auc = new AUC2(_auc);
       double mse = _sumsqe / _count;
-      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, aucdata, sigma, mse, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
+      ModelMetrics res = new ModelMetricsBinomialGLM(m, f, mse, _domain, sigma, auc, _resDev, _nullDev, _resDev + 2*rank(gm.beta()));
       return m._output.addModelMetrics(res);
     }
   }
@@ -100,7 +90,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
-      case Binomial: return new GLMMetricsBuilderBinomial(domain, ModelUtils.DEFAULT_THRESHOLDS);
+      case Binomial: return new GLMMetricsBuilderBinomial(domain);
       case Regression: return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -580,7 +570,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       public GLMModel atomic(GLMModel old) {
         if(old == null)
           return old; // job could've been cancelled!
-        if(trainVal != null)old._defaultThresholds = trainVal.thresholds;
         if(old._output._submodels == null){
           old._output = (GLMOutput)old._output.clone();
           old._output._submodels = new Submodel[]{sm};
@@ -624,7 +613,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     Submodel [] _submodels;
     String [] _coefficient_names;
     int         _best_lambda_idx;
-    float       _threshold;
+    double      _threshold;
     double   [] _global_beta;
     double 		  _residual_deviance = Double.NaN;
     double 		  _null_deviance = Double.NaN;
@@ -710,7 +699,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xVal : hval?_submodels[i].holdOutVal:_submodels[i].trainVal;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.auc > bestVal.auc) || val.residual_deviance < bestVal.residual_deviance) {
+          if ((useAuc && val.auc() > bestVal.auc()) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
             bestId = i;
           }
@@ -729,7 +718,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _aic = Double.NaN;
         _auc = Double.NaN;
       } else {
-        _threshold = _submodels[l].trainVal.best_threshold;
+        _threshold = _submodels[l].trainVal.bestThreshold();
         _residual_deviance = _submodels[l].trainVal.residualDeviance();
         _null_deviance = _submodels[l].trainVal.nullDeviance();
         _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();

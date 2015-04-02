@@ -214,7 +214,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         } else
           _parms._lambda = new double[]{_tInfos[0]._lambdaMax * (_dinfo.fullN() < (_tInfos[0]._nobs >> 4) ? 1e-3 : 1e-1)};
       }
-      GLMModel m = new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs, ModelUtils.DEFAULT_THRESHOLDS);
+      GLMModel m = new GLMModel(_dest, _parms, new GLMOutput(GLM.this), _dinfo, _tInfos[0]._ymu, _tInfos[0]._lambdaMax, _tInfos[0]._nobs);
       m.delete_and_lock(GLM.this._key);
       m.adaptTestForTrain(_valid,true);
       // _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
@@ -636,7 +636,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
               getCompleter().addToPendingCount(1);
-              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, contractVec(glrt._beta, _taskInfo._activeCols), _taskInfo._ymu,_rowFilter, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), false)).asyncExec(_activeData._adaptedFrame);
+              new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, contractVec(glrt._beta, _taskInfo._activeCols), _taskInfo._ymu,_rowFilter, new Iteration(getCompleter(), false)).asyncExec(_activeData._adaptedFrame);
               return;
             }
           }
@@ -731,7 +731,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         setSubmodel(newBeta, null, null, this);
         tryComplete();
       } else // fork off ADMM iteration
-        new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _taskInfo._ymu, _rowFilter, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
+        new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _taskInfo._ymu, _rowFilter, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
     }
 
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
@@ -811,7 +811,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               setSubmodel(glmt._beta, glmt._val, null,  (H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             final boolean validate = (_taskInfo._iter % 5) == 0;
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _taskInfo._ymu, _rowFilter, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), glmt._glm, validate, newBeta, _taskInfo._ymu, _rowFilter,new Iteration(getCompleter(), true)).asyncExec(_activeData._adaptedFrame);
           }
         }
       }
@@ -832,7 +832,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             assert t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + lst._likelihoods[i]);
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _taskInfo._ymu, _rowFilter, ModelUtils.DEFAULT_THRESHOLDS, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _taskInfo._ymu, _rowFilter, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
             return;
           }
         }
@@ -865,6 +865,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       res[res.length - 1] = beta[beta.length - 1];
       return res;
     }
+
     private final double[] contractVec(double[] beta, final int[] activeCols) {
       if (beta == null) return null;
       if (activeCols == null) return beta.clone();
