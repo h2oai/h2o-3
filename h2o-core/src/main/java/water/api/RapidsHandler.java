@@ -42,6 +42,9 @@ class RapidsHandler extends Handler {
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
             sb.append(rapids.string);
+          } else if (fr.anyVec().isString()) {
+            rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+            sb.append(rapids.string);
           } else {
             rapids.scalar = fr.anyVec().at(0);
             sb.append(Double.toString(rapids.scalar));
