@@ -238,7 +238,7 @@ public class GLMTest  extends TestUtil {
         for(int j = 0; j < b.length; ++j) {
           b[j] += step * pk[j];
         }
-        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
+        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, null, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
         assertEquals("objective values differ at step " + i + ": " + step, glmt._likelihood, glst._likelihoods[i], 1e-8);
         System.out.println("step = " + step + ", obj = " + glmt._likelihood + ", " + glst._likelihoods[i]);
         step *= stepDec;
@@ -277,8 +277,8 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < beta.length; ++i)
       beta[i] = 1 - 2*rnd.nextDouble();
 
-      GLMGradientTask grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
@@ -290,8 +290,8 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for(int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2*rnd.nextDouble();
-      grtCol = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
 
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
@@ -310,8 +310,8 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2*rnd.nextDouble();
 
-      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta, 1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta, 1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       dinfo.remove();
@@ -548,7 +548,7 @@ public class GLMTest  extends TestUtil {
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
       // todo: remove, result from h2o.1
       // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0).doAll(dinfo._adaptedFrame);
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model._dinfo.coefNames();
       System.out.println("coefs = " + Arrays.toString(names));
@@ -625,8 +625,8 @@ public class GLMTest  extends TestUtil {
       DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
       // todo: remove, result from h2o.1
      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0).doAll(dinfo._adaptedFrame);
-      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380).doAll(dinfo._adaptedFrame);
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0, null).doAll(dinfo._adaptedFrame);
+      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       for(int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
@@ -675,7 +675,7 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       // test the gram
       DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
-      GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null,null).doAll(dinfo._adaptedFrame);
+      GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null,null, null).doAll(dinfo._adaptedFrame);
       for(int i = 0; i < glmt._xy.length; ++i) {
         for(int j = 0; j <= i; ++j ) {
           assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);

@@ -15,33 +15,32 @@ public class DataInfo extends Keyed {
   public int [] _activeCols;
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
-  boolean _filterVec; // binary row filter, only process rows with the bit set
   boolean _weightsVec;
   // vecs are arranged so that there is predictors | response | filter | offset | weights,
 
-  public DataInfo setFilter(Vec v) {
-    if(_filterVec) {
-      int id = _adaptedFrame.numCols() - 1 - (_weightsVec?1:0);
-      _adaptedFrame.replace(id,v);
-    } else {
-      String name = "_filter_vec";
-      while (_adaptedFrame.vec(name) != null) name = "_" + name;
-      _adaptedFrame.add(name, v);
-      _filterVec = true;
-    }
-    return this;
-  }
+//  public DataInfo setFilter(Vec v) {
+//    if(_filterVec) {
+//      int id = _adaptedFrame.numCols() - 1 - (_weightsVec?1:0);
+//      _adaptedFrame.replace(id,v);
+//    } else {
+//      String name = "_filter_vec";
+//      while (_adaptedFrame.vec(name) != null) name = "_" + name;
+//      _adaptedFrame.add(name, v);
+//      _filterVec = true;
+//    }
+//    return this;
+//  }
 
   public Vec weightsVec(){
     return _weightsVec?_adaptedFrame.vec(_adaptedFrame.numCols()-1):null;
   }
-  public Vec filterVec(){
-    return _filterVec?_adaptedFrame.vec(filterVecId()):null;
-  }
-  public int filterVecId(){
-    return _filterVec?_adaptedFrame.numCols()- 1 - (_weightsVec?1:0):-1;
-  }
-
+//  public Vec filterVec(){
+//    return _filterVec?_adaptedFrame.vec(filterVecId()):null;
+//  }
+//  public int filterVecId(){
+//    return _filterVec?_adaptedFrame.numCols()- 1 - (_weightsVec?1:0):-1;
+//  }
+//
   public DataInfo setWeights(Vec v) {
     if(_weightsVec) {
       int id = _adaptedFrame.numCols() - 1;
@@ -461,7 +460,7 @@ public class DataInfo extends Keyed {
     public double [] response;
     public int    [] numIds;
     public int    [] binIds;
-
+    public int       rid;
     public int       nBins;
     public int       nNums;
     public final double etaOffset;
@@ -506,7 +505,7 @@ public class DataInfo extends Keyed {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
-        res = etaOffset;
+        res += etaOffset;
         for (int i = 0; i < nNums; ++i)
           res += numVals[i] * vec[numIds[i]];
       }
@@ -583,18 +582,21 @@ public class DataInfo extends Keyed {
     if(_normMul != null && beta != null)
       for(int i = 0; i < _nums; ++i)
         etaOffset -= beta[i] * _normSub[i] * _normMul[i];
-    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;
+//    Chunk filterChunk = _filterVec?chunks[filterVecId()]:null;
     for (int i = 0; i < rows.length; ++i) {
-      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);
-      if(filterChunk == null || filterChunk.at8(i) == 1)
+//      assert filterChunk == null || filterChunk.at8(i) == 0 || filterChunk.at8(i) == 1:"unepxected bit value " + filterChunk.at8(i);
+//      if(filterChunk == null || filterChunk.at8(i) == 0) {
         rows[i] = new Row(true, Math.min(_nums - _bins, 16), Math.min(_bins, 16) + _cats, _responses, etaOffset);
+        rows[i].rid = i;
+//      }
+
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        if(filterChunk != null && filterChunk.at8(i) == 0)
-          continue;
+//        if(filterChunk != null && filterChunk.at8(i) == 1)
+//          continue;
         if (chunks[i].isNA(r)) {
           if (_skipMissing) {
             row.bad = true;
@@ -613,8 +615,8 @@ public class DataInfo extends Keyed {
     for (int cid = 0; cid < _bins; ++cid) {
       Chunk c = chunks[cid + _cats];
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(filterChunk != null && filterChunk.at8(r) == 0)
-          continue;
+//        if(filterChunk != null && filterChunk.at8(r) == 0)
+//          continue;
         if(!c.isSparse() && c.atd(r) == 0)continue;
         Row row = rows[r];
         if (c.isNA(r))
@@ -628,8 +630,8 @@ public class DataInfo extends Keyed {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(filterChunk != null && filterChunk.at8(r) == 0)
-          continue;
+//        if(filterChunk != null && filterChunk.at8(r) == 0)
+//          continue;
         if(!c.isSparse() && c.atd(r) == 0)continue;
         assert r > oldRow;
         oldRow = r;
@@ -648,8 +650,8 @@ public class DataInfo extends Keyed {
     for (int i = 1; i <= _responses; ++i) {
       Chunk rChunk = chunks[chunks.length-i];
       for (int r = 0; r < chunks[0]._len; ++r) {
-        if(filterChunk != null && filterChunk.at8(r) == 0)
-          continue;
+//        if(filterChunk != null && filterChunk.at8(r) == 0)
+//          continue;
         nobs++;
         Row row = rows[r];
         double d = rChunk.atd(r);
