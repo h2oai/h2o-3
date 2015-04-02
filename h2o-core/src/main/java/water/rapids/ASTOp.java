@@ -1589,7 +1589,7 @@ class ASTRbind extends ASTUniPrefixOp {
     AST ary = E.parse();
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     dblarys.add(ary);
-    AST a;
+    AST a=null;
     boolean broke = false;
     while (E.skipWS().hasNext()) {
       a = E.parse();
@@ -1603,7 +1603,10 @@ class ASTRbind extends ASTUniPrefixOp {
       }
       else { broke = true; break; }
     }
-    if (broke) E.rewind();
+    if (broke) {
+      if(a==null) E.rewind();
+      else        E.rewind(a);
+    }
     Collections.reverse(dblarys);
     ASTRbind res = (ASTRbind) clone();
     res._asts = dblarys.toArray(new AST[argcnt=dblarys.size()]);
@@ -1788,7 +1791,7 @@ class ASTCbind extends ASTUniPrefixOp {
     AST ary = E.parse();
     if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
     dblarys.add(ary);
-    AST a;
+    AST a=null;
     boolean broke = false;
     while (E.skipWS().hasNext()) {
       a = E.parse();
@@ -1802,7 +1805,10 @@ class ASTCbind extends ASTUniPrefixOp {
       }
       else { broke = true; break; }
     }
-    if (broke) E.rewind();
+    if (broke) {
+      if(a==null) E.rewind();
+      else        E.rewind(a);
+    }
     ASTCbind res = (ASTCbind) clone();
     AST[] arys = new AST[argcnt=dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
