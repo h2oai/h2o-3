@@ -86,7 +86,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
 
-    // Currently, does not work on categorical data
+    // PCA does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) {
