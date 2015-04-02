@@ -576,8 +576,12 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     name <- j
     j <- match(j, colnames(x))
     if( any(is.na(j)) ) {
-      updateColName <- TRUE
-      idx <- ncol(x)+1
+      if( is.numeric(name) ) {
+       idx <- name
+      } else {
+        updateColName <- TRUE
+        idx <- ncol(x)+1
+      }
       j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
@@ -594,8 +598,12 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
     name <- j
     j <- match(j, colnames(x))
     if( any(is.na(j)) ) {
-      updateColName <- TRUE
-      idx <- ncol(x)+1
+      if( is.numeric(name) ) {
+        idx <- name
+      } else {
+        updateColName <- TRUE
+        idx <- ncol(x)+1
+      }
       j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
       ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i), j))
