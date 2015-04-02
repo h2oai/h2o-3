@@ -61,6 +61,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
         // The model to be built
         model = new QuantileModel(dest(), _parms, new QuantileModel.QuantileOutput(Quantile.this));
+        model._output._parameters = _parms;
         model._output._quantiles = new double[train().numCols()][_parms._probs.length];
         model.delete_and_lock(_key);
 

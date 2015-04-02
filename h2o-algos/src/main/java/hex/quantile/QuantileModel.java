@@ -16,6 +16,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
   }
 
   public static class QuantileOutput extends Model.Output {
+    public QuantileParameters _parameters;   // Model parameters
     public int _iterations;        // Iterations executed
     public double _quantiles[/*N*/][/*Q*/]; // Our N columns, Q quantiles reported
     public QuantileOutput( Quantile b ) { super(b); }
