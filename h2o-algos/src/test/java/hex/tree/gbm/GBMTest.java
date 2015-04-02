@@ -675,7 +675,7 @@ public class GBMTest extends TestUtil {
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(1.0, mm.auc()._auc, 1e-8);
 
       double mse[] = gbm._output._mse_train;
       assertEquals(0.202649429311526, mse[mse.length-1], 1e-6);
@@ -708,7 +708,7 @@ public class GBMTest extends TestUtil {
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(1.0, mm.auc()._auc, 1e-8);
 
       double mse[] = gbm._output._mse_train;
       assertEquals(0.202649429311526, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
@@ -742,7 +742,7 @@ public class GBMTest extends TestUtil {
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(1.0, mm.auc()._auc, 1e-8);
 
       double mse[] = gbm._output._mse_train;
       assertEquals(0.202649429311526, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
@@ -777,7 +777,7 @@ public class GBMTest extends TestUtil {
 
       gbm.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm, parms.train());
-      assertEquals(1.0, mm.auc().AUC(), 1e-8);
+      assertEquals(1.0, mm.auc()._auc, 1e-8);
 
       double mse[] = gbm._output._mse_train;
       assertEquals(0.202649429311526, mse[mse.length-1], 1e-6);

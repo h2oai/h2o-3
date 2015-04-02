@@ -533,7 +533,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc().AUC()) < 1e-8);
+      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc()._auc) < 1e-8);
 
       double mse = dl._output.train_metrics.mse();
       assertEquals(0.3955084146938792, mse, 1e-6);
@@ -567,7 +567,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      Assert.assertTrue(Math.abs(1.0 - mm.auc().AUC()) < 1e-8); //Note: better results than non-shuffled
+      Assert.assertTrue(Math.abs(1.0 - mm.auc()._auc) < 1e-8); //Note: better results than non-shuffled
 
       double mse = dl._output.train_metrics.mse();
       assertEquals(0.007518775420551756, mse, 1e-6); //Note: better results than non-shuffled
@@ -602,7 +602,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc().AUC()) < 1e-8);
+      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc()._auc) < 1e-8);
 
       double mse = dl._output.train_metrics.mse();
       assertEquals(0.3955084146938792, mse, 1e-6); //Note: better results than non-shuffled
@@ -638,7 +638,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc().AUC()) < 1e-8);
+      Assert.assertTrue(Math.abs(0.92592592592592 - mm.auc()._auc) < 1e-8);
 
       double mse = dl._output.train_metrics.mse();
       assertEquals(0.3955084146938792, mse, 1e-6);

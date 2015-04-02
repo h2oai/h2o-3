@@ -504,7 +504,7 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc()._auc, 1e-8);
 
       double mse[] = drf._output._mse_train;
       assertEquals(0.3, mse[mse.length-1], 1e-6);
@@ -538,7 +538,7 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc()._auc, 1e-8);
 
       double mse[] = drf._output._mse_train;
       assertEquals(0.3, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
@@ -572,7 +572,7 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc()._auc, 1e-8);
 
       double mse[] = drf._output._mse_train;
       assertEquals(0.3, mse[mse.length-1], 1e-6); //Note: better results than non-shuffled
@@ -607,7 +607,7 @@ public class DRFTest extends TestUtil {
 
       drf.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(drf, parms.train());
-      assertEquals(0.8333333333333334, mm.auc().AUC(), 1e-8);
+      assertEquals(0.8333333333333334, mm.auc()._auc, 1e-8);
 
       double mse[] = drf._output._mse_train;
       assertEquals(0.3, mse[mse.length-1], 1e-6);
