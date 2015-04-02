@@ -468,7 +468,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     DRFLeafNode( DTree tree, int pid, int nid ) { super(tree, pid, nid); }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f((float)_pred); }
+    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
     @Override protected int size() { return 4; }
   }
 

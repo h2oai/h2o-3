@@ -3,9 +3,6 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.Row;
 
-
-import java.util.Arrays;
-
 import hex.glm.GLMModel.GLMParameters;
 import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -463,7 +460,7 @@ public abstract class GLMTask  {
       _skip = skp;
     }
 
-    private final boolean mostlySparse(Chunk [] chks){
+    private boolean mostlySparse(Chunk [] chks){
       int cnt = 0;
       for(Chunk chk:chks)
         if(chk.isSparse())
@@ -615,32 +612,6 @@ public abstract class GLMTask  {
     }
   }
 
-  public static class GLMCategoricalIterationTask extends MRTask<GLMCategoricalIterationTask> {
-    double [] _gram;
-    double [] _xy;
-
-    final double [] _beta;
-    final GLMParameters _glm;
-
-    public GLMCategoricalIterationTask(GLMParameters params, double [] beta) {
-      _glm = params;
-      _beta = beta;
-    }
-
-    @Override public void map(Chunk [] chks) {
-      Chunk x = chks[0];
-      Chunk o = chks[1];
-      Chunk w = chks[2];
-      Chunk y = chks[3];
-      for(int i = 0; i < x._len; ++i) {
-        if(x.isNA(i))continue;
-        int c = (int)x.at8(i);
-        double eta = _beta[c];
-        double off = o.atd(i) - eta;
-
-      }
-    }
-  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *
@@ -658,16 +629,13 @@ public abstract class GLMTask  {
     final double _ymu;
     long _nobs;
     final boolean _validate;
-    final float [] _thresholds;
-    float [][] _newThresholds;
     int [] _ti;
     public double _likelihood;
 
-    public static final int N_THRESHOLDS = 50;
     final double _lambda;
     double _zsum;
 
-    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, float [] thresholds, H2OCountedCompleter cmp) {
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, double lambda, GLMModel.GLMParameters glm, boolean validate, double [] beta, double ymu, H2OCountedCompleter cmp) {
       super(cmp);
       _jobKey = jobKey;
       _dinfo = dinfo;
@@ -675,19 +643,7 @@ public abstract class GLMTask  {
       _beta = beta;
       _ymu = ymu;
       _validate = validate;
-      assert glm._family != Family.binomial || thresholds != null;
-      _thresholds = _validate?thresholds:null;
       _lambda = lambda;
-    }
-
-    private void sampleThresholds(int yi){
-      _ti[yi] = (_newThresholds[yi].length >> 2);
-      try{ Arrays.sort(_newThresholds[yi]);} catch(Throwable t){
-        System.out.println("got AIOOB during sort?! ary = " + Arrays.toString(_newThresholds[yi]));
-        return;
-      } // sort throws AIOOB sometimes!
-      for (int i = 0; i < _newThresholds.length; i += 4)
-        _newThresholds[yi][i >> 2] = _newThresholds[yi][i];
     }
 
     @Override
@@ -700,13 +656,12 @@ public abstract class GLMTask  {
       if(_validate) {
         int rank = 0;
         if(_beta != null)for(double d:_beta)if(d != 0)++rank;
-        _val = new GLMValidation(null, _ymu, _glm, rank, _thresholds);
+        _val = new GLMValidation(null, _ymu, _glm, rank);
       }
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
 
       if(_glm._family == Family.binomial && _validate){
         _ti = new int[2];
-        _newThresholds = new float[2][4*N_THRESHOLDS];
       }
 
       // compute
@@ -714,8 +669,6 @@ public abstract class GLMTask  {
       if(sparse) {
         for(Row r:_dinfo.extractSparseRows(chks, _beta))
           processRow(r);
-        // need to adjust gradient by centered zeros
-        int numStart = _dinfo.numStart();
       } else {
         Row row = _dinfo.newDenseRow();
         for(int r = 0 ; r < chks[0]._len; ++r)
@@ -723,10 +676,6 @@ public abstract class GLMTask  {
       }
       if(_validate && _glm._family == Family.binomial) {
         assert _val != null;
-        _newThresholds[0] = Arrays.copyOf(_newThresholds[0],_ti[0]);
-        _newThresholds[1] = Arrays.copyOf(_newThresholds[1],_ti[1]);
-        Arrays.sort(_newThresholds[0]);
-        Arrays.sort(_newThresholds[1]);
       }
     }
 
@@ -758,12 +707,6 @@ public abstract class GLMTask  {
       _zsum += w*z;
       if(_validate) {
         _val.add(y, eta, mu);
-        if(_glm._family == Family.binomial) {
-          int yi = (int) y;
-          if (_ti[yi] == _newThresholds[yi].length)
-            sampleThresholds(yi);
-          _newThresholds[yi][_ti[yi]++] = (float) mu;
-        }
       }
       _likelihood += _glm.likelihood(y,eta,mu);
       assert w >= 0|| Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
@@ -791,22 +734,6 @@ public abstract class GLMTask  {
         _yy += git._yy;
         _nobs += git._nobs;
         if (_validate) _val.add(git._val);
-        if(_validate && _glm._family == Family.binomial) {
-          _newThresholds[0] = ArrayUtils.join(_newThresholds[0], git._newThresholds[0]);
-          _newThresholds[1] = ArrayUtils.join(_newThresholds[1], git._newThresholds[1]);
-          if (_newThresholds[0].length >= 2 * N_THRESHOLDS) {
-            for (int i = 0; i < 2 * N_THRESHOLDS; i += 2)
-              _newThresholds[0][i >> 1] = _newThresholds[0][i];
-          }
-          if (_newThresholds[0].length > N_THRESHOLDS)
-            _newThresholds[0] = Arrays.copyOf(_newThresholds[0], N_THRESHOLDS);
-          if (_newThresholds[1].length >= 2 * N_THRESHOLDS) {
-            for (int i = 0; i < 2 * N_THRESHOLDS; i += 2)
-              _newThresholds[1][i >> 1] = _newThresholds[1][i];
-          }
-          if (_newThresholds[1].length > N_THRESHOLDS)
-            _newThresholds[1] = Arrays.copyOf(_newThresholds[1], N_THRESHOLDS);
-        }
         _likelihood += git._likelihood;
         super.reduce(git);
       }

@@ -231,10 +231,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                           // binary
                                           if (model2._output.nclasses() == 2) {
                                             assert (resp == 1);
-                                            threshold = mm.auc().threshold();
-                                            error = mm.auc().err();
+                                            threshold = mm.auc().defaultThreshold();
+                                            error = mm.auc().defaultErr();
                                             // check that auc.cm() is the right CM
-                                            Assert.assertEquals(new ConfusionMatrix(mm.auc().cm(), new String[]{"0", "1"}).err(), error, 1e-15);
+                                            Assert.assertEquals(new ConfusionMatrix(mm.auc().defaultCM(), new String[]{"0", "1"}).err(), error, 1e-15);
                                             // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                             Assert.assertEquals(mm.cm().err(), error, 1e-15);
                                           }
