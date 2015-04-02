@@ -64,7 +64,11 @@ class RollupStats extends Iced {
     _size = _naCnt = 0;
   }
 
-  private RollupStats( int mode ) { this(); _naCnt = mode; }
+  private RollupStats( int mode ) {
+    _mins = new double[5];
+    _maxs = new double[5];
+    _naCnt = mode;
+  }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
