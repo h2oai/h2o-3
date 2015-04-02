@@ -857,14 +857,9 @@ class ASTHour  extends ASTTimeOp { @Override String opStr(){ return "hour" ; } @
 class ASTMinute extends ASTTimeOp { @Override String opStr(){return "minute";} @Override ASTOp make() {return new ASTMinute();} @Override long op(MutableDateTime dt) { return dt.getMinuteOfHour();}}
 class ASTSecond extends ASTTimeOp { @Override String opStr(){return "second";} @Override ASTOp make() {return new ASTSecond();} @Override long op(MutableDateTime dt) { return dt.getSecondOfMinute();}}
 class ASTMillis extends ASTTimeOp { @Override String opStr(){return "millis";} @Override ASTOp make() {return new ASTMillis();} @Override long op(MutableDateTime dt) { return dt.getMillisOfSecond();}}
-class ASTMonth extends ASTTimeOp {
-  static private final String[][] FACTORS = new String[][]{{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}};
-  @Override protected String[][] factors() { return FACTORS; }
-  @Override String opStr(){ return "month"; }
-  @Override ASTOp make() {return new ASTMonth ();}
-  @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}
-}
-class ASTDayOfWeek extends ASTTimeOp { 
+class ASTMonth extends ASTTimeOp { @Override String opStr(){ return "month"; } @Override ASTOp make() {return new ASTMonth ();} @Override long op(MutableDateTime dt) { return dt.getMonthOfYear()-1;}}
+
+class ASTDayOfWeek extends ASTTimeOp {
   static private final String[][] FACTORS = new String[][]{{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}}; // Order comes from Joda
   @Override protected String[][] factors() { return FACTORS; }
   @Override String opStr(){ return "dayOfWeek"; }
@@ -901,13 +896,13 @@ class ASTMktime extends ASTUniPrefixOp {
 
     if( x==null ) {                            // Single point
       long msec = new MutableDateTime(is[6],   // year
-                                      is[5]+1, // month
-                                      is[4]+1, // day
-                                      is[3],   // hour
-                                      is[2],   // minute
-                                      is[1],   // second
-                                      is[0])   // msec
-        .getMillis();
+              is[5]+1, // month
+              is[4]+1, // day
+              is[3],   // hour
+              is[2],   // minute
+              is[1],   // second
+              is[0])   // msec
+              .getMillis();
       env.poppush(1, new ValNum(msec));
       return;
     }
@@ -931,16 +926,16 @@ class ASTMktime extends ASTUniPrefixOp {
         int rlen = chks[0]._len;
         for( int r=0; r<rlen; r++ ) {
           dt.setDateTime((int)chks[6].at8(r),  // year
-                         (int)chks[5].at8(r)+1,// month
-                         (int)chks[4].at8(r)+1,// day
-                         (int)chks[3].at8(r),  // hour
-                         (int)chks[2].at8(r),  // minute
-                         (int)chks[1].at8(r),  // second
-                         (int)chks[0].at8(r)); // msec
+                  (int)chks[5].at8(r)+1,// month
+                  (int)chks[4].at8(r)+1,// day
+                  (int)chks[3].at8(r),  // hour
+                  (int)chks[2].at8(r),  // minute
+                  (int)chks[1].at8(r),  // second
+                  (int)chks[0].at8(r)); // msec
           n.addNum(dt.getMillis());
         }
       }
-      }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
+    }.doAll(1,vecs).outputFrame(new String[]{"msec"},null);
     env.poppush(1, new ValFrame(fr2));
   }
 }
