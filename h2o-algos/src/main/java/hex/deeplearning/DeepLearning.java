@@ -130,8 +130,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
       Scope.enter();
       DeepLearningModel cp = null;
 
-      Frame tra_fr = addRowWeights(_train);
-      Frame val_fr = _valid == null ? null : addRowWeights(_valid);
+      Frame tra_fr = addRowWeights(_train, rowWeights());
+      Frame val_fr = _valid == null ? null : addRowWeights(_valid, vrowWeights());
 
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), tra_fr, val_fr);
@@ -242,8 +242,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
 
-        Frame tra_fr = addRowWeights(_train);
-        Frame val_fr = _valid == null ? null : addRowWeights(_valid);
+        Frame tra_fr = addRowWeights(_train, rowWeights());
+        Frame val_fr = _valid == null ? null : addRowWeights(_valid, vrowWeights());
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
