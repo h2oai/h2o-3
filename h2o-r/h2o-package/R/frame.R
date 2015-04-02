@@ -594,6 +594,16 @@ subset.H2OFrame <- function(x, subset, select, drop = FALSE, ...) {
 setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   missingI <- missing(i)
   missingJ <- missing(j)
+  if( !missingJ && is.na(j) ) j <- as.list(match.call())$j
+
+  updateColName <- FALSE
+  idx <- 0
+  name <- ""
+  if( !missingI && is.character(i) && missingJ ) {  ## case where fr["baz"] <- qux
+    missingI <- TRUE
+    missingJ <- FALSE
+    j <- i
+  }
 
   if(!missingI && !is.numeric(i))
     stop("`i` must be missing or a numeric vector")
@@ -602,14 +612,51 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
   if(!is(value, "H2OFrame") && !is.numeric(value) && !is.character(value))
     stop("`value` can only be an H2OFrame object or a numeric or character vector")
 
-  if (missingI && missingJ)
+  if (missingI && missingJ) {
     sub <- x
-  else if (missingI)
-    sub <- x[,j]
-  else if (missingJ)
+  } else if (missingI) {
+    name <- j
+    j <- match(j, colnames(x))
+    if( any(is.na(j)) ) {
+      if( is.numeric(name) ) {
+       idx <- name
+      } else {
+        updateColName <- TRUE
+        idx <- ncol(x)+1
+      }
+      j <- .eval(idx,parent.frame())
+      op  <- new("ASTApply", op = "[")
+      ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
+      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+      finalizers <- x@finalizers
+      sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+    } else {
+      sub <- x[,j]
+    }
+  } else if (missingJ) {
     sub <- x[i,]
-  else
-    sub <- x[i, j]
+  } else {
+    name <- j
+    j <- match(j, colnames(x))
+    if( any(is.na(j)) ) {
+      if( is.numeric(name) ) {
+        idx <- name
+      } else {
+        updateColName <- TRUE
+        idx <- ncol(x)+1
+      }
+      j <- .eval(idx,parent.frame())
+      op  <- new("ASTApply", op = "[")
+      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
+      mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
+      finalizers <- x@finalizers
+      sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
+                      finalizers = finalizers, linkToGC = TRUE, mutable = mutable)
+    } else {
+      sub <- x[i, j]
+    }
+  }
 
   lhs <- .get(sub)
   finalizers <- sub@finalizers
@@ -621,7 +668,10 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
 
   op  <- new("ASTApply", op = "=")
   ast <- new("ASTNode", root = op, children = list(lhs, rhs))
-  .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
+  res <- .h2o.replace.frame(conn = x@conn, ast = ast, key = x@key, finalizers = finalizers)
+
+  if( updateColName ) { colnames(res)[idx] <- name }
+  res
 })
 
 #' @rdname H2OFrame-Extract
@@ -1372,6 +1422,10 @@ setMethod("as.numeric", "H2OFrame", function(x)
 setMethod("ifelse", signature(test="H2OFrame", yes="ANY", no="ANY"), function(test, yes, no)
   .h2o.nary_row_op("ifelse", test, yes, no))
 
+#' @export
+setMethod("ifelse", signature(test="ANY",yes="H2OFrame", no="H2OFrame"), function(test,yes,no)
+  .h2o.nary_frame_op("ifelse", test, yes, no))
+
 #' Combine H2O Datasets by Columns
 #'
 #' Takes a sequence of H2O data sets and combines them by column
@@ -1600,19 +1654,6 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   if(vars < 0L || vars > (ncol(.data)-1L))
     stop('Column ', vars, ' out of range for frame columns ', ncol(.data), '.')
 
-  # FUN <- deparse(substitute(.fun), width.cutoff = 500L)
-  # if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
-  # .FUN <- get(FUN)
-  # if( !is.function(.FUN) ) stop("FUN must be an R function
-  if( typeof(.fun) == 'closure' ) FUN <- deparse(substitute(.fun), width.cutoff = 500L)
-  else FUN <- .fun
-  .FUN <- NULL
-  if (is.character(FUN)) .FUN <- get(FUN, envir = envir)
-  if (!is.null(.FUN) && !is.function(.FUN)) stop("FUN must be an R function")
-  else if(is.null(.FUN) && !is.function(FUN))
-    stop("FUN must be an R function")
-  if (!is.null(.FUN)) FUN <- as.name(FUN)
-
   l <- list(...)
   if(length(l) > 0L) {
     tmp <- sapply(l, function(x) { !class(x) %in% c("H2OFrame", "numeric", "character", "logical") } )
@@ -1630,12 +1671,14 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
   }
 
   # Process the function. Decide if it's an anonymous fcn, or a named one.
+  FUN <- .fun
+  if(is.character(.fun)) FUN <- gsub("\"", "", FUN)
   myfun <- deparse(substitute(FUN), width.cutoff = 500L)
   fun.ast <- NULL
   # anon function?
   if (substr(myfun[1L], 1L, nchar("function")) == "function") {
     # handle anon fcn
-    fun.ast <- .fun.to.ast(FUN, "anon")
+    fun.ast <- .fun.to.ast(.fun, "anon")
     a <- invisible(.h2o.post.function(fun.ast))
     if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
   # else named function get the ast
@@ -1643,26 +1686,21 @@ h2o.ddply <- function (.data, .variables, .fun = NULL, ..., .progress = 'none') 
     if (.is.op(substitute(FUN))) {
       fun.ast <- new("ASTFun", name=myfun, arguments="", body=new("ASTBody", statements=list()))
     } else {
-      fun_name <- as.character(FUN)
-      fun <- match.fun(FUN)
-      fun.ast <- .fun.to.ast(fun, fun_name)
-      a <- invisible(.h2o.post.function(fun.ast))
-      if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      if( is(FUN, "standardGeneric")) {
+        fun_name <- FUN@generic[[1]]
+        fun.ast  <- new("ASTFun", name=fun_name, arguments="", body=new("ASTBody", statements=list()))
+      } else {
+        fun_name <- as.character(substitute(FUN))
+        fun <- match.fun(FUN)
+        fun.ast <- .fun.to.ast(fun, fun_name)
+        a <- invisible(.h2o.post.function(fun.ast))
+        if (!is.null(a$exception)) stop(a$exception, call.=FALSE)
+      }
     }
   }
 
   if (is.null(fun.ast)) stop("argument FUN was invalid")
-
-#  if(length(l) == 0)
-#    ast <- .h2o.nary_op("apply", X, MARGIN, fun.ast)
-#  else
-#    ast <- .h2o.nary_op("apply", X, MARGIN, fun.ast, fun_args = l)  # see the developer note in ast.R for info on the special "fun_args" parameter
-#  ast
-
-#  vars <- paste0('{', paste(vars, collapse = ";"), '}')
-
   .h2o.nary_frame_op("h2o.ddply", .data, vars, fun.ast)
-#  .h2o.nary_op("ddply", .data, vars, .fun, fun_args=list(...), .progress)
 }
 
 
