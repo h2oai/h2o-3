@@ -246,6 +246,8 @@ Otherwise, install from the [NodeJS website](http://nodejs.org/download/).
 
 Install [R](http://www.r-project.org/) and add the bin directory to your PATH if not already included.
 
+<a name="InstallRPackagesInUnix"></a>
+
 Install the following R packages: [RCurl](http://cran.r-project.org/package=RCurl), [rjson](http://cran.r-project.org/package=rjson), [statmod](http://cran.r-project.org/package=statmod), [devtools](http://cran.r-project.org/package=devtools), [roxygen2](http://cran.r-project.org/package=roxygen2) and [testthat](http://cran.r-project.org/package=testthat).
 
     cd Downloads
@@ -294,7 +296,13 @@ Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-
 
     javac -version
 
-##### Step 3. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
+##### Step 3. Install R and the required packages:
+
+Installation instructions can be found here [R installation](http://cran.r-project.org).  Click “Download R for Linux”.  Click “ubuntu”.  Follow the given instructions.
+
+To install the required packages, follow the [same instructions as for OS X above](#InstallRPackagesInUnix).
+
+##### Step 4. Git Clone [h2o-dev](https://github.com/h2oai/h2o-dev.git)
 
 If you don't already have a Git client:
 
@@ -304,7 +312,7 @@ Download and update h2o-dev source codes:
 
     git clone https://github.com/h2oai/h2o-dev
 
-##### Step 4. Run the top-level gradle build:
+##### Step 5. Run the top-level gradle build:
 
     cd h2o-dev
     ./gradlew build

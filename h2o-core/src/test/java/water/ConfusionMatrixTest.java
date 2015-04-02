@@ -206,10 +206,10 @@ public class ConfusionMatrixTest extends TestUtil {
       if (debug) {
         System.err.println("actual            : " + Arrays.toString(actualDomain));
         System.err.println("predicted         : " + Arrays.toString(predictedDomain));
-        System.err.println("CM domain         : " + Arrays.toString(cm.domain));
+        System.err.println("CM domain         : " + Arrays.toString(cm._domain));
         System.err.println("expected CM domain: " + Arrays.toString(expectedDomain) + "\n");
-        for (int i=0; i<cm.confusion_matrix.length; i++)
-          System.err.println(Arrays.toString(cm.confusion_matrix[i]));
+        for (int i=0; i<cm._cm.length; i++)
+          System.err.println(Arrays.toString(cm._cm[i]));
         System.err.println("");
         System.err.println(cm.toASCII());
       }
@@ -223,8 +223,8 @@ public class ConfusionMatrixTest extends TestUtil {
   }
 
   private void assertCMEqual(String[] expectedDomain, long[][] expectedCM, ConfusionMatrix actualCM) {
-    Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM.domain);
-    long[][] acm = actualCM.confusion_matrix;
+    Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM._domain);
+    long[][] acm = actualCM._cm;
     Assert.assertEquals("CM dimension differs", expectedCM.length, acm.length);
     for (int i=0; i < acm.length; i++) Assert.assertArrayEquals("CM row " +i+" differs!", expectedCM[i], acm[i]);
   }

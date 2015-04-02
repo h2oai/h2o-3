@@ -87,7 +87,7 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         for(int i = 0; i < pcond[0].length; i++) {
           int cidx = dinfo._cats + col;
           double num = tsk._rescnt[i];
-          double pmean = (double)tsk._jntsum[col][i][0]/num;
+          double pmean = tsk._jntsum[col][i][0]/num;
 
           pcond[cidx][i][0] = pmean;
           // double pvar = tsk._jntsum[col][i][1]/num - pmean * pmean;

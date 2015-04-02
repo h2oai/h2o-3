@@ -267,8 +267,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 //      _lastLambda = lambda;
       _beta = beta;
       _ginfo = ginfo;
-      if(_params._family == Family.binomial)
-        _thresholds = ModelUtils.DEFAULT_THRESHOLDS;
     }
 
     public void adjustToNewLambda( double currentLambda, double newLambda) {
@@ -485,7 +483,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               // while iteration expects pending count of 1, so we need to increase it here (Iteration itself adds 1 but 1 will be subtracted when we leave this method since we're in the callback which is called by onCompletion!
               // [unlike at the start of nextLambda call when we're not inside onCompletion]))
               getCompleter().addToPendingCount(1);
-              new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, contractVec(glrt._beta, _activeCols), _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),false)).asyncExec(_activeData._adaptedFrame);
+              new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, contractVec(glrt._beta, _activeCols), _taskInfo._ymu, new Iteration(getCompleter(),false)).asyncExec(_activeData._adaptedFrame);
               return;
             }
           }
@@ -567,7 +565,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         setSubmodel(newBeta,null,this);
         tryComplete();
       } else // fork off ADMM iteration
-        new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]),_taskInfo._params,false, beta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(this,false)).asyncExec(_activeData._adaptedFrame);
+        new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]),_taskInfo._params,false, beta, _taskInfo._ymu, new Iteration(this,false)).asyncExec(_activeData._adaptedFrame);
     }
     private class Iteration extends H2O.H2OCallback<GLMIterationTask> {
       public final long _iterationStartTime;
@@ -605,10 +603,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         } else if(_lastResult == null || lastObjVal > objVal)
           _lastResult = new IterationInfo(_iter, glmt._beta, glmt._likelihood);
 
-        if(glmt._newThresholds != null) {
-          _taskInfo._thresholds = ArrayUtils.join(glmt._newThresholds[0], glmt._newThresholds[1]);
-          Arrays.sort(_taskInfo._thresholds);
-        }
         final double [] newBeta = MemoryManager.malloc8d(glmt._xy.length);
         double l2pen = _currentLambda * (1-_taskInfo._params._alpha[0]);
         double l1pen = _currentLambda * _taskInfo._params._alpha[0];
@@ -648,7 +642,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               setSubmodel(glmt._beta, glmt._val, (H2O.H2OCountedCompleter) getCompleter().getCompleter()); // update current intermediate result
             final boolean validate = (_iter % 5) == 0;
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(_jobKey,_activeData,_currentLambda * (1-_taskInfo._params._alpha[0]),glmt._glm, validate, newBeta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),true)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(_jobKey,_activeData,_currentLambda * (1-_taskInfo._params._alpha[0]),glmt._glm, validate, newBeta, _taskInfo._ymu, new Iteration(getCompleter(),true)).asyncExec(_activeData._adaptedFrame);
           }
         }
       }
@@ -667,7 +661,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             assert t < 1;
             LogInfo("line search: found admissible step = " + t + ",  objval = " + lst._likelihoods[i]);
             getCompleter().addToPendingCount(1);
-            new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, beta, _taskInfo._ymu, _taskInfo._thresholds, new Iteration(getCompleter(),true, false)).asyncExec(_activeData._adaptedFrame);
+            new GLMIterationTask(_jobKey, _activeData, _currentLambda * (1-_taskInfo._params._alpha[0]), _taskInfo._params, true, beta, _taskInfo._ymu, new Iteration(getCompleter(),true, false)).asyncExec(_activeData._adaptedFrame);
             return;
           }
         }
@@ -801,14 +795,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               }
               if(lambdas.length > 1) {
                 GLMValidation val = new GLMValidation(_dinfo._adaptedFrame._key,ymut._ymu,_parms,0);
-                val.auc = .5;
+                val._auc = null;
                 double nullDev = gLmaxTsk._objVal * ymut._nobs;
                 val.null_deviance = nullDev;
                 val.residual_deviance = nullDev;
                 glmOutput.addNullSubmodel(gLmax, _parms.link(gYmu), val); // todo add null validation
               }
               _maxLambda = lambdas.length;
-              GLMModel model = new GLMModel(_dest, _parms, glmOutput, _dinfo, gYmu,gLmax,nobs, ModelUtils.DEFAULT_THRESHOLDS);
+              GLMModel model = new GLMModel(_dest, _parms, glmOutput, _dinfo, gYmu,gLmax,nobs);
               if(warning != null)
                 model.addWarning(warning);
               model.delete_and_lock(_key);
@@ -855,7 +849,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
                         Key dstKey = Key.make(_dest.toString() + "_xval_" + fi, (byte)1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
                         _state[fi] = new GLMTaskInfo(dstKey,dinfo,params,ymut.nobs(fi-1),ymut.ymu(fi-1),lLmax, _betaStart == null?nullBeta(dinfo,params,ymut.ymu(fi-1)):_betaStart, _betaGiven, _rho, _betaLB, _betaUB, new GradientInfo(lLmaxTsk._objVal,lLmaxTsk._gradient));
                         assert DKV.get(dinfo._key) != null;
-                        new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_parms._family == Family.binomial), dinfo, ymut.ymu(fi-1), gLmax, nobs, ModelUtils.DEFAULT_THRESHOLDS).delete_and_lock(_key);
+                        new GLMModel(dstKey, params, new GLMOutput(GLM.this,dinfo,_parms._family == Family.binomial), dinfo, ymut.ymu(fi-1), gLmax, nobs).delete_and_lock(_key);
                         if(lLmax > gLmax){
                           getCompleter().addToPendingCount(1);
                           // lambda max for this n_fold is > than global lambda max -> it has non-trivial solution for global lambda max, need to compute it first.
