@@ -31,9 +31,9 @@ prostate.hex$foo <- prostate.hex$AGE
 prostate.hex[,"bar"] <- prostate.hex$AGE
 prostate.hex["baz"] <- prostate.hex$AGE
 
-expect_equal(prostate.hex$foo[100], prostate.hex$AGE[100])
-expect_equal(prostate.hex$bar[100], prostate.hex$AGE[100])
-expect_equal(prostate.hex$baz[100], prostate.hex$AGE[100])
+expect_equal(as.data.frame(prostate.hex$foo[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
+expect_equal(as.data.frame(prostate.hex$bar[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
+expect_equal(as.data.frame(prostate.hex$baz[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
 
 
 print("Local assignment of existing column")
@@ -51,9 +51,9 @@ prostate.hex$PSA <- prostate.hex$AGE
 prostate.hex[,"VOL"] <- prostate.hex$AGE
 prostate.hex["GLEASON"] <- prostate.hex$AGE
 
-expect_equal(prostate.hex$PSA[100], prostate.hex$AGE[100])
-expect_equal(prostate.hex$VOL[100], prostate.hex$AGE[100])
-expect_equal(prostate.hex$GLEASON[100], prostate.hex$AGE[100])
+expect_equal(as.data.frame(prostate.hex$PSA[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
+expect_equal(as.data.frame(prostate.hex$VOL[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
+expect_equal(as.data.frame(prostate.hex$GLEASON[100])[[1]], as.data.frame(prostate.hex$AGE[100])[[1]])
 
 
 testEnd()

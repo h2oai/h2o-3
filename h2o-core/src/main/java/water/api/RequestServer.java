@@ -605,10 +605,10 @@ public class RequestServer extends NanoHTTPD {
     catch (H2OFailException e) {
       H2OError error = e.toH2OError(uri);
 
-      Log.warn("Caught exception (fatal to the cluster): " + error.toString());
+      Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      Log.warn(wrap(new H2OErrorV1().fillFromImpl(error), type));
+      Log.fatal(wrap(new H2OErrorV1().fillFromImpl(error), type));
       System.exit(-1);
 
       // unreachable, but the compiler doesn't know it:

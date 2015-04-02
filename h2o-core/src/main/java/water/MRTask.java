@@ -220,8 +220,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return getResult();
   }
 
-  public final void asyncExec(Vec... vecs){asyncExec(0,new Frame(vecs),false);}
-  public final void asyncExec(Frame fr){asyncExec(0,fr,false);}
+  public final T asyncExec(Vec... vecs){asyncExec(0,new Frame(vecs),false); return self();}
+  public final T asyncExec(Frame fr){asyncExec(0,fr,false); return self();}
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should

@@ -21,24 +21,31 @@ h2o.ddplytest <- function(conn){
   #fn1 <- function(df){ min(df$col1)}
   fn1 <- function(df){ min(df[, 3])}
   df.h.1 <- h2o.ddply(df.h, 'colgroup', fn1)
+  print(df.h.1)
 
   Log.info('grouping over multiple columns (equivalent to tapply with IDX=group1 + group2)')
   #fn2 <- function(df){ min(df$col1)}
   fn2 <- function(df){ min(df[, 3])}
   df.h.2 <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn2)
+  print(df.h.2)
+
   Log.info('single grouping column, use 2 columns')
   #fn3 <- function(df){ min(df$col1 + df$col2) }
   fn3 <- function(df){ min(df[, 3] + df[, 4]) }
   df.h.3 <- h2o.ddply(df.h, 'colgroup', fn3)
+  print(df.h.3)
 
   Log.info('grouping multiple columns, use 2 columns')
   # fn4 <- function(df){ min(df$col1 + df$col2) }
   fn4 <- function(df){ min(df[, 3] + df[, 4]) }
   df.h.4 <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn4)
+  print(df.h.4)
 
   Log.info('testing all column address modes')
   df.h.4b <- h2o.ddply(df.h, c('colgroup', 'colgroup2'), fn4)
+  print(df.h.4b)
   df.h.4c <- h2o.ddply(df.h, 1:2, fn4)
+  print(df.h.4c)
   # df.h.4d <- h2o.ddply(df.h, h2o..('colgroup', 'colgroup2'), fn4)
   # .(list, of, objects) notation not supported
 
@@ -79,7 +86,6 @@ h2o.ddplytest <- function(conn){
 
   Log.info('testing')
   expect_that( dim(df.1), equals( c(3,2) ) )
-  expect_that( all(df.1[,1] == c('a', 'b', 'c')), equals(T) )
   expect_that( all(df.1[,2] == c(1,3,5)), equals(T) )
 
 
