@@ -249,10 +249,7 @@ public class Job<T extends Keyed> extends Keyed {
           onCancelled();
       }
     }.invoke(_key);
-    cleanup();
-  }
-
-  public void cleanup() {
+    // Cleanup on a cancel (or remove)
     DKV.remove(_progressKey);
   }
 

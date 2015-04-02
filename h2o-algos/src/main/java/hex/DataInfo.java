@@ -15,7 +15,8 @@ public class DataInfo extends Keyed {
   public int [] _activeCols;
   public Frame _adaptedFrame;
   public int _responses; // number of responses
-  public int _row_weights; // number of row weights
+
+
 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -76,6 +77,29 @@ public class DataInfo extends Keyed {
       for(int i = 0; i < _normMul.length; ++i)
         _etaOffset -= _normSub[i] * _normMul[i];
   }
+
+
+//  public DataInfo(Key selfKey, Frame train, Frame valid, int hasResponses, boolean useAllFactorLvls, double[] normSub, double[] normMul, TransformType predictor_transform, double[] normRespSub, double[] normRespMul){
+//    this(selfKey, train, valid, hasResponses,useAllFactorLvls,
+//      normMul != null && normSub != null ? predictor_transform : TransformType.NONE, //just allocate, doesn't matter whether standardize or normalize is used (will be overwritten below)
+//      normRespMul != null && normRespSub != null ? TransformType.STANDARDIZE : TransformType.NONE);
+//    assert predictor_transform != null;
+//    assert (normSub == null) == (normMul == null);
+//    assert (normRespSub == null) == (normRespMul == null);
+//    if(normSub != null) {
+//      System.arraycopy(normSub, 0, _normSub, 0, normSub.length);
+//      System.arraycopy(normMul, 0, _normMul, 0, normMul.length);
+//    }
+//    if(normRespSub != null) {
+//      System.arraycopy(normRespSub, 0, _normRespSub, 0, normRespSub.length);
+//      System.arraycopy(normRespMul, 0, _normRespMul, 0, normRespMul.length);
+//    }
+//  }
+//
+//
+//  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactors, TransformType predictor_transform) {
+//    this(selfKey, train, valid, nResponses, useAllFactors, predictor_transform, TransformType.NONE);
+//  }
 
   //new DataInfo(f,catLvls, _responses, _standardize, _response_transform);
   public DataInfo(Key selfKey, Frame fr, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, int foldId, int nfolds){
@@ -196,11 +220,10 @@ public class DataInfo extends Keyed {
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
-  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, int row_weights) {
+  public DataInfo(Key selfKey, Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing) {
     super(selfKey);
     assert predictor_transform != null;
     assert  response_transform != null;
-    _row_weights = row_weights;
     _skipMissing = skipMissing;
     _nfolds = _foldId = 0;
     _predictor_transform = predictor_transform;
@@ -212,7 +235,7 @@ public class DataInfo extends Keyed {
     final Vec[] vvecs = (valid == null) ? null : valid.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses-_row_weights;
+    final int n = tvecs.length-_responses;
     assert n >= 1;            // Checked in init() before
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
@@ -278,14 +301,6 @@ public class DataInfo extends Keyed {
       }
     }
 
-    // row weights
-    for (int i=0; i<_row_weights; ++i) {
-      names[ncats + nnums + i] = train._names[ncats + nnums + i];
-      if (valid != null)
-        vvecs2[ncats + nnums + i] = vvecs[ncats + nnums + i];
-      tvecs2[ncats + nnums + i] = tvecs[ncats + nnums + i];
-    }
-
     // Compute the mean/sigma for each response
     if (_responses > 0) {
       switch(response_transform){
@@ -297,9 +312,9 @@ public class DataInfo extends Keyed {
       default:        throw H2O.unimpl();
       }
       for(int i = 0; i < _responses; ++i){
-        names[ncats+nnums+_row_weights+i]  =   train._names[ncats+nnums+_row_weights+i];
-        if (valid != null) vvecs2         [ncats+nnums+_row_weights+i] = vvecs[ncats+nnums+_row_weights+i];
-        Vec v = (tvecs2[ncats+nnums+_row_weights+i] = tvecs[ncats+nnums+_row_weights+i]);
+        names[ncats+nnums+i]  =   train._names[ncats+nnums+i];
+        if (valid != null) vvecs2         [ncats+nnums+i] = vvecs[ncats+nnums+i];
+        Vec v = (tvecs2[ncats+nnums+i] = tvecs[ncats+nnums+i]);
         double vs = (v.sigma()      ) == 0 ? 1.0 : 1.0/(v.sigma()      );
         double vm = (v.max()-v.min()) == 0 ? 1.0 : 1.0/(v.max()-v.min());
         switch( response_transform ) {
@@ -408,7 +423,6 @@ public class DataInfo extends Keyed {
     public double [] response;
     public int    [] numIds;
     public int    [] binIds;
-    public double row_weight;
 
     public int       nBins;
     public int       nNums;
@@ -503,13 +517,8 @@ public class DataInfo extends Keyed {
         d = (d - _normSub[i]) * _normMul[i];
       row.numVals[i] = d;
     }
-
-    if (_row_weights > 1) throw H2O.unimpl();
-    for (int i=0; i<_row_weights; ++i)
-      row.row_weight = chunks[_cats + _nums + i].atd(rid);
-
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[_cats + _nums + _row_weights + i].atd(rid);
+      row.response[i] = chunks[chunks.length - _responses + i].atd(rid);
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
@@ -583,14 +592,11 @@ public class DataInfo extends Keyed {
         row.addNum(cid + numStart + _bins, d);
       }
     }
-
-    if (_row_weights > 0) throw H2O.unimpl();
-
     // response(s)
     for (int r = 0; r < chunks[0]._len; ++r) {
       Row row = rows[r];
       for (int i = 1; i <= _responses; ++i) {
-        row.response[row.response.length - i] = chunks[chunks.length - i].atd(r);
+        row.response[row.response.length - i] = chunks[chunks.length - 1].atd(r);
         if (_normRespMul != null)
           row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         if (Double.isNaN(row.response[row.response.length - i]))

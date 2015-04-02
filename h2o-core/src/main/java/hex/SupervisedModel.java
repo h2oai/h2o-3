@@ -78,7 +78,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     }
 
     /** @return Returns number of input features */
-    @Override public int nfeatures() { return super.nfeatures()-1; } //remove response
+    @Override public int nfeatures() { return _names.length - 1; }
+
     @Override public boolean isSupervised() { return true; }
 
     /** @return number of classes; illegal to call before setting distribution */

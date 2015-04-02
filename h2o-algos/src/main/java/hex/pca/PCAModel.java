@@ -62,6 +62,11 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     public PCAOutput(PCA b) { super(b); }
 
+    /** Override because base class implements ncols-1 for features with the
+     *  last column as a response variable; for PCA all the columns are
+     *  features. */
+    @Override public int nfeatures() { return _names.length; }
+
     @Override public ModelCategory getModelCategory() {
       return ModelCategory.DimReduction;
     }

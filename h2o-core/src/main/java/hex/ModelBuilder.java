@@ -35,23 +35,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
-  public boolean canHaveRowWeights() { return true; }
-  protected transient boolean _have_dummy_weights;
-  protected transient String _row_weights_name;
-  protected transient Vec _row_weights; // training row weights column
-  protected Key _row_weights_key; // training row weights key
-  public final Vec rowWeights() { return _row_weights == null ? (_row_weights = DKV.getGet(_row_weights_key)) : _row_weights; }
-
-  protected transient Vec _vrow_weights; // validation row weights column
-  protected Key _vrow_weights_key; // validation row weights key
-  public final Vec vrowWeights() { return _vrow_weights == null ? (_vrow_weights = DKV.getGet(_vrow_weights_key)) : _vrow_weights; }
-
-  public Frame addRowWeights(Frame fr, Vec weights) {
-    Frame tra_fr = new Frame(fr._key, fr.names(), fr.vecs());
-    tra_fr.add(_row_weights_name, weights);
-    return tra_fr;
-  }
-
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
   private static final Map<String, Class<? extends ModelBuilder>> _builders = new HashMap<>();
@@ -225,44 +208,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
     // numeric (arrays of bytes).
-    new FilterCols() {
+    new FilterCols() { 
       @Override protected boolean filter(Vec v) { return v.isString() || v.isUUID(); }
     }.doIt(_train,"Dropping String and UUID columns: ",expensive);
 
     // Check that at least some columns are not-constant and not-all-NAs
-    if (_train.numCols() == 0)
-      error("_train","There are no usable columns to generate a model");
-
-    // place row weights at the end (and if not specified, make one consisting of all 1.0s)
-    if (expensive && canHaveRowWeights()) {
-      _row_weights_name = _parms._row_weights_column == null ?
-              "_default_row_weights_all_ones_" : _parms._row_weights_column;
-
-      int weight_idx = _train.find(_row_weights_name);
-      if (weight_idx == -1) {
-        _have_dummy_weights = true;
-        _row_weights = _train.lastVec().makeCon(1.0);
-        if (_valid != null)
-          _vrow_weights = _valid.lastVec().makeCon(1.0);
-      } else {
-        _row_weights = _train.remove(weight_idx);
-        if (_valid != null) {
-          if (_valid.find(_row_weights_name) == -1)
-            error("_row_weights_column", "Row weights column is missing in the validation set!");
-          _vrow_weights = _valid.remove(weight_idx);
-        }
-      }
-      if (_row_weights.isBad())
-        error("_row_weights_column", "Row weights column is all NAs!");
-      if (!_row_weights.isNumeric())
-        error("_row_weights_column", "Row weights column is not numeric!");
-//      _train.add(_row_weights_name, _row_weights);
-      _row_weights_key = _row_weights._key;
-      if (_valid != null) {
-//        _valid.add(_row_weights_name, _vrow_weights);
-        _vrow_weights_key = _vrow_weights._key;
-      }
-    }
+    if( _train.numCols() == 0 )
+      error("_train","There are no usable columns to generate model");
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap enums
@@ -282,20 +234,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     assert !expensive || (_valid == null || Arrays.equals(_train._names,_valid._names));
   }
-  @Override public void cleanup() {
-    super.cleanup();
-    if (_have_dummy_weights) {
-      if (rowWeights() != null) rowWeights().remove();
-      if (_vrow_weights_key != null && vrowWeights() != null) vrowWeights().remove();
-    }
-  }
 
   abstract class FilterCols {
     abstract protected boolean filter(Vec v);
     void doIt( Frame f, String msg, boolean expensive ) {
       boolean any=false;
       for( int i = 0; i < f.vecs().length; i++ ) {
-        if( filter(f.vecs()[i]) && f._names[i] != _row_weights_name) {
+        if( filter(f.vecs()[i]) ) {
           if( any ) msg += ", "; // Log dropped cols
           any = true;
           msg += f._names[i];

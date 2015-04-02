@@ -129,12 +129,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     public final void buildModel() {
       Scope.enter();
       DeepLearningModel cp = null;
-
-      Frame tra_fr = addRowWeights(_train, rowWeights());
-      Frame val_fr = _valid == null ? null : addRowWeights(_valid, vrowWeights());
-
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), tra_fr, val_fr);
+        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid);
         cp.model_info().initializeMembers();
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -162,12 +158,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         Log.info("Adding " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
 
         try {
-          final DataInfo dinfo = new DataInfo(Key.make(), tra_fr, val_fr,
-                  _parms._autoencoder ? 0 : 1,
-                  _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-                  _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
-                  isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip,
-                  1 /*row weights*/);
+          final DataInfo dinfo = new DataInfo(Key.make(), _train, _valid,
+                                              _parms._autoencoder ? 0 : 1, 
+                                              _parms._autoencoder || _parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+                                              _parms._autoencoder ? DataInfo.TransformType.NORMALIZE : DataInfo.TransformType.STANDARDIZE, //transform predictors
+                                              isClassifier()     ? DataInfo.TransformType.NONE      : DataInfo.TransformType.STANDARDIZE, _parms._missing_values_handling == MissingValuesHandling.Skip);
           DKV.put(dinfo._key,dinfo);
           cp = new DeepLearningModel(dest(), previous, false, dinfo);
           cp.write_lock(self());
@@ -241,9 +236,8 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         new ProgressUpdate("Setting up training data...").fork(_progressKey);
         model.write_lock(self());
         final DeepLearningModel.DeepLearningParameters mp = model._parms;
-
-        Frame tra_fr = addRowWeights(_train, rowWeights());
-        Frame val_fr = _valid == null ? null : addRowWeights(_valid, vrowWeights());
+        Frame tra_fr = new Frame(mp.train()._key, _train.names(), _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(mp.valid()._key, _valid.names(), _valid.vecs()) : null;
 
         final long model_size = model.model_info().size();
         if (!_parms._quiet_mode) Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
