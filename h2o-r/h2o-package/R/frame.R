@@ -606,7 +606,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       }
       j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i), j))
+      ast <- new("ASTNode", root = op, children = list(.get(x), .eval(i,parent.frame()), j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
       finalizers <- x@finalizers
       sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
