@@ -22,13 +22,13 @@ import hex.genmodel.GenModel;
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
-  public abstract interface DeepFeatures {
-    public Frame scoreAutoEncoder(Frame frame, Key destination_key);
-    public Frame scoreDeepFeatures(Frame frame, final int layer);
+  public interface DeepFeatures {
+    Frame scoreAutoEncoder(Frame frame, Key destination_key);
+    Frame scoreDeepFeatures(Frame frame, final int layer);
   }
 
   /** Different prediction categories for models.  NOTE: the values list in the API annotation ModelOutputSchema needs to match. */
-  public static enum ModelCategory {
+  public enum ModelCategory {
     Unknown,
     Binomial,
     Multinomial,
@@ -449,23 +449,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( _output.isClassifier() ) {
 //      assert(mdomain != null); // label must be enum
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-      ModelCategory model_cat = this._output.getModelCategory();
       ConfusionMatrix cm = mm.cm();
-      if(model_cat == ModelCategory.Binomial)
-        cm = ((ModelMetricsBinomial)mm)._cm;
-      else if(model_cat == ModelCategory.Multinomial) {
-        cm = ((ModelMetricsMultinomial) mm)._cm;
-        float[] hr = ((ModelMetricsMultinomial)mm)._hit_ratios;
-        if (hr != null && hr.length > 0)
-          Log.info(getHitRatioTable(hr));
-      }
-
-      if (cm != null && cm.domain != null) {
-//        assert (java.util.Arrays.deepEquals(cm.domain,mdomain));
-        cm.table = cm.toTable();
-        if( cm.confusion_matrix.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
-          water.util.Log.info(cm.table.toString(1));
-      }
+      if (cm != null && cm._domain != null) //don't print table for regression
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+          water.util.Log.info(cm.table().toString(1));
 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
@@ -529,7 +516,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual, Model.this, row);
+        _mb.perRow(preds, actual, Model.this);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }

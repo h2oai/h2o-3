@@ -1,10 +1,10 @@
 package water.api;
 
-import hex.AUCData;
+import hex.AUC2;
 
 import static hex.AUC.ThresholdCriterion;
 
-public class AUCBase<I extends AUCData, S extends AUCBase<I, S>> extends Schema<I, S> {
+public class AUCBase<I extends AUC2, S extends AUCBase<I, S>> extends Schema<I, S> {
   @API(help = "Thresholds (optional, e.g. 0:1:0.01 or 0.0,0.2,0.4,0.6,0.8,1.0).", direction=API.Direction.OUTPUT)
   public float[] thresholds;
 

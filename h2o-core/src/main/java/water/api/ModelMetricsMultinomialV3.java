@@ -31,8 +31,10 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
       hit_ratio_table = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
-    if (null != modelMetrics._cm)
-      cm = (ConfusionMatrixBase)Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
+    if (null != modelMetrics._cm) {
+      modelMetrics._cm.table();  // Fill in lazy table, for icing
+      cm = (ConfusionMatrixBase) Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
+    }
 
     return this;
   }

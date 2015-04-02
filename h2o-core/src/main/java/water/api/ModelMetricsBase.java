@@ -38,6 +38,9 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
   @API(help="Predictions Frame.", direction=API.Direction.OUTPUT)
   public FrameV2 predictions;
 
+  @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
+  public double mse;
+
   @Override public S fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();
@@ -56,6 +59,8 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
 
     PojoUtils.copyProperties(this, modelMetrics, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES,
             new String[]{"model", "model_category", "model_checksum", "frame", "frame_checksum"});
+
+    this.mse = modelMetrics._mse;
 
     return (S) this;
   }

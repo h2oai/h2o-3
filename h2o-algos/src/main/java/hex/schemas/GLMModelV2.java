@@ -18,8 +18,8 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
     @API(help="bets lambda if doing lambda search")
     int         best_lambda_idx;
 
-    @API(help="The decision threshold to be used in classification")
-    float       threshold;
+    @API(help="The decision threshold to be used in classification; defaults to maximum_F1")
+    double      threshold;
 
 //    @API(help="fill me in GLMModelOutputV2")
 //    double   [] global_beta;
@@ -84,6 +84,6 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
   // TODO: revisit; we want an empty impl here. . .
   @Override public GLMModel createImpl() {
     GLMModel.GLMParameters parms = parameters.createImpl();
-    return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0, ModelUtils.DEFAULT_THRESHOLDS);
+    return new GLMModel( key.key(), parms, new GLMModel.GLMOutput(), null, 0.0, 0.0, 0);
   }
 }

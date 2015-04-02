@@ -1,13 +1,10 @@
 package hex.glm;
 
-
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
-import hex.ConfusionMatrix;
-import hex.AUC;
+import hex.AUC2;
 import water.Iced;
 import water.Key;
-import water.util.ModelUtils;
 
 /**
  * Class for GLMValidation.
@@ -20,58 +17,28 @@ public class GLMValidation extends Iced {
   double residual_deviance;
   double null_deviance;
   long nobs;
-  float best_threshold;
-  double auc = Double.NaN;
-  Key [] xval_models;
+  AUC2 _auc;
+  private AUC2.AUCBuilder _auc_bldr;
   double aic;// internal aic used only for poisson family!
   private double _aic2;// internal aic used only for poisson family!
   final Key dataKey;
-  public final float [] thresholds;
-  ConfusionMatrix[] _cms;
   final GLMModel.GLMParameters _glm;
   final private int _rank;
 
-  public static class GLMXValidation extends GLMValidation {
-    public GLMXValidation(GLMModel mainModel, GLMModel [] xvalModels, GLMValidation [] xvals, double lambda, long nobs, float [] thresholds) {
-      super(mainModel._key, mainModel._ymu, mainModel._parms, mainModel.rank(lambda),thresholds);
-      xval_models = new Key[xvalModels.length];
-      for(int i = 0; i < xval_models.length; ++i)
-        xval_models[i] = xvalModels[i]._key;
-      double t = 0;
-      for(int i = 0; i < xvalModels.length; ++i){
-        add(xvals[i]);
-        t += xvals[i].best_threshold;
-      }
-      computeAUC();
-      computeAIC();
-      best_threshold = (float)(t/xvalModels.length);
-      this.nobs = nobs;
-    }
-  }
-  public GLMValidation(Key dataKey, double ymu, GLMModel.GLMParameters glm, int rank){
-    this(dataKey, ymu, glm, rank,glm._family == Family.binomial?ModelUtils.DEFAULT_THRESHOLDS:null);
-  }
-  public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank, float [] thresholds){
+
+  public GLMValidation(Key dataKey, double ymu, GLMParameters glm, int rank){
     _rank = rank;
     _ymu = ymu;
     _glm = glm;
-    if(_glm._family == Family.binomial){
-      _cms = new ConfusionMatrix[thresholds.length];
-      for(int i = 0; i < _cms.length; ++i)
-        _cms[i] = new ConfusionMatrix(new long[2][2], null);
-    }
+    _auc_bldr = (glm._family == Family.binomial) ? new AUC2.AUCBuilder(AUC2.NBINS) : null;
     this.dataKey = dataKey;
-    this.thresholds = thresholds;
   }
 
-  public static Key makeKey(){return Key.make("__GLMValidation_" + Key.make());}
   public void add(double yreal, double eta, double ymodel){
     null_deviance += _glm.deviance(yreal, eta, _ymu);
-    if(_glm._family == Family.binomial) // classification -> update confusion matrix too
-      for(int i = 0; i < thresholds.length; ++i)
-        _cms[i].add((int)yreal, (ymodel >= thresholds[i])?1:0);
     residual_deviance  += _glm.deviance(yreal, eta, ymodel);
     ++nobs;
+    if( _auc_bldr != null ) _auc_bldr.perRow(ymodel, (int) yreal);
 
     if( _glm._family == Family.poisson ) { // aic for poisson
       long y = Math.round(yreal);
@@ -86,14 +53,14 @@ public class GLMValidation extends Iced {
     null_deviance += v.null_deviance;
     nobs += v.nobs;
     _aic2 += v._aic2;
-    if(_cms == null)_cms = v._cms;
-    else for(int i = 0; i < _cms.length; ++i)_cms[i].add(v._cms[i]);
+    if( _auc_bldr != null ) _auc_bldr.reduce(v._auc_bldr);
   }
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
   public final long nullDOF(){return nobs-1;}
   public final long resDOF(){return nobs - _rank -1;}
-  public double auc(){return auc;}
+  public double auc(){ return (_auc==null) ? Double.NaN : _auc._auc; }
+  public double bestThreshold(){ return _auc==null ? Double.NaN : _auc.defaultThreshold();}
   public double aic(){return aic;}
   protected void computeAIC(){
     aic = 0;
@@ -118,34 +85,11 @@ public class GLMValidation extends Iced {
   }
 
   protected void computeAUC(){
-    if(_glm._family == Family.binomial){
-      for(ConfusionMatrix cm:_cms)cm.reComputeErrors();
-      AUC auc = new AUC(_cms,thresholds,/*TODO: add CM domain*/null);
-      this.auc = auc.data().AUC();
-      best_threshold = auc.data().threshold();
-    }
+    if(_glm._family == Family.binomial)
+      _auc = new AUC2(_auc_bldr);
   }
   @Override
   public String toString(){
     return "null_dev = " + null_deviance + ", res_dev = " + residual_deviance + ", auc = " + auc();
   }
-
-
-
-  /**
-   * Computes area under the ROC curve. The ROC curve is computed from the confusion matrices
-   * (there is one for each computed threshold). Area under this curve is then computed as a sum
-   * of areas of trapezoids formed by each neighboring points.
-   *
-   * @return estimate of the area under ROC curve of this classifier.
-   */
-  double[] tprs;
-  double[] fprs;
-
-  private double trapeziod_area(double x1, double x2, double y1, double y2) {
-    double base = Math.abs(x1 - x2);
-    double havg = 0.5 * (y1 + y2);
-    return base * havg;
-  }
-
 }
