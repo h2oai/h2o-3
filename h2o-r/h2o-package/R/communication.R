@@ -366,7 +366,7 @@
           cnms <- cnms[-1L]
           fmts <- fmts[-1L]
           tbl <- tbl[, -1L, drop = FALSE]
-          if (all(nzchar(rnms)))
+          if (length(rnms) > 0 && all(nzchar(rnms)))
             dimnames(tbl) <- list(make.unique(rnms), make.unique(cnms))
           else
             colnames(tbl) <- make.unique(cnms)
