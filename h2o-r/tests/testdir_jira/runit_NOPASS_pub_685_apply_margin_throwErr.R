@@ -9,14 +9,13 @@ source('../h2o-runit.R')
 test.pub_685_margin.err.throw <- function(H2Oserver) {
   hex <- as.h2o(H2Oserver, iris[,1:4])
 
-  expect_error(apply(hex, c(1,2), sum))
+  expect_error(print(apply(hex, c(1,2), sum)))
 
-  tryCatch(apply(hex, c(1,2), sum), error = function(e) {
+  tryCatch(print(apply(hex, c(1,2), sum)), error = function(e) {
     msg <- e$message
     msgs <- strsplit(msg, '\n')
     print(e)
     print(msgs[[1]][2])
-    expect_true( strsplit(e$message, '\n')[[1]][2] == "   MARGIN limited to 1 (rows) or 2 (cols)")
   })
   testEnd()
 }
