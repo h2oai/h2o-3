@@ -8,6 +8,9 @@ import water.util.PojoUtils;
 public class QuantileModelV2 extends ModelSchema<QuantileModel, QuantileModelV2, QuantileModel.QuantileParameters, QuantileV2.QuantileParametersV2, QuantileModel.QuantileOutput, QuantileModelV2.QuantileModelOutputV2> {
 
   public static final class QuantileModelOutputV2 extends ModelOutputSchema<QuantileModel.QuantileOutput, QuantileModelOutputV2> {
+    @API(help = "Model parameters")
+    QuantileV2.QuantileParametersV2 parameters;
+
     @API(help="Iterations executed")
     public double iterations;
 

@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.ConfusionMatrix;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
@@ -141,9 +140,6 @@ public class GBMTest extends TestUtil {
   }
 
   // ==========================================================================
-  public void basicGBM(String fname, PrepData prep) {
-    basicGBM(fname, prep, false, Family.gaussian);
-  }
   public GBMModel.GBMOutput basicGBM(String fname, PrepData prep, boolean validation, Family family) {
     GBMModel gbm = null;
     Frame fr = null, fr2= null, vfr=null;
@@ -232,10 +228,10 @@ public class GBMTest extends TestUtil {
       }
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.valid());
-      double auc = mm._aucdata.AUC();
+      double auc = mm._auc._auc;
       Assert.assertTrue(0.84 <= auc && auc < 0.86); // Sanely good model
-      ConfusionMatrix cmf1 = mm._aucdata.CM();
-      Assert.assertArrayEquals(ar(ar(315, 78), ar(27, 80)), cmf1.confusion_matrix);
+      long[][] cm = mm._auc.defaultCM();
+      Assert.assertArrayEquals(ar(ar(315, 78), ar(26, 81)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -514,7 +510,7 @@ public class GBMTest extends TestUtil {
 
   // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testReprodubility() {
-    Frame tfr=null, vfr=null;
+    Frame tfr=null;
     final int N = 5;
     double[] mses = new double[N];
 
@@ -556,20 +552,14 @@ public class GBMTest extends TestUtil {
       }
     } finally{
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
-    for (int i=0; i<mses.length; ++i) {
-      Log.info("trial: " + i + " -> mse: " + mses[i]);
-    }
-    for (int i=0; i<mses.length; ++i) {
-      assertEquals(mses[i], mses[0], 1e-15);
-    }
+    for( double mse : mses ) assertEquals(mse, mses[0], 1e-15);
   }
 
   // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Test public void testReprodubilityAirline() {
-    Frame tfr=null, vfr=null;
+    Frame tfr=null;
     final int N = 1;
     double[] mses = new double[N];
 
@@ -616,22 +606,17 @@ public class GBMTest extends TestUtil {
         job.remove();
         gbm.delete();
       }
-    } finally{
+    } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
-    for (int i=0; i<mses.length; ++i) {
-      Log.info("trial: " + i + " -> mse: " + mses[i]);
-    }
-    for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.20753934108993594, mses[i], 1e-6); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
-    }
+    for( double mse : mses )
+      assertEquals(0.20753934108993594, mse, 1e-6); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
   @Test public void testCategorical() {
-    Frame tfr=null, vfr=null;
+    Frame tfr=null;
     final int N = 1;
     double[] mses = new double[N];
 
@@ -655,7 +640,7 @@ public class GBMTest extends TestUtil {
         assertEquals(gbm._output._ntrees, parms._ntrees);
 
         hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(gbm,parms.train());
-        double auc = mm._aucdata.AUC();
+        double auc = mm._auc._auc;
         Assert.assertTrue(1 == auc);
 
         mses[i] = gbm._output._mse_train[gbm._output._mse_train.length-1];
@@ -664,15 +649,9 @@ public class GBMTest extends TestUtil {
       }
     } finally{
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
     }
     Scope.exit();
-    for (int i=0; i<mses.length; ++i) {
-      Log.info("trial: " + i + " -> mse: " + mses[i]);
-    }
-    for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.0142093, mses[i], 1e-6);
-    }
+    for( double mse : mses ) assertEquals(0.0142093, mse, 1e-6);
   }
 
 }

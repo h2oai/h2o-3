@@ -1,9 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
-import hex.FrameTask;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
