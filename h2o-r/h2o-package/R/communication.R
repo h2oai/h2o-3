@@ -592,6 +592,21 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 
       job = jobs[[1]]
 
+      # check failed up front...
+      if( job$status == "FAILED" ) {
+        cat("\n\n")
+        cat(job$exception)
+        cat("\n\n")
+        m <- strsplit(jobs[[1]]$exception, "\n")[[1]][1]
+        m <- gsub(".*msg ","",m)
+        stop(m, call.=FALSE)
+      }
+
+      # check cancelled up front...
+       if (status == "CANCELLED") {
+        stop("Job key ", job_key, " cancelled by user")
+      }
+
       key = job$key
       name = key$name
       if (name != job_key) {
@@ -608,14 +623,6 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 
       status = job$status
       stopifnot(is.character(status))
-
-      if (status == "CANCELLED") {
-        stop("Job key ", job_key, " cancelled by user")
-      }
-
-      if (status == "FAILED") {
-        stop("Job key ", job_key, " failed")
-      }
 
       if ((status == "CREATED") || (status == "RUNNING")) {
         # Do nothing, keep running...
