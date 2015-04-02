@@ -34,13 +34,13 @@ def pub_444_spaces_in_filenames(ip,port):
     train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/b a r .csv"))
     train_data.show()
     train_data.describe()
-    gbm = h2o.gbm(x=train_data[1:], y=train_data["response"].asfactor(), ntrees=1, loss="bernoulli")
+    gbm = h2o.gbm(x=train_data[1:], y=train_data["response"].asfactor(), ntrees=1, loss="bernoulli", min_rows=1)
     gbm.show()
 
     train_data = h2o.upload_file(path=h2o.locate("smalldata/jira/ ba z.csv"))
     train_data.show()
     train_data.describe()
-    gbm = h2o.gbm(x=train_data[1:], y=train_data[0].asfactor(), ntrees=1, loss="bernoulli")
+    gbm = h2o.gbm(x=train_data[1:], y=train_data[0].asfactor(), ntrees=1, loss="bernoulli", min_rows=1)
     gbm.show()
 
     os.remove(h2o.locate("smalldata/jira/") + "foo .csv")
