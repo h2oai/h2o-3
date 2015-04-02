@@ -920,10 +920,7 @@ public class Vec extends Keyed<Vec> {
   public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    int min, max;
-    // Right now, limited to small dense integers.
-    if( (min=(int)min()) < 0 || (max=(int)max()) > 1000000 )
-      throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
+    int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
