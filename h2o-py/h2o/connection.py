@@ -425,7 +425,7 @@ class H2OConnection(object):
 
         have_table = has_schema_type and x["__meta"]["schema_type"] == "TwoDimTable"
         have_tableV1 = have_table and x["__meta"]["schema_name"] == "TwoDimTableV1"
-        if have_tableV1:
+        if have_table:
           col_formats = [c["format"] for c in x["columns"]]
           table_header = x["name"]
           col_types = [c["type"] for c in x["columns"]]

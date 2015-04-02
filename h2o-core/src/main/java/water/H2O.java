@@ -605,7 +605,7 @@ final public class H2O {
       H2OCountedCompleter h2o = null;
       boolean set_t_prior = false;
       try {
-        assert  priority() == pp; // Job went to the correct queue?
+        assert  priority() == pp:" wrong priority for task " + getClass().getSimpleName() + ", expected " + priority() + ", but got " + pp; // Job went to the correct queue?
         assert t._priority <= pp; // Thread attempting the job is only a low-priority?
         final int p2 = Math.max(pp,MIN_HI_PRIORITY);
         for( int p = MAX_PRIORITY; p > p2; p-- ) {

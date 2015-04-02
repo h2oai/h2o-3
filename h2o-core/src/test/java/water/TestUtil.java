@@ -12,6 +12,7 @@ import org.junit.runners.model.Statement;
 import org.junit.runner.Description;
 import water.fvec.*;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.Timer;
@@ -122,11 +123,17 @@ public class TestUtil extends Iced {
    *  @param fname Test filename
    *  @return      Frame or NPE */
   protected Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
-  protected Frame parse_test_file( Key outputKey, String fname ) {
+  protected Frame parse_test_file( Key outputKey, String fname) {
     File f = find_test_file(fname);
     assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, nfs._key);
+  }
+  protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
+    File f = find_test_file(fname);
+    assert f != null && f.exists():" file not found: " + fname;
+    NFSFileVec nfs = NFSFileVec.make(f);
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
