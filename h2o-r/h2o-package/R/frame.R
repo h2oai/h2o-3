@@ -983,6 +983,8 @@ quantile.H2OFrame <- function(x,
   model <- .h2o.createModel(x@conn, "quantile", parms, parent.frame())
 
   col <- model@model$quantile[[1L]]
+  # TODO: For some reason, processMatrices doesn't replace "NaN" with NA_real_, so have to do it here
+  col <- sapply(col, function(x) { if(identical(x, "NaN")) NA_real_ else x })
   names(col) <- paste0(100*model@model$parameters$probs, "%")
   col
 }
