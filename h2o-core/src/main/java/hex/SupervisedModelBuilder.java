@@ -29,11 +29,11 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
    * @param fr
    * @return
    */
-  @Override public Frame addRowWeights(Frame fr) {
+  @Override public Frame addRowWeights(Frame fr, Vec weights) {
     Frame frw = new Frame(fr._key, fr.names(), fr.vecs());
     Vec resp = frw.remove(_parms._response_column);
-    frw.add(_row_weights_name, row_weights());
-    frw.add(_parms._response_column, resp);
+    frw.add(_row_weights_name, weights);
+    if (resp != null) frw.add(_parms._response_column, resp);
     return frw;
   }
 

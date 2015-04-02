@@ -35,19 +35,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
+  public boolean canHaveRowWeights() { return true; }
   protected transient boolean _have_dummy_weights;
   protected transient String _row_weights_name;
   protected transient Vec _row_weights; // training row weights column
   protected Key _row_weights_key; // training row weights key
-  public final Vec row_weights() { return _row_weights == null ? (_row_weights = DKV.getGet(_row_weights_key)) : _row_weights; }
+  public final Vec rowWeights() { return _row_weights == null ? (_row_weights = DKV.getGet(_row_weights_key)) : _row_weights; }
 
   protected transient Vec _vrow_weights; // validation row weights column
   protected Key _vrow_weights_key; // validation row weights key
-  public final Vec vrow_weights() { return _row_weights == null ? (_row_weights = DKV.getGet(_row_weights_key)) : _row_weights; }
+  public final Vec vrowWeights() { return _vrow_weights == null ? (_vrow_weights = DKV.getGet(_vrow_weights_key)) : _vrow_weights; }
 
-  public Frame addRowWeights(Frame fr) {
+  public Frame addRowWeights(Frame fr, Vec weights) {
     Frame tra_fr = new Frame(fr._key, fr.names(), fr.vecs());
-    tra_fr.add(_row_weights_name, row_weights());
+    tra_fr.add(_row_weights_name, weights);
     return tra_fr;
   }
 
@@ -233,7 +234,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train","There are no usable columns to generate a model");
 
     // place row weights at the end (and if not specified, make one consisting of all 1.0s)
-    if (expensive) {
+    if (expensive && canHaveRowWeights()) {
       _row_weights_name = _parms._row_weights_column == null ?
               "_default_row_weights_all_ones_" : _parms._row_weights_column;
 
@@ -284,9 +285,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   @Override public void cleanup() {
     super.cleanup();
     if (_have_dummy_weights) {
-      row_weights().remove();
-      if (_vrow_weights_key != null)
-        vrow_weights().remove();
+      if (rowWeights() != null) rowWeights().remove();
+      if (_vrow_weights_key != null && vrowWeights() != null) vrowWeights().remove();
     }
   }
 

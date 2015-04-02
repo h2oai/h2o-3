@@ -57,6 +57,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return new Model.ModelCategory[]{Model.ModelCategory.Clustering};
   }
 
+  @Override public boolean canHaveRowWeights() { return false; }
+
   public enum Initialization {
     PlusPlus, User
   }
