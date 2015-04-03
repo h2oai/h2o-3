@@ -2255,7 +2255,7 @@ class ASTRepLen extends ASTUniPrefixOp {
 
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
-  protected static double[] _probs = null;  // if probs is null, pop the _probs frame etc.
+  protected double[] _probs = null;  // if probs is null, pop the _probs frame etc.
   @Override String opStr() { return "quantile"; }
   public ASTQtile() { super(new String[]{"quantile","x","probs"}); }
   @Override ASTQtile make() { return new ASTQtile(); }
@@ -2290,13 +2290,22 @@ class ASTQtile extends ASTUniPrefixOp {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._probs = _probs;
     if( _probs == null ) {
-      final Frame probs = env.popAry();
-      if( probs.numCols() != 1 ) throw new IllegalArgumentException("Probs must be a single vector.");
-      Vec pv = probs.anyVec();
-      double[] p = parms._probs = new double[(int)pv.length()];
-      for( int i = 0; i < pv.length(); i++)
-        if ((p[i] = pv.at((long) i)) < 0 || p[i] > 1)
+      final Frame probs;
+      if( env.isAry() ) {
+        probs = env.popAry();
+        if( probs.numCols() != 1 ) throw new IllegalArgumentException("Probs must be a single vector.");
+        Vec pv = probs.anyVec();
+        double[] p = parms._probs = new double[(int)pv.length()];
+        for( int i = 0; i < pv.length(); i++)
+          if ((p[i] = pv.at((long) i)) < 0 || p[i] > 1)
+            throw new IllegalArgumentException("Quantile: probs must be in the range of [0, 1].");
+      } else if( env.isNum() ) {
+        double p[] = parms._probs = new double[1];
+        p[0] = env.popDbl();
+        if (p[0] <0 || p[0] > 1)
           throw new IllegalArgumentException("Quantile: probs must be in the range of [0, 1].");
+      }
+
     }
 
     Frame x = env.popAry();
