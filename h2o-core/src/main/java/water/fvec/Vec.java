@@ -460,15 +460,15 @@ public class Vec extends Keyed<Vec> {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Make a new vector initialized to increasing integers mod {@code repeat}, starting with 1.
-   *  @return A new vector initialized to increasing integers mod {@code repeat}, starting
-   *  with 1. */
+  /** Make a new vector initialized to increasing integers mod {@code repeat}.
+   *  @return A new vector initialized to increasing integers mod {@code repeat}.
+   */
   public static Vec makeRepSeq( long len, final long repeat ) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
-            c.set(r, (r + 1 + c._start) % repeat);
+            c.set(r, (r + c._start) % repeat);
       }
     }.doAll(makeZero(len))._fr.vecs()[0];
   }

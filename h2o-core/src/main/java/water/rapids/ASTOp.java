@@ -2211,7 +2211,7 @@ class ASTRepLen extends ASTUniPrefixOp {
       if (fr.numCols() == 1) {
 
         // In this case, create a new vec of length _length using the elements of x
-        Vec v = Vec.makeRepSeq((long)_length, fr.numRows());  // vec of "indices" corresponding to rows in x
+        Vec v = Vec.makeRepSeq((long)_length, (fr.numRows()));  // vec of "indices" corresponding to rows in x
         new MRTask() {
           @Override public void map(Chunk c) {
             for (int i = 0; i < c._len; ++i)
