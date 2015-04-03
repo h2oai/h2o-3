@@ -60,15 +60,12 @@ class RollupStats extends Iced {
   private RollupStats() {
     _mins = new double[5];  Arrays.fill(_mins, Double.NaN);
     _maxs = new double[5];  Arrays.fill(_maxs, Double.NaN);
+    _pctiles = new double[Vec.PERCENTILES.length];  Arrays.fill(_pctiles, Double.NaN);
     _mean = _sigma = Double.NaN;
     _size = _naCnt = 0;
   }
 
-  private RollupStats( int mode ) {
-    _mins = new double[5];
-    _maxs = new double[5];
-    _naCnt = mode;
-  }
+  private RollupStats( int mode ) { this(); _naCnt = mode; }
   private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
   static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
 
@@ -149,6 +146,7 @@ class RollupStats extends Iced {
       }
 
     } else {                    // Numeric
+      double sum = 0;
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.atd(i);
         if( Double.isNaN(d) ) _naCnt++;
@@ -159,7 +157,7 @@ class RollupStats extends Iced {
           else {
             if( d != 0 ) _nzCnt++;
             min(d);  max(d);
-            _mean += d;
+            sum += d;
             _rows++;
             if( _isInt && ((long)d) != d ) _isInt = false;
           }
@@ -167,7 +165,8 @@ class RollupStats extends Iced {
         if(l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start+i)) ^ 23*l;
       }
-
+      if(Double.isNaN(_mean)) _mean = sum;
+      else _mean += sum;
     }
     _checksum = checksum;
 

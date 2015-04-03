@@ -2313,6 +2313,7 @@ class ASTQtile extends ASTUniPrefixOp {
     QuantileModel q = new Quantile(parms).trainModel().get();
     
     Frame fr = new Frame();
+    fr.add("Probs",Vec.makeCon(parms._probs));
     for( int i=0; i<x.numCols(); i++ )
       fr.add(x._names[i]+"Quantiles",Vec.makeCon(q._output._quantiles[i]));
     q.delete();
