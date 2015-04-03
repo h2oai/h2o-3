@@ -219,7 +219,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     sb.append(_name).append(":").append(_min).append("-").append(_maxEx).append(" step="+(1/_step)+" nbins="+nbins()+" isInt="+_isInt);
     if( _bins != null ) {
       for( int b=0; b<_bins.length; b++ ) {
-        sb.append(String.format("\ncnt=%d, [%f - %f], mean/var=", _bins[b],_min2,_maxIn));
+        sb.append(String.format("\ncnt=%d, [%f - %f], mean/var=", _bins[b],_min+b/_step,_min+(b+1)/_step));
         sb.append(String.format("%6.2f/%6.2f,", mean(b), var(b)));
       }
       sb.append('\n');
