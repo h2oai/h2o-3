@@ -390,7 +390,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if( dn._split._col == -1 )                    // Unable to decide?
               dn = tree.decided(dn._pid);  // Then take parent's decision
             int leafnid = dn.ns(chks,row); // Decide down to a leafnode
-            assert leaf <= leafnid && leafnid < tree._len;
+            assert leaf <= leafnid && leafnid < tree._len :
+                    "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
             assert tree.node(leafnid) instanceof LeafNode;
             // Note: I can which leaf/region I end up in, but I do not care for
             // the prediction presented by the tree.  For GBM, we compute the
