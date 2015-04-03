@@ -2,10 +2,8 @@ package hex.quantile;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.schemas.QuantileModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 
 public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
