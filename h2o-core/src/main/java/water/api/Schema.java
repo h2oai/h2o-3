@@ -495,7 +495,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if (inside.length() == 0)
         splits = new String[] {};
       else
-          splits = inside.split(",");
+        splits = inside.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); //all commas outside of quotes
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
