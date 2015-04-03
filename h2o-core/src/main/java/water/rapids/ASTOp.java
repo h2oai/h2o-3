@@ -250,11 +250,11 @@ public abstract class ASTOp extends AST {
   abstract void apply(Env e);
   // Special row-wise 'apply'
   double[] map(Env env, double[] in, double[] out, AST[] args) { throw H2O.unimpl(); }
-  @Override void exec(Env e) { throw H2O.fail(); }
+  @Override void exec(Env e) { throw H2O.unimpl(); }
   // special exec for apply calls
   void exec(Env e, AST arg1, AST[] args) { throw H2O.unimpl("No exec method for `" + this.opStr() + "` during `apply` call"); }
-  @Override int type() { throw H2O.fail(); }
-  @Override String value() { throw H2O.fail(); }
+  @Override int type() { throw H2O.unimpl(); }
+  @Override String value() { throw H2O.unimpl(); }
 
 //  @Override public String toString() {
 //    String s = _t._ts[0]+" "+opStr()+"(";
@@ -273,17 +273,17 @@ public abstract class ASTOp extends AST {
     if (UNI_INFIX_OPS.containsKey(op)) return UNI_INFIX_OPS.get(op);
     if (isUDF(op)) return UDF_OPS.get(op);
     if (PREFIX_OPS.containsKey(op)) return PREFIX_OPS.get(op);
-    throw H2O.fail("Unimplemented: Could not find the operation or function "+op);
+    throw H2O.unimpl("Unimplemented: Could not find the operation or function "+op);
   }
 }
 
 abstract class ASTUniOrBinOp extends ASTOp {
   ASTUniOrBinOp(String[] vars) { super(vars); }
-  double op( double d ) { throw H2O.fail(); }
-  double op(double d0, double d1) { throw H2O.fail(); }
-  String op( String s0, double d1 ) { throw H2O.fail(); }
-  String op( double d0, String s1 ) { throw H2O.fail(); }
-  String op( String s0, String s1 ) { throw H2O.fail(); }
+  double op( double d ) { throw H2O.unimpl(); }
+  double op(double d0, double d1) { throw H2O.unimpl(); }
+  String op( String s0, double d1 ) { throw H2O.unimpl(); }
+  String op( double d0, String s1 ) { throw H2O.unimpl(); }
+  String op( String s0, String s1 ) { throw H2O.unimpl(); }
 }
 
 abstract class ASTUniOp extends ASTUniOrBinOp {
@@ -1017,7 +1017,7 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
       case Env.NUM: d0  = ((ValNum)left)._d; break;
       case Env.ARY: fr0 = ((ValFrame)left)._fr; break;
       case Env.STR: s0  = ((ValStr)left)._s; break;
-      default: throw H2O.fail("Got unusable type: "+ left_type +" in binary operator "+ opStr());
+      default: throw H2O.unimpl("Got unusable type: "+ left_type +" in binary operator "+ opStr());
     }
 
     // Cast the RHS of the op
@@ -1025,11 +1025,11 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
       case Env.NUM: d1  = ((ValNum)right)._d; break;
       case Env.ARY: fr1 = ((ValFrame)right)._fr; break;
       case Env.STR: s1  = ((ValStr)right)._s; break;
-      default: throw H2O.fail("Got unusable type: "+ right_type +" in binary operator "+ opStr());
+      default: throw H2O.unimpl("Got unusable type: "+ right_type +" in binary operator "+ opStr());
     }
 
     // If both are doubles on the stack
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.pop(); env.pop(); env.push(new ValNum(op(d0, d1))); return; }
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2,new ValNum(op(d0, d1))); return; }
 
     // One or both of the items on top of stack are Strings and neither are frames
     if( fr0==null && fr1==null) {
@@ -1049,6 +1049,23 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
       } else env.push(new ValStr(op(s0,s1)));
       return;
     }
+
+    if( fr0!=null ) {
+      if( fr0.numCols()==1 && fr0.numRows()==1 ) {
+        d0 = fr0.anyVec().at(0);
+        fr0=null;
+      }
+    }
+
+    if( fr1!=null ) {
+      if( fr1.numCols()==1 && fr1.numRows()==1 ) {
+        d1= fr1.anyVec().at(0);
+        fr1=null;
+      }
+    }
+
+    // both were 1x1 frames on the stack...
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2,new ValNum(op(d0, d1))); return; }
 
     final boolean lf = fr0 != null;
     final boolean rf = fr1 != null;
@@ -1907,7 +1924,7 @@ class ASTMax extends ASTReducerOp {
 class ASTAND extends ASTBinOp {
   @Override String opStr() { return "&&"; }
   ASTAND( ) { super();}
-  @Override double op(double d0, double d1) { throw H2O.fail(); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot '&&' Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot '&&' Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot '&&' Strings.");}
@@ -2051,7 +2068,7 @@ class ASTMatch extends ASTUniPrefixOp {
 class ASTOR extends ASTBinOp {
   @Override String opStr() { return "||"; }
   ASTOR( ) { super(); }
-  @Override double op(double d0, double d1) { throw H2O.fail(); }
+  @Override double op(double d0, double d1) { throw H2O.unimpl(); }
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot '||' Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot '||' Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot '||' Strings.");}
