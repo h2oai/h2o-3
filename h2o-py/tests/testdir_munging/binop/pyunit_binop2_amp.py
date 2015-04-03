@@ -44,8 +44,8 @@ def binop_amp(ip,port):
     try:
         res = 1.2 + iris[2]
         res2 = res[133] & iris[1]
-        res2.show()
-        assert False, "expected error. objects with different dimensions not supported."
+        res2.show()   # 1x1 & frame is ok...
+        #assert False, "expected error. objects with different dimensions not supported."
     except EnvironmentError:
         pass
 
@@ -81,7 +81,7 @@ def binop_amp(ip,port):
         res = 1.2 + iris[2]
         res2 = iris[1] & res[133]
         res2.show()
-        assert False, "expected error. objects with different dimensions not supported."
+        #assert False, "expected error. objects with different dimensions not supported."
     except EnvironmentError:
         pass
 
