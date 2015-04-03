@@ -946,51 +946,34 @@ public class Vec extends Keyed<Vec> {
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
    *  The original Vec is not mutated.
    */
-  public Vec asEnum() {
-    String[] domain;
-    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    if( isEnum() ) {
-      domain=domain();
-    } else {
-      int min = (int) min(), max = (int) max();
-      // try to do the fast domain collection
-      long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-      if (dom.length > Categorical.MAX_ENUM_SIZE)
-        throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
-      domain = ArrayUtils.toString(dom);
-    }
-    return copyOver(domain);
-  }
-
-  /**
-   * Similar to makeCopy, but performs copy on the Vec level, rather than on the Chunk level.
-   * @param domain
-   * @return
-   */
-  public Vec copyOver(String[] domain) {
+//  public Vec toEnum() {
+//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+//    int min = (int) min(), max = (int) max();
+//    // try to do the fast domain collection
+//    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+//    if (dom.length > Categorical.MAX_ENUM_SIZE)
+//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+//    return copyOver(ArrayUtils.toString(dom));
+//  }
+//
+  private Vec copyOver(final String[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain;
-    return new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        ValueString vstr = new ValueString();
-        for(int i=0;i<c._len;++i) {
-          switch( _type ) {
-            case T_BAD : break; /* NOP */
-            case T_STR : nc.addStr(c.atStr(vstr, i)); break;
-            case T_UUID: nc.addUUID(c, i); break;
-            case T_NUM : /* fallthrough */
-            case T_ENUM:
-            case T_TIME: nc.addNum(c.atd(i)); break;
-            default:
-              if (_type > T_TIME && _type <= T_TIMELAST)
-                nc.addNum(c.atd(i));
-              else
-                throw new IllegalArgumentException("Unsupported vector type: " + _type);
-              break;
-          }
+    return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
+  }
+
+  private static class CPTask extends MRTask<CPTask> {
+    private final String[] _domain;
+    CPTask(String[] domain) { _domain = domain;}
+    @Override public void map(Chunk c, NewChunk nc) {
+      for(int i=0;i<c._len;++i)
+        if( _domain==null )
+          nc.addNum(c.at8(i));
+        else {
+          long num = Arrays.binarySearch(_domain, String.valueOf(c.at8(i)));  // ~24 hits in worst case for 10M levels
+          nc.addNum(num);
         }
-      }
-    }.doAll(1,this).outputFrame(null,dom).anyVec();
+    }
   }
 
   /** Transform an Enum Vec to a Int Vec. If the domain of the Vec is stringified ints, then
@@ -1006,7 +989,7 @@ public class Vec extends Keyed<Vec> {
     if( !isEnum() ) throw new IllegalArgumentException("toInt conversion only works on Enum and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
-    Vec newVec = copyOver(null);;
+    Vec newVec = copyOver(null);
     try {
       int ignored = Integer.parseInt(this._domain[0]);
       useDomain=true;

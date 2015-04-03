@@ -273,7 +273,7 @@ public abstract class ASTOp extends AST {
     if (UNI_INFIX_OPS.containsKey(op)) return UNI_INFIX_OPS.get(op);
     if (isUDF(op)) return UDF_OPS.get(op);
     if (PREFIX_OPS.containsKey(op)) return PREFIX_OPS.get(op);
-    throw H2O.unimpl("Unimplemented: Could not find the operation or function "+op);
+    throw H2O.unimpl("Unimplemented: Could not find the operation or function " + op);
   }
 }
 
@@ -1017,7 +1017,7 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
       case Env.NUM: d0  = ((ValNum)left)._d; break;
       case Env.ARY: fr0 = ((ValFrame)left)._fr; break;
       case Env.STR: s0  = ((ValStr)left)._s; break;
-      default: throw H2O.unimpl("Got unusable type: "+ left_type +" in binary operator "+ opStr());
+      default: throw H2O.unimpl("Got unusable type: " + left_type + " in binary operator " + opStr());
     }
 
     // Cast the RHS of the op
@@ -1025,11 +1025,11 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
       case Env.NUM: d1  = ((ValNum)right)._d; break;
       case Env.ARY: fr1 = ((ValFrame)right)._fr; break;
       case Env.STR: s1  = ((ValStr)right)._s; break;
-      default: throw H2O.unimpl("Got unusable type: "+ right_type +" in binary operator "+ opStr());
+      default: throw H2O.unimpl("Got unusable type: " + right_type + " in binary operator " + opStr());
     }
 
     // If both are doubles on the stack
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2,new ValNum(op(d0, d1))); return; }
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2, new ValNum(op(d0, d1))); return; }
 
     // One or both of the items on top of stack are Strings and neither are frames
     if( fr0==null && fr1==null) {
@@ -1065,7 +1065,7 @@ abstract class ASTBinOp extends ASTUniOrBinOp {
     }
 
     // both were 1x1 frames on the stack...
-    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2,new ValNum(op(d0, d1))); return; }
+    if( (fr0==null && fr1==null) && (s0==null && s1==null) ) { env.poppush(2, new ValNum(op(d0, d1))); return; }
 
     final boolean lf = fr0 != null;
     final boolean rf = fr1 != null;
@@ -2322,7 +2322,6 @@ class ASTQtile extends ASTUniPrefixOp {
         if (p[0] <0 || p[0] > 1)
           throw new IllegalArgumentException("Quantile: probs must be in the range of [0, 1].");
       }
-
     }
 
     Frame x = env.popAry();
@@ -3291,10 +3290,40 @@ class ASTAsNumeric extends ASTUniPrefixOp {
   @Override void apply(Env env) {
     Frame ary = env.peekAry();
     Vec[] nvecs = new Vec[ary.numCols()];
-    for (int c = 0; c < ary.numCols(); ++c)
-      nvecs[c] = ary.vecs()[c].isInt() || ary.vecs()[c].isEnum() ? ary.vecs()[c].toInt() : ary.vecs()[c].copyOver(ary.vecs()[c].domain());
+    Vec vv;
+    for (int c = 0; c < ary.numCols(); ++c) {
+      vv = ary.vecs()[c];
+      nvecs[c] = ( vv.isInt() || vv.isEnum() ) ? vv.toInt() : copyOver(vv.domain(),vv);
+    }
     Frame v = new Frame(ary._names, nvecs);
     env.poppush(1, new ValFrame(v));
+  }
+
+  static private Vec copyOver(final String[] domain, final Vec vv) {
+    String[][] dom = new String[1][];
+    dom[0]=domain;
+    final byte _type = vv.get_type();
+    return new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        ValueString vstr = new ValueString();
+        for(int i=0;i<c._len;++i) {
+          switch( _type ) {
+            case Vec.T_BAD : break; /* NOP */
+            case Vec.T_STR : nc.addStr(c.atStr(vstr, i)); break;
+            case Vec.T_UUID: nc.addUUID(c, i); break;
+            case Vec.T_NUM : /* fallthrough */
+            case Vec.T_ENUM:
+            case Vec.T_TIME: nc.addNum(c.atd(i)); break;
+            default:
+              if (_type > Vec.T_TIME && _type <= Vec.T_TIMELAST)
+                nc.addNum(c.atd(i));
+              else
+                throw new IllegalArgumentException("Unsupported vector type: " + _type);
+              break;
+          }
+        }
+      }
+    }.doAll(1,vv).outputFrame(null,dom).anyVec();
   }
 }
 
@@ -3317,7 +3346,7 @@ class ASTFactor extends ASTUniPrefixOp {
       env.pushAry(ary);
       return;
     }
-    Vec v1 = v0.asEnum(); // asEnum() creates a new vec --> must be cleaned up!
+    Vec v1 = v0.toEnum();
     Frame fr = new Frame(ary._names, new Vec[]{v1});
     env.pushAry(fr);
   }
