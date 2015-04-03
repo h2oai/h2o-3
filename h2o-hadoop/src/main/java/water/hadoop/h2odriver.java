@@ -986,6 +986,10 @@ public class h2odriver extends Configured implements Tool {
     if (rv == CLUSTER_ERROR_TIMEOUT) {
       // Try to print YARN diagnostics.
       try {
+        // Wait a short time before trying to print diagnostics.
+        // Try to give the Resource Manager time to clear out this job itself from it's state.
+        Thread.sleep(3000);
+
         Class clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
         if (clazz != null) {
           Method method = clazz.getMethod("diagnose", String.class, int.class, int.class);
