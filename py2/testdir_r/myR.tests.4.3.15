@@ -8,6 +8,7 @@ testdir_munging/summary/runit_NOPASS_summary2_numeric.R
 testdir_munging/summary/runit_NOPASS_summary_numeric.R
 testdir_munging/exec/runit_NOPASS_pub-569.R
 testdir_munging/exec/runit_NOPASS_merge_col_types.R
+testdir_munging/exec/runit_NOPASS_merge_comparison.R
 testdir_munging/exec/runit_NOPASS_merge_no_shared_cols.R
 testdir_munging/exec/runit_NOPASS_pub-668.R
 testdir_misc/runit_logloss_NOPASS.R
