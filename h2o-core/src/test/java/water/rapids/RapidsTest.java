@@ -124,4 +124,27 @@ public class RapidsTest extends TestUtil {
       if( l != null ) l.delete();
     }
   }
+
+
+  @Test public void testQuantile() {
+    Frame fr = frame(ard(ard(1.223292e-02), 
+                         ard(1.635312e-25), 
+                         ard(1.601522e-11), 
+                         ard(8.452298e-10), 
+                         ard(2.643733e-10), 
+                         ard(2.671520e-06), 
+                         ard(1.165381e-06), 
+                         ard(7.193265e-10),
+                         ard(3.383532e-04), 
+                         ard(2.561221e-05)));
+    Frame pr = frame(ard(ard(0.001), ard(0.005), ard(.01), ard(.02), ard(.05), ard(.10), ard(.50), ard(.8883), ard(.99), ard(.90)));
+    String x = String.format("(quantile %%%s %%%s )",fr._key,pr._key);
+    Env env = Exec.exec(x);
+    System.out.println(env.toString());
+    Frame f = env.popAry();
+    System.out.println(f);
+    f.delete();
+    pr.delete();
+    fr.delete();
+  }
 }
