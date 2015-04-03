@@ -32,16 +32,13 @@ class Person:
             self.resolved_story_points += story_points
             self.resolved_list.append(issue)
 
-    def emit(self):
-        if g_csv:
-            self._emit_csv()
-        else:
-            self._emit_barchart()
+    def emit_issues_csv(self):
+        print (self.name + "," + str(len(self.resolved_list)) + "," + str(len(self.unresolved_list)))
 
-    def _emit_csv(self):
+    def emit_storypoints_csv(self):
         print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
 
-    def _emit_barchart(self):
+    def emit_barchart(self):
         print("")
         print("-----" + self.name + "-----")
         Person._printbar("  resolved", self.resolved_story_points, "R")
@@ -105,11 +102,23 @@ class PeopleManager:
 
     def emit(self):
         global g_csv
+
         if g_csv:
+            print("STORY_POINTS")
             print("name,resolved,unresolved")
-        for key in sorted(self.people_map.keys()):
-            person = self.people_map[key]
-            person.emit()
+            for key in sorted(self.people_map.keys()):
+                person = self.people_map[key]
+                person.emit_storypoints_csv()
+            print("")
+            print("NUMBER_OF_ISSUES")
+            print("name,resolved,unresolved")
+            for key in sorted(self.people_map.keys()):
+                person = self.people_map[key]
+                person.emit_issues_csv()
+        else:
+            for key in sorted(self.people_map.keys()):
+                person = self.people_map[key]
+                person.emit_barchart()
 
 
 def usage():

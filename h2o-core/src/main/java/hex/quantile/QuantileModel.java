@@ -2,10 +2,8 @@ package hex.quantile;
 
 import hex.Model;
 import hex.ModelMetrics;
-import hex.schemas.QuantileModelV2;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
 
 public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
@@ -16,6 +14,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
   }
 
   public static class QuantileOutput extends Model.Output {
+    public QuantileParameters _parameters;   // Model parameters
     public int _iterations;        // Iterations executed
     public double _quantiles[/*N*/][/*Q*/]; // Our N columns, Q quantiles reported
     public QuantileOutput( Quantile b ) { super(b); }

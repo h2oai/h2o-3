@@ -437,7 +437,7 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:
         rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
-        __CMD__ += rapids_series + " %FALSE #7"
+        __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":
       if left.is_local():   raise NotImplementedError

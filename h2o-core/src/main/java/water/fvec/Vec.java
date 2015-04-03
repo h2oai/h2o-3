@@ -196,6 +196,10 @@ public class Vec extends Keyed<Vec> {
     assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
     return _type==T_ENUM; 
   }
+
+  public final double sparseRatio() {
+    return rollupStats()._nzCnt/(double)length();
+  }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
@@ -414,6 +418,21 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAllNodes();
     return vs;
+  }
+
+  /** A Vec from an array of doubles
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec makeCon(double ...rows) { 
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( double r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.close(fs);
+    fs.blockForPending();
+    return vec;
   }
 
   /** Make a new vector initialized to increasing integers, starting with 1.
@@ -916,10 +935,7 @@ public class Vec extends Keyed<Vec> {
   public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    int min, max;
-    // Right now, limited to small dense integers.
-    if( (min=(int)min()) < 0 || (max=(int)max()) > 1000000 )
-      throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
+    int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
