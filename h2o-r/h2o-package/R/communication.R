@@ -592,8 +592,11 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 
       job = jobs[[1]]
 
+      status = job$status
+      stopifnot(is.character(status))
+
       # check failed up front...
-      if( job$status == "FAILED" ) {
+      if( status == "FAILED" ) {
         cat("\n\n")
         cat(job$exception)
         cat("\n\n")
@@ -603,7 +606,7 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
       }
 
       # check cancelled up front...
-       if (status == "CANCELLED") {
+       if( status == "CANCELLED" ) {
         stop("Job key ", job_key, " cancelled by user")
       }
 
@@ -620,9 +623,6 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
           setTxtProgressBar(pb, progress)
         }
       }
-
-      status = job$status
-      stopifnot(is.character(status))
 
       if ((status == "CREATED") || (status == "RUNNING")) {
         # Do nothing, keep running...
