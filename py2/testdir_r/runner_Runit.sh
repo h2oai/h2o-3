@@ -31,7 +31,9 @@ then
     echo "Assume cloud is only built on the local machine, and it's the only thing creating these ice dirs"
     echo "maybe change user to 0xdiag rather than 0xcustomer?"
 
-    'find /home/0xcustomer/ice* -ctime +3 | xargs rm -rf; cd /mnt/0xcustomer-datasets'
+    # Cleanup?
+    ## find /home/0xcustomer/ice* -ctime +3 | xargs rm -rf; cd /mnt/0xcustomer-datasets
+
     python ../four_hour_cloud.py -cj pytest_config-jenkins.json &
     # make sure this matches what's in the json!
     CLOUD_IP=127.0.0.1
