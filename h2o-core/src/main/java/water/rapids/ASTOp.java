@@ -2272,7 +2272,7 @@ class ASTRepLen extends ASTUniPrefixOp {
 
 // Compute exact quantiles given a set of cutoffs, using multipass binning algo.
 class ASTQtile extends ASTUniPrefixOp {
-  protected double[] _probs = null;  // if probs is null, pop the _probs frame etc.
+  double[] _probs = null;  // if probs is null, pop the _probs frame etc.
   @Override String opStr() { return "quantile"; }
   public ASTQtile() { super(new String[]{"quantile","x","probs"}); }
   @Override ASTQtile make() { return new ASTQtile(); }
@@ -3292,7 +3292,7 @@ class ASTAsNumeric extends ASTUniPrefixOp {
     Frame ary = env.peekAry();
     Vec[] nvecs = new Vec[ary.numCols()];
     for (int c = 0; c < ary.numCols(); ++c)
-      nvecs[c] = ary.vecs()[c].toInt();
+      nvecs[c] = ary.vecs()[c].isInt() || ary.vecs()[c].isEnum() ? ary.vecs()[c].toInt() : ary.vecs()[c].copyOver(ary.vecs()[c].domain());
     Frame v = new Frame(ary._names, nvecs);
     env.poppush(1, new ValFrame(v));
   }
@@ -3317,7 +3317,7 @@ class ASTFactor extends ASTUniPrefixOp {
       env.pushAry(ary);
       return;
     }
-    Vec v1 = v0.toEnum(); // toEnum() creates a new vec --> must be cleaned up!
+    Vec v1 = v0.asEnum(); // asEnum() creates a new vec --> must be cleaned up!
     Frame fr = new Frame(ary._names, new Vec[]{v1});
     env.pushAry(fr);
   }
