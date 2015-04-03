@@ -938,21 +938,23 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           ?(y - ybar * gram.get(icptCol,i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
           :((y - ybar * xbar)/ (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
         double rho = 1e-6;
-        if(x != 0) {
+        if(x > 0) {
           rho = Math.abs(l1pen / x);
           double D = l1pen*(l1pen + 4*x);
           if(D >= 0) {
             D = Math.sqrt(D);
             double r = .25 * (l1pen + D) / (2 * x);
-            if(r > 0) rho = r;
+            if(r > 0) rho = r; else System.out.println("negative rho estimate(1)! r = " + r);
           }
         } else if(x < 0) {
           double D = l1pen * (l1pen - 4 * x);
           if(D >= 0) {
             D = Math.sqrt(D);
             double r = -.25 * (l1pen + D) / (2 * x);
-            if(r > 0) rho = r;
+            if(r > 0) rho = r; else Log.warn("negative rho estimate(2)!  r = " + r);
           }
+        } else {
+          Log.warn("x estimated zero!");
         }
         if(ub != null && !Double.isInfinite(ub[i]) || lb != null && !Double.isInfinite(lb[i])) {
           double lx = (x - lb[i]);
