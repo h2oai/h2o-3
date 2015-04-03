@@ -45,7 +45,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
-      throw new IllegalArgumentException("Too many levels in response column!");
+      error("_nclass", "Too many levels in response column!");
+
+    if( _parms._min_rows < 0 )
+      error("_min_rows", "Requested min_rows must be greater than 0");
+
     if( _parms._ntrees < 0 || _parms._ntrees > 100000 )
       error("_ntrees", "Requested ntrees must be between 1 and 100000");
     _ntrees = _parms._ntrees;   // Total trees in final model
