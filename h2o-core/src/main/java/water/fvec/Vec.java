@@ -932,30 +932,31 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link EnumWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new Categorical Vec  */
-  public EnumWrappedVec toEnum() {
-    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
-    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    int min = (int) min(), max = (int) max();
-    // try to do the fast domain collection
-    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-    if( domain.length > Categorical.MAX_ENUM_SIZE )
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
-    return adaptTo(ArrayUtils.toString(domain));
-  }
+//  public EnumWrappedVec toEnum() {
+//    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
+//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+//    int min = (int) min(), max = (int) max();
+//    // try to do the fast domain collection
+//    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+//    if( domain.length > Categorical.MAX_ENUM_SIZE )
+//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
+//    return adaptTo(ArrayUtils.toString(domain));
+//  }
 
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
    *  The original Vec is not mutated.
    */
-//  public Vec toEnum() {
-//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-//    int min = (int) min(), max = (int) max();
-//    // try to do the fast domain collection
-//    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-//    if (dom.length > Categorical.MAX_ENUM_SIZE)
-//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
-//    return copyOver(ArrayUtils.toString(dom));
-//  }
-//
+  public Vec toEnum() {
+    if( isEnum() ) return makeCopy(domain());
+    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    int min = (int) min(), max = (int) max();
+    // try to do the fast domain collection
+    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+    if (dom.length > Categorical.MAX_ENUM_SIZE)
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+    return copyOver(ArrayUtils.toString(dom));
+  }
+
   private Vec copyOver(final String[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain;
