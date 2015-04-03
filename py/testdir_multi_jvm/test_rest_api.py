@@ -793,6 +793,16 @@ validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
 assert parameters_validation['__http_response']['status_code'] == requests.codes.precondition_failed, "FAIL: expected 412 Precondition Failed from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
 if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 
+#####################################
+# Early test of predict()
+# TODO: remove after we remove the early exit
+p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', destination_key='deeplearning_airlines_binomial_predictions')
+validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, destination_key='deeplearning_airlines_binomial_predictions')
+validate_frame_exists('deeplearning_airlines_binomial_predictions')
+h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_airlines_binomial', " on: ", 'airlines_binomial', ":  ", repr(p))
+
+# print h2o_util.dump_json(p)
+
 print("WARNING: Terminating test before the end because we don't have as.factor yet. . .")   # TODO: Remove after deeplearning_prostate_binomial is updated
 sys.exit(0)
 

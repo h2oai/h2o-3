@@ -1,9 +1,11 @@
 package hex;
 
-import java.util.Arrays;
-import water.*;
-import water.fvec.*;
+import water.Iced;
 import water.MRTask;
+import water.fvec.Chunk;
+import water.fvec.Vec;
+
+import java.util.Arrays;
 
 /** One-pass approximate AUC
  *
@@ -103,13 +105,17 @@ public class AUC2 extends Iced {
       return mx;
     }
     public static final ThresholdCriterion[] VALUES = values();
-  }
+  } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
   public long tp( int idx ) { return _tps[idx]; }
   public long fp( int idx ) { return _fps[idx]; }
   public long tn( int idx ) { return _n-_fps[idx]; }
   public long fn( int idx ) { return _p-_tps[idx]; }
+
+  public long[][] cm_for_threshold( int idx ) { return new long[][]
+                 {{tn(idx), fp(idx)},
+                  {fn(idx), tp(idx)}}; }
 
   /** @return maximum F1 */
   public double maxF1() { return ThresholdCriterion.f1.max_criterion(this); }
