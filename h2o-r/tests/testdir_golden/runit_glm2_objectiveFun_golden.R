@@ -18,7 +18,7 @@ function(conn) {
     lambda <- 1e-5
     
     # H2O GLM model
-    hh        <- h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",n_folds=0, alpha = alpha)
+    hh        <- h2o.glm(x=myX,y=myY,training_frame=mfrmr,family="gaussian",n_folds=0, alpha = alpha, lambda = lambda)
     res_dev   <- hh@model$residual_deviance
     obs       <- nrow(mfrmr)
     # lambda    <- hh@model$params$lambda_best

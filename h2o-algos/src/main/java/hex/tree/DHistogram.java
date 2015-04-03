@@ -119,8 +119,6 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
 
   public int nbins() { return _nbin; }
   public int bins(int b) { return _bins[b]; }
-  public float mins(int b) { return _min2; }
-  public float maxsIn(int b) { return _maxIn; } // Always an Inclusive max
   abstract public double mean(int b);
   abstract public double var (int b);
 
@@ -221,7 +219,7 @@ public abstract class DHistogram<TDH extends DHistogram> extends Iced {
     sb.append(_name).append(":").append(_min).append("-").append(_maxEx).append(" step="+(1/_step)+" nbins="+nbins()+" isInt="+_isInt);
     if( _bins != null ) {
       for( int b=0; b<_bins.length; b++ ) {
-        sb.append(String.format("\ncnt=%d, [%f - %f], mean/var=", _bins[b],mins(b),maxsIn(b)));
+        sb.append(String.format("\ncnt=%d, [%f - %f], mean/var=", _bins[b],_min+b/_step,_min+(b+1)/_step));
         sb.append(String.format("%6.2f/%6.2f,", mean(b), var(b)));
       }
       sb.append('\n');

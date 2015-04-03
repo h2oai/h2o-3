@@ -1,7 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../h2o-runit.R')
 
-# Compare within-cluster sum of squared error
 test.pcastand.golden <- function(H2Oserver) {
   # Import data: 
   Log.info("Importing arrests.csv data...") 
