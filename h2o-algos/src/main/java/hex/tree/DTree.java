@@ -395,19 +395,29 @@ public class DTree extends Iced {
     }
 
     @Override public String toString() {
-      if( _split._col == -1 ) return "Decided has col = -1";
-      int col = _split._col;
-      if( _split._equal == 1 )
-        return
-          _tree._names[col]+" != "+_splat+"\n"+
-          _tree._names[col]+" == "+_splat+"\n";
-      else if( _split._equal == 2 || _split._equal == 3 )
-        return
-          _tree._names[col]+" not in "+_split._bs.toString()+"\n"+
-          _tree._names[col]+"  is in "+_split._bs.toString()+"\n";
-      return
-        _tree._names[col]+" < "+_splat+"\n"+
-        _splat+" >="+_tree._names[col]+"\n";
+      StringBuilder sb = new StringBuilder();
+      sb.append("DecidedNode:\n");
+      sb.append("_nid: " + _nid);
+      sb.append("_nids (children): " + Arrays.toString(_nids));
+      sb.append("_split:" + _split.toString());
+      sb.append("_splat:" + _splat);
+      if( _split._col == -1 ) {
+        sb.append("Decided has col = -1");
+      } else {
+        int col = _split._col;
+        if (_split._equal == 1) {
+          sb.append(_tree._names[col] + " != " + _splat + "\n" +
+                  _tree._names[col] + " == " + _splat + "\n");
+        } else if (_split._equal == 2 || _split._equal == 3) {
+          sb.append(_tree._names[col] + " not in " + _split._bs.toString() + "\n" +
+                  _tree._names[col] + "  is in " + _split._bs.toString() + "\n");
+        } else {
+          sb.append(
+                  _tree._names[col] + " < " + _splat + "\n" +
+                          _splat + " >=" + _tree._names[col] + "\n");
+        }
+      }
+      return sb.toString();
     }
 
     StringBuilder printChild( StringBuilder sb, int nid ) {

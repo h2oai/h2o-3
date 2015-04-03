@@ -17,12 +17,14 @@ def loss_behaviorGBM(ip,port):
   cars = h2o.import_frame(path=h2o.locate("smalldata/junit/cars.csv"))
   cars_model = h2o.gbm(x=cars[3:7], y=cars["cylinders"])
   assert isinstance(cars_model,h2o.model.regression.H2ORegressionModel)
-  # character response: expect error
-  try:
-    eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"])
-    assert False, "expected an error"
-  except EnvironmentError:
-    assert True
+
+# AUTO loss works now - no longer dies here
+#  # character response: expect error
+#  try:
+#    eco_model = h2o.gbm(x=eco[0:8], y=eco["Method"])
+#    assert False, "expected an error"
+#  except EnvironmentError:
+#    assert True
 
   #Log.info("==============================")
   #Log.info("Gaussian Behavior")

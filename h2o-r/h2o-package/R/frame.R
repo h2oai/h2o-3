@@ -1065,20 +1065,7 @@ quantile.H2OFrame <- function(x,
     stop("`probs` must be between 0 and 1 exclusive")
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
-
-  parms <- as.list(match.call()[-1L])
-
-  training_frame <- x
-  .quantile.map <- c("x" = "training_frame")
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.quantile.map) ) i <- .quantile.map[[i]]; i })
-
-  model <- .h2o.createModel(x@conn, "quantile", parms, parent.frame())
-
-  col <- model@model$quantile[[1L]]
-  # BUG: For some reason, processMatrices doesn't replace "NaN" with NA_real_, so have to do it here
-  col <- sapply(col, function(x) { if(identical(x, "NaN")) NA_real_ else x })
-  names(col) <- paste0(100*model@model$parameters$probs, "%")
-  col
+  res <- .h2o.nary_frame_op("quantile", x, probs)
 }
 
 #'
