@@ -201,13 +201,12 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
-  if (delete_train)
-    h2o.rm(temp_train_key)
-  if (!is.null(params$validation_frame))
-    if (delete_valid)
-      h2o.rm(temp_valid_key)
-  m
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+}
+
+h2o.getFutureModel <- function(object) {
+  .h2o.__waitOnJob(object@h2o, object@job_key)
+  h2o.getModel(object@destination_key, object@h2o)
 }
 
 #' @export
@@ -650,12 +649,15 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   max_metrics <- object@metrics$max_criteria_and_metric_scores
   p <- max_metrics[match("tps",max_metrics$Metric),3]
   n <- max_metrics[match("fps",max_metrics$Metric),3]
-  lapply(thresholds,function(t) {
+  m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
     tps <- row$tps
     fps <- row$fps
     matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
   })
+  names(m) <- "Actual/Predicted"
+  m
+  dimnames(m[[1]]) <- list(list("0","1"), list("0","1"))
 })
 
 #' @export
