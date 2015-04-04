@@ -175,7 +175,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       long r2 = (long)p2;       // Lower integral row number
       int loidx = findBin(r2);  // Find bin holding low value
       double lo = (loidx == _nbins) ? binEdge(_nbins) : _maxs[loidx];
-      if( r2==p2 && _mins[loidx]==lo ) return lo; // Exact row number, exact bin?  Then quantile is exact
+      if( loidx<_nbins && r2==p2 && _mins[loidx]==lo ) return lo; // Exact row number, exact bin?  Then quantile is exact
 
       long r3 = r2+1;           // Upper integral row number
       int hiidx = findBin(r3);  // Find bin holding high value
