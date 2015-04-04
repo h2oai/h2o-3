@@ -58,8 +58,9 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
     if (!is.null(beta_constraint)) {
         if (!inherits(beta_constraint, "data.frame") && !inherits(beta_constraint, "H2OFrame"))
           stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraint)))
-        if (inherits(beta_constraint, "data.frame"))
+        if (inherits(beta_constraint, "data.frame")) {
           beta_constraint <- as.h2o(training_frame@conn, beta_constraint)
+        }
     }
     dots <- list(...)
 
@@ -182,7 +183,19 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     args <- .verify_dataxy(training_frame, x, y)
     parms$x <- args$x_ignore
     parms$y <- args$y
+    parms$beta_constraint <- beta_constraint
     names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
+    m <- .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+    m@model$coefficients <- m@model$coefficients_table[,2]
+    names(m@model$coefficients) <- m@model$coefficients_table[,1]
+    m
+}
 
-    .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+h2o.makeGLMModel <- function(model,beta) {  
+   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))   
+   m <- h2o.getModel(key=res$key$name) 
+   m@model$coefficients <- m@model$coefficients_table[,2]
+   names(m@model$coefficients) <- m@model$coefficients_table[,1]
+   m
 }

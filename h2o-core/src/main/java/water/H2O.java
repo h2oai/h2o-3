@@ -469,13 +469,59 @@ final public class H2O {
   // Best-guess process ID
   public static long PID = -1L;
 
-  // Convenience error
-  // TODO: throw an exception that will cause H2O to shut down (but tests can catch)
-  public static RuntimeException unimpl() { return new RuntimeException("unimplemented"); }
-  public static RuntimeException unimpl(String msg) { return new RuntimeException("unimplemented: " + msg); }
-  public static H2OFailException fail() { throw new H2OFailException("Unknown code failure"); }  // Internal H2O fail; only interesting thing is the stack-trace
-  public static H2OFailException fail(String msg) { return new H2OFailException(msg); }  // Internal H2O fail; only interesting thing is the stack-trace
-  public static H2OFailException fail(String msg, Throwable cause) { return new H2OFailException(msg, cause); }
+
+  /**
+   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * @see #fail(String, Throwable)
+   * @return never returns
+   */
+  public static H2OFailException unimpl() { return H2O.fail("unimplemented"); }
+
+  /**
+   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * @see #fail(String, Throwable)
+   * @return never returns
+   */
+  public static H2OFailException unimpl(String msg) { return H2O.fail("unimplemented: " + msg); }
+
+  /**
+   * H2O.fail is intended to be used in code where something should never happen, and if
+   * it does it's a coding error that needs to be addressed immediately.  Examples are:
+   * AutoBuffer serialization for an object you're trying to serialize isn't available;
+   * there's a typing error on your schema; your switch statement didn't cover all the AST
+   * subclasses available in Rapids.
+   * <p>
+   * It should *not* be used when only the single request should fail, it should *only* be
+   * used if the error means that someone needs to go add some code right away.
+   *
+   * @param msg Message to Log.fatal()
+   * @param cause Optional cause exception to Log.fatal()
+   * @return never returns; calls System.exit(-1)
+   */
+  public static H2OFailException fail(String msg, Throwable cause) {
+    Log.fatal(msg);
+    if (null != cause) Log.fatal(cause);
+
+    H2O.shutdown();
+    System.exit(-1);
+
+    // unreachable
+    return new H2OFailException(msg);
+  }
+
+  /**
+   * @see #fail(String, Throwable)
+   * @return never returns
+   */
+  public static H2OFailException fail() { return H2O.fail("Unknown code failure"); }
+
+  /**
+   * @see #fail(String, Throwable)
+   * @return never returns
+   */
+  public static H2OFailException fail(String msg) { return H2O.fail(msg, null); }
+
+
 
   // --------------------------------------------------------------------------
   // The worker pools - F/J pools with different priorities.
@@ -596,7 +642,7 @@ final public class H2O {
     protected H2OCountedCompleter(H2OCountedCompleter completer){super(completer);}
 
     /** Used by the F/J framework internally to do work.  Once per F/J task,
-     *  drain the high priority queue before doing any low priority work. 
+     *  drain the high priority queue before doing any low priority work.
      *  Calls {@link #compute2} which contains actual work. */
     @Override public final void compute() {
       FJWThr t = (FJWThr)Thread.currentThread();
@@ -605,7 +651,7 @@ final public class H2O {
       H2OCountedCompleter h2o = null;
       boolean set_t_prior = false;
       try {
-        assert  priority() == pp; // Job went to the correct queue?
+        assert  priority() == pp:" wrong priority for task " + getClass().getSimpleName() + ", expected " + priority() + ", but got " + pp; // Job went to the correct queue?
         assert t._priority <= pp; // Thread attempting the job is only a low-priority?
         final int p2 = Math.max(pp,MIN_HI_PRIORITY);
         for( int p = MAX_PRIORITY; p > p2; p-- ) {
@@ -1058,8 +1104,8 @@ final public class H2O {
       cnts[t]++;
     }
     StringBuilder sb = new StringBuilder();
-    for( int t=0; t<cnts.length; t++ ) 
-      if( cnts[t] != 0 ) 
+    for( int t=0; t<cnts.length; t++ )
+      if( cnts[t] != 0 )
         sb.append(String.format("-%30s %5d\n",TypeMap.CLAZZES[t],cnts[t]));
     return sb.toString();
   }

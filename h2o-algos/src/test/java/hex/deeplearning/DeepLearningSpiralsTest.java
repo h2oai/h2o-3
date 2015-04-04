@@ -84,7 +84,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           DeepLearningModel mymodel = DKV.getGet(dest);
           Frame pred = mymodel.score(frame);
           ModelMetricsBinomial mm = ModelMetricsBinomial.getFromDKV(mymodel,frame);
-          double error = mm._aucdata.err();
+          double error = mm._auc.defaultErr();
           Log.info("Error: " + error);
           if (error >= 0.025) {
             Assert.fail("Classification error is not less than 0.025, but " + error + ".");

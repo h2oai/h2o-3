@@ -14,33 +14,33 @@ test.quantile.golden <- function(conn) {
   expect_error(quantile(vec.hex, probs = c(0.1, -0.5, 0.2, 1.5)))
   
   Log.info("Check min/max equal to 0% and 100% quantiles")
-  expect_equal(as.numeric(quantile(vec.hex, probs = 0)), min(vec.hex))
-  expect_equal(as.numeric(quantile(vec.hex, probs = 1)), max(vec.hex))
+  expect_equal(as.data.frame(quantile(vec.hex, probs = 0))[1,1], min(vec.hex))
+  expect_equal(as.data.frame(quantile(vec.hex, probs = 1))[1,1], max(vec.hex))
   
   Log.info("Check constant vector returns constant for all quantiles")
   vec.cons <- rep(5,1000)
   vec.cons.hex <- as.h2o(conn, vec.cons)
-  expect_true(all(quantile(vec.cons.hex, probs = probs) == 5))
+  expect_true(all(as.data.frame(quantile(vec.cons.hex, probs = probs)) == 5))
   
   Log.info("Check quantiles are identical to R with type = 7")
-  quant.r <- quantile(vec, probs = probs, type = 7)
-  quant.h2o <- quantile(vec.hex, probs = probs)
+  quant.r <- as.vector(quantile(vec, probs = probs, type = 7))
+  quant.h2o <- as.data.frame(quantile(vec.hex, probs = probs))[,1]
   expect_equal(quant.h2o, quant.r)
   
-  quant.rand.r <- quantile(vec, probs = probs.rand, type = 7)
-  quant.rand.h2o <- quantile(vec.hex, probs = probs.rand)
+  quant.rand.r <- as.vector(quantile(vec, probs = probs.rand, type = 7))
+  quant.rand.h2o <- as.data.frame(quantile(vec.hex, probs = probs.rand))[,1]
   expect_equal(quant.rand.h2o, quant.rand.r)
   
   Log.info("Check missing values are ignored in calculation")
   vecNA <- vec; vecNA[sample(1000,100)] <- NA
   vecNA.hex <- as.h2o(conn, vecNA)
   
-  quantNA.r <- quantile(vecNA, probs = probs, type = 7, na.rm = TRUE)
-  quantNA.h2o <- quantile(vecNA.hex, probs = probs)
+  quantNA.r <- as.vector(quantile(vecNA, probs = probs, type = 7, na.rm = TRUE))
+  quantNA.h2o <- as.data.frame(quantile(vecNA.hex, probs = probs))[,1]
   expect_equal(quantNA.h2o, quantNA.r)
   
-  quantNA.rand.r <- quantile(vecNA, probs = probs.rand, type = 7, na.rm = TRUE)
-  quantNA.rand.h2o <- quantile(vecNA.hex, probs = probs.rand)
+  quantNA.rand.r <- as.vector(quantile(vecNA, probs = probs.rand, type = 7, na.rm = TRUE))
+  quantNA.rand.h2o <- as.data.frame(quantile(vecNA.hex, probs = probs.rand))[,1]
   expect_equal(quantNA.rand.h2o, quantNA.rand.r)
   
   testEnd()

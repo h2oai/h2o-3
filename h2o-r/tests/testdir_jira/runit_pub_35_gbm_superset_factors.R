@@ -35,7 +35,7 @@ pub35gbm <- function(conn){
                training_frame = df.h,
                ntrees = 10,
                max_depth = 5,
-               min_rows = 10,
+               min_rows = 1,
                learn_rate = 0.1,
                loss = "multinomial")
 

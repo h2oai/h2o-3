@@ -18,6 +18,7 @@ abstract public class AST extends Iced {
   String[] _arg_names;
   AST[] _asts;
   AST parse_impl(Exec e) { throw H2O.fail("Missing parse_impl for "+this.getClass()); }
+  abstract String opStr();
   abstract void exec(Env e);
   abstract String value();
   abstract int type();
@@ -134,6 +135,15 @@ abstract public class AST extends Iced {
 }
 
 class ASTId extends AST {
+  String opStr() {
+    switch( _type ) {
+      case '$': return "$";
+      case '!': return "!";
+      case '&': return "&";
+      default:
+        throw new IllegalArgumentException("No such type for ID: " + _type);
+    }
+  }
   final String _id;
   final char _type; // either '$' or '!' or '&'
   ASTId(char type, String id) { _type = type; _id = id; }
@@ -152,6 +162,7 @@ class ASTId extends AST {
 }
 
 class ASTKey extends AST {
+  String opStr() {throw H2O.unimpl("No such opStr for ASTKey."); }
   final String _key;
   ASTKey(String key) { _key = key; }
   ASTKey parse_impl(Exec E) {
@@ -165,6 +176,7 @@ class ASTKey extends AST {
 }
 
 class ASTFrame extends AST {
+  String opStr() {return "%";}
   final String _key;
   final Frame _fr;
   boolean isFrame;
@@ -196,6 +208,7 @@ class ASTFrame extends AST {
 class ASTNum extends AST {
   final double _d;
   ASTNum(double d) { _d = d; }
+  String opStr() {return "#";}
   ASTNum parse_impl(Exec E) {
     try {
       return new ASTNum(Double.valueOf(E.parseID()));
@@ -215,14 +228,25 @@ class ASTNum extends AST {
  *  ASTSpan parses phrases like 1:10.
  */
 class ASTSpan extends AST {
+  String opStr() { return ":"; }
   final long _min;       final long _max;
   final ASTNum _ast_min; final ASTNum _ast_max;
   boolean _isCol; boolean _isRow;
   ASTSpan(ASTNum min, ASTNum max) { _ast_min = min; _ast_max = max; _min = (long)min._d; _max = (long)max._d;
-    if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    if( _min <= 0 && _max <= 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+        if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan(long min, long max) { _ast_min = new ASTNum(min); _ast_max = new ASTNum(max); _min = min; _max = max;
-    if (_min > _max) throw new IllegalArgumentException("min > max for `:` operator.");
+    if( _min < 0 && _max < 0) {
+      if (_max > _min)
+        throw new IllegalArgumentException("max>min: All negative, incorrect order.");
+    } else {
+      if (_min > _max) throw new IllegalArgumentException("min > max: min <= max for `:` operator.");
+    }
   }
   ASTSpan parse_impl(Exec E) {
     AST l = E.parse();
@@ -247,7 +271,7 @@ class ASTSpan extends AST {
     for (int i = 0; i < res.length; ++i) res[i] = min++;
     return res;
   }
-  boolean all_neg() { return _min < 0; }
+  boolean all_neg() { return _min<0||_max<0; }
   boolean all_pos() { return !all_neg(); }
   boolean isNum() { return _min == _max; }
   long toNum() { return _min; }
@@ -262,6 +286,7 @@ class ASTSpan extends AST {
 }
 
 class ASTSeries extends AST {
+  String opStr() { return "{";}
   final long[] _idxs;
   final ASTSpan[] _spans;
   boolean _isCol;
@@ -407,7 +432,7 @@ class ASTSeries extends AST {
 }
 
 class ASTStatement extends AST {
-
+  String opStr() {return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
     ArrayList<AST> ast_ary = new ArrayList<AST>();
@@ -577,6 +602,7 @@ class ASTWhile extends ASTStatement {
 //}
 
 class ASTString extends AST {
+  String opStr() { return String.valueOf(_eq); }
   final String _s;
   final char _eq;
   ASTString(char eq, String s) { _eq = eq; _s = s; }
@@ -592,6 +618,7 @@ class ASTString extends AST {
 }
 
 class ASTNull extends AST {
+  String opStr() { throw H2O.unimpl();}
   ASTNull() {}
   @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
@@ -622,6 +649,7 @@ class ASTNull extends AST {
  *       If the vec is numeric, then the RHS must also be numeric (if enum, then produce NAs or throw IAE).
  */
 class ASTAssign extends AST {
+  String opStr() { return "="; }
   ASTAssign parse_impl(Exec E) {
     E.skipWS();
     AST l;
@@ -1031,6 +1059,7 @@ class ASTAssign extends AST {
 
 // AST Slice
 class ASTSlice extends AST {
+  String opStr() { return "["; }
   ASTSlice() {}
 
   ASTSlice parse_impl(Exec E) {
@@ -1079,7 +1108,23 @@ class ASTSlice extends AST {
           env.push(new ValStr(ary.vecs()[col].domain()[(int) ary.vecs()[col].at(row)]));
         } else env.push(new ValNum(ary.vecs()[col].at(row)));
       } catch (ArrayIndexOutOfBoundsException e) {
-        if (col < 0 || col >= ary.vecs().length) throw new IllegalArgumentException("Column index out of bounds: tried to select column 0<="+col+"<="+(ary.vecs().length-1)+".");
+        if( col < 0 ) {
+          int rm_col = -1*col - 1;  // 1 -> 0 idx...
+          // really want to do all columns BUT this one... so not a single scalar result => recurse
+          long[] columns = new long[ary.numCols()-1];
+          int v=0;
+          for(int i=0;i<columns.length;++i) {
+            if (i == rm_col) v++;
+            columns[i] = v++;
+          }
+          ValSeries vs = new ValSeries(columns,null);
+          vs.setSlice(false,true);  // make it a column selector...
+          env.pushAry(ary);
+          env.push(rows);
+          env.push(vs);
+          this.exec(env);
+          return;
+        }
         if (row < 0 || row >= ary.vecs()[col].length()) throw new IllegalArgumentException("Row index out of bounds: tried to select row 0<="+row+"<="+(ary.vecs()[col].length()-1)+".");
       }
     } else {
@@ -1152,7 +1197,7 @@ class ASTSlice extends AST {
         ? new MRTask() {
             @Override public void map(Chunk cs) {
               for (long i = cs.start(); i < cs._len + cs.start(); ++i)
-                if (a0.contains(-i)) cs.set((int) (i - cs.start() - 1), 0); // -1 for indexing
+                if (a0.contains(-i)) cs.set((int) (i - cs.start()), 0);
             }
           }.doAll(v0).getResult()._fr
         : new MRTask() {
@@ -1226,6 +1271,7 @@ class ASTSlice extends AST {
 
 //-----------------------------------------------------------------------------
 class ASTDelete extends AST {
+  String opStr() { return "del"; }
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
     AST cols = E.skipWS().parse();

@@ -31,7 +31,10 @@ test.DRF.smallcat <- function(conn) {
   drfperf <- h2o.performance(drfmodel)
   print(h2o.confusionMatrix(drfmodel,alphabet.hex))
   expect_equal(h2o.auc(drfperf), 1)
-  expect_equal(h2o.confusionMatrix(drfmodel,alphabet.hex)[3,"Error"], 0)
+  # No errors off the diagonal
+  default_cm <- h2o.confusionMatrix(drfmodel,alphabet.hex)[[1]]
+  expect_equal(default_cm[1,2], 0)
+  expect_equal(default_cm[2,1], 0)
 
   # Train R DRF Model:
   # Log.info("R DRF with same parameters:")

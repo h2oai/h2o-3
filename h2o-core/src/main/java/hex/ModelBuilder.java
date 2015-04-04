@@ -298,6 +298,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       this.message_type = message_type;
       this.field_name = field_name;
       this.message = message;
+      switch (message_type) {
+        case INFO: Log.info(field_name + ": " + message); break;
+        case WARN: Log.warn(field_name + ": " + message); break;
+        case ERROR: Log.err(field_name + ": " + message); break;
+      }
     }
 
     @Override public String toString() { return message_type + " on field: " + field_name + ": " + message; }

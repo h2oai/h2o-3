@@ -1,13 +1,18 @@
 package hex.glm;
 
 import hex.DataInfo;
+import hex.DataInfo.TransformType;
+import hex.ModelMetrics;
+import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMTask.GLMIterationTask;
 import hex.glm.GLMTask.GLMGradientTask;
 import hex.glm.GLMTask.GLMLineSearchTask;
+import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import hex.AUCData;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GetScoringModelTask;
@@ -18,10 +23,12 @@ import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.parser.ValueString;
 import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
@@ -223,14 +230,14 @@ public class GLMTest  extends TestUtil {
         beta[i] = 1 - 2 * rnd.nextDouble();
         pk[i]   = 10* (1 - 2*rnd.nextDouble());
       }
-      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo,0,0,params, 1, beta,pk,.7,16).doAll(dinfo._adaptedFrame);
+      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, 1, beta,pk,.7,16, null).doAll(dinfo._adaptedFrame);
       double step = 1, stepDec = .7;
       for(int i = 0; i < glst._nSteps; ++i) {
         double [] b =  beta.clone();
         for(int j = 0; j < b.length; ++j) {
           b[j] += step * pk[j];
         }
-        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
+        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, null, null).doAll(dinfo._adaptedFrame);
         assertEquals("objective values differ at step " + i + ": " + step, glmt._likelihood, glst._likelihoods[i], 1e-8);
         System.out.println("step = " + step + ", obj = " + glmt._likelihood + ", " + glst._likelihoods[i]);
         step *= stepDec;
@@ -269,8 +276,8 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < beta.length; ++i)
       beta[i] = 1 - 2*rnd.nextDouble();
 
-      GLMGradientTask grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
@@ -282,8 +289,8 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for(int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2*rnd.nextDouble();
-      grtCol = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo, params,params._lambda[0], beta, 1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
 
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
@@ -302,8 +309,8 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2*rnd.nextDouble();
 
-      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
+      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta, 1, null).forceColAccess().doAll(dinfo._adaptedFrame);
+      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta, 1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
       for(int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       dinfo.remove();
@@ -399,7 +406,6 @@ public class GLMTest  extends TestUtil {
 //      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
       model.delete();
       job.remove();
-
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
       params = new GLMParameters(Family.gaussian);
@@ -448,7 +454,7 @@ public class GLMTest  extends TestUtil {
 //      HashMap<String, Double> coefs = model.coefficients();
 //      for(int i = 0; i < cfs1.length; ++i)
 //        assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
-//      GLMValidation val = model.validation();
+//      GLMValidation val = model.trainVal();
 ////      assertEquals(512.3, val.nullDeviance(),1e-1);
 ////      assertEquals(378.3, val.residualDeviance(),1e-1);
 ////      assertEquals(396.3, val.aic(),1e-1);
@@ -470,8 +476,12 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
-
-//  @Test public void testProximal() {
+  /**
+   * Test bounds on prostate dataset, 2 cases :
+   *    1) test against known result in glmnet (with elastic net regularization) with elastic net penalty
+   *    2) test with no regularization, check the gradient in the end.
+   */
+  @Test public void testBounds() {
 //    glmnet's result:
 //    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
 //    res2$beta[,58]
@@ -481,50 +491,165 @@ public class GLMTest  extends TestUtil {
 //    s57
 //    -4.155864
 //    lambda = 0.001108, null dev =  512.2888, res dev = 379.7597
-//    Key parsed = Key.make("prostate_parsed");
-//    Key modelKey = Key.make("prostate_model");
-//    GLMModel model = null;
-//    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv", new String[]{"ID"}, "CAPSULE");
-//    Key k = Key.make("rebalanced");
-//    H2O.submitTask(new RebalanceDataSet(fr, k, 64)).join();
-//    fr.delete();
-//    fr = DKV.get(k).get();
-//    fr.remove("ID");
-//    Key betaConsKey = Key.make("beta_constraints");
-//
-//    //String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
-//    //double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
-//    // [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
-//    FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
-//    Frame betaConstraints = ParseDataset2.parse(parsed, new Key[]{betaConsKey});
-//    try {
-//      // H2O differs on intercept and race, same residual deviance though
-//      GLM2.Source src = new GLM2.Source((Frame)fr.clone(), fr.vec("CAPSULE"), false, true);
-//      new GLM2("GLM offset test on prostate.", Key.make(), modelKey, src, Family.binomial).setNonNegative(false).setRegularization(new double[]{0},new double[]{0.000}).setBetaConstraints(betaConstraints).setHighAccuracy().doInit().fork().get(); //.setHighAccuracy().doInit().fork().get();
-//      model = DKV.get(modelKey).get();
-//      fr.add("CAPSULE", fr.remove("CAPSULE"));
-//      DataInfo dinfo = new DataInfo(fr, 1, true, false, TransformType.NONE, DataInfo.TransformType.NONE);
-//      GLMIterationTask glmt = new GLMTask.GLMIterationTask(0,null, dinfo, new GLMParams(Family.binomial),false, true, true, model.beta(), 0, 1.0/380, ModelUtils.DEFAULT_THRESHOLDS, null).doAll(dinfo._adaptedFrame);
-//      double [] beta = model.beta();
-//      double [] grad = glmt.gradient(0,0);
-//      for(int i = 0; i < beta.length; ++i)
-//        Assert.assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta[i] - betaConstraints.vec("beta_given").at(i)), 1e-8);
-//      // now standardized
-//    } finally {
-//      fr.delete();
-//      if(model != null)model.delete();
-//    }
-//  }
+    GLMModel model = null;
+
+    Key parsed = Key.make("prostate_parsed");
+    Key modelKey = Key.make("prostate_model");
+
+    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Key betaConsKey = Key.make("beta_constraints");
+
+    String[] cfs1 = new String[]{"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON", "Intercept"};
+    double[] vals = new double[]{-0.006502588, -0.500000000,  0.500000000,  0.400000000,  0.034826559, -0.011661747,  0.500000000, -4.564024 };
+
+//    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
+    FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._beta_constraint = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._alpha = new double[]{1};
+      params._lambda = new double[]{0.001607};
+      GLM job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      Map<String, Double> coefs =  model.coefficients();
+      for (int i = 0; i < cfs1.length; ++i)
+        assertEquals(vals[i], coefs.get(cfs1[i]), 1e-2);
+      GLMValidation val = model.validation();
+      System.out.println("val = " + val);
+      assertEquals(512.2888, val.nullDeviance(), 1e-1);
+                // 388.4952716196743
+      assertEquals(388.4686, val.residualDeviance(),1e-1);
+      model.delete();
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
+      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+      job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      assertTrue(job.isDone());
+      model = DKV.get(modelKey).get();
+      double [] beta = model.beta();
+      System.out.println("beta = " + Arrays.toString(beta));
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      fr.remove("ID").remove();
+      DKV.put(fr._key,fr);
+      // now check the gradient
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
+      // todo: remove, result from h2o.1
+      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, null).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      String [] names = model._dinfo.coefNames();
+      System.out.println("coefs = " + Arrays.toString(names));
+      System.out.println("grad = " + Arrays.toString(grad));
+      ValueString vs = new ValueString();
+      outer:
+      for(int i = 0; i < names.length; ++i){
+        for(int j = 0; j < betaConstraints.numRows();++j) {
+          if(betaConstraints.vec("names").atStr(vs,j).toString().equals(names[i])) {
+            if(Math.abs(beta[i] - betaConstraints.vec("lower_bounds").at(j)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vec("upper_bounds").at(j)) < 1e-4) {
+              continue outer;
+            }
+          }
+        }
+        assertEquals(0,grad[i],1e-2);
+      }
+    } finally {
+      fr.delete();
+      betaConstraints.delete();
+      if(model != null)model.delete();
+    }
+  }
+
+
+
+  @Test public void testProximal() {
+//    glmnet's result:
+//    res2 <- glmnet(x=M,y=D$CAPSULE,lower.limits=-.5,upper.limits=.5,family='binomial')
+//    res2$beta[,58]
+//    AGE        RACE          DPROS       PSA         VOL         GLEASON
+//    -0.00616326 -0.50000000  0.50000000  0.03628192 -0.01249324  0.50000000 //    res2$a0[100]
+//    res2$a0[58]
+//    s57
+//    -4.155864
+//    lambda = 0.001108, null dev =  512.2888, res dev = 379.7597
+    Key parsed = Key.make("prostate_parsed");
+    Key modelKey = Key.make("prostate_model");
+    GLMModel model = null;
+
+    Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+    Key k = Key.make("rebalanced");
+    fr.remove("ID").remove();
+    DKV.put(fr._key,fr);
+    Key betaConsKey = Key.make("beta_constraints");
+
+    String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
+    double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
+//    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
+    FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+    try {
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = false;
+      params._family = Family.binomial;
+      params._beta_constraint = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._alpha = new double[]{0};
+      params._lambda = new double[]{0};
+      GLM job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.get(modelKey).get();
+
+      double [] beta_1 = model.beta();
+      params._solver = Solver.L_BFGS;
+      params._max_iter = 1000;
+      job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.get(modelKey).get();
+      fr.add("CAPSULE", fr.remove("CAPSULE"));
+      // now check the gradient
+      DataInfo dinfo = new DataInfo(Key.make(),fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true);
+      // todo: remove, result from h2o.1
+     // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
+      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0, null).doAll(dinfo._adaptedFrame);
+      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380, null).doAll(dinfo._adaptedFrame);
+      double [] grad = lt._gradient;
+      for(int i = 0; i < beta_1.length; ++i)
+        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
+    } finally {
+      for(Vec v:betaConstraints.vecs())
+        v.remove();
+      DKV.remove(betaConstraints._key);
+      for(Vec v:fr.vecs())v.remove();
+      DKV.remove(fr._key);
+      if(model != null)model.delete();
+    }
+  }
   // test categorical autoexpansions, run on airlines which has several categorical columns,
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test public void testAirlines() {
     GLM job = null;
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file("smalldata/airlines/AirlinesTrainMM.csv.zip");
+    Frame frG = parse_test_file(Key.make("gram"),"smalldata/airlines/gram_std.csv", true);
+    Vec xy = frG.remove("xy");
     frMM.remove("").remove();
+    frMM.add("IsDepDelayed",frMM.remove("IsDepDelayed"));
     DKV.put(frMM._key,frMM);
     Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
-
     //  Distance + Origin + Dest + UniqueCarrier
     String [] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime","ArrTime","IsDepDelayed_REC"};
     try{
@@ -534,14 +659,41 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._lambda = new double[]{1e-5};
-//      params._alpha = new double[]{0};
       params._standardize = false;
-      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+      job = new GLM(Key.make("airlines_cat_nostd"),"Airlines with auto-expanded categoricals, no standardization",params);
       model1 = job.trainModel().get();
+      Frame score1 = model1.score(fr);
+      ModelMetrics mm = ModelMetrics.getFromDKV(model1, fr);
+      Assert.assertEquals(5336.918,mm._mse * score1.numRows(),1);
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
-      job = new GLM(Key.make("prostate_model"),"glm test simple poisson",params);
+      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
       model2 = job.trainModel().get();
+      params._standardize = true;
+      params._train = frMM._key;
+      params._use_all_factor_levels = true;
+      // test the gram
+      DataInfo dinfo = new DataInfo(Key.make(),frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true);
+      GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0,null, null).doAll(dinfo._adaptedFrame);
+      for(int i = 0; i < glmt._xy.length; ++i) {
+        for(int j = 0; j <= i; ++j ) {
+          assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
+        }
+        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
+      }
+      frG.delete();
+      xy.remove();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._link = Link.logit;
+      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
+      model3 = job.trainModel().get();
+      params._train = fr._key;
+      params._ignored_columns = ignoredCols;
+      job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
+      model4 = job.trainModel().get();
+      assertEquals(model3.validation().null_deviance,model4.validation().nullDeviance(),1e-4);
+      assertEquals(model4.validation().residual_deviance, model3.validation().residualDeviance(), model3.validation().null_deviance * 1e-3);
       HashMap<String, Double> coefs1 = model1.coefficients();
       HashMap<String, Double> coefs2 = model2.coefficients();
       GLMValidation val1 = model1.validation();
@@ -560,10 +712,12 @@ public class GLMTest  extends TestUtil {
       }
       assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
       assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
-      assertEquals(val1.aic(), val2.aic(),1e-4);
+      assertEquals(val1.aic(), val2.aic(),1e-2);
       // compare result against glmnet
       assertEquals(5336.918,val1.residualDeviance(),1);
       assertEquals(6051.613,val1.nullDeviance(),1);
+
+
       // lbfgs
 //      params._solver = Solver.L_BFGS;
 //      params._train = fr._key;
@@ -641,8 +795,8 @@ public class GLMTest  extends TestUtil {
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
-      AUCData adata = mm._aucdata;
-      assertEquals(val.auc(), adata.AUC(), 1e-2);
+      hex.AUC2 adata = mm._auc;
+      assertEquals(val.auc(), adata._auc, 1e-2);
 
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
@@ -677,13 +831,13 @@ public class GLMTest  extends TestUtil {
       System.out.println("beta = " + Arrays.toString(beta));
       assertEquals(model.validation().auc(), 1, 1e-4);
       GLMValidation val = model.validation();
-      assertEquals(1,val.auc,1e-2);
+      assertEquals(1,val.auc(),1e-2);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
-      AUCData adata = mm._aucdata;
-      assertEquals(val.auc(), adata.AUC(), 1e-2);
+      hex.AUC2 adata = mm._auc;
+      assertEquals(val.auc(), adata._auc, 1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();
@@ -711,12 +865,13 @@ public class GLMTest  extends TestUtil {
       Scope.enter();
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
+      params._lambda = null;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._lambda_search = true;
       params._nlambdas = 35;
       params._lambda_min_ratio = 0.18;
-      params._max_active_predictors = 200;
+      params._max_active_predictors = 215;
       params._alpha = new double[]{1};
       job = new GLM(modelKey,"glm test simple poisson",params);
       job.trainModel().get();
@@ -729,8 +884,8 @@ public class GLMTest  extends TestUtil {
       Submodel sm = model._output._submodels[model._output._best_lambda_idx];
       double l1norm = 0;
       for(double d:sm.norm_beta) l1norm += Math.abs(d);
-      double objval = sm.validation.residual_deviance / sm.validation.nobs + sm.lambda_value*l1norm;
-      assertEquals(0.32922849120947384,objval,0.32922849120947384*1e-2);
+      double objval = sm.trainVal.residual_deviance / sm.trainVal.nobs + sm.lambda_value*l1norm;
+      assertEquals(0.32922849120947384,objval,1e-3);
       // test scoring on several submodels
       GLMModel m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
       Frame score = m.score(fr);
@@ -740,7 +895,7 @@ public class GLMTest  extends TestUtil {
       // try scoring another model
       model._output.setSubmodelIdx(model._output._submodels.length>>1);
       sm = model._output._submodels[model._output._best_lambda_idx];
-      val = model._output._submodels[model._output._best_lambda_idx].validation;
+      val = model._output._submodels[model._output._best_lambda_idx].trainVal;
       m = new GetScoringModelTask(null,model._key,sm.lambda_value).invokeTask()._res;
       score = m.score(fr);
       mse = new MSETsk().doAll(score.anyVec(), fr.vec(m._output.responseName()));
@@ -751,6 +906,7 @@ public class GLMTest  extends TestUtil {
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
       params = new GLMParameters(Family.gaussian);
       // params._response = 0;
+      params._lambda = null;
       params._response_column = fr._names[0];
       params._train = parsed;
       params._lambda_search = true;

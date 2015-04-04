@@ -190,6 +190,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else addedL2 *= 10;
       ++attempts;
       addDiag(gram, addedL2); // try to add L2 penalty to make the Gram SPD
+      Log.info("Added L2 regularization = " + addedL2 + " to diagonal of Y' Gram matrix");
       chol = new CholeskyDecomposition(new Matrix(gram));
     }
     if(!chol.isSPD())
@@ -258,6 +259,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         else addedL2 *= 10;
         ++attempts;
         gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of X Gram matrix");
         gram.cholesky(chol);
       }
       if(!chol.isSPD())
@@ -398,7 +400,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // Cholesky yychol_init = regularizedCholesky(ygram_init);
         double[][] ygram_init = formGram(yt);
         if(_parms._gamma > 0) addDiag(ygram_init, _parms._gamma);
-        CholeskyDecomposition yychol_init = PCA.regularizedCholesky(ygram_init);
+        // CholeskyDecomposition yychol_init = PCA.regularizedCholesky(ygram_init);
 
         CholMulTask cmtsk_init = new CholMulTask(dinfo, ygram_init, yt, _train.numCols(), _parms._k);
         cmtsk_init.doAll(dinfo._adaptedFrame);

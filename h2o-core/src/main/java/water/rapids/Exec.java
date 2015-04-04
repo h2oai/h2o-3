@@ -209,6 +209,20 @@ public class Exec extends Iced {
     return this;
   }
 
+  Exec rewind(AST a) {
+    String s = a.opStr();
+    if( s.equals("\"") || s.equals("\'") ) _x--;
+    int len=s.length();
+    int idx=len-1;
+    while( true ) {
+      if( _x<=0 ) { _x=0;break; }
+      if( idx<0 ) break;
+      if( ppeek() != s.charAt(idx) ) { _x--; idx=len-1; continue; }
+      idx--; _x--;
+    }
+    return this;
+  }
+
   boolean isSpecial(char c) { return c == '\"' || c == '\'' || c == '#' || c == '!' || c == '%' || c =='{'; }
   boolean isQuoted(char c) { return c == '\"' || c == '\''; }
   char getQuote() { return (char)_ast[_x++]; }
