@@ -1,5 +1,5 @@
 # Change this global variable to match your own system's path
-ROOT.PATH <- "/users/cliffc/desktop/"
+ROOT.PATH <- "/Users/spencer/0xdata/"
 DEV.PATH  <- "h2o-dev/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
@@ -18,5 +18,5 @@ src()
 
 h <- h2o.init()
 #hex <- as.h2o(iris, h)
-
-hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))
+#
+#hex <- h2o.importFile(h, paste(ROOT.PATH, "h2o-dev/smalldata/logreg/prostate.csv", sep = ""))
