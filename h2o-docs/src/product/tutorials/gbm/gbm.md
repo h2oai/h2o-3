@@ -41,7 +41,7 @@ Now, parse the imported data:
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
+  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
 
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  

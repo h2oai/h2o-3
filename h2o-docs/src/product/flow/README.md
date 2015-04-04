@@ -333,9 +333,17 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
+<<<<<<< Updated upstream
 - **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
 
 - **Max\_after\_balance\_size**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
+=======
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. For Deep Learning, this option is only applicable for classification.
+
+- **Max\_confusion\_matrix\_size**: [(DL)](#DL) (Classification only) Specify the number of classes for the confusion matrices. The default value is 20. 
+
+- **Max\_after\_balance\_size**: [(GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
+>>>>>>> Stashed changes
 
 - **Ntrees**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
 
@@ -355,9 +363,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are automatic, mean square, cross-entropy, or none and the default value is mean square. 
+- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are automatic, mean square, cross-entropy, huber, absolute, or none and the default value is MeanSquare. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. If you have outliers, select huber. 
 
-- **Variable_importance**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
+- **Variable_importances**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
 - **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. The K-Means default is 0. For PCA, specify the rank of matrix approximation. The PCA default is 1.  
 
@@ -372,31 +380,33 @@ The available options vary depending on the selected model. If an option is only
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, Tweedie, or none).
 
-- **N_folds**: ([GLM](#GLM), [DL](#DL)) Specify the number of cross-validations to perform. The default is 0. 
+- **N_folds**: ([GLM](#GLM), [DL](#DL)) Specify the number of cross-validations to perform. The default is 0. If a value is specified, **override\_with\_best\_model** cannot be enabled. 
 
 - **Keep\_cross\_validation\_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default. 
 
 - **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
 
-- **Override\_with\_best\_model**: [(DL)](#DL) Check this checkbox to override the final model with the best model found during training. This option is selected by default. 
+- **Override\_with\_best\_model**: [(DL)](#DL) Check this checkbox to override the final model with the best model found during training. This option is selected by default and is not applicable if a value is specified for **N_folds**. 
 
-- **Expert_mode**: [(DL)](#DL) Check this checkbox to enable "expert mode" and configure additional options. This option is not selected by default.
-
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
 - **Activation**: [(DL)](#DL) Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). The default option is Rectifier. 
 
-- **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. 
+- **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
 
 - **Epochs**: ([word2vec](#w2v), [DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
 
-- **Loss**: [(DL)](#DL) *Required* Select the loss function (MeanSquare, CrossEntropy, or MeanSqaureClassification). 
+- **Loss**: [(DL)](#DL) *Required* Select the loss function (MeanSquare, CrossEntropy, or MeanSqaureClassification). CrossEntropy is only applicable if the response is categorical and cannot be enabled if **autoencoder** is enabled. 
 
-- **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default. 
+- **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default. If this option is enabled when **Hidden\_dropout\_ratios** is enabled, hidden dropout ratios are automatically set to 0.5. 
 
 - **Max\_confusion\_matrix\_size**: [(DL)](#DL) Specify the number of classes for the confusion matrices. The default value is 20. 
 
+<<<<<<< Updated upstream
 - **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
+=======
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. For Deep Learning, this option is applicable for classification and when **Balance_Classes** is enabled. 
+>>>>>>> Stashed changes
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
@@ -410,7 +420,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (skip, mean imputation, or none). The default value is mean imputation. 
 
-- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0.0. 
+- **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0.0. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
 - **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0.0. 
 
@@ -468,25 +478,28 @@ The available options vary depending on the selected model. If an option is only
 
 - **Target\_ratio\_comm\_to\_comp**: [(DL)](#DL) Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). The default value is 0.02. 
 
-- **Adaptive_rate**: [(DL)](#DL) Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. 
+- **Adaptive_rate**: [(DL)](#DL) Check this checkbox to enable the adaptive learning rate (ADADELTA). This option is selected by default. If this option is enabled, the following parameters are ignored: `rate`, `rate_decay`, `rate_annealing`, `momentum_start`, `momentum_ramp`, `momentum_stable`, and `nesterov_accelerated_gradient`. 
 
-- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. The default value is 0.99. 
+- **Rho**: [(DL)](#DL) Specify the adaptive learning rate time decay factor. The default value is 0.99. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. The default value is 1.0E-8. 
+- **Epsilon**: [(DL)](#DL) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. The default value is 1.0E-8. This option is only applicable if **adaptive_rate** is enabled. 
 
-- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. The default value is 0.005. 
+- **Rate**: [(DL)](#DL) Specify the learning rate. Higher rates result in less stable models and lower rates result in slower convergence. The default value is 0.005. Not applicable if **adaptive_rate** is enabled. 
 
-- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate_annealing value * samples). The default value is 1.0E-6. 
+- **Rate_annealing**: [(DL)](#DL) Specify the learning rate annealing. The formula is rate/(1+rate_annealing value * samples). The default value is 1.0E-6. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. The default value is 0.0. 
+- **Momentum_start**: [(DL)](#DL) Specify the initial momentum at the beginning of training. A suggested value is 0.5. The default value is 0.0. Not applicable if **adaptive_rate** is enabled.
 
-- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. The default value is 1000000.0. 
+- **Momentum_ramp**: [(DL)](#DL) Specify the number of training samples for increasing the momentum. The default value is 1000000.0. Not applicable if **adaptive_rate** is enabled.
 
-- **Nesterov\_accelerated\_gradient**: [(DL)](#DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. 
+- **Momentum_stable**: [DL](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
 
-- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The default value is 0.0. 
 
-- **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer. The default is 0.5. 
+- **Nesterov\_accelerated\_gradient**: [(DL)](#DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive_rate** is enabled. 
+
+- **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1 and the default value is 0.0. 
+
+- **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify at least two layer ratios, with one value per hidden layer. The range is default is 0.5. This option is applicable only if *TahnwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list. 
 
 - **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. The default value is 0.0. 
 
@@ -500,21 +513,21 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). The default value is infinity. 
 
-- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, Normal, or None). The default is Uniform Adaptive. 
+- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, Normal, or None). The default is Uniform Adaptive. If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
 
-- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. The default value is 1.0. 
+- **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. The default value is 1.0. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
 
 - **Score\_training\_samples**: [(DL)](#DL) Specify the number of training set samples for scoring. To use all training samples, enter 0. The default value is 10000. 
 
-- **Score\_validation\_samples**: [(DL)](#DL) Specify the number of validation set samples for scoring. To use all validation set samples, enter 0. The default value is 0. 
+- **Score\_validation\_samples**: [(DL)](#DL) (Requires selection from the **Validation_Frame** drop-down list) Specify the number of validation set samples for scoring. To use all validation set samples, enter 0. The default value is 0. This option is applicable to classification only. 
 
 - **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The default value is 0.1.
 
-- **Classification_stop**: [(DL)](#DL) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1. The default value is 0.0. 
+- **Classification_stop**: [(DL)](#DL) (Applicable to discrete/categorical datasets only) Specify the stopping criterion for classification error fractions on training data. To disable this option, enter -1. The default value is 0.0. 
 
-- **Regression_stop**: [(DL)](#DL) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1. The default value is 1.0E-6. 
+- **Regression_stop**: [(DL)](#DL) (Applicable to real value/continuous datasets only) Specify the stopping criterion for regression error (MSE) on the training data. To disable this option, enter -1. The default value is 1.0E-6. 
 
-- **Max\_hit\_ratio\_k**: [(DL)](#DL) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
+- **Max\_hit\_ratio\_k**: [(DL)](#DL) (Classification only) Specify the maximum number (top K) of predictions to use for hit ratio computation (for multi-class only). To disable this option, enter 0. The default value is 10. 
 
 - **Score\_validation\_sampling**: [(DL)](#DL) Select the method for sampling the validation dataset for scoring (uniform, stratified, or none). The default value is uniform. 
 
@@ -522,7 +535,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ignore\_const\_cols**: [(DL)](#DL) Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default. 
 
-- **Replicate\_training\_data**: [(DL)](#DL) Check this checkbox to replicate the entire training dataset on every node for faster training on small datasets. This option is not selected by default. 
+- **Replicate\_training\_data**: [(DL)](#DL) Check this checkbox to replicate the entire training dataset on every node for faster training on small datasets. This option is not selected by default. This option is only applicable for clouds with more than one node. 
 
 - **Shuffle\_training\_data**: [(DL)](#DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
