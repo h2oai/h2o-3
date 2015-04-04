@@ -23,35 +23,11 @@ rm -f test.*xml
 source ./runner_setup.sh "$@"
 
 rm -f h2o-nodes.json
-if [[ $USER == "jenkins" ]]
-then 
-    # clean out old ice roots from 0xcust.** (assuming we're going to run as 0xcust..
-    # only do this if you're jenksin
-    
-    echo "Assume cloud is only built on the local machine, and it's the only thing creating these ice dirs"
-    echo "maybe change user to 0xdiag rather than 0xcustomer?"
+python ../four_hour_cloud.py -cj pytest_config-jenkins.json &
 
-    # Cleanup?
-    ## find /home/0xcustomer/ice* -ctime +3 | xargs rm -rf; cd /mnt/0xcustomer-datasets
-
-    python ../four_hour_cloud.py -cj pytest_config-jenkins.json &
-    # make sure this matches what's in the json!
-    CLOUD_IP=127.0.0.1
-    CLOUD_PORT=54474
-else
-    if [[ $USER == "kevin" ]]
-    then
-        python ../four_hour_cloud.py -cj pytest_config-kevin.json &
-        # make sure this matches what's in the json!
-        CLOUD_IP=127.0.0.1
-        CLOUD_PORT=54355
-    else
-        python ../four_hour_cloud.py &
-        # make sure this matches what the four_hour_cloud.py does!
-        CLOUD_IP=127.0.0.1
-        CLOUD_PORT=54321
-    fi
-fi 
+# make sure this matches what's in the json!
+CLOUD_IP=127.0.0.1
+CLOUD_PORT=54474
 
 CLOUD_PID=$!
 jobs -l
@@ -118,7 +94,6 @@ myR() {
 
     which R
     R --version
-
 
     # first test will cause an h2o package install?
     # this is where we downloaded to. 
@@ -188,7 +163,6 @@ source ./myR.tests.include
 # produces xml too!
 echo 'Shut down H2O'
 curl -X POST $CLOUD_IP:$CLOUD_PORT/3/Shutdown.html > /dev/null
-
 
 #***********************************************************************
 # End of list of tests
