@@ -954,24 +954,26 @@ public class Vec extends Keyed<Vec> {
     long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if (dom.length > Categorical.MAX_ENUM_SIZE)
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
-    return copyOver(ArrayUtils.toString(dom));
+    return copyOver(dom);
   }
 
-  private Vec copyOver(final String[] domain) {
+  private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
-    dom[0]=domain;
+    dom[0]=ArrayUtils.toString(domain);
     return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
   }
 
   private static class CPTask extends MRTask<CPTask> {
-    private final String[] _domain;
-    CPTask(String[] domain) { _domain = domain;}
+    private final long[] _domain;
+    CPTask(long[] domain) { _domain = domain;}
     @Override public void map(Chunk c, NewChunk nc) {
       for(int i=0;i<c._len;++i)
         if( _domain==null )
           nc.addNum(c.at8(i));
         else {
-          long num = Arrays.binarySearch(_domain, String.valueOf(c.at8(i)));  // ~24 hits in worst case for 10M levels
+          long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
+          if( num < 0 )
+            System.out.println("asdf");
           nc.addNum(num);
         }
     }
