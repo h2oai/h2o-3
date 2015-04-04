@@ -153,7 +153,8 @@ echo "Okay to run h2oWrapper.R every time for now"
 # myR $TESTDIR/$TEST 300
 rm -f -r ./myR.tests.include
 # add the myR and the timeout to the tests (TESTDIR is from relative path from tests)
-sed -e 's!^!myR !' -e 's!$! 300!' < ./myR.tests > ./myR.tests.include
+# sed -e 's!^!myR !' -e 's!$! 300!' < ./myR.tests > ./myR.tests.include
+sed -e 's!^!myR !' -e 's!$! 300!' < ./$1 > ./myR.tests.include
 source ./myR.tests.include
 
 # airlines is failing summary. put it last
