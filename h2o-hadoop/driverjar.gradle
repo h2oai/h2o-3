@@ -12,7 +12,7 @@ compileJava {
 sourceSets {
   main {
     java {
-      srcDir '../h2o-yarn/generic/src/main/java'
+      srcDir '../h2o-yarn-generic/src/main/java'
     }
   }
 }
