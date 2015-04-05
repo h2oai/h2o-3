@@ -333,23 +333,19 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
-<<<<<<< Updated upstream
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
+- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the Max\_after\_balance\_size parameter.
 
-- **Max\_after\_balance\_size**: [GLM](#GLM), [GBM](#GBM), [DL](#DL), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
-=======
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. For Deep Learning, this option is only applicable for classification.
+- **Max\_after\_balance\_size**: [(GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Specify the max. dataset size after balancing classes (as a multiple of the original dataset size). The default value is 5. 
+
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
 - **Max\_confusion\_matrix\_size**: [(DL)](#DL) (Classification only) Specify the number of classes for the confusion matrices. The default value is 20. 
-
-- **Max\_after\_balance\_size**: [(GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
->>>>>>> Stashed changes
 
 - **Ntrees**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
 
 - **Max\_depth**: [(GBM)](#GBM), [(DRF)](#drf) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). For GBM, the default value is 5. For DRF, the default value is 20. 
 
-- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10. 
+- **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values.
 
 - **Nbins**: [(GBM)](#GBM), [(DRF)](#drf) Specify the number of bins for the histogram. The default value is 20. 
 
@@ -363,9 +359,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are automatic, mean square, cross-entropy, huber, absolute, or none and the default value is MeanSquare. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. If you have outliers, select huber. 
+- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers. 
 
-- **Variable_importances**: ([GBM](#GBM), [DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
+- **Variable_importances**: ([DL](#DL)) Check this checkbox to compute variable importance. This option is not selected by default. 
 
 - **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. The K-Means default is 0. For PCA, specify the rank of matrix approximation. The PCA default is 1.  
 
@@ -380,7 +376,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, Gamma, Tweedie, or none).
 
-- **N_folds**: ([GLM](#GLM), [DL](#DL)) Specify the number of cross-validations to perform. The default is 0. If a value is specified, **override\_with\_best\_model** cannot be enabled. 
+- **N_folds**: ([GLM](#GLM), [DL](#DL)) Specify the number of cross-validations to perform. The default is 0. If a value is specified, **override\_with\_best\_model** cannot be enabled for DL. 
 
 - **Keep\_cross\_validation\_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default. 
 
@@ -388,25 +384,15 @@ The available options vary depending on the selected model. If an option is only
 
 - **Override\_with\_best\_model**: [(DL)](#DL) Check this checkbox to override the final model with the best model found during training. This option is selected by default and is not applicable if a value is specified for **N_folds**. 
 
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires **MeanSquare** as the loss function. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
-- **Activation**: [(DL)](#DL) Select the activation function (Tahn, Tahn with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). The default option is Rectifier. 
+- **Activation**: [(DL)](#DL) Select the activation function (Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout). The default option is Rectifier. 
 
 - **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
 
 - **Epochs**: ([word2vec](#w2v), [DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
 
-- **Loss**: [(DL)](#DL) *Required* Select the loss function (MeanSquare, CrossEntropy, or MeanSqaureClassification). CrossEntropy is only applicable if the response is categorical and cannot be enabled if **autoencoder** is enabled. 
-
-- **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default. If this option is enabled when **Hidden\_dropout\_ratios** is enabled, hidden dropout ratios are automatically set to 0.5. 
-
-- **Max\_confusion\_matrix\_size**: [(DL)](#DL) Specify the number of classes for the confusion matrices. The default value is 20. 
-
-<<<<<<< Updated upstream
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL)), [(DRF)](#drf), [(NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. 
-=======
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. For Deep Learning, this option is applicable for classification and when **Balance_Classes** is enabled. 
->>>>>>> Stashed changes
+- **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
@@ -418,13 +404,13 @@ The available options vary depending on the selected model. If an option is only
 
 - **Single\_node\_mode**: [(DL)](#DL) Check this checkbox to force H2O to run on a single node for fine-tuning of model parameters. This option is not selected by default. 
 
-- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (skip, mean imputation, or none). The default value is mean imputation. 
+- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip, MeanImputation, or None). The default value is MeanImputation. 
 
 - **Average_activation**: [(DL)](#DL) Specify the average activation for the sparse autoencoder. The default value is 0.0. If **Rectifier** is selected as the **Activation** type, this value must be positive. For Tanh, the value must be in (-1,1). 
 
 - **Sparsity_beta**: [(DL)](#DL) Specify the sparsity regularization. The default value is 0.0. 
 
-- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing.
+- **Max\_categorical\_features**: [(DL)](#DL) Specify the maximum number of categorical features enforced via hashing. The default is unlimited.
 
 - **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
@@ -494,12 +480,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Momentum_stable**: [DL](#DL) Specify the final momentum value reached after the **momentum_ramp** training samples. Not applicable if **adaptive_rate** is enabled. 
 
-
 - **Nesterov\_accelerated\_gradient**: [(DL)](#DL) Check this checkbox to use the Nesterov accelerated gradient. This option is recommended and selected by default. Not applicable is **adaptive_rate** is enabled. 
 
 - **Input\_dropout\_ratio**: [(DL)](#DL) Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. The range is >= 0 to <1 and the default value is 0.0. 
 
-- **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify at least two layer ratios, with one value per hidden layer. The range is default is 0.5. This option is applicable only if *TahnwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list. 
+- **Hidden\_dropout\_ratios**: [(DL)](#DL) Specify the hidden layer dropout ratios to improve generalization. Specify one value per hidden layer, each value between 0 and 1 (exclusive). The default is 0.5. This option is applicable only if *TanhwithDropout*, *RectifierwithDropout*, or *MaxoutWithDropout* is selected from the **Activation** drop-down list. 
 
 - **L1**: [(DL)](#DL) Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0. The default value is 0.0. 
 
@@ -539,7 +524,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Shuffle\_training\_data**: [(DL)](#DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Sparse**: [(DL)](#DL) Check this checkbox to use sparse data handling. This option is not selected by default. 
+- **Sparse**: [(DL)](#DL) Check this checkbox to use sparse iterators for the input layer. This option is not selected by default as it rarely improves performance. 
 
 - **Col_major**: [(DL)](#DL) Check this checkbox to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is not selected by default. 
 
