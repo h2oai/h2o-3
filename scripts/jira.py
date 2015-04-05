@@ -5,6 +5,7 @@ import os
 import requests
 import urllib
 import re
+import dateutil.parser
 
 
 g_user = None
@@ -12,6 +13,33 @@ g_pass = None
 g_sprint = None
 g_csv = False
 g_verbose = False
+g_burndown = False
+
+
+def get_issue_key(issue):
+    return issue[u'key']
+
+
+def get_issue_assignee(issue):
+    return issue[u'fields'][u'assignee']
+
+
+def get_issue_assignee_name(issue):
+    return issue[u'fields'][u'assignee'][u'name']
+
+
+def get_issue_story_points(issue):
+    story_points = issue[u'fields'][u'customfield_10004']
+    if story_points is None:
+        story_points = 0
+    else:
+        story_points = float(story_points)
+    return story_points
+
+
+def get_issue_resolution_date(issue):
+    d = dateutil.parser.parse(issue[u'fields'][u'resolutiondate'])
+    return d
 
 
 class Person:
@@ -23,7 +51,7 @@ class Person:
         self.unresolved_story_points = 0
 
     def add(self, issue):
-        story_points = Person._get_story_points(issue)
+        story_points = get_issue_story_points(issue)
         resolution = issue[u'fields'][u'resolution']
         if resolution is None:
             self.unresolved_story_points += story_points
@@ -32,10 +60,13 @@ class Person:
             self.resolved_story_points += story_points
             self.resolved_list.append(issue)
 
+    def get_story_points(self):
+        return (self.resolved_story_points + self.unresolved_story_points)
+
     def emit_issues_csv(self):
         print (self.name + "," + str(len(self.resolved_list)) + "," + str(len(self.unresolved_list)))
 
-    def emit_storypoints_csv(self):
+    def emit_story_points_csv(self):
         print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
 
     def emit_barchart(self):
@@ -45,7 +76,7 @@ class Person:
         if (g_verbose):
             print("")
             for issue in self.resolved_list:
-                story_points = Person._get_story_points(issue)
+                story_points = get_issue_story_points(issue)
                 summary = issue[u'fields'][u'summary']
                 summary = summary.encode('ascii', 'ignore')
                 print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
@@ -55,7 +86,7 @@ class Person:
         if (g_verbose):
             print("")
             for issue in self.unresolved_list:
-                story_points = Person._get_story_points(issue)
+                story_points = get_issue_story_points(issue)
                 summary = issue[u'fields'][u'summary']
                 summary = summary.encode('ascii', 'ignore')
                 print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
@@ -74,22 +105,13 @@ class Person:
             i += 1
         sys.stdout.write("\n")
 
-    @staticmethod
-    def _get_story_points(issue):
-        story_points = issue[u'fields'][u'customfield_10004']
-        if story_points is None:
-            story_points = 0
-        else:
-            story_points = float(story_points)
-        return story_points
-
 
 class PeopleManager:
     def __init__(self):
         self.people_map = {}
 
     def add(self, issue):
-        assignee = issue[u'fields'][u'assignee']
+        assignee = get_issue_assignee(issue)
         if (assignee is None):
             print("ERROR: assignee is none for issue: " + str(issue))
             sys.exit(1)
@@ -105,14 +127,51 @@ class PeopleManager:
         return person
 
     def emit(self):
-        global g_csv
+        if g_burndown:
+            total_story_points = 0
+            for key in sorted(self.people_map.keys()):
+                person = self.people_map[key]
+                total_story_points += person.get_story_points()
+            issues = self.get_resolved_issues_sorted_by_date()
+            if (len(issues) == 0):
+                print("No resolved issues")
+                return
+            after_total = total_story_points
+            earliest_resolution_date = get_issue_resolution_date(issues[0])
+            start_date = earliest_resolution_date
+            if g_csv:
+                print("key,assignee,story_points,before_total,resolution_date,resolution_date_days,after_total")
+                date_str = start_date.strftime("%Y-%m-%d %H:%M")
+                date_epoch_millis = (start_date - start_date).total_seconds() / 3600.0 / 24
+                print(",,,,{},{}".format(date_str, date_epoch_millis, total_story_points))
+            for issue in issues:
+                before_total = after_total
+                key = get_issue_key(issue)
+                assignee = get_issue_assignee_name(issue)
+                story_points = get_issue_story_points(issue)
+                resolution_date = get_issue_resolution_date(issue)
+                date_epoch_millis = (resolution_date - start_date).total_seconds() / 3600.0 / 24
+                after_total = before_total - story_points
+                if g_csv:
+                    date_str = resolution_date.strftime("%Y-%m-%d %H:%M")
+                    print("{},{},{},{},{},{},{}".format(key, assignee,
+                                                        story_points, before_total,
+                                                        date_str, date_epoch_millis,
+                                                        after_total))
+                else:
+                    date_str = resolution_date.strftime("%Y-%m-%d %H:%M")
+                    print("{:11s}  {:10s}  {:.1f}  {:.1f}  {:s}  {:.1f}".format(key, assignee,
+                                                                                story_points, before_total,
+                                                                                date_str,
+                                                                                after_total))
+            return
 
         if g_csv:
             print("STORY_POINTS")
             print("name,resolved,unresolved")
             for key in sorted(self.people_map.keys()):
                 person = self.people_map[key]
-                person.emit_storypoints_csv()
+                person.emit_story_points_csv()
             print("")
             print("NUMBER_OF_ISSUES")
             print("name,resolved,unresolved")
@@ -123,6 +182,14 @@ class PeopleManager:
             for key in sorted(self.people_map.keys()):
                 person = self.people_map[key]
                 person.emit_barchart()
+
+    def get_resolved_issues_sorted_by_date(self):
+        issues = []
+        for person in self.people_map.values():
+            for i in person.resolved_list:
+                issues.append(i)
+        sorted_issues = sorted(issues, key=lambda x: get_issue_resolution_date(x))
+        return sorted_issues
 
 
 def usage():
@@ -166,6 +233,7 @@ def parse_args(argv):
     global g_sprint
     global g_csv
     global g_verbose
+    global g_burndown
 
     i = 1
     while (i < len(argv)):
@@ -188,8 +256,10 @@ def parse_args(argv):
             g_sprint = argv[i]
         elif (s == "--csv"):
             g_csv = True
-        elif (s == "--verbose"):
+        elif (s == "-v" or s == "--verbose"):
             g_verbose = True
+        elif (s == "--burndown"):
+            g_burndown = True
         elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         else:
