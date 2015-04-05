@@ -46,7 +46,9 @@ class Person:
             print("")
             for issue in self.resolved_list:
                 story_points = Person._get_story_points(issue)
-                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
+                summary = issue[u'fields'][u'summary']
+                summary = summary.encode('ascii', 'ignore')
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
         if (g_verbose):
             print("")
         Person._printbar("unresolved", self.unresolved_story_points, "U")
@@ -54,7 +56,9 @@ class Person:
             print("")
             for issue in self.unresolved_list:
                 story_points = Person._get_story_points(issue)
-                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, issue[u'fields'][u'summary']))
+                summary = issue[u'fields'][u'summary']
+                summary = summary.encode('ascii', 'ignore')
+                print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
 
     @staticmethod
     def _printbar(label, value, char):
