@@ -1,4 +1,3 @@
-testdir_golden/runit_NOPASS_pca_3_golden.R
 testdir_golden/runit_NOPASS_naivebayes_3_golden.R
 testdir_golden/runit_NOPASS_pca_2_golden.R
 testdir_golden/runit_NOPASS_glm2_10_golden.R
