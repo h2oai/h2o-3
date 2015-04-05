@@ -73,7 +73,7 @@ class Person:
     def emit_barchart(self):
         print("")
         print("-----" + self.name + "-----")
-        Person._printbar("  resolved", self.resolved_story_points, "R")
+        Person._print_bar("  resolved", self.resolved_story_points, "R")
         if (g_verbose):
             print("")
             for issue in self.resolved_list:
@@ -83,7 +83,7 @@ class Person:
                 print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
         if (g_verbose):
             print("")
-        Person._printbar("unresolved", self.unresolved_story_points, "U")
+        Person._print_bar("unresolved", self.unresolved_story_points, "U")
         if (g_verbose):
             print("")
             for issue in self.unresolved_list:
@@ -93,7 +93,7 @@ class Person:
                 print("{0:14s}{1:11s} ({2:.1f}): {3}".format("", issue[u'key'], story_points, summary))
 
     @staticmethod
-    def _printbar(label, value, char):
+    def _print_bar(label, value, char):
         bars_per_day = 4
         sys.stdout.write(label + ":  ")
         num_bars = int(value * bars_per_day)
