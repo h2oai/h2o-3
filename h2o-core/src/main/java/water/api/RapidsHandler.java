@@ -1,6 +1,7 @@
 package water.api;
 
 import water.DKV;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.parser.ValueString;
 import water.rapids.Env;
@@ -82,14 +83,16 @@ class RapidsHandler extends Handler {
     catch( IllegalArgumentException pe ) { e=pe;}
     catch( Throwable e2 ) { Log.err(e=e2); }
     finally {
-      if (e != null) e.printStackTrace();
-      if (e != null) rapids.error = e.getMessage() == null ? e.toString() : e.getMessage();
-      if (e != null && e instanceof ArrayIndexOutOfBoundsException) rapids.error = e.toString();
       if (env != null) {
         try {env.remove_and_unlock(); }
         catch (Exception xe) { Log.err("env.remove_and_unlock() failed", xe); }
       }
     }
+    if( e!=null ) e.printStackTrace();
+    if( e!=null ) rapids.error = e.getMessage() == null ? e.toString() : e.getMessage();
+    if( e!=null && e instanceof ArrayIndexOutOfBoundsException) rapids.error = e.toString();
+    if( e!=null )
+      throw new H2OIllegalArgumentException(rapids.error);
     return rapids;
   }
 }

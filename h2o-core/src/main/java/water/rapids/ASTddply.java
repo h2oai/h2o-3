@@ -506,6 +506,10 @@ public class ASTddply extends ASTOp {
             _nchks[i] = new NewChunk(_grpCols[i] = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
         }
         for (int i = 0; i < _ncols; ++i) {
+          if( env.isStr() ) { // must be TRUE or FALSE
+            String s = env.popStr();
+            env.push(new ValNum(s.equals("TRUE")?1:0));
+          }
           _nchks[i].addNum(_ncols == 1 ? env.popDbl() : fr.vecs()[i].at(0));
         }
         aa.delete(); // nuke the group frame

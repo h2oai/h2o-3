@@ -52,7 +52,7 @@ public class EnumWrappedVec extends WrappedVec {
    *  the 'from' domain not in the 'to' domain are mapped past the end of the
    *  'to' values.  Strings in the 'to' domain not in the 'from' domain
    *  simply do not appear in the mapping.  The returned map is always the same
-   *  length as the 'from' domain.  It's contents have values from both
+   *  length as the 'from' domain.  Its contents have values from both
    *  domains; the resulting domain is as big as the largest value in the map,
    *  and only has strings from the 'from' domain (which probably overlap
    *  somewhat with the 'to' domain).

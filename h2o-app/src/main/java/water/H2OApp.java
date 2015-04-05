@@ -54,6 +54,7 @@ public class H2OApp {
     ModelBuilder.registerModelBuilder("glm", GLM.class);
     H2O.registerPOST("/3/ModelBuilders/glm", GLMBuilderHandler.class, "train",                                                        "Train a GLM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
+    H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model","make a new GLM model based on existing one");
 
     ModelBuilder.registerModelBuilder("pca", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");
@@ -70,10 +71,6 @@ public class H2OApp {
     // ModelBuilder.registerModelBuilder("example", Example.class);
     // H2O.registerPOST("/3/ModelBuilders/example", ExampleBuilderHandler.class, "train",                                                "Train an Example model on the specified Frame.");
     // H2O.registerPOST("/3/ModelBuilders/example/parameters", ExampleBuilderHandler.class, "validate_parameters",                       "Validate a set of Example model builder parameters.");
-
-    ModelBuilder.registerModelBuilder("quantile", Quantile.class);
-    H2O.registerPOST("/3/ModelBuilders/quantile", QuantileBuilderHandler.class, "train",                                              "Train a Quantile model on the specified Frame.");
-    H2O.registerPOST("/3/ModelBuilders/quantile/parameters", QuantileBuilderHandler.class, "validate_parameters",                     "Validate a set of Quantile model builder parameters.");
 
     // ModelBuilder.registerModelBuilder("grep", Grep.class);
     // H2O.registerPOST("/3/ModelBuilders/grep", GrepBuilderHandler.class, "train",                                                      "Search a raw text file for matches");

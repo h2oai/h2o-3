@@ -196,6 +196,10 @@ public class Vec extends Keyed<Vec> {
     assert (_type==T_ENUM && _domain!=null) || (_type!=T_ENUM && _domain==null); 
     return _type==T_ENUM; 
   }
+
+  public final double sparseRatio() {
+    return rollupStats()._nzCnt/(double)length();
+  }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (){ return _type==T_UUID; }
@@ -416,6 +420,21 @@ public class Vec extends Keyed<Vec> {
     return vs;
   }
 
+  /** A Vec from an array of doubles
+   *  @param rows Data
+   *  @return The Vec  */
+  public static Vec makeCon(double ...rows) { 
+    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for( double r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
   public static Vec makeSeq( long len) {
@@ -441,15 +460,15 @@ public class Vec extends Keyed<Vec> {
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
-  /** Make a new vector initialized to increasing integers mod {@code repeat}, starting with 1.
-   *  @return A new vector initialized to increasing integers mod {@code repeat}, starting
-   *  with 1. */
+  /** Make a new vector initialized to increasing integers mod {@code repeat}.
+   *  @return A new vector initialized to increasing integers mod {@code repeat}.
+   */
   public static Vec makeRepSeq( long len, final long repeat ) {
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
-            c.set(r, (r + 1 + c._start) % repeat);
+            c.set(r, (r + c._start) % repeat);
       }
     }.doAll(makeZero(len))._fr.vecs()[0];
   }
@@ -916,15 +935,45 @@ public class Vec extends Keyed<Vec> {
   public EnumWrappedVec toEnum() {
     if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
     if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    int min, max;
-    // Right now, limited to small dense integers.
-    if( (min=(int)min()) < 0 || (max=(int)max()) > 1000000 )
-      throw new IllegalArgumentException("Enum conversion only works on small integers, but min="+min()+" and max = "+max());
+    int min = (int) min(), max = (int) max();
     // try to do the fast domain collection
     long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
     if( domain.length > Categorical.MAX_ENUM_SIZE )
       throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
     return adaptTo(ArrayUtils.toString(domain));
+  }
+
+  /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
+   *  The original Vec is not mutated.
+   */
+//  public Vec toEnum() {
+//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+//    int min = (int) min(), max = (int) max();
+//    // try to do the fast domain collection
+//    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+//    if (dom.length > Categorical.MAX_ENUM_SIZE)
+//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+//    return copyOver(ArrayUtils.toString(dom));
+//  }
+//
+  private Vec copyOver(final String[] domain) {
+    String[][] dom = new String[1][];
+    dom[0]=domain;
+    return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
+  }
+
+  private static class CPTask extends MRTask<CPTask> {
+    private final String[] _domain;
+    CPTask(String[] domain) { _domain = domain;}
+    @Override public void map(Chunk c, NewChunk nc) {
+      for(int i=0;i<c._len;++i)
+        if( _domain==null )
+          nc.addNum(c.at8(i));
+        else {
+          long num = Arrays.binarySearch(_domain, String.valueOf(c.at8(i)));  // ~24 hits in worst case for 10M levels
+          nc.addNum(num);
+        }
+    }
   }
 
   /** Transform an Enum Vec to a Int Vec. If the domain of the Vec is stringified ints, then
@@ -936,28 +985,24 @@ public class Vec extends Keyed<Vec> {
    * @return A new Vec
    */
   public Vec toInt() {
-    if( isInt() && _domain==null ) return this.makeCopy(null);
-    if( !isEnum()) throw new IllegalArgumentException("toInt conversion only works on Enum and Int vecs");
+    if( isInt() && _domain==null ) return copyOver(null);
+    if( !isEnum() ) throw new IllegalArgumentException("toInt conversion only works on Enum and Int vecs");
     // check if the 1st lvl of the domain can be parsed as int
     boolean useDomain=false;
-    Vec newVec;
+    Vec newVec = copyOver(null);
     try {
       int ignored = Integer.parseInt(this._domain[0]);
       useDomain=true;
     } catch (NumberFormatException e) {
       // makeCopy and return...
     }
-    if (useDomain) {
-      newVec = this.makeCopy(null);
-      final String[] oldDomain = this._domain;
+    if( useDomain ) {
       new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
-            c.set(i, Integer.parseInt(oldDomain[(int)c.at8(i)]));
+            c.set(i, Integer.parseInt(_domain[(int)c.at8(i)]));
         }
       }.doAll(newVec);
-    } else {
-      newVec = this.makeCopy(null);
     }
     return newVec;
   }

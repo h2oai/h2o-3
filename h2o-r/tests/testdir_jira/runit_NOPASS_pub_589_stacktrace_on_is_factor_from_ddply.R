@@ -21,13 +21,10 @@ h2o.ddply(covtype.hex, c(2), m)
 s <- function(x) { sd( x[,2]) }
 h2o.ddply(covtype.hex, c(2), s)
 
-q <- function(x) { quantile(x[,2] , c(0.9) ) }
-h2o.ddply(covtype.hex, c(2), q)
-
 h2o.ddply(covtype.hex, c(2), nrow)
 h2o.ddply(covtype.hex, c(2), ncol)
 h2o.ddply(covtype.hex, c(2), length)
-h2o.ddply(covtype.hex, c(2), is.factor)
+h2o.ddply(covtype.hex, c(2), function(x) { is.factor(x[,1]) })
 
 testEnd()
 

@@ -78,6 +78,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
     }
 
+    if (expensive) { //otherwise, _nclass isn't set yet
+      if (_parms._loss == GBMModel.GBMParameters.Family.AUTO) {
+        if (_nclass == 1) _parms._loss = GBMModel.GBMParameters.Family.gaussian;
+        if (_nclass == 2) _parms._loss = GBMModel.GBMParameters.Family.bernoulli;
+        if (_nclass >= 3) _parms._loss = GBMModel.GBMParameters.Family.multinomial;
+      }
+    }
+
     switch( _parms._loss ) {
       case bernoulli:
         if( _nclass != 2 /*&& !couldBeBool(_response)*/)
@@ -91,10 +99,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (!isClassifier()) error("_loss", "Multinomial requires an enum response.");
         break;
       case gaussian:
-        if (isClassifier()) error("_loss", "Gaussian requires the response to be numeric");
+        if (isClassifier()) error("_loss", "Gaussian requires the response to be numeric.");
+        break;
+      case AUTO:
         break;
       default:
-        error("_loss","Loss must be specified");
+        error("_loss","Invalid loss: " + _parms._loss);
     }
     
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
@@ -390,7 +400,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if( dn._split._col == -1 )                    // Unable to decide?
               dn = tree.decided(dn._pid);  // Then take parent's decision
             int leafnid = dn.ns(chks,row); // Decide down to a leafnode
-            assert leaf <= leafnid && leafnid < tree._len;
+            assert leaf <= leafnid && leafnid < tree._len :
+                    "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
             assert tree.node(leafnid) instanceof LeafNode;
             // Note: I can which leaf/region I end up in, but I do not care for
             // the prediction presented by the tree.  For GBM, we compute the
