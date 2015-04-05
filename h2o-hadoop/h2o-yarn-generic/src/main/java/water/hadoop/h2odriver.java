@@ -14,6 +14,7 @@ import org.apache.hadoop.util.ToolRunner;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.lang.reflect.Method;
@@ -76,6 +77,7 @@ public class h2odriver extends Configured implements Tool {
   volatile boolean clusterFailedToComeUp = false;
   volatile boolean clusterHasNodeWithLocalhostIp = false;
   volatile boolean shutdownRequested = false;
+  volatile AtomicInteger numNodesStarted = new AtomicInteger();
 
   public void setShutdownRequested() {
     shutdownRequested = true;
@@ -239,6 +241,7 @@ public class h2odriver extends Configured implements Tool {
           if (msg.getEmbeddedWebServerIp().equals("127.0.0.1")) {
             clusterHasNodeWithLocalhostIp = true;
           }
+          numNodesStarted.incrementAndGet();
           _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), _s);
         }
         else if (type == MapperToDriverMessage.TYPE_CLOUD_SIZE) {
@@ -986,9 +989,13 @@ public class h2odriver extends Configured implements Tool {
     if (rv == CLUSTER_ERROR_TIMEOUT) {
       // Try to print YARN diagnostics.
       try {
+        // Wait a short time before trying to print diagnostics.
+        // Try to give the Resource Manager time to clear out this job itself from it's state.
+        Thread.sleep(3000);
+
         Class clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
         if (clazz != null) {
-          Method method = clazz.getMethod("diagnose", String.class, int.class, int.class);
+          Method method = clazz.getMethod("diagnose", String.class, int.class, int.class, int.class);
           String queueName;
           queueName = conf.get("mapreduce.job.queuename");
           if (queueName == null) {
@@ -997,7 +1004,7 @@ public class h2odriver extends Configured implements Tool {
           if (queueName == null) {
             queueName = "default";
           }
-          method.invoke(null, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes);
+          method.invoke(null, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
         }
 
         return rv;

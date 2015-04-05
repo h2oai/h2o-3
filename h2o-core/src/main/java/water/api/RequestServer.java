@@ -245,7 +245,6 @@ public class RequestServer extends NanoHTTPD {
     register("/1/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
     register("/1/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
-    register("/1/Quantiles"                                        ,"GET"   ,QuantilesHandler.class, "quantiles", "Return quantiles for the specified column of the specified Frame."); // TODO: move under Frames!
     register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
@@ -606,10 +605,10 @@ public class RequestServer extends NanoHTTPD {
     catch (H2OFailException e) {
       H2OError error = e.toH2OError(uri);
 
-      Log.warn("Caught exception (fatal to the cluster): " + error.toString());
+      Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      Log.warn(wrap(new H2OErrorV1().fillFromImpl(error), type));
+      Log.fatal(wrap(new H2OErrorV1().fillFromImpl(error), type));
       System.exit(-1);
 
       // unreachable, but the compiler doesn't know it:

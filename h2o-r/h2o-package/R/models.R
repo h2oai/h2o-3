@@ -668,3 +668,22 @@ plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
     abline(0, 1, lty = 2)
   }
 }
+
+#' @export
+screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
+  if(x@algorithm != "pca") stop("x must be a H2O PCA model")
+  if(missing(npcs))
+    npcs = min(10, x@model$parameters$k)
+  else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
+    stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
+  
+  if(missing(main))
+    main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
+  
+  if(type == "barplot")
+    barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else if(type == "lines")
+    lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else
+    stop("type must be either 'barplot' or 'lines'")
+}
