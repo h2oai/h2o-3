@@ -1,6 +1,7 @@
 testdir_golden/runit_NOPASS_pca_2_golden.R
 testdir_golden/runit_NOPASS_pca_3_golden.R
 testdir_golden/runit_NOPASS_glm2_10_golden.R
+testdir_golden/runit_NOPASS_naivebayes_3_golden.R
 testdir_munging/summary/runit_NOPASS_summary_prostate_factor.R
 testdir_munging/summary/runit_NOPASS_summary2_numeric.R
 testdir_munging/summary/runit_NOPASS_summary_numeric.R
@@ -43,3 +44,4 @@ testdir_docexamples/runit_NOPASS_Rdoc_confusion_matrix.R
 testdir_algos/randomforest/runit_NOPASS_RF_vi_class_toy_test.R
 testdir_algos/gbm/runit_GBM_NOPASS_cup98_01_medium.R
 testdir_demos/runit_demo_NOPASS_random_data_glm.R
+
