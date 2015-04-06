@@ -178,13 +178,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // atomic updates) - once-per-row.  This optimized version updates the
   // histograms once-per-NID, but requires pre-sorting the rows by NID.
   private void accum_all(Chunk chks[], Chunk wrks, int nnids[]) {
-    final DHistogram hcs[][] = _hcs;
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
-    int nh[] = new int[hcs.length+1];
+    int nh[] = new int[_hcs.length+1];
     for( int i : nnids ) if( i >= 0 ) nh[i+1]++;
     // Rollup the histogram of rows-per-NID in this chunk
-    for( int i=0; i<hcs.length; i++ ) nh[i+1] += nh[i];
+    for( int i=0; i<_hcs.length; i++ ) nh[i+1] += nh[i];
     // Splat the rows into NID-groups
     int rows[] = new int[nnids.length];
     for( int row=0; row<nnids.length; row++ )
