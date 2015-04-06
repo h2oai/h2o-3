@@ -132,7 +132,7 @@ public class IcedWrapper extends Iced {
     }
     if (is_array) {
       if (t == "byte") {
-        throw H2O.unimpl();
+        throw H2O.fail();
         // TODO: i_ar = ArrayUtils.toPrimitive((Byte[])o);
       } else if (t.equals("I")) {
         return i_ar;
@@ -143,7 +143,7 @@ public class IcedWrapper extends Iced {
       } else if (t.equals("D")) {
         return d_ar;
       } else if (t.equals("Bo")) {
-        throw H2O.unimpl();
+        throw H2O.fail();
         // TODO: AutoBuffer can't serialize arrays of booleans: b_ar = (boolean[])o;
       } else if (t.equals("S")) {
         return s_ar;

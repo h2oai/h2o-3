@@ -1445,9 +1445,19 @@ NULL
 #' @rdname h2o.cbind
 #' @export
 h2o.cbind <- function(...) {
-  klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
+  li <- list(...)
+  use.args <- FALSE
+  if( length(li)==1 && is.list(li[[1]]) ) {
+    li <- li[[1]]
+    use.args <- TRUE
+  }
+  klasses <- unlist(lapply(li, function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
-  .h2o.nary_frame_op("cbind", ...)
+  if( use.args ) {
+    .h2o.nary_frame_op("cbind", .args=li)
+  } else {
+    .h2o.nary_frame_op("cbind", ...)
+  }
 }
 
 #' Set a Factor Column to Level

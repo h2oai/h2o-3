@@ -61,8 +61,8 @@ h2o.rm(conn,"myframe")
 #row_grid 
 #create_frm_time 
 #algo_run_time 
-frm_size/2^20 #MB 
-plot(frm_size[1:3]) 
+#frm_size/2^20 #MB 
+#plot(frm_size[1:3]) 
 #col_grid 
 #row_grid 
 
