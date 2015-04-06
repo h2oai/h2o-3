@@ -959,7 +959,7 @@ public class Vec extends Keyed<Vec> {
 
   private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
-    dom[0]=ArrayUtils.toString(domain);
+    dom[0]=domain==null?null:ArrayUtils.toString(domain);
     return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
   }
 
