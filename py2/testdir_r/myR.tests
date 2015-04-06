@@ -37,7 +37,6 @@ testdir_docexamples/runit_NOPASS_Rdoc_save_model.R
 testdir_docexamples/runit_NOPASS_Rdoc_pcr.R
 testdir_docexamples/runit_NOPASS_Rdoc_load_model.R
 testdir_docexamples/runit_NOPASS_Rdoc_remove_vec.R
-testdir_docexamples/runit_NOPASS_Rdoc_predict.R
 testdir_docexamples/runit_NOPASS_Rdoc_confusion_matrix.R
 testdir_algos/randomforest/runit_NOPASS_RF_vi_class_toy_test.R
 testdir_algos/gbm/runit_GBM_NOPASS_cup98_01_medium.R
