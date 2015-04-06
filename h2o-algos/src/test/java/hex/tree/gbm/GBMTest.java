@@ -592,8 +592,8 @@ public class GBMTest extends TestUtil {
         parms._response_column = "IsDepDelayed";
         parms._nbins = 10;
         parms._ntrees = 7;
-        parms._max_depth = 10;
-        parms._min_rows = 1;
+        parms._max_depth = 5;
+        parms._min_rows = 10;
         parms._loss = Family.bernoulli;
         parms._balance_classes = true;
 
@@ -611,7 +611,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.2061627735630746, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21925349482557605, mse, 1e-15); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223

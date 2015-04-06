@@ -165,7 +165,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
-          nhs[col].incr((float)chks[col].atd(row),(float)wrks.atd(row)); // Histogram row/col
+          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
       }
     }
   }
@@ -242,7 +242,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         rh.setMax(max);
         for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
           if( bins[b] != 0 ) { AtomicUtils.IntArray.add(rh._bins,b,bins[b]); bins[b]=0; }
-          if( ssqs[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
+          if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }
     }
