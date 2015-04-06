@@ -1,17 +1,15 @@
 package hex;
 
+import hex.genmodel.GenModel;
+import org.joda.time.DateTime;
+import water.*;
+import water.fvec.*;
+import water.util.*;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
-import org.joda.time.DateTime;
-
-import water.*;
-import water.fvec.*;
-import water.util.*;
-import hex.genmodel.GenModel;
 
 /**
  * A Model models reality (hopefully).
@@ -156,7 +154,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
           } catch (ClassCastException t) {
-            throw H2O.unimpl(); //no support yet for int[][] etc.
+            throw H2O.fail(); //no support yet for int[][] etc.
           }
         } else {
           try {

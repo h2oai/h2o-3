@@ -666,7 +666,7 @@ public class RequestServer extends NanoHTTPD {
     case query:
     case help:
     default:
-      throw H2O.unimpl();
+      throw H2O.unimpl("Unknown type: " + type.toString());
     }
   }
 
@@ -681,7 +681,7 @@ public class RequestServer extends NanoHTTPD {
     case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
-      throw H2O.unimpl();
+      throw H2O.unimpl("Unknown type: " + type.toString());
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

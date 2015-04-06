@@ -71,7 +71,7 @@ public class Handler extends H2OCountedCompleter {
   }
 
   @Override final protected void compute2() {
-    throw H2O.unimpl();
+    throw H2O.fail();
   }
 
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {

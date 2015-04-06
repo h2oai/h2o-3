@@ -29,7 +29,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
     }
 
     @Override public double[] perRow(double[] ds, float[] yact, Model m) {
-      throw H2O.unimpl("Subclasses must implement perRow.");
+      throw H2O.fail("Subclasses must implement perRow.");
     }
 
     @Override public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) { return null; }
