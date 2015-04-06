@@ -1,16 +1,18 @@
 package water;
 
-import java.io.*;
+import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashMapLong;
+import water.util.DocGen.HTML;
+import water.util.Log;
+import water.util.UnsafeUtils;
+
+import java.io.IOException;
 import java.net.*;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import water.nbhm.*;
-import water.util.Log;
-import water.util.DocGen.HTML;
-import water.util.UnsafeUtils;
 
 /**
  * A <code>Node</code> in an <code>H2O</code> Cloud.
@@ -390,6 +392,6 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
   @Override public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
   @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
   @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
-  @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
   @Override public final HTML writeHTML_impl(HTML ab) { return ab.putStr("_key",_key.toString()); }
 }

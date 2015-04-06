@@ -44,7 +44,7 @@ public abstract class DocGen<T extends DocGen> {
     private HTML f1() { return p("</dd></dl>\n");  }
     private HTML f(String name, String s) { return f0(name).p(s).f1();  }
     // Weaver entry points
-    public HTML putSer(String name, Serializable obj) { throw H2O.unimpl(); }
+    public HTML putSer(String name, Serializable obj) { throw H2O.fail(); }
     public HTML putStr(String name, String  s) { return f(name,s); }
     public HTML putZ  (String name, boolean b) { return f(name,Boolean.toString(b)); }
     public HTML put1  (String name, byte    b) { return f(name,Byte   .toString(b)); }
@@ -59,7 +59,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAEnum(String name, Enum[] es) { return es==null?f(name,"null"):f0(name).array(es).f1(); }
 
     public HTML putAStr(String name, String [] ss) { return ss==null?f(name,"null"):f0(name).array(ss).f1(); }
-    public HTML putA1  (String name, byte   [] bs) { throw H2O.unimpl(); }
+    public HTML putA1  (String name, byte   [] bs) { throw H2O.fail(); }
     public HTML putA2  (String name, short  [] ss) { 
       if( ss==null ) return f(name,"null");
       f0(name).arrayHead();
@@ -99,7 +99,7 @@ public abstract class DocGen<T extends DocGen> {
     public HTML putAA8  (String name, long   [][] lss) { return lss==null?f(name,"null"):f0(name).array(lss).f1(); }
     public HTML putAA4f (String name, float  [][] fss) { return fss==null?f(name,"null"):f0(name).array(fss).f1(); }
     public HTML putAA8d (String name, double [][] dss) { return dss==null?f(name,"null"):f0(name).array(dss).f1(); }
-    public HTML putAA   (String name, Freezable[][]fss){ throw H2O.unimpl(); }
+    public HTML putAA   (String name, Freezable[][]fss){ throw H2O.fail(); }
 
     public HTML putAAA4 (String name, int    [][][]isss) { return isss==null?f(name,"null"):f0(name).array(isss).f1(); }
     public HTML putAAA8 (String name, long   [][][]lsss) { return lsss==null?f(name,"null"):f0(name).array(lsss).f1(); }
