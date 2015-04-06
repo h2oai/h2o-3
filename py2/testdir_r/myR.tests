@@ -38,3 +38,4 @@ testdir_docexamples/runit_NOPASS_Rdoc_remove_vec.R
 testdir_docexamples/runit_NOPASS_Rdoc_confusion_matrix.R
 testdir_algos/randomforest/runit_NOPASS_RF_vi_class_toy_test.R
 testdir_algos/gbm/runit_GBM_NOPASS_cup98_01_medium.R
+testdir_demos/runit_demo_random_data_glm.R
