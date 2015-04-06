@@ -271,7 +271,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   @Override public final V get(long timeout, TimeUnit unit) {
     if( _done ) return _dt;     // Fast-path shortcut
-    throw H2O.unimpl();
+    throw H2O.fail();
   }
 
   // Done if target is dead or canceled, or we have a result.

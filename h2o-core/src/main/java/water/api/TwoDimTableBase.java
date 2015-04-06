@@ -131,7 +131,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
           else if (columns[c].format == "long") {
             dblCellValues[r][c] = (Long)data[c][r].get();
           }
-          else throw H2O.unimpl();
+          else throw H2O.fail();
         } catch (ClassCastException e) {
           throw new RuntimeException(e);
         }

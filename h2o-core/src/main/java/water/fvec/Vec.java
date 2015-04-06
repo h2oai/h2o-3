@@ -932,45 +932,48 @@ public class Vec extends Keyed<Vec> {
    *  Transformation is done by a {@link EnumWrappedVec} which provides a mapping
    *  between values - without copying the underlying data.
    *  @return A new Categorical Vec  */
-  public EnumWrappedVec toEnum() {
-    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
-    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-    int min = (int) min(), max = (int) max();
-    // try to do the fast domain collection
-    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-    if( domain.length > Categorical.MAX_ENUM_SIZE )
-      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
-    return adaptTo(ArrayUtils.toString(domain));
-  }
+//  public EnumWrappedVec toEnum() {
+//    if( isEnum() ) return adaptTo(domain()); // Use existing domain directly
+//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+//    int min = (int) min(), max = (int) max();
+//    // try to do the fast domain collection
+//    long domain[] = (min >=0 && max < Integer.MAX_VALUE-4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+//    if( domain.length > Categorical.MAX_ENUM_SIZE )
+//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + domain.length + " > " + Categorical.MAX_ENUM_SIZE);
+//    return adaptTo(ArrayUtils.toString(domain));
+//  }
 
   /** Create a new Vec (as opposed to wrapping it) that is the Enum'ified version of the original.
    *  The original Vec is not mutated.
    */
-//  public Vec toEnum() {
-//    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
-//    int min = (int) min(), max = (int) max();
-//    // try to do the fast domain collection
-//    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
-//    if (dom.length > Categorical.MAX_ENUM_SIZE)
-//      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
-//    return copyOver(ArrayUtils.toString(dom));
-//  }
-//
-  private Vec copyOver(final String[] domain) {
+  public Vec toEnum() {
+    if( isEnum() ) return makeCopy(domain());
+    if( !isInt() ) throw new IllegalArgumentException("Enum conversion only works on integer columns");
+    int min = (int) min(), max = (int) max();
+    // try to do the fast domain collection
+    long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(this).domain() : new CollectDomain().doAll(this).domain();
+    if (dom.length > Categorical.MAX_ENUM_SIZE)
+      throw new IllegalArgumentException("Column domain is too large to be represented as an enum: " + dom.length + " > " + Categorical.MAX_ENUM_SIZE);
+    return copyOver(dom);
+  }
+
+  private Vec copyOver(long[] domain) {
     String[][] dom = new String[1][];
-    dom[0]=domain;
+    dom[0]=domain==null?null:ArrayUtils.toString(domain);
     return new CPTask(domain).doAll(1,this).outputFrame(null,dom).anyVec();
   }
 
   private static class CPTask extends MRTask<CPTask> {
-    private final String[] _domain;
-    CPTask(String[] domain) { _domain = domain;}
+    private final long[] _domain;
+    CPTask(long[] domain) { _domain = domain;}
     @Override public void map(Chunk c, NewChunk nc) {
       for(int i=0;i<c._len;++i)
         if( _domain==null )
           nc.addNum(c.at8(i));
         else {
-          long num = Arrays.binarySearch(_domain, String.valueOf(c.at8(i)));  // ~24 hits in worst case for 10M levels
+          long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
+          if( num < 0 )
+            throw new IllegalArgumentException("Could not find the enum value!");
           nc.addNum(num);
         }
     }
@@ -1040,7 +1043,7 @@ public class Vec extends Keyed<Vec> {
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
-          _uniques.put(ys.at8(row),"");
+          _uniques.put(ys.at8(row), "");
     }
 
     @Override public void reduce(CollectDomain mrt) {
@@ -1055,7 +1058,7 @@ public class Vec extends Keyed<Vec> {
       assert _uniques == null || _uniques.size()==0;
       long ls[] = ab.getA8();
       _uniques = new NonBlockingHashMapLong<>();
-      if( ls != null ) for( long l : ls ) _uniques.put(l,"");
+      if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
     }
     @Override public void copyOver(CollectDomain that) {

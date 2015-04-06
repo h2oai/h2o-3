@@ -238,7 +238,7 @@ public class RequestServer extends NanoHTTPD {
     // typesafe way:
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
-
+    register("/1/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
     register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
@@ -666,7 +666,7 @@ public class RequestServer extends NanoHTTPD {
     case query:
     case help:
     default:
-      throw H2O.unimpl();
+      throw H2O.unimpl("Unknown type: " + type.toString());
     }
   }
 
@@ -681,7 +681,7 @@ public class RequestServer extends NanoHTTPD {
     case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
     case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
     case java:
-      throw H2O.unimpl();
+      throw H2O.unimpl("Unknown type: " + type.toString());
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

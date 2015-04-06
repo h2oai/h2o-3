@@ -17,6 +17,9 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The Gini score for this run.", direction=API.Direction.OUTPUT)
     public double Gini;
 
+  @API(help="The Confusion Matrices for this scoring run; redundant but easier for the client to consume.", direction=API.Direction.OUTPUT)
+  public long[][][] confusion_matrices;
+
   @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT)
     public TwoDimTableBase thresholds_and_metric_scores;
 
@@ -48,11 +51,15 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         formats   [i] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
-      for( int i=0; i<auc._nBins; i++ )
-        for( int j=0; j<crits.length; j++ ) {
-          double d = crits[j].exec(auc,i); // Note: casts to Object are NOT redundant
-          thresholdsByMetrics.set(i,j,crits[j]._isInt ? (Object)((long)d) : d);
+      confusion_matrices = new long[auc._nBins][2][2];
+
+      for( int i=0; i<auc._nBins; i++ ) {
+        for (int j = 0; j < crits.length; j++) {
+          double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
+          thresholdsByMetrics.set(i, j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
+        confusion_matrices[i] = auc.cm_for_threshold(i);
+      }
       this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
       
       // Fill TwoDimTable
