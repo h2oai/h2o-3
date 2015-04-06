@@ -14,7 +14,7 @@ def define_params():
         'max_after_balance_size': [100.0, 1000.0, None],
         # 'solver': ['ADMM', 'L_BFGS', None],
         'solver': ['L_BFGS', None],
-        'max_iter': [1, 3, 15, None],
+        'max_iterations': [1, 3, 15, None],
         'dropNA20Cols': [None, 0, 1],
         'standardize': [None, 0, 1],
         'tweedie_variance_power': [None, 0, 1],

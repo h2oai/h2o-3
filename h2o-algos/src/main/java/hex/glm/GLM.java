@@ -223,8 +223,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         _validDinfo = new DataInfo(Key.make(), _valid, null, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       if(_parms._lambda_search) // todo add xval/hval for null model?
         setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null,null);
-      if(_parms._max_iter == -1)
-        _parms._max_iter = _parms._lambda_search?6*_parms._nlambdas:50;
+      if(_parms._max_iterations == -1)
+        _parms._max_iterations = _parms._lambda_search?6*_parms._nlambdas:50;
     }
   }
 
@@ -268,7 +268,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   @Override
   public Job<GLMModel> trainModel() {
     _parms.read_lock_frames(this);
-    start(new GLMDriver(null), _parms._max_iter);
+    start(new GLMDriver(null), _parms._max_iterations);
     return this;
   }
 
@@ -435,7 +435,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // TODO ...
         }
         // launch the next lambda
-        if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iter) {
+        if(++_lambdaId  < _parms._lambda.length && _tInfos[0]._iter < _parms._max_iterations) {
           double nextLambda = _parms._lambda[_lambdaId];
           getCompleter().addToPendingCount(1);
           if(_parms._n_folds > 1){
@@ -711,7 +711,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           throw H2O.unimpl();
         GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._nobs, _bc._betaGiven, _bc._rho, 0, _rowFilter);
         final long t1 = System.currentTimeMillis();
-        L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iter);
+        L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iterations);
         Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
@@ -800,7 +800,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           throw new RuntimeException(LogInfo("got NaNs and/or Infs in beta"));
         } else {
           final double bdiff = beta_diff(glmt._beta, newBeta);
-          if ((_parms._family == Family.gaussian && _parms._link == Link.identity) || bdiff < _parms._beta_epsilon || _taskInfo._iter >= _parms._max_iter) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
+          if ((_parms._family == Family.gaussian && _parms._link == Link.identity) || bdiff < _parms._beta_epsilon || _taskInfo._iter >= _parms._max_iterations) { // Gaussian is non-iterative and gradient is ADMMSolver's gradient => just validate and move on to the next lambda_value
             int diff = (int) Math.log10(bdiff);
             int nzs = 0;
             for (int i = 0; i < newBeta.length; ++i)

@@ -24,7 +24,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
-import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -615,7 +614,7 @@ public class GLMTest  extends TestUtil {
 
       double [] beta_1 = model.beta();
       params._solver = Solver.L_BFGS;
-      params._max_iter = 1000;
+      params._max_iterations = 1000;
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -824,7 +823,7 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._standardize = false;
-      params._max_iter = 20;
+      params._max_iterations = 20;
       job = new GLM(Key.make("glm_model"), "glm test simple poisson", params);
       model = job.trainModel().get();
       double [] beta = model.beta();

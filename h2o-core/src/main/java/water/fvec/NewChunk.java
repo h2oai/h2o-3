@@ -384,7 +384,7 @@ public class NewChunk extends Chunk {
       cancel_sparse();
       nc.cancel_sparse();
     }
-    if( _ds != null ) throw H2O.unimpl();
+    if( _ds != null ) throw H2O.fail();
     while( sparseLen() + nc.sparseLen() >= _xs.length )
       _xs = MemoryManager.arrayCopyOf(_xs,_xs.length<<1);
     _ls = MemoryManager.arrayCopyOf(_ls,_xs.length);
@@ -953,7 +953,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8(buf, off+ridsz, lval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;
@@ -983,7 +983,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8d(buf, off + ridsz, dval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;
