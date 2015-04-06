@@ -450,6 +450,7 @@ class ASTStatement extends AST {
   }
   @Override void exec(Env env) {
     ArrayList<Frame> cleanup = new ArrayList<>();
+    if( _asts.length==0 ) { env.push(new ValNull()); return; }
     for( int i=0; i<_asts.length-1; i++ ) {
       if (_asts[i] instanceof ASTReturn) {
        _asts[i].treeWalk(env);
