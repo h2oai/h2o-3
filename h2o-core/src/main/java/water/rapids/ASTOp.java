@@ -82,6 +82,7 @@ public abstract class ASTOp extends AST {
     putBinInfix(new ASTMul());
     putBinInfix(new ASTMMult());
     putBinInfix(new ASTDiv());
+    putBinInfix(new ASTIntDiv());
     putBinInfix(new ASTPow());
     putBinInfix(new ASTPow2());
     putBinInfix(new ASTMod());
@@ -1172,6 +1173,12 @@ class ASTDiv extends ASTBinOp { public ASTDiv() { super(); } @Override String op
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
 }
+class ASTIntDiv extends ASTBinOp { public ASTIntDiv() { super(); } @Override String opStr(){ return "intDiv"; } @Override ASTOp make() { return new ASTIntDiv();}
+  @Override double op(double d0, double d1) { return (int)d0/(int)d1;}
+  @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+  @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+  @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+}
 class ASTPow extends ASTBinOp { public ASTPow() { super(); } @Override String opStr(){ return "^"  ;} @Override ASTOp make() {return new ASTPow ();}
   @Override double op(double d0, double d1) { return Math.pow(d0,d1);}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
@@ -1184,7 +1191,7 @@ class ASTPow2 extends ASTBinOp { public ASTPow2() { super(); } @Override String 
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
 }
-class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "mod"  ;} @Override ASTOp make() {return new ASTMod ();}
+class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "mod"; } @Override ASTOp make() {return new ASTMod ();}
   @Override double op(double d0, double d1) { return d0%d1;}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot mod (%) Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
