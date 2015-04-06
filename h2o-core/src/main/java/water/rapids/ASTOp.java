@@ -2300,7 +2300,10 @@ class ASTQtile extends ASTUniPrefixOp {
       }
 
     // else ASTSeq
-    } else seq = E.parse();
+    } else {
+      seq = E.parse();
+      _probs=null;
+    }
     if (seq != null)
       if (seq instanceof ASTId) seq = Env.staticLookup((ASTId)seq);
     // Finish the rest
@@ -2340,6 +2343,7 @@ class ASTQtile extends ASTUniPrefixOp {
     for( int i=0; i<x.numCols(); i++ )
       fr.add(x._names[i]+"Quantiles",Vec.makeCon(q._output._quantiles[i]));
     q.delete();
+    parms._probs=_probs=null;
     env.pushAry(fr);
   }
 }
