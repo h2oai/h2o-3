@@ -973,7 +973,7 @@ public class Vec extends Keyed<Vec> {
         else {
           long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
           if( num < 0 )
-            System.out.println("asdf");
+            throw new IllegalArgumentException("Could not find the enum value!");
           nc.addNum(num);
         }
     }
@@ -1043,7 +1043,7 @@ public class Vec extends Keyed<Vec> {
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
-          _uniques.put(ys.at8(row),"");
+          _uniques.put(ys.at8(row), "");
     }
 
     @Override public void reduce(CollectDomain mrt) {
@@ -1058,7 +1058,7 @@ public class Vec extends Keyed<Vec> {
       assert _uniques == null || _uniques.size()==0;
       long ls[] = ab.getA8();
       _uniques = new NonBlockingHashMapLong<>();
-      if( ls != null ) for( long l : ls ) _uniques.put(l,"");
+      if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
     }
     @Override public void copyOver(CollectDomain that) {
