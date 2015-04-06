@@ -369,6 +369,7 @@ public class H2ONode extends Iced<H2ONode> implements Comparable {
         // Blow it off and go wait again...
         catch( InterruptedException e ) { continue; }
         assert r._computed : "Found RPCCall not computed "+r._tsknum;
+        r._ackResendCnt++;
         // RPC from somebody who dropped out of cloud?
         if( (!H2O.CLOUD.contains(r._client) && !r._client._heartbeat._client) ||
             // Timedout client?
