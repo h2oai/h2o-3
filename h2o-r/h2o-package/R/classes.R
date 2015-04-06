@@ -395,7 +395,3 @@ setClass("H2ODimReductionMetrics", contains="H2OModelMetrics")
 
 #' @export
 setClass("H2OModelFuture", representation(h2o="H2OConnection", job_key="character", destination_key="character"))
-h2o.getFutureModel <- function(object) {
-  .h2o.__waitOnJob(object@h2o, object@job_key)
-  h2o.getModel(object@destination_key, object@h2o)
-}

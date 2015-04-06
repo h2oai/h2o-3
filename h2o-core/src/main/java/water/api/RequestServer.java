@@ -238,7 +238,7 @@ public class RequestServer extends NanoHTTPD {
     // typesafe way:
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
-
+    register("/1/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
     register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
