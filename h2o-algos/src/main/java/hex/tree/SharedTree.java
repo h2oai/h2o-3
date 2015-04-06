@@ -45,7 +45,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     super.init(expensive);
 
     if( _nclass > SharedTreeModel.SharedTreeParameters.MAX_SUPPORTED_LEVELS )
-      throw new IllegalArgumentException("Too many levels in response column!");
+      error("_nclass", "Too many levels in response column!");
+
+    if( _parms._min_rows < 0 )
+      error("_min_rows", "Requested min_rows must be greater than 0");
+
     if( _parms._ntrees < 0 || _parms._ntrees > 100000 )
       error("_ntrees", "Requested ntrees must be between 1 and 100000");
     _ntrees = _parms._ntrees;   // Total trees in final model
@@ -56,6 +60,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if( _parms._ntrees < checkpointModel._output._ntrees+1 )
           error("_ntrees", "Requested ntrees must be between "+checkpointModel._output._ntrees+1+" and 100000");
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
+      }
+    }
+    if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
+    if (expensive) {
+      if (_parms._min_rows > _train.numRows()) {
+        error("_min_rows",
+                "The dataset size is too small for _min_rows="
+                        + _parms._min_rows + " , number of rows: " + _train.numRows() + " < " + _parms._min_rows);
       }
     }
     if( _train != null )
@@ -374,8 +387,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
-      ConfusionMatrix cm = (mm instanceof ModelMetricsBinomial) ? ((ModelMetricsBinomial)mm)._cm :
-        ((mm instanceof ModelMetricsMultinomial) ? ((ModelMetricsMultinomial)mm)._cm : null);
+      ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
         Log.info(cm.toASCII());
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");

@@ -13,6 +13,7 @@ import water.util.Log;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -86,9 +87,11 @@ import java.util.concurrent.atomic.AtomicInteger;
     Frame fr = e.popAry();
 
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
+    final int nGrps = p1._g.size();
+    final G[] grps = p1._g._g.toArray(new G[nGrps]);
+    H2O.submitTask(new ParallelPostGlobal(grps)).join();
 
     // build the output
-    final int nGrps = p1._g.size();
     final int nCols = _gbCols.length+_agg.length;
 
     // dummy vec
@@ -101,9 +104,8 @@ import java.util.concurrent.atomic.AtomicInteger;
       names[i] = fr.name((int) _gbCols[i]);
       domains[i] = fr.domains()[(int)_gbCols[i]];
     }
-    System.arraycopy(AGG.names(_agg),0,names, _gbCols.length,_agg.length);
+    System.arraycopy(AGG.names(_agg),0,names,_gbCols.length,_agg.length);
 
-    final G[] grps = p1._g.toArray(new G[nGrps]);
     final AGG[] agg=_agg;
     Frame f=new MRTask() {
       @Override public void map(Chunk[] c, NewChunk[] ncs) {
@@ -140,17 +142,46 @@ import java.util.concurrent.atomic.AtomicInteger;
     e.pushAry(f);
   }
 
+  private static class IcedNBHS<T extends Iced> extends Iced implements Iterable<T> {
+    private NonBlockingHashSet<T> _g;
+
+    IcedNBHS() {_g=new NonBlockingHashSet<>();}
+    boolean add(T t) { return _g.add(t); }
+    boolean addAll(NonBlockingHashSet<T> g) { return _g.addAll(g); }
+    T get(T g) { return _g.get(g); }
+    int size() { return _g.size(); }
+
+
+    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+      if( _g == null ) return ab.put4(0);
+      ab.put4(_g.size());
+      for( T g: _g) ab.put(g);
+      return ab;
+    }
+
+    @Override public IcedNBHS read_impl(AutoBuffer ab) {
+      int len = ab.get4();
+      if( len == 0 ) return this;
+      _g = new NonBlockingHashSet<>();
+      for( int i=0;i<len;++i) _g.add((T)ab.get());
+      return this;
+    }
+
+    @Override public Iterator<T> iterator() {return _g.iterator(); }
+  }
+
   private static class GBTask extends MRTask<GBTask> {
-    NonBlockingHashSet<G> _g;
+    IcedNBHS<G> _g;
     private long[] _gbCols;
     private AGG[] _agg;
     GBTask(long[] gbCols, AGG[] agg) { _gbCols=gbCols; _agg=agg; }
-    @Override public void setupLocal() { _g = new NonBlockingHashSet<>(); }
+    @Override public void setupLocal() { _g = new IcedNBHS<>(); }
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
+      G g = new G(0,c,_gbCols,_agg.length,naMethods);
       for (int i=0;i<c[0]._len;++i) {
-        G g = new G(i,c,_gbCols,_agg.length,naMethods);
+        g.reFill(i, c, _gbCols);
         if( !_g.add(g) ) g=_g.get(g);
         // cas in COUNT
         long r=g._N;
@@ -161,10 +192,9 @@ import java.util.concurrent.atomic.AtomicInteger;
     }
     @Override public void reduce(GBTask t) {
       if( _g!=t._g ) {
-        NonBlockingHashSet<G> l = _g;
-        NonBlockingHashSet<G> r = t._g;
+        IcedNBHS<G> l = _g;
+        IcedNBHS<G> r = t._g;
         if( l.size() < r.size() ) { l=r; r=_g; }  // larger on the left
-
         // loop over the smaller set of grps
         for( G rg:r ) {
           G lg = l.get(rg);
@@ -180,14 +210,12 @@ import java.util.concurrent.atomic.AtomicInteger;
         t._g=null;
       }
     }
-    @Override public void closeLocal() {}
-    @Override public void postGlobal() { H2O.submitTask(new ParallelPostGlobal(_g.toArray(new G[_g.size()]))).join(); }
-
     // task helper functions
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g) { perRow(agg,chkRow,rowOffset,c,g,null); }
     private static void reduceGroup(AGG[] agg, G g, G that) { perRow(agg,-1,-1,null,g,that);}
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g, G that) {
       byte type; int col;
+      long vals[] = new long[6]; // 6 cases in the switch, magic array for legibility in the switch
       for (int i=0;i<agg.length;++i) {
         col = agg[i]._c;
 
@@ -208,7 +236,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
         // build up a long[] of vals, to handle the case when c is and isn't null.
         // c is null in the reduce  of the MRTask
-        long[] vals = new long[6]; // 6 cases in the switch, magic array for legibility in the switch
         long bits=-1;
         if( c!=null ) {
           if( c[col].isNA(chkRow) ) continue;
@@ -281,29 +308,6 @@ import java.util.concurrent.atomic.AtomicInteger;
       long o = g._NA[c];
       while(!G.CAS_NA(g,G.longRawIdx(c),o,o+n))
         o=g._NA[c];
-    }
-
-    // serialization
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-      ab.putA8(_gbCols);
-      ab.put4(_agg.length);
-      for (AGG a_agg : _agg) ab.put(a_agg);
-      if( _g == null ) return ab.put4(0);
-      ab.put4(_g.size());
-      for( G g: _g) ab.put(g);
-      return ab;
-    }
-
-    @Override public GBTask read_impl(AutoBuffer ab) {
-      _gbCols = ab.getA8();
-      int l = ab.get4();
-      _agg = new AGG[l];
-      for(int i=0;i<l;++i) _agg[i]=ab.get(AGG.class);
-      int len = ab.get4();
-      if( len == 0 ) return this;
-      _g = new NonBlockingHashSet<>();
-      for( int i=0;i<len;++i) _g.add(ab.get(G.class));
-      return this;
     }
   }
 
@@ -380,6 +384,14 @@ import java.util.concurrent.atomic.AtomicInteger;
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
+    }
+    public void reFill(int row, Chunk chks[], long cols[]) {
+      fill(row,chks,cols);
+      _N=0;
+      for(int i=0;i<_ND.length;++i) {
+        _sum[i] = _ss[i] = _ND[i] = _NA[i] = _f[i] = _l[i] = 0;
+        _min[i] = Double.POSITIVE_INFINITY; _max[i] = Double.NEGATIVE_INFINITY;
+      }
     }
     private int hash() {
       long h=0;                 // hash is sum of field bits
@@ -474,6 +486,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
   static class AGG extends AST {
     // (AGG #N "agg" #col "na"  "agg" #col "na"   => string num string   string num string
+    String opStr() { return "agg";  }
     private AGG[] _aggs;
     AGG parse_impl(Exec E) {
       int n = (int)((ASTNum)(E.parse()))._d; E.skipWS();

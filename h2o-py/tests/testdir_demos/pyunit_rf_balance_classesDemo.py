@@ -13,9 +13,9 @@ def rf_balance_classes(ip,port):
         #Building confusion matrix for test set
         perf = model_object.model_performance(air_test)
         perf.show()
-        print(perf.confusion_matrices(thresholds=[0.5]))
-        print(perf.precision(thresholds=[0.5]))
-        print(perf.accuracy(thresholds=[0.5]))
+        print(perf.confusion_matrices())
+        print(perf.precision())
+        print(perf.accuracy())
         print(perf.auc())
 
     #uploading data file to h2o

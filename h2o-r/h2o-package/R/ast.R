@@ -113,7 +113,7 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
 
       # disallow binary ops here
       if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
-        stop("Unimplemented: binary operations (+, -, *, /) within a slice.")
+        return(.eval(eval(expr,envir)))
       }
 
       new_expr <- as.list(expr[-1L])[[1L]]
@@ -142,16 +142,22 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
                children = list(paste0('#-', eval(new_expr[[1L]][[2L]], envir = envir)),
                                paste0('#-', eval(new_expr[[1L]][[3L]], envir = envir)))))
       }
+    } else if (length(expr) == 3L) {  # have a binary operation, e.g. 50 - 1
+      return(.eval(eval(expr,envir),envir))
     }
     # end negative expression cases
   }
 
   # Create a new ASTSpan
   if (identical(expr[[1L]], quote(`:`))) {
+    if( eval(expr[[2L]],envir) < 0 ) {
+      neg <- TRUE
+      if( eval(expr[[3L]],envir) >= 0) stop("Index range must not include positive and negative values.")
+    }
     if (neg)
       return(new("ASTNode", root = new("ASTApply", op = ":"),
-                 children = list(paste0('#-', eval(expr[[2L]], envir = envir)),
-                                 paste0('#-', eval(expr[[3L]], envir = envir)))))
+                 children = list(paste0('#', eval(expr[[2L]], envir = envir)+1L),
+                                 paste0('#', eval(expr[[3L]], envir = envir)+1L))))
     else
       return(new("ASTNode", root = new("ASTApply", op = ":"),
                  children = list(paste0('#', eval(expr[[2L]], envir = envir) - 1L),
@@ -159,6 +165,9 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
   }
 
   if (is.vector(expr) && is.numeric(expr)) {
+    neg <- expr[1] < 0
+    sub_one <- !neg
+    if( neg ) { expr <- expr + 1 }
     children <- lapply(expr, .ast.walker, envir, neg, sub_one)
     return(new("ASTSeries", op="{", children = children))
   }
