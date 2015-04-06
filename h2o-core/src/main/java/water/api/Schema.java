@@ -495,7 +495,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       if (inside.length() == 0)
         splits = new String[] {};
       else
-        splits = inside.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); //all commas outside of quotes
+        splits = splitArgs(inside);
       Class<E> afclz = (Class<E>)fclz.getComponentType();
       E[] a = null;
       // Can't cast an int[] to an Object[].  Sigh.
@@ -598,6 +598,35 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   }
   private boolean peek( String s, int x, char c ) { return x < s.length() && s.charAt(x) == c; }
 
+  // Splits on commas, but ignores commas in double quotes.  Required
+  // since using a regex blow the stack on long column counts
+  // TODO: detect and complain about malformed JSON
+  private static String[] splitArgs(String argStr) {
+    StringBuffer sb = new StringBuffer (argStr);
+    StringBuffer arg = new StringBuffer ();
+    List<String> splitArgList = new ArrayList<String> ();
+    boolean inDoubleQuotes = false;
+
+    for (int i=0; i < sb.length(); i++) {
+      if (sb.charAt (i) == '"' && !inDoubleQuotes) {
+        inDoubleQuotes = true;
+        arg.append(sb.charAt(i));
+      } else if (sb.charAt(i) == '"' && inDoubleQuotes) {
+        inDoubleQuotes = false;
+        arg.append(sb.charAt(i));
+      } else if (sb.charAt(i) == ',' && !inDoubleQuotes) {
+        splitArgList.add(arg.toString());
+        // clear the field for next word
+        arg.setLength(0);
+      } else {
+        arg.append(sb.charAt(i));
+      }
+    }
+    if (arg.length() > 0)
+      splitArgList.add(arg.toString());
+
+    return splitArgList.toArray(new String[splitArgList.size()]);
+  }
 
   private static boolean schemas_registered = false;
   /**
