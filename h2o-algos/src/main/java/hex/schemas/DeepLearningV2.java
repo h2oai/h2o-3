@@ -95,7 +95,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
     @API(help = "If enabled, override the final model with the best model found during training", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean override_with_best_model;
 
-    @API(help = "Auto-Encoder (Experimental)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Auto-Encoder", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean autoencoder;
 
     @API(help="Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.", level = API.Level.secondary, direction=API.Direction.INOUT)
@@ -187,7 +187,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * surface with small learning rates, the model can converge far
      * slower than necessary.
      */
-    @API(help = "Adaptive learning rate (ADADELTA)", level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean adaptive_rate;
 
     /**
@@ -196,7 +196,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * Typical values are between 0.9 and 0.999.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", /* dmin = 0.01, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate time decay factor (similarity to prior updates)", /* dmin = 0.01, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
     public double rho;
 
     /**
@@ -206,7 +206,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * Typical values are between 1e-10 and 1e-4.
      * This parameter is only active if adaptive learning rate is enabled.
      */
-    @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", /* dmin = 1e-15, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
+    @API(help = "Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress)", /* dmin = 1e-15, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
     public double epsilon;
 
     /*Learning Rate*/
@@ -353,7 +353,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "MeanSquare", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT)
     public DeepLearningParameters.Loss loss;
 
     /*Scoring*/
@@ -384,7 +384,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
      * and on diagnostics such as computation of feature importances (i.e., not on training).
      */
-    @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", /* dmin = 0, dmax = 1, */ level = API.Level.expert, direction=API.Direction.INOUT)
+    @API(help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).", /* dmin = 0, dmax = 1, */ level = API.Level.secondary, direction=API.Direction.INOUT)
     public double score_duty_cycle;
 
     /**
@@ -467,7 +467,7 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
     /**
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
-    @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", level = API.Level.critical, direction=API.Direction.INOUT)
+    @API(help = "Replicate the entire training dataset onto every node for faster training on small datasets", level = API.Level.secondary, direction=API.Direction.INOUT)
     public boolean replicate_training_data;
 
     /**
