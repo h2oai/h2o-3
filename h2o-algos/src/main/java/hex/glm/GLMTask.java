@@ -14,6 +14,8 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
+import java.util.Arrays;
+
 /**
  * All GLM related distributed tasks:
  *
@@ -268,17 +270,15 @@ public abstract class GLMTask  {
 //          g[g.length-1] += gval;
 //      }
 //    }
-    protected void goByRows(Chunk [] chks){
+    protected void goByRows(Chunk [] chks, boolean [] skp){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
-      Chunk rowFilter = _rowFilter != null?_rowFilter.chunkForChunkIdx(chks[0].cidx()):null;
       for(int rid = 0; rid < chks[0]._len; ++rid) {
-        if(rowFilter != null && rowFilter.at8(rid) == 1)
-          continue;
-        _nobs++;
+        if(skp[rid]) continue;
         row = _dinfo.extractDenseRow(chks, rid, row);
         if(row.bad) continue;
+        _nobs++;
         double eta = row.innerProduct(b);
         double mu = _params.linkInv(eta);
         if(_validate)
@@ -356,14 +356,8 @@ public abstract class GLMTask  {
       return eta;
     }
 
-    protected void goByCols(Chunk [] chks){
+    protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
-      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
-      if(_rowFilter != null) {
-        Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
-        for(int r = 0; r < chks[0]._len; ++r)
-          skp[r] = c.at8(r) == 1;
-      }
       double  [] eta = computeEtaByCols(chks,skp);
       double  [] b = _beta;
       double  [] g = _gradient;
@@ -454,10 +448,16 @@ public abstract class GLMTask  {
         _val = new GLMValidation(_dinfo._key,_ymu,_params,rank);
       _gradient = MemoryManager.malloc8d(_beta.length);
 
+      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
+      if(_rowFilter != null) {
+        Chunk c = _rowFilter.chunkForChunkIdx(chks[0].cidx());
+        for(int r = 0; r < chks[0]._len; ++r)
+          skp[r] = c.at8(r) == 1;
+      }
       if(_forceCols || (!_forceRows && (chks.length >= 100 || mostlySparse(chks))))
-        goByCols(chks);
+        goByCols(chks, skp);
       else
-        goByRows(chks);
+        goByRows(chks, skp);
       // apply reg
     }
     public void reduce(GLMGradientTask grt) {
@@ -469,6 +469,30 @@ public abstract class GLMTask  {
     }
   }
 
+
+  static class GLMWeightsTask extends MRTask<GLMWeightsTask> {
+    final GLMParameters _params;
+    GLMWeightsTask(GLMParameters params){_params = params;}
+
+    @Override public void map(Chunk [] chks) {
+      Chunk yChunk = chks[0];
+      Chunk zChunk = chks[1];
+      Chunk wChunk = chks[2];
+      Chunk eChunk = chks[3];
+      for(int i = 0; i < yChunk._len; ++i) {
+        double y = yChunk.atd(i);
+        double eta = eChunk.atd(i);
+        double mu = _params.linkInv(eta);
+        double var = Math.max(1e-6, _params.variance(mu)); // avoid numerical problems with 0 variance
+        double d = _params.linkDeriv(mu);
+        zChunk.set(i,eta + (y-mu)*d);
+        wChunk.set(i,1.0/(var*d*d));
+      }
+    }
+    @Override public void reduce(GLMWeightsTask gwt) {}
+  }
+
+
   /**
    * Tassk with simplified gradient computation for logistic regression (and least squares)
    * Looks like
@@ -479,7 +503,7 @@ public abstract class GLMTask  {
       super(dinfo, params, lambda, beta, reg, rowFilter);
     }
 
-    @Override   protected void goByRows(Chunk [] chks){
+    @Override   protected void goByRows(Chunk [] chks, boolean [] skp){
       Row row = _dinfo.newDenseRow();
       double [] g = _gradient;
       double [] b = _beta;
@@ -512,9 +536,8 @@ public abstract class GLMTask  {
       }
     }
 
-    @Override protected void goByCols(Chunk [] chks){
+    @Override protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
-      boolean [] skp = MemoryManager.mallocZ(chks[0]._len);
       double  [] eta = computeEtaByCols(chks,skp);
       double  [] b = _beta;
       double  [] g = _gradient;
@@ -584,6 +607,65 @@ public abstract class GLMTask  {
     }
   }
 
+
+
+  public static class GLMCoordinateDescentTask extends MRTask<GLMCoordinateDescentTask> {
+    final double [] _betaUpdate;
+    final double [] _beta;
+    final double _xOldSub;
+    final double _xOldMul;
+    final double _xNewSub;
+    final double _xNewMul;
+
+    double [] _xy;
+
+    public GLMCoordinateDescentTask(double [] betaUpdate, double [] beta, double xOldSub, double xOldMul, double xNewSub, double xNewMul) {
+      _betaUpdate = betaUpdate;
+      _beta = beta;
+      _xOldSub = xOldSub;
+      _xOldMul = xOldMul;
+      _xNewSub = xNewSub;
+      _xNewMul = xNewMul;
+    }
+
+    public void map(Chunk [] chks) {
+      Chunk xOld = chks[0];
+      Chunk xNew = chks[1];
+      if(xNew.vec().isEnum()){
+        _xy = MemoryManager.malloc8d(xNew.vec().domain().length);
+      } else
+      _xy = new double[1];
+      Chunk eta = chks[2];
+      Chunk weights = chks[3];
+      Chunk res = chks[4];
+      for(int i = 0; i < eta._len; ++i) {
+        double w = weights.atd(i);
+        double e = eta.atd(i);
+        if(_betaUpdate != null) {
+          if (xOld.vec().isEnum()) {
+            int cid = (int) xOld.at8(i);
+            e = +_betaUpdate[cid];
+          } else
+            e += _betaUpdate[0] * (xOld.atd(i) - _xOldSub) * _xOldMul;
+          eta.set(i, e);
+        }
+        int cid = 0;
+        double x = w;
+        if(xNew.vec().isEnum()) {
+          cid = (int) xNew.at8(i);
+          e -= _beta[cid];
+        } else {
+          x = (xNew.atd(i) - _xNewSub) * _xNewMul;
+          e -= _beta[0] * x;
+          x *= w;
+        }
+        _xy[cid] += x * (res.atd(i) - e);
+      }
+    }
+    @Override public void reduce(GLMCoordinateDescentTask t) {
+      ArrayUtils.add(_xy, t._xy);
+    }
+  }
   /**
    * One iteration of glm, computes weighted gram matrix and t(x)*y vector and t(y)*y scalar.
    *

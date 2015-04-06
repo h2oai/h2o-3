@@ -28,8 +28,6 @@ public class ADMM {
     final double _eps;
     final int max_iter;
 
-    public L1Solver(){this(1e-4,5000);}
-    public L1Solver(double eps){this(eps,5000);}
     public L1Solver(double eps, int max_iter) {
       _eps = eps; this.max_iter = max_iter;
     }
@@ -155,7 +153,7 @@ public class ADMM {
       return false;
     }
   }
-  protected static double shrinkage(double x, double kappa) {
+  public static double shrinkage(double x, double kappa) {
     double sign = x < 0?-1:1;
     double sx = x*sign;
     if(sx <= kappa) return 0;

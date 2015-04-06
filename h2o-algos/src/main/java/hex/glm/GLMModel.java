@@ -506,7 +506,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     }
     public static enum Link {family_default, identity, logit, log,inverse,tweedie}
 
-    public static enum Solver {ADMM, L_BFGS}
+    public static enum Solver {ADMM, L_BFGS, COORDINATE_DESCENT}
 
     // helper function
     static final double y_log_y(double y, double mu) {
@@ -584,7 +584,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             old._output = (GLMOutput)old._output.clone();
             old._output._submodels = sms;
           } else {
-            if (old._output._submodels[id].iteration < sm.iteration)
+            if (old._output._submodels[id].iteration <= sm.iteration)
               old._output._submodels[id] = sm;
           }
         }

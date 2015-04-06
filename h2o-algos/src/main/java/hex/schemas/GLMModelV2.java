@@ -80,7 +80,6 @@ public class GLMModelV2 extends ModelSchema<GLMModel, GLMModelV2, GLMModel.GLMPa
       this.rank = impl.rank();
       GLMModel.Submodel sm = impl.bestSubmodel();
       String [] cnames = impl.coefficientNames();
-      System.out.println("CNAMES = " + Arrays.toString(cnames));
       String [] names = sm.idxs == null?impl.coefficientNames().clone():ArrayUtils.select(impl.coefficientNames(), sm.idxs);
       coefficients_table = new TwoDimTableBase();
       coefficients_magnitude = new TwoDimTableBase();
