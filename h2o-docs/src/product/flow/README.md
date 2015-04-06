@@ -367,9 +367,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Gamma**: [(PCA)](#pca) Specify the regularization weight for PCA. The default is 0. 
 
-- **Max_iterations**: [(K-Means)](#Kmeans), [(PCA)](#pca) Specify the number of training iterations. The default is 1000.
-
-- **Max_iters**: [(GLM)](#GLM) Specify the number of training iterations. The default is 50.  
+- **Max_iterations**: [(K-Means](#Kmeans), [PCA](#pca),[GLM)](#GLM) Specify the number of training iterations. For K-Means and PCA, the default is 1000. For GLM, the default is 50. 
 
 - **Init**: [(K-Means)](#Kmeans), [(PCA)](#pca) Select the initialization mode For K-Means, the options are Furthest, PlusPlus, or None. For PCA, the options are PlusPlus, User, or None. 
 **Note**: If PlusPlus is selected, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
