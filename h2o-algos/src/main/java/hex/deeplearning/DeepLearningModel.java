@@ -550,6 +550,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
       }
       if (_n_folds != 0) {
+        dl.error("_n_folds", "n_folds is not yet implemented.");
         if (expensive) {
           if (_override_with_best_model) {
             dl.warn("_override_with_best_model", "Automatically disabling override_with_best_model, since the final model is the only scored model with n-fold cross-validation.");

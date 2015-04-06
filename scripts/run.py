@@ -1065,8 +1065,8 @@ class TestRunner:
                    "-f",
                    runner_setup_package_r]
             if self.path_to_tar is not None:
-              print "Using R TAR located at: " + self.path_to_tar
-              cmd += ["--args", self.path_to_tar]
+                print "Using R TAR located at: " + self.path_to_tar
+                cmd += ["--args", self.path_to_tar]
             child = subprocess.Popen(args=cmd,
                                      stdout=out,
                                      stderr=subprocess.STDOUT)
@@ -1653,8 +1653,8 @@ def parse_args(argv):
         elif s == "--c":
             g_convenient = True
         elif s == "--tar":
-          i += 1
-          g_path_to_tar = os.path.abspath(argv[i])
+            i += 1
+            g_path_to_tar = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
             if (i > len(argv)):
