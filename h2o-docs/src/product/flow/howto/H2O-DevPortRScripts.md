@@ -285,7 +285,7 @@ H2O  | H2O-Dev
 `score_training_samples,` | `score_training_samples,` 
 `score_validation_samples,` | `score_validation_samples,`
 `score_duty_cycle,` | `score_duty_cycle,` 
-`classification_stop,` | `classification_stop,`
+`classification_stop,` | 
 `regression_stop,` | `regression_stop,`
 `quiet_mode,` | `quiet_mode,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
