@@ -150,7 +150,7 @@ H2O  | H2O-Dev
  &nbsp; | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_eps = 0` 
-`strong_rules = TRUE,` | -
+`strong_rules = TRUE,` | 
  &nbsp; | `balance_classes = FALSE,` 
 `return_all_lambda = FALSE,` | 
 &nbsp; | `class_sampling_factors,`
