@@ -67,7 +67,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 #' @export
-h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=300) {
+h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=120) {
   tryCatch(
     invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {

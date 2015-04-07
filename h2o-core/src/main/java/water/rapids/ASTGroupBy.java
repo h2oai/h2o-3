@@ -179,9 +179,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
-      G g = new G(0,c,_gbCols,_agg.length,naMethods);
       for (int i=0;i<c[0]._len;++i) {
-        g.reFill(i, c, _gbCols);
+        G g = new G(i,c,_gbCols,_agg.length,naMethods);
         if( !_g.add(g) ) g=_g.get(g);
         // cas in COUNT
         long r=g._N;
