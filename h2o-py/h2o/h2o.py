@@ -317,4 +317,9 @@ def as_list(data):
       return x
     j = frame(data._data)
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
-  #elif isinstance(data, H2OFrame):
+  if isinstance(data, H2OVec):
+    x = data._expr.eager()
+    if data._expr.is_local():
+      return x
+    j = frame(data._expr._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))

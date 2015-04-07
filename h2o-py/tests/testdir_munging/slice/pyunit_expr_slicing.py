@@ -16,7 +16,7 @@ def expr_slicing(ip,port):
     # expr[int] (column slice), expr is pending
     res = 2 - iris
     res2 = h2o.as_list(res[0])
-    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res[17][0] - -3.1) < 1e-10 and abs(res[24][0] - -2.8) < 1e-10, \
+    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res2[17][0] - -3.1) < 1e-10 and abs(res2[24][0] - -2.8) < 1e-10, \
         "incorrect values"
 
     # expr[int,int], expr is remote

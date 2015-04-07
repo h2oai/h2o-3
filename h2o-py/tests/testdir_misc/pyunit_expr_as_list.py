@@ -17,13 +17,12 @@ def expr_as_list(ip,port):
     # expr[int], expr is pending
     res = 2 - iris
     res2 = h2o.as_list(res[0])
-    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res[17][0] - -3.1) < 1e-10 and abs(res[24][0] - -2.8) < 1e-10, \
+    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res2[17][0] - -3.1) < 1e-10 and abs(res2[24][0] - -2.8) < 1e-10, \
         "incorrect values"
 
     # expr[int], expr is remote
-    res.eager()
     res3 = h2o.as_list(res[0])
-    assert abs(res2[3][0] - -2.6) < 1e-10 and abs(res[17][0] - -3.1) < 1e-10 and abs(res[24][0] - -2.8) < 1e-10, \
+    assert abs(res3[3][0] - -2.6) < 1e-10 and abs(res3[17][0] - -3.1) < 1e-10 and abs(res3[24][0] - -2.8) < 1e-10, \
         "incorrect values"
 
     # expr[int], expr is local
@@ -37,7 +36,6 @@ def expr_as_list(ip,port):
     assert abs(res5[0][0] - 0.3) < 1e-10, "incorrect values"
 
     # expr[tuple], expr._data is remote
-    res.eager()
     res6 = h2o.as_list(res[5,2])
     assert abs(res6[0][0] - 0.3) < 1e-10, "incorrect values"
 
