@@ -4,9 +4,12 @@ import org.apache.commons.lang.ArrayUtils;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 
-public class IcedWrapper extends Schema<Iced, IcedWrapper> {
-  public IcedWrapper() { super(); }
-
+/**
+ * Iced wrapper object for primitive types and arrays, to allow fields in other Iced
+ * classes to have a generic type equivalent to Object, which can contain primitives,
+ * arrays, and Iced objects.
+ */
+public class IcedWrapper <I extends IcedWrapper, S extends IcedWrapper /*I'm my own Schema*/> extends Schema<I, IcedWrapper<I, S>> {
   /**
    * Is the wrapped value an array?
    */
