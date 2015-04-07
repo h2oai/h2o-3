@@ -1475,9 +1475,9 @@ abstract class ASTReducerOp extends ASTOp {
       throw new IllegalArgumentException("Expected the na.rm value to be one of $TRUE, $FALSE, $T, $F");
     }
     _narm = ((ASTNum)a).dbl() == 1;
-    ASTReducerOp res = (ASTReducerOp) clone();
     AST[] arys = new AST[_argcnt = dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    ASTReducerOp res = (ASTReducerOp) clone();
     res._asts = arys;
     return res;
   }
@@ -1621,8 +1621,9 @@ class ASTRbind extends ASTUniPrefixOp {
       else        E.rewind(a);
     }
     Collections.reverse(dblarys);
+    argcnt=dblarys.size();
     ASTRbind res = (ASTRbind) clone();
-    res._asts = dblarys.toArray(new AST[argcnt=dblarys.size()]);
+    res._asts = dblarys.toArray(new AST[argcnt]);
     return res;
   }
 
