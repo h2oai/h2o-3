@@ -1064,8 +1064,10 @@ final public class H2O {
   public static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
-    if( val != null )
-      val._key = key;
+    if( val != null ) {
+      assert val._key.equals(key);
+      if( val._key != key ) val._key = key; // Attempt to uniquify keys
+    }
 
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);
