@@ -86,7 +86,7 @@ H2O  | H2O-Dev
 `validation,` | `validation_frame = NULL,` 
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
- - | `seed,` 
+ &nbsp; | `seed,` 
  - | `score_each_iteration)`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
@@ -99,6 +99,8 @@ H2O  | H2O-Dev
 
 <a name="GLM"></a>
 ##GLM
+
+ N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 The following parameters have been renamed, but retain the same functions:
 
@@ -135,7 +137,6 @@ H2O Parameter Name | H2O-Dev Parameter Name
  - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
  - `solver`: Select ADMM or LBFGS. 
 
- N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 
 
@@ -222,6 +223,9 @@ H2O  | H2O-Dev
 <a name="DL"></a>
 ##Deep Learning
 
+N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+
+
 The following parameters have been renamed, but retain the same functions: 
 
 H2O Parameter Name | H2O-Dev Parameter Name
@@ -236,10 +240,9 @@ The following parameters have been added:
 - `export_weights__and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
 
 The following options for the `loss` parameter have been added:
-- `absolute`:
-- `huber`: 
+- `absolute`: Provides strong penalties for mispredictions 
+- `huber`: Can improve results for regression 
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 H2O  | H2O-Dev
 ------------- | -------------
