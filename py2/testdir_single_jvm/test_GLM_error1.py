@@ -63,7 +63,7 @@ class Basic(unittest.TestCase):
         for trial in range(5):
             parameters = {
                 'response_column': 'C55', 
-                'max_iter': 3, 
+                'max_iterations': 3,
                 'solver': 'L_BFGS', 
                 'ignored_columns': '[1]', 
                 'prior1': 1, 

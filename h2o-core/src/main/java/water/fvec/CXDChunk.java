@@ -11,7 +11,7 @@ public class CXDChunk extends CXIChunk {
   // extract fp value from an (byte)offset
   protected final double getFValue(int off){
     if(valsz() == 8) return UnsafeUtils.get8d(_mem, off + ridsz());
-    throw H2O.unimpl();
+    throw H2O.fail();
   }
 
   @Override protected long at8_impl(int idx) {

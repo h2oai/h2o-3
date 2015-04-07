@@ -125,8 +125,10 @@ public class ASTddply extends ASTOp {
     NewChunk[] nchkz = new NewChunk[results[0]._vs.length];
     for (int i=0; i<nchkz.length;++i) {
       nchkz[i] = new NewChunk(grpColz[i]=new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
-      Chunk src = ((Vec)DKV.get(results[0]._vs[i]).get()).chunkForChunkIdx(0);
-      nchkz[i].add(src.inflate_impl(new NewChunk(src)));
+      Vec v = DKV.get(results[0]._vs[i]).get();
+      Chunk src = v.nChunks()==0?null:v.chunkForChunkIdx(0);
+      if( src==null ) continue;
+      else nchkz[i].add(src.inflate_impl(new NewChunk(src)));
     }
 
     // fold in rest of the chunks
@@ -159,6 +161,12 @@ public class ASTddply extends ASTOp {
     Vec rm;
     for( int i = _cols.length; i < names.length; i++) names[i] = "C"+(i-_cols.length+1);
     for (int i = 0; i < vres.length; ++i) {
+      if( vres[i].length()==0 ) {
+        //got no results --
+        Frame ff = new Frame(new String[]{"C1"}, new Vec[]{vres[i]});
+        env.pushAry(ff);
+        return;
+      }
       if (vres[0].group().equals(vres[i].group())) continue;
       vres[i] = vres[0].align(rm = vres[i]); // align makes a copy
       Keyed.remove(rm._key);
@@ -509,7 +517,7 @@ public class ASTddply extends ASTOp {
           if( env.isStr() ) { // must be TRUE or FALSE
             String s = env.popStr();
             env.push(new ValNum(s.equals("TRUE")?1:0));
-          }
+          } else if( env.isNul() )  { env.pop(); continue; }
           _nchks[i].addNum(_ncols == 1 ? env.popDbl() : fr.vecs()[i].at(0));
         }
         aa.delete(); // nuke the group frame

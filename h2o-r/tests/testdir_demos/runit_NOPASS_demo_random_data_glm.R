@@ -47,9 +47,9 @@ for(i in 1:length(rows)){ # changing number of rows
     #str(myframe)  
     #warmup
     print("first")
-    myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,max_iter=1)
+    myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,max_iterations=1)
     print(i)
-      myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,max_iter=1)
+      myframe.glm<-h2o.glm(x=seq(2,ncols+1),y=1,training_frame=myframe,family="gaussian",lambda_search=F,max_iterations=1)
     print("second")
     # algo_run_time[i,j] <- aat[3] 
   } 
@@ -61,8 +61,8 @@ h2o.rm(conn,"myframe")
 #row_grid 
 #create_frm_time 
 #algo_run_time 
-frm_size/2^20 #MB 
-plot(frm_size[1:3]) 
+#frm_size/2^20 #MB 
+#plot(frm_size[1:3]) 
 #col_grid 
 #row_grid 
 
