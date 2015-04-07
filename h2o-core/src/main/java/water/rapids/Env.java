@@ -97,6 +97,18 @@ public class Env extends Iced {
     _trash = e._trash;
   }
 
+  // makes a new "global" context -- useful for one off invocations
+  static Env make(HashSet<Key> locked) {
+    Env env = new Env(locked);
+    // some default items in the symbol table
+    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
+    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
+    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
+    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+    env.put("-Inf",Env.NUM, Double.toString(Double.NEGATIVE_INFINITY));
+    return env;
+  }
+
   public boolean isGlobal() { return _isGlobal && _parent == null && _local == null; }
 
   public static String typeToString(int type) {
