@@ -85,8 +85,9 @@ import java.util.concurrent.atomic.AtomicInteger;
   @Override void apply(Env e) {
     // only allow reductions on time and numeric columns
     Frame fr = e.popAry();
-
+    long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
+    Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
     final int nGrps = p1._g.size();
     final G[] grps = p1._g._g.toArray(new G[nGrps]);
     H2O.submitTask(new ParallelPostGlobal(grps)).join();
