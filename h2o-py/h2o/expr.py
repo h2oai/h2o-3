@@ -350,10 +350,12 @@ class Expr(object):
     raise NotImplementedError
 
   def multi_dim_slice_cols_cmd(self, child):
-    c = child._data[1]
-    if isinstance(c, int): return "#" + str(c)
-    if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
-    if c == "null": return '"null"'
+    if   isinstance(self._left._data, list): return '"null"'
+    elif isinstance(self._left._data,unicode):
+      c = child._data[1]
+      if isinstance(c, int): return "#" + str(c)
+      if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
+      if c == "null": return '"null"'
     raise NotImplementedError
 
   def _do_it(self):

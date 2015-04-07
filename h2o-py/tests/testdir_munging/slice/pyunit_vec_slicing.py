@@ -8,7 +8,6 @@ def vec_slicing(ip,port):
     h2o.init(ip,port)
 
     iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
-    rows, cols = iris.dim()
     iris.show()
 
     ###################################################################

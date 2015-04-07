@@ -323,3 +323,12 @@ def as_list(data):
       return x
     j = frame(data._expr._data)
     return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OFrame):
+    vec_as_list = [as_list(v) for v in data._vecs]
+    frm = []
+    for row in range(len(vec_as_list[0])):
+      tmp = []
+      for col in range(len(vec_as_list)):
+        tmp.append(vec_as_list[col][row][0])
+      frm.append(tmp)
+    return frm
