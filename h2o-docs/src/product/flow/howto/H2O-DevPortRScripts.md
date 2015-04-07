@@ -315,6 +315,8 @@ H2O  | H2O-Dev
 <a name="DRF"></a>
 ##Distributed Random Forest
 
+**Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. 
+
 The following parameters have been renamed, but retain the same functions: 
 
 H2O Parameter Name | H2O-Dev Parameter Name
