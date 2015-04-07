@@ -87,7 +87,7 @@ H2O  | H2O-Dev
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
  &nbsp; | `seed,` 
- - | `score_each_iteration)`
+ &nbsp; | `score_each_iteration)`
 `group_split = TRUE,` | 
 `importance = FALSE,` | 
 `nfolds = 0,` | 
@@ -147,22 +147,22 @@ H2O  | H2O-Dev
 `y,` | `y,` 
 `data,` |`training_frame,` 
 `key = "",` | `destination_key,` 
- - | `validation_frame`
+ &nbsp; | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_eps = 0` 
 `strong_rules = TRUE,` | -
-- | `balance_classes = FALSE,` 
+ &nbsp; | `balance_classes = FALSE,` 
 `return_all_lambda = FALSE,` | 
-- | `class_sampling_factors,`
+&nbsp; | `class_sampling_factors,`
 `intercept = TRUE,` | 
-- | `max_after_balance_size = 5,`
+&nbsp; | `max_after_balance_size = 5,`
 `non_negative = FALSE,` | 
-- | `solver = c("ADMM", "L_BFGS"),`
+&nbsp; | `solver = c("ADMM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
 `family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
 `tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` | `tweedie_variance_power = NaN,` 
-- | `tweedie_link_power = NaN,` 
+&nbsp; | `tweedie_link_power = NaN,` 
 `alpha = 0.5,` | `alpha = 0.5,` 
 `prior = NULL` | `prior1 = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
@@ -306,8 +306,8 @@ H2O  | H2O-Dev
 `col_major,` | `col_major,`
 `max_categorical_features,` | `max_categorical_features,`
 `reproducible)` | `reproducible=FALSE,` 
- - | `average_activation,`
-  - | `export_weights_and_biases = FALSE)`
+ &nbsp; | `average_activation,`
+ &nbsp; | `export_weights_and_biases = FALSE)`
 
  
  ---
@@ -356,10 +356,10 @@ H2O  | H2O-Dev
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
 `sample.rate=2/3,` | `sample_rate = 0.6666667,` 
- - | `build_tree_one_node = FALSE,` 
+ &nbsp; | `build_tree_one_node = FALSE,` 
 `ntree=50` | `ntrees=50,` 
 `depth=20,` | `max_depth = 20,` 
- - | `min_rows = 1,`
+ &nbsp; | `min_rows = 1,`
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
