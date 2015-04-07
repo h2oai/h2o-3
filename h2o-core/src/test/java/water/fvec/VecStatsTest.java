@@ -56,7 +56,7 @@ public class VecStatsTest extends TestUtil {
     }
   }
 
-  @Test public void testPCTiles() {
+  @Test @Ignore public void testPCTiles() {
     Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
     double[] pctiles = vec.pctiles();
     System.out.println(java.util.Arrays.toString(pctiles));
