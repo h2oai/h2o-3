@@ -1,7 +1,6 @@
 package water;
 
 import org.apache.commons.lang.ArrayUtils;
-import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 
 /**
@@ -9,7 +8,7 @@ import water.exceptions.H2OIllegalArgumentException;
  * classes to have a generic type equivalent to Object, which can contain primitives,
  * arrays, and Iced objects.
  */
-public class IcedWrapper <I extends IcedWrapper, S extends IcedWrapper /*I'm my own Schema*/> extends Schema<I, IcedWrapper<I, S>> {
+public class IcedWrapper extends Iced {
   /**
    * Is the wrapped value an array?
    */
