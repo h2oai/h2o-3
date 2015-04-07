@@ -53,7 +53,7 @@ def user(ip, port):
     # Internal "Expr(c=a+b)" not dead!
 
     # column addition can be a big data operation, so the result should be an Expr.
-    # 'mean' can't be overloaded in python, so TODO: create custom 'mean' function to operate on Exprs.
+    # TODO: create custom 'mean' function to operate on Expr objects.
     # print 1 + (a[0] + b[1]).mean()
 
     #import collections
