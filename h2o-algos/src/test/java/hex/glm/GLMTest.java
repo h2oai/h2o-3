@@ -790,6 +790,7 @@ public class GLMTest  extends TestUtil {
       GLMValidation val = model.validation();
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
+      assertEquals(371,val.resDOF());
       assertEquals(396.3, val.aic(),1e-1);
       score = model.score(fr);
 
