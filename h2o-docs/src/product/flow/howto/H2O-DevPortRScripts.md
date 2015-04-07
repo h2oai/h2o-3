@@ -1,8 +1,10 @@
 #Porting R Scripts from H2O to H2O-Dev
 
-This document outlines how to port R scripts written in H2O for compatibility with the new H2O-Dev API. 
+This document outlines how to port R scripts written in H2O for compatibility with the new H2O-Dev API. When upgrading from H2O to H2O-Dev, most functions are the same. However, there are some differences that will need to be resolved when porting any scripts that were originally created using H2O to H2O-Dev. 
 
 The original R script for H2O is listed first, followed by the updated script for H2O-Dev. 
+
+Some of the parameters have been renamed for consistency. For each algorithm, a table that describes the differences is provided. 
 
 **Table of Contents**
 - [GBM](#GBM)
@@ -12,9 +14,30 @@ The original R script for H2O is listed first, followed by the updated script fo
 - [Distributed Random Forest](#DRF)
 
 
+##Changes from H2O to H2O-Dev
+
+###`h2o.exec`
+The `h2o.exec` command is no longer supported. Any workflows using `h2o.exec` must be revised to remove this command.  If the H2O-Dev workflow contains any parameters or commands from H2O, errors will result and the workflow will fail. 
+
+The purpose of `h2o.exec` was to wrap expressions so that they could be evaluated in a single `\Exec2` call. For example, 
+ `h2o.exec(fr[,1] + 2/fr[,3])`
+ and 
+ `fr[,1] + 2/fr[,3]`
+produced the same results in H2O. However, the first example makes a single REST call and uses a single temp object, while the second makes several REST calls and uses several temp objects. 
+
+Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typcial R expression. 
+
+Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
+
+###Principal Components Regression (PCR)
+
+Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
+
 
 <a name="GBM"></a>
 ##GBM
+
+N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -45,7 +68,6 @@ The following parameters have been added:
 - `seed`: A random number to control sampling and initialization. 
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
 
-N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 
 H2O  | H2O-Dev
@@ -105,7 +127,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
  
  The following parameters have been added: 
  
- - `class_sampling_factors`: 
+ - `class_sampling_factors`: Specify an array containing real numbers to define how much each class should be over- or under-sampled.
  - `validation_frame`: Specify the validation dataset. 
  - `balance_classes`: For imbalanced data, balance training data class counts via over/under-sampling for improved predictive accuracy.
  - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
@@ -117,34 +139,35 @@ H2O Parameter Name | H2O-Dev Parameter Name
 
 H2O  | H2O-Dev
 ------------- | -------------
-`h2o.glm <- function(` | `h2o.glm <- function(`
+`h2o.glm <- function(` | `h2o.startGLMJob <- function(`
 `x,` | `x,`
 `y,` | `y,` 
 `data,` |`training_frame,` 
 `key = "",` | `destination_key,` 
+ - | `validation_frame`
+`iter.max = 100,` |  `max_iterations = 50,` 
+`epsilon = 1e-4` | `beta_eps = 0` 
+`strong_rules = TRUE,` | `balance_classes = FALSE,` 
+`return_all_lambda = FALSE,` | `class_sampling_factors,` 
+`intercept = TRUE,` | `max_after_balance_size = 5,`
+`non_negative = FALSE,` | `solver = c("ADMM", "L_BFGS"),` 
+`standardize = TRUE,` | `standardize = TRUE,` 
 `family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
 `tweedie.p = ifelse(family == "tweedie",` | `tweedie_variance_power = NaN,` 
 `1.5, NA_real_),` | `tweedie_link_power = NaN,` 
-`prior = NULL` | `prior1 = 0.0,` 
-`nfolds = 0,` | `n_folds = 0,` 
 `alpha = 0.5,` | `alpha = 0.5,` 
+`prior = NULL` | `prior1 = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
 `lambda_search = FALSE,` | `lambda_search = FALSE,` 
 `nlambda = -1,` | `nlambdas = -1,` 
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
-`standardize = TRUE,` | `standardize = TRUE,` 
-`iter.max = 100,` |  `max_iter = 50,` 
-`epsilon = 1e-4` | `beta_eps = 0` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
-`beta_constraints = NULL,` | `beta_constraint = NULL,` 
-`return_all_lambda = FALSE,` | `class_sampling_factors,` 
-`higher_accuracy = FALSE,` | `validation_frame,` 
-`strong_rules = TRUE,` | `balance_classes = FALSE,` 
-`intercept = TRUE,` | `max_after_balance_size = 5.0,` 
-`non_negative = FALSE,` | `solver = c("ADMM", "L_BFGS"),` 
-`variable_importances = FALSE,` | `...`
-`disable_line_search = FALSE,` | `)`
+`nfolds = 0,` | `n_folds = 0,` 
+`beta_constraints = NULL,` | `beta_constraint = NULL)` 
+`higher_accuracy = FALSE,` |  
+`variable_importances = FALSE,` | 
+`disable_line_search = FALSE,` | 
 `offset = NULL,` | 
 `max_predictors = -1)` |
 
@@ -179,8 +202,8 @@ H2O  | H2O-Dev
 ------------- | -------------
 `h2o.kmeans <- function(` | `h2o.kmeans <- function(`
 `data,` | `training_frame,` 
-`centers,` | `k,`
 `cols = '',` | `x,`
+`centers,` | `k,`
 `key = "",` | `destination_key,`
 `iter.max = 10,` | `max_iterations = 1000,`
 `normalize = FALSE,`  | `standardize = TRUE,`
@@ -204,14 +227,17 @@ H2O Parameter Name | H2O-Dev Parameter Name
 
 The following parameters have been added: 
 
-- `export_weights__and_biases`: An additional option allowing users to access the raw weights and biases as H2O frames. 
-- `absolute` and `huber`: 
+- `export_weights__and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
+
+The following options for the `loss` parameter have been added:
+- `absolute`:
+- `huber`: 
 
 N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
 H2O  | H2O-Dev
 ------------- | -------------
-`h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(`
+`h2o.deeplearning <- function(x,` | `h2o.deeplearning <- function(x, `
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `destination_key = "",`
@@ -230,12 +256,12 @@ H2O  | H2O-Dev
 `seed,` | `seed,` 
 `adaptive_rate,` | `adaptive_rate = TRUE,` 
 `rho,` | `rho = 0.99,` 
-`epsilon,` | `epsilon = 1e-8,` 
+`epsilon,` | `epsilon = 1e-08,` 
 `rate,` | `rate = 0.005,` 
-`rate_annealing,` | `rate_annealing = 1e-6,` 
+`rate_annealing,` | `rate_annealing = 1e-06,` 
 `rate_decay,` | `rate_decay = 1.0,` 
 `momentum_start,` | `momentum_start = 0,`
-`momentum_ramp,` | `momentum_ramp = 1e6,`
+`momentum_ramp,` | `momentum_ramp = 1e+06,`
 `momentum_stable,` | `momentum_stable = 0,` 
 `nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = TRUE,`
 `input_dropout_ratio,` | `input_dropout_ratio = 0,` 
@@ -245,7 +271,7 @@ H2O  | H2O-Dev
 `max_w2,` | `max_w2 = Inf,`
 `initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
 `initial_weight_scale,` | `initial_weight_scale = 1,`
-`loss,` | `loss = "Automatic",` 
+`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
 `score_interval,` | `score_interval = 5,` 
 `score_training_samples,` | `score_training_samples,` 
 `score_validation_samples,` | `score_validation_samples,`
@@ -256,7 +282,7 @@ H2O  | H2O-Dev
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
 `max_hit_ratio_k,` | `max_hit_ratio_k,`
 `balance_classes,` | `balance_classes = FALSE,`
-`class_sampling_factors,` | `average_activation,`
+`class_sampling_factors,` | `class_sampling_factors,`
 `max_after_balance_size,` | `max_after_balance_size,` 
 `score_validation_sampling,` | `score_validation_sampling,`
 `diagnostics,` | `diagnostics,` 
@@ -271,6 +297,7 @@ H2O  | H2O-Dev
 `col_major,` | `col_major,`
 `max_categorical_features,` | `max_categorical_features,`
 `reproducible)` | `reproducible=FALSE,` 
+ - | `average_activation,`
   - | `export_weights_and_biases = FALSE)`
 
  
@@ -320,15 +347,17 @@ H2O  | H2O-Dev
 `validation,` | `validation_frame,` 
 `mtries = -1,` | `mtries = -1,` 
 `sample.rate=2/3,` | `sample_rate = 0.6666667,` 
+ - | `build_tree_one_node = FALSE,` 
 `ntree=50` | `ntrees=50,` 
 `depth=20,` | `max_depth = 20,` 
+ - | `min_rows = 1,`
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
 `seed = -1,` | `seed,` 
-`nodesize=1,` | `min_rows = 1,` 
-`classification=TRUE,` | `build_tree_one_node = FALSE,` 
-`importance=FALSE,` | `...)`
+`nodesize=1,` |  
+`classification=TRUE,` | 
+`importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction=0,` | 
 `max.after.balance.size=5,` | 
