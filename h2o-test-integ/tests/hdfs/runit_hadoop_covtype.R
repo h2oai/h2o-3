@@ -21,7 +21,7 @@ heading("BEGIN TEST")
 conn <- h2o.init(ip=myIP, port=myPort, startH2O = FALSE)
 
 hdfs_data_file = "/datasets/covtype.data"
-hdfs_tmp_dir = /tmp/runit"
+hdfs_tmp_dir = "/tmp/runit"
 
 url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_data_file)
 model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
