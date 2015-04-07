@@ -26,6 +26,12 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public P parameters;
 
   // Output fields
+  @API(help="The algo name for this ModelBuilder.", direction=API.Direction.OUTPUT)
+  public String algo;
+
+  @API(help="The pretty algo name for this ModelBuilder (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
+  public String algo_full_name;
+
   @API(help="Model categories this ModelBuilder can build.", direction = API.Direction.OUTPUT)
   public Model.ModelCategory[] can_build;
 
@@ -108,6 +114,10 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
     builder.init(false); // check params
+
+    this.algo = builder.getAlgo();
+    this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+
     this.can_build = builder.can_build();
     job = (JobV2)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
@@ -165,6 +175,10 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSON("job", job);
+    ab.put1(',');
+    ab.putJSONStr("algo", algo);
+    ab.put1(',');
+    ab.putJSONStr("algo_full_name", algo_full_name);
     ab.put1(',');
     ab.putJSONAEnum("can_build", can_build);
     ab.put1(',');
