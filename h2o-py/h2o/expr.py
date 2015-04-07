@@ -73,7 +73,7 @@ class Expr(object):
       assert length is not None
       self._len = length
     elif self.is_local():  # Local data, grab length by inspection
-      self._len = len(self._data) if isinstance(self._data, (list, tuple)) else 1
+      self._len = len(self._data) if isinstance(self._data, list) else 1
     elif self.is_slice():
       self._len = self._data.stop - self._data.start
     else:
@@ -155,15 +155,19 @@ class Expr(object):
     else:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-      elif isinstance(self._data, int):
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+      elif isinstance(self._data, (int, list)):
         print self._data
+        print
         return
       else:
         data = [self._data]
-      header = self._vecname + " (first " + str(len(data)) + " row(s))"
-      rows = range(1, len(data) + 1, 1)
-      print tabulate.tabulate(zip(rows, data), headers=["Row ID", header])
+      t_data = map(list, zip(*data))[0:10]
+      for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
+      headers = ["Row ID"]
+      for i in range(len(t_data[0])): headers.append('')
+      print "Displaying first " + str(len(t_data)) + " row(s)"
+      print tabulate.tabulate(t_data, headers=headers)
       print
 
 #  def __repr__(self):
@@ -198,15 +202,14 @@ class Expr(object):
 
   # Basic indexed or sliced lookup
   def __getitem__(self, i):
-    if isinstance(i, int):
-      x = self.eager()
-      if self.is_local(): return x[i]
-
-    # multi-dimensional slicing via 2-tuple
-    if isinstance(i, tuple):
-      l = 1 if isinstance(i[0], int) else i[0].stop - i[0].start
-      return Expr("[", self, Expr((i[0], i[1])), length=l)
-
+    if   self.is_local():
+      if    isinstance(i, int)  : return self.eager()[i]
+      elif  isinstance(i, tuple): return self.eager()[i[0]][i[1]]
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
+    elif self.is_remote() or self.is_pending():
+      if    isinstance(i, int)  : return Expr("[", self, Expr(("null", i)))  # column slicing
+      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
@@ -310,21 +313,48 @@ class Expr(object):
             "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
             + ")"
         child._data = None  # trigger GC now
-      # multi-dimensional slice
-      elif self._op == "[" and isinstance(child._data, tuple):
-        r, c = (child._data[0], child._data[1])
-        if isinstance(r,int) and isinstance(c,int)      : __CMD__ += "#"+str(r)+" #"+str(c)
-        elif isinstance(r,int) and isinstance(c,slice)  : __CMD__ += "#"+str(r)+" (: #"+str(c.start)+" #"+str(c.stop)+")"
-        elif isinstance(r,slice) and isinstance(c,int)  : __CMD__ += "(: #"+str(r.start)+" #"+str(r.stop)+")"+" #"+str(c)
-        elif isinstance(r,slice) and isinstance(c,slice): __CMD__ += "(: #"+str(r.start)+" #"+str(r.stop)+")"+ \
-                                                                     " (: #"+str(c.start)+" #"+str(c.stop)+")"
-        else:
-          raise NotImplementedError
+      elif self._op == "[" and isinstance(self._rite._data, tuple): # multi-dimensional slice
+        if not isinstance(child._data, tuple): return child         # doing left child.  just return.
+        __CMD__ += self.multi_dim_slice_cmd(child)                  # doing right child. generate slice string
         return child
-      else:
-        pass
     __CMD__ += " "
     return child
+
+  def multi_dim_slice_cmd(self, child):
+    return self.multi_dim_slice_data_cmd(child) + ' ' + self.multi_dim_slice_rows_cmd(child) + ' ' + \
+           self.multi_dim_slice_cols_cmd(child)
+
+  def multi_dim_slice_data_cmd(self, child):
+    if    isinstance(self._left._data,unicode): return ""
+    elif  isinstance(self._left._data, list)  :
+      c = child._data[1]
+      if isinstance(c, int): return "'" + self._left._data[c] + "'"
+      if isinstance(c, slice):
+        cols = self._left._data[c]
+        cmd = "(cbind"
+        for col in cols: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+      if c == "null":
+        cmd = "(cbind"
+        for col in self._left._data: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+    raise NotImplementedError
+
+  def multi_dim_slice_rows_cmd(self, child):
+    r = child._data[0]
+    if isinstance(r, int): return "#" + str(r)
+    if isinstance(r, slice): return "(: #"+str(r.start)+" #"+str(r.stop)+")"
+    if r == "null": return '"null"'
+    raise NotImplementedError
+
+  def multi_dim_slice_cols_cmd(self, child):
+    c = child._data[1]
+    if isinstance(c, int): return "#" + str(c)
+    if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
+    if c == "null": return '"null"'
+    raise NotImplementedError
 
   def _do_it(self):
     """
@@ -388,9 +418,8 @@ class Expr(object):
     elif self._op == "[":
 
       #   [] = []
-      if left.is_local():    self._data = left._data[rite._data]
-      #   multi-dimensional slice
-      elif isinstance(rite._data, tuple): pass
+      if isinstance(rite._data, tuple): pass #   multi-dimensional slice
+      elif left.is_local():    self._data = left._data[rite._data]
       #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
       else:                  __CMD__ += ' "null"'
 
@@ -456,12 +485,8 @@ class Expr(object):
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead
-    # Keep children alive for multi-dimensional slice
-    if self._op == "[" and not left.is_local() and isinstance(rite._data, tuple):
-      pass
-    else:
-      self._left = None  # Trigger GC/ref-cnt of temps
-      self._rite = None
+    self._left = None  # Trigger GC/ref-cnt of temps
+    self._rite = None
 
     # Keep LHS alive
     if assign_vec:

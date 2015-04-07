@@ -336,10 +336,12 @@ class H2OFrame:
 
     # multi-dimensional slicing via 2-tuple
     if isinstance(i, tuple):
-      rows, cols = self.dim()
-      l = 1 if isinstance(i[0], int) else i[0].stop - i[0].start
-      e = Expr(self.send_frame(), length=rows)
-      return Expr("[", e, Expr((i[0], i[1])), length=l)
+      j = h2o.frame(self.send_frame())
+      fr = j['frames'][0]
+      veckeys = [str(v['name']) for v in fr['vec_keys']]
+      left = Expr(veckeys)
+      rite = Expr((i[0], i[1]))
+      return Expr("[", left, rite, length=2)
 
     raise NotImplementedError("Slicing by unknown type: "+str(type(i)))
 
@@ -451,6 +453,9 @@ class H2OFrame:
   def __rdiv__(self, i): return self._simple_frames_bin_op(i,"/",True)
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return self._simple_frames_bin_op(i,"^",True)
+
+  # unops
+  def __abs__ (self): return Expr("abs", Expr(self.send_frame(), length=self.nrow()), None)
 
   @staticmethod
   def py_tmp_key():
@@ -893,6 +898,8 @@ class H2OVec:
   def __rdiv__(self, i): return self._simple_vec_bin_rop(i,"/")  # not commutative
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return self._simple_vec_bin_rop(i,"^")  # not commutative
+
+  def __abs__ (self): return H2OVec(self._name, Expr("abs", self, None))
 
   def __len__(self):
     """
