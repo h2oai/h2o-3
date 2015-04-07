@@ -157,8 +157,8 @@ public final class SchemaMetadata extends Iced {
         Object o = f.get(schema);
         this.value = consValue(o);
 
-        boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
+        boolean is_enum = Enum.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Enum.class.isAssignableFrom(f.getType().getComponentType()));
+        this.is_schema = Schema.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
 
         this.type = consType(schema, ReflectionUtils.findActualFieldClass(schema.getClass(), f), f.getName());
 
@@ -176,6 +176,10 @@ public final class SchemaMetadata extends Iced {
           } else {
             this.schema_name = schema_class.getSimpleName();
           }
+        } else if (is_enum && !f.getType().isArray()) {
+          this.schema_name = f.getType().getSimpleName();
+        } else if (is_enum && f.getType().isArray()) {
+          this.schema_name = f.getType().getComponentType().getSimpleName();
         }
 
         API annotation = f.getAnnotation(API.class);

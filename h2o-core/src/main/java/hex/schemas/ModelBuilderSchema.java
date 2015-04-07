@@ -32,7 +32,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @API(help="The pretty algo name for this ModelBuilder (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
   public String algo_full_name;
 
-  @API(help="Model categories this ModelBuilder can build.", direction = API.Direction.OUTPUT)
+  @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)

@@ -40,7 +40,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     @API(help="Type for this field is itself a Schema.", direction=API.Direction.OUTPUT)
     public boolean is_schema;
 
-    @API(help="Schema name for this field, if it is_schema.")
+    @API(help="Schema name for this field, if it is_schema, or the name of the enum, if it's an enum.")
     public String schema_name;
 
     @API(help="Value for this field", direction=API.Direction.OUTPUT)
