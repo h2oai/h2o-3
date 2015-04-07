@@ -118,15 +118,15 @@ H2O Parameter Name | H2O-Dev Parameter Name
  
  The following parameters have been removed: 
  
- - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. 
- - `higher_accuracy`: A logical value indicating whether to use line search.
- - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. 
- - `intercept`: Defines factor columns in the model. 
- - `non_negative`: Specify a non-negative response. 
- - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
- - `disable_line_search`: Disables line search for faster model building.
- - `offset`: Specify a column as an offset. 
- - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. 
+ - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. >>
+ - `higher_accuracy`: A logical value indicating whether to use line search. >>
+ - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. >>
+ - `intercept`: Defines factor columns in the model. >>
+ - `non_negative`: Specify a non-negative response. >>
+ - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. >>
+ - `disable_line_search`: Disables line search for faster model building. >>
+ - `offset`: Specify a column as an offset. >>
+ - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >>
 
  
  The following parameters have been added: 
@@ -196,7 +196,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 
 The following parameters have been removed: 
 
-- `dropNACols`:   Drop columns with more than 20% missing values.
+- `dropNACols`:   Drop columns with more than 20% missing values.  >>To be added later?
 
 The following parameters have been added:
 
@@ -224,6 +224,13 @@ H2O  | H2O-Dev
 ##Deep Learning
 
 N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
+
+The following parameters have been removed:
+
+- `classification`: Classification is now inferred from the data type.
+- `holdout_fraction`: >>
+- `classification_stop`: Classification is now inferred from the data type. 
+
 
 
 The following parameters have been renamed, but retain the same functions: 
@@ -315,7 +322,7 @@ H2O  | H2O-Dev
 <a name="DRF"></a>
 ##Distributed Random Forest
 
-**Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. 
+**Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. >>
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -334,14 +341,15 @@ The following parameters have been removed:
 
 - `classification`: This is now automatically inferred from the response type. To achieve classification with a 0/1 response column, explicitly convert the response to a factor (`as.factor()`). 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
+- `nodesize`: Use the `build_tree_one_node` parameter instead. 
 - `holdout.fraction`: Specifying the fraction of the training data to hold out for validation is no longer supported. 
-- `max.after.balance.size`:  Maximum relative size of the training data after balancing class counts (can be less than 1.0)
-- `class.sampling.factors`: Desired over/under-sampling ratios per class (lexicographic order).
+- `max.after.balance.size`:  Maximum relative size of the training data after balancing class counts (can be less than 1.0) >>
+- `class.sampling.factors`: Desired over/under-sampling ratios per class (lexicographic order). >>
 - `doGrpSplit`: The bit-set group splitting of categorical variables is now the default. 
-- `verbose`: Include tree splits and extra statistics information in the stdout.
-- `oobee`: Out-of-bag error estimate. 
-- `stat.type`: Defines the statistic type (entropy, gini, or twoing)
-- `type`: Enables type selection. 
+- `verbose`: Include tree splits and extra statistics information in the stdout. >>
+- `oobee`: Out-of-bag error estimate. >>
+- `stat.type`: Defines the statistic type (entropy, gini, or twoing) >>
+- `type`: Enables type selection. >>
 
 The following parameter has been added: 
 
