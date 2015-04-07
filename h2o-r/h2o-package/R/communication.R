@@ -36,7 +36,7 @@
 }
 
 .h2o.doRawREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
-  timeout_secs <- NULL
+  timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
   if (missing(parms))
@@ -107,13 +107,8 @@
   tmp <- NULL
   if (method == "GET") {
     h = basicHeaderGatherer()
-    if( !is.null(timeout_secs) ) {
       tmp = tryCatch(getURL(url = url, headerfunction = h$update, useragent=R.version.string, timeout=timeout_secs),
                            error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    } else {
-      tmp = tryCatch(getURL(url = url, headerfunction = h$update, useragent=R.version.string),
-                     error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    }
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -123,13 +118,8 @@
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-    if( !is.null(timeout_secs) ) {
       tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs)),
                          error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    } else {
-      tmp = tryCatch(postForm(uri = url, .params = list(fileUploadInfo = fileUploadInfo), .opts=curlOptions(writefunction = t$update, headerfunction=h$update, useragent=R.version.string, verbose = FALSE)),
-                     error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    }
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -138,13 +128,8 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer()
-    if( !is.null(timeout_secs) ) {
       tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
                          error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    } else {
-      tmp = tryCatch(curlPerform(url = url, postfields=postBody, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE),
-                     error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    }
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -153,14 +138,8 @@
   } else if (method == "DELETE") {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer()
-    if( !is.null(timeout_secs) ) {
-
-      tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
+    tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE, timeout=timeout_secs),
                            error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    } else {
-      tmp <- tryCatch(curlPerform(url = url, customrequest = method, writefunction = t$update, headerfunction = h$update, useragent=R.version.string, verbose = FALSE),
-                     error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    }
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -566,56 +545,40 @@ h2o.clusterInfo <- function(conn = h2o.getConnection()) {
 #'
 #' Warn if there are sick nodes.
 .h2o.__checkConnectionHealth <- function(conn = h2o.getConnection()) {
-  max_retries <- 10
-  retries <- 0
-  grabCloudStatus <- function(conn = h2o.getConnection()) {
-    rv <- .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
+  rv <- .h2o.doGET(conn = conn, urlSuffix = .h2o.__CLOUD)
 
-    if (rv$curlError) {
-      ip = conn@ip
-      port = conn@port
-      stop(sprintf("H2O connection has been severed. Cannot connect to instance at %s\n", h2o.getBaseURL(conn)),
-           rv$curlErrorMessage)
-    }
-
-    if (rv$httpStatusCode != 200L) {
-      ip = conn@ip
-      port = conn@port
-      stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
-           sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
-    }
-
-    .h2o.fromJSON(rv$payload)
+  if (rv$curlError) {
+    ip = conn@ip
+    port = conn@port
+    stop(sprintf("H2O connection has been severed. Cannot connect to instance at %s\n", h2o.getBaseURL(conn)),
+         rv$curlErrorMessage)
   }
 
-  checker <- function(node, conn = h2o.getConnection()) {
-    status <- as.logical(node$healthy)
-    elapsed <- as.integer(as.POSIXct(Sys.time()))*1000 - node$last_ping
-    # nport <- unlist(strsplit(node$h2o, ":"))[2L]
-    if(!status) .h2o.__cloudSick(node_name = NULL, conn = conn)
-    if(elapsed > 60*1000) .h2o.__cloudSick(node_name = NULL, conn = conn)
-    if(elapsed > 10*1000 && retries < max_retries) {
-        retries <<- retries + 1
-        Sys.sleep(5L)
-        invisible(lapply(grabCloudStatus(conn)$nodes, checker, conn))
-    }
-    0L
+  if (rv$httpStatusCode != 200L) {
+    ip = conn@ip
+    port = conn@port
+    stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
+         sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
   }
 
-  cloudStatus <- grabCloudStatus(conn)
-  if(cloudStatus$bad_nodes != 0L) .h2o.__cloudSick(node_name = NULL, conn = conn)
-  lapply(cloudStatus$nodes, checker, conn)
+  cloudStatus <- .h2o.fromJSON(rv$payload)
+  nodes = cloudStatus$nodes
+  overallHealthy = TRUE
+  for (i in 1:length(nodes)) {
+    node = nodes[[i]]
+    healthy = node$healthy
+    if (! healthy) {
+      ip_port = node$ip_port
+      warning(paste0("H2O cluster node ", ip_port, " is behaving slowly and should be inspected manually"), immediate. = T)
+      overallHealthy = FALSE
+    }
+  }
+  if (! overallHealthy) {
+    url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
+    warning(paste0("Check H2O cluster status here: ", url, "\n", collapse = ""), immediate. = T)
+  }
+
   0L
-}
-
-#' Helper method to issue a warning.
-.h2o.__cloudSick <- function(node_name = NULL, conn = h2o.getConnection()) {
-  url <- .h2o.calcBaseURL(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = .h2o.__CLOUD)
-  m1 <- "Attempting to execute action on an unhealthy cluster!\n"
-  m2 <- ifelse(node_name != NULL, paste0("The sick node is identified to be: ", node_name, "\n", collapse = ""), "")
-  m3 <- paste0("Check cloud status here: ", url, collapse = "")
-  m <- paste0(m1, m2, "\n", m3)
-  warning(m)
 }
 
 

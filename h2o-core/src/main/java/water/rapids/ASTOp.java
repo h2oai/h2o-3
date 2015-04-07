@@ -3113,14 +3113,17 @@ class ASTIfElse extends ASTUniPrefixOp {
     if (env.isAry()) no  = env.popAry(); else dno  = env.popDbl();
 
     if (yes != null && no != null) {
-      if (yes.numCols() != no.numCols())
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + no.numCols() + ".");
+      if (yes.numCols() != no.numCols()) {
+        if (!((yes.numCols() == 1 && no.numCols() != 1) || (yes.numCols() != 1 && no.numCols() == 1))) {
+          throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + yes.numCols() + " columns; `no` has " + no.numCols() + " columns.");
+        }
+      }
     } else if (yes != null) {
       if (yes.numCols() != 1)
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + 1 + ".");
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + yes.numCols() + " columns; `no` has " + 1 + " columns.");
     } else if (no != null) {
       if (no.numCols() != 1)
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + 1 + "; `no` has " + no.numCols() + ".");
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + 1 + "; `no` has " + no.numCols() + ".");
     }
     Frame fr2;
     if( tst.numRows()==1 && tst.numCols()==1 ) {
