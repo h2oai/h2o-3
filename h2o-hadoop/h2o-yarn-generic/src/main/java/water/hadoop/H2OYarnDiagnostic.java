@@ -16,6 +16,7 @@ public class H2OYarnDiagnostic {
     int numNodes;
     int nodeMemoryMb;
     int nodeVirtualCores;
+    int numNodesStarted;
 
     // Fill these in as we process the queue information, and remember the
     // answers for printing helpful diagnostics.
@@ -23,12 +24,12 @@ public class H2OYarnDiagnostic {
     int queueAvailableVirtualCores;
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 3) {
-            System.out.println("usage:  queueName numNodes nodeMemoryMb");
+        if (args.length != 4) {
+            System.out.println("usage:  queueName numNodes nodeMemoryMb numNodesStarted");
             System.exit(1);
         }
 
-        diagnose(args[0], Integer.valueOf(args[1]), Integer.valueOf(args[2]));
+        diagnose(args[0], Integer.valueOf(args[1]), Integer.valueOf(args[2]), Integer.valueOf(args[3]));
     }
 
     /**
@@ -37,14 +38,16 @@ public class H2OYarnDiagnostic {
      * @param queueName YARN queue name
      * @param numNodes Requested number of worker containers (not including AM)
      * @param nodeMemoryMb Requested worker container size
+     * @param numNodesStarted Number of containers that actually got started before giving up
      * @throws Exception
      */
-	public static void diagnose(String queueName, int numNodes, int nodeMemoryMb) throws Exception {
+	public static void diagnose(String queueName, int numNodes, int nodeMemoryMb, int numNodesStarted) throws Exception {
         H2OYarnDiagnostic client = new H2OYarnDiagnostic();
         client.queueName = queueName;
         client.numNodes = numNodes;
         client.nodeMemoryMb = nodeMemoryMb;
         client.nodeVirtualCores = 1;
+        client.numNodesStarted = numNodesStarted;
         client.run();
     }
 
@@ -324,23 +327,22 @@ public class H2OYarnDiagnostic {
         System.out.println("----------------------------------------------------------------------");
     }
 
+    private int numPrinted = 0;
+
     private void printErrorDiagnosis(String s) {
-        printBar();
-        System.out.println("");
-        System.out.println("ERROR: " + s);
-        System.out.println("");
-        printBar();
+        System.out.println("ERROR:   " + s);
+        numPrinted++;
     }
 
     private void printWarningDiagnosis(String s) {
-        printBar();
-        System.out.println("");
         System.out.println("WARNING: " + s);
-        System.out.println("");
-        printBar();
+        numPrinted++;
     }
 
     private void printDiagnosis(List<NodeReport> clusterNodeReports) throws IOException, YarnException {
+        printBar();
+        System.out.println("");
+
         // Check if the requested container size exceeds the available space on any node.
         {
             boolean containerFitsOnSomeNode = false;
@@ -357,7 +359,6 @@ public class H2OYarnDiagnostic {
 
             if (! containerFitsOnSomeNode) {
                 printErrorDiagnosis("Job container memory request (" + prettyPrintMb(nodeMemoryMb) + ") does not fit on any YARN cluster node");
-                return;
             }
         }
 
@@ -374,7 +375,6 @@ public class H2OYarnDiagnostic {
             int jobMb = this.numNodes * this.nodeMemoryMb;
             if (n < jobMb) {
                 printErrorDiagnosis("Job memory request (" + prettyPrintMb(jobMb) + ") exceeds available YARN cluster memory (" + prettyPrintMb(n) + ")");
-                return;
             }
         }
 
@@ -391,7 +391,6 @@ public class H2OYarnDiagnostic {
             int jobVirtualCores = this.numNodes * this.nodeVirtualCores;
             if (n < jobVirtualCores) {
                 printErrorDiagnosis("YARN cluster available virtual cores (" + n + ") < requested H2O containers (" + jobVirtualCores + ")");
-                return;
             }
         }
 
@@ -405,7 +404,6 @@ public class H2OYarnDiagnostic {
             int jobMb = this.numNodes * this.nodeMemoryMb;
             if (this.queueAvailableMemory < jobMb) {
                 printWarningDiagnosis("Job memory request (" + prettyPrintMb(jobMb) + ") exceeds queue available memory capacity (" + prettyPrintMb(this.queueAvailableMemory) + ")");
-                return;
             }
         }
 
@@ -414,20 +412,25 @@ public class H2OYarnDiagnostic {
             int jobVirtualCores = this.numNodes * this.nodeVirtualCores;
             if (this.queueAvailableVirtualCores < jobVirtualCores) {
                 printWarningDiagnosis("Job virtual cores request (" + jobVirtualCores + ") exceeds queue available virtual cores capacity (" + this.queueAvailableVirtualCores + ")");
-                return;
             }
         }
 
+        if ((numNodesStarted > 0) && (numNodesStarted < numNodes)) {
+            printErrorDiagnosis("Only " + numNodesStarted + " out of the requested " + numNodes + " worker containers were started due to YARN cluster resource limitations");
+        }
+
         // Default warning.
-        {
-            printBar();
+        if (numPrinted == 0) {
+            System.out.println("ERROR: Unable to start any H2O nodes; please contact your YARN administrator.");
             System.out.println("");
-            System.out.println("ERROR: Unable to start cluster; you may want to check YARN settings for the following properties:");
+            System.out.println("       A common cause for this is the requested container size (" + prettyPrintMb(this.nodeMemoryMb) + ")");
+            System.out.println("       exceeds the following YARN settings:");
             System.out.println("");
             System.out.println("           yarn.nodemanager.resource.memory-mb");
             System.out.println("           yarn.scheduler.maximum-allocation-mb");
-            System.out.println("");
-            printBar();
         }
+
+        System.out.println("");
+        printBar();
     }
 }

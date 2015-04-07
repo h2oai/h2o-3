@@ -24,7 +24,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '<=' = 'L',
              '==' = 'n',
              '!=' = 'N',
-             '%%' = '%',
+             '%%' = 'mod',
              '**' = '^',
              '!'  = '_',
              '|'  = '|',
@@ -36,7 +36,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '/'  = '/',
              '^'  = '^',
              't'  = 't', 
-             "%/%"="%/%")
+             "%/%"="intDiv")
 
 .binary_op.map <- c("%*%" = "x",
                     '>'  = 'g',

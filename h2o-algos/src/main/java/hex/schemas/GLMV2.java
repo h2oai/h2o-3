@@ -17,7 +17,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
   public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
     static public String[] own_fields = new String[]{
       "solver",
-      "max_iter",
+      "max_iterations",
       "beta_eps",
       "standardize",
       "family",
@@ -38,11 +38,11 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     public Solver solver;
 
     // Input fields
-    @API(help = "Standardize numeric columns to have zero mean and unit variance.")
+    @API(help = "Standardize numeric columns to have zero mean and unit variance")
     public boolean standardize;
 
-    @API(help = "Maximum number of iterations. ")
-    public int max_iter = 50;
+    @API(help = "Maximum number of iterations")
+    public int max_iterations = 50;
 
     @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
     public double beta_eps;

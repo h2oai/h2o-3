@@ -50,9 +50,15 @@ myY="IsDepDelayed"
 
 #gbm
 air.gbm <- h2o.gbm(x = myX, y = myY, loss = "multinomial", training_frame = air.train, ntrees = 10,
-                   max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid, variable_importance = F)
+                   max_depth = 3, learn_rate = 0.01, nbins = 100, validation_frame = air.valid)
+
 print(air.gbm@model)
-air.gbm@model$auc
+print("Variable Importance")
+print(air.gbm@model$variable_importances)
+
+print("AUC: ")
+p <- h2o.performance(air.gbm, air.valid)
+print(p@metrics$AUC)
 
 #RF
 # air.rf <- h2o.randomForest(x=myX,y=myY,data=air.train,ntree=10,depth=20,seed=12,importance=T,validation=air.valid, type = "BigData")

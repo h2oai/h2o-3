@@ -1066,6 +1066,11 @@ quantile.H2OFrame <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .h2o.nary_frame_op("quantile", x, probs)
+  
+  res <- as.matrix(res)
+  col <- as.numeric(res[,-1])
+  names(col) <- paste0(100*res[,1], "%")
+  col
 }
 
 #'
@@ -1091,6 +1096,7 @@ quantile.H2OFrame <- function(x,
 setMethod("summary", "H2OFrame", function(object, ...) {
   digits <- 12L
   cnames <- colnames(object)
+  missing <- list()
   cols <- sapply(cnames, function(x) {
       res <- .h2o.__remoteSend(object@conn, .h2o.__COL_SUMMARY(object@key, x), method = "GET")
       col <- res$frames[[1]]$columns[[1]]
@@ -1104,7 +1110,8 @@ setMethod("summary", "H2OFrame", function(object, ...) {
           params = format(signif(as.numeric(c(min(col$mins), col$percentiles[4], col$percentiles[6], col$mean, col$percentiles[8], max(col$maxs, na.rm = T))), digits), digits = 4)
         c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
           paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
-          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "))
+          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "), 
+          if(!is.null(col$missing_count) && col$missing_count > 0) paste0("NA's   :", col$missing_count, "  ") else NA)
       } else {
         top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
         if(is.null(col$domain)) domains <- top.ix[1:6] else domains <- col$domain[top.ix]
@@ -1124,6 +1131,7 @@ setMethod("summary", "H2OFrame", function(object, ...) {
                         sapply(counts, function(y) { ifelse(width[2] == nchar(y), "", paste(rep(' ', width[2] - nchar(y)), collapse='')) }),
                           counts, " ")
         result[is.na(domains)] <- NA
+        result <- c(result, NA)   # Pad end to accommodate potential additional row of NA counts in numeric cols
         result
       }
     })
@@ -1437,9 +1445,19 @@ NULL
 #' @rdname h2o.cbind
 #' @export
 h2o.cbind <- function(...) {
-  klasses <- unlist(lapply(list(...), function(l) is(l, "H2OFrame")))
+  li <- list(...)
+  use.args <- FALSE
+  if( length(li)==1 && is.list(li[[1]]) ) {
+    li <- li[[1]]
+    use.args <- TRUE
+  }
+  klasses <- unlist(lapply(li, function(l) is(l, "H2OFrame")))
   if (any(!klasses)) stop("`h2o.cbind` accepts only of H2OFrame objects")
-  .h2o.nary_frame_op("cbind", ...)
+  if( use.args ) {
+    .h2o.nary_frame_op("cbind", .args=li)
+  } else {
+    .h2o.nary_frame_op("cbind", ...)
+  }
 }
 
 #' Set a Factor Column to Level

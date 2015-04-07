@@ -13,12 +13,12 @@ source('../h2o-runit.R')
 
 test.colapply <- function(conn) {
   Log.info('Uploading hepatitis data from jira web to H2O...')
-  hep <- h2o.importFile(conn, path=locate("smalldata/hepatitis.data.txt"), "hep")
+  hep <- h2o.importFile(conn, path=locate("smalldata/drf_test/hepatitis.data.txt"), "hep")
   
   Log.info('Print head of dataset')
   Log.info(head(hep))
  
-  m <- h2o.randomForest(x = c("C9", "C12", "C13", "C15", "C16", "C18"), y = "C1", data = hep, ntree = 10, depth = 100, importance = T) 
+  m <- h2o.randomForest(x = c("C9", "C12", "C13", "C15", "C16", "C18"), y = "C1", training_frame = hep, ntrees = 10, max_depth = 100)
 
   print(m)  
   testEnd()

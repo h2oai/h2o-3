@@ -82,6 +82,7 @@ public abstract class ASTOp extends AST {
     putBinInfix(new ASTMul());
     putBinInfix(new ASTMMult());
     putBinInfix(new ASTDiv());
+    putBinInfix(new ASTIntDiv());
     putBinInfix(new ASTPow());
     putBinInfix(new ASTPow2());
     putBinInfix(new ASTMod());
@@ -1172,6 +1173,12 @@ class ASTDiv extends ASTBinOp { public ASTDiv() { super(); } @Override String op
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
 }
+class ASTIntDiv extends ASTBinOp { public ASTIntDiv() { super(); } @Override String opStr(){ return "intDiv"; } @Override ASTOp make() { return new ASTIntDiv();}
+  @Override double op(double d0, double d1) { return (int)d0/(int)d1;}
+  @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+  @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+  @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot divide Strings.");}
+}
 class ASTPow extends ASTBinOp { public ASTPow() { super(); } @Override String opStr(){ return "^"  ;} @Override ASTOp make() {return new ASTPow ();}
   @Override double op(double d0, double d1) { return Math.pow(d0,d1);}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
@@ -1184,7 +1191,7 @@ class ASTPow2 extends ASTBinOp { public ASTPow2() { super(); } @Override String 
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
   @Override String op(String s0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
 }
-class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "mod"  ;} @Override ASTOp make() {return new ASTMod ();}
+class ASTMod extends ASTBinOp { public ASTMod() { super(); } @Override String opStr(){ return "mod"; } @Override ASTOp make() {return new ASTMod ();}
   @Override double op(double d0, double d1) { return d0%d1;}
   @Override String op(String s0, double d1) {throw new IllegalArgumentException("Cannot mod (%) Strings.");}
   @Override String op(double d0, String s1) {throw new IllegalArgumentException("Cannot exponentiate Strings.");}
@@ -2293,7 +2300,10 @@ class ASTQtile extends ASTUniPrefixOp {
       }
 
     // else ASTSeq
-    } else seq = E.parse();
+    } else {
+      seq = E.parse();
+      _probs=null;
+    }
     if (seq != null)
       if (seq instanceof ASTId) seq = Env.staticLookup((ASTId)seq);
     // Finish the rest
@@ -2329,9 +2339,11 @@ class ASTQtile extends ASTUniPrefixOp {
     QuantileModel q = new Quantile(parms).trainModel().get();
     
     Frame fr = new Frame();
+    fr.add("Probs",Vec.makeCon(parms._probs));
     for( int i=0; i<x.numCols(); i++ )
       fr.add(x._names[i]+"Quantiles",Vec.makeCon(q._output._quantiles[i]));
     q.delete();
+    parms._probs=_probs=null;
     env.pushAry(fr);
   }
 }
@@ -3101,14 +3113,17 @@ class ASTIfElse extends ASTUniPrefixOp {
     if (env.isAry()) no  = env.popAry(); else dno  = env.popDbl();
 
     if (yes != null && no != null) {
-      if (yes.numCols() != no.numCols())
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + no.numCols() + ".");
+      if (yes.numCols() != no.numCols()) {
+        if (!((yes.numCols() == 1 && no.numCols() != 1) || (yes.numCols() != 1 && no.numCols() == 1))) {
+          throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + yes.numCols() + " columns; `no` has " + no.numCols() + " columns.");
+        }
+      }
     } else if (yes != null) {
       if (yes.numCols() != 1)
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + yes.numCols() + "; `no` has " + 1 + ".");
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + yes.numCols() + " columns; `no` has " + 1 + " columns.");
     } else if (no != null) {
       if (no.numCols() != 1)
-        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has" + 1 + "; `no` has " + no.numCols() + ".");
+        throw new IllegalArgumentException("Column mismatch between `yes` and `no`. `yes` has " + 1 + "; `no` has " + no.numCols() + ".");
     }
     Frame fr2;
     if( tst.numRows()==1 && tst.numCols()==1 ) {

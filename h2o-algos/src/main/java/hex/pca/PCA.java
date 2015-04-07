@@ -71,7 +71,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("PCALoading_" + Key.rand());
-    if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+    if (_parms._gamma < 0) error("_gamma", "_gamma must be a non-negative number");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
@@ -85,10 +85,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points","The user-specified points must have k = " + _parms._k + " rows");
     }
-    // Currently, does not work on categorical data
+
+    // PCA does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
-      if (!vecs[i].isNumeric()) throw H2O.unimpl();
+      if (!vecs[i].isNumeric()) {
+        // throw H2O.unimpl("PCA currently only works on numeric data");
+        error("_train", "_train must contain only numeric data");
+        break;
+      }
     }
   }
 

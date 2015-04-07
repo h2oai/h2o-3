@@ -201,13 +201,12 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
-  if (delete_train)
-    h2o.rm(temp_train_key)
-  if (!is.null(params$validation_frame))
-    if (delete_valid)
-      h2o.rm(temp_valid_key)
-  m
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+}
+
+h2o.getFutureModel <- function(object) {
+  .h2o.__waitOnJob(object@h2o, object@job_key)
+  h2o.getModel(object@destination_key, object@h2o)
 }
 
 #' @export
@@ -650,12 +649,15 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
   max_metrics <- object@metrics$max_criteria_and_metric_scores
   p <- max_metrics[match("tps",max_metrics$Metric),3]
   n <- max_metrics[match("fps",max_metrics$Metric),3]
-  lapply(thresholds,function(t) {
+  m <- lapply(thresholds,function(t) {
     row <- h2o.find_row_by_threshold(object,t)
     tps <- row$tps
     fps <- row$fps
     matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
   })
+  names(m) <- "Actual/Predicted"
+  m
+  dimnames(m[[1]]) <- list(list("0","1"), list("0","1"))
 })
 
 #' @export
@@ -667,4 +669,23 @@ plot.H2OBinomialMetrics <- function(object, type = "roc", ...) {
     plot(1 - object@metrics$thresholds_and_metric_scores$specificity, object@metrics$thresholds_and_metric_scores$recall, main = paste(yaxis, "vs", xaxis), xlab = xaxis, ylab = yaxis, ...)
     abline(0, 1, lty = 2)
   }
+}
+
+#' @export
+screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...) {
+  if(x@algorithm != "pca") stop("x must be a H2O PCA model")
+  if(missing(npcs))
+    npcs = min(10, x@model$parameters$k)
+  else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
+    stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
+  
+  if(missing(main))
+    main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
+  
+  if(type == "barplot")
+    barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else if(type == "lines")
+    lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
+  else
+    stop("type must be either 'barplot' or 'lines'")
 }
