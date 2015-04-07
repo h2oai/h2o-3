@@ -71,7 +71,7 @@ The following parameters have been removed:
 
 The following parameters have been added: 
 
-- `seed`: A random number to control sampling and initialization. 
+- `seed`: A random number to control sampling and initialization when `balance_classes` is enabled. 
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
 
 ###GBM Algorithm Comparison
@@ -207,6 +207,8 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
+**Note** In H2O, the `normalize` parameter was disabled by default.The `standardize` parameter is enabled by default in H2O-Dev to provide more accurate results for datasets containing columns with large values. 
+
 ###Deprecated K-Means Parameters
 
 The following parameters have been removed: 
@@ -265,6 +267,7 @@ The following parameters have been removed:
 The following parameters have been added: 
 
 - `export_weights_and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
+- `average_activation`: Average activation for sparse auto-encoder (Experimental)
 
 The following options for the `loss` parameter have been added:
 - `absolute`: Provides strong penalties for mispredictions 
