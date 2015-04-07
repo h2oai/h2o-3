@@ -86,8 +86,10 @@ H2O  | H2O-Dev
 `validation,` | `validation_frame = NULL,` 
 `balance.classes = FALSE` | `balance_classes = FALSE,` 
 `max.after.balance.size = 5,` | `max_after_balance_size = 1,` 
-`group_split = TRUE,` | `seed,` 
-`importance = FALSE,` | `score_each_iteration)`
+ - | `seed,` 
+ - | `score_each_iteration)`
+`group_split = TRUE,` | 
+`importance = FALSE,` | 
 `nfolds = 0,` | 
 `holdout.fraction = 0,` | 
 `class.sampling.factors = NULL,` | 
@@ -147,15 +149,19 @@ H2O  | H2O-Dev
  - | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_eps = 0` 
-`strong_rules = TRUE,` | `balance_classes = FALSE,` 
-`return_all_lambda = FALSE,` | `class_sampling_factors,` 
-`intercept = TRUE,` | `max_after_balance_size = 5,`
-`non_negative = FALSE,` | `solver = c("ADMM", "L_BFGS"),` 
+`strong_rules = TRUE,` | -
+- | `balance_classes = FALSE,` 
+`return_all_lambda = FALSE,` | 
+- | `class_sampling_factors,`
+`intercept = TRUE,` | 
+- | `max_after_balance_size = 5,`
+`non_negative = FALSE,` | 
+- | `solver = c("ADMM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
 `family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
-`tweedie.p = ifelse(family == "tweedie",` | `tweedie_variance_power = NaN,` 
-`1.5, NA_real_),` | `tweedie_link_power = NaN,` 
+`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` | `tweedie_variance_power = NaN,` 
+- | `tweedie_link_power = NaN,` 
 `alpha = 0.5,` | `alpha = 0.5,` 
 `prior = NULL` | `prior1 = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
@@ -246,7 +252,7 @@ H2O  | H2O-Dev
 `nfolds = 0,` | `n_folds = 0,` 
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
-`checkpoint,` | `checkpoint,` 
+`checkpoint = " "` | `checkpoint,` 
 `autoencoder,` | `autoencoder = FALSE,` 
 `use_all_factor_levels,` | `use_all_factor_levels = TRUE`
 `activation,` | `activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),`
@@ -355,14 +361,14 @@ H2O  | H2O-Dev
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
 `seed = -1,` | `seed,` 
-`nodesize=1,` |  
+`nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
-`holdout.fraction=0,` | 
-`max.after.balance.size=5,` | 
+`holdout.fraction = 0,` | 
+`max.after.balance.size = 5,` | 
 `class.sampling.factors = NULL,` | 
-`doGrpSplit=TRUE,` | 
+`doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
 `stat.type = "ENTROPY",` |
