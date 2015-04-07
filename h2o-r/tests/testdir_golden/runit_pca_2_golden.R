@@ -10,7 +10,7 @@ test.pcastand.golden <- function(H2Oserver) {
   Log.info("Compare with PCA when center = TRUE, scale. = TRUE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = TRUE)
   fitH2O <- h2o.prcomp(arrestsH2O, k = 4, gamma = 0, init = "PlusPlus", center = TRUE, scale. = TRUE)
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  checkPCAModel(fitH2O, fitR, tolerance = 1e-3)
   
 #   pcimpR <- summary(fitR)$importance
 #   pcimpH2O <- fitH2O@model$pc_importance
