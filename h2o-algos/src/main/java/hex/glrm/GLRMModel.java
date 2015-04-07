@@ -59,7 +59,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
-          return Math.exp(u) - a;
+          return Math.exp(u)-a;
         case Hinge:
           return a*u <= 1 ? -a : 0;
         case Logistic:
@@ -67,6 +67,30 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         default:
           throw new RuntimeException("Unknown loss function " + _loss);
       }
+    }
+
+    // r_i(x_i): Regularization function for single entry x_i
+    public final double regularize(double u) {
+      switch(_regularization) {
+        case L2:
+          return u*u;
+        case L1:
+          return Math.abs(u);
+        default:
+          throw new RuntimeException("Unknown regularization function " + _regularization);
+      }
+    }
+
+    // \sum_i r_i(x_i): Sum of regularization function for all entries of X
+    public final double regularize(double[][] u) {
+      if(u == null) return 0;
+
+      double ureg = 0;
+      for(int i = 0; i < u.length; i++) {
+        for(int j = 0; j < u[0].length; j++)
+          ureg = regularize(u[i][j]);
+      }
+      return ureg;
     }
 
     // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at u
@@ -135,7 +159,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         _work = new double[dims];
       }
 
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m, int row) { return dataRow; }
+      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
 
       @Override
       public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {

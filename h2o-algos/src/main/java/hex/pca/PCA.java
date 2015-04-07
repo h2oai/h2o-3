@@ -16,6 +16,7 @@ import hex.FrameTask;
 import hex.gram.Gram.NonSPDMatrixException;
 
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -209,16 +210,15 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
     return regularizedCholesky(gram, 10);
   }
 
-
   class PCADriver extends H2O.H2OCountedCompleter<PCADriver> {
 
     // Initialize Y to be the k centers from k-means++
     double[][] initialY(DataInfo dinfo) {
       double[][] centers;
+      int numCenters = _parms._k;
+      int numCols = _train.numCols();
 
       if (null != _parms._user_points) { // User-specified starting points
-        int numCenters = _parms._k;
-        int numCols = _parms._user_points.get().numCols();
         centers = new double[numCenters][numCols];
         Vec[] centersVecs = _parms._user_points.get().vecs();
 
@@ -227,6 +227,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           for (int c = 0; c < numCols; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
+        if(frobenius2(centers) == 0)
+          throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
@@ -253,6 +255,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // K-means automatically destandardizes centers! Need the original standardized version
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
+        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(numCenters, numCols);
       }
       return centers;
     }

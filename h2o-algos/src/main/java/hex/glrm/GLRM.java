@@ -9,6 +9,7 @@ import hex.schemas.GLRMV2;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -76,6 +77,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
+  // Squared Frobenius norm of a matrix (sum of squared entries)
+  public static double frobenius2(double[][] x) {
+    if(x == null) return 0;
+
+    double frob = 0;
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < x[0].length; j++)
+        frob += x[i][j] * x[i][j];
+    }
+    return frob;
+  }
+
   // Transform each column of a 2-D array
   public static double[][] transform(double[][] centers, int ncats, double[] normSub, double[] normMul) {
     int K = centers.length;
@@ -96,10 +109,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Initialize Y to be the k centers from k-means++
     public double[][] initialY() {
       double[][] centers;
+      int numCenters = _parms._k;
+      int numCols = _train.numCols();
 
       if (null != _parms._user_points) { // User-specified starting points
-        int numCenters = _parms._k;
-        int numCols = _parms._user_points.get().numCols();
         centers = new double[numCenters][numCols];
         Vec[] centersVecs = _parms._user_points.get().vecs();
 
@@ -108,6 +121,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for (int c = 0; c < numCols; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
+        if(frobenius2(centers) == 0)
+          throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
+
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
@@ -134,6 +150,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // K-means automatically destandardizes centers! Need the original standardized version
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
+        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(numCenters, numCols);
       }
       return centers;
     }
@@ -191,25 +208,31 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         x = new Frame(_parms._loading_key, null, xvecs);
         DKV.put(x._key, x);
 
-        // 0) Initialize Y matrix using k-means++
+        // 0) Initialize Y matrix and take single step of X
         double nobs = _train.numRows() * _train.numCols();
         double[][] yt = ArrayUtils.transpose(initialY());
+        UpdateX xinit = new UpdateX(dinfo, _parms, yt, _train.numCols(), 1.0);
+        xinit.doAll(dinfo._adaptedFrame);
+
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        double obj = xinit._loss + _parms._gamma * (xinit._xreg + _parms.regularize(yt));   // Initial objective function
 
         while (!isDone(model)) {
           double step = 1/(model._output._iterations+1);  // Step size \alpha_k = 1/(iters + 1)
 
-          // 1) Update X matrix given fixed Y
-          UpdateX xtsk = new UpdateX(dinfo, _parms, yt, _train.numCols(), step);
-          xtsk.doAll(dinfo._adaptedFrame);
-
-          // 2) Update Y matrix given fixed X
+          // 1) Update Y matrix given fixed X
           UpdateY ytsk = new UpdateY(dinfo, _parms, yt, _train.numCols(), step);
           yt = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
 
-          // TODO: Compute average change in objective function each iteration
-          model._output._avg_change_obj /= nobs;
+          // 2) Update X matrix given fixed Y
+          UpdateX xtsk = new UpdateX(dinfo, _parms, yt, _train.numCols(), step);
+          xtsk.doAll(dinfo._adaptedFrame);
+
+          // 3) Compute average change in objective function
+          double obj_new = xtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
+          model._output._avg_change_obj = (obj - obj_new) / nobs;   // TODO: Check obj_new < obj, else reduce step size and redo
+          obj = obj_new;
           model._output._iterations++;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -248,12 +271,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   private static class UpdateX extends MRTask<UpdateX> {
-    double[] _normSub;  // For standardizing A only
-    double[] _normMul;
-    int _ncolA, _ncolX;
     GLRMParameters _parms;
-    double _alpha;
-    double[][] _yt;
+    double[] _normSub, _normMul;  // For standardizing A only
+    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
+    double _alpha;      // Step size
+    double[][] _yt;     // _yt = Y' (transpose of Y)
+
+    double _loss;    // Loss evaluated on A - XY using new X (and current Y)
+    double _xreg;    // Regularization evaluated on new X
 
     UpdateX(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA, final double alpha) {
       assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
@@ -271,13 +296,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
       assert (_ncolX + _ncolA) == cs.length;
-      double[] grad = new double[_ncolX];
+      double[] a = new double[_ncolA];
+      _loss = _xreg = 0;
 
       for(int row = 0; row < cs[0]._len; row++) {
+        double[] grad = new double[_ncolX];
+        double[] xnew = new double[_ncolX];
+
         // Compute gradient of objective at row
         for(int j = 0; j < _ncolA; j++) {
-          double a = cs[j].atd(row);
-          if(Double.isNaN(a)) continue;   // Skip missing observations in row
+          a[j] = cs[j].atd(row);
+          if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Inner product x_i * y_j
           int idx = 0;
@@ -287,7 +316,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           assert idx == _ncolX;
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
+          double weight = _parms.lgrad(xy, (a[j] - _normSub[j]) * _normMul[j]);
           for(int i = 0; i < _ncolX; i++)
             grad[i] += weight * _yt[j][i];
         }
@@ -296,24 +325,37 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         int idx = 0;
         for(int k = _ncolA; k < cs.length; k++) {
           double xold = cs[k].atd(row);   // Old value of x_i
-          double prox = _parms.rproxgrad(xold - _alpha * grad[idx], _alpha);  // Proximal gradient
-          cs[k].set(row, prox);
+          xnew[idx] = _parms.rproxgrad(xold - _alpha * grad[idx], _alpha);  // Proximal gradient
+          cs[k].set(row, xnew[idx]);
+          _xreg += _parms.regularize(xnew[idx]);
           idx++;
         }
-        assert idx == grad.length;
+        assert idx == _ncolX;
+
+        // Compute loss function using new x_i
+        for(int j = 0; j < _ncolA; j++) {
+          if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
+          double xy = ArrayUtils.innerProduct(xnew, _yt[j]);
+          _loss += _parms.loss(xy, a[j]);
+        }
       }
+    }
+
+    @Override public void reduce(UpdateX other) {
+      _loss += other._loss;
+      _xreg += other._xreg;
     }
   }
 
   private static class UpdateY extends MRTask<UpdateY> {
-    double[] _normSub;  // For standardizing A only
-    double[] _normMul;
-    int _ncolA, _ncolX;
     GLRMParameters _parms;
-    double _alpha;      // Step size this iteration
+    double[] _normSub, _normMul;  // For standardizing A only
+    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
+    double _alpha;      // Step size
     double[][] _ytold;  // Old Y matrix
 
     double[][] _ytnew;  // New Y matrix
+    double _yreg;    // Regularization evaluated on new Y
 
     UpdateY(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA, final double alpha) {
       assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
@@ -326,24 +368,25 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       _parms = parms;
       _alpha = alpha;
       _ytold = yt;
-
-      _ytnew = new double[_ncolA][_ncolX];
+      _yreg = 0;
+      // _ytnew = new double[_ncolA][_ncolX];
     }
 
     // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
       assert (_ncolX + _ncolA) == cs.length;
+      _ytnew = new double[_ncolA][_ncolX];
 
       for(int j = 0; j < _ncolA; j++) {
         // Compute gradient of objective at column
         for(int row = 0; row < cs[0]._len; row++) {
           double a = cs[j].atd(row);
-          if (Double.isNaN(a)) continue;   // Skip missing observations in column
+          if(Double.isNaN(a)) continue;   // Skip missing observations in column
 
           // Inner product x_i * y_j
           int idx = 0;
           double xy = 0;
-          for (int k = _ncolA; k < cs.length; k++)
+          for(int k = _ncolA; k < cs.length; k++)
             xy += cs[k].atd(row) * _ytold[j][idx++];
           assert idx == _ncolX;
 
@@ -352,11 +395,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
           for(int k = _ncolA; k < cs.length; k++)
             _ytnew[j][idx++] += weight * cs[k].atd(row);
+          assert idx == _ncolX;
         }
       }
     }
 
-    @Override public void reduce(UpdateY other) { ArrayUtils.add(_ytnew, other._ytnew); }
+    @Override public void reduce(UpdateY other) {
+      ArrayUtils.add(_ytnew, other._ytnew);
+    }
 
     @Override protected void postGlobal() {
       // Compute new y_j values using proximal gradient
@@ -364,8 +410,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         for(int k = 0; k < _ncolX; k++) {
           double u = _ytold[j][k] - _alpha * _ytnew[j][k];
           _ytnew[j][k] = _parms.rproxgrad(u, _alpha);
+          _yreg += _parms.regularize(_ytnew[j][k]);
         }
       }
     }
+
   }
 }

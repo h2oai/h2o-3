@@ -434,6 +434,19 @@ public class ArrayUtils {
     }
   }
 
+  // Generate a n by m array of random numbers drawn from the standard normal distribution
+  public static double[][] gaussianArray(int n, int m) { return gaussianArray(n, m, System.currentTimeMillis()); }
+  public static double[][] gaussianArray(int n, int m, long seed) {
+    if(n <= 0 || m <= 0) return null;
+    double[][] result = new double[n][m];
+    Random random = getRNG(seed);
+
+    for(int i = 0; i < n; i++) {
+      for(int j = 0; j < m; j++)
+        result[i][j] = random.nextGaussian();
+    }
+    return result;
+  }
 
   /** Returns number of strings which represents a number. */
   public static int numInts(String... a) {
