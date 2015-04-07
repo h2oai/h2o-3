@@ -47,7 +47,6 @@ class RollupStats extends Iced {
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
 
-  public boolean hasStats(){return _naCnt >= 0;}
   public boolean hasHisto(){return _bins != null;}
 
   // Check for: Vector is mutating and rollups cannot be asked for
@@ -57,17 +56,17 @@ class RollupStats extends Iced {
   // Check for: Rollups available
   private boolean isReady() { return _naCnt>=0; }
 
-  private RollupStats() {
+  private RollupStats(int mode) {
     _mins = new double[5];  Arrays.fill(_mins, Double.NaN);
     _maxs = new double[5];  Arrays.fill(_maxs, Double.NaN);
     _pctiles = new double[Vec.PERCENTILES.length];  Arrays.fill(_pctiles, Double.NaN);
     _mean = _sigma = Double.NaN;
-    _size = _naCnt = 0;
+    _size = 0;
+    _naCnt = mode;
   }
 
-  private RollupStats( int mode ) { this(); _naCnt = mode; }
-  private static RollupStats makeComputing(Key rskey) { return new RollupStats(-1); }
-  static RollupStats makeMutating (Key rskey) { return new RollupStats(-2); }
+  private static RollupStats makeComputing() { return new RollupStats(-1); }
+  static RollupStats makeMutating () { return new RollupStats(-2); }
 
   private RollupStats map( Chunk c ) {
     _size = c.byteSize();
@@ -243,25 +242,14 @@ class RollupStats extends Iced {
     @Override public boolean logVerbose() { return false; }
   }
 
-  private static RollupStats check( Key rskey, RollupStats rs, Value val ) {
-    if( val == null ) return rs==null ? makeComputing(rskey) : rs;
-    rs = val.get(RollupStats.class);
-    if( rs.isReady() ) return rs; // All good
-    if( rs.isMutating() )
-      throw new IllegalArgumentException("Cannot ask for roll-up stats while the vector is being actively written.");
-    assert rs.isComputing();
-    return rs;                  // In progress
-  }
-
-  static void start(final Vec vec, Futures fs){ start(vec,fs,false);}
   static void start(final Vec vec, Futures fs, boolean computeHisto) {
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = getOrNull(vec);
     if(rs == null || computeHisto && !rs.hasHisto())
-      fs.add(new RPC(vec.rollupStatsKey().home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
+      fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
         @Override
         public void callback(H2OCountedCompleter h2OCountedCompleter) {
-          DKV.get(vec.rollupStatsKey()); // fetch new results via DKV to enable caching of the results.
+          DKV.get(rskey); // fetch new results via DKV to enable caching of the results.
         }
       }).call());
   }
@@ -291,15 +279,10 @@ class RollupStats extends Iced {
   static RollupStats getOrNull(Vec vec) {
     final Key rskey = vec.rollupStatsKey();
     Value val = DKV.get(rskey);
-    if( val == null) {
-      if (vec.length() > 0)
-        return null;
-      else  // empty vec, presuming header file
-        return new RollupStats();
-    } else {
-      RollupStats rs = val.get(RollupStats.class);
-      return rs.isReady() ? rs : null;
-    }
+    if( val == null )           // No rollup stats present?
+      return vec.length() > 0 ? /*not computed*/null : /*empty vec*/new RollupStats(0);
+    RollupStats rs = val.get(RollupStats.class);
+    return rs.isReady() ? rs : null;
   }
   // Histogram base & stride
   double h_base() { return _mins[0]; }
@@ -350,7 +333,7 @@ class RollupStats extends Iced {
     @Override public byte priority(){return _priority; }
 
     private Value makeComputing(){
-      RollupStats newRs = RollupStats.makeComputing(_rsKey);
+      RollupStats newRs = RollupStats.makeComputing();
       CountedCompleter cc = getCompleter(); // should be null or RPCCall
       if(cc != null) assert cc.getCompleter() == null;
       newRs._tsk = cc == null?this:cc;
