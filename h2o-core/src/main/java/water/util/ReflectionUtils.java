@@ -59,7 +59,7 @@ public class ReflectionUtils {
 
   /**
    * Reflection helper which returns the actual class for a field which has a parameterized type.
-   * E.g., DeepLearningV2's "parameters" class is in parter ModelBuilderSchema, and is parameterized
+   * E.g., DeepLearningV2's "parameters" class is in parent ModelBuilderSchema, and is parameterized
    * by type parameter P.
    */
   public static Class findActualFieldClass(Class clz, Field f) {
