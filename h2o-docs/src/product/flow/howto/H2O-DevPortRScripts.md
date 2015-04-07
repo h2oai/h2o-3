@@ -39,6 +39,8 @@ Principal Components Regression (PCR) has also been deprecated. To obtain PCR va
 
 N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
+###Renamed GBM Parameters
+
 The following parameters have been renamed, but retain the same functions: 
 
 H2O Parameter Name | H2O-Dev Parameter Name
@@ -55,6 +57,8 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
 
+###Deprecated GBM Parameters
+
 The following parameters have been removed: 
 
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
@@ -63,12 +67,14 @@ The following parameters have been removed:
 - `class.sampling.factors`: Specifying the over- or under-sampling ratios per class is no longer supported. 
 - `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. 
 
+###New GBM Parameters
+
 The following parameters have been added: 
 
 - `seed`: A random number to control sampling and initialization. 
 - `score_each_iteration`: Display error rate information after each tree in the requested set is built. 
 
-
+###GBM Algorithm Comparison
 
 H2O  | H2O-Dev
 ------------- | -------------
@@ -102,6 +108,8 @@ H2O  | H2O-Dev
 
  N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
+###Renamed GLM Parameters
+
 The following parameters have been renamed, but retain the same functions:
 
 H2O Parameter Name | H2O-Dev Parameter Name
@@ -112,11 +120,13 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `nfolds` | `n_folds`
 `nlambda` | `nlambdas`
 `lambda.min.ratio` | `lambda_min_ratio`
- `iter.max` | `max_iter`
+ `iter.max` | `max_iterations`
  `epsilon` | `beta_eps`
  `beta_constraints` | `beta_constraint`
  
- The following parameters have been removed: 
+###Deprecated GLM Parameters
+ 
+The following parameters have been removed: 
  
  - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. >>
  - `higher_accuracy`: A logical value indicating whether to use line search. >>
@@ -128,6 +138,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
  - `offset`: Specify a column as an offset. >>
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >>
 
+###New GLM Parameters
  
  The following parameters have been added: 
  
@@ -137,7 +148,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
  - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
  - `solver`: Select ADMM or LBFGS. 
 
-
+###GLM Algorithm Comparison
 
 
 H2O  | H2O-Dev
@@ -183,6 +194,8 @@ H2O  | H2O-Dev
 <a name="Kmeans"></a>
 ##K-Means
 
+###Renamed K-Means Parameters
+
 The following parameters have been renamed, but retain the same functions: 
 
 H2O Parameter Name | H2O-Dev Parameter Name
@@ -194,16 +207,20 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `iter.max` | `max_iterations`
 `normalize` | `standardize`
 
+###Deprecated K-Means Parameters
+
 The following parameters have been removed: 
 
 - `dropNACols`:   Drop columns with more than 20% missing values.  >>To be added later?
+
+###New K-Means Parameters
 
 The following parameters have been added:
 
 - `user` has been added as an additional option for the `init` parameter. Using this parameter forces the K-Means algorithm to start at the user-specified points. 
 - `user_points`: Specify starting points for the K-Means algorithm. 
 
-
+###K-Means Algorithm Comparison
 
 H2O  | H2O-Dev
 ------------- | -------------
@@ -225,13 +242,7 @@ H2O  | H2O-Dev
 
 N-fold cross-validation and grid search will be supported in a future version of H2O-Dev. 
 
-The following parameters have been removed:
-
-- `classification`: Classification is now inferred from the data type.
-- `holdout_fraction`: >>
-- `classification_stop`: Classification is now inferred from the data type. 
-
-
+###Renamed Deep Learning Parameters
 
 The following parameters have been renamed, but retain the same functions: 
 
@@ -241,15 +252,25 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `key` | `destination_key`
 `validation` | `validation_frame`
 
+###Deprecated DL Parameters
+
+The following parameters have been removed:
+
+- `classification`: Classification is now inferred from the data type.
+- `holdout_fraction`: >>
+- `classification_stop`: Classification is now inferred from the data type. 
+
+###New DL Parameters
 
 The following parameters have been added: 
 
-- `export_weights__and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
+- `export_weights_and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
 
 The following options for the `loss` parameter have been added:
 - `absolute`: Provides strong penalties for mispredictions 
 - `huber`: Can improve results for regression 
 
+###DL Algorithm Comparison
 
 H2O  | H2O-Dev
 ------------- | -------------
@@ -324,6 +345,8 @@ H2O  | H2O-Dev
 
 **Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O-Dev is similar to DRF functionality in H2O. 
 
+###Renamed DRF Parameters
+
 The following parameters have been renamed, but retain the same functions: 
 
 H2O Parameter Name | H2O-Dev Parameter Name
@@ -337,24 +360,27 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `balance.classes` | `balance_classes`
 `score.each.iteration` | `score_each_iteration`
 
+###Deprecated DRF Parameters
+
 The following parameters have been removed: 
 
 - `classification`: This is now automatically inferred from the response type. To achieve classification with a 0/1 response column, explicitly convert the response to a factor (`as.factor()`). 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `nodesize`: Use the `build_tree_one_node` parameter instead. 
 - `holdout.fraction`: Specifying the fraction of the training data to hold out for validation is no longer supported. 
-- `max.after.balance.size`:  Maximum relative size of the training data after balancing class counts (can be less than 1.0) >>
-- `class.sampling.factors`: Desired over/under-sampling ratios per class (lexicographic order). >>
 - `doGrpSplit`: The bit-set group splitting of categorical variables is now the default. 
-- `verbose`: Include tree splits and extra statistics information in the stdout. >>
-- `oobee`: Out-of-bag error estimate. >>
-- `stat.type`: Defines the statistic type (entropy, gini, or twoing) >>
-- `type`: Enables type selection. >>
+- `verbose`: Infonrmation about tree splits and extra statistics is now included automatically in the stdout. 
+- `oobee`: The out-of-bag error estimate is now computed automatically (if no validation set is specified).
+- `stat.type`: This parameter was used for SpeeDRF, which is no longer supported.
+- `type`: This parameter was used for SpeeDRF, which is no longer supported. 
+
+###New DRF Parameters
 
 The following parameter has been added: 
 
 - `build_tree_one_node`: Run on a single node to use fewer CPUs. 
 
+###DRF Algorithm Comparison
 
 H2O  | H2O-Dev
 ------------- | -------------
@@ -373,14 +399,14 @@ H2O  | H2O-Dev
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
-`seed = -1,` | `seed,` 
+`seed = -1,` | `seed)` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | 
-`class.sampling.factors = NULL,` | 
+`max.after.balance.size = 5,` | `max_after_balance_size` (to be readded by Arno>>)
+`class.sampling.factors = NULL,` | `class_sampling_factors` (to be readded by Arno>>)
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
