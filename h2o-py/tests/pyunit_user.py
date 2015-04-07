@@ -11,7 +11,7 @@ def user(ip, port):
     a.head()
 
     print a[0].name()  # Column header
-    a[0][2].show()  # column 0, row 2 value
+    a[0,2].show()  # column 0, row 2 value
     a["sepal_len"][2].show()  # Column 0, row 2 value
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
@@ -52,7 +52,9 @@ def user(ip, port):
     c = None
     # Internal "Expr(c=a+b)" not dead!
 
-    print 1 + (a[0] + b[1]).mean()
+    # column addition can be a big data operation, so the result should be an Expr.
+    # 'mean' can't be overloaded in python, so TODO: create custom 'mean' function to operate on Exprs.
+    # print 1 + (a[0] + b[1]).mean()
 
     #import collections
 
