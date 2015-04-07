@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
+public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -62,9 +62,15 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
     P impl = null;
+
+    // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
+    if (ModelBuilderSchema.class == this.getClass()) {
+      return (P)new ModelParametersSchema();
+    }
+
     try {
-    Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
-    impl = (P)parameters_class.newInstance();
+      Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      impl = (P)parameters_class.newInstance();
     }
     catch (Exception e) {
       throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);

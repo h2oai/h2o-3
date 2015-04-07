@@ -18,6 +18,10 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
   @API(help="Simple name of the Schema.  NOTE: the schema_names form a single namespace.")
   public String name ;
 
+  /** The simple schema superclass name, e.g. ModelSchema, used in the schema metadata.  Must not be changed after creation (treat as final).  */
+  @API(help="Simple name of the superclass of the Schema.  NOTE: the schema_names form a single namespace.")
+  public String superclass ;
+
   @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
   public String type;
 

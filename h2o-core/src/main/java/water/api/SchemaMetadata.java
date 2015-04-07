@@ -1,10 +1,10 @@
 package water.api;
 
-import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
+import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -21,7 +21,8 @@ import java.util.Map;
 public final class SchemaMetadata extends Iced {
 
   public int version;
-  public String name ;
+  public String name;
+  public String superclass;
   public String type;
 
   public List<FieldMetadata> fields;
@@ -356,6 +357,8 @@ public final class SchemaMetadata extends Iced {
     version = schema.__meta.schema_version;
     name = schema.__meta.schema_name;
     type = schema.__meta.schema_type;
+
+    superclass = schema.getClass().getSuperclass().getSimpleName();
 
     fields = new ArrayList<>();
     // Fields up to but not including Schema

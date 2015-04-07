@@ -88,8 +88,9 @@ public class ReflectionUtils {
 
     ParameterizedType generic_super = (ParameterizedType)clz.getGenericSuperclass();
 
-    // NOTE: only handles a single level of parameterization right now:
-    return (Class)generic_super.getActualTypeArguments()[which_tv];
+    if (generic_super.getActualTypeArguments()[which_tv] instanceof Class)
+      return (Class)generic_super.getActualTypeArguments()[which_tv];
+    return findActualFieldClass(clz.getSuperclass(), f);
   }
 
   // Best effort conversion from an Object to a double
