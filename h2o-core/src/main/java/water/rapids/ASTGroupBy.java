@@ -485,6 +485,7 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   static class AGG extends AST {
+    @Override AGG make() { return new AGG(); }
     // (AGG #N "agg" #col "na"  "agg" #col "na"   => string num string   string num string
     String opStr() { return "agg";  }
     private AGG[] _aggs;

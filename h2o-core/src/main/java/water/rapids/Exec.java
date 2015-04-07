@@ -123,9 +123,9 @@ public class Exec extends Iced {
   }
 
   private AST lookup(String tok) {
-    AST sym = ASTOp.SYMBOLS.get(tok);
+    AST sym = ASTOp.SYMBOLS.get(tok).make();
     if (sym != null) return sym;
-    sym = ASTOp.UDF_OPS.get(tok);
+    sym = ASTOp.UDF_OPS.get(tok).make();
     if (sym != null) return sym;
     throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
   }

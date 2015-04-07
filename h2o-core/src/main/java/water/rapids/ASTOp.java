@@ -1822,9 +1822,9 @@ class ASTCbind extends ASTUniPrefixOp {
       if(a==null) E.rewind();
       else        E.rewind(a);
     }
-    ASTCbind res = (ASTCbind) clone();
     AST[] arys = new AST[argcnt=dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    ASTCbind res = (ASTCbind) clone();
     res._asts = arys;
     return res;
   }
