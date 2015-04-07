@@ -65,7 +65,7 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
       result = (KeyV1)c.newInstance(key);
     }
     catch (Exception e) {
-      throw H2O.fail("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": " + e + "; cause: " + e.getCause() + " " + Arrays.toString(e.getCause().getStackTrace()));
+      throw new H2OIllegalArgumentException("Caught exception trying to instantiate KeyV1 for class: " + clz.toString() + ": " + e + "; cause: " + e.getCause() + " " + Arrays.toString(e.getCause().getStackTrace()));
     }
     return result;
   }

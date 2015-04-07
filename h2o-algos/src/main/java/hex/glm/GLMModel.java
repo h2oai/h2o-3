@@ -181,7 +181,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public double _beta_epsilon = 1e-4;
-    public int _max_iter = -1;
+    public int _max_iterations = -1;
     public int _n_folds;
 
     public Key<Frame> _beta_constraint = null;
