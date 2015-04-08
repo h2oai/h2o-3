@@ -320,6 +320,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
+          assert !Double.isInfinite(g);
           ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }
