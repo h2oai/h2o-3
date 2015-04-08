@@ -1,12 +1,14 @@
 package water.rapids;
 
-import hex.quantile.*;
 import hex.DMatrix;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import jsr166y.CountedCompleter;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
+import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import sun.misc.Unsafe;
 import water.*;
@@ -185,6 +187,7 @@ public abstract class ASTOp extends AST {
 
     // Date
     putPrefix(new ASTasDate());
+    putPrefix(new ASTToDate());
 
 //Classes that may not come back:
 
@@ -415,26 +418,80 @@ class ASTasDate extends ASTUniPrefixOp {
     if( fr.vecs().length != 1 || !(fr.vecs()[0].isEnum() || fr.vecs()[0].isString()))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
+    final String[] dom  = fr.anyVec().domain();
+    final boolean isStr = dom==null && fr.anyVec().isString();
+    if( !isStr )
+      assert dom!=null : "toDate error: domain is null, but vec is not String";
+
     Frame fr2 = new MRTask() {
-      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+      private transient DateTimeFormatter _fmt;
+      @Override public void setupLocal() { _fmt=ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone()); }
+      @Override public void map( Chunk c, NewChunk nc ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
-        final boolean isStr = chks[0] instanceof CStrChunk;
-        String date = null;
-        DateTimeFormatter dtf = ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone());
-        for( int i=0; i<nchks.length; i++ ) {
-          NewChunk n =nchks[i];
-          Chunk c = chks[i];
-          int rlen = c._len;
-          for( int r=0; r<rlen; r++ ) {
-            if (!c.isNA(r)) {
-              if (isStr) date = c.atStr(new ValueString(), r).toString();
-              else date = c.vec().domain()[(int)c.atd(r)];
-              n.addNum(DateTime.parse(date, dtf).getMillis(), 0);
-            } else n.addNA();
-          }
+        String date;
+        ValueString vStr = new ValueString();
+        for( int i=0; i<c._len; ++i ) {
+          if( !c.isNA(i) ) {
+            if( isStr ) date = c.atStr(vStr, i).toString();
+            else        date = dom[(int)c.at8(i)];
+            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+          } else nc.addNA();
         }
       }
-    }.doAll(fr.numCols(),fr).outputFrame(fr._names, null);
+    }.doAll(1,fr).outputFrame(fr._names, null);
+    env.pushAry(fr2);
+  }
+}
+
+// pass thru directly to Joda -- as.Date is because R is a special snowflake
+class ASTToDate extends ASTUniPrefixOp {
+  protected String _format;
+  ASTToDate() { super(new String[]{"toDate", "x", "format"}); }
+  @Override String opStr() { return "toDate"; }
+  @Override ASTOp make() {return new ASTToDate();}
+  @Override ASTToDate parse_impl(Exec E) {
+    AST ast = E.parse();
+    if (ast instanceof ASTId) ast = Env.staticLookup((ASTId)ast);
+    try {
+      _format = ((ASTString)E.skipWS().parse())._s;
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("`format` must be a string.");
+    }
+    ASTToDate res = (ASTToDate) clone();
+    res._asts = new AST[]{ast};
+    return res;
+  }
+  @Override void apply(Env env) {
+    final String format = _format;
+    if (format.isEmpty()) throw new IllegalArgumentException("toDate requires a non-empty format string");
+    // check the format string more?
+
+    Frame fr = env.popAry();
+
+    if( fr.vecs().length != 1 || !(fr.vecs()[0].isEnum() || fr.vecs()[0].isString()))
+      throw new IllegalArgumentException("toDate requires a single column of factors or strings");
+
+    final String[] dom  = fr.anyVec().domain();
+    final boolean isStr = dom==null && fr.anyVec().isString();
+    if( !isStr )
+      assert dom!=null : "toDate error: domain is null, but vec is not String";
+
+    Frame fr2 = new MRTask() {
+      private transient DateTimeFormatter _fmt;
+      @Override public void setupLocal() {_fmt = DateTimeFormat.forPattern(format).withZone(ParseTime.getTimezone());}
+      @Override public void map( Chunk c, NewChunk nc ) {
+        //done on each node in lieu of rewriting DateTimeFormatter as Iced
+        String date;
+        ValueString vStr = new ValueString();
+        for( int i=0; i<c._len; ++i ) {
+          if( !c.isNA(i) ) {
+            if( isStr ) date = c.atStr(vStr, i).toString();
+            else        date = dom[(int)c.at8(i)];
+            nc.addNum(DateTime.parse(date,_fmt).getMillis());
+          } else nc.addNA();
+        }
+      }
+    }.doAll(1,fr).outputFrame(fr._names, null);
     env.pushAry(fr2);
   }
 }
