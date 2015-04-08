@@ -4,6 +4,7 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.IcedBitSet;
+import water.util.MathUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -208,6 +209,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     long   n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
     double p0 = equal != 1 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal != 1 ? sums1[best] :  sums[best]              ;
+    if( MathUtils.equalsWithinOneSmallUlp((float)(p0/n0),(float)(p1/n1)) ) return null; // No difference in predictions, which are all at 1 float ULP
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 
