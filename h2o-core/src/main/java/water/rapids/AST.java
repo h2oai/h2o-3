@@ -22,6 +22,7 @@ abstract public class AST extends Iced {
   abstract void exec(Env e);
   abstract String value();
   abstract int type();
+  abstract AST make();
   public int numChildren() { return _asts.length; } // Must "apply" each arg, then put the results into ASTOp/UDF
 
   /**
@@ -159,6 +160,7 @@ class ASTId extends AST {
   boolean isGlobalSet() { return _type == '!'; }
   boolean isLookup() { return _type == '%'; }
   boolean isValid() { return isLocalSet() || isGlobalSet() || isLookup(); }
+  @Override ASTId make() { return new ASTId(_type, ""); }
 }
 
 class ASTKey extends AST {
@@ -173,6 +175,7 @@ class ASTKey extends AST {
   @Override void exec(Env e) { (new ASTFrame(_key)).exec(e); }
   @Override int type () { return Env.NULL; }
   @Override String value() { return _key; }
+  @Override ASTKey make() { return new ASTKey(""); }
 }
 
 class ASTFrame extends AST {
@@ -203,6 +206,7 @@ class ASTFrame extends AST {
   @Override int type () { return Env.ARY; }
   @Override String value() { return _key; }
   boolean isGlobal() { return _g; }
+  @Override ASTFrame make() { throw H2O.unimpl(); }
 }
 
 class ASTNum extends AST {
@@ -222,6 +226,7 @@ class ASTNum extends AST {
   @Override int type () { return Env.NUM; }
   @Override String value() { return Double.toString(_d); }
   double dbl() { return _d; }
+  @Override ASTNum make() { return new ASTNum(0); }
 }
 
 /**
@@ -283,6 +288,7 @@ class ASTSpan extends AST {
 //  @Override public ASTSpan read_impl(AutoBuffer ab) {
 //    return new ASTSpan(ab.get8(), ab.get8());
 //  }
+  @Override ASTSpan make() {return new ASTSpan(new ASTNum(0),new ASTNum(0)); }
 }
 
 class ASTSeries extends AST {
@@ -429,9 +435,11 @@ class ASTSeries extends AST {
 //    series._isRow = !isCol;
 //    return series;
 //  }
+  @Override ASTSeries make() { return new ASTSeries(null, null); }
 }
 
 class ASTStatement extends AST {
+  @Override ASTStatement make() { return new ASTStatement(); }
   String opStr() {return ","; }
   // must parse all statements: {(ast);(ast);(ast);...;(ast)}
   @Override ASTStatement parse_impl( Exec E ) {
@@ -603,6 +611,7 @@ class ASTWhile extends ASTStatement {
 //}
 
 class ASTString extends AST {
+  @Override ASTString make() { return new ASTString(_eq,""); }
   String opStr() { return String.valueOf(_eq); }
   final String _s;
   final char _eq;
@@ -619,6 +628,7 @@ class ASTString extends AST {
 }
 
 class ASTNull extends AST {
+  @Override ASTNull make() { return new ASTNull(); }
   String opStr() { throw H2O.unimpl();}
   ASTNull() {}
   @Override void exec(Env e) { e.push(new ValNull());}
@@ -650,6 +660,7 @@ class ASTNull extends AST {
  *       If the vec is numeric, then the RHS must also be numeric (if enum, then produce NAs or throw IAE).
  */
 class ASTAssign extends AST {
+  @Override ASTAssign make() { return new ASTAssign(); }
   String opStr() { return "="; }
   ASTAssign parse_impl(Exec E) {
     E.skipWS();
@@ -1060,6 +1071,7 @@ class ASTAssign extends AST {
 
 // AST Slice
 class ASTSlice extends AST {
+  @Override ASTSlice make() { return new ASTSlice(); }
   String opStr() { return "["; }
   ASTSlice() {}
 
@@ -1272,6 +1284,7 @@ class ASTSlice extends AST {
 
 //-----------------------------------------------------------------------------
 class ASTDelete extends AST {
+  @Override ASTDelete make() { return new ASTDelete(); }
   String opStr() { return "del"; }
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
