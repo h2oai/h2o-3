@@ -76,9 +76,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       mean = _response.mean();
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
-    }
 
-    if (expensive) { //otherwise, _nclass isn't set yet
       if (_parms._loss == GBMModel.GBMParameters.Family.AUTO) {
         if (_nclass == 1) _parms._loss = GBMModel.GBMParameters.Family.gaussian;
         if (_nclass == 2) _parms._loss = GBMModel.GBMParameters.Family.bernoulli;
@@ -87,24 +85,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     switch( _parms._loss ) {
-      case bernoulli:
-        if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-          error("_loss", "Binomial requires the response to be a 2-class categorical");
-        else if( _response != null ) {
-          // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
-          _initialPrediction = Math.log(mean / (1.0f - mean));
-        }
-        break;
-      case multinomial:
-        if (!isClassifier()) error("_loss", "Multinomial requires an enum response.");
-        break;
-      case gaussian:
-        if (isClassifier()) error("_loss", "Gaussian requires the response to be numeric.");
-        break;
-      case AUTO:
-        break;
-      default:
-        error("_loss","Invalid loss: " + _parms._loss);
+    case bernoulli:
+      if( _nclass != 2 /*&& !couldBeBool(_response)*/)
+        error("_loss", "Binomial requires the response to be a 2-class categorical");
+      else if( _response != null ) 
+        // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
+        _initialPrediction = Math.log(mean / (1.0 - mean));
+      break;
+    case multinomial:
+      if (!isClassifier()) error("_loss", "Multinomial requires an enum response.");
+      break;
+    case gaussian:
+      if (isClassifier()) error("_loss", "Gaussian requires the response to be numeric.");
+      break;
+    case AUTO:
+      break;
+    default:
+      error("_loss","Invalid loss: " + _parms._loss);
     }
     
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
