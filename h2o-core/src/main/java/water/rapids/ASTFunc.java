@@ -68,9 +68,7 @@ public class ASTFunc extends ASTFuncDef {
   }
 
   @Override String opStr() { return _name; }
-
-  @Override ASTOp make() { return new ASTFunc(); }
-
+  @Override ASTOp make() { return this; }
   @Override void apply(Env e) {
     Frame cleanme;
     Frame f;
@@ -204,8 +202,6 @@ class ASTFuncDef extends ASTOp {
   }
 
   @Override String opStr() { return "def"; }
-
   @Override ASTOp make() { return new ASTFuncDef(); }
-
   @Override void apply(Env e) { throw H2O.fail(); }
 }

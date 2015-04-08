@@ -389,7 +389,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
 }
 
 class ASTasDate extends ASTUniPrefixOp {
-  protected static String _format;
+  protected String _format;
   ASTasDate() { super(new String[]{"as.Date", "x", "format"}); }
   @Override String opStr() { return "as.Date"; }
   @Override ASTOp make() {return new ASTasDate();}
@@ -1443,9 +1443,9 @@ class ASTFoldCombine extends ASTUniPrefixOp {
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
-  protected static double _init;
-  protected static boolean _narm;        // na.rm in R
-  protected static int _argcnt;
+  protected double _init;
+  protected boolean _narm;        // na.rm in R
+  protected int _argcnt;
   ASTReducerOp( double init) {
     super(new String[]{"","dblary","...", "na.rm"});
     _init = init;
@@ -1475,9 +1475,9 @@ abstract class ASTReducerOp extends ASTOp {
       throw new IllegalArgumentException("Expected the na.rm value to be one of $TRUE, $FALSE, $T, $F");
     }
     _narm = ((ASTNum)a).dbl() == 1;
-    ASTReducerOp res = (ASTReducerOp) clone();
     AST[] arys = new AST[_argcnt = dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    ASTReducerOp res = (ASTReducerOp) clone();
     res._asts = arys;
     return res;
   }
@@ -1516,7 +1516,7 @@ abstract class ASTReducerOp extends ASTOp {
 
   private static class RedOp extends MRTask<RedOp> {
     final ASTReducerOp _bin;
-    RedOp( ASTReducerOp bin ) { _bin = bin; _d = ASTReducerOp._init; }
+    RedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
@@ -1534,7 +1534,7 @@ abstract class ASTReducerOp extends ASTOp {
 
   private static class NaRmRedOp extends MRTask<NaRmRedOp> {
     final ASTReducerOp _bin;
-    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = ASTReducerOp._init; }
+    NaRmRedOp( ASTReducerOp bin ) { _bin = bin; _d = bin._init; }
     double _d;
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
@@ -1593,7 +1593,7 @@ class ASTSum extends ASTReducerOp {
 
 
 class ASTRbind extends ASTUniPrefixOp {
-  protected static int argcnt;
+  protected int argcnt;
   @Override String opStr() { return "rbind"; }
   public ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
   @Override ASTOp make() { return new ASTRbind(); }
@@ -1621,8 +1621,9 @@ class ASTRbind extends ASTUniPrefixOp {
       else        E.rewind(a);
     }
     Collections.reverse(dblarys);
+    argcnt=dblarys.size();
     ASTRbind res = (ASTRbind) clone();
-    res._asts = dblarys.toArray(new AST[argcnt=dblarys.size()]);
+    res._asts = dblarys.toArray(new AST[argcnt]);
     return res;
   }
 
@@ -1795,7 +1796,7 @@ class ASTRbind extends ASTUniPrefixOp {
 }
 
 class ASTCbind extends ASTUniPrefixOp {
-  protected static int argcnt;
+  protected int argcnt;
   @Override String opStr() { return "cbind"; }
   public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
@@ -1822,9 +1823,9 @@ class ASTCbind extends ASTUniPrefixOp {
       if(a==null) E.rewind();
       else        E.rewind(a);
     }
-    ASTCbind res = (ASTCbind) clone();
     AST[] arys = new AST[argcnt=dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
+    ASTCbind res = (ASTCbind) clone();
     res._asts = arys;
     return res;
   }
@@ -1969,7 +1970,7 @@ class ASTAND extends ASTBinOp {
 }
 
 class ASTRename extends ASTUniPrefixOp {
-  protected static String _newname;
+  protected String _newname;
   @Override String opStr() { return "rename"; }
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
@@ -2024,8 +2025,8 @@ class ASTSetLevel extends ASTUniPrefixOp {
 }
 
 class ASTMatch extends ASTUniPrefixOp {
-  protected static double _nomatch;
-  protected static String[] _matches;
+  protected double _nomatch;
+  protected String[] _matches;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
@@ -2111,7 +2112,7 @@ class ASTOR extends ASTBinOp {
 
 // Similar to R's seq_len
 class ASTSeqLen extends ASTUniPrefixOp {
-  protected static double _length;
+  protected double _length;
   @Override String opStr() { return "seq_len"; }
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
   @Override ASTOp make() { return new ASTSeqLen(); }
@@ -2138,9 +2139,9 @@ class ASTSeqLen extends ASTUniPrefixOp {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTUniPrefixOp {
-  protected static double _from;
-  protected static double _to;
-  protected static double _by;
+  protected double _from;
+  protected double _to;
+  protected double _by;
 
   @Override String opStr() { return "seq"; }
   ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
@@ -2172,6 +2173,10 @@ class ASTSeq extends ASTUniPrefixOp {
       e.printStackTrace();
       throw new IllegalArgumentException("Argument `by` expected to be a number.");
     }
+
+    if( _from >= _to ) throw new IllegalArgumentException("`from` >= `to`: " + _from + ">=" + _to);
+    if( _by <= 0 ) throw new IllegalArgumentException("`by` must be >0: " + _by + " <=0");
+
     // Finish the rest
     ASTSeq res = (ASTSeq) clone();
     res._asts = new AST[]{}; // in reverse order so they appear correctly on the stack.
@@ -2210,7 +2215,7 @@ class ASTSeq extends ASTUniPrefixOp {
 }
 
 class ASTRepLen extends ASTUniPrefixOp {
-  protected static double _length;
+  protected double _length;
   @Override String opStr() { return "rep_len"; }
   public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
@@ -2349,8 +2354,8 @@ class ASTQtile extends ASTUniPrefixOp {
 }
 
 class ASTSetColNames extends ASTUniPrefixOp {
-  protected static long[] _idxs;
-  protected static String[] _names;
+  protected long[] _idxs;
+  protected String[] _names;
   @Override String opStr() { return "colnames="; }
   public ASTSetColNames() { super(new String[]{}); }
   @Override ASTSetColNames make() { return new ASTSetColNames(); }
@@ -2391,7 +2396,7 @@ class ASTSetColNames extends ASTUniPrefixOp {
 }
 
 class ASTRunif extends ASTUniPrefixOp {
-  protected static long   _seed;
+  protected long   _seed;
   @Override String opStr() { return "h2o.runif"; }
   public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
@@ -3674,8 +3679,8 @@ class ASTTranspose extends ASTOp {
 
 
 //class ASTFindInterval extends ASTUniPrefixOp {
-//  protected static boolean _rclosed;
-//  protected static double _x;
+//  protected boolean _rclosed;
+//  protected double _x;
 //
 //  ASTFindInterval() { super(new String[]{"findInterval", "x", "vec", "rightmost.closed"}); }
 //  @Override String opStr() { return "findInterval"; }
