@@ -30,7 +30,7 @@ data.hex[,55] <- ifelse(data.hex[,55] == 1, 1, 0)
 print(summary(data.hex))
 
 #heading("Running covtype GLM")
-covtype.glm <- h2o.glm(x = setdiff(1:54, c(21,29)), y = 55, training_frame = data.hex, family = "gaussian", n_folds = 2, alpha = 0, lambda = 0)
+covtype.glm <- h2o.glm(x = setdiff(1:54, c(21,29)), y = 55, training_frame = data.hex, family = "gaussian", alpha = 0, lambda = 0)
 covtype.glm
 
 # covtype.glm.path <- h2o.saveModel(covtype.glm, dir = model_path)
