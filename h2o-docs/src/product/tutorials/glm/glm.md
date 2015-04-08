@@ -76,7 +76,6 @@ Now, parse the imported data:
 0. Uncheck the **Standardize** checkbox.
 0. From the drop-down **Family** menu, select `gaussian`. 
 0. Enter `0` in the **N_folds** field. If **N_folds** is greater than 0, the model displays the specified number of cross-validation models.  
-0. Use the default **Tweedie Variance Power** value (NaN).  This option is only used for the Tweedie family of GLM models (like zero-inflated Poisson).
 0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.
 0. Enter `.002` in the **Lambda** field. 
 0. Click the **Build Model** button.
