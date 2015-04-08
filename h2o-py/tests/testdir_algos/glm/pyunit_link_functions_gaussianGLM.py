@@ -23,7 +23,7 @@ def link_functions_gaussian(ip,port):
     myX = ["ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
 
     print("Create models with canonical link: IDENTITY")
-    h2o_model = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gaussian", link="identity",alpha=[0.5], Lambda=[0], n_folds=0)
+    h2o_model = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gaussian", link="identity",alpha=[0.5], Lambda=[0])
     sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Gaussian(sm.families.links.identity)).fit()
 
     print("Compare model deviances for link function identity")

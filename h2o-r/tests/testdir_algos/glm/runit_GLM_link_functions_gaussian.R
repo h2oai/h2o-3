@@ -24,7 +24,7 @@ test.linkFunctions <- function(conn) {
 	R.formula = (R.data[,"GLEASON"]~.) 
 
 	print("Create models with canonical link: IDENTITY")
-	model.h2o.gaussian.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gaussian", link="identity",alpha=0.5, lambda=0, n_folds=0)
+	model.h2o.gaussian.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="gaussian", link="identity",alpha=0.5, lambda=0, nfolds=0)
 	model.R.gaussian.identity <- glm(formula=R.formula, data=R.data[,2:9], family=gaussian(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")

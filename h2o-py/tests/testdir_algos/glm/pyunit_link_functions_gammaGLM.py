@@ -23,7 +23,7 @@ def link_functions_gamma(ip,port):
 	myX = ["ID","AGE","RACE","GLEASON","DCAPS","PSA","VOL","CAPSULE"]
 
 	print("Create models with canonical link: INVERSE")
-	h2o_model_in = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gamma", link="inverse",alpha=[0.5], Lambda=[0], n_folds=0)
+	h2o_model_in = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gamma", link="inverse",alpha=[0.5], Lambda=[0])
 	sm_model_in = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Gamma(sm.families.links.inverse_power)).fit()
 
 	print("Compare model deviances for link function inverse")
@@ -32,7 +32,7 @@ def link_functions_gamma(ip,port):
 	assert h2o_deviance_in - sm_deviance_in < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
 	print("Create models with canonical link: LOG")
-	h2o_model_log = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gamma", link="log",alpha=[0.5], Lambda=[0], n_folds=0)
+	h2o_model_log = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="gamma", link="log",alpha=[0.5], Lambda=[0])
 	sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Gamma(sm.families.links.log)).fit()
 
 	print("Compare model deviances for link function log")
