@@ -10,14 +10,14 @@ test.pcascore.golden <- function(H2Oserver) {
   Log.info("Compare with PCA when center = TRUE, scale. = FALSE")
   fitR <- prcomp(arrestsR, center = TRUE, scale. = FALSE)
   fitH2O <- h2o.prcomp(arrestsH2O, k = 4, gamma = 0, init = "PlusPlus", center = TRUE, scale. = FALSE)
-  checkPCAModel(fitH2O, fitR, tolerance = 1e-6)
+  checkPCAModel(fitH2O, fitR, tolerance = 1e-3)
   
   Log.info("Compare Projections into PC space")
   predR <- predict(fitR, arrestsR)
   predH2O <- predict(fitH2O, arrestsH2O)
   Log.info("R Projection:"); print(head(predR))
   Log.info("H2O Projection:"); print(head(predH2O))
-  checkSignedCols(as.matrix(predH2O), predR, tolerance = 1e-5)
+  checkSignedCols(as.matrix(predH2O), predR, tolerance = 1e-3)
   
   testEnd()
 }
