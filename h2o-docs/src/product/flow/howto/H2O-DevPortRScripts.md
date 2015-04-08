@@ -65,7 +65,7 @@ The following parameters have been removed:
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
 - `class.sampling.factors`: Specifying the over- or under-sampling ratios per class is no longer supported. 
-- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. 
+- `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O-Dev. 
 
 ###New GBM Parameters
 
@@ -128,15 +128,15 @@ H2O Parameter Name | H2O-Dev Parameter Name
  
 The following parameters have been removed: 
  
- - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. >>
- - `higher_accuracy`: A logical value indicating whether to use line search. >>
- - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. >>
- - `intercept`: Defines factor columns in the model. >>
- - `non_negative`: Specify a non-negative response. >>
- - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. >>
- - `disable_line_search`: Disables line search for faster model building. >>
- - `offset`: Specify a column as an offset. >>
- - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >>
+ - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. >> ?? may be re-added
+ - `higher_accuracy`: A logical value indicating whether to use line search. >> tweak beta_eps 
+ - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. >> ?may be re-added; on by default
+ - `intercept`: Defines factor columns in the model. >> re-added
+ - `non_negative`: Specify a non-negative response. >> re-added
+ - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
+ - `disable_line_search`: Disables line search for faster model building. >> was for testing only
+ - `offset`: Specify a column as an offset. >> -re-added
+ - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >> re-added
 
 ###New GLM Parameters
  
@@ -160,7 +160,7 @@ H2O  | H2O-Dev
 `key = "",` | `destination_key,` 
  &nbsp; | `validation_frame`
 `iter.max = 100,` |  `max_iterations = 50,` 
-`epsilon = 1e-4` | `beta_eps = 0` 
+`epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
  &nbsp; | `balance_classes = FALSE,` 
 `return_all_lambda = FALSE,` | 
