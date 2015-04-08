@@ -508,7 +508,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  // HEXDEV-194: Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testReprodubility() {
     Frame tfr=null;
     final int N = 5;
@@ -557,7 +557,7 @@ public class GBMTest extends TestUtil {
     for( double mse : mses ) assertEquals(mse, mses[0], 1e-15);
   }
 
-  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
+  // PUBDEV-557: Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Test public void testReprodubilityAirline() {
     Frame tfr=null;
     final int N = 1;
@@ -653,5 +653,4 @@ public class GBMTest extends TestUtil {
     Scope.exit();
     for( double mse : mses ) assertEquals(0.0142093, mse, 1e-6);
   }
-
 }
