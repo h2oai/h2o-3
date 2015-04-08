@@ -9,6 +9,8 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.MathUtils;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
@@ -719,12 +721,12 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _auc = Double.NaN;
       } else {
         _threshold = _submodels[l].trainVal.bestThreshold();
-        _residual_deviance = _submodels[l].trainVal.residualDeviance();
-        _null_deviance = _submodels[l].trainVal.nullDeviance();
+        _residual_deviance = MathUtils.roundToNDigits(_submodels[l].trainVal.residualDeviance(),5);
+        _null_deviance = MathUtils.roundToNDigits(_submodels[l].trainVal.nullDeviance(),5);
         _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();
         _null_degrees_of_freedom = _submodels[l].trainVal.nullDOF();
-        _aic = _submodels[l].trainVal.aic();
-        _auc = _submodels[l].trainVal.auc();
+        _aic = MathUtils.roundToNDigits(_submodels[l].trainVal.aic(),5);
+        _auc = MathUtils.roundToNDigits(_submodels[l].trainVal.auc(),5);
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);
