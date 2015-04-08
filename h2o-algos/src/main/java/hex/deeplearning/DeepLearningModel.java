@@ -1119,7 +1119,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
         }
         if (levels[levels.length-1] > 0) {
-          int levelcutoff = levels[levels.length-1-Math.min(10, levels.length)];
+          int levelcutoff = levels[levels.length-1-Math.min(10, levels.length-1)];
           int count = 0;
           for (int i=0; i<dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
             if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {

@@ -342,7 +342,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
+- **Balance_classes**: ([GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
 
 - **Max\_after\_balance\_size**: [(GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
 
@@ -407,7 +407,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
-- **Beta_eps**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+- **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -439,11 +439,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
-- **Link**: [(GLM)](#GLM) Select a link function (Family_Default, Identity, Logit, Log, Inverse, Tweedie).
-
-- **Tweedie\_variance\_power**: ([GLM](#GLM) with Tweedie) Specify the variance power for the Tweedie model. 
-
-- **Tweedie\_link\_power**: ([GLM](#GLM) with Tweedie) Specify the Tweedie link power. 
+- **Link**: [(GLM)](#GLM) Select a link function (Family_Default, Identity, Logit, Log, Inverse).
 
 - **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2. The default value is 0.5. 
 
@@ -523,7 +519,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#drf)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Prior1**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
+- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
 
 - **NLambdas**: [(GLM)](#GLM) Specify the number of lambdas to use in the search. The default value is -1. 
 
