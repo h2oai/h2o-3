@@ -43,7 +43,7 @@ class FindHandler extends Handler {
         } catch( NumberFormatException e ) {
           if( vecs.length==1 ) {
             // There's only one Vec and it's a numeric Vec and our search string isn't a number
-            IcedHashMap<String, Object> values = new IcedHashMap<>();
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             String msg = "Frame: " + frame._key.toString() + " as only one column, it is numeric, and the find pattern is not numeric: " + find.match;
             values.put("frame_name", frame._key.toString());
             values.put("column_name", frame.name(i));

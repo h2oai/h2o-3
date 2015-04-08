@@ -24,7 +24,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public Model.ModelCategory model_category;
 
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
-  public IcedHashMap<String,String> help;
+  public IcedHashMap.IcedHashMapStringString help;
 
   public ModelOutputSchema() {
     super();
@@ -38,7 +38,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   }
 
   private void fillHelp() {
-    this.help = new IcedHashMap<>();
+    this.help = new IcedHashMap.IcedHashMapStringString();
     try {
       Field[] dest_fields = Weaver.getWovenFields(this.getClass());
       for (Field f : dest_fields) {

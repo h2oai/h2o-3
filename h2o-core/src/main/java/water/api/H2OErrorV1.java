@@ -32,7 +32,7 @@ public class H2OErrorV1<I extends H2OError, S extends H2OErrorV1<I, S>> extends 
 //  public int error_id;
 
   @API(help="Any values that are relevant to reporting or handling this error.  Examples are a key name if the error is on a key, or a field name and object name if it's on a specific field.", direction=API.Direction.OUTPUT)
-  public IcedHashMap values;
+  public IcedHashMap.IcedHashMapStringObject values;
 
   @API(help="Exception type, if any.", direction=API.Direction.OUTPUT)
   public String exception_type;
