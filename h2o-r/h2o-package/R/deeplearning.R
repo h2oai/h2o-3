@@ -44,6 +44,7 @@
 #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
 #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ration computation(for multi-class only, 0 to disable)
 #' @param balance_classes Balance training data class counts via over/under-sampling (for imbalanced data)
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0)
 #' @param score_validation_sampling Method used to sample validation dataset for scoring
 #' @param diagnostics Enable diagnostics for hidden layers
@@ -111,6 +112,7 @@ h2o.deeplearning <- function(x, y, training_frame, destination_key = "",
                              max_confusion_matrix_size,
                              max_hit_ratio_k,
                              balance_classes = FALSE,
+                             class_sampling_factors,
                              max_after_balance_size,
                              score_validation_sampling,
                              diagnostics,
@@ -211,6 +213,7 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
                                 max_confusion_matrix_size,
                                 max_hit_ratio_k,
                                 balance_classes = FALSE,
+                                class_sampling_factors,
                                 max_after_balance_size,
                                 score_validation_sampling,
                                 diagnostics,

@@ -380,7 +380,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             try {
               evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
             } catch( NumberFormatException nfe ) {
-              throw new IllegalArgumentException("Validation set has a numeric column "+names[i]+" which is categorical in the training data");
+              throw new IllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;

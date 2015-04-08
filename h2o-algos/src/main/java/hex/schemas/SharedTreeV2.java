@@ -42,12 +42,6 @@ public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<
     @API(help="Validation set error per-tree (scored).", direction=API.Direction.OUTPUT)
     public double mse_valid[/*_ntrees+1*/];
 
-    @API(help="Confusion Matrix for classification models, or null otherwise", direction=API.Direction.OUTPUT)
-    public ConfusionMatrixV3 cm;
-
-    @API(help="AUC for binomial models, or null otherwise", direction=API.Direction.OUTPUT)
-    public AUCV3 auc;
-
     @API(help="Variable Importance", direction=API.Direction.OUTPUT)
     public VarImpV2 varimp;
   }

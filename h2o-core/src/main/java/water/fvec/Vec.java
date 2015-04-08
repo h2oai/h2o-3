@@ -600,7 +600,7 @@ public class Vec extends Keyed<Vec> {
     // Set rollups to "vector isMutating" atomically.
     new TAtomic<RollupStats>() {
       @Override protected RollupStats atomic(RollupStats rs) {
-        return rs != null && rs.isMutating() ? null : RollupStats.makeMutating(rskey);
+        return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
       }
     }.invoke(rskey);
   }
