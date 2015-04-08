@@ -321,6 +321,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
           assert !Double.isInfinite(g);
+          assert !Float.isNaN((float)g);
+          assert !Float.isInfinite((float)g);
           ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }
