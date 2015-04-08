@@ -29,6 +29,126 @@
 #' @param higher_accuracy
 #' @param use_all_factor_levels
 #' @param beta_constraints
+#' @export
+h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
+                    max_iterations = 50,
+                    beta_epsilon = 0,
+                    score_each_iteration = FALSE,
+                    do_classification = FALSE,
+                    balance_classes = FALSE,
+                    class_sampling_factors,
+                    max_after_balance_size = 5.0,
+                    solver = c("ADMM", "L_BFGS"),
+                    standardize = TRUE,
+                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
+                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
+                    tweedie_variance_power = NaN,
+                    tweedie_link_power = NaN,
+                    alpha = 0.5,
+                    prior = 0.0,
+                    lambda = 1e-05,
+                    lambda_search = FALSE,
+                    nlambdas = -1,
+                    lambda_min_ratio = 1.0,
+                    higher_accuracy = FALSE,
+                    use_all_factor_levels = FALSE,
+                    nfolds = 0,
+                    beta_constraints = NULL,
+                    ...
+                    )
+{
+  if (!is.null(beta_constraints)) {
+      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
+        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (inherits(beta_constraints, "data.frame")) {
+        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+      }
+  }
+  #Handle ellipses
+  if (length(list(...)) > 0)
+    dots <- .model.ellipses( list(...))
+  else
+    dots <- list()
+  if (is.null(dots$envir))
+    dots$envir <- parent.frame()
+
+  if (!inherits(training_frame, "H2OFrame"))
+   tryCatch(training_frame <- h2o.getFrame(training_frame),
+            error = function(err) {
+              stop("argument \"training_frame\" must be a valid H2OFrame or key")
+            })
+
+  # Parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, y)
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+  if(!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if(!missing(beta_epsilon))
+    parms$beta_epsilon <- beta_epsilon
+  if(!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if(!missing(do_classification))
+    parms$do_classification <- do_classification
+  if(!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if(!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+  if(!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if(!missing(solver))
+    parms$solver <- solver
+  if(!missing(standardize))
+    parms$standardize <- standardize
+  if(!missing(family))
+    parms$family <- family
+  if(!missing(link))
+    parms$link <- link
+  if(!missing(tweedie_variance_power))
+    parms$tweedie_variance_power <- tweedie_variance_power
+  if(!missing(tweedie_link_power))
+    parms$tweedie_link_power <- tweedie_link_power
+  if(!missing(alpha))
+    parms$alpha <- alpha
+  if(!missing(prior))
+    parms$prior <- prior
+  if(!missing(lambda))
+    parms$lambda <- lambda
+  if(!missing(lambda_search))
+    parms$lambda_search <- lambda_search
+  if(!missing(nlambdas))
+    parms$nlambdas <- nlambdas
+  if(!missing(lambda_min_ratio))
+    parms$lambda_min_ratio <- lambda_min_ratio
+  if(!missing(higher_accuracy))
+    parms$higher_accuracy <- higher_accuracy
+  if(!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
+  # For any other value, error out.
+  # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
+  if (nfolds > 1) stop("nfolds >1 not supported")
+  # if(!missing(nfolds))
+  #   parms$nfolds <- nfolds
+  if(!missing(beta_constraints))
+    parms$beta_constraints <- beta_constraints
+
+  m <- .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+  m@model$coefficients <- m@model$coefficients_table[,2]
+  names(m@model$coefficients) <- m@model$coefficients_table[,1]
+  m
+}
+
+h2o.makeGLMModel <- function(model,beta) {
+   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
+   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+   m <- h2o.getModel(key=res$key$name)
+   m@model$coefficients <- m@model$coefficients_table[,2]
+   names(m@model$coefficients) <- m@model$coefficients_table[,1]
+   m
+}
 
 #' @export
 h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_frame, ...,
@@ -54,35 +174,19 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
                     beta_constraints = NULL
                     )
 {
-    if (!is.null(beta_constraints)) {
-        if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
-          stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
-        if (inherits(beta_constraints, "data.frame")) {
-          beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
-        }
-    }
-    dots <- list(...)
+  if (!is.null(beta_constraints)) {
+      if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
+        stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
+      if (inherits(beta_constraints, "data.frame")) {
+        beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
+      }
+  }
 
-    for(type in names(dots))
-        if (is.environment(dots[[type]]))
-        {
-        dots$envir <- type
-        type <- NULL
-        } else {
-          stop(paste0("\n  unused argument (", type, " = ", deparse(dots[[type]]), ")"))
-        }
-    if (is.null(dots$envir))
-        dots$envir <- parent.frame()
-
-    if( missing(x) ) stop("`x` is missing, with no default")
-    if( missing(y) ) stop("`y` is missing, with no default")
-    if( missing(training_frame) ) stop("`training_frame` is missing, with no default")
-
-    if (!inherits(training_frame, "H2OFrame"))
-        tryCatch(training_frame <- h2o.getFrame(training_frame),
-                 error = function(err) {
-                   stop("argument \"training_frame\" must be a valid H2OFrame or key")
-                })
+  if (!inherits(training_frame, "H2OFrame"))
+      tryCatch(training_frame <- h2o.getFrame(training_frame),
+               error = function(err) {
+                 stop("argument \"training_frame\" must be a valid H2OFrame or key")
+              })
 #required map for params with different names, assuming it will change in the RESTAPI end
     .glm.map <- c("x" = "ignored_columns",
                   "y" = "response_column",
@@ -112,95 +216,4 @@ h2o.getGLMModel <- function(keys) {
     if (delete_valid)
       h2o.rm(temp_valid_key)
   model
-}
-
-#' @export
-h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
-                    #AUTOGENERATED Params
-                    max_iterations = 50,
-                    beta_epsilon = 0,
-                    score_each_iteration = FALSE,
-                    do_classification = FALSE,
-                    balance_classes = FALSE,
-                    class_sampling_factors,
-                    max_after_balance_size = 5.0,
-                    solver = c("ADMM", "L_BFGS"),
-                    standardize = TRUE,
-                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
-                    link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    tweedie_variance_power = NaN,
-                    tweedie_link_power = NaN,
-                    alpha = 0.5,
-                    prior = 0.0,
-                    lambda = 1e-05,
-                    lambda_search = FALSE,
-                    nlambdas = -1,
-                    lambda_min_ratio = 1.0,
-                    higher_accuracy = FALSE,
-                    use_all_factor_levels = FALSE,
-                    nfolds = 0,
-                    beta_constraints = NULL,
-                    ...
-                    )
-{
-    if (!is.null(beta_constraints)) {
-        if (!inherits(beta_constraints, "data.frame") && !inherits(beta_constraints, "H2OFrame"))
-          stop(paste("`beta_constraints` must be an H2OParsedData or R data.frame. Got: ", class(beta_constraints)))
-        if (inherits(beta_constraints, "data.frame"))
-          beta_constraints <- as.h2o(training_frame@conn, beta_constraints)
-    }
-    dots <- list(...)
-
-    for(type in names(dots))
-        if (is.environment(dots[[type]]))
-        {
-        dots$envir <- type
-        type <- NULL
-        } else {
-          stop(paste0("\n  unused argument (", type, " = ", dots[[type]], ")"))
-        }
-    if (is.null(dots$envir))
-        dots$envir <- parent.frame()
-
-    if( missing(x) ) stop("`x` is missing, with no default")
-    if( missing(y) ) stop("`y` is missing, with no default")
-    if( missing(training_frame) ) stop("`training_frame` is missing, with no default")    
-
-    if (!inherits(training_frame, "H2OFrame"))
-        tryCatch(training_frame <- h2o.getFrame(training_frame),
-                 error = function(err) {
-                   stop("argument \"training_frame\" must be a valid H2OFrame or key")
-                })
-#required map for params with different names, assuming it will change in the RESTAPI end
-    .glm.map <- c("x" = "ignored_columns",
-                "y" = "response_column",
-                "key" = "destination_key")
-
-    parms <- as.list(match.call(expand.dots = FALSE)[-1L])
-    parms$... <- NULL
-
-    # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
-    # For any other value, error out.
-    # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
-    if (nfolds > 1) stop("nfolds >1 not supported")
-    parms$nfolds <- NULL
-
-    args <- .verify_dataxy(training_frame, x, y)
-    parms$x <- args$x_ignore
-    parms$y <- args$y
-    parms$beta_constraints <- beta_constraints
-    names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
-    m <- .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
-    m@model$coefficients <- m@model$coefficients_table[,2]
-    names(m@model$coefficients) <- m@model$coefficients_table[,1]
-    m
-}
-
-h2o.makeGLMModel <- function(model,beta) {  
-   cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
-   res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))   
-   m <- h2o.getModel(key=res$key$name) 
-   m@model$coefficients <- m@model$coefficients_table[,2]
-   names(m@model$coefficients) <- m@model$coefficients_table[,1]
-   m
 }

@@ -201,7 +201,13 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+  if (delete_train)
+    h2o.rm(temp_train_key)
+  if (!is.null(params$validation_frame))
+    if (delete_valid)
+      h2o.rm(temp_valid_key)
+  m
 }
 
 h2o.getFutureModel <- function(object) {
@@ -678,14 +684,37 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
     npcs = min(10, x@model$parameters$k)
   else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
     stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
-  
+
   if(missing(main))
     main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-  
+
   if(type == "barplot")
     barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
   else if(type == "lines")
     lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
   else
     stop("type must be either 'barplot' or 'lines'")
+}
+
+# Handles ellipses
+.model.ellipses <- function(dots) {
+  out <- list()
+  out$envir <- NULL
+  out <- sapply(names(dots), function(type) {
+    if (is.environment(dots[[type]]))
+      dots[[type]]
+    else
+      stop(paste0("\n  unused argument (",
+                  type,
+                  " = ",
+                  deparse(substitute(dots[[type]])),
+                  ")", ", is this legacy code? Try h2o.shim"), call. = FALSE)
+  })
+  # Keep enviornment
+  e <- as.numeric(which(sapply(out, is.environment)))
+  if (length(e) > 0){
+    out$envir <- out[[e]]
+    out[[e]] <- NULL
+  }
+  out
 }
