@@ -116,7 +116,6 @@ H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `destination_key`
-`nfolds` | `n_folds`
 `nlambda` | `nlambdas`
 `lambda.min.ratio` | `lambda_min_ratio`
  `iter.max` | `max_iterations`
@@ -135,6 +134,7 @@ The following parameters have been removed:
  - `disable_line_search`: Disables line search for faster model building. >> was for testing only
  - `offset`: Specify a column as an offset. >> -re-added
  - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >> re-added
+ - `n_folds`: 
 
 ###New GLM Parameters
  
@@ -177,7 +177,7 @@ H2O  | H2O-Dev
 `nlambda = -1,` | `nlambdas = -1,` 
 `lambda.min.ratio = -1,` | `lambda_min_ratio = 1.0,` 
 `use_all_factor_levels = FALSE` | `use_all_factor_levels = FALSE,` 
-`nfolds = 0,` | `n_folds = 0,` 
+`nfolds = 0,` |  
 `beta_constraints = NULL,` | `beta_constraint = NULL)` 
 `higher_accuracy = FALSE,` |  
 `variable_importances = FALSE,` | 
@@ -257,6 +257,7 @@ The following parameters have been removed:
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: >>
 - `classification_stop`: Classification is now inferred from the data type. 
+- `n_folds`: >>
 
 ###New DL Parameters
 
@@ -279,7 +280,7 @@ H2O  | H2O-Dev
 `key = "",` | `destination_key = "",`
 `override_with_best_model,` | `override_with_best_model,` 
 `classification = TRUE,` | 
-`nfolds = 0,` | `n_folds = 0,` 
+`nfolds = 0,` |  
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
 `checkpoint = " "` | `checkpoint,` 
