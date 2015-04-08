@@ -4,6 +4,7 @@ import hex.glrm.GLRMModel;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
+import water.api.TwoDimTableBase;
 
 public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.GLRMParameters, GLRMV2.GLRMParametersV2, GLRMModel.GLRMOutput, GLRMModelV2.GLRMModelOutputV2> {
   public static final class GLRMModelOutputV2 extends ModelOutputSchema<GLRMModel.GLRMOutput, GLRMModelOutputV2> {
@@ -16,6 +17,15 @@ public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.G
 
     @API(help = "Mapping from training data to lower dimensional k-space")
     public double[][] archetypes;
+
+    @API(help = "Standard deviation of each principal component")
+    public double[] std_deviation;
+
+    @API(help = "Principal components matrix")
+    public TwoDimTableBase eigenvectors;
+
+    @API(help = "Importance of each principal component")
+    public TwoDimTableBase pc_importance;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

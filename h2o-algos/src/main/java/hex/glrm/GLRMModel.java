@@ -7,19 +7,22 @@ import hex.ModelMetricsUnsupervised;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
+import water.util.TwoDimTable;
 
 public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
+
   public static class GLRMParameters extends Model.Parameters {
-    public int _k = 1;                            // Number of principal components
-    public int _max_iterations = 1000;            // Max iterations
-    public Loss _loss = Loss.L2;            // Loss function
+    public int _k = 1;                            // Rank of resulting XY matrix
+    public Loss _loss = Loss.L2;                  // Loss function
     public Regularizer _regularization = Regularizer.L2;   // Regularization function
     public double _gamma = 0;                     // Regularization weight
-    public long _seed = System.nanoTime(); // RNG seed
+    public int _max_iterations = 1000;            // Max iterations
+    public long _seed = System.nanoTime();        // RNG seed
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;
     public Key<Frame> _user_points;
     public Key<Frame> _loading_key;
+    public boolean _recover_pca = false;          // Recover principal components of XY at the end?
 
     public enum Loss {
       L2, L1, Huber, Poisson, Hinge, Logistic
@@ -55,7 +58,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         case L2:
           return 2*(u-a);
         case L1:
-          return Math.signum(u-a);
+          return -Math.signum(u-a);
         case Huber:
           return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
         case Poisson:
@@ -116,6 +119,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Mapping from training data to lower dimensional k-space (Y)
     public double[][] _archetypes;
 
+    // PCA output on XY
+    // Principal components (eigenvectors) from SVD of XY
+    public double[/*feature*/][/*k*/] _eigenvectors_raw;
+    public TwoDimTable _eigenvectors;
+
+    // Standard deviation of each principal component
+    public double[] _std_deviation;
+
+    // Importance of principal components
+    // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
+    public TwoDimTable _pc_importance;
+
     // Model parameters
     GLRMParameters _parameters;
 
@@ -142,7 +157,6 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   @Override protected double[] score0(double[] data, double[] preds) {
     throw H2O.unimpl();
   }
-
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k);

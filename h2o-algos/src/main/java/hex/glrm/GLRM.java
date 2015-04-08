@@ -1,8 +1,14 @@
 package hex.glrm;
 
+import Jama.Matrix;
+import Jama.QRDecomposition;
+import Jama.SingularValueDecomposition;
 import hex.DataInfo;
+import hex.FrameTask;
 import hex.Model;
 import hex.ModelBuilder;
+import hex.gram.Gram;
+import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
 import hex.schemas.GLRMV2;
@@ -15,6 +21,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
@@ -121,7 +128,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           for (int c = 0; c < numCols; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
-        if(frobenius2(centers) == 0)
+        if (frobenius2(centers) == 0)
           throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
 
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
@@ -166,9 +173,84 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       return false;             // Not stopping
     }
 
+    public Cholesky regularizedCholesky(Gram gram, int max_attempts) {
+      int attempts = 0;
+      double addedL2 = 0;   // TODO: Should I report this to the user?
+      Gram.Cholesky chol = gram.cholesky(null);
+      while(!chol.isSPD() && attempts < max_attempts) {
+        if(addedL2 == 0) addedL2 = 1e-5;
+        else addedL2 *= 10;
+        ++attempts;
+        gram.addDiag(addedL2); // try to add L2 penalty to make the Gram SPD
+        Log.info("Added L2 regularization = " + addedL2 + " to diagonal of X Gram matrix");
+        gram.cholesky(chol);
+      }
+      if(!chol.isSPD())
+        throw new Gram.NonSPDMatrixException();
+      return chol;
+    }
+    public Cholesky regularizedCholesky(Gram gram) {
+      return regularizedCholesky(gram, 10);
+    }
+
+    // Recover eigenvalues and eigenvectors of XY
+    public void recoverPCA(GLRMModel model, DataInfo xinfo) {
+      // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
+      GramTask xgram = new GramTask(self(), xinfo).doAll(xinfo._adaptedFrame);
+      Cholesky xxchol = regularizedCholesky(xgram._gram);
+
+      // R from QR decomposition of X = QR is upper triangular factor of Cholesky of X'X
+      // Gram = X'X/n = LL' -> X'X = (L*sqrt(n))(L'*sqrt(n))
+      Matrix x_r = new Matrix(xxchol.getL()).transpose();
+      x_r = x_r.times(Math.sqrt(_train.numRows()));
+
+      QRDecomposition yt_qr = new QRDecomposition(new Matrix(model._output._archetypes));
+      Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
+      Matrix rrmul = x_r.times(yt_r.transpose());
+      SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
+
+      // Eigenvectors are V'Z' = (ZV)'
+      Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
+      model._output._eigenvectors_raw = eigvec.getArray();
+
+      String[] colTypes = new String[_parms._k];
+      String[] colFormats = new String[_parms._k];
+      String[] colHeaders = new String[_parms._k];
+      Arrays.fill(colTypes, "double");
+      Arrays.fill(colFormats, "%5f");
+      for(int i = 0; i < colHeaders.length; i++) colHeaders[i] = "PC" + String.valueOf(i+1);
+      model._output._eigenvectors = new TwoDimTable("Rotation", null, _train.names(),
+              colHeaders, colTypes, colFormats, "", new String[_train.numCols()][], model._output._eigenvectors_raw);
+
+      // Calculate standard deviations from \Sigma
+      // Note: Singular values ordered in weakly descending order by algorithm
+      double[] sval = rrsvd.getSingularValues();
+      double[] sdev = new double[sval.length];
+      double[] pcvar = new double[sval.length];
+      double tot_var = 0;
+      double dfcorr = 1.0 / Math.sqrt(_train.numRows() - 1.0);
+      for(int i = 0; i < sval.length; i++) {
+        sdev[i] = dfcorr * sval[i];   // Correct since degrees of freedom = n-1
+        pcvar[i] = sdev[i] * sdev[i];
+        tot_var += pcvar[i];
+      }
+      model._output._std_deviation = sdev;
+
+      // Calculate proportion of variance explained
+      double[] prop_var = new double[sval.length];    // Proportion of total variance
+      double[] cum_var = new double[sval.length];    // Cumulative proportion of total variance
+      for(int i = 0; i < sval.length; i++) {
+        prop_var[i] = pcvar[i] / tot_var;
+        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
+      }
+      model._output._pc_importance = new TwoDimTable("Importance of components", null,
+              new String[] { "Standard deviation", "Proportion of Variance", "Cumulative Proportion" },
+              colHeaders, colTypes, colFormats, "", new String[3][], new double[][] { sdev, prop_var, cum_var });
+    }
+
     @Override protected void compute2() {
       GLRMModel model = null;
-      DataInfo dinfo = null;
+      DataInfo dinfo = null, xinfo = null;
       Frame x = null;
 
       try {
@@ -206,32 +288,40 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // Save X frame for user reference later
         x = new Frame(_parms._loading_key, null, xvecs);
+        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(x._key, x);
+        DKV.put(xinfo._key, xinfo);
 
         // 0) Initialize Y matrix and take single step of X
         double nobs = _train.numRows() * _train.numCols();
         double[][] yt = ArrayUtils.transpose(initialY());
-        UpdateX xinit = new UpdateX(dinfo, _parms, yt, _train.numCols(), 1.0);
-        xinit.doAll(dinfo._adaptedFrame);
+        // UpdateX xinit = new UpdateX(dinfo, _parms, yt, _train.numCols(), 1.0);
+        // xinit.doAll(dinfo._adaptedFrame);
 
+        // Initial objective function
+        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
+        double obj = objtsk._loss + _parms.regularize(yt);
+        // double obj = xinit._loss + _parms._gamma * (xinit._xreg + _parms.regularize(yt));
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
-        double obj = xinit._loss + _parms._gamma * (xinit._xreg + _parms.regularize(yt));   // Initial objective function
 
         while (!isDone(model)) {
-          double step = 1/(model._output._iterations+1);  // Step size \alpha_k = 1/(iters + 1)
+          double step = 1.0/((model._output._iterations+1) * _train.numRows());  // Step size \alpha_k = 1/(iters + 1)
 
-          // 1) Update Y matrix given fixed X
-          UpdateY ytsk = new UpdateY(dinfo, _parms, yt, _train.numCols(), step);
-          yt = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
-
-          // 2) Update X matrix given fixed Y
+          // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(dinfo, _parms, yt, _train.numCols(), step);
           xtsk.doAll(dinfo._adaptedFrame);
 
+          // 2) Update Y matrix given fixed X
+          UpdateY ytsk = new UpdateY(dinfo, _parms, yt, _train.numCols(), step);
+          yt = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
+
           // 3) Compute average change in objective function
-          double obj_new = xtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
+          objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
+          double obj_new = objtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
           model._output._avg_change_obj = (obj - obj_new) / nobs;   // TODO: Check obj_new < obj, else reduce step size and redo
+          assert model._output._avg_change_obj > 0;
+
           obj = obj_new;
           model._output._iterations++;
           model.update(_key); // Update model in K/V store
@@ -241,6 +331,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         // 4) Save solution to model output
         model._output._archetypes = yt;
         model._output._parameters = _parms;
+        if (_parms._recover_pca) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?
         // BMulTask tsk = new BMulTask(self(), xinfo, yt).doAll(_parms._k, xinfo._adaptedFrame);
@@ -259,6 +350,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         _train.unlock(_key);
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
+        if (xinfo != null) xinfo.remove();
         // if (x != null && !_parms._keep_loading) x.delete();
         _parms.read_unlock_frames(GLRM.this);
       }
@@ -411,6 +503,47 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           double u = _ytold[j][k] - _alpha * _ytnew[j][k];
           _ytnew[j][k] = _parms.rproxgrad(u, _alpha);
           _yreg += _parms.regularize(_ytnew[j][k]);
+        }
+      }
+    }
+  }
+
+  private static class ObjCalc extends MRTask<ObjCalc> {
+    GLRMParameters _parms;
+    double[] _normSub, _normMul;  // For standardizing A only
+    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
+    double[][] _yt;
+    double _loss;
+
+    ObjCalc(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA) {
+      assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
+      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
+      if(dinfo._normMul == null) {
+        _normMul = MemoryManager.malloc8d(ncolA);
+        Arrays.fill(_normMul, 1.0);
+      } else _normMul = dinfo._normMul;
+      _ncolA = ncolA; _ncolX = parms._k;
+      _parms = parms;
+      _yt = yt;
+      _loss = 0;
+    }
+
+    // In chunk, first _ncolA cols are A, next _ncolX cols are X
+    @Override public void map(Chunk[] cs) {
+      assert (_ncolX + _ncolA) == cs.length;
+
+      for(int row = 0; row < cs[0]._len; row++) {
+        for (int j = 0; j < _ncolA; j++) {
+          double a = cs[j].atd(row);
+          if (Double.isNaN(a)) continue;   // Skip missing observations in row
+
+          // Inner product x_i * y_j
+          int idx = 0;
+          double xy = 0;
+          for (int k = _ncolA; k < cs.length; k++)
+            xy += cs[k].atd(row) * _yt[j][idx++];
+          assert idx == _ncolX;
+          _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
         }
       }
     }
