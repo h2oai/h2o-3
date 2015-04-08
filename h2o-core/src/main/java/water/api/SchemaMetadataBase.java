@@ -18,6 +18,10 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
   @API(help="Simple name of the Schema.  NOTE: the schema_names form a single namespace.")
   public String name ;
 
+  /** The simple schema superclass name, e.g. ModelSchema, used in the schema metadata.  Must not be changed after creation (treat as final).  */
+  @API(help="Simple name of the superclass of the Schema.  NOTE: the schema_names form a single namespace.")
+  public String superclass ;
+
   @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).")
   public String type;
 
@@ -40,7 +44,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     @API(help="Type for this field is itself a Schema.", direction=API.Direction.OUTPUT)
     public boolean is_schema;
 
-    @API(help="Schema name for this field, if it is_schema.")
+    @API(help="Schema name for this field, if it is_schema, or the name of the enum, if it's an enum.")
     public String schema_name;
 
     @API(help="Value for this field", direction=API.Direction.OUTPUT)

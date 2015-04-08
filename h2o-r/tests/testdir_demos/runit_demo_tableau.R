@@ -32,7 +32,7 @@ test.tableau <- function(conn) {
   
   .arg2 <- 'Origin,Dest,UniqueCarrier'
   xvars <- unlist( strsplit( .arg2, split = ',' , fixed = TRUE ) )
-  data.glm <- h2o.glm(x = xvars , y = 'Cancelled', training_frame = data.hex, family = 'binomial', n_folds = 0, standardize=TRUE)
+  data.glm <- h2o.glm(x = xvars , y = 'Cancelled', training_frame = data.hex, family = 'binomial', nfolds = 0, standardize=TRUE)
   
   glmModelTemp <- eval(parse(text = 'data.glm' ))
   originFactors <- levels(data.hex$Origin)

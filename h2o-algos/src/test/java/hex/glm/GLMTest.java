@@ -510,7 +510,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = true;
       params._family = Family.binomial;
-      params._beta_constraint = betaConstraints._key;
+      params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
@@ -602,7 +602,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = false;
       params._family = Family.binomial;
-      params._beta_constraint = betaConstraints._key;
+      params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;

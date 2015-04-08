@@ -624,7 +624,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       for (Class<? extends Schema> clz : clzs) {
         Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
         for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
-         if (!Modifier.isAbstract(schema_class.getModifiers()))
+//         if (!Modifier.isAbstract(schema_class.getModifiers()))
           Schema.register(schema_class);
       }
     }
