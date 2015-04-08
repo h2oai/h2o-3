@@ -18,7 +18,7 @@ public class H2OModelBuilderError extends H2OError {
   public ModelBuilder.ValidationMessage[] _validation_messages;
   public int _validation_error_count;
 
-  public H2OModelBuilderError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap<String, Object> values, H2OModelBuilderIllegalArgumentException e) {
+  public H2OModelBuilderError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, H2OModelBuilderIllegalArgumentException e) {
     super(timestamp, error_url, msg, dev_msg, http_status, values, e);
     this._parameters = (Model.Parameters) values.get("parameters");
     this._validation_messages = (ModelBuilder.ValidationMessage[]) values.get("validation_messages");
