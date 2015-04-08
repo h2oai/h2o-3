@@ -288,33 +288,27 @@ The **Build Model...** button can be accessed from any page containing the .hex 
 In the **Build a Model** cell, select an algorithm from the drop-down menu: 
 
 <a name="Kmeans"></a>
-- **kmeans**: Create a K-Means model
+- **K-means**: Create a K-Means model
 **Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
-- **glm**: Create a Generalized Linear model
+- **Generalized Linear Model**: Create a Generalized Linear model
 
-<a name="grep"></a>
-- **grep**: Perform a global search for a specified character string and display the results (global regular expression)
-**Note**: For a grep model, the selected training frame must contain one vector of raw text. 
- 
 <a name="drf"></a>
-- **drf**: Create a distributed Random Forest model.  
+- **Distributed RF**: Create a distributed Random Forest model.  
 
 <a name="nb"></a>
-- **naivebayes**: Create a Naive Bayes model. 
+- **Naive Bayes**: Create a Naive Bayes model. 
 
 <a name="pca"></a> 
-- **pca**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
+- **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
 <a name="GBM"></a>
-- **gbm**: Create a Gradient Boosted model
+- **Gradient Boosting Machine**: Create a Gradient Boosted model
 
 <a name="DL"></a>
-- **deeplearning**: Create a Deep Learning model
+- **Deep Learning**: Create a Deep Learning model
 
-<a name="quantile"></a>
-- **quantile**: Obtain the quantile for the current data
 
 The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types. 
 
@@ -335,8 +329,6 @@ The available options vary depending on the selected model. If an option is only
 - **Transform**: [(PCA)](#pca) Select the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None. 
 
 - **Score\_each\_iteration**: (Optional) Score the validation set after each iteration of the model-building process. If you select this option, the model-building time increases. 
-
-- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are 0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999. 
 
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL)) Select the column to use as the independent variable.
 

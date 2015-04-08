@@ -67,7 +67,7 @@ Now, parse the imported data:
 ### Building a Model
 
 0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `glm` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
+0. Select `Generalized Linear Model` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
 0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.
 **Note**: You must include at least 2 columns. 
