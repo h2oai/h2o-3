@@ -6,7 +6,7 @@ import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 import water.api.TwoDimTableBase;
 
-public abstract class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
+public class SharedTreeModelV2<M extends SharedTreeModel<M, P, O>,
                                         S extends SharedTreeModelV2<M, S, P, PS, O, OS>,
                                         P extends SharedTreeModel.SharedTreeParameters,
                                         PS extends SharedTreeV2.SharedTreeParametersV2<P, PS>,

@@ -13,9 +13,8 @@ def binop_div(ip,port):
     #frame/scaler
     res = iris / 5
     res_rows, res_cols = res.dim()
-    h2o_sums = []
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
-    for x, y in zip([sum([res[c][r].eager() for r in range(rows)]) for c in range(cols-1)], [175.3, 91.62, 112.76, 35.96]):
+    for x, y in zip([sum([res[r,c].eager() for r in range(rows)]) for c in range(cols-1)], [175.3, 91.62, 112.76, 35.96]):
       assert abs(x - y) < 1e-7,  "unexpected column sums."
 
     res = 5 / iris
@@ -25,12 +24,14 @@ def binop_div(ip,port):
     #frame/vec
     try:
       res = iris / iris[0]
+      res.show()
       assert False, "expected error. objects of different dimensions not supported."
     except EnvironmentError:
       pass
 
     try:
       res = iris[2] / iris
+      res.show()
       assert False, "expected error. objects of different dimensions not supported."
     except EnvironmentError:
       pass
@@ -60,6 +61,7 @@ def binop_div(ip,port):
 
     try:
       res = iris / iris[0:3]
+      res.show()
       assert False, "expected error. frames are different dimensions."
     except EnvironmentError:
       pass

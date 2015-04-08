@@ -8,6 +8,7 @@ import urllib
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
+from expr import Expr
 import h2o_model_builder
 
 
@@ -300,3 +301,34 @@ def locate(path):
 
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
+
+def as_list(data):
+  """
+  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
+  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
+  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
+  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
+  be constructed for production conversion between H2O and python data types.
+  :return: List of list (Rows x Columns).
+  """
+  if isinstance(data, Expr):
+    x = data.eager()
+    if data.is_local():
+      return x
+    j = frame(data._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OVec):
+    x = data._expr.eager()
+    if data._expr.is_local():
+      return x
+    j = frame(data._expr._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OFrame):
+    vec_as_list = [as_list(v) for v in data._vecs]
+    frm = []
+    for row in range(len(vec_as_list[0])):
+      tmp = []
+      for col in range(len(vec_as_list)):
+        tmp.append(vec_as_list[col][row][0])
+      frm.append(tmp)
+    return frm
