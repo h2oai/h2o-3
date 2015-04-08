@@ -7,8 +7,21 @@ import water.api.*;
 public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLearningModelV2, DeepLearningModel.DeepLearningParameters, DeepLearningV2.DeepLearningParametersV2, DeepLearningModel.DeepLearningModelOutput, DeepLearningModelV2.DeepLearningModelOutputV2> {
 
   public static final class DeepLearningModelOutputV2 extends ModelOutputSchema<DeepLearningModel.DeepLearningModelOutput, DeepLearningModelOutputV2> {
-    @API(help="Scoring information")
-    DeepLearningScoringV2 errors;
+    @API(help="Epoch Counter", direction=API.Direction.OUTPUT)
+    public double epoch_counter;
+
+    @API(help="Training Samples", direction=API.Direction.OUTPUT)
+    public long training_samples;
+
+    @API(help="Training Time (milliseconds)", direction=API.Direction.OUTPUT)
+    public long training_time_ms;
+
+    // training/validation sets
+    @API(help="Score for training samples", direction=API.Direction.OUTPUT)
+    public long score_training_samples;
+
+    @API(help="Score for validation samples", direction=API.Direction.OUTPUT)
+    public long score_validation_samples;
 
     @API(help="Model summary")
     TwoDimTableBase model_summary;
