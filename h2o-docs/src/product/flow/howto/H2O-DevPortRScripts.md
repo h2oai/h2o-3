@@ -116,14 +116,12 @@ H2O Parameter Name | H2O-Dev Parameter Name
 -------------------|-----------------------
 `data` | `training_frame`
 `key` | `destination_key`
-`prior` | `prior1`
 `nfolds` | `n_folds`
 `nlambda` | `nlambdas`
 `lambda.min.ratio` | `lambda_min_ratio`
  `iter.max` | `max_iterations`
- `epsilon` | `beta_eps`
- `beta_constraints` | `beta_constraint`
- 
+ `epsilon` | `beta_epsilon`
+
 ###Deprecated GLM Parameters
  
 The following parameters have been removed: 
@@ -144,7 +142,6 @@ The following parameters have been removed:
  
  - `class_sampling_factors`: Specify an array containing real numbers to define how much each class should be over- or under-sampled.
  - `validation_frame`: Specify the validation dataset. 
- - `balance_classes`: For imbalanced data, balance training data class counts via over/under-sampling for improved predictive accuracy.
  - `max_after_balance_size`: If classes are balanced, limit the resulting dataset size to the specified multiple of the original dataset size.
  - `solver`: Select ADMM or LBFGS. 
 
@@ -162,7 +159,6 @@ H2O  | H2O-Dev
 `iter.max = 100,` |  `max_iterations = 50,` 
 `epsilon = 1e-4` | `beta_epsilon = 0` 
 `strong_rules = TRUE,` | 
- &nbsp; | `balance_classes = FALSE,` 
 `return_all_lambda = FALSE,` | 
 &nbsp; | `class_sampling_factors,`
 `intercept = TRUE,` | 
@@ -170,12 +166,12 @@ H2O  | H2O-Dev
 `non_negative = FALSE,` | 
 &nbsp; | `solver = c("ADMM", "L_BFGS"),`
 `standardize = TRUE,` | `standardize = TRUE,` 
-`family,` | `family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),` 
-`link,` | `link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),`
-`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` | `tweedie_variance_power = NaN,` 
-&nbsp; | `tweedie_link_power = NaN,` 
+`family,` | `family = c("gaussian", "binomial", "poisson", "gamma"),` 
+`link,` | `link = c("family_default", "identity", "logit", "log", "inverse"),`
+`tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  
+&nbsp; |  
 `alpha = 0.5,` | `alpha = 0.5,` 
-`prior = NULL` | `prior1 = 0.0,` 
+`prior = NULL` | `prior = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
 `lambda_search = FALSE,` | `lambda_search = FALSE,` 
 `nlambda = -1,` | `nlambdas = -1,` 
