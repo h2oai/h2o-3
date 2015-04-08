@@ -111,14 +111,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     for( int c=0; c<keys.length; c++ )
       if( keys[c] != null ) {
         double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
-        if (Double.isInfinite(pred)) {
-          if (keys.length == 1) {
-            throw H2O.fail("Got infinite label.");
-          } else {
-            Log.warn("Tree (index " + treeIdx + ") predicted " + pred + " for class " + c + ". Setting it to 1e15.");
-            pred = 1e15;
-          }
-        }
+        assert(!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
   }
