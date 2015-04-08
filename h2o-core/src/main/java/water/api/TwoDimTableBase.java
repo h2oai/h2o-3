@@ -15,7 +15,7 @@ import water.util.TwoDimTable;
  *
  */
 public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> extends Schema<I, TwoDimTableBase<I, S>> {
-  public static class ColumnSpecsV1 extends Schema<Iced, ColumnSpecsV1> {
+  public static class ColumnSpecsBase extends Schema<Iced, ColumnSpecsBase> {
     @API(help="Column Name", direction=API.Direction.OUTPUT)
     String name;
     @API(help="Column Type", direction=API.Direction.OUTPUT)
@@ -33,7 +33,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
   public String description;
 
   @API(help="Column Specification", direction=API.Direction.OUTPUT)
-  public ColumnSpecsV1[] columns;
+  public ColumnSpecsBase[] columns;
 
   @API(help="Number of Rows", direction=API.Direction.OUTPUT)
   public int rowcount;
@@ -52,14 +52,14 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     final int cols = t.getColDim()+1;
     final int rows = t.getRowDim();
     rowcount = rows;
-    columns = new ColumnSpecsV1[cols];
-    columns[0] = new ColumnSpecsV1();
+    columns = new ColumnSpecsBase[cols];
+    columns[0] = new ColumnSpecsBase();
     columns[0].name = t.getColHeaderForRowHeaders();
     columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
     columns[0].format = "%s";
     columns[0].description = null;
     for (int c=1; c<cols; ++c) {
-      columns[c] = new ColumnSpecsV1();
+      columns[c] = new ColumnSpecsBase();
       columns[c].name = t.getColHeaders()[c-1];
       columns[c].type = t.getColTypes()[c-1];
       columns[c].format = t.getColFormats()[c-1];
