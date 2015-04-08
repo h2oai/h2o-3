@@ -68,16 +68,14 @@ public class ADMM {
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-      Log.info("rho = " + Arrays.toString(rho));
-
       double[] u = MemoryManager.malloc8d(N);
       double[] x = MemoryManager.malloc8d(N);
       double[] beta_given = MemoryManager.malloc8d(N);
       double  [] kappa = MemoryManager.malloc8d(rho.length);
+
       if(l1pen > 0)
         for(int i = 0; i < N-ii; ++i)
           kappa[i] = l1pen/rho[i];
-      Log.info("kappa = " + Arrays.toString(rho));
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
@@ -154,15 +152,23 @@ public class ADMM {
       iter = max_iter;
       return false;
     }
+
+    /**
+     * Estimate optimal rho based on l1 penalty and (estimate of) soltuion x without the l1penalty
+     * @param x
+     * @param l1pen
+     * @return
+     */
     public static double estimateRho(double x, double l1pen){
       double rho = 0;
+      if(l1pen == 0 || x == 0) return 0;
       if (x > 0) {
         double D = l1pen * (l1pen + 4 * x);
         if (D >= 0) {
           D = Math.sqrt(D);
           double r = .25 * (l1pen + D) / (2 * x);
           if (r > 0) rho = r;
-          else if(l1pen > 0) System.out.println("negative rho estimate(1)! r = " + r);
+          else Log.warn("negative rho estimate(1)! r = " + r);
         }
       } else if (x < 0) {
         double D = l1pen * (l1pen - 4 * x);
@@ -170,14 +176,13 @@ public class ADMM {
           D = Math.sqrt(D);
           double r = -.25 * (l1pen + D) / (2 * x);
           if (r > 0) rho = r;
-          else if(l1pen > 0) Log.warn("negative rho estimate(2)!  r = " + r);
+          else Log.warn("negative rho estimate(2)!  r = " + r);
         }
-      } else if(l1pen > 0) {
-        Log.warn("x estimated zero!");
       }
       return rho;
     }
   }
+
   public static double shrinkage(double x, double kappa) {
     double sign = x < 0?-1:1;
     double sx = x*sign;
