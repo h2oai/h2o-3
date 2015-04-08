@@ -40,6 +40,9 @@ class RapidsHandler extends Handler {
       if (env.isAry()) {
         Frame fr = env.popAry();
         if (fr.numRows() == 1 && fr.numCols() == 1) {
+          rapids.key = new KeyV1.FrameKeyV1(fr._key);
+          rapids.num_rows = 1;
+          rapids.num_cols = 1;
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
             sb.append(rapids.string);
