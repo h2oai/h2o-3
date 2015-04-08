@@ -225,11 +225,6 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           }
         }
       }
-      if (_solver == Solver.L_BFGS) {
-        glm.hide("_alpha", "L1 penalty is currently only available for ADMM solver.");
-        glm.hide("_higher_accuracy","only available for ADMM");
-        _alpha = new double[]{0};
-      }
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");

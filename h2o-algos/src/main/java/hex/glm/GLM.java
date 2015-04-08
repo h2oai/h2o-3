@@ -299,6 +299,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _rho = rho;
       return this;
     }
+
+    public boolean hasBounds(){
+      if(_betaLB != null)
+        for(double d:_betaLB)
+          if(!Double.isInfinite(d)) return true;
+      if(_betaUB != null)
+        for(double d:_betaUB)
+          if(!Double.isInfinite(d)) return true;
+      return false;
+    }
   }
 
   /**
@@ -731,15 +741,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       switch(_parms._solver) { // TODO add L1 pen handling!
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
+          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._nobs, _rowFilter);
+          if(_bc._betaGiven != null && _bc._rho != null)
+            solver = new ProximalGradientSolver(solver,_bc._betaGiven,_bc._rho);
           if (beta == null) {
             beta = MemoryManager.malloc8d(_activeData.fullN() + (_activeData._intercept ? 1 : 0));
             if (_activeData._intercept)
               beta[beta.length - 1] = _parms.link(_taskInfo._ymu);
           }
-          if (_parms._alpha[0] > 0 || _taskInfo._activeCols != null)
-            throw H2O.unimpl();
-          GradientSolver solver = new GLMGradientSolver(_parms, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _taskInfo._ymu, _taskInfo._nobs, _bc._betaGiven, _bc._rho, 0, _rowFilter);
-          final long t1 = System.currentTimeMillis();
           L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iter);
           Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
             @Override
@@ -753,14 +762,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
               return isRunning(GLM.this._key);
             }
           });
-          long t2 = System.currentTimeMillis();
-          Log.info("L_BFGS (k = " + lbfgs.k() + ") done after " + r.iter + " iterations and " + ((t2 - t1) / 1000) + " seconds, objval = " + r.ginfo._objVal + ", penalty = " + (_parms._lambda[_lambdaId] * .5 * ArrayUtils.l2norm2(beta, true)) + ",  gradient norm2 = " + (MathUtils.l2norm2(r.ginfo._gradient)));
-          _taskInfo._ginfo = r.ginfo;
-          double[] newBeta = r.coefs;
-          // update the state
-          _taskInfo._beta = newBeta;
-          _taskInfo._iter += r.iter;
-          setSubmodel(newBeta, null, null, this);
+          _taskInfo._beta = r.coefs;
+          double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
+          if(l1pen > 0 || _bc.hasBounds()) {
+            double [] rho = MemoryManager.malloc8d(beta.length);
+            // compute rhos
+            for(int i = 0; i < rho.length; ++i)
+              rho[i] = ADMM.L1Solver.estimateRho(_taskInfo._beta[i],l1pen);
+            new ADMM.L1Solver(1e-4, 100).solve(new LBFGS_ProximalSolver(solver, r.coefs.clone(), rho), _taskInfo._beta, l1pen);
+          }
           break;
         }
         case COORDINATE_DESCENT:
@@ -1101,26 +1111,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double x = (beta_given != null && proxPen != null)
           ? (y - ybar * gram.get(icptCol, i) + proxPen[i] * beta_given[i]) / ((gram.get(i, i) - xbar * xbar) + l2pen + proxPen[i])
           : ((y - ybar * xbar) / (gram.get(i, i) - xbar * xbar) + l2pen);///gram.get(i,i);
-        double rho = 0;
-        if (x > 0) {
-          double D = l1pen * (l1pen + 4 * x);
-          if (D >= 0) {
-            D = Math.sqrt(D);
-            double r = .25 * (l1pen + D) / (2 * x);
-            if (r > 0) rho = r;
-            else if(l1pen > 0) System.out.println("negative rho estimate(1)! r = " + r);
-          }
-        } else if (x < 0) {
-          double D = l1pen * (l1pen - 4 * x);
-          if (D >= 0) {
-            D = Math.sqrt(D);
-            double r = -.25 * (l1pen + D) / (2 * x);
-            if (r > 0) rho = r;
-            else if(l1pen > 0) Log.warn("negative rho estimate(2)!  r = " + r);
-          }
-        } else if(l1pen > 0) {
-          Log.warn("x estimated zero!");
-        }
+        double rho = ADMM.L1Solver.estimateRho(x,l1pen);
         if(l1pen > 0 && rho == 0);
          rho = Math.abs(l1pen / x);
         // upper nad lower bounds have different rho requirements.
@@ -1197,35 +1188,113 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public boolean canSetRho() { return false; }
   }
 
+
+  public static final class LBFGS_ProximalSolver implements ProximalSolver {
+    double [] _beta;
+    final double [] _rho;
+    final GradientSolver _gSolver;
+    double [] _gradient;
+
+    public LBFGS_ProximalSolver(GradientSolver gs, double [] beta, double [] rho){
+      _gSolver = gs;
+      _beta = beta;
+      _rho = rho;
+    }
+
+    @Override
+    public double[] rho() { return _rho;}
+
+    @Override
+    public void solve(double[] beta_given, double[] result) {
+      ProximalGradientSolver s = new ProximalGradientSolver(_gSolver,beta_given,_rho);
+      L_BFGS.Result r  = new L_BFGS().solve(s,_beta);
+      _beta = r.coefs;
+      _gradient = r.ginfo._gradient;
+      System.arraycopy(_beta,0,result,0,_beta.length);
+    }
+
+    @Override
+    public boolean hasGradient() {
+      return _gradient != null;
+    }
+
+    @Override
+    public double[] gradient(double[] beta) { return _gradient;}
+
+    @Override
+    public void setRho(double[] rho) {
+      System.arraycopy(rho,0,_rho,0,_rho.length);
+    }
+
+    @Override
+    public boolean canSetRho() { return true;}
+  }
+
+  /**
+   * Simple wrapper around gradient computation, adding proximal penalty
+   */
+  public static class ProximalGradientSolver extends GradientSolver {
+    final GradientSolver _solver;
+    final double [] _betaGiven;
+    final double [] _rho;
+
+    public ProximalGradientSolver(GradientSolver s, double [] betaGiven, double [] rho) {
+      _solver = s;
+      _betaGiven = betaGiven;
+      _rho = rho;
+    }
+    @Override
+    public GradientInfo getGradient(double[] beta) {
+      GradientInfo gt = _solver.getGradient(beta);
+      for (int i = 0; i < gt._gradient.length; ++i) {
+        double diff = (beta[i] - _betaGiven[i]);
+        double pen = _rho[i] * diff;
+        gt._gradient[i] += pen;
+        gt._objVal += .5*pen*diff;
+      }
+      return gt;
+    }
+    @Override
+    public double[] getObjVals(double[] beta, double[] pk) {
+      double [] objs = _solver.getObjVals(beta,pk);
+      double step = 1;
+      for (int i = 0; i < objs.length; ++i, step *= _solver.stepDec()) {
+        double[] b = ArrayUtils.wadd(beta.clone(), pk, step);
+        double pen = 0;
+        for (int j = 0; j < _betaGiven.length; ++j) {
+          double diff = b[j] - _betaGiven[j];
+          pen += .5 * _rho[j] * diff * diff;
+        }
+        objs[i] += pen;
+      }
+      return objs;
+    }
+  }
+
   /**
    * Gradient and line search computation for L_BFGS and also L_BFGS solver wrapper (for ADMM)
    */
-  public static final class GLMGradientSolver extends GradientSolver implements ProximalSolver {
+  public static final class GLMGradientSolver extends GradientSolver  {
     final GLMParameters _glmp;
     final DataInfo _dinfo;
     final double _ymu;
     final double _lambda;
     final long _nobs;
     int _nsteps = 32;
-    double[] _betaGiven;
-    final double[] _proximalPen;
-    double _rho;
     Vec _rowFilter;
+    double [] _beta;
 
     public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs) {
-      this(glmp, dinfo, lambda, ymu, nobs, null, null,0, null);
+      this(glmp, dinfo, lambda, ymu, nobs, null);
     }
 
-    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs, double[] betaGiven, double[] proximalPen, double rho, Vec rowFilter) {
+    public GLMGradientSolver(GLMParameters glmp, DataInfo dinfo, double lambda, double ymu, long nobs, Vec rowFilter) {
       _glmp = glmp;
       _dinfo = dinfo;
       _ymu = ymu;
       _nobs = nobs;
       _lambda = lambda;
       _stepDec = LINE_SEARCH_STEP;
-      _betaGiven = betaGiven;
-      _proximalPen = proximalPen;
-      _rho = rho;
       _rowFilter = rowFilter;
     }
 
@@ -1239,14 +1308,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter ).doAll(_dinfo._adaptedFrame)
         : new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter).doAll(_dinfo._adaptedFrame);
-      if (_betaGiven != null) { // add proximal gradient
-        for (int i = 0; i < gt._gradient.length; ++i) {
-          double diff = (beta[i] - _betaGiven[i]);
-          double pen = _proximalPen[i] * diff;
-          gt._gradient[i] += pen;
-          gt._objVal += .5*pen*diff;
-        }
-      }
       return new GradientInfo(gt._objVal, gt._gradient);
     }
 
@@ -1257,56 +1318,14 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       double step = 1;
       for (int i = 0; i < objs.length; ++i, step *= _stepDec) {
         objs[i] *= reg;
-        if (_lambda > 0 || _betaGiven != null) { // have some l2 pen
+        if (_lambda > 0 ) { // have some l2 pen
           double[] b = ArrayUtils.wadd(beta.clone(), direction, step);
           if (_lambda > 0)
             objs[i] += .5 * _lambda * ArrayUtils.l2norm2(b, _dinfo._intercept);
-          if (_betaGiven != null && _proximalPen != null) {
-            for (int j = 0; j < _betaGiven.length; ++j) {
-              double diff = b[j] - _betaGiven[j];
-              objs[i] += .5 * _proximalPen[j] * diff * diff;
-            }
-          }
         }
       }
       return objs;
     }
-
-    @Override
-    public double []  rho() {
-      return new double []{_rho};
-    }
-
-    double [] _beta;
-    double [] _gradient;
-    @Override
-    public void solve(double[] beta_given, double[] result) {
-      if(_beta == null)
-        throw new IllegalArgumentException("Can not call solve without beta_start, call setBetaStart() first");
-      if(_betaGiven == null)
-        _betaGiven = beta_given.clone();
-      else
-        System.arraycopy(beta_given, 0, _betaGiven, 0, beta_given.length);
-      Result r = new L_BFGS().solve(this, _beta);
-      System.arraycopy(r.coefs, 0, _beta, 0, r.coefs.length);
-      if (_gradient == null)
-        _gradient = r.ginfo._gradient.clone();
-      else
-        System.arraycopy(r.ginfo._gradient, 0, _gradient, 0, _gradient.length);
-    }
-    @Override
-    public boolean hasGradient() {
-      return _gradient != null;
-    }
-
-    @Override
-    public double[] gradient(double[] beta) { return _gradient; }
-
-    @Override
-    public void setRho(double [] rho) { _rho = rho[0];}
-
-    @Override
-    public boolean canSetRho() { return true;}
   }
 
   private static final double[] expandVec(double[] beta, final int[] activeCols, int fullN) {

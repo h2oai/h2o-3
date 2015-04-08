@@ -101,10 +101,11 @@ public final class L_BFGS extends Iced {
      * @param pk   - search direction
      * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
-    protected abstract double [] getObjVals(double[] beta, double[] pk);
+    public abstract double [] getObjVals(double[] beta, double[] pk);
 
     protected double _startStep = 1.0;
     protected double _stepDec = .75;
+    public double stepDec(){return _stepDec;}
 
     /**
      * Perform line search at given solution and search direction.
