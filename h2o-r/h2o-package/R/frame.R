@@ -999,7 +999,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   if(n == 0L)
     data.frame()
   else {
-    startidx <- max(1L, endidx - n)
+    startidx <- max(1L, endidx - n + 1)
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
     x.slice <- as.data.frame(tmp_tail)
