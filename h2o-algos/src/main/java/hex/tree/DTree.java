@@ -521,7 +521,6 @@ public class DTree extends Iced {
       return sb.append("pred=").append(_pred).append("\n");
     }
     public final double pred() { return _pred; }
-    public final void pred(double pred) { _pred = (float)pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }
