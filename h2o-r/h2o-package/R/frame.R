@@ -978,7 +978,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   if(n == 0L)
-    data.frame()
+    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
     tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
@@ -997,7 +997,7 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0L)
-    data.frame()
+    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
     startidx <- max(1L, endidx - n + 1)
     idx <- startidx:endidx
