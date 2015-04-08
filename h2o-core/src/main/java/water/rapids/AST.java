@@ -160,7 +160,7 @@ class ASTId extends AST {
   boolean isGlobalSet() { return _type == '!'; }
   boolean isLookup() { return _type == '%'; }
   boolean isValid() { return isLocalSet() || isGlobalSet() || isLookup(); }
-  @Override ASTId make() { return new ASTId('%', ""); }
+  @Override ASTId make() { return new ASTId(_type, ""); }
 }
 
 class ASTKey extends AST {
