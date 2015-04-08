@@ -342,6 +342,11 @@ H2O  | H2O-Dev
 <a name="DRF"></a>
 ##Distributed Random Forest
 
+###Changes to DRF in H2O-Dev
+
+Distributed Random Forest (DRF) was represented as `h2o.randomForest(type="BigData", ...)` in H2O. In H2O, SpeeDRF (`type="fast"`) was not as accurate, especially for complex data with categoricals, and did not address regression problems. DRF (`type="BigData"`) was at least as accurate as SpeeDRT (`type="fast"`) and was the only algorithm that scaled to big data (data too large to fit on a single node). 
+In H2O-Dev, our plan is to improve the performance of DRF so that the data fits on a single node (optimally, for all cases), which will make SpeeDRF obsolete. Ultimately, the goal is provide a single algorithm that provides the "best of both worlds" for all datasets and use cases. 
+
 **Note**: H2O-Dev only supports DRF. SpeeDRF is no longer supported. The functionality of DRF in H2O-Dev is similar to DRF functionality in H2O. 
 
 ###Renamed DRF Parameters
