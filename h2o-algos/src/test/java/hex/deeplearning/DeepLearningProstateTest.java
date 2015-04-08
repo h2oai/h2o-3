@@ -143,7 +143,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                         p._override_with_best_model = override_with_best_model;
                                         p._epochs = epochs;
                                         p._loss = loss;
-                                        p._n_folds = n_folds;
+                                        if (n_folds > 0) {
+                                          H2O.unimpl();
+                                          // p._n_folds = n_folds;
+                                        }
                                         p._keep_cross_validation_splits = keep_cv_splits;
                                         p._seed = seed;
                                         p._train_samples_per_iteration = train_samples_per_iteration;
@@ -194,7 +197,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._destination_key = Key.make();
                                       dest = p._destination_key;
                                       p._checkpoint = dest_tmp;
-                                      p._n_folds = 0;
+                                      // p._n_folds = 0;
 
                                       p._valid = valid == null ? null : valid._key;
                                       p._response_column = frame._names[resp];

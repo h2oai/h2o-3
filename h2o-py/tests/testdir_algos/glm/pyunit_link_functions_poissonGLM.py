@@ -22,7 +22,7 @@ def link_functions_poisson(ip,port):
     myX = ["ID","AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
 
     print("Create h2o model with canonical link: LOG")
-    h2o_model_log = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="poisson", link="log",alpha=[0.5], Lambda=[0], n_folds=0)
+    h2o_model_log = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="poisson", link="log",alpha=[0.5], Lambda=[0])
 
     print("Create statsmodel model with canonical link: LOG")
     sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Poisson(sm.families.links.log)).fit()
@@ -33,7 +33,7 @@ def link_functions_poisson(ip,port):
     assert h2o_deviance_log - sm_deviance_log < 0.01, "expected h2o to have an equivalent or better deviance measures"
 
     print("Create h2o models with link: IDENTITY")
-    h2o_model_id = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="poisson", link="identity",alpha=[0.5], Lambda=[0], n_folds=0)
+    h2o_model_id = h2o.glm(x=h2o_data[myX], y=h2o_data[myY], family="poisson", link="identity",alpha=[0.5], Lambda=[0])
 
     print("Create statsmodel models with link: IDENTITY")
     sm_model_id = sm.GLM(endog=sm_data_response, exog=sm_data_features, family=sm.families.Poisson(sm.families.links.identity)).fit()

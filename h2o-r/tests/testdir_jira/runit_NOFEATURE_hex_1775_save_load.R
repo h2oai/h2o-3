@@ -23,7 +23,7 @@ test.hex_1775 <- function(conn) {
   
   # Build GLM, RandomForest, GBM, Naive Bayes, and Deep Learning models
   Log.info("Build GLM model")
-  prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", n_folds = 0, alpha = 0.5)
+  prostate.glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate.hex, family = "binomial", nfolds = 0, alpha = 0.5)
   Log.info("Build GBM model")
   prostate.gbm = h2o.gbm(y = 2, x = 3:9, training_frame = prostate.hex, nfolds = 5, loss = "multinomial")
   Log.info("Build Speedy Random Forest Model")
