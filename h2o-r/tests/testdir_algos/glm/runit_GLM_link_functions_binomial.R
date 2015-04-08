@@ -22,7 +22,7 @@ test.linkFunctions <- function(conn) {
 	R.formula <- (R.data[,"CAPSULE"]~.) 
 
 	print("Create models with canonical link: LOGIT")
-	model.h2o.binomial.logit <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="binomial", link="logit",alpha=0.5, lambda=0, n_folds=0)
+	model.h2o.binomial.logit <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="binomial", link="logit",alpha=0.5, lambda=0, nfolds=0)
 	model.R.binomial.logit <- glm(formula=R.formula, data=R.data[,4:10], family=binomial(link=logit), na.action=na.omit)
 
 	print("Compare model deviances for link function logit")
