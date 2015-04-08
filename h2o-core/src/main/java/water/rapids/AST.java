@@ -611,7 +611,7 @@ class ASTWhile extends ASTStatement {
 //}
 
 class ASTString extends AST {
-  @Override ASTString make() { return new ASTString('\"',"");}
+  @Override ASTString make() { return new ASTString(_eq,""); }
   String opStr() { return String.valueOf(_eq); }
   final String _s;
   final char _eq;

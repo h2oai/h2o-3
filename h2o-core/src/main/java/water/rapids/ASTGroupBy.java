@@ -121,16 +121,16 @@ import java.util.concurrent.atomic.AtomicInteger;
             byte type = agg[a]._type;
             switch( type ) {
               case AGG.T_N:  ncs[j++].addNum(g._N       );  break;
-              case AGG.T_ND: ncs[j++].addNum(g._ND[a]   );  break;
-              case AGG.T_F:  ncs[j++].addNum(g._f[a]    );  break;
-              case AGG.T_L:  ncs[j++].addNum(g._l[a]    );  break;
+              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]  );  break;
               case AGG.T_MIN:ncs[j++].addNum(g._min[a]  );  break;
               case AGG.T_MAX:ncs[j++].addNum(g._max[a]  );  break;
-              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]  );  break;
               case AGG.T_VAR:ncs[j++].addNum(g._vars[a] );  break;
               case AGG.T_SD :ncs[j++].addNum(g._sdevs[a]);  break;
               case AGG.T_SUM:ncs[j++].addNum(g._sum[a]  );  break;
               case AGG.T_SS :ncs[j++].addNum(g._ss [a]  );  break;
+              case AGG.T_ND: ncs[j++].addNum(g._ND[a]   );  break;
+              case AGG.T_F:  ncs[j++].addNum(g._f[a]    );  break;
+              case AGG.T_L:  ncs[j++].addNum(g._l[a]    );  break;
               default:
                 throw new IllegalArgumentException("Unsupported aggregation type: " + type);
             }
@@ -215,8 +215,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     private static void reduceGroup(AGG[] agg, G g, G that) { perRow(agg,-1,-1,null,g,that);}
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g, G that) {
       byte type; int col;
-      long vals[] = new long[6]; // 6 cases in the switch, magic array for legibility in the switch
-      for (int i=0;i<agg.length;++i) {
+      for( int i=0;i<agg.length;++i ) {
         col = agg[i]._c;
 
         // update NA value for this (group, aggregate) pair:
@@ -241,28 +240,22 @@ import java.util.concurrent.atomic.AtomicInteger;
           if( c[col].isNA(chkRow) ) continue;
           bits = Double.doubleToRawLongBits(c[col].atd(chkRow));
         }
-        vals[0] = c==null ? that._f[i] : chkRow+rowOffset;
-        vals[1] = c==null ? that._l[i] : chkRow+rowOffset;
-        vals[2] = c==null ? Double.doubleToRawLongBits(that._min[i]) : bits;
-        vals[3] = c==null ? Double.doubleToRawLongBits(that._max[i]) : bits;
-        vals[4] = c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits;
-        vals[5] = c==null ? Double.doubleToRawLongBits(that._ss[i] ) : bits;
         if( type == AGG.T_ND ) {
 //          if( c==null ) g._nd._nd[i].addAll(that._nd._nd[i]);
 //          else          g._nd._nd[i].add(c[col].atd(chkRow));
           continue;
         }
 
-        switch( type ) {
-          case AGG.T_F:   setFirst(g,vals[0],i);   break;
-          case AGG.T_L:   setLast( g,vals[1],i);   break;
-          case AGG.T_MIN: setMin(  g,vals[2],i);   break;
-          case AGG.T_MAX: setMax(  g,vals[3],i);   break;
+        switch( type ) {  // ordered by "popularity"
           case AGG.T_AVG: /* fall through */
-          case AGG.T_SUM: setSum(  g,vals[4],i);   break;
+          case AGG.T_SUM: setSum(  g,c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i);   break;
+          case AGG.T_MIN: setMin(  g,c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
+          case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
           case AGG.T_VAR: /* fall through */
           case AGG.T_SD:
-          case AGG.T_SS:  setSS(   g,vals[5],i);   break;
+          case AGG.T_SS:  setSS(   g,c==null ? Double.doubleToRawLongBits(that._ss[i] ) : bits,i);   break;
+          case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
+          case AGG.T_L:   setLast( g,c==null ? that._l[i] : chkRow+rowOffset,i);   break;
           default:
             throw new IllegalArgumentException("Unsupported aggregation type: " + type);
         }
