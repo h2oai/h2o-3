@@ -467,6 +467,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       @Override
       public void callback(H2OCountedCompleter h2OCountedCompleter) {
         Log.info("Gradient err at lambda = " + _parms._lambda[_lambdaId] + " = " + _tInfos[0].gradientCheck(_parms._lambda[_lambdaId], _parms._alpha[0]));
+        int rank = 0;
+        for(int i = 0; i < _tInfos[0]._beta.length - (_dinfo._intercept?1:0); ++i)
+          if(_tInfos[0]._beta[i] != 0) ++rank;
+        Log.info("Solution at lambda = " + _parms._lambda[_lambdaId] + "has " + rank + " nonzeros");
         if(_parms._n_folds > 1){
           // copy the state over
           ParallelTasks<GLMSingleLambdaTsk> t = (ParallelTasks<GLMSingleLambdaTsk>)h2OCountedCompleter;
@@ -616,7 +620,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     protected void solve(){
       if (_activeData.fullN() > _parms._max_active_predictors)
         throw new TooManyPredictorsException();
-      switch(_parms._solver) { // TODO add L1 pen handling!
+      switch(_parms._solver) {
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
           assert beta.length == _activeData.fullN()+1;
@@ -1100,10 +1104,26 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override
     public double[] rho() { return _rho;}
 
+    double [] _beta_given;
+    GradientInfo _ginfo;
     @Override
     public void solve(double[] beta_given, double[] result) {
       ProximalGradientSolver s = new ProximalGradientSolver(_gSolver,beta_given,_rho);
-      L_BFGS.Result r  = new L_BFGS().solve(s,_beta);
+      if(_beta_given == null)
+        _beta_given = MemoryManager.malloc8d(beta_given.length);
+      if(_ginfo != null) { // update the gradient
+        for(int i = 0; i < beta_given.length; ++i) {
+          _ginfo._gradient[i] += _rho[i] * (_beta_given[i] - beta_given[i]);
+          _ginfo._objVal += .5 * _rho[i] *  (((result[i] - beta_given[i]) * (result[i] - beta_given[i])) -( (result[i] - _beta_given[i]) * (result[i] - _beta_given[i])));
+          _beta_given[i] = beta_given[i];
+        }
+      }
+
+      L_BFGS.Result r  = _ginfo == null
+        ? new L_BFGS().solve(s,result.clone())
+        : new L_BFGS().solve(s,result.clone(),_ginfo,new ProgressMonitor());
+//      L_BFGS.Result r  = new L_BFGS().solve(s,result.clone());
+      _ginfo = r.ginfo;
       _beta = r.coefs;
       _gradient = r.ginfo._gradient;
       _iter += r.iter;

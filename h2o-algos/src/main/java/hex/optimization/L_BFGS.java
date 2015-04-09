@@ -269,7 +269,7 @@ public final class L_BFGS extends Iced {
         } else {
           ls_switch = 0;
         }
-        if (ls.madeProgress || _hist._k < _hist._m) {
+        if (ls.madeProgress || _hist._k < 2) {
           ArrayUtils.wadd(beta, pk, ls.step);
         } else break; // ls did not make progress => converged
       } else  ArrayUtils.add(beta, pk);
