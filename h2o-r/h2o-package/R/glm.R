@@ -67,10 +67,6 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
   #Handle ellipses
   if (length(list(...)) > 0)
     dots <- .model.ellipses( list(...))
-  else
-    dots <- list()
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
 
   if (!inherits(training_frame, "H2OFrame"))
    tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -135,7 +131,7 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
   if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
 
-  m <- .h2o.createModel(training_frame@conn, 'glm', parms, dots$envir)
+  m <- .h2o.createModel(training_frame@conn, 'glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
   m
@@ -201,7 +197,7 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
     parms$training_frame  = training_frame
     parms$beta_constraints = beta_constraints
     names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
-    .h2o.startModelJob(training_frame@conn, 'glm', parms, dots$envir)
+    .h2o.startModelJob(training_frame@conn, 'glm', parms)
 }
 
 #' @export

@@ -91,17 +91,10 @@
 
 
 
-.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, envir) {
+.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
-
-  params <- lapply(as.list(params), function(i) {
-                     if (is.name(i))    i <- get(deparse(i), envir)
-                     if (is.call(i))    i <- eval(i, envir)
-                     if (is.integer(i)) i <- as.numeric(i)
-                     i
-                   })
 
   #---------- Check user parameter types ----------#
   error <- lapply(ALL_PARAMS, function(i) {
@@ -186,7 +179,7 @@
   new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
  delete_train <- !.is.eval(params$training_frame)
  if (delete_train) {
@@ -201,7 +194,7 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
   if (delete_train)
     h2o.rm(temp_train_key)
   if (!is.null(params$validation_frame))
@@ -241,17 +234,6 @@ predict.H2OModel <- function(object, newdata, ...) {
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
 {
   output <- data.frame()
-  dots <- list(...)
-
-  for(type in dots)
-    if (is.environment(type))
-    {
-      dots$envir <- type
-      type <- NULL
-    }
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
-#   params$envir <- l$envir
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
   if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
@@ -261,7 +243,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
     else if(model.type == "glm") model.type = "h2o.glm"
     else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
 
-    model <- do.call(model.type, c(params, envir = dots$envir))
+    model <- do.call(model.type, c(params))
   }
   output[1, "fold_num"] <- -1
   output[1, "model_key"] <- model@key
@@ -698,23 +680,8 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 
 # Handles ellipses
 .model.ellipses <- function(dots) {
-  out <- list()
-  out$envir <- NULL
-  out <- sapply(names(dots), function(type) {
-    if (is.environment(dots[[type]]))
-      dots[[type]]
-    else
-      stop(paste0("\n  unused argument (",
-                  type,
-                  " = ",
-                  deparse(substitute(dots[[type]])),
-                  ")", ", is this legacy code? Try h2o.shim"), call. = FALSE)
+  lapply(names(dots), function(type) {
+    stop(paste0('\n  unexpected argument "',
+                type,'", is this legacy code? Try h2o.shim'), call. = FALSE)
   })
-  # Keep enviornment
-  e <- as.numeric(which(sapply(out, is.environment)))
-  if (length(e) > 0){
-    out$envir <- out[[e]]
-    out[[e]] <- NULL
-  }
-  out
 }

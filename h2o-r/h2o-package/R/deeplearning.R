@@ -145,8 +145,6 @@ h2o.deeplearning <- function(x, y, training_frame,
 
   # Pass over ellipse parameters and deprecated parameters
   dots <- .model.ellipses(list(...))
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -285,7 +283,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if(!missing(export_weights_and_biases))
     parms$export_weights_and_biases <- export_weights_and_biases
 
-  .h2o.createModel(training_frame@conn, 'deeplearning', parms, dots$envir)
+  .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
 
 # Function call for R sided cross validation of h2o objects
@@ -353,7 +351,7 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
 
-  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
+  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms))
 }
 
 #' Anomaly Detection
