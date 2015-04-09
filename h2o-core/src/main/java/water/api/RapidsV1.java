@@ -4,6 +4,12 @@ import water.Iced;
 
 public class RapidsV1 extends Schema<Iced, RapidsV1> {
 
+  static final int ARY   =0;
+  static final int NUM   =1;
+  static final int STR   =2;
+  static final int ARYNUM=3;
+  static final int ARYSTR=4;
+
   // Input fields
   @API(help="An Abstract Syntax Tree."            , direction=API.Direction.INPUT) String ast;
   @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String[] funs;
@@ -21,4 +27,6 @@ public class RapidsV1 extends Schema<Iced, RapidsV1> {
   @API(help="result"                 , direction=API.Direction.OUTPUT) String result;
   @API(help="Was evaluated"          , direction=API.Direction.OUTPUT) boolean evaluated;
   @API(help="Head of a Frame result" , direction=API.Direction.OUTPUT) String[][] head;
+  @API(help="Result Type."           , direction=API.Direction.OUTPUT) int result_type;
+  @API(help="Vec keys for key result", direction=API.Direction.OUTPUT) KeyV1.VecKeyV1[] vec_keys;
 }
