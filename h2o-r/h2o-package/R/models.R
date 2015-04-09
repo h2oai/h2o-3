@@ -194,13 +194,7 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  m = h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
-  if (delete_train)
-    h2o.rm(temp_train_key)
-  if (!is.null(params$validation_frame))
-    if (delete_valid)
-      h2o.rm(temp_valid_key)
-  m
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
 }
 
 h2o.getFutureModel <- function(object) {
