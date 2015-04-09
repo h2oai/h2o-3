@@ -281,14 +281,6 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 <a name="GLM"></a>
 - **glm**: Create a Generalized Linear model
 
-<a name="grep"></a>
-- **grep**: Perform a global search for a specified character string and display the results (global regular expression)
-**Note**: For a grep model, the selected training frame must contain one vector of raw text. 
- 
-<a name="w2v"></a>
-- **word2vec**: Create a word-to-vector model for text-based data. 
-**Note**: For a word2vec model, the training frame must contain string columns. For more information about creating a "bag of words" model, refer to the tutorial on <a href="https://www.kaggle.com/c/word2vec-nlp-tutorial/details/part-1-for-beginners-bag-of-words" target="_blank">Kaggle's website</a>. 
-
 <a name="drf"></a>
 - **drf**: Create a distributed Random Forest model.  
 
@@ -388,13 +380,13 @@ The available options vary depending on the selected model. If an option is only
 
 - **Hidden**: [(DL)](#DL) Specify the hidden layer sizes (e.g., 100,100). For Grid Search, use comma-separated values: (10,10),(20,20,20). The default value is [200,200]. The specified value(s) must be positive. 
 
-- **Epochs**: ([word2vec](#w2v), [DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
+- **Epochs**: ([DL](#DL)) Specify the number of times to iterate (stream) the dataset. The value can be a fraction. The default value for DL is 10.0 and 5 for word2vec. 
 
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
-- **Beta_eps**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+- **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -412,21 +404,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Reproducible**: [(DL)](#DL) To force reproducibility on small data, check this checkbox. If this option is enabled, the model takes more time to generate, since it uses only one thread. 
 
-- **Minwordfreq**: [(word2vec)](#w2v) Specify the number of times a word must appear to be included in the model. The default is 5. 
-
-- **WordModel**: [(word2vec)](#w2v) Select the model type (continuous bag of words [CBOW], SkipGram, or None). 
-
-- **NormModel**: [(word2vec)](#w2v) Select the normalization type (Hierarchical Softmax [HSM], Negative Sampling [NegSampling], or None). 
-
-- **NegSampleCnt**: [(word2vec)](#w2v) Specify the number of negative examples (for example, entering 0 would mean that the example is not used). The default value is 5. 
-
-- **Vecsize**: [(word2vec)](#w2v) Specify the word vector size. The default is 100. 
-
-- **Windowsize**: [(word2vec)](#w2v) Specify the max skip length between words. The default is 5. 
-
-- **Sentsamplerate**: [(word2vec)](#w2v) Specify the threshold for word occurences. Words with higher frequencies in the training data are randomly down-sampled. The default value is 0.001. 
-
-- **Initlearningrate**: [(word2vec)](#w2v) Specify the starting learning rate. The default is 0.05. 
+- **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
 - **Laplace**: [(NaiveBayes)](#nb) Specify the Laplace smoothing parameter. The default value is 0. 
 
