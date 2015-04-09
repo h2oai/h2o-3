@@ -49,10 +49,6 @@ h2o.randomForest <- function( x, y, training_frame,
   # Pass over ellipse parameters and deprecated parameters
   if (length(list(...)) > 0)
     dots <- .model.ellipses( list(...))
-  else
-    dots <- list()
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -99,5 +95,5 @@ h2o.randomForest <- function( x, y, training_frame,
   if(!missing(seed))
     parms$seed <- seed
 
-  .h2o.createModel(training_frame@conn, 'drf', parms, dots$envir)
+  .h2o.createModel(training_frame@conn, 'drf', parms)
 }
