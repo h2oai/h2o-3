@@ -4,9 +4,9 @@ import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import water.api.*;
 
-public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<B,S,P>, P extends SharedTreeV2.SharedTreeParametersV2> extends SupervisedModelBuilderSchema<B,S,P> {
+public class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<B,S,P>, P extends SharedTreeV2.SharedTreeParametersV2> extends SupervisedModelBuilderSchema<B,S,P> {
 
-  public abstract static class SharedTreeParametersV2<P extends SharedTreeParameters, S extends SharedTreeParametersV2<P, S>> extends SupervisedModelParametersSchema<P, S> {
+  public static class SharedTreeParametersV2<P extends SharedTreeParameters, S extends SharedTreeParametersV2<P, S>> extends SupervisedModelParametersSchema<P, S> {
     static public String[] own_fields = new String[] {
       "ntrees", "max_depth", "min_rows", "nbins", "seed"
     };
@@ -41,12 +41,6 @@ public abstract class SharedTreeV2<B extends SharedTree, S extends SharedTreeV2<
 
     @API(help="Validation set error per-tree (scored).", direction=API.Direction.OUTPUT)
     public double mse_valid[/*_ntrees+1*/];
-
-    @API(help="Confusion Matrix for classification models, or null otherwise", direction=API.Direction.OUTPUT)
-    public ConfusionMatrixV3 cm;
-
-    @API(help="AUC for binomial models, or null otherwise", direction=API.Direction.OUTPUT)
-    public AUCV3 auc;
 
     @API(help="Variable Importance", direction=API.Direction.OUTPUT)
     public VarImpV2 varimp;

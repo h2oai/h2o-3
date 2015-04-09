@@ -34,7 +34,7 @@ def demo_cm_roc(ip,port):
 
     #glm
     glm = h2o.glm(x=air_train[myX], y=air_train[myY], validation_x= air_valid[myX],
-                  validation_y=air_valid[myY], family = "binomial")
+                  validation_y=air_valid[myY], family = "binomial", solver="L_BFGS")
     glm.show()
     glm._model_json['output']['coefficients_magnitude'].show()
 

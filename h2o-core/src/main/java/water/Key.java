@@ -119,7 +119,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     // go round-robin in 64MB chunks.
     if( _kb[0] == CHK ) {
       // Homed Chunk?
-      if( _kb[1] != -1 ) throw H2O.unimpl();
+      if( _kb[1] != -1 ) throw H2O.fail();
       // For round-robin on Chunks in the following pattern:
       // 1 Chunk-per-node, until all nodes have 1 chunk (max parallelism).
       // Then 2 chunks-per-node, once around, then 4, then 8, then 16.

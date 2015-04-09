@@ -26,15 +26,15 @@ public class IcedArrayList<T extends Iced> extends ArrayList<T> implements Freez
     return this;
   }
 
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
-  @Override public IcedArrayList<T> read_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+  @Override public AutoBuffer write_impl( AutoBuffer ab ) { throw H2O.fail(); }
+  @Override public IcedArrayList<T> read_impl( AutoBuffer ab ) { throw H2O.fail(); }
   @Override public AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab; }
-  @Override public IcedArrayList<T> readJSON_impl(AutoBuffer ab) {throw H2O.unimpl(); }
-  @Override public HTML writeHTML_impl( HTML html ) { throw H2O.unimpl(); }
+  @Override public IcedArrayList<T> readJSON_impl(AutoBuffer ab) {throw H2O.fail(); }
+  @Override public HTML writeHTML_impl( HTML html ) { throw H2O.fail(); }
 
-  @Override public HTML writeHTML( HTML html ) { throw H2O.unimpl(); }
-  @Override public AutoBuffer writeJSON(AutoBuffer ab) { throw H2O.unimpl(); }
-  @Override public T readJSON(AutoBuffer ab) { throw H2O.unimpl(); }
+  @Override public HTML writeHTML( HTML html ) { throw H2O.fail(); }
+  @Override public AutoBuffer writeJSON(AutoBuffer ab) { throw H2O.fail(); }
+  @Override public T readJSON(AutoBuffer ab) { throw H2O.fail(); }
 
   private static int _frozen$type;
   @Override public int frozenType() {

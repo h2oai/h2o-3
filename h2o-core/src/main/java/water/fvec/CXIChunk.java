@@ -109,7 +109,7 @@ public class CXIChunk extends Chunk {
       case 2: return UnsafeUtils.get2(_mem, off + _ridsz);
       case 4: return UnsafeUtils.get4(_mem, off + _ridsz);
       case 8: return UnsafeUtils.get8(_mem, off + _ridsz);
-      default: throw H2O.unimpl();
+      default: throw H2O.fail();
    } 
   }
 

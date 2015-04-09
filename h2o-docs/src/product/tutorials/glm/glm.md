@@ -67,7 +67,7 @@ Now, parse the imported data:
 ### Building a Model
 
 0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `glm` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
+0. Select `Generalized Linear Model` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
 0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.
 **Note**: You must include at least 2 columns. 
@@ -76,7 +76,6 @@ Now, parse the imported data:
 0. Uncheck the **Standardize** checkbox.
 0. From the drop-down **Family** menu, select `gaussian`. 
 0. Enter `0` in the **N_folds** field. If **N_folds** is greater than 0, the model displays the specified number of cross-validation models.  
-0. Use the default **Tweedie Variance Power** value (NaN).  This option is only used for the Tweedie family of GLM models (like zero-inflated Poisson).
 0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.
 0. Enter `.002` in the **Lambda** field. 
 0. Click the **Build Model** button.

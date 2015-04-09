@@ -46,7 +46,7 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
                        seed)
 {
   # Required args: training_frame
-  if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
+  if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -81,6 +81,7 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   }
   else if ( is.character(init) ) { # PlusPlus
     parms[["user_points"]] <- NULL
+    if (missing(k)) parms[["k"]] <- as.integer(min(dim(training_frame)))
   }
   else{
     stop ("argument init must be set to PlusPlus, or a valid set of user-defined starting points.")

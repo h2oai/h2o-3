@@ -55,14 +55,7 @@ public class Exec extends Iced {
     cluster_init();
     // Preload the global environment from existing Frames
     HashSet<Key> locked = new HashSet<>();
-    Env env = new Env(locked);
-
-    // Some global constants
-    env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-    env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-    env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-    env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
-    env.put("-Inf",Env.NUM, Double.toString(Double.NEGATIVE_INFINITY));
+    Env env = Env.make(locked);
 
     try {
       Exec ex = new Exec(str, env);
@@ -90,13 +83,7 @@ public class Exec extends Iced {
     new MRTask() {
       @Override public void setupLocal() {
         HashSet<Key> locked = new HashSet<>();
-        Env env = new Env(locked);
-
-        // Some global constants
-        env.put("TRUE",  Env.NUM, "1"); env.put("T", Env.NUM, "1");
-        env.put("FALSE", Env.NUM, "0"); env.put("F", Env.NUM, "0");
-        env.put("NA",  Env.NUM, Double.toString(Double.NaN));
-        env.put("Inf", Env.NUM, Double.toString(Double.POSITIVE_INFINITY));
+        Env env = Env.make(locked);
         Exec ex = new Exec(str, env);
         ex.parse_fun();
       }
@@ -123,9 +110,9 @@ public class Exec extends Iced {
   }
 
   private AST lookup(String tok) {
-    AST sym = ASTOp.SYMBOLS.get(tok);
+    AST sym = ASTOp.SYMBOLS.get(tok).make();
     if (sym != null) return sym;
-    sym = ASTOp.UDF_OPS.get(tok);
+    sym = ASTOp.UDF_OPS.get(tok).make();
     if (sym != null) return sym;
     throw new IllegalArgumentException("*Unimplemented* failed lookup on token: `"+tok+"`. Contact support@0xdata.com for more information.");
   }

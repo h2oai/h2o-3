@@ -1,10 +1,10 @@
 package water.api;
 
-import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
+import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -21,7 +21,8 @@ import java.util.Map;
 public final class SchemaMetadata extends Iced {
 
   public int version;
-  public String name ;
+  public String name;
+  public String superclass;
   public String type;
 
   public List<FieldMetadata> fields;
@@ -157,8 +158,8 @@ public final class SchemaMetadata extends Iced {
         Object o = f.get(schema);
         this.value = consValue(o);
 
-        boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-        this.is_schema = (Schema.class.isAssignableFrom(f.getType())) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
+        boolean is_enum = Enum.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Enum.class.isAssignableFrom(f.getType().getComponentType()));
+        this.is_schema = Schema.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
 
         this.type = consType(schema, ReflectionUtils.findActualFieldClass(schema.getClass(), f), f.getName());
 
@@ -176,6 +177,10 @@ public final class SchemaMetadata extends Iced {
           } else {
             this.schema_name = schema_class.getSimpleName();
           }
+        } else if (is_enum && !f.getType().isArray()) {
+          this.schema_name = f.getType().getSimpleName();
+        } else if (is_enum && f.getType().isArray()) {
+          this.schema_name = f.getType().getComponentType().getSimpleName();
         }
 
         API annotation = f.getAnnotation(API.class);
@@ -352,6 +357,8 @@ public final class SchemaMetadata extends Iced {
     version = schema.__meta.schema_version;
     name = schema.__meta.schema_name;
     type = schema.__meta.schema_type;
+
+    superclass = schema.getClass().getSuperclass().getSimpleName();
 
     fields = new ArrayList<>();
     // Fields up to but not including Schema

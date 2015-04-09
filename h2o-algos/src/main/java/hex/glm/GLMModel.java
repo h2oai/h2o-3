@@ -181,10 +181,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public double _beta_epsilon = 1e-4;
-    public int _max_iter = -1;
+    public int _max_iterations = -1;
     public int _n_folds;
 
-    public Key<Frame> _beta_constraint = null;
+    public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
 
@@ -193,24 +193,24 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
       if(_n_folds == 1)_n_folds = 0; // 0 or 1 means no n_folds
       if(_lambda_search && _nlambdas == -1)
         _nlambdas = 100;
-      if(_beta_constraint != null) {
-        Frame f = _beta_constraint.get();
-        if(f == null) glm.error("beta_constraint","Missing frame for beta constraints");
+      if(_beta_constraints != null) {
+        Frame f = _beta_constraints.get();
+        if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
         Vec v = f.vec("names");
-        if(v == null)glm.error("beta_constraint","Beta constraints parameter must have names column with valid coefficient names");
+        if(v == null)glm.error("beta_constraints","Beta constraints parameter must have names column with valid coefficient names");
         // todo: check the coefficient names
         v = f.vec("upper_bounds");
         if(v != null && !v.isNumeric())
-          glm.error("beta_constraint","upper_bounds must be numeric if present");v = f.vec("upper_bounds");
+          glm.error("beta_constraints","upper_bounds must be numeric if present");v = f.vec("upper_bounds");
         v = f.vec("lower_bounds");
         if(v != null && !v.isNumeric())
-          glm.error("beta_constraint","lower_bounds must be numeric if present");
+          glm.error("beta_constraints","lower_bounds must be numeric if present");
         v = f.vec("beta_given");
         if(v != null && !v.isNumeric())
-          glm.error("beta_constraint","beta_given must be numeric if present");v = f.vec("upper_bounds");
+          glm.error("beta_constraints","beta_given must be numeric if present");v = f.vec("upper_bounds");
         v = f.vec("beta_start");
         if(v != null && !v.isNumeric())
-          glm.error("beta_constraint","beta_start must be numeric if present");
+          glm.error("beta_constraints","beta_start must be numeric if present");
       }
       if(_family == Family.binomial) {
         Frame frame = DKV.getGet(_train);

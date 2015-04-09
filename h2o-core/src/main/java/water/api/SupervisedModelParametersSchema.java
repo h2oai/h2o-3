@@ -6,7 +6,7 @@ import water.api.FrameV2.ColSpecifierV2;
 /**
  * An instance of a SupervisedModelParameters schema contains the common SupervisedModel build parameters (e.g., response_column).
  */
-abstract public class SupervisedModelParametersSchema<P extends SupervisedModel.SupervisedParameters, S extends SupervisedModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
+public class SupervisedModelParametersSchema<P extends SupervisedModel.SupervisedParameters, S extends SupervisedModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
 
   static public String[] own_fields = new String[]{"response_column", "balance_classes", "class_sampling_factors", "max_after_balance_size"};
 

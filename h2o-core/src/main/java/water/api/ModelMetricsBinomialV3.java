@@ -49,9 +49,9 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       }
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
       for( int i=0; i<auc._nBins; i++ )
-        for( int j=0; j<crits.length; j++ ) {
-          double d = crits[j].exec(auc,i); // Note: casts to Object are NOT redundant
-          thresholdsByMetrics.set(i,j,crits[j]._isInt ? (Object)((long)d) : d);
+        for (int j = 0; j < crits.length; j++) {
+          double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
+          thresholdsByMetrics.set(i, j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
       this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
       

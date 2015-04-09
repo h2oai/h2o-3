@@ -6,7 +6,8 @@ def binop_amp(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
 
-    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
+
+    iris = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader_65_rows.csv"))
     rows, cols = iris.dim()
     iris.show()
 
@@ -26,66 +27,56 @@ def binop_amp(ip,port):
 
     # LHS: scaler, RHS: Expr
     res = 2 + iris[0]
-    res2 = 1.1 & res[133]
-    assert res2.eager(), "expected True"
+    res2 = h2o.as_list(1.1 & res[44])
+    assert res2, "expected True"
 
     ###################################################################
 
     # LHS: Expr, RHS: H2OFrame
-    try:
-        res = 1.2 + iris[2]
-        res2 = res[133] & iris
-    except NotImplementedError:
-        pass
+    res = 1.2 + iris[2]
+    res2 = res[11] & iris
+    res2.show()
 
     # LHS: Expr, RHS: H2OVec
-    try:
-        res = 1.2 + iris[2]
-        res2 = res[133] & iris[1]
-        res2.show()   # 1x1 & frame is ok...
-        #assert False, "expected error. objects with different dimensions not supported."
-    except EnvironmentError:
-        pass
+    res = 1.2 + iris[2]
+    res2 = res[43] & iris[1]
+    res2.show()
 
     # LHS: Expr, RHS: Expr
     res = 1.1 + iris[2]
-    res2 = res[133] & res[10]
-    assert res2.eager(), "expected True"
+    res2 = h2o.as_list(res[22] & res[10])
+    assert res2, "expected True"
 
     # LHS: Expr, RHS: scaler
     res = 2 + iris[0]
-    res2 = res[133] & 3
-    assert res2.eager(), "expected True"
+    res2 = h2o.as_list(res[41] & 3)
+    assert res2, "expected True"
 
     ###################################################################
 
     # LHS: H2OVec, RHS: H2OFrame
     try:
         res = iris[2] & iris
+        res.show()
         assert False, "expected error. objects with different dimensions not supported."
     except EnvironmentError:
         pass
 
     # LHS: H2OVec, RHS: H2OVec
-    res = iris[0] & iris[1]
-    assert res, "expected same values"
+    res = h2o.as_list(iris[0] & iris[1])
+    assert sum([x[0] for x in res]) == 65.0, "expected all True"
 
-    res = iris[2] & iris[1]
-    assert res, "expected same values"
+    res = h2o.as_list(iris[2] & iris[1])
+    assert sum([x[0] for x in res]) == 65.0, "expected all True"
 
     # LHS: H2OVec, RHS: Expr
-    try:
-        res = 1.2 + iris[2]
-        res2 = iris[1] & res[133]
-        res2.show()
-        #assert False, "expected error. objects with different dimensions not supported."
-    except EnvironmentError:
-        pass
+    res = 1.2 + iris[2]
+    res2 = iris[1] & res[7]
+    res2.show()
 
     # LHS: H2OVec, RHS: scaler
-    res = iris[0] & 0
-    for r in range(rows):
-        assert not res[r].eager(),  "expected False"
+    res = h2o.as_list(iris[0] & 0)
+    assert sum([x[0] for x in res]) == 0.0, "expected all False"
 
     ###################################################################
 
@@ -100,6 +91,7 @@ def binop_amp(ip,port):
 
     try:
         res = iris & iris[0:3]
+        res.show()
         assert False, "expected error. frames are different dimensions."
     except EnvironmentError:
         pass
@@ -107,24 +99,24 @@ def binop_amp(ip,port):
     # LHS: H2OFrame, RHS: H2OVec
     try:
         res = iris & iris[0]
+        res.show()
         assert False, "expected error. objects of different dimensions not supported."
     except EnvironmentError:
         pass
 
     # LHS: H2OFrame, RHS: Expr
-    try:
-        res = 1.2 + iris[2]
-        res2 = iris & res[133]
-    except NotImplementedError:
-        pass
+    res = 1.2 + iris[2]
+    res2 = iris & res[55]
+    res2.show()
 
     # LHS: H2OFrame, RHS: scaler
     res = iris & 0
     res_rows, res_cols = res.dim()
+    res = h2o.as_list(res)
     assert res_rows == rows and res_cols == cols, "dimension mismatch"
     for c in range(cols-1):
         for r in range(rows):
-            assert not res[c][r].eager(),  "expected False"
+            assert res[r][c] == 0.0,  "expected False"
 
     ###################################################################
 

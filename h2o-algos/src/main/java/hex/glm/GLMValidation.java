@@ -58,7 +58,7 @@ public class GLMValidation extends Iced {
   public final double nullDeviance(){return null_deviance;}
   public final double residualDeviance(){return residual_deviance;}
   public final long nullDOF(){return nobs-1;}
-  public final long resDOF(){return nobs - _rank -1;}
+  public final long resDOF(){return nobs - _rank;}
   public double auc(){ return (_auc==null) ? Double.NaN : _auc._auc; }
   public double bestThreshold(){ return _auc==null ? Double.NaN : _auc.defaultThreshold();}
   public double aic(){return aic;}

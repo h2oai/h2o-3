@@ -53,7 +53,7 @@ Now, parse the imported data:
 ### Building a Model
 
 0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `drf` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
+0. Select `Distributed RF` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
 0. If the parsed ad.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Response column** drop-down list, select `C1`. 
 0. In the **Ntrees** field, specify the number of trees for the model to build. For this example, enter `150`. 

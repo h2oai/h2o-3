@@ -5,6 +5,7 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
@@ -471,18 +472,19 @@ final public class H2O {
 
 
   /**
-   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * Throw an exception that will cause the request to fail, but the cluster to continue.
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException unimpl() { return H2O.fail("unimplemented"); }
+  public static H2OIllegalArgumentException unimpl() { return new H2OIllegalArgumentException("unimplemented"); }
 
   /**
-   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * Throw an exception that will cause the request to fail, but the cluster to continue.
+   * @see #unimpl(String)
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException unimpl(String msg) { return H2O.fail("unimplemented: " + msg); }
+  public static H2OIllegalArgumentException unimpl(String msg) { return new H2OIllegalArgumentException("unimplemented: " + msg); }
 
   /**
    * H2O.fail is intended to be used in code where something should never happen, and if
@@ -1062,8 +1064,10 @@ final public class H2O {
   public static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
-    if( val != null )
-      val._key = key;
+    if( val != null ) {
+      assert val._key.equals(key);
+      if( val._key != key ) val._key = key; // Attempt to uniquify keys
+    }
 
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);

@@ -3,8 +3,8 @@ source('../h2o-runit.R')
 
 test.nbayes.golden <- function(H2Oserver) {
   Log.info("Importing titanic_sub.csv data...") 
-  titanicR <- read.csv(locate("smalldata/titanic_sub.csv"), header = TRUE)
-  titanicH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/titanic_sub.csv"), key = "titanicH2O")
+  titanicR <- read.csv(locate("smalldata/gbm_test/titanic_sub.csv"), header = TRUE)
+  titanicH2O <- h2o.uploadFile(H2Oserver, locate("smalldata/gbm_test/titanic_sub.csv"), key = "titanicH2O")
   titanicR$survived <- as.factor(titanicR$survived)
   titanicH2O$survived <- as.factor(titanicH2O$survived)
   
