@@ -113,6 +113,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Iterations executed
     public int _iterations;
 
+    // Current value of objective function
+    public double _objective;
+
     // Average change in objective function this iteration
     public double _avg_change_obj;
 

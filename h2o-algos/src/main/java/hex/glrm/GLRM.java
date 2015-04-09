@@ -169,7 +169,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       if (model._output._iterations > _parms._max_iterations) return true;
 
       // Stopped when average decrease in objective per iteration < TOLERANCE
-      if( model._output._avg_change_obj < TOLERANCE ) return true;
+      if( Math.abs(model._output._avg_change_obj) < TOLERANCE ) return true;
       return false;             // Not stopping
     }
 
@@ -294,18 +294,17 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // 0) Initialize Y matrix and take single step of X
         double nobs = _train.numRows() * _train.numCols();
+        // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
         double[][] yt = ArrayUtils.transpose(initialY());
-        // UpdateX xinit = new UpdateX(dinfo, _parms, yt, _train.numCols(), 1.0);
-        // xinit.doAll(dinfo._adaptedFrame);
 
         // Initial objective function
         ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
-        double obj = objtsk._loss + _parms.regularize(yt);
-        // double obj = xinit._loss + _parms._gamma * (xinit._xreg + _parms.regularize(yt));
+        model._output._objective = objtsk._loss + _parms.regularize(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
 
         while (!isDone(model)) {
+          // TODO: Need to set step size appropriately
           double step = 1.0/((model._output._iterations+1) * _train.numRows());  // Step size \alpha_k = 1/(iters + 1)
 
           // 1) Update X matrix given fixed Y
@@ -319,10 +318,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // 3) Compute average change in objective function
           objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
-          model._output._avg_change_obj = (obj - obj_new) / nobs;   // TODO: Check obj_new < obj, else reduce step size and redo
+          model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;   // TODO: Check obj_new < obj, else reduce step size and redo
           assert model._output._avg_change_obj > 0;
 
-          obj = obj_new;
+          model._output._objective = obj_new;
           model._output._iterations++;
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
