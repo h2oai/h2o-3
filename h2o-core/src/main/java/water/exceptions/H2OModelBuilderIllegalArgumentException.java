@@ -18,7 +18,7 @@ public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentE
 
     H2OModelBuilderIllegalArgumentException exception = new H2OModelBuilderIllegalArgumentException(msg, msg);
 
-    exception.values = new IcedHashMap<String, Object>();
+    exception.values = new IcedHashMap.IcedHashMapStringObject();
     exception.values.put("algo", algo);
     exception.values.put("parameters", parameters);
     exception.values.put("validation_error_count", builder.error_count());

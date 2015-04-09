@@ -188,7 +188,7 @@ public class Job<T extends Keyed> extends Keyed {
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
-    assert !isRunning();
+    assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 

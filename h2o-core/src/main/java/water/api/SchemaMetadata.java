@@ -6,6 +6,7 @@ import water.IcedWrapper;
 import water.Weaver;
 import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -242,8 +243,15 @@ public final class SchemaMetadata extends Iced {
       if (is_array)
         return consType(schema, clz.getComponentType(), field_name) + "[]";
 
-      if (Map.class.isAssignableFrom(clz))
-        return "Map";
+      if (Map.class.isAssignableFrom(clz)) {
+        if (IcedHashMap.class == clz.getSuperclass()) {
+          return "Map<" + ReflectionUtils.findActualClassParameter(clz, 0).getSimpleName() + "," + ReflectionUtils.findActualClassParameter(clz, 1).getSimpleName() + ">";
+        } else {
+          Log.warn("Schema Map field isn't a subclass of IcedHashMap, so its metadata won't have type parameters: " + schema.getClass().getSimpleName() + "." + field_name);
+          return "Map";
+        }
+      }
+
 
       if (List.class.isAssignableFrom(clz))
         return "List";
