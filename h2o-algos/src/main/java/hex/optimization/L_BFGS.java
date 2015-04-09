@@ -302,7 +302,7 @@ public final class L_BFGS extends Iced {
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       ginfo = newGinfo;
     }
-    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
+//    Log.info("L_BFGS done after " + iter + " iterations, objval = " + ginfo._objVal + ", gradient norm2 = " + MathUtils.l2norm2(ginfo._gradient) );
     return new Result(iter,beta, ginfo);
   }
 

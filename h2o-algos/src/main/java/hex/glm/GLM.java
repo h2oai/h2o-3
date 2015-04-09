@@ -630,26 +630,36 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           }
           L_BFGS lbfgs = new L_BFGS().setMaxIter(_parms._max_iter);
           assert beta.length == _taskInfo._ginfo._gradient.length;
-          Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
-            @Override
-            public boolean progress(double[] beta, GradientInfo ginfo) {
-              if ((_taskInfo._iter & 7) == 0) {
-                update(8, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
-                LogInfo("LBFGS: objval = " + ginfo._objVal);
-              }
-              ++_taskInfo._iter;
-              // todo update the model here so we can show intermediate results
-              return isRunning(GLM.this._key);
-            }
-          });
-          _taskInfo._beta = r.coefs;
           double l1pen = _parms._lambda[_lambdaId] * _parms._alpha[0];
           if(l1pen > 0 || _bc.hasBounds()) {
+            // compute gradient at null beta to get estimate for rho
+            double [] nullBeta = MemoryManager.malloc8d(_taskInfo._beta.length);
+            if(_dinfo._intercept)
+              nullBeta[nullBeta.length-1] = _parms.link(_taskInfo._ymu);
+            double [] g = solver.getGradient(nullBeta)._gradient;
             double [] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
-            for(int i = 0; i < rho.length; ++i)
-              rho[i] = ADMM.L1Solver.estimateRho(_taskInfo._beta[i],l1pen);
-            new ADMM.L1Solver(1e-4, 100).solve(new LBFGS_ProximalSolver(solver, r.coefs.clone(), rho), _taskInfo._beta, l1pen);
+            double avg = 0;
+            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
+              avg += rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen);
+//            avg /= rho.length - (_dinfo._intercept?1:0);
+//            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
+//              rho[i] = Math.max(Math.min(rho[i],1.5*avg),0.5*avg);
+            new ADMM.L1Solver(1e-4, 1000).solve(new LBFGS_ProximalSolver(solver,_taskInfo._beta,rho), _taskInfo._beta, l1pen);
+          } else {
+            Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
+              @Override
+              public boolean progress(double[] beta, GradientInfo ginfo) {
+                if ((_taskInfo._iter & 15) == 0) {
+                  update(16, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
+                  LogInfo("LBFGS: objval = " + ginfo._objVal);
+                }
+                ++_taskInfo._iter;
+                // todo update the model here so we can show intermediate results
+                return isRunning(GLM.this._key);
+              }
+            });
+            _taskInfo._beta = r.coefs;
           }
           break;
         }
@@ -1009,7 +1019,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         int icpt = xy.length-1;
         rhos[icpt] = 1;//(xy[icpt] >= 0 ? xy[icpt] : -xy[icpt]);
       }
-      Log.info("rhos = " + Arrays.toString(rhos));
       if(l2pen > 0)
         gram.addDiag(l2pen);
       if(proxPen != null && beta_given != null) {
@@ -1067,6 +1076,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     @Override public void setRho(double [] r){throw new UnsupportedOperationException(); /* could do it but it's (very) expensive, so throw UOE instead */}
     @Override
     public boolean canSetRho() { return false; }
+
+    @Override
+    public int iter() {
+      return 0;
+    }
   }
 
 
@@ -1075,6 +1089,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final double [] _rho;
     final GradientSolver _gSolver;
     double [] _gradient;
+    public int _iter;
 
     public LBFGS_ProximalSolver(GradientSolver gs, double [] beta, double [] rho){
       _gSolver = gs;
@@ -1091,6 +1106,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       L_BFGS.Result r  = new L_BFGS().solve(s,_beta);
       _beta = r.coefs;
       _gradient = r.ginfo._gradient;
+      _iter += r.iter;
       System.arraycopy(_beta,0,result,0,_beta.length);
     }
 
@@ -1100,7 +1116,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     @Override
-    public double[] gradient(double[] beta) { return _gradient;}
+    public double[] gradient(double[] beta) { return _gSolver.getGradient(beta)._gradient;}
 
     @Override
     public void setRho(double[] rho) {
@@ -1109,6 +1125,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
     @Override
     public boolean canSetRho() { return true;}
+
+    @Override
+    public int iter() {
+      return _iter;
+    }
   }
 
   /**

@@ -18,6 +18,7 @@ public class ADMM {
     public double [] gradient(double [] beta);
     public void setRho(double [] rho);
     public boolean canSetRho();
+    public int iter();
   }
 
   public static class L1Solver {
@@ -64,15 +65,14 @@ public class ADMM {
         return true;
       }
       int ii = hasIntercept?1:0;
-      double[] zbest = null;
+      double [] zbest = null;
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-      double[] u = MemoryManager.malloc8d(N);
-      double[] x = MemoryManager.malloc8d(N);
-      double[] beta_given = MemoryManager.malloc8d(N);
-      double  [] kappa = MemoryManager.malloc8d(rho.length);
-
+      double [] u = MemoryManager.malloc8d(N);
+      double [] x = z.clone();
+      double [] beta_given = MemoryManager.malloc8d(N);
+      double [] kappa = MemoryManager.malloc8d(rho.length);
       if(l1pen > 0)
         for(int i = 0; i < N-ii; ++i)
           kappa[i] = l1pen/rho[i];
@@ -83,6 +83,8 @@ public class ADMM {
       for (i = 0; i < max_iter; ++i) {
         // updated x
         solver.solve(beta_given, x);
+        if(i == 0)
+          System.out.println("initial solve took " + solver.iter() + " iterations");
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
         boolean allzeros = true;
@@ -138,7 +140,7 @@ public class ADMM {
             continue;
           }
           iter = i;
-          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr);
+          Log.info("ADMM.L1Solver: converged at iteration = " + i + ", gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
           return true;
         }
       }
@@ -148,7 +150,7 @@ public class ADMM {
         computeErr(z, solver.gradient(z), l1pen, lb, ub);
         assert Math.abs(best_err - gerr) < 1e-8 : " gerr = " + gerr + ", best_err = " + best_err + " zbest = " + Arrays.toString(zbest) + ", z = " + Arrays.toString(z);
       }
-      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr);
+      Log.warn("ADMM DID NOT CONVERGE with gerr = " + gerr + ", inner solver took " + solver.iter() + " iteartions");
       iter = max_iter;
       return false;
     }
@@ -166,7 +168,7 @@ public class ADMM {
         double D = l1pen * (l1pen + 4 * x);
         if (D >= 0) {
           D = Math.sqrt(D);
-          double r = .25 * (l1pen + D) / (2 * x);
+          double r = (l1pen + D) / (2 * x);
           if (r > 0) rho = r;
           else Log.warn("negative rho estimate(1)! r = " + r);
         }
@@ -174,12 +176,12 @@ public class ADMM {
         double D = l1pen * (l1pen - 4 * x);
         if (D >= 0) {
           D = Math.sqrt(D);
-          double r = -.25 * (l1pen + D) / (2 * x);
+          double r = - (l1pen + D) / (2 * x);
           if (r > 0) rho = r;
           else Log.warn("negative rho estimate(2)!  r = " + r);
         }
       }
-      return rho;
+      return .25*rho;
     }
   }
 
