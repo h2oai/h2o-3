@@ -55,11 +55,29 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
-  .pca.map <- c("x" = "ignored_columns")
 
   # Gather user input
-  parms <- as.list(match.call()[-1L])
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.pca.map) ) i <- .pca.map[[i]]; i })
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- x
+  if(!missing(k))
+    parms$k <- k
+  # TODO: These are dummy parameters to get transform, should this be changed?
+  # if(!missing(center))
+  #   parms$center <- center
+  # if(!missing(scale.))
+  #   parms$scale. <- scale.
+  if(!missing(destination_key))
+    parms$destination_key <- destination_key
+  if(!missing(gamma))
+    parms$gamma <- gamma
+  if(!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if(!missing(init))
+    parms$init <- init
+  if(!missing(seed))
+    parms$seed <- seed
 
   if( !(missing(x)) ) parms[["ignored_columns"]] <- .verify_datacols(training_frame, x)$cols_ignore
 
@@ -77,11 +95,11 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
       warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
     parms[["user_points"]] <- parms[["user_points"]]@key
-    parms[["k"]] <- as.integer(nrow(init))
+    parms[["k"]] <- as.numeric(nrow(init))
   }
   else if ( is.character(init) ) { # PlusPlus
     parms[["user_points"]] <- NULL
-    if (missing(k)) parms[["k"]] <- as.integer(min(dim(training_frame)))
+    if (missing(k)) parms[["k"]] <- as.numeric(min(dim(training_frame)))
   }
   else{
     stop ("argument init must be set to PlusPlus, or a valid set of user-defined starting points.")
@@ -99,5 +117,5 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   parms[["scale."]] <- NULL
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms, parent.frame())
+  .h2o.createModel(training_frame@conn, 'pca', parms)
 }

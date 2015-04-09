@@ -132,21 +132,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              export_weights_and_biases=FALSE,
                              ...)
 {
-  .deeplearning.map <-  c("x" = "ignored_columns",
-                          "y" = "response_column")
- # Map required for supported deprecated parameters
-  .deeplearning.dep.map <- c("data" = "training_frame",
-                    "key" = "destination_key",
-                    "validation" = "validation_frame")
-  # Map for unsupported deprecated parameters
-  .deeplearning.unsp.map <- c("classification" = "now automatically inferred from the
-                                                 data type.",
-                              "holdout_fraction" = "no longer supported.")
-
   # Pass over ellipse parameters and deprecated parameters
   dots <- .model.ellipses(list(...))
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -161,13 +148,12 @@ h2o.deeplearning <- function(x, y, training_frame,
                    stop("argument \"validation_frame\" must be a valid H2OFrame or key")
                  })
   }
-
   # Parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   colargs <- .verify_dataxy(training_frame, x, y, autoencoder)
-  parms$ignored_columns <- colargs$y
-  parms$response_column <- colargs$x_ignore
+  parms$response_column <- colargs$y
+  parms$ignored_columns <- colargs$x_ignore
   if(!missing(destination_key))
     parms$destination_key <- destination_key
   if(!missing(override_with_best_model))
@@ -285,7 +271,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if(!missing(export_weights_and_biases))
     parms$export_weights_and_biases <- export_weights_and_biases
 
-  .h2o.createModel(training_frame@conn, 'deeplearning', parms, dots$envir)
+  .h2o.createModel(training_frame@conn, 'deeplearning', parms)
 }
 
 # Function call for R sided cross validation of h2o objects
@@ -353,7 +339,7 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
 
-  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms, envir = env))
+  do.call("h2o.crossValidate", list(model.type = 'deeplearning', nfolds = nfolds, params = parms))
 }
 
 #' Anomaly Detection

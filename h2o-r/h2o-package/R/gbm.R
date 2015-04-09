@@ -65,10 +65,6 @@ h2o.gbm <- function(x, y, training_frame,
   # Pass over ellipse parameters
   if(length(list(...)) > 0)
     dots <- .model.ellipses(list(...))
-  else
-    dots <- list()
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
 
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
@@ -115,7 +111,7 @@ h2o.gbm <- function(x, y, training_frame,
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
 
-  .h2o.createModel(training_frame@conn, 'gbm', parms, dots$envir )
+  .h2o.createModel(training_frame@conn, 'gbm', parms)
 }
 
 # Function call for R sided cross validation of h2o objects
@@ -139,5 +135,5 @@ h2o.gbm.cv <- function(x, y, training_frame, nfolds = 2,
   parms <- lapply(as.list(match.call()[-1L]), eval, env)
   parms$nfolds <- NULL
 
-  do.call("h2o.crossValidate", list(model.type = 'gbm', nfolds = nfolds, params = parms, envir = env))
+  do.call("h2o.crossValidate", list(model.type = 'gbm', nfolds = nfolds, params = parms))
 }
