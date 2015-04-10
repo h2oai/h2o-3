@@ -78,8 +78,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       double[] betaLB = null;
       double[] betaUB = null;
       double[] rho = null;
-      if (_parms._beta_constraint != null) {
-        Frame beta_constraints = _parms._beta_constraint.get();
+      if (_parms._beta_constraints != null) {
+        Frame beta_constraints = _parms._beta_constraints.get();
         Vec v = beta_constraints.vec("names");
         String[] dom;
         int[] map;
@@ -172,7 +172,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _tInfos = new GLMTaskInfo[_parms._n_folds + 1];
       InitTsk itsk = new InitTsk(0, _dinfo._intercept, null);
       H2O.submitTask(itsk).join();
-      assert itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean();
+      assert itsk._ymut != null;
+      assert itsk._gtNull != null;
+      assert itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs;// +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean()
       _rowFilter = itsk._ymut._fVec;
       assert _rowFilter.nChunks() == _dinfo._adaptedFrame.anyVec().nChunks();
       assert (_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length()) == itsk._ymut._nobs:"unexpected nobs, expected " + itsk._ymut._nobs + ", but got " + _rowFilter.mean() * _rowFilter.length();
@@ -238,8 +240,9 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     GLMGradientTask _gtBetaStart;
     @Override
     protected void compute2() {
+      addToPendingCount(1);
       // get filtered dataset's mean and number of observations
-      new YMUTask(_dinfo, _dinfo._adaptedFrame.anyVec().makeZero(), new H2OCallback<YMUTask>() {
+      new YMUTask(_dinfo, _dinfo._adaptedFrame.anyVec().makeZero(), new H2OCallback<YMUTask>(this) {
         @Override
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
@@ -444,7 +447,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             cmp.addToPendingCount(tasks.length-1);
             for(int i = 0; i < tasks.length; ++i)
               tasks[i] = new GLMSingleLambdaTsk(cmp,_tInfos[i]);
-            new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter)getCompleter()),tasks).fork();
+            new ParallelTasks(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()),tasks).fork();
           } else {
             _tInfos[0].adjustToNewLambda(currentLambda,nextLambda, _parms._alpha[0], _dinfo._intercept);
             new GLMSingleLambdaTsk(new LambdaSearchIteration((H2OCountedCompleter) getCompleter()),  _tInfos[0]).fork();

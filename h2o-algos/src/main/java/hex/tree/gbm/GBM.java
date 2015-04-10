@@ -313,10 +313,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final DTree tree = ktrees[k];
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
-          double g = gp._gss[k][i] == 0 // Constant response?
+          double g = Math.abs(gp._gss[k][i]) < 1e-15 // Constant response?
             ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
             : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
           assert !Double.isNaN(g);
+          assert !Double.isInfinite(g);
+          assert !Float.isNaN((float)g);
+          assert !Float.isInfinite((float)g);
           ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
         }
       }

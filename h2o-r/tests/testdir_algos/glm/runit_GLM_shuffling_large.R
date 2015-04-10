@@ -17,13 +17,13 @@ test <- function(conn) {
         arcene.train.full_shuffled = h2o.assign(arcene.train.full[sample(nrow(arcene.train.full),replace=F),],"arcene.train.full_shuffled")
     
     print("Create model on original Arcene dataset.")
-        h2o.model <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full, family="binomial", lambda_search=TRUE, alpha=0.5, n_folds=0, use_all_factor_levels=TRUE)
+        h2o.model <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full, family="binomial", lambda_search=TRUE, alpha=0.5, nfolds=0, use_all_factor_levels=TRUE)
 
     print("Create second model on original Arcene dataset.")
-        h2o.model2 <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full, family="binomial", lambda_search=TRUE, alpha=0.5, n_folds=0, use_all_factor_levels=TRUE)
+        h2o.model2 <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full, family="binomial", lambda_search=TRUE, alpha=0.5, nfolds=0, use_all_factor_levels=TRUE)
 
     print("Create model on shuffled Arcene dataset.")
-        h2o.model.s <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full_shuffled, family="binomial", lambda_search=TRUE, alpha=0.5, n_folds=0, use_all_factor_levels=TRUE)
+        h2o.model.s <- h2o.glm(x=c(1:1000), y=1001, training_frame=arcene.train.full_shuffled, family="binomial", lambda_search=TRUE, alpha=0.5, nfolds=0, use_all_factor_levels=TRUE)
 
     print("Assert that number of predictors remaining and their respective coefficients are equal.")
         print("Comparing 2 models from original dataset")

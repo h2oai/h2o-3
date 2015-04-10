@@ -165,7 +165,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
         //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
-          nhs[col].incr((float)chks[col].atd(row),(float)wrks.atd(row)); // Histogram row/col
+          nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
       }
     }
   }
@@ -178,13 +178,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // atomic updates) - once-per-row.  This optimized version updates the
   // histograms once-per-NID, but requires pre-sorting the rows by NID.
   private void accum_all(Chunk chks[], Chunk wrks, int nnids[]) {
-    final DHistogram hcs[][] = _hcs;
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
-    int nh[] = new int[hcs.length+1];
+    int nh[] = new int[_hcs.length+1];
     for( int i : nnids ) if( i >= 0 ) nh[i+1]++;
     // Rollup the histogram of rows-per-NID in this chunk
-    for( int i=0; i<hcs.length; i++ ) nh[i+1] += nh[i];
+    for( int i=0; i<_hcs.length; i++ ) nh[i+1] += nh[i];
     // Splat the rows into NID-groups
     int rows[] = new int[nnids.length];
     for( int row=0; row<nnids.length; row++ )
@@ -242,7 +241,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         rh.setMax(max);
         for( int b=0; b<rh._bins.length; b++ ) { // Bump counts in bins
           if( bins[b] != 0 ) { AtomicUtils.IntArray.add(rh._bins,b,bins[b]); bins[b]=0; }
-          if( ssqs[b] != 0 ) { rh.incr1(b,(float)sums[b],(float)ssqs[b]); sums[b]=ssqs[b]=0; }
+          if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
         }
       }
     }

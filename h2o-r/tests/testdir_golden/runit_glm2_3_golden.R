@@ -10,7 +10,7 @@ cuseR<- read.csv(locate("smalldata/logreg/cuseexpanded.csv"), header=T)
 
 Log.info("Test H2O Poisson not regularized")
 Log.info("Run matching models in R and H2O")
-fitH2O<- h2o.glm(y="Using", x=c("Age", "Ed", "Wantsmore"), training_frame=cuseH2O, family="poisson", lambda=0, alpha=0, n_folds=0)
+fitH2O<- h2o.glm(y="Using", x=c("Age", "Ed", "Wantsmore"), training_frame=cuseH2O, family="poisson", lambda=0, alpha=0, nfolds=0)
 fitR<- glm(Using ~ AgeA + AgeC + AgeD + LowEd + MoreYes, family=poisson, data=cuseR)
 
 

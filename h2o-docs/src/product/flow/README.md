@@ -288,33 +288,27 @@ The **Build Model...** button can be accessed from any page containing the .hex 
 In the **Build a Model** cell, select an algorithm from the drop-down menu: 
 
 <a name="Kmeans"></a>
-- **kmeans**: Create a K-Means model
+- **K-means**: Create a K-Means model
 **Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
-- **glm**: Create a Generalized Linear model
+- **Generalized Linear Model**: Create a Generalized Linear model
 
-<a name="grep"></a>
-- **grep**: Perform a global search for a specified character string and display the results (global regular expression)
-**Note**: For a grep model, the selected training frame must contain one vector of raw text. 
- 
 <a name="drf"></a>
-- **drf**: Create a distributed Random Forest model.  
+- **Distributed RF**: Create a distributed Random Forest model.  
 
 <a name="nb"></a>
-- **naivebayes**: Create a Naive Bayes model. 
+- **Naive Bayes**: Create a Naive Bayes model. 
 
 <a name="pca"></a> 
-- **pca**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
+- **Principal Component Analysis**: Create a Principal Components Analysis model for modeling without regularization or performing dimensionality reduction. 
 
 <a name="GBM"></a>
-- **gbm**: Create a Gradient Boosted model
+- **Gradient Boosting Machine**: Create a Gradient Boosted model
 
 <a name="DL"></a>
-- **deeplearning**: Create a Deep Learning model
+- **Deep Learning**: Create a Deep Learning model
 
-<a name="quantile"></a>
-- **quantile**: Obtain the quantile for the current data
 
 The available options vary depending on the selected model. If an option is only available for a specific model type, the model type is listed. If no model type is specified, the option is applicable to all model types. 
 
@@ -336,13 +330,11 @@ The available options vary depending on the selected model. If an option is only
 
 - **Score\_each\_iteration**: (Optional) Score the validation set after each iteration of the model-building process. If you select this option, the model-building time increases. 
 
-- **Probs**: [(Quantile)](#quantile) Specify the probabilities for quantiles. The default values are 0.001, 0.01, 0.1, 0.25, 0.333, 0.5, 0.667, 0.75, 0.9, 0.99, 0.999. 
-
 - **Response_column**: (Required for [GLM](#GLM), [GBM](#GBM), [DL](#DL)) Select the column to use as the independent variable.
 
 - **Ratios**: [(Splitframe)](#sf) Specify the split ratio. The resulting number of the split is the ratio length +1. The default value is 0.5. 
 
-- **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
+- **Balance_classes**: ([GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Upsample the minority classes to balance the class distribution. This option is not selected by default. 
 
 - **Max\_after\_balance\_size**: [(GLM](#GLM), [GBM](#GBM), [DL](#DL), [DRF](#drf), [NaiveBayes)](#nb) Specify the balanced class dataset size (as a multiple of the original dataset size). The default value is 5. 
 
@@ -379,8 +371,6 @@ The available options vary depending on the selected model. If an option is only
 
 - **Family**: [(GLM)](#GLM) Select the model type (Gaussian, Binomial, Poisson, or Gamma).
 
-- **N_folds**: ([GLM](#GLM), [DL](#DL)) Specify the number of cross-validations to perform. The default is 0. 
-
 - **Keep\_cross\_validation\_splits**: [(DL)](#DL) Check this checkbox to keep the cross-validation frames. This option is not selected by default. 
 
 - **Checkpoint**: [(DL)](#DL) Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model (e.g., by a grid search).
@@ -407,7 +397,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
-- **Beta_eps**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
+- **Beta_epsilon**: [(GLM)](#GLM) Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence. 
 
 - **Diagnostics**: [(DL)](#DL) Check this checkbox to compute the variable importances for input features (using the Gedeon method). For large networks, selecting this option can reduce speed. This option is selected by default. 
 
@@ -439,11 +429,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Standardize**: ([K-Means](#Kmeans), [GLM](#GLM)) To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
 
-- **Link**: [(GLM)](#GLM) Select a link function (Family_Default, Identity, Logit, Log, Inverse, Tweedie).
-
-- **Tweedie\_variance\_power**: ([GLM](#GLM) with Tweedie) Specify the variance power for the Tweedie model. 
-
-- **Tweedie\_link\_power**: ([GLM](#GLM) with Tweedie) Specify the Tweedie link power. 
+- **Link**: [(GLM)](#GLM) Select a link function (Family_Default, Identity, Logit, Log, Inverse).
 
 - **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2. The default value is 0.5. 
 
@@ -523,7 +509,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#drf)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
-- **Prior1**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
+- **Prior**: [(GLM)](#GLM) Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. The default value is 0.0. 
 
 - **NLambdas**: [(GLM)](#GLM) Specify the number of lambdas to use in the search. The default value is -1. 
 

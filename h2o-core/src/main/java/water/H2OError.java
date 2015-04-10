@@ -29,7 +29,7 @@ public class H2OError extends Iced {
       public int _error_id;*/
 
   /** Any values that are relevant to reporting or handling this error.  Examples are a key name if the error is on a key, or a field name and object name if it's on a specific field. */
-  public IcedHashMap<String, Object> _values;
+  public IcedHashMap.IcedHashMapStringObject _values;
 
   /** Exception type, if any. */
   public String _exception_type;
@@ -40,11 +40,11 @@ public class H2OError extends Iced {
   /** Stacktrace, if any. */
   public String[] _stacktrace;
 
-  public H2OError(String error_url, String msg, String dev_msg, int http_status, IcedHashMap<String, Object> values, Exception e) {
+  public H2OError(String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, Exception e) {
     this(System.currentTimeMillis(), error_url, msg, dev_msg, http_status, values, e);
   }
 
-  public H2OError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap<String, Object> values, Exception e) {
+  public H2OError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, Exception e) {
     this._timestamp = timestamp;
     this._error_url = error_url;
     this._msg = msg;
@@ -74,7 +74,7 @@ public class H2OError extends Iced {
   }
 
   public H2OError(Exception e, String error_url) {
-    this(System.currentTimeMillis(), error_url, e.getMessage(), e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(), new IcedHashMap(), e);
+    this(System.currentTimeMillis(), error_url, e.getMessage(), e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(), new IcedHashMap.IcedHashMapStringObject(), e);
   }
 
   static public String httpStatusHeader(int status_code) {
