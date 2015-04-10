@@ -669,8 +669,15 @@ public class RequestServer extends NanoHTTPD {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
-    if (s instanceof SpecifiesHttpResponseCode)
+    // If we're given an http response code use it.
+    if (s instanceof SpecifiesHttpResponseCode) {
       http_response_header = H2OError.httpStatusHeader(((SpecifiesHttpResponseCode) s).httpStatus());
+    }
+
+    // If we've gotten an error always return the error as JSON
+    if (s instanceof SpecifiesHttpResponseCode && HttpResponseStatus.OK.getCode() != ((SpecifiesHttpResponseCode) s).httpStatus()) {
+        type = RequestType.json;
+    }
 
     switch( type ) {
     case json:
@@ -697,7 +704,7 @@ public class RequestServer extends NanoHTTPD {
       return new Response(http_response_header, MIME_HTML, html.toString());
     }
     default:
-      throw H2O.fail("Unknown type to wrap(): " + type);
+      throw H2O.unimpl("Unknown type to wrap(): " + type);
     }
   }
 
