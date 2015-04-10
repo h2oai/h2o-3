@@ -2,13 +2,13 @@ package water
 
 import java.io.File
 import org.junit.{Test,BeforeClass,Ignore}
-import water.fvec.{DataFrame,MapReduce}
+import water.fvec.{H2OFrame, DataFrame, MapReduce}
 import scala.reflect.ClassTag
 
 class BasicTest extends TestUtil {
   @Test def basicTest() = {
     //val fr = new DataFrame(new File("../smalldata/iris/iris_wheader.csv"))
-    val fr = DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
+    val fr = H2OFrame(new File("../smalldata/junit/cars_nice_header.csv"))
     val fr2 = fr('cylinders,'displacement)   // Predict delay from year alone
     //val fr = new DataFrame(new File("../smalldata/airlines/allyears2k_headers.zip"))
     try {
@@ -70,7 +70,7 @@ class BasicTest extends TestUtil {
   // test is off because of its size
   @Test @Ignore def biggerTest() = {
     //val fr = new DataFrame(new File("../smalldata/junit/cars_nice_header.csv"))
-    val fr = DataFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
+    val fr = H2OFrame(new File("../../datasets/UCI/UCI-large/covtype/covtype.data"))
     val fr2 = fr('C1,'C2)
     try {
       val iters = 100
