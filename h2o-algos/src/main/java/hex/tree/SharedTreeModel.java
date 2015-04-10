@@ -68,7 +68,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _mse_train = new double[]{mse_train};
-      _mse_valid  = new double[]{mse_valid};
+      _mse_valid = new double[]{mse_valid};
     }
 
     // Append next set of K trees
