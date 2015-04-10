@@ -467,7 +467,7 @@ class Expr(object):
     elif self._op == "quantile":
       if left.is_local():   raise NotImplementedError
       else:
-        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
+        rapids_series = "(dlist #"+" #".join([str(x) for x in rite._data])+")"
         __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":

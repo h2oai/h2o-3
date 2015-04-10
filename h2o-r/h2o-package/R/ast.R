@@ -102,10 +102,15 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
     if (is.character(expr)) return(deparse(expr))
   }
   if (isGeneric(deparse(expr[[1L]]))) {
-    # Have a vector => ASTSeries
+    # Have a vector => make a list
     if ((expr[[1L]]) == quote(`c`)) {
       children <- lapply(expr[-1L], .ast.walker, envir, neg, sub_one)
-      return(new("ASTSeries", op="{", children = children))
+      if( length(children)==1 ) {
+        if( is(children[[1]], "ASTNode") ) return(children)
+      }
+      op <- new("ASTApply", op="llist")
+      if( !(substr(children[[1]],1,1) == "#") ) { op <- new("ASTApply", op="slist") }
+      return(new("ASTNode", root=op, children=children))
 
     # handle the negative indexing cases
     } else if (expr[[1L]] == quote(`-`)) {
@@ -128,7 +133,8 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
             children <- lapply(new_expr[-1L], .ast.walker, envir, neg, sub_one)
             children <- lapply(children, function(x) if (is.character(x)) gsub('#', '', paste0('-', x)) else -x) # scrape off the '#', put in the - and continue...
             children <- lapply(children, function(x) paste0('#', as.numeric(as.character(x)) - sub))
-            return(new("ASTSeries", op="{", children=children))
+            op <- new("ASTApply", op="llist")
+            return(new("ASTNode", root=op, children=children))
           } else {
             if (length(as.list(new_expr[-1L])) < 2L) new_expr <- as.list(new_expr[-1L])
             else return(.ast.walker(substitute(new_expr), envir, neg=TRUE, sub_one))
@@ -169,7 +175,9 @@ function(expr, envir, neg = FALSE, sub_one = TRUE) {
     sub_one <- !neg
     if( neg ) { expr <- expr + 1 }
     children <- lapply(expr, .ast.walker, envir, neg, sub_one)
-    return(new("ASTSeries", op="{", children = children))
+    op <- new("ASTApply", op="llist")
+    if( !(substr(children[[1]],1,1) == "#") ) { op <- new("ASTApply", op="slist") }
+    return(new("ASTNode", root=op, children=children))
   }
   stop("No suitable AST could be formed from the expression.")
 }
@@ -201,9 +209,16 @@ function(a, name=NULL) {
     } else if (is.vector(res)) {
       if (length(res) > 1L) {
         if (is.numeric(res)) res <- as.numeric(res)
-        # wrap the vector up into a ';' separated {} thingy
-        tt <- paste(unlist(lapply(res, deparse)), collapse = ';', sep = ';')
-        paste0('{', tt, '}')
+        if( is.numeric(res) && all(res%%1==0)) {
+          tt <- paste0('#', res, collapse=" ")
+          paste0("(llist ", tt, ")")
+        } else if( is.numeric(res) ) {
+          tt <- paste0('#', res, collapse=" ")
+          paste0("(dlist ", tt, ")")
+        } else {
+          tt <- paste0(unlist(lapply(res, deparse)), collapse= " ")
+          paste0("(slist ", tt, ")")
+        }
       } else if (is.numeric(res)) {
         paste0('#', res)
       } else if (is.logical(res)) {
