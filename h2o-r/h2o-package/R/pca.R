@@ -55,7 +55,6 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
 
-  .pca.map <- c("x" = "ignored_columns")
 
   # Gather user input
   parms <- list()
@@ -64,7 +63,7 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
     parms$ignored_columns <- x
   if(!missing(k))
     parms$k <- k
-  # These are dummy parameters to get transform, should this be changed?
+  # TODO: These are dummy parameters to get transform, should this be changed?
   # if(!missing(center))
   #   parms$center <- center
   # if(!missing(scale.))
@@ -79,8 +78,6 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
     parms$init <- init
   if(!missing(seed))
     parms$seed <- seed
-  parms <- as.list(match.call()[-1L])
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.pca.map) ) i <- .pca.map[[i]]; i })
 
   if( !(missing(x)) ) parms[["ignored_columns"]] <- .verify_datacols(training_frame, x)$cols_ignore
 
