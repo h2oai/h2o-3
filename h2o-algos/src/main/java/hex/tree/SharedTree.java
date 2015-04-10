@@ -389,11 +389,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
       ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
-        if( cm._cm.length <= _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
+        if( cm._cm.length <= _parms._max_confusion_matrix_size) {
           Log.info(cm.toASCII());
         } else {
           Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
-                  + "): " + _parms._max_confusion_matrix_size + " classes.");
+                  + "): " + _nclass + " classes.");
         }
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
