@@ -1341,7 +1341,8 @@ class ASTDelete extends AST {
   String opStr() { return "del"; }
   ASTDelete parse_impl(Exec E) {
     AST ary = E.parse();
-    AST cols = E.parse();
+    AST cols = null;
+    if( !E.isEnd() ) cols = E.parse();
     E.eatEnd(); // eat ending ')'
     ASTDelete res = (ASTDelete) clone();
     res._asts = new AST[]{ary,cols};
@@ -1353,8 +1354,9 @@ class ASTDelete extends AST {
   @Override void exec(Env env) {
     // stack looks like:  [....,hex,cols]
     AST ast = _asts[0];
-    String s = ast instanceof ASTFrame ? ((ASTFrame)ast)._key :
-      (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
+    String s = ast instanceof ASTFrame
+            ? ((ASTFrame)ast)._key
+            : (ast instanceof ASTString ? ast.value() : ((ASTId)ast)._id);
     DKV.remove(Key.make(s));
     env.push(new ValNum(0));
   }
