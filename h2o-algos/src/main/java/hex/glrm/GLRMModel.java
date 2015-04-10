@@ -19,9 +19,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public int _max_iterations = 1000;            // Max iterations
     public long _seed = System.nanoTime();        // RNG seed
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
-    public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;
-    public Key<Frame> _user_points;
-    public Key<Frame> _loading_key;
+    public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
+    public Key<Frame> _user_points;               // User-specified Y matrix (for _init = User)
+    public Key<Frame> _loading_key;               // Key to save X matrix
     public boolean _recover_pca = false;          // Recover principal components of XY at the end?
 
     public enum Loss {
@@ -123,7 +123,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     public double[][] _archetypes;
 
     // PCA output on XY
-    // Principal components (eigenvectors) from SVD of XY
+    // Principal components (eigenvectors) of XY
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
     public TwoDimTable _eigenvectors;
 
