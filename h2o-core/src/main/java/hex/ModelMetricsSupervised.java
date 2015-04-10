@@ -8,7 +8,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public final double _sigma;   // stddev of the response (if any)
 
   public ModelMetricsSupervised(Model model, Frame frame, double mse, String[] domain, double sigma) {
-    super(model, frame, mse);
+    super(model, frame, mse, null);
     _domain = domain;
     _sigma = sigma;
   }

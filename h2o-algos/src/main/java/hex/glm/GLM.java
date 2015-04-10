@@ -66,6 +66,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
+    hide("_score_each_iteration", "Not used by GLM.");
+    hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
+    hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
+    hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
     if (expensive) {
       if (_parms._link == Link.family_default)

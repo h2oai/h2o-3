@@ -204,9 +204,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
       Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
-      fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
+      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
+      fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
+      fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
     }
@@ -293,11 +293,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_resp(     ) { return _ncols; }
   protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass; }
   protected int idx_tree(int c) { return _ncols+1+c; }
+  protected int idx_work(int c) { return _ncols+1+_nclass+c; }
+  protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c; }
 
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp( )]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
-  protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
+  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
@@ -367,6 +369,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score on training data
       Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
+      out._train_metrics = mm;
+      if (oob) out._train_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
@@ -376,6 +380,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
+        out._valid_metrics = mmv;
         String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
         Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
       }
@@ -384,7 +389,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
       ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
-        Log.info(cm.toASCII());
+        if( cm._cm.length <= _parms._max_confusion_matrix_size) {
+          Log.info(cm.toASCII());
+        } else {
+          Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
+                  + "): " + _nclass + " classes.");
+        }
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
       _timeLastScoreEnd = System.currentTimeMillis();
