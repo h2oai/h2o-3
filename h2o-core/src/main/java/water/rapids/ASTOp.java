@@ -3112,9 +3112,8 @@ class ASTIfElse extends ASTUniPrefixOp {
       } finally {
         if (env!=null)env.unlock();
       }
-      Frame ret = tgt.makeCompatible(res);
-//      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
-      return ret;
+      //      if (env != null) env.cleanup(ret==res?null:res, (Frame)DKV.remove(k).get());
+      return tgt.makeCompatible(res);
     }
     src = DKV.remove(k).get();
     Frame ret = tgt.makeCompatible(src);
@@ -3157,9 +3156,9 @@ class ASTIfElse extends ASTUniPrefixOp {
     Frame fr2;
     if( tst.numRows()==1 && tst.numCols()==1 ) {
       if( tst.anyVec().at(0) != 0 ) // any number other than 0 means true... R semantics
-        fr2 = new Frame(new String[]{"C1"}, new Vec[]{yes==null?Vec.makeCon(dyes,1):yes.vecs()[0]});
+        fr2 = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(yes==null?dyes:yes.vecs()[0].at(0),1)});
       else
-        fr2 = new Frame(new String[]{"C1"}, new Vec[]{no==null?Vec.makeCon(dno,1):no.vecs()[0]});
+        fr2 = new Frame(new String[]{"C1"}, new Vec[]{Vec.makeCon(no==null?dno:no.vecs()[0].at(0),1)});
     } else {
       Frame a_yes = yes == null ? adaptToTst(dyes, tst) : adaptToTst(yes, tst);
       Frame a_no = no == null ? adaptToTst(dno, tst) : adaptToTst(no, tst);
