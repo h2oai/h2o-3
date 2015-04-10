@@ -116,7 +116,11 @@ public class ModelParameterSchemaV2 extends Schema<Iced, ModelParameterSchemaV2>
   }
 
   /**
-   * ModelParameterSchema has its own serializer so that
+   * ModelParameterSchema has its own serializer so that default_value and actual_value
+   * get serialized as their native types.  Autobuffer assumes all classes that have their
+   * own serializers should be serialized as JSON objects, and wraps them in {}, so this
+   * can't just be handled by a customer serializer in IcedWrapper.
+   *
    * @param ab
    * @return
    */

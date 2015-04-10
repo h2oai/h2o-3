@@ -27,7 +27,7 @@ test <- function(conn) {
    # assertError(H2OModel.noSR.fail <- h2o.glm(x=c(1:7000), y="arcene.train.label", data=arcene.train.full, family="binomial", lambda_search=FALSE,alpha=1, nfolds=0, use_all_factor_levels=1))
   
   print("Model successfully created for arcene data with 7000 columns with strong rules on.")
-    H2OModel.SR.pass <- h2o.glm(x=c(1:7000), y="arcene.train.label", training_frame=arcene.train.full, family="binomial", lambda_search=T,alpha=1, n_folds=0, use_all_factor_levels=TRUE)
+    H2OModel.SR.pass <- h2o.glm(x=c(1:7000), y="arcene.train.label", training_frame=arcene.train.full, family="binomial", lambda_search=T,alpha=1, nfolds=0, use_all_factor_levels=TRUE)
   
   testEnd()
 }

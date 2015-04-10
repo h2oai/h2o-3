@@ -31,7 +31,9 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
-    public int _n_folds;
+    // public int _n_folds;
+    public int getNumFolds() { return 0; }
+
     public boolean _keep_cross_validation_splits;
 
     /**
@@ -508,9 +510,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (_n_folds != 0)
+      if (getNumFolds() != 0)
         dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
-      if(_override_with_best_model && _n_folds != 0) {
+      if(_override_with_best_model && getNumFolds() != 0) {
         if (expensive) {
           dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
           _override_with_best_model = false;
@@ -549,7 +551,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
         dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
       }
-      if (_n_folds != 0) {
+      if (getNumFolds() != 0) {
         dl.error("_n_folds", "n_folds is not yet implemented.");
         if (expensive) {
           if (_override_with_best_model) {
@@ -896,7 +898,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         colTypes.add("double");
         colFormat.add("%.5f");
       }
-    } else if (get_params()._n_folds > 0) {
+    } else if (get_params().getNumFolds() > 0) {
       colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
 //      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -982,7 +984,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           table.set(row, col++, e.valid_err);
         }
       }
-      else if(get_params()._n_folds > 1) {
+      else if(get_params().getNumFolds() > 1) {
         throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
       }
       row++;
@@ -1595,12 +1597,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     actual_best_model_key = Key.makeUserHidden(Key.make());
-    if (parms._n_folds != 0) actual_best_model_key = null;
+    if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms._n_folds;
+      errors[0].num_folds = parms.getNumFolds();
       _output.errors = last_scored();
       _output.scoring_history = createScoringHistoryTable(errors);
       _output.variable_importances = calcVarImp(last_scored().variable_importances);

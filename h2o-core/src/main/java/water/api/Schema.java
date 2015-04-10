@@ -460,7 +460,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
         if (api.required()) {
           if (parms.getProperty(f.getName()) == null) {
-            IcedHashMap<String, Object> values = new IcedHashMap<>();
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("schema", this.getClass().getSimpleName());
             values.put("argument", f.getName());
             throw new H2OIllegalArgumentException("Required field " + f.getName() + " not specified",
@@ -518,7 +518,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           } else if (! stripped.startsWith("\"") || ! stripped.endsWith("\"")) {
             String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be quoted, but the client sent: " + stripped;
 
-            IcedHashMap values = new IcedHashMap<String, Object>();
+            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("function", fclz.getSimpleName() + ".fillFromParms()");
             values.put("argument", field_name);
             values.put("value", stripped);
@@ -834,7 +834,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       // TODO: render examples and other stuff, if it's passed in
     }
     catch (Exception e) {
-      IcedHashMap values = new IcedHashMap();
+      IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
       values.put("schema", this);
       // TODO: This isn't quite the right exception type:
       throw new H2OIllegalArgumentException("Caught exception using reflection on schema: " + this,

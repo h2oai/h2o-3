@@ -290,7 +290,7 @@ class Expr(object):
     if isinstance(self._data, unicode):
       pass  # Big Data Key is the result
     # Small data result pulled locally
-    elif j['num_rows']:
+    elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')

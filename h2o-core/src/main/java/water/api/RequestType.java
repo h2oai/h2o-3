@@ -26,7 +26,10 @@ enum RequestType {
     int i = url.indexOf('.');
     if(  i == -1 ) return html; // Default for no extension
     String s = url.substring(i+1);
-    // valueOf(s) throws IAE if there is no match.
+    int idx = s.indexOf('/');
+    if (idx >= 0) {
+      s = s.substring(0, idx);
+    }
     for( RequestType t : _values )
       if( s.equals(t.name()) ) return t;
     return json;                // None of the above; use json

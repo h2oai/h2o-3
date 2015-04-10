@@ -28,16 +28,16 @@ test.LiblineaR <- function(conn) {
     Log.info(" family = 'binomial': Logistic Regression\n")
     Log.info(" lambda =      1/700: Shrinkage Parameter\n")
     Log.info("  alpha =        0.0: Elastic Net Parameter\n")
-    Log.info("beta_eps =      1E-02: Tolerance of termination criterion\n")
+    Log.info("beta_epsilon =  E-02: Tolerance of termination criterion\n")
     Log.info(" nfolds =          1: No kfold cross-validation\n")
     h2o.m <- h2o.glm(x              = c("GLEASON","DPROS","PSA","DCAPS","AGE","RACE","VOL"), 
                      y              = "CAPSULE",
                      training_frame = trainhex,
                      family         = "binomial",
-                     n_folds         = 1,
+                     nfolds         = 1,
                      lambda         = 1/ (7 * 100), #700,
                      alpha          = 0.0,
-                     beta_eps        = 1E-2)
+                     beta_epsilon   = 1E-2)
     
     h2op         <- predict(h2o.m, testhex)
     h2opreds     <- head(h2op, nrow(h2op))
