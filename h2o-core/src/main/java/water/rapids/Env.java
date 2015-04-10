@@ -543,6 +543,14 @@ public class Env extends Iced {
     @Override public Val pop() {
       if (isEmpty()) return null;
       Val o = peek();
+      if( o instanceof ValStr ) {
+        AST f = staticLookup( new ASTString('\"', ((ValStr)o)._s));
+        if( f instanceof ASTFrame) {
+          _stack.remove(_head--);
+          f.exec(Env.this);
+          return pop();
+        }
+      }
       _stack.remove(_head--);
       if (o instanceof ValFrame) toss((ValFrame)o);
       return o;

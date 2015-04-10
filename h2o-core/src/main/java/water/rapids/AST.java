@@ -685,10 +685,11 @@ class ASTAssign extends AST {
     // ( implies that the LHS is a new AST -- result locality depends on the AST
     if (E.isSpecial(E.peek())) {  // LHS is NOT an AST... no slice assignment
       boolean putkv = E.peek() == '!';
-      boolean skip1 = (E.peek() == '\'' || E.peek() == '\"');  // skip one more at the end if quoted ID...
       E._x++; // skip the special char...
+      boolean skip1 = (E.peek() == '\'' || E.peek() == '\"');  // skip one more at the end if quoted ID...
+      if( skip1 ) E._x++; // skip beginning quote
       l = new ASTId(putkv ? '!' : '&', E.parseID()); // parse the ID on the left, or could be a column, or entire frame, or a row
-      if( skip1 ) E._x++;
+      if( skip1 ) E._x++; // skip ending quote
     } else {
       if( E.peek() == '(' ) l = E.parse();  // thing on the LHS is an AST => slot assign [<-
       else l = new ASTId('&', E.parseID()); // else got plain old ID, assume local put
