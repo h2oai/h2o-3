@@ -95,11 +95,11 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
       warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
     }
     parms[["user_points"]] <- parms[["user_points"]]@key
-    parms[["k"]] <- as.integer(nrow(init))
+    parms[["k"]] <- as.numeric(nrow(init))
   }
   else if ( is.character(init) ) { # PlusPlus
     parms[["user_points"]] <- NULL
-    if (missing(k)) parms[["k"]] <- as.integer(min(dim(training_frame)))
+    if (missing(k)) parms[["k"]] <- as.numeric(min(dim(training_frame)))
   }
   else{
     stop ("argument init must be set to PlusPlus, or a valid set of user-defined starting points.")
