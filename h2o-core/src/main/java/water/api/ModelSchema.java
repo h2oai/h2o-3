@@ -3,9 +3,11 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
+import water.DKV;
 import water.H2O;
 import water.api.KeyV1.ModelKeyV1;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.PojoUtils;
 
 /**
@@ -122,4 +124,11 @@ public class ModelSchema<M extends Model<M, P, O>,
     return ab;
   }
 
+  public String toJava() {
+    Model m = DKV.getGet(key.key());
+    if (m == null) {
+      throw new H2OKeyNotFoundArgumentException("model_key", "toJava", key.key().toString());
+    }
+    return m.toJava();
+  }
 }
