@@ -7,6 +7,7 @@ from math import sqrt, isnan, floor
 import h2o
 import frame
 import tabulate
+import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -431,8 +432,26 @@ class Expr(object):
       else:
         if rite is None: __CMD__ += "#NaN"
 
-    elif self._op == "floor":
-      if left.is_local():   self._data = [floor(x) for x in left._data]
+    elif self._op in ["floor", "abs"]:
+      if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op == "sign":
+      if left.is_local():   self._data = [cmp(x,0) for x in left._data]
+      else:                 pass
+
+    elif self._op in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", "sinh", "tanh", "acosh", "asinh", "atanh", \
+                      "sqrt", "trunc", "log", "log10", "log1p"]:
+      if left.is_local():   self._data = eval("[math." + self._op + "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op in ["cospi", "sinpi", "tanpi", "ceiling", "log2"]:
+      if left.is_local():
+        if self._op   == "cospi"  : self._data = eval("[math.cos(math.pi*x) for x in left._data]")
+        elif self._op == "sinpi"  : self._data = eval("[math.sin(math.pi*x) for x in left._data]")
+        elif self._op == "tanpi"  : self._data = eval("[math.tan(math.pi*x) for x in left._data]")
+        elif self._op == "ceiling": self._data = eval("[math.ceil(x) for x in left._data]")
+        elif self._op == "log2"   : self._data = eval("[math.log(x,2) for x in left._data]")
       else:                 pass
 
     elif self._op == "month":

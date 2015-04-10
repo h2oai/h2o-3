@@ -332,3 +332,44 @@ def as_list(data):
         tmp.append(vec_as_list[col][row][0])
       frm.append(tmp)
     return frm
+
+
+def cos(data)  : return _simple_un_math_op("cos", data)
+def sin(data)  : return _simple_un_math_op("sin", data)
+def tan(data)  : return _simple_un_math_op("tan", data)
+def acos(data) : return _simple_un_math_op("acos", data)
+def asin(data) : return _simple_un_math_op("asin", data)
+def atan(data) : return _simple_un_math_op("atan", data)
+def cosh(data) : return _simple_un_math_op("cosh", data)
+def sinh(data) : return _simple_un_math_op("sinh", data)
+def tanh(data) : return _simple_un_math_op("tanh", data)
+def acosh(data): return _simple_un_math_op("acosh", data)
+def asinh(data): return _simple_un_math_op("asinh", data)
+def atanh(data): return _simple_un_math_op("atanh", data)
+def cospi(data): return _simple_un_math_op("cospi", data)
+def sinpi(data): return _simple_un_math_op("sinpi", data)
+def tanpi(data): return _simple_un_math_op("tanpi", data)
+def abs(data)  : return _simple_un_math_op("abs", data)
+def sign(data) : return _simple_un_math_op("sign", data)
+def sqrt(data) : return _simple_un_math_op("sqrt", data)
+def trunc(data): return _simple_un_math_op("trunc", data)
+def ceil(data) : return _simple_un_math_op("ceiling", data)
+def floor(data): return _simple_un_math_op("floor", data)
+def log(data)  : return _simple_un_math_op("log", data)
+def log10(data): return _simple_un_math_op("log10", data)
+def log1p(data): return _simple_un_math_op("log1p", data)
+def log2(data): return _simple_un_math_op("log2", data)
+
+
+def _simple_un_math_op(op, data):
+  """
+  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+
+  :param op: the math operation
+  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
+  :return: Expr'd data
+  """
+  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
+  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
+  elif isinstance(data, Expr)    : return Expr(op, data)
+  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
