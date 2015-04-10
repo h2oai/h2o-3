@@ -79,22 +79,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
   }
 
-  /** /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesV2 list_or_fetch(int version, FramesV2 f) {
-    //if (this.version != 2)
-    //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
-    FramesV3 f3 = new FramesV3();
-    f3.fillFromImpl(f.createAndFillImpl());
-
-    if (null != f.key) {
-      f3 = fetch(version, f3);
-    } else {
-      f3 = list(version, f3);
-    }
-    return new FramesV2().fillFromImpl(f3.createAndFillImpl());
-  }
-
   /** Return all the frames. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 list(int version, FramesV3 s) {

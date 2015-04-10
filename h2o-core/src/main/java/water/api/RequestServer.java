@@ -161,8 +161,6 @@ public class RequestServer extends NanoHTTPD {
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
       "Return all Frames in the H2O distributed K/V store.");
-    register("/2/Frames"                                         ,"GET"   ,FramesHandler.class, "list_or_fetch",
-      "Return all Frames in the H2O distributed K/V store (old output format)."); // uses ?key=
     register("/3/Frames/(?<key>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"key"},
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
