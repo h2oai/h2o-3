@@ -143,11 +143,11 @@ public class KeyV1<I extends Iced, S extends KeyV1<I, S, K>, K extends Keyed> ex
 
     // TODO: this is kinda hackey; the handlers should register the types they can fetch.
     if (Job.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Jobs.json/" + key.toString();
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Jobs/" + key.toString();
     else if (Frame.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Frames.json/" + key.toString();
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Frames/" + key.toString();
     else if (Model.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Models.json/" + key.toString();
+      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Models/" + key.toString();
     else if (Vec.class.isAssignableFrom(keyed_class))
       this.URL = null;
     else
