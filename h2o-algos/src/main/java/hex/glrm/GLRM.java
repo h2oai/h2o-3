@@ -31,7 +31,7 @@ import java.util.Arrays;
  */
 public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-8;
+  private final double TOLERANCE = 1e-6;
 
   // Number of columns in training set (p)
   private int _ncolA;
@@ -312,18 +312,18 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           objtsk = new ObjCalc(dinfo, _parms, ytnew).doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
-          model._output._objective = obj_new;
           model._output._iterations++;
 
-          if(model._output._avg_change_obj > 0) {
+          if(model._output._avg_change_obj > 0) {   // Objective decreased this iteration
             yt = ytnew;
             step = 1.0/model._output._iterations;   // Step size \alpha_k = 1/iters
+            model._output._objective = obj_new;
             overwriteX = true;
           } else {    // If objective increased, re-run with smaller step size
-            step = step/1.5;
+            step = step / 1.5;
             overwriteX = false;
+            Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
           }
-          if(model._output._iterations % 10 == 0) Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
         }
@@ -497,12 +497,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           // Inner product x_i * y_j
           double xy = 0;
           for(int k = 0; k < _ncolX; k++)
-            xy += chk_xnew(cs, k).atd(row) * _ytold[j][k];
+            xy += chk_xnew(cs,k).atd(row) * _ytold[j][k];
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
           double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
           for(int k = 0; k < _ncolX; k++)
-            _ytnew[j][k] += weight * chk_xnew(cs, k).atd(row);
+            _ytnew[j][k] += weight * chk_xnew(cs,k).atd(row);
         }
       }
     }
