@@ -449,8 +449,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
           water.util.Log.info(cm.table().toString(1));
+        }
 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does

@@ -645,8 +645,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable model_summary;
     TwoDimTable scoring_history;
     TwoDimTable variable_importances;
-    ModelMetrics train_metrics;
-    ModelMetrics valid_metrics;
     double run_time;
 
     public String toString() {
@@ -708,7 +706,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
-      default: throw H2O.unimpl("Invalid Modelcategory " + _output.getModelCategory());
+      default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
     }
   }
 
@@ -1725,7 +1723,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
-          _output.train_metrics = mm1;
+          _output._train_metrics = mm1;
           _output.run_time = run_time;
 
           if (ftest != null) {
@@ -1748,7 +1746,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
-              _output.valid_metrics = mm2;
+              _output._valid_metrics = mm2;
             }
           }
         }
