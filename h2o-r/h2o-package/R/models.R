@@ -244,7 +244,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   # output[1, "model"] <- model@model$mse_valid
 
   data <- params$training_frame
-  data <- eval(data, dots$envir)
+  data <- eval(data)
   data.len <- nrow(data)
 
   # nfold_vec <- h2o.sample(fr, 1:nfolds)
@@ -256,7 +256,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   xval <- lapply(1:nfolds, function(i) {
       params$training_frame <- data[fnum_id$object != i, ]
       params$validation_frame <- data[fnum_id$object != i, ]
-      fold <- do.call(model.type, c(params, envir = dots$envir))
+      fold <- do.call(model.type, c(params))
       output[(i+1), "fold_num"] <<- i - 1
       output[(i+1), "model_key"] <<- fold@key
       # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))

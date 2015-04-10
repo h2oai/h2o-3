@@ -58,6 +58,27 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   .pca.map <- c("x" = "ignored_columns")
 
   # Gather user input
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- x
+  if(!missing(k))
+    parms$k <- k
+  # These are dummy parameters to get transform, should this be changed?
+  # if(!missing(center))
+  #   parms$center <- center
+  # if(!missing(scale.))
+  #   parms$scale. <- scale.
+  # if(!missing(destination_key))
+    parms$destination_key <- destination_key
+  if(!missing(gamma))
+    parms$gamma <- gamma
+  if(!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if(!missing(init))
+    parms$init <- init
+  if(!missing(seed))
+    parms$seed <- seed
   parms <- as.list(match.call()[-1L])
   names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.pca.map) ) i <- .pca.map[[i]]; i })
 
@@ -99,5 +120,5 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   parms[["scale."]] <- NULL
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'pca', parms, parent.frame())
+  .h2o.createModel(training_frame@conn, 'pca', parms)
 }
