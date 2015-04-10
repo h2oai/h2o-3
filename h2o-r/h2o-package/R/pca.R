@@ -68,7 +68,7 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   #   parms$center <- center
   # if(!missing(scale.))
   #   parms$scale. <- scale.
-  # if(!missing(destination_key))
+  if(!missing(destination_key))
     parms$destination_key <- destination_key
   if(!missing(gamma))
     parms$gamma <- gamma
