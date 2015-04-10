@@ -4,11 +4,11 @@ import h2o
 import numpy as np
 import random
 import math
+import scipy.special
 
 def expr_math_ops(ip,port):
     # Connect to h2o
     h2o.init(ip,port)
-
 
     sin_cos_tan_atan_sinh_cosh_tanh_asinh_data = [[random.uniform(-10,10) for r in range(10)] for c in range(10)]
     asin_acos_atanh_data = [[random.uniform(-1,1) for r in range(10)] for c in range(10)]
@@ -70,6 +70,16 @@ def expr_math_ops(ip,port):
     assert check_values(h2o.log10(h2o_data3), np.log10(np_data3)),       "expected equal log10 values between h2o and numpy"
     assert check_values(h2o.log1p(h2o_data3), np.log1p(np_data3)),       "expected equal log1p values between h2o and numpy"
     assert check_values(h2o.log2(h2o_data3), np.log2(np_data3)),         "expected equal log2 values between h2o and numpy"
+    assert check_values(h2o.exp(h2o_data3), np.exp(np_data3)),           "expected equal exp values between h2o and numpy"
+    assert check_values(h2o.expm1(h2o_data3), np.expm1(np_data3)),       "expected equal expm1 values between h2o and numpy"
+    assert (h2o.as_list(h2o.gamma(h2o_data3))[5][5] - math.gamma(h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
+        "expected equal gamma values between h2o and math"
+    assert (h2o.as_list(h2o.lgamma(h2o_data3))[5][5] - math.lgamma(h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
+        "expected equal gamma values between h2o and math"
+    assert (h2o.as_list(h2o.digamma(h2o_data3))[5][5] - scipy.special.polygamma(0,h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
+        "expected equal gamma values between h2o and math"
+    assert (h2o.as_list(h2o.trigamma(h2o_data3))[5][5] - scipy.special.polygamma(1,h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
+        "expected equal gamma values between h2o and math"
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, expr_math_ops)
