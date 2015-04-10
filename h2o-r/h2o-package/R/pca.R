@@ -62,7 +62,7 @@ h2o.prcomp <- function(training_frame, x, k, center = TRUE, scale. = FALSE,
   if(!missing(x))
     parms$ignored_columns <- x
   if(!missing(k))
-    parms$k <- k
+    parms$k <- as.numeric(k)
   # TODO: These are dummy parameters to get transform, should this be changed?
   # if(!missing(center))
   #   parms$center <- center
