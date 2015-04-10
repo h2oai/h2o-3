@@ -47,7 +47,7 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._gamma = 0;
-      parms._transform = DataInfo.TransformType.STANDARDIZE;
+      parms._transform = DataInfo.TransformType.NONE;
       parms._recover_pca = false;
 
       try {
