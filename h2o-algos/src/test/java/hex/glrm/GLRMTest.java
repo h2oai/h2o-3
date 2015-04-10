@@ -47,14 +47,13 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._gamma = 0;
-      parms._transform = DataInfo.TransformType.NONE;
+      parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_pca = false;
 
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
-        Log.info("Iterations: " + model._output._iterations);
-        Log.info("Objective value: " + model._output._objective);
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -89,8 +88,7 @@ public class GLRMTest extends TestUtil {
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
-        Log.info("Iterations: " + model._output._iterations);
-        Log.info("Objective value: " + model._output._objective);
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

@@ -4,7 +4,6 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 import hex.DataInfo;
-import hex.FrameTask;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram;
@@ -32,7 +31,13 @@ import java.util.Arrays;
  */
 public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  final private double TOLERANCE = 1e-8;
+  private final double TOLERANCE = 1e-8;
+
+  // Number of columns in training set (p)
+  private int _ncolA;
+
+  // Number of columns in fitted X matrix (k)
+  private int _ncolX;
 
   @Override public ModelBuilderSchema schema() {
     return new GLRMV2();
@@ -82,6 +87,9 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isNumeric()) throw H2O.unimpl();
     }
+
+    _ncolA = _train.numCols();
+    _ncolX = _parms._k;
   }
 
   // Squared Frobenius norm of a matrix (sum of squared entries)
@@ -116,16 +124,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     // Initialize Y to be the k centers from k-means++
     public double[][] initialY() {
       double[][] centers;
-      int numCenters = _parms._k;
-      int numCols = _train.numCols();
 
       if (null != _parms._user_points) { // User-specified starting points
-        centers = new double[numCenters][numCols];
+        centers = new double[_ncolX][_ncolA];
         Vec[] centersVecs = _parms._user_points.get().vecs();
 
         // Get the centers and put into array
-        for (int r = 0; r < numCenters; r++) {
-          for (int c = 0; c < numCols; c++)
+        for (int r = 0; r < _ncolX; r++) {
+          for (int c = 0; c < _ncolA; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
         if (frobenius2(centers) == 0)
@@ -157,7 +163,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // K-means automatically destandardizes centers! Need the original standardized version
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
-        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(numCenters, numCols);
+        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(_ncolX, _ncolA);
       }
       return centers;
     }
@@ -251,7 +257,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     @Override protected void compute2() {
       GLRMModel model = null;
       DataInfo dinfo = null, xinfo = null;
-      Frame x = null;
+      Frame fr = null, x = null;
 
       try {
         _parms.read_lock_frames(GLRM.this); // Fetch & read-lock input frames
@@ -263,71 +269,74 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.delete_and_lock(_key);
         _train.read_lock(_key);
 
-        // Jam A and X into a single frame [A,X] for distributed computation
-        // A is read-only training data, X will be modified in place every iteration
-        Vec[] vecs = new Vec[_train.numCols() + _parms._k];
-        Vec[] xvecs = new Vec[_parms._k];
-        for (int i = 0; i < _train.numCols(); i++) vecs[i] = _train.vec(i);
-        int c = 0;
-        for (int i = _train.numCols(); i < vecs.length; i++) {
-          vecs[i] = _train.anyVec().makeZero();
-          xvecs[c++] = vecs[i];
-        }
-        assert c == xvecs.length;
-        Frame fr = new Frame(null, vecs);
+        // Jam A and X into a single frame for distributed computation
+        // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
+        Vec[] vecs = new Vec[_ncolA + 2*_ncolX];
+        for (int i = 0; i < _ncolA; i++) vecs[i] = _train.vec(i);
+        for (int i = _ncolA; i < vecs.length; i++) vecs[i] = _train.anyVec().makeRand(_parms._seed);
+        fr = new Frame(null, vecs);
         dinfo = new DataInfo(Key.make(), fr, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
         DKV.put(dinfo._key, dinfo);
 
         // Output standardization vectors for use in scoring later
-        model._output._normSub = dinfo._normSub == null ? new double[_train.numCols()] : Arrays.copyOf(dinfo._normSub, _train.numCols());
+        model._output._normSub = dinfo._normSub == null ? new double[_ncolA] : Arrays.copyOf(dinfo._normSub, _ncolA);
         if(dinfo._normMul == null) {
-          model._output._normMul = new double[_train.numCols()];
+          model._output._normMul = new double[_ncolA];
           Arrays.fill(model._output._normMul, 1.0);
         } else
-          model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
+          model._output._normMul = Arrays.copyOf(dinfo._normMul, _ncolA);
 
-        // Save X frame for user reference later
-        x = new Frame(_parms._loading_key, null, xvecs);
-        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-        DKV.put(x._key, x);
-        DKV.put(xinfo._key, xinfo);
-
-        // 0) Initialize Y matrix and take single step of X
+        // 0) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
         double[][] yt = ArrayUtils.transpose(initialY());
 
         // Initial objective function
-        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
-        model._output._objective = objtsk._loss + _parms.regularize(yt);
+        ObjCalc objtsk = new ObjCalc(dinfo, _parms, yt).doAll(dinfo._adaptedFrame);
+        model._output._objective = objtsk._loss + _parms._gamma * _parms.regularize(yt);
         model._output._iterations = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
+        boolean overwriteX = false;
+        double step = 1.0;
 
         while (!isDone(model)) {
-          // TODO: Need to set step size appropriately
-          double step = 1.0/((model._output._iterations+1) * _train.numRows());  // Step size \alpha_k = 1/(iters + 1)
-
           // 1) Update X matrix given fixed Y
-          UpdateX xtsk = new UpdateX(dinfo, _parms, yt, _train.numCols(), step);
+          UpdateX xtsk = new UpdateX(dinfo, _parms, yt, step/_ncolA, overwriteX);
           xtsk.doAll(dinfo._adaptedFrame);
 
           // 2) Update Y matrix given fixed X
-          UpdateY ytsk = new UpdateY(dinfo, _parms, yt, _train.numCols(), step);
-          yt = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
+          UpdateY ytsk = new UpdateY(dinfo, _parms, yt, step/_ncolA);
+          double[][] ytnew = ytsk.doAll(dinfo._adaptedFrame)._ytnew;
 
           // 3) Compute average change in objective function
-          objtsk = new ObjCalc(dinfo, _parms, yt, _train.numCols()).doAll(dinfo._adaptedFrame);
+          objtsk = new ObjCalc(dinfo, _parms, ytnew).doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma * (xtsk._xreg + ytsk._yreg);
-          model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;   // TODO: Check obj_new < obj, else reduce step size and redo
-          assert model._output._avg_change_obj > 0;
-
+          model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._objective = obj_new;
           model._output._iterations++;
+
+          if(model._output._avg_change_obj > 0) {
+            yt = ytnew;
+            step = 1.0/model._output._iterations;   // Step size \alpha_k = 1/iters
+            overwriteX = true;
+          } else {    // If objective increased, re-run with smaller step size
+            step = step/1.5;
+            overwriteX = false;
+          }
+          if(model._output._iterations % 10 == 0) Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
         }
 
         // 4) Save solution to model output
+        // Save X frame for user reference later
+        Vec[] xvecs = new Vec[_ncolX];
+        for (int i = 0; i < _ncolX; i++) xvecs[i] = fr.vec(idx_xnew(i));
+        x = new Frame(_parms._loading_key, null, xvecs);
+        xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
+        DKV.put(x._key, x);
+        DKV.put(xinfo._key, xinfo);
+
         model._output._archetypes = yt;
         model._output._parameters = _parms;
         if (_parms._recover_pca) recoverPCA(model, xinfo);
@@ -350,6 +359,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (model != null) model.unlock(_key);
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
+
+        // Clean up old copy of X matrix
+        if (fr != null) {
+          for(int i = 0; i < _ncolX; i++)
+            fr.vec(idx_xold(i)).remove();
+        }
         // if (x != null && !_parms._keep_loading) x.delete();
         _parms.read_unlock_frames(GLRM.this);
       }
@@ -361,32 +376,39 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  private static class UpdateX extends MRTask<UpdateX> {
+  // In chunk, first _ncolA cols are A, next _ncolX cols are X
+  protected int idx_xold(int c) { return _ncolA+c; }
+  protected int idx_xnew(int c) { return _ncolA+_ncolX+c; }
+
+  protected Chunk chk_xold(Chunk chks[], int c) { return chks[_ncolA+c]; }
+  protected Chunk chk_xnew(Chunk chks[], int c) { return chks[_ncolA+_ncolX+c]; }
+
+  private class UpdateX extends MRTask<UpdateX> {
     GLRMParameters _parms;
     double[] _normSub, _normMul;  // For standardizing A only
-    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
     double _alpha;      // Step size
+    boolean _update;    // Should we update X from working copy?
     double[][] _yt;     // _yt = Y' (transpose of Y)
 
     double _loss;    // Loss evaluated on A - XY using new X (and current Y)
     double _xreg;    // Regularization evaluated on new X
 
-    UpdateX(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA, final double alpha) {
-      assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
-      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
+    public UpdateX(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final double alpha) { this(dinfo, parms, yt, alpha, true); }
+    public UpdateX(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final double alpha, final boolean update) {
+      assert yt != null && yt.length == _ncolA && yt[0].length == parms._k;
+      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(_ncolA) : dinfo._normSub;
       if(dinfo._normMul == null) {
-        _normMul = MemoryManager.malloc8d(ncolA);
+        _normMul = MemoryManager.malloc8d(_ncolA);
         Arrays.fill(_normMul, 1.0);
       } else _normMul = dinfo._normMul;
-      _ncolA = ncolA; _ncolX = parms._k;
       _parms = parms;
       _alpha = alpha;
+      _update = update;
       _yt = yt;
     }
 
-    // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
-      assert (_ncolX + _ncolA) == cs.length;
+      assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
       _loss = _xreg = 0;
 
@@ -394,17 +416,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         double[] grad = new double[_ncolX];
         double[] xnew = new double[_ncolX];
 
+        // Copy old working copy of X to current X if requested
+        if(_update) {
+          for(int k = 0; k < _ncolX; k++)
+            chk_xold(cs,k).set(row, chk_xnew(cs,k).atd(row));
+        }
+
         // Compute gradient of objective at row
         for(int j = 0; j < _ncolA; j++) {
           a[j] = cs[j].atd(row);
           if(Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Inner product x_i * y_j
-          int idx = 0;
           double xy = 0;
-          for(int k = _ncolA; k < cs.length; k++)
-            xy += cs[k].atd(row) * _yt[j][idx++];
-          assert idx == _ncolX;
+          for(int k = 0; k < _ncolX; k++)
+            xy += chk_xold(cs, k).atd(row) * _yt[j][k];
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
           double weight = _parms.lgrad(xy, (a[j] - _normSub[j]) * _normMul[j]);
@@ -412,16 +438,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             grad[i] += weight * _yt[j][i];
         }
 
-        // Update row x_i in place with new values
-        int idx = 0;
-        for(int k = _ncolA; k < cs.length; k++) {
-          double xold = cs[k].atd(row);   // Old value of x_i
-          xnew[idx] = _parms.rproxgrad(xold - _alpha * grad[idx], _alpha);  // Proximal gradient
-          cs[k].set(row, xnew[idx]);
-          _xreg += _parms.regularize(xnew[idx]);
-          idx++;
+        // Update row x_i of working copy with new values
+        for(int k = 0; k < _ncolX; k++) {
+          double xold = chk_xold(cs, k).atd(row);   // Old value of x_i
+          xnew[k] = _parms.rproxgrad(xold - _alpha * grad[k], _alpha);  // Proximal gradient
+          chk_xnew(cs, k).set(row, xnew[k]);
+          _xreg += _parms.regularize(xnew[k]);
         }
-        assert idx == _ncolX;
 
         // Compute loss function using new x_i
         for(int j = 0; j < _ncolA; j++) {
@@ -438,24 +461,22 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  private static class UpdateY extends MRTask<UpdateY> {
+  private class UpdateY extends MRTask<UpdateY> {
     GLRMParameters _parms;
     double[] _normSub, _normMul;  // For standardizing A only
-    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
     double _alpha;      // Step size
     double[][] _ytold;  // Old Y matrix
 
     double[][] _ytnew;  // New Y matrix
     double _yreg;    // Regularization evaluated on new Y
 
-    UpdateY(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA, final double alpha) {
-      assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
-      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
+    public UpdateY(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final double alpha) {
+      assert yt != null && yt.length == _ncolA && yt[0].length == parms._k;
+      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(_ncolA) : dinfo._normSub;
       if(dinfo._normMul == null) {
-        _normMul = MemoryManager.malloc8d(ncolA);
+        _normMul = MemoryManager.malloc8d(_ncolA);
         Arrays.fill(_normMul, 1.0);
       } else _normMul = dinfo._normMul;
-      _ncolA = ncolA; _ncolX = parms._k;
       _parms = parms;
       _alpha = alpha;
       _ytold = yt;
@@ -463,9 +484,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       // _ytnew = new double[_ncolA][_ncolX];
     }
 
-    // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
-      assert (_ncolX + _ncolA) == cs.length;
+      assert (_ncolA + 2*_ncolX) == cs.length;
       _ytnew = new double[_ncolA][_ncolX];
 
       for(int j = 0; j < _ncolA; j++) {
@@ -475,18 +495,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if(Double.isNaN(a)) continue;   // Skip missing observations in column
 
           // Inner product x_i * y_j
-          int idx = 0;
           double xy = 0;
-          for(int k = _ncolA; k < cs.length; k++)
-            xy += cs[k].atd(row) * _ytold[j][idx++];
-          assert idx == _ncolX;
+          for(int k = 0; k < _ncolX; k++)
+            xy += chk_xnew(cs, k).atd(row) * _ytold[j][k];
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          idx = 0;
           double weight = _parms.lgrad(xy, (a - _normSub[j]) * _normMul[j]);
-          for(int k = _ncolA; k < cs.length; k++)
-            _ytnew[j][idx++] += weight * cs[k].atd(row);
-          assert idx == _ncolX;
+          for(int k = 0; k < _ncolX; k++)
+            _ytnew[j][k] += weight * chk_xnew(cs, k).atd(row);
         }
       }
     }
@@ -507,29 +523,26 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
   }
 
-  private static class ObjCalc extends MRTask<ObjCalc> {
+  private class ObjCalc extends MRTask<ObjCalc> {
     GLRMParameters _parms;
     double[] _normSub, _normMul;  // For standardizing A only
-    int _ncolA, _ncolX;         // _ncolA = p (number of training cols), _ncolX = k (number of PCs)
     double[][] _yt;
     double _loss;
 
-    ObjCalc(DataInfo dinfo, GLRMParameters parms, final double[][] yt, final int ncolA) {
-      assert yt != null && yt.length == ncolA && yt[0].length == parms._k;
-      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(ncolA) : dinfo._normSub;
+    public ObjCalc(DataInfo dinfo, GLRMParameters parms, final double[][] yt) {
+      assert yt != null && yt.length == _ncolA && yt[0].length == parms._k;
+      _normSub = dinfo._normSub == null ? MemoryManager.malloc8d(_ncolA) : dinfo._normSub;
       if(dinfo._normMul == null) {
-        _normMul = MemoryManager.malloc8d(ncolA);
+        _normMul = MemoryManager.malloc8d(_ncolA);
         Arrays.fill(_normMul, 1.0);
       } else _normMul = dinfo._normMul;
-      _ncolA = ncolA; _ncolX = parms._k;
       _parms = parms;
       _yt = yt;
       _loss = 0;
     }
 
-    // In chunk, first _ncolA cols are A, next _ncolX cols are X
     @Override public void map(Chunk[] cs) {
-      assert (_ncolX + _ncolA) == cs.length;
+      assert (_ncolA + 2*_ncolX) == cs.length;
 
       for(int row = 0; row < cs[0]._len; row++) {
         for (int j = 0; j < _ncolA; j++) {
@@ -537,15 +550,12 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
           if (Double.isNaN(a)) continue;   // Skip missing observations in row
 
           // Inner product x_i * y_j
-          int idx = 0;
           double xy = 0;
-          for (int k = _ncolA; k < cs.length; k++)
-            xy += cs[k].atd(row) * _yt[j][idx++];
-          assert idx == _ncolX;
+          for (int k = 0; k < _ncolX; k++)
+            xy += chk_xnew(cs, k).atd(row) * _yt[j][k];
           _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
         }
       }
     }
-
   }
 }
