@@ -587,8 +587,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("// How to download, compile and execute:").nl();
     sb.p("//     mkdir tmpdir").nl();
     sb.p("//     cd tmpdir").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/h2o-model.jar > h2o-model.jar").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/2/").p(this.getClass().getSimpleName()).p("View.java?_modelKey=").pobj(_key).p(" > ").p(modelName).p(".java").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-model.jar > h2o-model.jar").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/Models.java/").pobj(_key).p(" > ").p(modelName).p(".java").nl();
     sb.p("//     javac -cp h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
     sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();

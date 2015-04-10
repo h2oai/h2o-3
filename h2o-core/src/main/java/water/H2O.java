@@ -503,6 +503,8 @@ final public class H2O {
   public static H2OFailException fail(String msg, Throwable cause) {
     Log.fatal(msg);
     if (null != cause) Log.fatal(cause);
+    Log.fatal("Stacktrace: ");
+    Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
     H2O.shutdown();
     System.exit(-1);

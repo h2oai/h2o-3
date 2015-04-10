@@ -197,6 +197,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // For all columns, for all NIDs, for all ROWS...
   private void accum_all2(Chunk chks[], Chunk wrks, int nh[], int[] rows) {
     final DHistogram hcs[][] = _hcs;
+    if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
     int    bins[] = new int   [_nbins];
     double sums[] = new double[_nbins];

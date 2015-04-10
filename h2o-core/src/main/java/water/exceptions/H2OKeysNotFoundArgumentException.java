@@ -7,7 +7,7 @@ public class H2OKeysNotFoundArgumentException extends H2ONotFoundArgumentExcepti
   public H2OKeysNotFoundArgumentException(String argument, String[] names) {
     super("Keys not found: " + argument + ": " + names.toString(),
             "Key not found: " + argument + ": " + names.toString());
-    this.values = new IcedHashMap<String, Object>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("names", names);
   }
