@@ -1,11 +1,8 @@
 package water.api;
 
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.exceptions.*;
 import water.util.HttpResponseStatus;
 import water.*;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
@@ -164,8 +161,6 @@ public class RequestServer extends NanoHTTPD {
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
       "Return all Frames in the H2O distributed K/V store.");
-    register("/2/Frames"                                         ,"GET"   ,FramesHandler.class, "list_or_fetch",
-      "Return all Frames in the H2O distributed K/V store (old output format)."); // uses ?key=
     register("/3/Frames/(?<key>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"key"},
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
@@ -509,7 +504,7 @@ public class RequestServer extends NanoHTTPD {
 
     Log.warn(error._dev_msg);
     Log.warn(error._values.toJsonString());
-    Log.warn((Object[])error._stacktrace);
+    Log.warn((Object[]) error._stacktrace);
 
     return wrap(new H2OErrorV1().fillFromImpl(error), type);
   }
@@ -678,10 +673,24 @@ public class RequestServer extends NanoHTTPD {
       http_response_header = H2OError.httpStatusHeader(((SpecifiesHttpResponseCode) s).httpStatus());
 
     switch( type ) {
-    case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
-    case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
-    case java:
+    case json:
+      return new Response(http_response_header, MIME_JSON, s.toJsonString());
+    case xml:
+      //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
       throw H2O.unimpl("Unknown type: " + type.toString());
+    case java:
+      if (s instanceof H2OErrorV1) {
+        return new Response(http_response_header, MIME_JSON, s.toJsonString());
+      }
+      if (! (s instanceof ModelsBase)) {
+        throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
+      }
+      ModelsBase mb = (ModelsBase) s;
+      if (mb.models.length != 1) {
+        throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
+      }
+      ModelSchema ms = mb.models[0];
+      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava());
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

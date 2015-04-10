@@ -28,9 +28,9 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
         idx = string.find(h2o_type, '[]')
         brackets = '' if idx is -1 else h2o_type[idx:]
     else:
-        simple_type = string.replace(schema_name, '[]', '')
-        idx = string.find(schema_name, '[]')
-        brackets = '' if idx is -1 else schema_name[idx:]
+        simple_type = schema_name
+        idx = string.find(h2o_type, '[]')
+        brackets = '' if idx is -1 else h2o_type[idx:]
 
     if simple_type == 'string':
         return string.capitalize(simple_type) + brackets
@@ -76,10 +76,12 @@ def generate_pojo(schema, pojo_name):
 
         if name == '__meta': continue
 
-        if type == 'Map': continue  # TODO
         if type == 'Iced': continue  # TODO
 
-        java_type = cons_java_type(pojo_name, name, type, schema_name)
+        if type.startswith('Map'):
+            java_type = type
+        else:
+            java_type = cons_java_type(pojo_name, name, type, schema_name)
         
         if java_type == 'enum': continue  # TODO
 

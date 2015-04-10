@@ -11,7 +11,7 @@ public class H2OKeyWrongTypeArgumentException extends H2OIllegalArgumentExceptio
 
     super("Expected a " + expected.getSimpleName() + " for key argument: " + argument + " with value: " + value + ".  Found a: " + actual.getSimpleName(),
           "Expected a " + expected.getCanonicalName() + " for key argument: " + argument + " with value: " + value + ".  Found a: " + actual.getCanonicalName());
-    this.values = new IcedHashMap<String, Object>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("value", value);
     this.values.put("expected_type", expected.getCanonicalName());
