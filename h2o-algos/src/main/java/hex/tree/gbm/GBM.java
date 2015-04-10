@@ -282,8 +282,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for( int nid=0; nid<leaf; nid++ ) {
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
-            if( dn._split._col == -1 ) // No decision here, no row should have this NID now
+            if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
+              if( nid==0 )               // Handle the trivial non-splitting tree
+                new GBMLeafNode(tree,-1,0);
               continue;
+            }
             for( int i=0; i<dn._nids.length; i++ ) {
               int cnid = dn._nids[i];
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
@@ -292,9 +295,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                    ((DecidedNode)tree.node(cnid))._split._col==-1) )
                 dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
             }
-            // Handle the trivial non-splitting tree
-            if( nid==0 && dn._split.col() == -1 )
-              new GBMLeafNode(tree,-1,0);
           }
         }
       } // -- k-trees are done
