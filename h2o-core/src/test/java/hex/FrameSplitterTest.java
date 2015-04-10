@@ -4,16 +4,19 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import water.DKV;
 import water.H2O;
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 import static water.fvec.FrameTestUtil.assertValues;
 import static water.fvec.FrameTestUtil.createFrame;
+import static water.util.FrameUtils.generateNumKeys;
 
 public class FrameSplitterTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void splitTinyFrame() {
     Frame   dataset = null;
@@ -22,7 +25,7 @@ public class FrameSplitterTest extends TestUtil {
 
     try {
       dataset = frame(ar("COL1"), ear(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-      FrameSplitter fs = new FrameSplitter(dataset, ratios);
+      FrameSplitter fs = new FrameSplitter(dataset, ratios, generateNumKeys(dataset._key, ratios.length+1), null);
       H2O.submitTask(fs).join();
       splits = fs.getResult();
       Assert.assertEquals("The expected number of split frames is ratios.length+1", ratios.length+1, splits.length);
@@ -84,7 +87,7 @@ public class FrameSplitterTest extends TestUtil {
     }
 
     try {
-      FrameSplitter fs = new FrameSplitter(f, ratios);
+      FrameSplitter fs = new FrameSplitter(f, ratios, generateNumKeys(f._key, ratios.length+1), null);
       H2O.submitTask(fs).join();
       splits = fs.getResult();
       assertValues(splits[0], split0);
@@ -114,5 +117,32 @@ public class FrameSplitterTest extends TestUtil {
     ratios = ard(0.5f);
     result = FrameSplitter.computeEspcPerSplit(espc, espc[espc.length-1], ratios);
     Assert.assertArrayEquals(ar(ar(0L, 1500L, 3500L), ar(0L, 1000L, 3500L)), result);
+  }
+
+  @Test public void test() {
+    // Load data
+    Frame f = parse_test_file(Key.make("iris.csv"), "smalldata/iris/iris.csv");
+    long numRows = f.numRows();
+    Assert.assertEquals(150, numRows);
+    // Perform frame split via API
+    try {
+      SplitFrame sf = new SplitFrame(Key.make());
+      sf.dataset = f;
+      sf.ratios = new double[] { 0.5 };
+      sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
+      // Invoke the job
+      sf.exec().get();
+      Assert.assertTrue("The job is not in DONE state, but in " + sf._state, sf.isDone());
+      Key[] ksplits = sf.dest_keys;
+      Frame[] fsplits = new Frame[ksplits.length];
+      for (int i=0; i<ksplits.length; i++) fsplits[i] = DKV.get(ksplits[i]).get();
+      Assert.assertEquals("Number of splits", 2, ksplits.length);
+      Assert.assertEquals("1. split 75rows", 75, fsplits[0].numRows());
+      Assert.assertEquals("2. split 75rows", 75, fsplits[1].numRows());
+      fsplits[0].delete();
+      fsplits[1].delete();
+    } finally {
+      f.delete();
+    }
   }
 }

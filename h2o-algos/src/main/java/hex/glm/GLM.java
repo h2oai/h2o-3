@@ -78,8 +78,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       double[] betaLB = null;
       double[] betaUB = null;
       double[] rho = null;
-      if (_parms._beta_constraint != null) {
-        Frame beta_constraints = _parms._beta_constraint.get();
+      if (_parms._beta_constraints != null) {
+        Frame beta_constraints = _parms._beta_constraints.get();
         Vec v = beta_constraints.vec("names");
         String[] dom;
         int[] map;

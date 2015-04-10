@@ -22,7 +22,7 @@ test.linkFunctions <- function(conn) {
 	R.formula = (R.data[,"GLEASON"]~.) 
 
 	print("Create models with canonical link: LOG")
-	model.h2o.poisson.log <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="poisson", link="log",alpha=0.5, lambda=0, n_folds=0)
+	model.h2o.poisson.log <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="poisson", link="log",alpha=0.5, lambda=0, nfolds=0)
 	model.R.poisson.log <- glm(formula=R.formula, data=R.data[,2:9], family=poisson(link=log), na.action=na.omit)
 	
 	print("Compare model deviances for link function log")
@@ -36,7 +36,7 @@ test.linkFunctions <- function(conn) {
 	}
 
 	print("Create models with link: IDENTITY")
-	model.h2o.poisson.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="poisson", link="identity",alpha=0.5, lambda=0, n_folds=0)
+	model.h2o.poisson.identity <- h2o.glm(x=myX, y=myY, training_frame=h2o.data, family="poisson", link="identity",alpha=0.5, lambda=0, nfolds=0)
 	model.R.poisson.identity <- glm(formula=R.formula, data=R.data[,2:9], family=poisson(link=identity), na.action=na.omit)
 	
 	print("Compare model deviances for link function identity")

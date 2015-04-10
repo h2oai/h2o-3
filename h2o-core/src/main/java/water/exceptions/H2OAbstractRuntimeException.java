@@ -13,9 +13,9 @@ abstract public class H2OAbstractRuntimeException extends RuntimeException {
 
   public long timestamp;
   public String dev_message;
-  public IcedHashMap<String, Object> values;
+  public IcedHashMap.IcedHashMapStringObject values;
 
-  public H2OAbstractRuntimeException(String message, String dev_message, IcedHashMap values) {
+  public H2OAbstractRuntimeException(String message, String dev_message, IcedHashMap.IcedHashMapStringObject values) {
     super(message);
 
     this.timestamp = System.currentTimeMillis();
@@ -24,7 +24,7 @@ abstract public class H2OAbstractRuntimeException extends RuntimeException {
   }
 
   public H2OAbstractRuntimeException(String msg, String dev_msg) {
-    this(msg, dev_msg, new IcedHashMap());
+    this(msg, dev_msg, new IcedHashMap.IcedHashMapStringObject());
   }
 
   public H2OError toH2OError() {

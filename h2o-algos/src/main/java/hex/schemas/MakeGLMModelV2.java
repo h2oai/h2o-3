@@ -1,22 +1,11 @@
 package hex.schemas;
 
-import hex.Model;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
-import hex.glm.GLMModel.GLMParameters;
-import hex.glm.GLMModel.GLMParameters.Family;
-import hex.glm.GLMModel.GLMParameters.Link;
-import hex.glm.GLMModel.GLMParameters.Solver;
-import water.DKV;
 import water.Iced;
 import water.Key;
 import water.api.API;
 import water.api.API.Direction;
-import water.api.API.Level;
-import water.api.KeyV1.FrameKeyV1;
+import water.api.KeyV1;
 import water.api.Schema;
-import water.api.SupervisedModelParametersSchema;
-import water.fvec.Frame;
 
 /**
  * Created by tomasnykodym on 8/29/14.
@@ -26,10 +15,10 @@ import water.fvec.Frame;
 public class MakeGLMModelV2 extends Schema<Iced,MakeGLMModelV2> {
 
   @API(help="source model", required = true, direction = Direction.INPUT)
-  public Key<Model> model;
+  public KeyV1.ModelKeyV1 model;
 
   @API(help="destination key", required = false, direction = Direction.INPUT)
-  public Key dest = Key.make();
+  public KeyV1.ModelKeyV1 dest = new KeyV1.ModelKeyV1(Key.make());
 
   @API(help="coefficient names", required = true, direction = Direction.INPUT)
   public String [] names;

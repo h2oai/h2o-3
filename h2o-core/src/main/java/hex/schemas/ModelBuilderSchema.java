@@ -9,6 +9,7 @@ import water.Key;
 import water.api.*;
 import water.api.ModelParametersSchema.ValidationMessageBase;
 import water.util.DocGen;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -17,9 +18,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
+public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
+
+  public static class IcedHashMapStringModelBuilderSchema extends IcedHashMap<String, ModelBuilderSchema> {}
 
   // Input fields
   @API(help="Model builder parameters.")
@@ -32,7 +35,7 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   @API(help="The pretty algo name for this ModelBuilder (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
   public String algo_full_name;
 
-  @API(help="Model categories this ModelBuilder can build.", direction = API.Direction.OUTPUT)
+  @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
@@ -62,9 +65,15 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
     P impl = null;
+
+    // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
+    if (ModelBuilderSchema.class == this.getClass()) {
+      return (P)new ModelParametersSchema();
+    }
+
     try {
-    Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
-    impl = (P)parameters_class.newInstance();
+      Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      impl = (P)parameters_class.newInstance();
     }
     catch (Exception e) {
       throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);

@@ -1,6 +1,7 @@
 package water.api;
 
 import water.DKV;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.parser.ValueString;
@@ -39,16 +40,28 @@ class RapidsHandler extends Handler {
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
         Frame fr = env.popAry();
+        Key[] keys = fr.keys();
+        if(keys != null && keys.length > 0) {
+          rapids.vec_keys = new KeyV1.VecKeyV1[keys.length];
+          for (int i = 0; i < keys.length; i++)
+            rapids.vec_keys[i] = new KeyV1.VecKeyV1(keys[i]);
+        }
         if (fr.numRows() == 1 && fr.numCols() == 1) {
+          rapids.key = new KeyV1.FrameKeyV1(fr._key);
+          rapids.num_rows = 0;
+          rapids.num_cols = 0;
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
             sb.append(rapids.string);
+            rapids.result_type = RapidsV1.ARYSTR;
           } else {
             rapids.scalar = fr.anyVec().at(0);
             sb.append(Double.toString(rapids.scalar));
             rapids.string = null;
+            rapids.result_type = RapidsV1.ARYNUM;
           }
         } else {
+          rapids.result_type = RapidsV1.ARY;
           rapids.key = new KeyV1.FrameKeyV1(fr._key);
           rapids.num_rows = fr.numRows();
           rapids.num_cols = fr.numCols();
@@ -73,9 +86,11 @@ class RapidsHandler extends Handler {
         rapids.scalar = env.popDbl();
         sb.append(Double.toString(rapids.scalar));
         rapids.string = null;
+        rapids.result_type = RapidsV1.NUM;
       } else if (env.isStr()) {
         rapids.string = env.popStr();
         sb.append(rapids.string);
+        rapids.result_type = RapidsV1.STR;
       }
       rapids.result = sb.toString();
       return rapids;
