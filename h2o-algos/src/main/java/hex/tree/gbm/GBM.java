@@ -315,9 +315,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
           float gf = (float)(_parms._learn_rate * m1class * gp._rss[k][i] / gp._gss[k][i]);
+          if( gp._rss[k][i]==0 && gp._gss[k][i]==0 ) gf = 0; // bad split; no rows, so do not adjust the predictions
           if( _nclass > 1 ) {   // In the multinomial case, check for very large values (which will get exponentiated later)
-            if( gp._rss[k][i]==0 && gp._gss[k][i]==0 ) gf = 0; // bad split; no rows, so do not adjust the predictions
-            else if( gf >  1e3 ) gf =  1e3f; // Cap prediction to +/- 1e3, will already overflow during Math.exp(gf)
+            if     ( gf >  1e3 ) gf =  1e3f; // Cap prediction to +/- 1e3, will already overflow during Math.exp(gf)
             else if( gf < -1e3 ) gf = -1e3f;
           }
           assert !Float.isNaN(gf) && !Float.isInfinite(gf);
