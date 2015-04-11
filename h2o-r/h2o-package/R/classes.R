@@ -387,8 +387,8 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setMethod("show", "H2OMultinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
-    cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
+    cat("MSE:  ", object@metrics$mse, "\n", sep="")
+    cat("LogLoss:  ", object@metrics$logloss, "\n\n", sep="")
     print(h2o.confusionMatrix(object))
 })
 #' @export
