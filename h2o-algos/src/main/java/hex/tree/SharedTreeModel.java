@@ -1,7 +1,6 @@
 package hex.tree;
 
 import hex.*;
-import static hex.tree.SharedTree.printGenerateTrees;
 import water.*;
 import water.util.*;
 
@@ -86,8 +85,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
-      if( _mse_valid != null )
-        _mse_valid = ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN);
+      _mse_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN) : null;
       fs.blockForPending();
     }
 
