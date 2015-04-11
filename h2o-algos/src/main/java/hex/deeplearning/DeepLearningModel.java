@@ -1725,7 +1725,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
           _output._training_metrics = mm1;
-          if (get_params()._score_training_samples != 0) {
+          if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
             _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
           }
           _output.run_time = run_time;
