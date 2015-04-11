@@ -109,19 +109,45 @@ public class GLRMInit {
     return centers;
   }
 
-  public double[] powerSVD(Key key, DataInfo dinfo, long seed) {
-    // 1) Initialize singular vector and compute Gram of training data
-    double[] v = ArrayUtils.gaussianArray(dinfo._adaptedFrame.numCols(), 1, seed)[0];
+  public double[][] powerSVD(Key key, DataInfo dinfo, long seed) {
+    // 1) Compute Gram of training data
     GramTask tsk = new GramTask(key, dinfo).doAll(dinfo._adaptedFrame);
     double[][] gram = tsk._gram.getXX();
+    double[][] rsval = new double[_parms._k][gram.length];
 
+    // 2) Compute and save first k singular values
+    for(int i = 0; i < _parms._k; i++) {
+      rsval[i] = powerLoop(gram, seed);
+
+      // Calculate I - v_iv_i' using current singular value
+      double[][] ivv = ArrayUtils.outerProduct(rsval[i], rsval[i]);
+      for(int j = 0; j < ivv.length; j++) ivv[j][j] = 1 - ivv[j][j];
+
+      // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - v_iv_i' = A(I - v_iv_i')
+      // TODO: This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
+    }
+    return rsval;
+  }
+
+  public double[] powerLoop(double[][] gram) {
+    return powerLoop(gram, ArrayUtils.gaussianVector(gram[0].length));
+  }
+  public double[] powerLoop(double[][] gram, long seed) {
+    return powerLoop(gram, ArrayUtils.gaussianVector(gram[0].length, seed));
+  }
+  public double[] powerLoop(double[][] gram, double[] vinit) {
+    assert gram.length == gram[0].length;
+    assert vinit.length == gram.length;
+
+    // Set x_i to initial value x_0
     int iters = 0;
     double err = 2 * TOLERANCE;
+    double[] v = vinit.clone();
+    double[] vnew = new double[v.length];
+
+    // Update x_i <- A'Ax_{i-1} where A'A = Gram of training frame
     while(err > TOLERANCE && iters < _parms._max_iterations) {
       err = 0;
-      double[] vnew = new double[v.length];
-
-      // 2) Update x_i <- A'Ax_{i-1} where A = training frame
       for (int i = 0; i < v.length; i++) {
         vnew[i] = ArrayUtils.innerProduct(gram[i], v);
         double diff = vnew[i] - v[i];
@@ -131,7 +157,7 @@ public class GLRMInit {
       iters++;
     }
 
-    // 3) Compute singular value decomposition
+    // Compute singular value and vector from x_i
     ArrayUtils.div(v, ArrayUtils.l2norm(v));    // v = x_i/||x_i||
     // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
     return v;

@@ -39,6 +39,15 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
+  public static double[][] outerProduct(double[] x, double[] y){
+    double[][] result = new double[x.length][y.length];
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < y.length; j++)
+        result[i][j] = x[i] * y[j];
+    }
+    return result;
+  }
+
   public static double l2norm2(double [] x){ return l2norm2(x,false); }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
@@ -454,6 +463,16 @@ public class ArrayUtils {
       for(int j = 0; j < m; j++)
         result[i][j] = random.nextGaussian();
     }
+    return result;
+  }
+  public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
+  public static double[] gaussianVector(int n, long seed) {
+    if(n <= 0) return null;
+    double[] result = new double[n];
+    Random random = getRNG(seed);
+
+    for(int i = 0; i < n; i++)
+      result[i] = random.nextGaussian();
     return result;
   }
 
