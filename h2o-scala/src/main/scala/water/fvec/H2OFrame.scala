@@ -24,15 +24,13 @@ class H2OFrame private ( key : Key[Frame], names : Array[String], vecs : Array[V
 
   def this(s : String) = this (Key.make(s).asInstanceOf[Key[Frame]])
 
-  // Scala DataFrame by reading a CSV file
-  def this(files : File*) = this(water.util.FrameUtils.parseFrame(
-                                    Key.make(ParseSetup.hex(files(0).getName)),
-                                    files.map(_.getAbsoluteFile) : _*))
-
   // Uniform call to load any resource referenced by URI
-  def this(uri:URI, uris: URI*) = this(water.util.FrameUtils.parseFrame(
-                                Key.make(ParseSetup.hex(uri.toString)),
-                                Seq(uri)++uris : _*))
+  def this(uris: URI*) = this(water.util.FrameUtils.parseFrame(
+                                Key.make(ParseSetup.hex(uris(0).toString)),
+                                uris : _*))
+
+  // Scala DataFrame by reading a CSV file
+  def this(file : File) = this(file.toURI)
 
   // No-args public constructor for (de)serialization
   def this() = this(null,null,new Array[Vec](0))
