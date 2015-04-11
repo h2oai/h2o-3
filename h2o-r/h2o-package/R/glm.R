@@ -121,8 +121,6 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     parms$nlambdas <- nlambdas
   if(!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
-  if(!missing(higher_accuracy))
-    parms$higher_accuracy <- higher_accuracy
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
