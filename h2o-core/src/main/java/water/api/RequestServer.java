@@ -100,20 +100,20 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
 
     // Admin
-    addToNavbar(register("/1/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
-    register("/1/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
-    addToNavbar(register("/2/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
+    addToNavbar(register("/1/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud."), "/Cloud", "Cloud", "Admin");
+    register("/1/Cloud",                  "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
+    addToNavbar(register("/2/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
     addToNavbar(register("/2/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
     addToNavbar(register("/2/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
     addToNavbar(register("/2/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
     addToNavbar(register("/2/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
-    addToNavbar(register("/2/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
+    register("/2/UnlockKeys" ,"POST",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
     addToNavbar(register("/2/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(register("/1/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
+    addToNavbar(register("/1/Tutorials", "GET", TutorialsHandler.class, "nop", "H2O tutorials."), "/Tutorials", "Tutorials Home", "Help");
 
-    initializeNavBar();
+    // initializeNavBar();
 
     // REST only, no html:
 
@@ -801,10 +801,11 @@ public class RequestServer extends NanoHTTPD {
    * Call this after the last call addToNavbar().
    * This is called automatically for navbar entries from inside H2O.
    * If user app level code calls addToNavbar, then call this again to make those changes visible.
-   */
   static void initializeNavBar() { _htmlTemplate = initializeNavBar(_htmlTemplateFromFile); }
+*/
 
   private static String initializeNavBar(String template) {
+    /*
     StringBuilder sb = new StringBuilder();
     for( String s : _navbarOrdering ) {
       ArrayList<MenuItem> arl = _navbar.get(s);
@@ -826,10 +827,13 @@ public class RequestServer extends NanoHTTPD {
     str.replace("NAVBAR", sb.toString());
     str.replace("CONTENTS", "%CONTENTS");
     return str.toString();
+    */
+    return "undefined";
   }
 
   // Add a new item to the navbar
   public static String addToNavbar(Route route, String base_url, String name, String category) {
+    /*
     assert route != null && base_url != null && name != null && category != null;
 
     ArrayList<MenuItem> arl = _navbar.get(category);
@@ -839,6 +843,7 @@ public class RequestServer extends NanoHTTPD {
       _navbarOrdering.add(category);
     }
     arl.add(new MenuItem(base_url, name));
+    */
     return route._url_pattern.pattern();
   }
 
