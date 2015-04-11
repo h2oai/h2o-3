@@ -108,7 +108,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
       // Compute log loss
       final double eps = 1e-15;
-      _logloss += -Math.log(Math.max(eps,ds[iact+1]));
+      _logloss -= Math.log(Math.max(eps, 1-err));
 
       return ds;                // Flow coding
     }
