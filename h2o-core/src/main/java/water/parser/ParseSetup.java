@@ -459,7 +459,7 @@ public final class ParseSetup extends Iced {
               other._parse_type+" as one dataset","File type mismatch: "+_parse_type+", "+other._parse_type);
 
     //different separators or col counts
-    if( other._separator != _separator && other._separator != GUESS_SEP )
+    if( _separator != other._separator && (_separator != GUESS_SEP || other._separator != GUESS_SEP))
       return false;
     // compatible column count
     return _number_columns == other._number_columns || other._number_columns == 0 || _number_columns == 0;
