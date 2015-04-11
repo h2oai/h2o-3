@@ -39,7 +39,7 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
-  public static double l2norm2(double[] x){ return l2norm2(x,false); }
+  public static double l2norm2(double [] x){ return l2norm2(x,false); }
   public static double l2norm2(double [] x, boolean skipLast){
     double sum = 0;
     int last = x.length - (skipLast?1:0);
@@ -181,6 +181,13 @@ public class ArrayUtils {
     assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
+  }
+  public static double[] multArray(double[][] ary, double[] nums) {
+    if(ary == null || nums == null) return null;
+    double[] res = new double[ary.length];
+    for(int i = 0; i < ary.length; i++)
+      res[i] = innerProduct(ary[i], nums);
+    return res;
   }
 
   public static double[][] transpose(double[][] ary) {

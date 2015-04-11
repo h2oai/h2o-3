@@ -184,6 +184,7 @@ public class GLRMTest extends TestUtil {
   }
 
   @Test public void testArrestsMissing() throws InterruptedException, ExecutionException {
+    // Expected eigenvectors and their standard deviations with standardized data
     double[] stddev = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
     double[][] eigvec = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
             ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
