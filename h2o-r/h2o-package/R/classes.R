@@ -365,6 +365,7 @@ setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
     cat("MSE:  ", object@metrics$mse, "\n", sep="")
@@ -385,6 +386,7 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2OMultinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
     cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     print(h2o.confusionMatrix(object))
@@ -394,6 +396,7 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2ORegressionMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
     cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
 })
 #' @rdname H2OModelMetrics-class
