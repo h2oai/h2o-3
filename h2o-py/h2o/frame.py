@@ -476,9 +476,9 @@ class H2OFrame:
     cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "'))"
     h2o.rapids(cbind)
     # And frame columns
-    colnames = "(colnames= %" + fr + " {(: #0 #" + str(len(self) - 1) + ")} {"
-    cnames = ';'.join([vec._name for vec in self._vecs])
-    colnames += cnames + "})"
+    colnames = "(colnames= %" + fr + " (: #0 #" + str(len(self) - 1) + ") "
+    cnames = "(slist \"" + '" "'.join([vec._name for vec in self._vecs]) +"\")"
+    colnames += cnames
     h2o.rapids(colnames)
     return fr
 
@@ -589,8 +589,7 @@ class H2OFrame:
     :return: New frame with 1 row per-group, of results from 'fun'
     """
     # Confirm all names present in dataset; collect column indices
-    colnums = [str(self._find_idx(name)) for name in cols]
-    rapids_series = "{"+";".join(colnums)+"}"
+    rapids_series = "(llist #"+" #".join([str(self._find_idx(name)) for name in cols])+")"
 
     # Eagerly eval and send the cbind'd frame over
     key = self.send_frame()
@@ -608,7 +607,7 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
-  def groupby(self,cols,a):
+  def group_by(self,cols,a):
     """
     GroupBy
     :param cols: The columns to group on.
@@ -624,13 +623,11 @@ class H2OFrame:
               "ignore" - ignore NAs in aggregates, but count them (e.g. in denominators for mean, var, sd, etc.)
     :return: The group by frame.
     """
-    colnums = [str(self._find_idx(name)) for name in cols]
-    rapids_series = "{"+";".join(colnums)+"}"
+    rapids_series = "(llist #"+" #".join([str(self._find_idx(name)) for name in cols])+")"
     aggregates = copy.deepcopy(a)
     key = self.send_frame()
     tmp_key = H2OFrame.py_tmp_key()
 
-    nAggs = len(aggregates)
     aggs = []
 
     # transform cols in aggregates to their indices...
@@ -640,15 +637,15 @@ class H2OFrame:
       else:
         aggregates[k][1] = '#'+str(aggregates[k][1])
       aggs+=["\"{1}\" {2} \"{3}\" \"{0}\"".format(str(k),*aggregates[k])]
-    aggs = "(agg #{} {})".format(nAggs, " ".join(aggs))
+    aggs = "(agg {})".format(" ".join(aggs))
 
     expr = "(= !{} (GB %{} {} {}))".format(tmp_key,key,rapids_series,aggs)
     h2o.rapids(expr)  # group by
     j = h2o.frame(tmp_key)
-    fr = j['frames'][0]    # Just the first (only) frame
-    rows = fr['rows']      # Row count
-    veckeys = fr['vec_keys']# List of h2o vec keys
-    cols = fr['columns']   # List of columns
+    fr = j['frames'][0]       # Just the first (only) frame
+    rows = fr['rows']         # Row count
+    veckeys = fr['vec_keys']  # List of h2o vec keys
+    cols = fr['columns']      # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
