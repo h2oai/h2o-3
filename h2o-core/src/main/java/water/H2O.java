@@ -1241,7 +1241,8 @@ final public class H2O {
     // join an existing Cloud.
     new HeartBeatThread().start();
 
-    startGAStartupReport();
+    if (GA != null)
+      startGAStartupReport();
   }
 
   // Die horribly
