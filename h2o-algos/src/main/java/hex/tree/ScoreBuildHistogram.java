@@ -125,17 +125,17 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // giving it an improved prediction).
   private void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
     for( int row=0; row<nids._len; row++ ) { // Over all rows
-      int nid = (int)nids.at8(row);         // Get Node to decide from
+      int nid = (int)nids.at8(row);          // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
-        nnids[row] = (nid-_leaf);
+        nnids[row] = nid-_leaf;              // will be negative, flagging a completed row
         continue;
       }
       // Score row against current decisions & assign new split
       boolean oob = isOOBRow(nid);
       if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
       DTree.DecidedNode dn = _tree.decided(nid);
-      if (dn._split._col == -1 && DTree.isRootNode(dn)) { nnids[row] = (nid-_leaf); continue; }
       if( dn._split._col == -1 ) { // Might have a leftover non-split
+        if( DTree.isRootNode(dn) ) { nnids[row] = nid-_leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
         nids.set(row, xnid);
@@ -146,12 +146,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       assert !isDecidedRow(nid);
       nid = dn.ns(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
-        int xnid = oob ? nid2Oob(nid) : nid;
-        nids.set(row, xnid);
-        nnids[row] = xnid-_leaf;
-      } else {
-        nnids[row] = nid-_leaf;
+        if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
+        nids.set(row, nid);
       }
+      nnids[row] = nid-_leaf;
     }
   }
 
@@ -164,7 +162,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         DHistogram nhs[] = _hcs[nid];
         int sCols[] = _tree.undecided(nid+_leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         for( int col : sCols ) // For tracked cols
-        //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
+          //FIXME/TODO: sum into local variables, do atomic increment once at the end, similar to accum_all
           nhs[col].incr((float)chks[col].atd(row),wrks.atd(row)); // Histogram row/col
       }
     }
@@ -197,6 +195,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // For all columns, for all NIDs, for all ROWS...
   private void accum_all2(Chunk chks[], Chunk wrks, int nh[], int[] rows) {
     final DHistogram hcs[][] = _hcs;
+    if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
     int    bins[] = new int   [_nbins];
     double sums[] = new double[_nbins];

@@ -2,39 +2,49 @@
 #'
 #' Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error distribution.
 #'
-#' @param x
-#' @param y
-#' @param training_frame
+#' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
+#' @param y A character string or index that represent the response variable in the model.
+#' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param ...
-#' @param destination_key
-#' @param validation_frame
-#' @param max_iterations
-#' @param beta_epsilon
-#' @param score_each_iteration
-#' @param balance_classes
-#' @param class_sampling_factors
-#' @param max_after_balance_size
-#' @param solver
-#' @param standardize
-#' @param family
-#' @param link
-#' @param tweedie_variance_power
-#' @param tweedie_link_power
-#' @param alpha
-#' @param lambda
-#' @param prior
-#' @param lambda_search
-#' @param nlambdas
-#' @param lambda_min_ratio
-#' @param higher_accuracy
-#' @param use_all_factor_levels
-#' @param beta_constraints
+#' @param destination_key (Optional) An unique hex key assigned to the resulting model. If none is given, a key will automatically be generated.
+#' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
+#' @param max_iter A non-negative integer specifying the maximum number of iterations.
+#' @param beta_eps A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations.
+#'        Defines the convergence criterion for \code{h2o.glm}.
+#' @param solver A character string specifying the solver used: ADMM (supports more features), L_BFGS (scales better for datasets with many columns)
+#' @param standardize A logical value indicating whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to
+#'        training the models.
+#' @param family A character string specifying the distribution of the model:  gaussian, binomial, poisson, gamma, tweedie.
+#' @param link A character string specifying the link function. The default is the canonical link for the \code{family}. The supported links for each of 
+#'        the \code{family} specifications are:
+#'        \code{"gaussian"}: \code{"identity"}, \code{"log"}, \code{"inverse"}\cr
+#'        \code{"binomial"}: \code{"logit"}, \code{"log"}\cr
+#'        \code{"poisson"}: \code{"log"}, \code{"identity"}\cr
+#'        \code{"gamma"}: \code{"inverse"}, \code{"log"}, \code{"identity"}\cr
+#'        \code{"tweedie"}: \code{"tweedie"}\cr
+#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}.
+#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}.
+#' @param alpha A numeric in [0, 1] specifying the elastic-net mixing parameter.
+#'                The elastic-net penalty is defined to be:
+#'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]},
+#'                making \code{alpha = 1} the lasso penalty and \code{alpha = 0} the ridge penalty.
+#' @param lambda A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta)} in the objective function.
+#'               When \code{lambda = 0}, no elastic-net penalty is applied and ordinary generalized linear models are fit.
+#' @param prior1 (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}. 
+#'               The default prior is the observational frequency of class 1.
+#' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
+#'                      \code{lambda} is interpreted as lambda min.
+#' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
+#' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the 
+#'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
+#'                         of variables then \code{lambda_min_ratio} = 0.01.
+#' @param use_all_factor_levels A logical value indicating whether dummy variables should be used for all factor levels of the categorical predictors.
+#'                              When \code{TRUE}, results in an over parameterized models.
+#' @param n_folds (Currently Unimplemented)
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
                     beta_epsilon = 0,
-                    score_each_iteration = FALSE,
-                    do_classification = FALSE,
                     balance_classes = FALSE,
                     class_sampling_factors,
                     max_after_balance_size = 5.0,
@@ -49,8 +59,7 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     lambda = 1e-05,
                     lambda_search = FALSE,
                     nlambdas = -1,
-                    lambda_min_ratio = 1.0,
-                    higher_accuracy = FALSE,
+                    lambda_min_ratio = -1.0,
                     use_all_factor_levels = FALSE,
                     nfolds = 0,
                     beta_constraints = NULL,
@@ -84,12 +93,6 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
     parms$max_iterations <- max_iterations
   if(!missing(beta_epsilon))
     parms$beta_epsilon <- beta_epsilon
-  if(!missing(score_each_iteration))
-    parms$score_each_iteration <- score_each_iteration
-  if(!missing(do_classification))
-    parms$do_classification <- do_classification
-  if(!missing(balance_classes))
-    parms$balance_classes <- balance_classes
   if(!missing(class_sampling_factors))
     parms$class_sampling_factors <- class_sampling_factors
   if(!missing(max_after_balance_size))
@@ -167,7 +170,9 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
                     nlambdas = -1,
                     lambda_min_ratio = 1.0,
                     use_all_factor_levels = FALSE,
-                    beta_constraints = NULL
+                    nfolds = 0,
+                    beta_constraints = NULL,
+                    ...
                     )
 {
   if (!is.null(beta_constraints)) {

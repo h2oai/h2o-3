@@ -967,8 +967,9 @@ public class Vec extends Keyed<Vec> {
     private final long[] _domain;
     CPTask(long[] domain) { _domain = domain;}
     @Override public void map(Chunk c, NewChunk nc) {
-      for(int i=0;i<c._len;++i)
-        if( _domain==null )
+      for(int i=0;i<c._len;++i) {
+        if( c.isNA(i) ) { nc.addNA(); continue; }
+        if( _domain == null )
           nc.addNum(c.at8(i));
         else {
           long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
@@ -976,6 +977,7 @@ public class Vec extends Keyed<Vec> {
             throw new IllegalArgumentException("Could not find the enum value!");
           nc.addNum(num);
         }
+      }
     }
   }
 

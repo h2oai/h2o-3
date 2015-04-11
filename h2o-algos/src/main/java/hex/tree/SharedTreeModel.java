@@ -1,7 +1,6 @@
 package hex.tree;
 
 import hex.*;
-import static hex.tree.SharedTree.printGenerateTrees;
 import water.*;
 import water.util.*;
 
@@ -68,7 +67,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _mse_train = new double[]{mse_train};
-      _mse_valid  = new double[]{mse_valid};
+      _mse_valid = new double[]{mse_valid};
     }
 
     // Append next set of K trees
@@ -86,8 +85,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
-      if( _mse_valid != null )
-        _mse_valid = ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN);
+      _mse_valid = _validation_metrics != null ? ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN) : null;
       fs.blockForPending();
     }
 
@@ -128,6 +126,20 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   // Override in subclasses to provide some top-level model-specific goodness
+  @Override protected boolean toJavaCheckTooBig() {
+    // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
+    try {
+      if ((this._output._treeStats._num_trees * this._output._treeStats._mean_leaves) > 5000) {
+        return true;
+      }
+    }
+    catch (Exception ignore) {
+      // If we can't figure out the answer, assume it's too big.
+      return true;
+    }
+
+    return false;
+  }
   @Override protected SB toJavaInit(SB sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();

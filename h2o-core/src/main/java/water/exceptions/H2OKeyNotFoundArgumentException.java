@@ -16,7 +16,7 @@ public class  H2OKeyNotFoundArgumentException extends H2ONotFoundArgumentExcepti
   public H2OKeyNotFoundArgumentException(String argument, String function, String name) {
     super("Key '" + name.toString() + "' not found in function: " + function + " for argument: " + argument,
             "Key '" + name.toString() + "' not found in function: " + function + " for argument: " + argument);
-    this.values = new IcedHashMap<>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("function", function);
     this.values.put("argument", argument);
     this.values.put("name", name);
@@ -25,7 +25,7 @@ public class  H2OKeyNotFoundArgumentException extends H2ONotFoundArgumentExcepti
   public H2OKeyNotFoundArgumentException(String argument, String name) {
     super("Key '" + name.toString() + "' not found for argument: " + argument,
             "Key '" + name.toString() + "' not found for argument: " + argument);
-    this.values = new IcedHashMap<>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("name", name);
   }
@@ -37,7 +37,7 @@ public class  H2OKeyNotFoundArgumentException extends H2ONotFoundArgumentExcepti
   public H2OKeyNotFoundArgumentException(String name) {
     super("Key not found: " + name.toString(),
           "Key not found: " + name.toString());
-    this.values = new IcedHashMap<>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("name", name);
   }
 

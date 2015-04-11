@@ -113,6 +113,13 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
 
   /** Return a single model. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelsV3 fetchPreview(int version, ModelsV3 s) {
+    s.preview = true;
+    return fetch(version, s);
+  }
+
+  /** Return a single model. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 fetch(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.key.key());
     s.models = new ModelSchema[1];

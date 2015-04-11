@@ -91,25 +91,17 @@ public final class ParseDataset extends Job<Frame> {
       totalParseSize += getByteVec(k).length();
     }
 
-    Vec update;
-    Iced ice;
-    Futures fs = new Futures();
-    Log.info("Parse chunk size " + setup._chunk_size);
+    // set the parse chunk size for files
     for( int i = 0; i < keys.length; ++i ) {
-      ice = DKV.getGet(keys[i]);
-      update = (ice instanceof Vec) ? (Vec)ice : ((Frame)ice).vec(0);
-      if(update instanceof FileVec) { // does not work for byte vec
-        ((FileVec) update).setChunkSize(setup._chunk_size);
-        DKV.put(update._key, update, fs);
-        fs.blockForPending();
-        // also update Frame to invalidate local caches
-        if (ice instanceof Frame) {
-          ((Frame) ice).reloadVecs();
-          DKV.put(((Frame)ice)._key, ice, fs);
-        }
+      Iced ice = DKV.getGet(keys[i]);
+      if(ice instanceof FileVec) {
+        ((FileVec) ice).setChunkSize(setup._chunk_size);
+        Log.info("Parse chunk size " + setup._chunk_size);
+      } else if(ice instanceof Frame && ((Frame)ice).vec(0) instanceof FileVec) {
+        ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+        Log.info("Parse chunk size " + setup._chunk_size);
       }
     }
-    fs.blockForPending();
 
     long memsz = H2O.CLOUD.memsz();
     if( totalParseSize > memsz*4 )

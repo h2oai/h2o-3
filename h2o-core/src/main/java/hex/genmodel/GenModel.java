@@ -172,11 +172,12 @@ public abstract class GenModel {
     return fs;
   }
 
-  // Because we call Math.exp, we have to be numerically stable or else
-  // we get Infinities, and then shortly NaN's.  Rescale the data so the
-  // largest value is +/-1 and the other values are smaller.
-  // See notes here:  http://www.hongliangjie.com/2011/01/07/logsum/
-  public static void GBM_rescale(double[] data, double[] preds) {
+  // Build a class distribution from a log scale.
+  // Because we call Math.exp, we have to be numerically stable or else we get
+  // Infinities, and then shortly NaN's.  Rescale the data so the largest value
+  // is +/-1 and the other values are smaller.  See notes here:
+  // http://www.hongliangjie.com/2011/01/07/logsum/
+  public static double log_rescale(double[] preds) {
     // Find a max
     double maxval=Double.NEGATIVE_INFINITY;
     for( int k=1; k<preds.length; k++) maxval = Math.max(maxval,preds[k]);
@@ -185,10 +186,13 @@ public abstract class GenModel {
     double dsum=0;
     for( int k=1; k<preds.length; k++ )
       dsum += (preds[k]=Math.exp(preds[k]-maxval));
-    // Rescale to a probability distribution
-    for( int k=1; k<preds.length; k++ ) preds[k] /= dsum;
-    preds[0] = getPrediction(preds, data);
+    return dsum;                // Return rolling sum; predictions are log-scaled
   }
 
-
+  // Build a class distribution from a log scale; find the top prediction
+  public static void GBM_rescale(double[] data, double[] preds) { 
+    double sum = log_rescale(preds);
+    for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+    preds[0] = getPrediction(preds, data); 
+  }
 }

@@ -15,6 +15,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Random;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
+
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
 
@@ -64,13 +66,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
     if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
-    if (expensive) {
-      if (_parms._min_rows > _train.numRows()) {
-        error("_min_rows",
-                "The dataset size is too small for _min_rows="
-                        + _parms._min_rows + " , number of rows: " + _train.numRows() + " < " + _parms._min_rows);
-      }
-    }
+    if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
+      error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows + " , number of rows: " + _train.numRows() + " < 2*" + _parms._min_rows);
     if( _train != null )
       _ncols = _train.numCols()-1;
   }
@@ -209,9 +206,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
       Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1));
-      fr2.add(fr._names[_ncols+1+k],vecs[_ncols+1+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+k],vecs[_ncols+1+_nclass+k]);
-      fr2.add(fr._names[_ncols+1+_nclass+_nclass+k],vecs[_ncols+1+_nclass+_nclass+k]);
+      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);
+      fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]);
+      fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]);
       // Start building one of the K trees in parallel
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins,tree,leafs,hcs,fr2, subset, build_tree_one_node, _improvPerVar));
     }
@@ -276,7 +273,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
 //        System.out.println("--> Decided node: " + dn +
 //                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
-        if( dn._split.col() == -1 ) udn.do_not_split();
+        if( dn._split._col == -1 ) udn.do_not_split();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
@@ -298,11 +295,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_resp(     ) { return _ncols; }
   protected int idx_oobt(     ) { return _ncols+1+_nclass+_nclass+_nclass; }
   protected int idx_tree(int c) { return _ncols+1+c; }
+  protected int idx_work(int c) { return _ncols+1+_nclass+c; }
+  protected int idx_nids(int c) { return _ncols+1+_nclass+_nclass+c; }
 
   protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp( )]; }
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
-  protected Chunk chk_work( Chunk chks[], int c ) { return chks[_ncols+1+_nclass+c]; }
-  protected Chunk chk_nids( Chunk chks[], int t ) { return chks[_ncols+1+_nclass+_nclass+t]; }
+  protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
+  protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[]) { return chks[_ncols+1+_nclass+_nclass+_nclass]; }
 
@@ -372,24 +371,38 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score on training data
       Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
+      out._training_metrics = mm;
+      if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
       Log.info("training r2 is "+(float)mm.r2()+", mse is "+(float)mm._mse+ train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      if (mm.hr() != null) {
+        Log.info(getHitRatioTable(mm.hr()));
+      }
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
+        out._validation_metrics = mmv;
         String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
         Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
+        if (mmv.hr() != null) {
+          Log.info(getHitRatioTable(mm.hr()));
+        }
       }
 
       if( out._ntrees > 0 )     // Compute variable importances
         out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
       ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
-        Log.info(cm.toASCII());
+        if( cm._cm.length <= _parms._max_confusion_matrix_size) {
+          Log.info(cm.toASCII());
+        } else {
+          Log.info("Confusion Matrix is too large (max_confusion_matrix_size=" + _parms._max_confusion_matrix_size
+                  + "): " + _nclass + " classes.");
+        }
         Log.info((_nclass > 1 ? "Total of " + cm.errCount() + " errors" : "Reported") + " on " + cm.totalRows() + " rows");
       }
       _timeLastScoreEnd = System.currentTimeMillis();
