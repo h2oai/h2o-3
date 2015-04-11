@@ -348,7 +348,7 @@ h2o.deeplearning.cv <- function(x, y, training_frame, nfolds = 2,
 #'
 #' @export
 h2o.anomaly <- function(object, data) {
-  url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
+  url <- paste0('Predictions/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", reconstruction_error=TRUE)
   key <- res$model_metrics[[1L]]$predictions$key$name
 
@@ -359,7 +359,7 @@ h2o.anomaly <- function(object, data) {
 h2o.deepfeatures <- function(object, data, layer) {
   index = layer - 1
 
-  url <- paste0('Predictions.json/models/', object@key, '/frames/', data@key)
+  url <- paste0('Predictions/models/', object@key, '/frames/', data@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST", deep_features_hidden_layer=index)
   key <- res$destination_key$name
 

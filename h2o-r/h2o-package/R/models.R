@@ -216,7 +216,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions.json/models/', object@key, '/frames/', newdata@key)
+  url <- paste0('Predictions/models/', object@key, '/frames/', newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$model_metrics[[1L]]$predictions
 
@@ -606,7 +606,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
     .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, key = temp_key)
   }
 
-  url <- paste0("Predictions.json/models/",object@key, "/frames/", newdata@key)
+  url <- paste0("Predictions/models/",object@key, "/frames/", newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")
 
   if(delete)

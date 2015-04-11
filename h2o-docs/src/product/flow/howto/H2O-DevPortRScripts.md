@@ -104,6 +104,28 @@ H2O  | H2O-Dev
 
 ###Output
 
+H2O  | H2O-Dev  | Model Type
+------------- | ------------- | -------------
+`@model$priorDistribution`|   | `all`
+`@model$params` | `@allparameters` | `all`
+`@model$err` | `@model$mse_train` | `all`
+`@model$classification` |   | `all`
+`@model$varimp` | `@model$variable_importances` | `all`
+`@model$confusion` |   | `binomial` and `multinomial`
+`@model$auc` |   | `binomial`
+`@model$gini` |   | `binomial`
+`@model$best_cutoff` |   | `binomial`
+`@model$F1` |   | `binomial`
+`@model$F2` |   | `binomial`
+`@model$accuracy` |   | `binomial`
+`@model$error` |   | `binomial`
+`@model$precision` |   | `binomial`
+`@model$recall` |   | `binomial`
+`@model$mcc` |   | `binomial`
+`@model$max_per_class_err` |   | `binomial`
+
+
+
 
 ---
 
@@ -189,7 +211,28 @@ H2O  | H2O-Dev
 `offset = NULL,` | 
 `max_predictors = -1)` |
 
----
+
+###Output
+
+H2O  | H2O-Dev  | Model Type
+------------- | ------------- | -------------
+`@model$params` | `@allparameters` | `all`
+`@model$coefficients` | `@model$coefficients_table$Coefficients` | `all`
+`@model$nomalized_coefficients` | `@model$coefficients_table$Norm Coefficients` | `all`
+`@model$rank` | `@model$rank` | `all`
+`@model$iter` |`@model$iter` | `all`
+`@model$lambda` |   | `all`
+`@model$deviance` | `@model$residual_deviance` | `all`
+`@model$null.deviance` | `@model$null_deviance` | `all`
+`@model$df.residual` | `@model$residual_degrees_of_freedom` | `all`
+`@model$df.null` | `@model$null_degrees_of_freedom` | `all`
+`@model$aic` | `@model$aic`| `all`
+`@model$train.err` |   | `binomial`
+`@model$prior` |   | `binomial`
+`@model$thresholds` | `@model$threshold` | `binomial`
+`@model$best_threshold` |   | `binomial`
+`@model$auc` | `@model$auc` | `binomial`
+`@model$confusion` |   | `binomial`
 
 <a name="Kmeans"></a>
 ##K-Means
@@ -236,6 +279,15 @@ H2O  | H2O-Dev
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
 `dropNACols = FALSE)` |
+
+H2O  | H2O-Dev
+------------- | -------------
+`@model$params` | `@allparameters`
+`@model$centers` | `@model$centers`
+`@model$withinss` | `@model$within_mse`
+`@model$tot.withinss` | 
+`@model$size` | `@model$size`
+`@model$iter` | `@model$iterations`
 
 ---
 
@@ -341,6 +393,18 @@ H2O  | H2O-Dev
  &nbsp; | `average_activation,`
  &nbsp; | `export_weights_and_biases = FALSE)`
 
+###Output
+
+H2O  | H2O-Dev  | Model Type
+------------- | ------------- | ------------- 
+`@model$priorDistribution`|   | `all`
+`@model$params` | `@allparameters` | `all`
+`@model$train_class_error` |   | `all`
+`@model$valid_class_error` |   | `all`
+`@model$varimp` | `@model$variable_importances` | `all`
+`@model$confusion` |   | `binomial` and `multinomial`
+`@model$train_auc` |   | `binomial`
+
  
  ---
 
@@ -423,7 +487,28 @@ H2O  | H2O-Dev
 `type = "fast")` | 
 
 
+###Output
 
+H2O  | H2O-Dev  | Model Type
+------------- | ------------- | -------------
+`@model$priorDistribution`|   | `all`
+`@model$params` | `@allparameters` | `all`
+`@model$mse` | `@model$mse_train` | `all`
+`@model$forest` |   | `all`
+`@model$classification` |   | `all`
+`@model$varimp` | `@model$variable_importances` | `all`
+`@model$confusion` |   | `binomial` and `multinomial`
+`@model$auc` |   | `binomial`
+`@model$gini` |   | `binomial`
+`@model$best_cutoff` |   | `binomial`
+`@model$F1` |   | `binomial`
+`@model$F2` |   | `binomial`
+`@model$accuracy` |   | `binomial`
+`@model$error` |   | `binomial`
+`@model$precision` |   | `binomial`
+`@model$recall` |   | `binomial`
+`@model$mcc` |   | `binomial`
+`@model$max_per_class_err` |   | `binomial`
 
 
 
