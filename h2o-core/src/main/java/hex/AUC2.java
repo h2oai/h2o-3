@@ -1,9 +1,10 @@
 package hex;
 
 import java.util.Arrays;
-import water.*;
-import water.fvec.*;
+import water.Iced;
 import water.MRTask;
+import water.fvec.Chunk;
+import water.fvec.Vec;
 
 /** One-pass approximate AUC
  *
@@ -103,7 +104,7 @@ public class AUC2 extends Iced {
       return mx;
     }
     public static final ThresholdCriterion[] VALUES = values();
-  }
+  } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
   public long tp( int idx ) { return _tps[idx]; }

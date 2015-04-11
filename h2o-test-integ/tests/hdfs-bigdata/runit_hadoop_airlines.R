@@ -57,7 +57,7 @@ DepY <- "IsDepDelayed"
 air.glm <- h2o.glm(x = myX, y = DepY, training_frame = data.hex, family = "binomial")
 pred_glm = predict(air.glm, data.hex)
 perf_glm <- h2o.performance(air.glm, data.hex)
-auc_glm <- h2o.auc(perf)
+auc_glm <- h2o.auc(perf_glm)
 print(auc_glm)
 expect_true(abs(auc_glm - 0.79) < 0.01)
 

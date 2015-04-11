@@ -59,7 +59,7 @@ public class ReflectionUtils {
 
   /**
    * Reflection helper which returns the actual class for a field which has a parameterized type.
-   * E.g., DeepLearningV2's "parameters" class is in parter ModelBuilderSchema, and is parameterized
+   * E.g., DeepLearningV2's "parameters" class is in parent ModelBuilderSchema, and is parameterized
    * by type parameter P.
    */
   public static Class findActualFieldClass(Class clz, Field f) {
@@ -88,8 +88,9 @@ public class ReflectionUtils {
 
     ParameterizedType generic_super = (ParameterizedType)clz.getGenericSuperclass();
 
-    // NOTE: only handles a single level of parameterization right now:
-    return (Class)generic_super.getActualTypeArguments()[which_tv];
+    if (generic_super.getActualTypeArguments()[which_tv] instanceof Class)
+      return (Class)generic_super.getActualTypeArguments()[which_tv];
+    return findActualFieldClass(clz.getSuperclass(), f);
   }
 
   // Best effort conversion from an Object to a double

@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import static hex.tree.SharedTree.printGenerateTrees;
 import water.*;
 import water.util.*;
 
@@ -22,7 +23,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public boolean _score_each_iteration;
 
-    public long _seed;          // Seed for psuedo-random redistribution
+    public long _seed;          // Seed for pseudo-random redistribution
 
     // TRUE: Continue extending an existing checkpointed model
     // FALSE: Overwrite any prior model
@@ -67,7 +68,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _mse_train = new double[]{mse_train};
-      _mse_valid  = new double[]{mse_valid};
+      _mse_valid = new double[]{mse_valid};
     }
 
     // Append next set of K trees
@@ -85,8 +86,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       _ntrees++;
       // 1-based for errors; _mse_train[0] is for zero trees, not 1 tree
       _mse_train = ArrayUtils.copyAndFillOf(_mse_train, _ntrees+1, Double.NaN);
-      if( _mse_valid != null )
-        _mse_valid = ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN);
+      _mse_valid = _valid_metrics != null ? ArrayUtils.copyAndFillOf(_mse_valid, _ntrees+1, Double.NaN) : null;
       fs.blockForPending();
     }
 
@@ -108,8 +108,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   public void score0(double data[], double preds[], int treeIdx) {
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ )
-      if( keys[c] != null )
-        preds[keys.length==1?0:c+1] += DKV.get(keys[c]).<CompressedTree>get().score(data);
+      if( keys[c] != null ) {
+        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+        assert(!Double.isInfinite(pred));
+        preds[keys.length == 1 ? 0 : c + 1] += pred;
+      }
   }
 
   // Numeric type used in generated code to hold predicted value between the

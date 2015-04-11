@@ -111,7 +111,10 @@ public class IcedHashMap<K, V> extends Iced implements ConcurrentMap<K, V>, Clon
     // ab.put1('}'); // NOTE: the serialization framework adds this automagically
     return ab;
   }
-  @Override public IcedHashMap<K, V> readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
-  @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.unimpl(); }
+  @Override public IcedHashMap<K, V> readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
+  @Override public HTML writeHTML_impl( HTML ab ) { throw H2O.fail(); }
 
+  // Subtypes which allow us to determine the type parameters at runtime, for generating schema metadata.
+  public static class IcedHashMapStringString extends IcedHashMap<String, String> {}
+  public static class IcedHashMapStringObject extends IcedHashMap<String, Object> {}
 }

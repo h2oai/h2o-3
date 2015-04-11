@@ -1,17 +1,15 @@
 package hex;
 
+import hex.genmodel.GenModel;
+import org.joda.time.DateTime;
+import water.*;
+import water.fvec.*;
+import water.util.*;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-
-import static hex.ModelMetricsMultinomial.getHitRatioTable;
-import org.joda.time.DateTime;
-
-import water.*;
-import water.fvec.*;
-import water.util.*;
-import hex.genmodel.GenModel;
 
 /**
  * A Model models reality (hopefully).
@@ -156,7 +154,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
           } catch (ClassCastException t) {
-            throw H2O.unimpl(); //no support yet for int[][] etc.
+            throw H2O.fail(); //no support yet for int[][] etc.
           }
         } else {
           try {
@@ -382,7 +380,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             try {
               evec = vec.adaptTo(domains[i]); // Convert to enum or throw IAE
             } catch( NumberFormatException nfe ) {
-              throw new IllegalArgumentException("Validation set has a numeric column "+names[i]+" which is categorical in the training data");
+              throw new IllegalArgumentException("Validation set has a non-categorical column "+names[i]+" which is categorical in the training data");
             }
             String[] ds = evec.domain();
             assert ds != null && ds.length >= domains[i].length;
@@ -451,8 +449,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ )
+        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
           water.util.Log.info(cm.table().toString(1));
+        }
 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
@@ -589,8 +588,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("// How to download, compile and execute:").nl();
     sb.p("//     mkdir tmpdir").nl();
     sb.p("//     cd tmpdir").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/h2o-model.jar > h2o-model.jar").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/2/").p(this.getClass().getSimpleName()).p("View.java?_modelKey=").pobj(_key).p(" > ").p(modelName).p(".java").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-model.jar > h2o-model.jar").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/Models.java/").pobj(_key).p(" > ").p(modelName).p(".java").nl();
     sb.p("//     javac -cp h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
     sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();

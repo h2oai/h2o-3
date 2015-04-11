@@ -137,7 +137,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
         Log.info("Resuming from checkpoint.");
         new ProgressUpdate("Resuming from checkpoint").fork(_progressKey);
-        if (_parms._n_folds != 0)
+        if (_parms.getNumFolds() != 0)
           throw new UnsupportedOperationException("n_folds must be 0: Cross-validation is not supported during checkpoint restarts.");
         _parms._autoencoder = previous.model_info().get_params()._autoencoder;
         if (!_parms._autoencoder && (_parms._response_column == null || !_parms._response_column.equals(previous.model_info().get_params()._response_column))) {
@@ -186,9 +186,11 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
               }
             }
           }
-          if (A._n_folds != 0) {
+          if (A.getNumFolds() != 0) {
             Log.warn("Disabling cross-validation: Not supported when resuming training from a checkpoint.");
-            A._n_folds = 0;
+
+            H2O.unimpl("writing to n_folds field needs to be uncommented");
+            // A._n_folds = 0;
           }
           cp.update(self());
         } finally {
@@ -314,7 +316,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
         while (model.doScoring(trainScoreFrame, validScoreFrame, self(), _progressKey));
 
         // replace the model with the best model so far (if it's better)
-        if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms._n_folds == 0) {
+        if (!isCancelledOrCrashed() && _parms._override_with_best_model && model.actual_best_model_key != null && _parms.getNumFolds() == 0) {
           DeepLearningModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.error() < model.error() && Arrays.equals(best_model.model_info().units, model.model_info().units)) {
             Log.info("Setting the model to be the best model so far (based on scoring history).");

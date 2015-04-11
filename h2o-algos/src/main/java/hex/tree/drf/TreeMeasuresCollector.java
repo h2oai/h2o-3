@@ -61,7 +61,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
       }
     }
 
-    public static long seed(int cidx) { return (0xe031e74f321f7e29L + (cidx << 32L)); }
+    public static long seed(int cidx) { return (0xe031e74f321f7e29L + ((long)cidx << 32L)); }
 
     public static Vec shuffle(Vec ivec) {
       Vec ovec = ivec.makeZero();

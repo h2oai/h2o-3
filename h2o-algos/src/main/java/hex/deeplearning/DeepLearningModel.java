@@ -31,7 +31,9 @@ import static java.lang.Double.isNaN;
 public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
 
   public static class DeepLearningParameters extends SupervisedModel.SupervisedParameters {
-    public int _n_folds;
+    // public int _n_folds;
+    public int getNumFolds() { return 0; }
+
     public boolean _keep_cross_validation_splits;
 
     /**
@@ -435,6 +437,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
+      dl.hide("_score_each_iteration", "Not used by Deep Learning.");
       boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
@@ -508,9 +511,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
       }
 
-      if (_n_folds != 0)
+      if (getNumFolds() != 0)
         dl.hide("_override_with_best_model", "override_with_best_model is unsupported in combination with n-fold cross-validation.");
-      if(_override_with_best_model && _n_folds != 0) {
+      if(_override_with_best_model && getNumFolds() != 0) {
         if (expensive) {
           dl.warn("_override_with_best_model", "Disabling override_with_best_model in combination with n-fold cross-validation.");
           _override_with_best_model = false;
@@ -549,7 +552,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
         dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
       }
-      if (_n_folds != 0) {
+      if (getNumFolds() != 0) {
         dl.error("_n_folds", "n_folds is not yet implemented.");
         if (expensive) {
           if (_override_with_best_model) {
@@ -643,8 +646,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable model_summary;
     TwoDimTable scoring_history;
     TwoDimTable variable_importances;
-    ModelMetrics train_metrics;
-    ModelMetrics valid_metrics;
     double run_time;
 
     public String toString() {
@@ -706,7 +707,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
-      default: throw H2O.unimpl("Invalid Modelcategory " + _output.getModelCategory());
+      default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
     }
   }
 
@@ -896,7 +897,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         colTypes.add("double");
         colFormat.add("%.5f");
       }
-    } else if (get_params()._n_folds > 0) {
+    } else if (get_params().getNumFolds() > 0) {
       colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
 //      colHeaders.add("Validation R^2"); colTypes.add("double"); colFormat.add("%g");
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -982,7 +983,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           table.set(row, col++, e.valid_err);
         }
       }
-      else if(get_params()._n_folds > 1) {
+      else if(get_params().getNumFolds() > 1) {
         throw H2O.unimpl("n_folds >= 2 is not (yet) implemented.");
       }
       row++;
@@ -1119,7 +1120,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
         }
         if (levels[levels.length-1] > 0) {
-          int levelcutoff = levels[levels.length-1-Math.min(10, levels.length)];
+          int levelcutoff = levels[levels.length-1-Math.min(10, levels.length-1)];
           int count = 0;
           for (int i=0; i<dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
             if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
@@ -1595,12 +1596,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DKV.put(dinfo._key,dinfo);
     model_info = new DeepLearningModelInfo(parms, dinfo, classification, train, valid);
     actual_best_model_key = Key.makeUserHidden(Key.make());
-    if (parms._n_folds != 0) actual_best_model_key = null;
+    if (parms.getNumFolds() != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
       errors = new DeepLearningScoring[1];
       errors[0] = new DeepLearningScoring();
       errors[0].validation = (parms._valid != null);
-      errors[0].num_folds = parms._n_folds;
+      errors[0].num_folds = parms.getNumFolds();
       _output.errors = last_scored();
       _output.scoring_history = createScoringHistoryTable(errors);
       _output.variable_importances = calcVarImp(last_scored().variable_importances);
@@ -1723,7 +1724,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
-          _output.train_metrics = mm1;
+          _output._train_metrics = mm1;
+          if (get_params()._score_training_samples != 0) {
+            _output._train_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
+          }
           _output.run_time = run_time;
 
           if (ftest != null) {
@@ -1746,7 +1750,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
-              _output.valid_metrics = mm2;
+              _output._valid_metrics = mm2;
+              if (get_params()._score_validation_samples != 0) {
+                _output._valid_metrics._description = "Metrics reported on " + ftrain.numRows() + " validation set samples";
+                if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
+                  _output._valid_metrics._description += " (using stratified sampling)";
+                }
+              }
             }
           }
         }

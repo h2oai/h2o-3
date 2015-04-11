@@ -24,7 +24,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ValueString;
-import water.util.ModelUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -511,7 +510,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = true;
       params._family = Family.binomial;
-      params._beta_constraint = betaConstraints._key;
+      params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
@@ -603,7 +602,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters();
       params._standardize = false;
       params._family = Family.binomial;
-      params._beta_constraint = betaConstraints._key;
+      params._beta_constraints = betaConstraints._key;
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
@@ -615,7 +614,7 @@ public class GLMTest  extends TestUtil {
 
       double [] beta_1 = model.beta();
       params._solver = Solver.L_BFGS;
-      params._max_iter = 1000;
+      params._max_iterations = 1000;
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       model = DKV.get(modelKey).get();
@@ -791,6 +790,7 @@ public class GLMTest  extends TestUtil {
       GLMValidation val = model.validation();
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
+      assertEquals(371,val.resDOF());
       assertEquals(396.3, val.aic(),1e-1);
       score = model.score(fr);
 
@@ -824,7 +824,7 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._standardize = false;
-      params._max_iter = 20;
+      params._max_iterations = 20;
       job = new GLM(Key.make("glm_model"), "glm test simple poisson", params);
       model = job.trainModel().get();
       double [] beta = model.beta();

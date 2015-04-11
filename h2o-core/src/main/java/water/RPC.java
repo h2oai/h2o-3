@@ -271,7 +271,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   @Override public final V get(long timeout, TimeUnit unit) {
     if( _done ) return _dt;     // Fast-path shortcut
-    throw H2O.unimpl();
+    throw H2O.fail();
   }
 
   // Done if target is dead or canceled, or we have a result.
@@ -313,6 +313,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     final int _tsknum;
     long _started;              // Retry fields for the ackack
     long _retry;
+    int _ackResendCnt;
     volatile boolean _computedAndReplied; // One time transition from false to true
     volatile boolean _computed; // One time transition from false to true
     // To help with asserts, record the size of the sent DTask - if we resend
@@ -499,6 +500,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       // we know the answer got there so just send a control-ACK back.  If we
       // sent via UDP, resend the whole answer.
       assert !ab.hasTCP():"ERROR: got tcp with existing task #, FROM " + ab._h2o.toString() + " AB: " +  UDP.printx16(lo,hi); // All the resends should be UDP only
+      ++old._ackResendCnt;
+      if(old._ackResendCnt % 50 == 0)
+        Log.err("Possibly broken network, can not send ack through, got " + old._ackResendCnt + " resends.");
       old.resend_ack();
     }
     ab.close();

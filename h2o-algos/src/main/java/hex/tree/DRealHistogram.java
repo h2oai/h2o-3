@@ -4,6 +4,7 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.IcedBitSet;
+import water.util.MathUtils;
 
 /** A Histogram, computed in parallel over a Vec.
  *
@@ -159,6 +160,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
       //                    = ssqs - sum^2/N
       double se0 = ssqs0[b] - sums0[b]*sums0[b]/ns0[b];
       double se1 = ssqs1[b] - sums1[b]*sums1[b]/ns1[b];
+      if( se0 < 0 ) se0 = 0;    // Roundoff error; sometimes goes negative
+      if( se1 < 0 ) se1 = 0;    // Roundoff error; sometimes goes negative
       if( (se0+se1 < best_se0+best_se1) || // Strictly less error?
           // Or tied MSE, then pick split towards middle bins
           (se0+se1 == best_se0+best_se1 &&
@@ -179,6 +182,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         double ssqs2 = ssqs0[b  ]+ssqs1[b+1];
         double si =    ssqs2     -sums2  *sums2  /   N   ; // Left+right, excluding 'b'
         double sx =    ssqs [b]  -sums[b]*sums[b]/bins[b]; // Just 'b'
+        if( si < 0 ) si = 0;    // Roundoff error; sometimes goes negative
+        if( sx < 0 ) sx = 0;    // Roundoff error; sometimes goes negative
         if( si+sx < best_se0+best_se1 ) { // Strictly less error?
           best_se0 = si;   best_se1 = sx;
           best = b;        equal = 1; // Equality check
@@ -196,8 +201,8 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
         min=Math.min(min,idxs[i]);
         max=Math.max(max,idxs[i]);
       }
-      bs = new IcedBitSet(max-min+1,min);
-      for( int i=best; i<nbins; i++ ) bs.set(idxs[i]);
+      bs = new IcedBitSet(max-min+1,min); // Bitset with just enough span to cover the interesting bits
+      for( int i=best; i<nbins; i++ ) bs.set(idxs[i]); // Reverse the index then set bits
       equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
@@ -208,6 +213,7 @@ public class DRealHistogram extends DHistogram<DRealHistogram> {
     long   n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
     double p0 = equal != 1 ? sums0[best] : sums0[best]+sums1[best+1];
     double p1 = equal != 1 ? sums1[best] :  sums[best]              ;
+    if( MathUtils.equalsWithinOneSmallUlp((float)(p0/n0),(float)(p1/n1)) ) return null; // No difference in predictions, which are all at 1 float ULP
     return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
   }
 

@@ -1,11 +1,8 @@
 package water.api;
 
-import water.exceptions.H2OFailException;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.exceptions.*;
 import water.util.HttpResponseStatus;
 import water.*;
-import water.exceptions.H2OAbstractRuntimeException;
-import water.exceptions.H2ONotFoundArgumentException;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
@@ -24,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-//import com.brsanthu.googleanalytics.AppViewHit;
+import com.brsanthu.googleanalytics.ScreenViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -164,8 +161,6 @@ public class RequestServer extends NanoHTTPD {
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
       "Return all Frames in the H2O distributed K/V store.");
-    register("/2/Frames"                                         ,"GET"   ,FramesHandler.class, "list_or_fetch",
-      "Return all Frames in the H2O distributed K/V store (old output format)."); // uses ?key=
     register("/3/Frames/(?<key>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"key"},
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
@@ -238,7 +233,7 @@ public class RequestServer extends NanoHTTPD {
     // typesafe way:
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
-
+    register("/1/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
     register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
@@ -476,12 +471,12 @@ public class RequestServer extends NanoHTTPD {
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
 
-/*    if (H2O.GA != null) {
+    if (H2O.GA != null) {
       if (header.getProperty("user-agent") != null)
-        H2O.GA.postAsync(new AppViewHit(uri).customDimention(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
+        H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
       else
-        H2O.GA.postAsync(new AppViewHit(uri));
-    }*/
+        H2O.GA.postAsync(new ScreenViewHit(uri));
+    }
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -509,7 +504,7 @@ public class RequestServer extends NanoHTTPD {
 
     Log.warn(error._dev_msg);
     Log.warn(error._values.toJsonString());
-    Log.warn((Object[])error._stacktrace);
+    Log.warn((Object[]) error._stacktrace);
 
     return wrap(new H2OErrorV1().fillFromImpl(error), type);
   }
@@ -666,7 +661,7 @@ public class RequestServer extends NanoHTTPD {
     case query:
     case help:
     default:
-      throw H2O.unimpl();
+      throw H2O.unimpl("Unknown type: " + type.toString());
     }
   }
 
@@ -674,21 +669,42 @@ public class RequestServer extends NanoHTTPD {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
-    if (s instanceof SpecifiesHttpResponseCode)
+    // If we're given an http response code use it.
+    if (s instanceof SpecifiesHttpResponseCode) {
       http_response_header = H2OError.httpStatusHeader(((SpecifiesHttpResponseCode) s).httpStatus());
+    }
+
+    // If we've gotten an error always return the error as JSON
+    if (s instanceof SpecifiesHttpResponseCode && HttpResponseStatus.OK.getCode() != ((SpecifiesHttpResponseCode) s).httpStatus()) {
+        type = RequestType.json;
+    }
 
     switch( type ) {
-    case json:   return new Response(http_response_header, MIME_JSON, s.toJsonString());
-    case xml:  //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
+    case json:
+      return new Response(http_response_header, MIME_JSON, s.toJsonString());
+    case xml:
+      //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
+      throw H2O.unimpl("Unknown type: " + type.toString());
     case java:
-      throw H2O.unimpl();
+      if (s instanceof H2OErrorV1) {
+        return new Response(http_response_header, MIME_JSON, s.toJsonString());
+      }
+      if (! (s instanceof ModelsBase)) {
+        throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
+      }
+      ModelsBase mb = (ModelsBase) s;
+      if (mb.models.length != 1) {
+        throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
+      }
+      ModelSchema ms = mb.models[0];
+      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava());
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
       return new Response(http_response_header, MIME_HTML, html.toString());
     }
     default:
-      throw H2O.fail("Unknown type to wrap(): " + type);
+      throw H2O.unimpl("Unknown type to wrap(): " + type);
     }
   }
 

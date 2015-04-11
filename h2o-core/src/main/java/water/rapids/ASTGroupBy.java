@@ -11,6 +11,7 @@ import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,27 +58,15 @@ import java.util.concurrent.atomic.AtomicInteger;
   @Override ASTOp make() {return new ASTGroupBy();}
   ASTGroupBy parse_impl(Exec E) {
     AST ary = E.parse();
-    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
-
     // parse gby columns
-    AST s=null;
-    try {
-      s=E.skipWS().parse();
-      _gbCols=((ASTSeries)s).toArray();
-      if(_gbCols.length > 1000 )
-        throw new IllegalArgumentException("Too many columns selected. Please select < 1000 columns.");
-    } catch (ClassCastException e) {
-      assert s!=null;
-      try {
-        _gbCols = new long[]{(long)((ASTNum)s).dbl()};
-      } catch (ClassCastException e2) {
-        throw new IllegalArgumentException("Badly formed AST. Columns argument must be a ASTSeries or ASTNum");
-      }
-    }
+    AST s = E.parse();
+    if( s instanceof ASTLongList ) _gbCols = ((ASTLongList)s)._l;
+    else if( s instanceof ASTNum ) _gbCols = new long[]{(long)((ASTNum)s)._d};
+    else throw new IllegalArgumentException("Badly formed AST. Columns argument must be a llist or number. Got: " +s.getClass());
 
     //parse AGGs
     _agg = ((AGG)E.parse())._aggs;
-
+    E.eatEnd();
     ASTGroupBy res = (ASTGroupBy)clone();
     res._asts = new AST[]{ary};
     return res;
@@ -85,8 +74,9 @@ import java.util.concurrent.atomic.AtomicInteger;
   @Override void apply(Env e) {
     // only allow reductions on time and numeric columns
     Frame fr = e.popAry();
-
+    long s = System.currentTimeMillis();
     GBTask p1 = new GBTask(_gbCols, _agg).doAll(fr);
+    Log.info("Group By Task done in " + (System.currentTimeMillis() - s)/1000. + " (s)");
     final int nGrps = p1._g.size();
     final G[] grps = p1._g._g.toArray(new G[nGrps]);
     H2O.submitTask(new ParallelPostGlobal(grps)).join();
@@ -120,16 +110,16 @@ import java.util.concurrent.atomic.AtomicInteger;
             byte type = agg[a]._type;
             switch( type ) {
               case AGG.T_N:  ncs[j++].addNum(g._N       );  break;
-              case AGG.T_ND: ncs[j++].addNum(g._ND[a]   );  break;
-              case AGG.T_F:  ncs[j++].addNum(g._f[a]    );  break;
-              case AGG.T_L:  ncs[j++].addNum(g._l[a]    );  break;
+              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]  );  break;
               case AGG.T_MIN:ncs[j++].addNum(g._min[a]  );  break;
               case AGG.T_MAX:ncs[j++].addNum(g._max[a]  );  break;
-              case AGG.T_AVG:ncs[j++].addNum(g._avs[a]  );  break;
               case AGG.T_VAR:ncs[j++].addNum(g._vars[a] );  break;
               case AGG.T_SD :ncs[j++].addNum(g._sdevs[a]);  break;
               case AGG.T_SUM:ncs[j++].addNum(g._sum[a]  );  break;
               case AGG.T_SS :ncs[j++].addNum(g._ss [a]  );  break;
+              case AGG.T_ND: ncs[j++].addNum(g._ND[a]   );  break;
+              case AGG.T_F:  ncs[j++].addNum(g._f[a]    );  break;
+              case AGG.T_L:  ncs[j++].addNum(g._l[a]    );  break;
               default:
                 throw new IllegalArgumentException("Unsupported aggregation type: " + type);
             }
@@ -179,9 +169,8 @@ import java.util.concurrent.atomic.AtomicInteger;
     @Override public void map(Chunk[] c) {
       long start = c[0].start();
       byte[] naMethods = AGG.naMethods(_agg);
-      G g = new G(0,c,_gbCols,_agg.length,naMethods);
       for (int i=0;i<c[0]._len;++i) {
-        g.reFill(i, c, _gbCols);
+        G g = new G(i,c,_gbCols,_agg.length,naMethods);
         if( !_g.add(g) ) g=_g.get(g);
         // cas in COUNT
         long r=g._N;
@@ -215,8 +204,7 @@ import java.util.concurrent.atomic.AtomicInteger;
     private static void reduceGroup(AGG[] agg, G g, G that) { perRow(agg,-1,-1,null,g,that);}
     private static void perRow(AGG[] agg, int chkRow, long rowOffset, Chunk[] c, G g, G that) {
       byte type; int col;
-      long vals[] = new long[6]; // 6 cases in the switch, magic array for legibility in the switch
-      for (int i=0;i<agg.length;++i) {
+      for( int i=0;i<agg.length;++i ) {
         col = agg[i]._c;
 
         // update NA value for this (group, aggregate) pair:
@@ -241,28 +229,22 @@ import java.util.concurrent.atomic.AtomicInteger;
           if( c[col].isNA(chkRow) ) continue;
           bits = Double.doubleToRawLongBits(c[col].atd(chkRow));
         }
-        vals[0] = c==null ? that._f[i] : chkRow+rowOffset;
-        vals[1] = c==null ? that._l[i] : chkRow+rowOffset;
-        vals[2] = c==null ? Double.doubleToRawLongBits(that._min[i]) : bits;
-        vals[3] = c==null ? Double.doubleToRawLongBits(that._max[i]) : bits;
-        vals[4] = c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits;
-        vals[5] = c==null ? Double.doubleToRawLongBits(that._ss[i] ) : bits;
         if( type == AGG.T_ND ) {
 //          if( c==null ) g._nd._nd[i].addAll(that._nd._nd[i]);
 //          else          g._nd._nd[i].add(c[col].atd(chkRow));
           continue;
         }
 
-        switch( type ) {
-          case AGG.T_F:   setFirst(g,vals[0],i);   break;
-          case AGG.T_L:   setLast( g,vals[1],i);   break;
-          case AGG.T_MIN: setMin(  g,vals[2],i);   break;
-          case AGG.T_MAX: setMax(  g,vals[3],i);   break;
+        switch( type ) {  // ordered by "popularity"
           case AGG.T_AVG: /* fall through */
-          case AGG.T_SUM: setSum(  g,vals[4],i);   break;
+          case AGG.T_SUM: setSum(  g,c==null ? Double.doubleToRawLongBits(that._sum[i]) : bits,i);   break;
+          case AGG.T_MIN: setMin(  g,c==null ? Double.doubleToRawLongBits(that._min[i]) : bits,i);   break;
+          case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
           case AGG.T_VAR: /* fall through */
           case AGG.T_SD:
-          case AGG.T_SS:  setSS(   g,vals[5],i);   break;
+          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i);   break;
+          case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
+          case AGG.T_L:   setLast(g, c == null ? that._l[i] : chkRow + rowOffset, i);   break;
           default:
             throw new IllegalArgumentException("Unsupported aggregation type: " + type);
         }
@@ -485,19 +467,20 @@ import java.util.concurrent.atomic.AtomicInteger;
   }
 
   static class AGG extends AST {
+    @Override AGG make() { return new AGG(); }
     // (AGG #N "agg" #col "na"  "agg" #col "na"   => string num string   string num string
     String opStr() { return "agg";  }
     private AGG[] _aggs;
     AGG parse_impl(Exec E) {
-      int n = (int)((ASTNum)(E.parse()))._d; E.skipWS();
-      _aggs=new AGG[n];
-      for( int i=0;i<n;++i) {
-        String type = E.parseString(E.peekPlus()); E.skipWS();
-        int     col = (int)((ASTNum)E.parse()).dbl(); E.skipWS();
-        String   na = E.parseString(E.peekPlus()); E.skipWS();
-        String name = E.parseString(E.peekPlus()); E.skipWS();
-        _aggs[i]=new AGG(type,col,na,name);
+      ArrayList<AGG> aggs = new ArrayList<>();
+      while( !E.isEnd() ) {
+        String type = E.parseString(E.peekPlus());
+        int     col = (int)((ASTNum)E.parse()).dbl();
+        String   na = E.parseString(E.peekPlus());
+        String name = E.parseString(E.peekPlus());
+        aggs.add(new AGG(type,col,na,name));
       }
+      _aggs = aggs.toArray(new AGG[aggs.size()]);
       return this;
     }
 

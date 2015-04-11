@@ -8,6 +8,7 @@ import urllib
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
+from expr import Expr
 import h2o_model_builder
 
 
@@ -300,3 +301,80 @@ def locate(path):
 
       tmp_dir = next_tmp_dir
       possible_result = os.path.join(tmp_dir, path)
+
+def as_list(data):
+  """
+  If data is an Expr, then eagerly evaluate it and pull the result from h2o into the local environment. In the local
+  environment an H2O Frame is represented as a list of lists (each element in the broader list represents a row).
+  Note: This uses function uses h2o.frame(), which will return meta information on the H2O Frame and only the first
+  100 rows. This function is only intended to be used within the testing framework. More robust functionality must
+  be constructed for production conversion between H2O and python data types.
+  :return: List of list (Rows x Columns).
+  """
+  if isinstance(data, Expr):
+    x = data.eager()
+    if data.is_local():
+      return x
+    j = frame(data._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OVec):
+    x = data._expr.eager()
+    if data._expr.is_local():
+      return x
+    j = frame(data._expr._data)
+    return map(list, zip(*[c['data'] for c in j['frames'][0]['columns'][:]]))
+  if isinstance(data, H2OFrame):
+    vec_as_list = [as_list(v) for v in data._vecs]
+    frm = []
+    for row in range(len(vec_as_list[0])):
+      tmp = []
+      for col in range(len(vec_as_list)):
+        tmp.append(vec_as_list[col][row][0])
+      frm.append(tmp)
+    return frm
+
+
+def cos(data)     : return _simple_un_math_op("cos", data)
+def sin(data)     : return _simple_un_math_op("sin", data)
+def tan(data)     : return _simple_un_math_op("tan", data)
+def acos(data)    : return _simple_un_math_op("acos", data)
+def asin(data)    : return _simple_un_math_op("asin", data)
+def atan(data)    : return _simple_un_math_op("atan", data)
+def cosh(data)    : return _simple_un_math_op("cosh", data)
+def sinh(data)    : return _simple_un_math_op("sinh", data)
+def tanh(data)    : return _simple_un_math_op("tanh", data)
+def acosh(data)   : return _simple_un_math_op("acosh", data)
+def asinh(data)   : return _simple_un_math_op("asinh", data)
+def atanh(data)   : return _simple_un_math_op("atanh", data)
+def cospi(data)   : return _simple_un_math_op("cospi", data)
+def sinpi(data)   : return _simple_un_math_op("sinpi", data)
+def tanpi(data)   : return _simple_un_math_op("tanpi", data)
+def abs(data)     : return _simple_un_math_op("abs", data)
+def sign(data)    : return _simple_un_math_op("sign", data)
+def sqrt(data)    : return _simple_un_math_op("sqrt", data)
+def trunc(data)   : return _simple_un_math_op("trunc", data)
+def ceil(data)    : return _simple_un_math_op("ceiling", data)
+def floor(data)   : return _simple_un_math_op("floor", data)
+def log(data)     : return _simple_un_math_op("log", data)
+def log10(data)   : return _simple_un_math_op("log10", data)
+def log1p(data)   : return _simple_un_math_op("log1p", data)
+def log2(data)    : return _simple_un_math_op("log2", data)
+def exp(data)     : return _simple_un_math_op("exp", data)
+def expm1(data)   : return _simple_un_math_op("expm1", data)
+def gamma(data)   : return _simple_un_math_op("gamma", data)
+def lgamma(data)  : return _simple_un_math_op("lgamma", data)
+def digamma(data) : return _simple_un_math_op("digamma", data)
+def trigamma(data): return _simple_un_math_op("trigamma", data)
+
+def _simple_un_math_op(op, data):
+  """
+  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+
+  :param op: the math operation
+  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
+  :return: Expr'd data
+  """
+  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
+  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
+  elif isinstance(data, Expr)    : return Expr(op, data)
+  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"

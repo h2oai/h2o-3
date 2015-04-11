@@ -729,7 +729,9 @@ public final class Gram extends Iced<Gram> {
       if(_hasIntercept)
         interceptRow[cid] += d; // intercept*x[i]
       // nums * cats
-      for(int j = 0; j < r.nBins; ++j)
+      if(r.nBins > 0)
+        mrow[r.binIds[0]] += d;
+      for(int j = 1; j < r.nBins; ++j)
         mrow[r.binIds[j] - _diagN] += d;
     }
     if(_hasIntercept){

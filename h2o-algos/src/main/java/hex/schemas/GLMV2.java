@@ -17,8 +17,8 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
   public static final class GLMParametersV2 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV2> {
     static public String[] own_fields = new String[]{
       "solver",
-      "max_iter",
-      "beta_eps",
+      "max_iterations",
+      "beta_epsilon",
       "standardize",
       "family",
       "link",
@@ -26,26 +26,25 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
       "tweedie_link_power",
       "alpha",
       "lambda",
-      "prior1",
+      "prior",
       "lambda_search",
       "nlambdas",
       "lambda_min_ratio",
-      "use_all_factor_levels",
-      "n_folds"
+      "use_all_factor_levels"
     };
 
     @API(help = "solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"})
     public Solver solver;
 
     // Input fields
-    @API(help = "Standardize numeric columns to have zero mean and unit variance.")
+    @API(help = "Standardize numeric columns to have zero mean and unit variance")
     public boolean standardize;
 
-    @API(help = "Maximum number of iterations. ")
-    public int max_iter = 50;
+    @API(help = "Maximum number of iterations")
+    public int max_iterations = 50;
 
     @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
-    public double beta_eps;
+    public double beta_epsilon;
 
     @API(help = "Family.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */})
     // took tweedie out since it's not reliable
@@ -67,7 +66,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     public double[] lambda = null;
 
     @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
-    public double prior1;
+    public double prior;
 
     @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.secondary)
     public boolean lambda_search;
@@ -81,10 +80,7 @@ public class GLMV2 extends SupervisedModelBuilderSchema<GLM,GLMV2,GLMV2.GLMParam
     @API(help = "By default, first factor level is skipped from the possible set of predictors. Set this flag if you want use all of the levels. Needs sufficient regularization to solve!", level = Level.secondary)
     public boolean use_all_factor_levels;
 
-    @API(help = "validation folds")
-    public int n_folds;
-
     @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
-    public FrameKeyV1 beta_constraint;
+    public FrameKeyV1 beta_constraints;
   }
 }

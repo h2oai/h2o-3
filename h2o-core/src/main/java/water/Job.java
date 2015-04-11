@@ -29,14 +29,14 @@ public class Job<T extends Keyed> extends Keyed {
   /** The list of all Jobs, past and present.
    *  @return The list of all Jobs, past and present */
   public static Job[] jobs() {
-    Value val = DKV.get(LIST);
+    final Value val = DKV.get(LIST);
     if( val==null ) return new Job[0];
     JobList jl = val.get();
     Job[] jobs = new Job[jl._jobs.length];
     int j=0;
     for( int i=0; i<jl._jobs.length; i++ ) {
-      val = DKV.get(jl._jobs[i]);
-      if( val != null ) jobs[j++] = val.get();
+      final Value job = DKV.get(jl._jobs[i]);
+      if( job != null ) jobs[j++] = job.get();
     }
     if( j==jobs.length ) return jobs; // All jobs still exist
     jobs = Arrays.copyOf(jobs,j);     // Shrink out removed
@@ -188,7 +188,7 @@ public class Job<T extends Keyed> extends Keyed {
   public T get() {
     assert _fjtask != null : "Cannot block on missing F/J task";
     _barrier.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
-    assert !isRunning();
+    assert !isRunning() : "Job state should not be running, but it is " + _state;
     return _dest.get();
   }
 

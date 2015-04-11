@@ -336,6 +336,16 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
+  public void addStr(Chunk c, long row) {
+    if( c.isNA_abs(row) ) addNA();
+    else addStr(c.atStr_abs(new ValueString(), row));
+  }
+
+  public void addStr(Chunk c, int row) {
+    if( c.isNA(row) ) addNA();
+    else addStr(c.atStr(new ValueString(), row));
+  }
+
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
     if( _ls==null || _ds== null || sparseLen() >= _ls.length )
@@ -384,7 +394,7 @@ public class NewChunk extends Chunk {
       cancel_sparse();
       nc.cancel_sparse();
     }
-    if( _ds != null ) throw H2O.unimpl();
+    if( _ds != null ) throw H2O.fail();
     while( sparseLen() + nc.sparseLen() >= _xs.length )
       _xs = MemoryManager.arrayCopyOf(_xs,_xs.length<<1);
     _ls = MemoryManager.arrayCopyOf(_ls,_xs.length);
@@ -953,7 +963,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8(buf, off+ridsz, lval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;
@@ -983,7 +993,7 @@ public class NewChunk extends Chunk {
           UnsafeUtils.set8d(buf, off + ridsz, dval);
           break;
         default:
-          throw H2O.unimpl();
+          throw H2O.fail();
       }
     }
     assert off==buf.length;

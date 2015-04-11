@@ -7,6 +7,7 @@ from math import sqrt, isnan, floor
 import h2o
 import frame
 import tabulate
+import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -99,7 +100,7 @@ class Expr(object):
 
   def vecname(self): return self._vecname
 
-  def is_local(self): return isinstance(self._data, (list, int, float, str))
+  def is_local(self): return isinstance(self._data, (list, tuple, int, float, str))
 
   def is_remote(self): return isinstance(self._data, unicode)
 
@@ -118,6 +119,17 @@ class Expr(object):
     :return: The number of columns/rows of the H2OFrame/H2OVec.
     """
     return self._len
+
+  def dim(self):
+    """
+    Eagerly evaluate the Expr. If it's an H2OFrame, return the number of rows and columns.
+    :return: The number of rows and columns in the H2OFrame as a list [rows, cols].
+    """
+    self.eager()
+    if isinstance(self._data, unicode):
+      frame = h2o.frame(self._data)
+      return [frame['frames'][0]['rows'], len(frame['frames'][0]['columns'])]
+    raise ValueError("data must be a (unicode) key")
 
   def debug(self):
     """
@@ -144,15 +156,19 @@ class Expr(object):
     else:
       if isinstance(self._data, unicode):
         j = h2o.frame(self._data)
-        data = j['frames'][0]['columns'][0]['data'][0:10]
-      elif isinstance(self._data, int):
+        data = [c['data'] for c in j['frames'][0]['columns'][:]]
+      elif isinstance(self._data, (int, float, str, list)):
         print self._data
+        print
         return
       else:
         data = [self._data]
-      header = self._vecname + " (first " + str(len(data)) + " row(s))"
-      rows = range(1, len(data) + 1, 1)
-      print tabulate.tabulate(zip(rows, data), headers=["Row ID", header])
+      t_data = map(list, zip(*data))
+      for didx,d in enumerate(t_data): t_data[didx].insert(0,didx)
+      headers = ["Row ID"]
+      for i in range(len(t_data[0])): headers.append('')
+      print "Displaying first " + str(len(t_data)) + " row(s)"
+      print tabulate.tabulate(t_data, headers=headers)
       print
 
 #  def __repr__(self):
@@ -187,12 +203,14 @@ class Expr(object):
 
   # Basic indexed or sliced lookup
   def __getitem__(self, i):
-    x = self.eager()
-    if self.is_local(): return x[i]
-    if not isinstance(i, int): raise NotImplementedError  # need a bigdata slice here
-    # ([ %vec #row #0)
-    #j = H2OCONN.Rapids("([ %"+str(self._data)+" #"+str(i)+" #0)")
-    #return j['scalar']
+    if   self.is_local():
+      if    isinstance(i, int)  : return self.eager()[i]
+      elif  isinstance(i, tuple): return self.eager()[i[0]][i[1]]
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
+    elif self.is_remote() or self.is_pending():
+      if    isinstance(i, int)  : return Expr("[", self, Expr(("null", i)))  # column slicing
+      elif  isinstance(i, tuple): return Expr("[", self, Expr((i[0], i[1]))) # row, column slicing
+      else                      : raise ValueError("Integer and 2-tuple slicing supported only")
     raise NotImplementedError
 
   def _simple_expr_bin_op( self, i, op):
@@ -273,7 +291,7 @@ class Expr(object):
     if isinstance(self._data, unicode):
       pass  # Big Data Key is the result
     # Small data result pulled locally
-    elif j['num_rows']:
+    elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
@@ -296,10 +314,50 @@ class Expr(object):
             "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
             + ")"
         child._data = None  # trigger GC now
-      else:
-        pass
+      elif self._op == "[" and isinstance(self._rite._data, tuple): # multi-dimensional slice
+        if not isinstance(child._data, tuple): return child         # doing left child.  just return.
+        __CMD__ += self.multi_dim_slice_cmd(child)                  # doing right child. generate slice string
+        return child
     __CMD__ += " "
     return child
+
+  def multi_dim_slice_cmd(self, child):
+    return self.multi_dim_slice_data_cmd(child) + ' ' + self.multi_dim_slice_rows_cmd(child) + ' ' + \
+           self.multi_dim_slice_cols_cmd(child)
+
+  def multi_dim_slice_data_cmd(self, child):
+    if    isinstance(self._left._data,unicode): return ""
+    elif  isinstance(self._left._data, list)  :
+      c = child._data[1]
+      if isinstance(c, int): return "'" + self._left._data[c] + "'"
+      if isinstance(c, slice):
+        cols = self._left._data[c]
+        cmd = "(cbind"
+        for col in cols: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+      if c == "null":
+        cmd = "(cbind"
+        for col in self._left._data: cmd += " '" + str(col) + "'"
+        cmd += ")"
+        return cmd
+    raise NotImplementedError
+
+  def multi_dim_slice_rows_cmd(self, child):
+    r = child._data[0]
+    if isinstance(r, int): return "#" + str(r)
+    if isinstance(r, slice): return "(: #"+str(r.start)+" #"+str(r.stop)+")"
+    if r == "null": return '"null"'
+    raise NotImplementedError
+
+  def multi_dim_slice_cols_cmd(self, child):
+    if   isinstance(self._left._data, list): return '"null"'
+    elif isinstance(self._left._data,unicode):
+      c = child._data[1]
+      if isinstance(c, int): return "#" + str(c)
+      if isinstance(c, slice): return "(: #"+str(c.start)+" #"+str(c.stop)+")"
+      if c == "null": return '"null"'
+    raise NotImplementedError
 
   def _do_it(self):
     """
@@ -363,7 +421,8 @@ class Expr(object):
     elif self._op == "[":
 
       #   [] = []
-      if left.is_local():    self._data = left._data[rite._data]
+      if isinstance(rite._data, tuple): pass #   multi-dimensional slice
+      elif left.is_local():    self._data = left._data[rite._data]
       #   all rows / columns ([ %fr_key "null" ()) / ([ %fr_key () "null")
       else:                  __CMD__ += ' "null"'
 
@@ -373,8 +432,28 @@ class Expr(object):
       else:
         if rite is None: __CMD__ += "#NaN"
 
-    elif self._op == "floor":
-      if left.is_local():   self._data = [floor(x) for x in left._data]
+    elif self._op in ["floor", "abs"]:
+      if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op == "sign":
+      if left.is_local():   self._data = [cmp(x,0) for x in left._data]
+      else:                 pass
+
+    elif self._op in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", "sinh", "tanh", "acosh", "asinh", "atanh", \
+                      "sqrt", "trunc", "log", "log10", "log1p", "exp", "expm1", "gamma", "lgamma"]:
+      if left.is_local():   self._data = eval("[math." + self._op + "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op in ["cospi", "sinpi", "tanpi", "ceiling", "log2", "digamma", "trigamma"]:
+      if left.is_local():
+        if self._op   == "cospi"   : self._data = eval("[math.cos(math.pi*x) for x in left._data]")
+        elif self._op == "sinpi"   : self._data = eval("[math.sin(math.pi*x) for x in left._data]")
+        elif self._op == "tanpi"   : self._data = eval("[math.tan(math.pi*x) for x in left._data]")
+        elif self._op == "ceiling" : self._data = eval("[math.ceil(x) for x in left._data]")
+        elif self._op == "log2"    : self._data = eval("[math.log(x,2) for x in left._data]")
+        elif self._op == "digamma" : self._data = eval("[scipy.special.polygamma(0,x) for x in left._data]")
+        elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
 
     elif self._op == "month":
@@ -409,7 +488,7 @@ class Expr(object):
     elif self._op == "quantile":
       if left.is_local():   raise NotImplementedError
       else:
-        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
+        rapids_series = "(dlist #"+" #".join([str(x) for x in rite._data])+")"
         __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":

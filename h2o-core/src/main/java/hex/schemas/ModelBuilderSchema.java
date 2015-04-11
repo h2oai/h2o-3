@@ -9,6 +9,7 @@ import water.Key;
 import water.api.*;
 import water.api.ModelParametersSchema.ValidationMessageBase;
 import water.util.DocGen;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -17,16 +18,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
+public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Schema<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
+
+  public static class IcedHashMapStringModelBuilderSchema extends IcedHashMap<String, ModelBuilderSchema> {}
 
   // Input fields
   @API(help="Model builder parameters.")
   public P parameters;
 
   // Output fields
-  @API(help="Model categories this ModelBuilder can build.", direction = API.Direction.OUTPUT)
+  @API(help="The algo name for this ModelBuilder.", direction=API.Direction.OUTPUT)
+  public String algo;
+
+  @API(help="The pretty algo name for this ModelBuilder (e.g., Generalized Linear Model, rather than GLM).", direction=API.Direction.OUTPUT)
+  public String algo_full_name;
+
+  @API(help="Model categories this ModelBuilder can build.", values={ "Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction" }, direction = API.Direction.OUTPUT)
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
@@ -56,9 +65,15 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   /** Factory method to create the model-specific parameters schema. */
   final public P createParametersSchema() {
     P impl = null;
+
+    // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
+    if (ModelBuilderSchema.class == this.getClass()) {
+      return (P)new ModelParametersSchema();
+    }
+
     try {
-    Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
-    impl = (P)parameters_class.newInstance();
+      Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      impl = (P)parameters_class.newInstance();
     }
     catch (Exception e) {
       throw H2O.fail("Caught exception trying to instantiate a builder instance for ModelBuilderSchema: " + this + ": " + e, e);
@@ -108,6 +123,10 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   // Generic filling from the impl
   @Override public S fillFromImpl(B builder) {
     builder.init(false); // check params
+
+    this.algo = builder.getAlgo();
+    this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
+
     this.can_build = builder.can_build();
     job = (JobV2)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
@@ -165,6 +184,10 @@ public abstract class ModelBuilderSchema<B extends ModelBuilder, S extends Model
   public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.put1(','); // the schema and version fields get written before we get called
     ab.putJSON("job", job);
+    ab.put1(',');
+    ab.putJSONStr("algo", algo);
+    ab.put1(',');
+    ab.putJSONStr("algo_full_name", algo_full_name);
     ab.put1(',');
     ab.putJSONAEnum("can_build", can_build);
     ab.put1(',');

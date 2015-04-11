@@ -315,10 +315,6 @@ public final class ParseSetup extends Iced {
                   "Remaining files have been ignored.";
         }
       }
-
-      // guesser chunk uses default
-      if (bv instanceof FileVec && !(bv instanceof UploadFileVec))
-        ((FileVec) bv).clearCachedChunk(0);
     }
 
     /**

@@ -2,7 +2,6 @@ package water.api;
 
 import hex.schemas.ModelBuilderSchema;
 import water.Iced;
-import water.util.IcedHashMap;
 
 // Input fields
 class ModelBuildersBase<I extends Iced, S extends ModelBuildersBase<I, S>> extends Schema<I, S> {
@@ -11,5 +10,5 @@ class ModelBuildersBase<I extends Iced, S extends ModelBuildersBase<I, S>> exten
 
   // Output fields
   @API(help="ModelBuilders", direction=API.Direction.OUTPUT)
-  IcedHashMap<String, ModelBuilderSchema> model_builders;
+  ModelBuilderSchema.IcedHashMapStringModelBuilderSchema model_builders;
 }
