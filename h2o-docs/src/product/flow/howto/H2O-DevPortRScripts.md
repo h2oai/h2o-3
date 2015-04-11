@@ -29,6 +29,19 @@ Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been
 
 Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
 
+<a name="h2operf"></a>
+###`h2o.performance`
+
+To access any exclusively binomial output, use `h2o.performance`, optionally with the corresponding accessor. The accessor can only use the model metrics object created by `h2o.performance`. Each accessor is named for its corresponding field (for example, `h2o.auc`, `h2o.gini`, `h2o.F1`). `h2o.performance` supports all current algorithms except for K-Means. 
+
+If you specify a data frame as a second parameter, H2O will use the specified data frame for scoring. If you do not specify a second parameter, the training metrics for the model metrics object are used. 
+
+###`xval` and `validation` slots
+
+The `xval` slot has been removed, as `nfolds` is not currently supported. 
+
+The `validation` slot has been merged with the `model` slot. 
+
 ###Principal Components Regression (PCR)
 
 Principal Components Regression (PCR) has also been deprecated. To obtain PCR values, create a Principal Components Analysis (PCA) model, then create a GLM model from the scored data from the PCA model. 
@@ -104,6 +117,8 @@ H2O  | H2O-Dev
 
 ###Output
 
+The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`|   | `all`
@@ -151,16 +166,16 @@ H2O Parameter Name | H2O-Dev Parameter Name
  
 The following parameters have been removed: 
  
- - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. >> ?? may be re-added
- - `higher_accuracy`: A logical value indicating whether to use line search. >> tweak beta_eps 
- - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. >> ?may be re-added; on by default
- - `intercept`: Defines factor columns in the model. >> re-added
- - `non_negative`: Specify a non-negative response. >> re-added
+ - `return_all_lambda`: A logical value indicating whether to return every model built during the lambda search. (may be re-added)
+ - `higher_accuracy`: For improved accuracy, adjust the `beta_epsilon` value. 
+ - `strong_rules`: Discards predictors likely to have 0 coefficients prior to model building. (may be re-added as enabled by default)
+ - `intercept`: Defines factor columns in the model. (may be re-added)
+ - `non_negative`: Specify a non-negative response. (may be re-added)
  - `variable_importances`: Variable importances are now computed automatically and displayed in the model output. They have been renamed to *Normalized Coefficient Magnitudes*. 
- - `disable_line_search`: Disables line search for faster model building. >> was for testing only
- - `offset`: Specify a column as an offset. >> -re-added
- - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. >> re-added
- - `n_folds`: 
+ - `disable_line_search`: This parameter has been deprecated, as it was mainly used for testing purposes. 
+ - `offset`: Specify a column as an offset. (may be re-added)
+ - `max_predictors`: Stops training the algorithm if the number of predictors exceeds the specified value. (may be re-added)
+ - `n_folds`: Number of folds for cross-validation (will be re-added)
 
 ###New GLM Parameters
  
@@ -214,6 +229,9 @@ H2O  | H2O-Dev
 
 ###Output
 
+
+The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
+
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$params` | `@allparameters` | `all`
@@ -256,7 +274,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 
 The following parameters have been removed: 
 
-- `dropNACols`:   Drop columns with more than 20% missing values.  >>To be added later?
+- `dropNACols`:   Drop columns with more than 20% missing values. (may be re-added)
 
 ###New K-Means Parameters
 
@@ -279,6 +297,11 @@ H2O  | H2O-Dev
 `init = "none",` | `init = c("Furthest","Random", "PlusPlus"),`
 `seed = 0,` | `seed)`
 `dropNACols = FALSE)` |
+
+###Output
+
+
+The following table provides the component name in H2O and the corresponding component name in H2O-Dev (if supported).
 
 H2O  | H2O-Dev
 ------------- | -------------
@@ -311,9 +334,9 @@ H2O Parameter Name | H2O-Dev Parameter Name
 The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
-- `holdout_fraction`: >>
+- `holdout_fraction`: Fraction of the training data to hold out for validation.
 - `classification_stop`: Classification is now inferred from the data type. 
-- `n_folds`: >>
+- `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
 
@@ -394,6 +417,9 @@ H2O  | H2O-Dev
  &nbsp; | `export_weights_and_biases = FALSE)`
 
 ###Output
+
+
+The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | ------------- 
@@ -478,8 +504,8 @@ H2O  | H2O-Dev
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size` (to be readded by Arno>>)
-`class.sampling.factors = NULL,` | `class_sampling_factors` (to be readded by Arno>>)
+`max.after.balance.size = 5,` | `max_after_balance_size` (to be re-added)
+`class.sampling.factors = NULL,` | `class_sampling_factors` (to be re-added)
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
@@ -488,6 +514,9 @@ H2O  | H2O-Dev
 
 
 ###Output
+
+
+The following table provides the component name in H2O, the corresponding component name in H2O-Dev (if supported), and the model type (binomial, multinomial, or all). Many components are now included in `h2o.performance`; for more information, refer to [(`h2o.performance`)](#h2operf).
 
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
