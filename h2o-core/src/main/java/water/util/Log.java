@@ -262,6 +262,7 @@ abstract public class Log {
     p.setProperty("log4j.logger.org.apache.hadoop",             "WARN");
     p.setProperty("log4j.logger.org.jets3t.service",            "WARN");
     p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR");
+    p.setProperty("log4j.logger.com.brsanthu.googleanalytics",  "ERROR");
 
     // See the following document for information about the pattern layout.
     // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
