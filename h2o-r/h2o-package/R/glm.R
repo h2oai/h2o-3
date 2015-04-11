@@ -5,7 +5,6 @@
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
 #' @param y A character string or index that represent the response variable in the model.
 #' @param training_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
-#' @param ...
 #' @param destination_key (Optional) An unique hex key assigned to the resulting model. If none is given, a key will automatically be generated.
 #' @param validation_frame An \code{\linkS4class{H2OFrame}} object containing the variables in the model.
 #' @param max_iter A non-negative integer specifying the maximum number of iterations.
@@ -15,7 +14,7 @@
 #' @param standardize A logical value indicating whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to
 #'        training the models.
 #' @param family A character string specifying the distribution of the model:  gaussian, binomial, poisson, gamma, tweedie.
-#' @param link A character string specifying the link function. The default is the canonical link for the \code{family}. The supported links for each of 
+#' @param link A character string specifying the link function. The default is the canonical link for the \code{family}. The supported links for each of
 #'        the \code{family} specifications are:
 #'        \code{"gaussian"}: \code{"identity"}, \code{"log"}, \code{"inverse"}\cr
 #'        \code{"binomial"}: \code{"logit"}, \code{"log"}\cr
@@ -30,17 +29,18 @@
 #'                making \code{alpha = 1} the lasso penalty and \code{alpha = 0} the ridge penalty.
 #' @param lambda A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta)} in the objective function.
 #'               When \code{lambda = 0}, no elastic-net penalty is applied and ordinary generalized linear models are fit.
-#' @param prior1 (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}. 
+#' @param prior1 (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}.
 #'               The default prior is the observational frequency of class 1.
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
 #' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
-#' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the 
+#' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
 #'                         of variables then \code{lambda_min_ratio} = 0.01.
 #' @param use_all_factor_levels A logical value indicating whether dummy variables should be used for all factor levels of the categorical predictors.
 #'                              When \code{TRUE}, results in an over parameterized models.
 #' @param n_folds (Currently Unimplemented)
+#' @param ...
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
@@ -61,7 +61,7 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
                     use_all_factor_levels = FALSE,
-                    nfolds = 0,
+                    nfolds,
                     beta_constraints = NULL,
                     ...
                     )
@@ -188,20 +188,56 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
                error = function(err) {
                  stop("argument \"training_frame\" must be a valid H2OFrame or key")
               })
-#required map for params with different names, assuming it will change in the RESTAPI end
-    .glm.map <- c("x" = "ignored_columns",
-                  "y" = "response_column",
-                  "key" = "destination_key")
 
-    parms <- as.list(match.call(expand.dots = FALSE)[-1L])
-    parms$... <- NULL
-
+    parms <- list()
     args <- .verify_dataxy(training_frame, x, y)
-    parms$x <- args$x_ignore
-    parms$y <- args$y
+    parms$ignored_columns <- args$x_ignore
+    parms$response_column <- args$y
     parms$training_frame  = training_frame
     parms$beta_constraints = beta_constraints
-    names(parms) <- lapply(names(parms), function(i) { if (i %in% names(.glm.map)) i <- .glm.map[[i]]; i })
+    if(!missing(destination_key))
+      parms$destination_key <- destination_key
+    if(!missing(validation_frame))
+      parms$validation_frame <- validation_frame
+    if(!missing(max_iterations))
+      parms$max_iterations <- max_iterations
+    if(!missing(beta_epsilon))
+      parms$beta_epsilon <- beta_epsilon
+    if(!missing(balance_classes))
+      parms$balance_classes <- balance_classes
+    if(!missing(class_sampling_factors))
+      parms$class_sampling_factors <- class_sampling_factors
+    if(!missing(max_after_balance_size))
+      parms$max_after_balance_size <- max_after_balance_size
+    if(!missing(solver))
+      parms$solver <- solver
+    if(!missing(standardize))
+      parms$standardize <- standardize
+    if(!missing(family))
+      parms$family <- family
+    if(!missing(link))
+      parms$link <- link
+    if(!missing(tweedie_variance_power))
+      parms$tweedie_variance_power <- tweedie_variance_power
+    if(!missing(tweedie_link_power))
+      parms$tweedie_link_power <- tweedie_link_power
+    if(!missing(alpha))
+      parms$alpha <- alpha
+    if(!missing(prior))
+      parms$prior <- prior
+    if(!missing(lambda))
+      parms$lambda <- lambda
+    if(!missing(lambda_search))
+      parms$lambda_search <- lambda_search
+    if(!missing(nlambdas))
+      parms$nlambdas <- nlambdas
+    if(!missing(lambda_min_ratio))
+      parms$lambda_min_ratio <- lambda_min_ratio
+    if(!missing(use_all_factor_levels))
+      parms$use_all_factor_levels <- use_all_factor_levels
+    if(!missing(nfolds))
+      parms$nfolds <- nfolds
+
     .h2o.startModelJob(training_frame@conn, 'glm', parms)
 }
 
