@@ -29,11 +29,7 @@ class RapidsHandler extends Handler {
     Env env = null;
     try {
       //learn all fcns
-      if(rapids.funs != null) {
-        for (String f : rapids.funs) {
-          water.rapids.Exec.new_func(f);
-        }
-      }
+      if( rapids.fun!=null ) water.rapids.Exec.new_func(rapids.fun);
       if (rapids.ast == null || rapids.ast.equals("")) return rapids;
       env = water.rapids.Exec.exec(rapids.ast);
       StringBuilder sb = env._sb;
@@ -52,6 +48,10 @@ class RapidsHandler extends Handler {
           rapids.num_cols = 0;
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
+            sb.append(rapids.string);
+            rapids.result_type = RapidsV1.ARYSTR;
+          } else if (fr.anyVec().isString()) {
+            rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
             sb.append(rapids.string);
             rapids.result_type = RapidsV1.ARYSTR;
           } else {

@@ -1,6 +1,6 @@
 # GLM Tutorial
 
-The purpose of this tutorial is to walk new users through Generalized Linear Analysis (GLM) using H2O Flow.
+This tutorial describes how to create a Generalized Linear Analysis (GLM) model using H2O Flow.
 
 Those who have never used H2O before should refer to <a href="https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/flow/README.md" target="_blank">Getting Started</a> for additional instructions on how to run H2O Flow.
 
