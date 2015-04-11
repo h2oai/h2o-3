@@ -8,7 +8,7 @@ remoteH2O = h2o.init(ip = myIP, port = as.numeric(myPort), startH2O = FALSE)
 
 prostate.hex = h2o.uploadFile(remoteH2O, path = system.file("extdata", "prostate.csv", package="h2o"), key = "prostate.hex")
 summary(prostate.hex)
-prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", data = prostate.hex, family = "binomial", nfolds = 10, alpha = 0.5)
+prostate.glm = h2o.glm(x = c("AGE","RACE","PSA","DCAPS"), y = "CAPSULE", training_frame = prostate.hex, family = "binomial", alpha = 0.5)
 print(prostate.glm)
 
 myLabels = c(prostate.glm@model$x, "Intercept")
