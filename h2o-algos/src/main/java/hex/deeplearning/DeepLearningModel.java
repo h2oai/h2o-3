@@ -437,6 +437,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
+      dl.hide("_score_each_iteration", "Not used by Deep Learning.");
       boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
