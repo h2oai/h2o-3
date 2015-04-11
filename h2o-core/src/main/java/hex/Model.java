@@ -579,8 +579,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *    }
    *  </pre>
    */
-  public final String toJava() { return toJava(new SB()).toString(); }
-  public SB toJava( SB sb ) {
+  public final String toJava(boolean preview) { return toJava(new SB(), preview).toString(); }
+  public SB toJava( SB sb, boolean preview ) {
     SB fileContext = new SB();  // preserve file context
     String modelName = JCodeGen.toJavaId(_key.toString());
     // HEADER
@@ -598,6 +598,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    if (preview && toJavaCheckTooBig()) {
+      sb.nl();
+      sb.nl();
+      sb.p("//").nl();
+      sb.p("// NOTE:  Java model is too large to preview, please download as shown above.").nl();
+      sb.p("//").nl();
+      return sb;
+    }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.nl();
@@ -637,6 +645,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return sb.ip("};").nl();
   }
   protected SB toJavaPROB( SB sb) { return sb; }
+  protected boolean toJavaCheckTooBig() {
+    Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
+    return true;
+  }
   // Override in subclasses to provide some top-level model-specific goodness
   protected SB toJavaInit(SB sb, SB fileContext) { return sb; }
   // Override in subclasses to provide some inside 'predict' call goodness
@@ -689,7 +701,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
 
       String modelName = JCodeGen.toJavaId(_key.toString());
-      String java_text = toJava();
+      boolean preview = false;
+      String java_text = toJava(preview);
       //System.out.println(java_text);
       GenModel genmodel;
       try { 

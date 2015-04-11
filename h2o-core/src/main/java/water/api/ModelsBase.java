@@ -9,6 +9,9 @@ class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends Schema<I,
   @API(help="Key of Model of interest", json=false) // TODO: no validation yet, because right now fields are required if they have validation.
   public ModelKeyV1 key;
 
+  @API(help="Return potentially abridged model suitable for viewing in a browser", json=false, required=false, direction=API.Direction.INPUT)
+  public boolean preview = false;
+
   @API(help="Find and return compatible frames?", json=false, direction=API.Direction.INPUT)
   public boolean find_compatible_frames = false;
 

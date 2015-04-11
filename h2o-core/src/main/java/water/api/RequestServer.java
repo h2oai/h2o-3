@@ -165,6 +165,8 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
       "Delete all Frames from the H2O distributed K/V store.");
+    register("/3/Models/(?<key>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"key"},
+      "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
@@ -594,7 +596,9 @@ public class RequestServer extends NanoHTTPD {
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
-        return wrap(handle(type,route,version,parms),type);
+        Schema s = handle(type, route, version, parms);
+        Response r = wrap(s, type);
+        return r;
       }
     }
     catch (H2OFailException e) {
@@ -697,7 +701,7 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava());
+      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
