@@ -50,7 +50,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "score_duty_cycle",
         "classification_stop",
         "regression_stop",
-        "max_hit_ratio_k",
         "score_validation_sampling",
         "diagnostics",
         "fast_mode",
@@ -62,7 +61,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
         "shuffle_training_data",
         "missing_values_handling",
         "quiet_mode",
-        "max_confusion_matrix_size",
         "autoencoder",
         "sparse",
         "col_major",
@@ -408,20 +406,6 @@ public class DeepLearningV2 extends SupervisedModelBuilderSchema<DeepLearning,De
      */
     @API(help = "Enable quiet mode for less output to standard output", level = API.Level.expert, direction=API.Direction.INOUT)
     public boolean quiet_mode;
-
-    /**
-     * For classification models, the maximum size (in terms of classes) of the
-     * confusion matrix for it to be printed. This option is meant to avoid printing
-     * extremely large confusion matrices.
-     */
-    @API(help = "Max. size (number of classes) for confusion matrices to be shown", level = API.Level.expert, direction=API.Direction.INOUT)
-    public int max_confusion_matrix_size;
-
-    /**
-     * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-     */
-    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", /* lmin=0, */ level = API.Level.expert, direction=API.Direction.INOUT)
-    public int max_hit_ratio_k;
 
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.

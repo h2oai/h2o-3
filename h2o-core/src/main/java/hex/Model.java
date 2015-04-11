@@ -68,11 +68,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
 
-    /** For classification models, the maximum size (in terms of classes) of
-     *  the confusion matrix for it to be printed. This option is meant to
-     *  avoid printing extremely large confusion matrices.  */
-    public int _max_confusion_matrix_size = 20;
-
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
                           _dropConsCols = defaultDropConsCols(); }
@@ -450,8 +445,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
-          water.util.Log.info(cm.table().toString(1));
+        if( cm._cm.length < ((SupervisedModel.SupervisedParameters)_parms)._max_confusion_matrix_size/*Print size limitation*/ ) {
+          Log.info(cm.table().toString(1));
         }
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
@@ -625,7 +620,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
+  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
