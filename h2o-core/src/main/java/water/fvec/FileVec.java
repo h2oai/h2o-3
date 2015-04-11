@@ -35,11 +35,24 @@ public abstract class FileVec extends ByteVec {
    * @param chunkSize requested chunk size to be used when parsing
    * @return actual _chunkSize setting
    */
-  public int setChunkSize(int chunkSize) {
+  public int setChunkSize(int chunkSize) { return setChunkSize(null, chunkSize); }
+  public int setChunkSize(Frame fr, int chunkSize) {
     if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
     if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
     _log2ChkSize = water.util.MathUtils.log2(chunkSize);
-    return _chunkSize = 1 << _log2ChkSize;
+    _chunkSize = 1 << _log2ChkSize;
+
+    //Now reset the chunk size on each node
+    Futures fs = new Futures();
+    DKV.put(_key, this, fs);
+    // also update Frame to invalidate local caches
+    if (fr != null ) {
+      fr.reloadVecs();
+      DKV.put(fr._key, fr, fs);
+    }
+    fs.blockForPending();
+
+    return _chunkSize;
   }
 
   @Override public long length() { return _len; }
@@ -151,21 +164,28 @@ public abstract class FileVec extends ByteVec {
    * Removes a chunk from the DKV.
    * <p>
    * Peaking into a file before the chunkSize has been calculated
-   * will cause the first chunk of the file to be DFLT_CHUNK_SIZE.
+   * will viewed chunks of the file to be DFLT_CHUNK_SIZE.
    * If this side-effect is not reversed then when
    * _chunkSize differs from the default value, parsing will either
    * double read sections (_chunkSize < DFLT_CHUNK_SIZE) or skip
    * data (_chunkSize > DFLT_CHUNK_SIZE).
    * This method reverses this side-effect.
    * </p>
-   * @param cidx
+   * @param
    */
-  public void clearCachedChunk(int cidx) {
-    Key cckey = chunkKey(cidx);
-    if (DKV.get(cckey) != null) {
-      Futures fs = new Futures();
-      DKV.remove(cckey, fs);
-      fs.blockForPending();
-    }
+  public void clearAllCachedChunks() {
+    new MRTask() {
+      @Override public void map (Chunk[]cs){
+        Futures fs = new Futures();
+        int nChunks = cs.length;
+        for (int i=0; i < nChunks; i++) {
+          Key cckey = chunkKey(cs[i].cidx());
+          if (DKV.get(cckey) != null) {
+            DKV.remove(cckey, fs);
+          }
+        }
+        fs.blockForPending();
+      }
+    }.doAll(this);
   }
 }

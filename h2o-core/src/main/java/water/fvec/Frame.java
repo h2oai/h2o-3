@@ -877,7 +877,8 @@ public class Frame extends Lockable<Frame> {
               last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
           }
           for (int c = 0; c < vecs.length; c++)
-            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c],r);
+            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c], r);
+            else if( vecs[c].isString() ) ncs[c].addStr(last_cs[c],r);
             else                   ncs[c].addNum (last_cs[c].at_abs(r));
         }
       }

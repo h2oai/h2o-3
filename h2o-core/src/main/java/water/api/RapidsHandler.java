@@ -54,6 +54,10 @@ class RapidsHandler extends Handler {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
             sb.append(rapids.string);
             rapids.result_type = RapidsV1.ARYSTR;
+          } else if (fr.anyVec().isString()) {
+            rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+            sb.append(rapids.string);
+            rapids.result_type = RapidsV1.ARYSTR;
           } else {
             rapids.scalar = fr.anyVec().at(0);
             sb.append(Double.toString(rapids.scalar));

@@ -127,11 +127,11 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
         # have to put quotes around the individual list items
-        source_keys = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+        source_keys = "[" + ",".join(map((lambda x: '"' + x + '"'), key)) + "]"
 
     else:
         # what if None here
-        source_keys = "['" + key + "']" # quotes required on key
+        source_keys = '["' + key + '"]' # quotes required on key
 
     params_dict['source_keys'] = source_keys
 
@@ -154,14 +154,14 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # this should match what we gave as input?
     if setup_result['source_keys']:
         # should these be quoted?
-        source_keysStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
+        source_keysStr = "[" + ",".join([('"%s"' % src['name']) for src in setup_result['source_keys'] ]) + "]"
     else:
         source_keysStr = None
-    
+
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
     if setup_result['column_names']:
-        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['column_names'])) + "]"
+        columnNamesStr = "[" + ",".join(map((lambda x: '"' + x + '"'), setup_result['column_names'])) + "]"
     else:
         columnNamesStr = None
 
@@ -169,7 +169,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
 
     if setup_result['na_strings']:
-	naStrings = "[" + ",".join(map((lambda x: "'" + x + "'" if x != None else "''"), setup_result['na_strings'])) + "]"
+	naStrings = "[" + ",".join(map((lambda x: '"' + x + '"' if x != None else '""'), setup_result['na_strings'])) + "]"
     else:
         naStrings = None
 
@@ -194,7 +194,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
             else:
                 raise Exception("%s %s should be int or string" % (k, type(k)))
 
-    columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
+    columnTypesStr = "[" + ",".join(map((lambda x: '"' + x + '"'), ct)) + "]"
 
 
     parse_params = {
