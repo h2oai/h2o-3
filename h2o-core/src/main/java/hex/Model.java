@@ -1,5 +1,6 @@
 package hex;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import hex.genmodel.GenModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -452,6 +453,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
           water.util.Log.info(cm.table().toString(1));
         }
+      if (mm.hr() != null) {
+        Log.info(getHitRatioTable(mm.hr()));
+      }
 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
