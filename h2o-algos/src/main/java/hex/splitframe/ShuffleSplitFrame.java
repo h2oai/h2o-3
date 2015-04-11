@@ -43,7 +43,7 @@ public class ShuffleSplitFrame {
             byte colType = cs[j].vec().get_type();
             switch (colType) {
               case Vec.T_BAD : break; /* NOP */
-              case Vec.T_STR : ncs[x + j].addStr(cs[j].atStr(vstr, i)); break;
+              case Vec.T_STR : ncs[x + j].addStr(cs[j], i); break;
               case Vec.T_UUID: ncs[x + j].addUUID(cs[j], i); break;
               case Vec.T_NUM : /* fallthrough */
               case Vec.T_ENUM:

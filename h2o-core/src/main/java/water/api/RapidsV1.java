@@ -12,7 +12,7 @@ public class RapidsV1 extends Schema<Iced, RapidsV1> {
 
   // Input fields
   @API(help="An Abstract Syntax Tree."            , direction=API.Direction.INPUT) String ast;
-  @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String[] funs;
+  @API(help="An array of function definitions."   , direction=API.Direction.INPUT) String fun;
   @API(help="A pointer to a Frame"                , direction=API.Direction.INPUT) KeyV1 ast_key;
 
   // Output
