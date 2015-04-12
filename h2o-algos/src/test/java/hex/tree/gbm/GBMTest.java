@@ -3,8 +3,7 @@ package hex.tree.gbm;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.fvec.RebalanceDataSet;
 import water.util.Log;
 
@@ -508,7 +507,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  // HDEXDEV-194 Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  // HEXDEV-194: Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
   @Test public void testReprodubility() {
     Frame tfr=null;
     final int N = 5;
@@ -557,7 +556,7 @@ public class GBMTest extends TestUtil {
     for( double mse : mses ) assertEquals(mse, mses[0], 1e-15);
   }
 
-  // PUBDEV-557 Test dependency on # nodes (for small number of bins, but fixed number of chunks)
+  // PUBDEV-557: Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Test public void testReprodubilityAirline() {
     Frame tfr=null;
     final int N = 1;
@@ -654,4 +653,40 @@ public class GBMTest extends TestUtil {
     for( double mse : mses ) assertEquals(0.0142093, mse, 1e-6);
   }
 
+  // Test uses big data and is too slow for a pre-push
+  @Test @Ignore public void testCUST_A() {
+    Frame tfr=null;
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("../standard/test_rev2.zip");
+      tfr.remove("device_ip").remove();
+      tfr.remove("device_id").remove();
+      int idx = tfr.find("C24");
+      Vec old = tfr.vecs()[idx];
+      tfr.replace(idx,old.toEnum());
+      old.remove();
+      DKV.put(tfr);
+
+      // Same parms for all
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = null;
+      parms._response_column = "C24";
+      parms._ntrees = 600;
+      parms._max_depth = 3;
+      parms._nbins = 20;
+      parms._min_rows = 20;
+      parms._learn_rate = 0.01f;
+      parms._loss = Family.multinomial;
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      job.remove();
+      gbm.delete();
+    } finally {
+      if (tfr  != null) tfr.remove();
+      Scope.exit();
+    }
+  }
 }

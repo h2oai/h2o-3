@@ -47,7 +47,7 @@ def loss_behaviorGBM(ip,port):
   assert isinstance(eco_model,h2o.model.binomial.H2OBinomialModel)
   # 2 level character response: expect bernoulli
   tree = h2o.import_frame(path=h2o.locate("smalldata/junit/test_tree_minmax.csv"))
-  tree_model = h2o.gbm(x=tree[0:3], y=tree["response"], loss="bernoulli")
+  tree_model = h2o.gbm(x=tree[0:3], y=tree["response"], loss="bernoulli", min_rows=1)
   assert isinstance(tree_model,h2o.model.binomial.H2OBinomialModel)
   # more than two integers for response: expect error
   try:

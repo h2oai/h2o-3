@@ -15,6 +15,7 @@ import java.util.Comparator;
  *  Frame to be scored.
  */
 public class ModelMetrics extends Keyed<ModelMetrics> {
+  public String _description;
   final Key _modelKey;
   final Key _frameKey;
   final Model.ModelCategory _model_category;
@@ -25,8 +26,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   public final double _mse;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
 
-  public ModelMetrics(Model model, Frame frame, double mse) {
+  public ModelMetrics(Model model, Frame frame, double mse, String desc) {
     super(buildKey(model, frame));
+    _description = desc;
     _modelKey = model._key;
     _frameKey = frame._key;
     _model_category = model._output.getModelCategory();

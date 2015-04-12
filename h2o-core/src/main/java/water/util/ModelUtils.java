@@ -48,6 +48,7 @@ public class ModelUtils {
    * @return corrected list of probabilities
    */
   public static double[] correctProbabilities(double[] scored, double[] priorClassDist, double[] modelClassDist) {
+    if( priorClassDist == modelClassDist ) return scored; // Shortcut if not correcting for probs
     double probsum=0;
     for( int c=1; c<scored.length; c++ ) {
       final double original_fraction = priorClassDist[c-1];
