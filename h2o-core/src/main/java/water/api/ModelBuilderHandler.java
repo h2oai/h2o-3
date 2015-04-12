@@ -25,7 +25,7 @@ abstract public class ModelBuilderHandler<B extends ModelBuilder, S extends Mode
     }
 
     Job j = builder.trainModel();
-    builderSchema.job = (JobV2) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
+    builderSchema.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(j); // TODO: version
 
     // copy warnings and infos; errors will cause an H2OModelBuilderIllegalArgumentException to be thrown above,
     // resulting in an H2OErrorVx to be returned.

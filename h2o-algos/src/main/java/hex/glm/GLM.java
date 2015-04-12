@@ -16,7 +16,7 @@ import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS;
 import hex.optimization.L_BFGS.*;
-import hex.schemas.GLMV2;
+import hex.schemas.GLMV3;
 import hex.schemas.ModelBuilderSchema;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -268,7 +268,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
   }
   @Override
   public ModelBuilderSchema schema() {
-    return new GLMV2();
+    return new GLMV3();
   }
 
 

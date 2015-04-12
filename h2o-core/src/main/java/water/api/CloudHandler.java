@@ -6,7 +6,7 @@ import water.Paxos;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public CloudV1 status(int version, CloudV1 cloud) {
+  public CloudV3 status(int version, CloudV3 cloud) {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
 
@@ -29,9 +29,9 @@ class CloudHandler extends Handler {
     cloud.bad_nodes = 0;
     cloud.cloud_healthy = true;
     if (null != members) {
-        cloud.nodes = new CloudV1.NodeV1[members.length];
+        cloud.nodes = new CloudV3.NodeV1[members.length];
         for (int i = 0; i < members.length; i++) {
-          cloud.nodes[i] = new CloudV1.NodeV1(members[i]);
+          cloud.nodes[i] = new CloudV3.NodeV1(members[i]);
           if (! cloud.nodes[i].healthy) {
             cloud.cloud_healthy = false;
             cloud.bad_nodes++;

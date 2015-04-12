@@ -509,7 +509,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       }
 
       for( int i=0; i<splits.length; i++ ) {
-        if (String.class == afclz || KeyV1.class.isAssignableFrom(afclz)) {
+        if (String.class == afclz || KeyV3.class.isAssignableFrom(afclz)) {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
 
@@ -540,41 +540,41 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       else if (!required && (s == null || s.length() == 0)) return null;
       else return Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s); // If the key name is in an array we need to trim surrounding quotes.
 
-    if( KeyV1.class.isAssignableFrom(fclz) ) {
+    if( KeyV3.class.isAssignableFrom(fclz) ) {
       if ((s == null || s.length() == 0) && required) throw new H2OKeyNotFoundArgumentException(field_name, s);
       if (!required && (s == null || s.length() == 0)) return null;
 
-      return KeyV1.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
+      return KeyV3.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
     if( Enum.class.isAssignableFrom(fclz) )
       return Enum.valueOf(fclz,s);
 
     // TODO: these can be refactored into a single case using the facilities in Schema:
-    if( FrameV2.class.isAssignableFrom(fclz) )
+    if( FrameV3.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(field_name, s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
         if (! v.isFrame()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Frame", v.get().getClass());
-        return new FrameV2((Frame) v.get()); // TODO: version!
+        return new FrameV3((Frame) v.get()); // TODO: version!
       }
 
-    if( JobV2.class.isAssignableFrom(fclz) )
+    if( JobV3.class.isAssignableFrom(fclz) )
       if( (s==null || s.length()==0) && required ) throw new H2OKeyNotFoundArgumentException(s);
       else if (!required && (s == null || s.length() == 0)) return null;
       else {
         Value v = DKV.get(s);
         if (null == v) return null; // not required
         if (! v.isJob()) throw H2OIllegalArgumentException.wrongKeyType(field_name, s, "Job", v.get().getClass());
-        return new JobV2().fillFromImpl((Job) v.get()); // TODO: version!
+        return new JobV3().fillFromImpl((Job) v.get()); // TODO: version!
       }
 
     // TODO: for now handle the case where we're only passing the name through; later we need to handle the case
     // where the frame name is also specified.
-    if ( FrameV2.ColSpecifierV2.class.isAssignableFrom(fclz)) {
-        return new FrameV2.ColSpecifierV2(s);
+    if ( FrameV3.ColSpecifierV2.class.isAssignableFrom(fclz)) {
+        return new FrameV3.ColSpecifierV2(s);
     }
 
     if( ModelSchema.class.isAssignableFrom(fclz) )

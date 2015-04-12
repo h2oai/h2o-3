@@ -10,7 +10,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.*;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV2;
+import hex.schemas.PCAV3;
 import hex.gram.Gram.GramTask;
 import hex.FrameTask;
 import hex.gram.Gram.NonSPDMatrixException;
@@ -44,7 +44,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV2();
+    return new PCAV3();
   }
 
   @Override

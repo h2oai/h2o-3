@@ -1326,7 +1326,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   use_hex_string <- getRversion() >= "3.1"
 
   url <- paste0('http://', x@conn@ip, ':', x@conn@port,
-                '/2/DownloadDataset',
+                '/3/DownloadDataset',
                 '?key=', URLencode(x@key),
                 '&hex_string=', as.numeric(use_hex_string))
 
