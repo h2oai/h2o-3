@@ -516,7 +516,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           if ("null".equals(stripped)) {
             a[i] = null;
           } else if (! stripped.startsWith("\"") || ! stripped.endsWith("\"")) {
-            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be quoted, but the client sent: " + stripped;
+            String msg = "Illegal argument for field: " + field_name + " of schema: " + this.getClass().getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
 
             IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             values.put("function", fclz.getSimpleName() + ".fillFromParms()");
