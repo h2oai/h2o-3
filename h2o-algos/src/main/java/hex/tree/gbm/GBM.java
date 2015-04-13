@@ -1,7 +1,7 @@
 package hex.tree.gbm;
 
 import hex.Model;
-import hex.schemas.GBMV2;
+import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -29,7 +29,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
 
-  @Override public GBMV2 schema() { return new GBMV2(); }
+  @Override public GBMV3 schema() { return new GBMV3(); }
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> trainModel() {

@@ -3,7 +3,7 @@ package hex.deeplearning;
 import hex.*;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-import hex.schemas.DeepLearningModelV2;
+import hex.schemas.DeepLearningModelV3;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -663,7 +663,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   }
 
   // Default publicly visible Schema is V2
-  public ModelSchema schema() { return new DeepLearningModelV2(); }
+  public ModelSchema schema() { return new DeepLearningModelV3(); }
 
   private volatile DeepLearningModelInfo model_info;
   void set_model_info(DeepLearningModelInfo mi) { model_info = mi; }
