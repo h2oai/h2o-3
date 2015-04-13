@@ -195,4 +195,13 @@ public abstract class GenModel {
     for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
     preds[0] = getPrediction(preds, data); 
   }
+
+  // --------------------------------------------------------------------------
+  // GLM utilities
+  public static double GLM_identityInv( double x ) { return x; }
+  public static double GLM_logitInv( double x ) { return 1.0 / (Math.exp(-x) + 1.0); }
+  public static double GLM_logInv( double x ) { return Math.exp(x); }
+  public static double GLM_inverseInv( double x ) {  double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x); return 1.0 / xx; }
+  public static double GLM_tweedieInv( double x, double tweedie_link_power ) { return Math.pow(x, 1/ tweedie_link_power); }
+
 }
