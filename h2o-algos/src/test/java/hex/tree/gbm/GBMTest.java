@@ -3,8 +3,7 @@ package hex.tree.gbm;
 import hex.tree.gbm.GBMModel.GBMParameters.Family;
 import org.junit.*;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.fvec.RebalanceDataSet;
 import water.util.Log;
 
@@ -652,5 +651,42 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses ) assertEquals(0.0142093, mse, 1e-6);
+  }
+
+  // Test uses big data and is too slow for a pre-push
+  @Test @Ignore public void testCUST_A() {
+    Frame tfr=null;
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("../standard/test_rev2.zip");
+      tfr.remove("device_ip").remove();
+      tfr.remove("device_id").remove();
+      int idx = tfr.find("C24");
+      Vec old = tfr.vecs()[idx];
+      tfr.replace(idx,old.toEnum());
+      old.remove();
+      DKV.put(tfr);
+
+      // Same parms for all
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._valid = null;
+      parms._response_column = "C24";
+      parms._ntrees = 600;
+      parms._max_depth = 3;
+      parms._nbins = 20;
+      parms._min_rows = 20;
+      parms._learn_rate = 0.01f;
+      parms._loss = Family.multinomial;
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+
+      job.remove();
+      gbm.delete();
+    } finally {
+      if (tfr  != null) tfr.remove();
+      Scope.exit();
+    }
   }
 }

@@ -336,6 +336,16 @@ public class NewChunk extends Chunk {
     assert sparseLen() <= _len;
   }
 
+  public void addStr(Chunk c, long row) {
+    if( c.isNA_abs(row) ) addNA();
+    else addStr(c.atStr_abs(new ValueString(), row));
+  }
+
+  public void addStr(Chunk c, int row) {
+    if( c.isNA(row) ) addNA();
+    else addStr(c.atStr(new ValueString(), row));
+  }
+
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
     if( _ls==null || _ds== null || sparseLen() >= _ls.length )

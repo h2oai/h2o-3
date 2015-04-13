@@ -9,7 +9,6 @@ import java.net.Socket;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -595,7 +594,7 @@ public class NanoHTTPD
             String key = parms.getProperty("key");
             boolean nps = Pattern.matches("/[^/]+/NodePersistentStorage.*", uri);
             if (nps) {
-              Pattern p = Pattern.compile(".*NodePersistentStorage.json/([^/]+)/([^/]+)");
+              Pattern p = Pattern.compile(".*NodePersistentStorage/([^/]+)/([^/]+)");
               Matcher m = p.matcher(uri);
               boolean b = m.matches();
               if (!b) {
@@ -623,14 +622,14 @@ public class NanoHTTPD
             if (!validKeyName(destination_key)) {
               sendError(HTTP_BADREQUEST, "Invalid key name, contains illegal characters");
             }
-            boolean uploadFile = Pattern.matches("/PostFile.json", uri) ||               // no version
-                                 Pattern.matches("/[1-9][0-9]*/PostFile.json", uri) ||   // numbered version
-                                 Pattern.matches("/LATEST/PostFile.json", uri);          // use LATEST
+            boolean uploadFile = Pattern.matches("/PostFile", uri) ||               // no version
+                                 Pattern.matches("/[1-9][0-9]*/PostFile", uri) ||   // numbered version
+                                 Pattern.matches("/LATEST/PostFile", uri);          // use LATEST
             if (uploadFile) {
               //
               // Here is an example of how to upload a file from the command line.
               //
-              // curl -v -F "file=@allyears2k_headers.zip" "http://localhost:54321/PostFile.json?key=a.zip"
+              // curl -v -F "file=@allyears2k_headers.zip" "http://localhost:54321/PostFile?key=a.zip"
               //
               // This call is handled as a POST request in method NanoHTTPD#fileUpload
               //

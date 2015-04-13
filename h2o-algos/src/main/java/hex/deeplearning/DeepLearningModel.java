@@ -437,6 +437,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     void validate( DeepLearning dl, boolean expensive ) {
+      dl.hide("_score_each_iteration", "Not used by Deep Learning.");
       boolean classification = expensive || dl._nclass != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
 
@@ -450,13 +451,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           dl.hide("_regression_stop", "regression_stop is used only with regression.");
         } else {
           dl.hide("_classification_stop", "classification_stop is used only with classification.");
-          dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
-          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-          dl.hide("_balance_classes", "balance_classes is used only with classification.");
+//          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+//          dl.hide("_balance_classes", "balance_classes is used only with classification.");
         }
 
-        if( !classification || !_balance_classes )
-          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+//        if( !classification || !_balance_classes )
+//          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
 
 
         if (!classification && _valid != null || _valid == null)
@@ -645,8 +645,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     TwoDimTable model_summary;
     TwoDimTable scoring_history;
     TwoDimTable variable_importances;
-    ModelMetrics train_metrics;
-    ModelMetrics valid_metrics;
     double run_time;
 
     public String toString() {
@@ -708,7 +706,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
-      default: throw H2O.unimpl("Invalid Modelcategory " + _output.getModelCategory());
+      default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
     }
   }
 
@@ -1725,7 +1723,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
-          _output.train_metrics = mm1;
+          _output._training_metrics = mm1;
+          if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
+            _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
+          }
           _output.run_time = run_time;
 
           if (ftest != null) {
@@ -1748,7 +1749,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
-              _output.valid_metrics = mm2;
+              _output._validation_metrics = mm2;
+              if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
+                _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";
+                if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
+                  _output._validation_metrics._description += " (stratified sampling)";
+                }
+              }
             }
           }
         }

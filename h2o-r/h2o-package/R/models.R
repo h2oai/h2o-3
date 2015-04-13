@@ -91,18 +91,12 @@
 
 
 
-.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params, envir) {
+.h2o.startModelJob <- function(conn = h2o.getConnection(), algo, params) {
   .key.validate(params$key)
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(conn, method = "GET", .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
 
-  params <- lapply(as.list(params), function(i) {
-                     if (is.name(i))    i <- get(deparse(i), envir)
-                     if (is.call(i))    i <- eval(i, envir)
-                     if (is.integer(i)) i <- as.numeric(i)
-                     i
-                   })
-
+  params <- lapply(params, function(x) {if(is.integer(x)) x <- as.numeric(x); x})
   #---------- Check user parameter types ----------#
   error <- lapply(ALL_PARAMS, function(i) {
     e <- ""
@@ -186,7 +180,7 @@
   new("H2OModelFuture",h2o=conn, job_key=job_key, destination_key=dest_key)
 }
 
-.h2o.createModel <- function(conn = h2o.getConnection(), algo, params, envir) {
+.h2o.createModel <- function(conn = h2o.getConnection(), algo, params) {
  params$training_frame <- get("training_frame", parent.frame())
  delete_train <- !.is.eval(params$training_frame)
  if (delete_train) {
@@ -201,7 +195,7 @@
       .h2o.eval.frame(conn = conn, ast = params$validation_frame@mutable$ast, key = temp_valid_key)
     }
   }
-  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params, envir))
+  h2o.getFutureModel(.h2o.startModelJob(conn, algo, params))
 }
 
 h2o.getFutureModel <- function(object) {
@@ -222,7 +216,7 @@ predict.H2OModel <- function(object, newdata, ...) {
   }
 
   # Send keys to create predictions
-  url <- paste0('Predictions.json/models/', object@key, '/frames/', newdata@key)
+  url <- paste0('Predictions/models/', object@key, '/frames/', newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method = "POST")
   res <- res$model_metrics[[1L]]$predictions
 
@@ -235,17 +229,6 @@ predict.H2OModel <- function(object, newdata, ...) {
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)
 {
   output <- data.frame()
-  dots <- list(...)
-
-  for(type in dots)
-    if (is.environment(type))
-    {
-      dots$envir <- type
-      type <- NULL
-    }
-  if (is.null(dots$envir))
-    dots$envir <- parent.frame()
-#   params$envir <- l$envir
 
   if( nfolds < 2 ) stop("`nfolds` must be greater than or equal to 2")
   if( missing(model) & missing(model.type) ) stop("must declare `model` or `model.type`")
@@ -255,14 +238,14 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
     else if(model.type == "glm") model.type = "h2o.glm"
     else if(model.type == "deeplearning") model.type = "h2o.deeplearning"
 
-    model <- do.call(model.type, c(params, envir = dots$envir))
+    model <- do.call(model.type, c(params))
   }
   output[1, "fold_num"] <- -1
   output[1, "model_key"] <- model@key
   # output[1, "model"] <- model@model$mse_valid
 
   data <- params$training_frame
-  data <- eval(data, dots$envir)
+  data <- eval(data)
   data.len <- nrow(data)
 
   # nfold_vec <- h2o.sample(fr, 1:nfolds)
@@ -274,7 +257,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
   xval <- lapply(1:nfolds, function(i) {
       params$training_frame <- data[fnum_id$object != i, ]
       params$validation_frame <- data[fnum_id$object != i, ]
-      fold <- do.call(model.type, c(params, envir = dots$envir))
+      fold <- do.call(model.type, c(params))
       output[(i+1), "fold_num"] <<- i - 1
       output[(i+1), "model_key"] <<- fold@key
       # output[(i+1), "cv_err"] <<- mean(as.vector(fold@model$mse_valid))
@@ -623,7 +606,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
     .h2o.eval.frame(conn = newdata@conn, ast = newdata@mutable$ast, key = temp_key)
   }
 
-  url <- paste0("Predictions.json/models/",object@key, "/frames/", newdata@key)
+  url <- paste0("Predictions/models/",object@key, "/frames/", newdata@key)
   res <- .h2o.__remoteSend(object@conn, url, method="POST")
 
   if(delete)
@@ -678,14 +661,22 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
     npcs = min(10, x@model$parameters$k)
   else if(!is.numeric(npcs) || npcs < 1 || npcs > x@model$parameters$k)
     stop(paste("npcs must be a positive integer between 1 and", x@model$parameters$k, "inclusive"))
-  
+
   if(missing(main))
     main = paste("h2o.prcomp(", strtrim(x@parameters$training_frame, 20), ")", sep="")
-  
+
   if(type == "barplot")
     barplot(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
   else if(type == "lines")
     lines(x@model$std_deviation[1:npcs]^2, main = main, ylab = "Variances", ...)
   else
     stop("type must be either 'barplot' or 'lines'")
+}
+
+# Handles ellipses
+.model.ellipses <- function(dots) {
+  lapply(names(dots), function(type) {
+    stop(paste0('\n  unexpected argument "',
+                type,'", is this legacy code? Try h2o.shim'), call. = FALSE)
+  })
 }

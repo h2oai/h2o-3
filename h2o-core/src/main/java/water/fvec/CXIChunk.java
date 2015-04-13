@@ -44,8 +44,8 @@ public class CXIChunk extends Chunk {
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
     int off = _OFF;
-    final int inc = _valsz + 2;
-    for(int i = 0; i < len; ++i, off += inc) arr[i] = UnsafeUtils.get2(_mem, off)&0xFFFF;
+    final int inc = _valsz + _ridsz;
+    for(int i = 0; i < len; ++i, off += inc) arr[i] = getId(off);
     return len;
   }
 

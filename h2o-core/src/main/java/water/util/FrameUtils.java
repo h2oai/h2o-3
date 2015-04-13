@@ -36,13 +36,20 @@ public class FrameUtils {
     return ParseDataset.parse(okey, inKeys);
   }
 
+  /** Parse given set of URIs and produce a frame's key representing output.
+   *
+   * @param okey key for ouput frame. Can be null
+   * @param uris array of URI (file://, hdfs://, s3n://, s3://, ...) to parse
+   * @return a frame which is saved into DKV under okey
+   * @throws IOException in case of parse error.
+   */
   public static Frame parseFrame(Key okey, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
       throw new IllegalArgumentException("List of uris is empty!");
     }
+    if(okey == null) okey = Key.make(uris[0].toString());
     Key[] inKeys = new Key[uris.length];
     for (int i=0; i<uris.length; i++)  inKeys[i] = H2O.getPM().anyURIToKey(uris[i]);
-    if(okey == null) okey = Key.make(uris[0].toString());
     return ParseDataset.parse(okey, inKeys);
   }
 

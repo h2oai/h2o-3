@@ -26,15 +26,12 @@
 #' votes.hex <- h2o.uploadFile(localH2O, path = votesPath, header = TRUE)
 #' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
 #' @export
-h2o.naiveBayes <- function(x, y, training_frame, destination_key,
+h2o.naiveBayes <- function(x, y, training_frame,
+                           destination_key,
                            laplace = 0,
                            threshold = 0.001,
-                           eps = 0) {
-  # Required args: x, y, training_frame
-  if( missing(x) ) stop("`x` is missing, with no default")
-  if( missing(y) ) stop("`y` is missing, with no default")
-  if( missing(training_frame) ) stop ("argument \"training_frame\" is missing, with no default")
-
+                           eps = 0)
+{
   # Training_frame may be a key or an H2OFrame object
   if (!inherits(training_frame, "H2OFrame"))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -46,16 +43,24 @@ h2o.naiveBayes <- function(x, y, training_frame, destination_key,
                        "threshold" = "min_sdev", "eps" = "eps_sdev")
 
   # Gather user input
-  parms <- as.list(match.call()[-1L])
+  parms <- list()
   args <- .verify_dataxy(training_frame, x, y)
-  parms$x <- args$x_ignore
-  parms$y <- args$y
-  names(parms) <- lapply(names(parms), function(i) { if( i %in% names(.naivebayes.map) ) i <- .naivebayes.map[[i]]; i })
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+  if(!missing(destination_key))
+    parms$destination_key <- destination_key
+  if(!missing(laplace))
+    parms$laplace <- laplace
+  # TODO: These params have different names than h2o, don't think this should be the case
+  if(!missing(threshold))
+    parms$min_sdev <- threshold
+  if(!missing(eps))
+    parms$eps_sdev <- eps
 
   # In R package, cutoff and threshold for probability and standard deviation are the same
   parms$min_prob <- threshold
   parms$eps_prob <- eps
 
   # Error check and build model
-  .h2o.createModel(training_frame@conn, 'naivebayes', parms, parent.frame())
+  .h2o.createModel(training_frame@conn, 'naivebayes', parms)
 }

@@ -39,10 +39,10 @@ public class DeepLearningModelV2 extends ModelSchema<DeepLearningModel, DeepLear
     TwoDimTableBase scoring_history;
 
     @API(help="Training data model metrics")
-    ModelMetricsBase train_metrics;
+    ModelMetricsBase training_metrics;
 
     @API(help="Validation data model metrics")
-    ModelMetricsBase valid_metrics;
+    ModelMetricsBase validation_metrics;
 
     @API(help="Variable Importances")
     TwoDimTableBase variable_importances;
