@@ -48,11 +48,11 @@ public class TypeMap {
 
     water.api.AboutHandler.AboutV3.class.getName(),
     water.api.AboutHandler.AboutEntryV3.class.getName(),
-    water.api.NodePersistentStorageV1.class.getName(),
-    water.api.NodePersistentStorageV1.NodePersistentStorageEntryV1.class.getName(),
-    water.api.DocsV1.class.getName(),
+    water.api.NodePersistentStorageV3.class.getName(),
+    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
+    water.api.DocsV3.class.getName(),
     water.api.DocsBase.class.getName(),
-    water.api.RouteV1.class.getName(),
+    water.api.RouteV3.class.getName(),
     water.api.RouteBase.class.getName(),
   };
   // Class name -> ID mapping
