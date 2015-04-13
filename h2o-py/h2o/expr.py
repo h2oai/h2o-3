@@ -249,6 +249,8 @@ class Expr(object):
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return self._simple_expr_bin_rop(i,"^")
 
+  def __abs__ (self): return h2o.abs(self)
+
   def __del__(self):
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return

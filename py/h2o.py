@@ -372,7 +372,6 @@ class H2O(object):
 
     ###################
     # REST API ACCESSORS
-    # TODO: remove .json
 
     '''
     Fetch all the jobs or a single job from the /Jobs endpoint.
@@ -382,7 +381,7 @@ class H2O(object):
             'job_key': job_key
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
-        result = self.__do_json_request('/2/Jobs.json', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/2/Jobs', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -398,7 +397,7 @@ class H2O(object):
         start_time = time.time()
         while True:
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
-            result = self.__do_json_request('/2/Jobs.json/' + job_key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/2/Jobs/' + job_key, timeout=timeoutSecs, params=params_dict)
             
             status = result['jobs'][0]['status']
             if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
@@ -417,7 +416,7 @@ class H2O(object):
     Create a Frame.
     '''
     def create_frame(self, timeoutSecs=180, **kwargs):
-        a = self.__do_json_request('3/CreateFrame.json', cmd="post",
+        a = self.__do_json_request('3/CreateFrame', cmd="post",
             timeout=timeoutSecs,
             params=kwargs
         )
@@ -429,7 +428,7 @@ class H2O(object):
     Split a Frame.
     '''
     def split_frame(self, timeoutSecs=180, **kwargs):
-        a = self.__do_json_request('2/SplitFrame.json', cmd="post",
+        a = self.__do_json_request('2/SplitFrame', cmd="post",
             timeout=timeoutSecs,
             postData=kwargs
         )
@@ -442,7 +441,7 @@ class H2O(object):
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
     def import_files(self, path, timeoutSecs=180):
-        a = self.__do_json_request('/2/ImportFiles.json',
+        a = self.__do_json_request('/2/ImportFiles',
             timeout=timeoutSecs,
             params={"path": path}
         )
@@ -469,7 +468,7 @@ class H2O(object):
             'source_keys': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
-        setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
+        setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
@@ -493,7 +492,7 @@ class H2O(object):
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
-        parse_result = self.__do_json_request(jsonRequest="/2/Parse.json", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
+        parse_result = self.__do_json_request(jsonRequest="/2/Parse", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
         # print("Parse result:", repr(parse_result))
@@ -512,7 +511,6 @@ class H2O(object):
         return None
 
 
-    # TODO: remove .json
     '''
     Return a single Frame or all of the Frames in the h2o cluster.  The
     frames are contained in a list called "frames" at the top level of the
@@ -530,13 +528,12 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
         
         if key:
-            result = self.__do_json_request('/3/Frames.json/' + key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/3/Frames/' + key, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('/3/Frames.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/3/Frames', timeout=timeoutSecs, params=params_dict)
         return result
 
 
-    # TODO: remove .json
     '''
     Return the columns for a single Frame in the h2o cluster.  
     '''
@@ -547,11 +544,10 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
         
-        result = self.__do_json_request('/3/Frames.json/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
         return result
 
 
-    # TODO: remove .json
     '''
     Return a single column for a single Frame in the h2o cluster.  
     '''
@@ -562,11 +558,10 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
         
-        result = self.__do_json_request('/3/Frames.json/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
         return result
 
 
-    # TODO: remove .json
     '''
     Return the summary for a single column for a single Frame in the h2o cluster.  
     '''
@@ -577,7 +572,7 @@ class H2O(object):
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
         
-        result = self.__do_json_request('/3/Frames.json/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -587,7 +582,7 @@ class H2O(object):
     def delete_frame(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
         assert key is not None, 'FAIL: "key" parameter is null'
 
-        result = self.__do_json_request('/3/Frames.json/' + key, cmd='delete', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Frames/' + key, cmd='delete', timeout=timeoutSecs)
 
         # TODO: look for what?
         if not ignoreMissingKey and 'f00b4r' in result:
@@ -601,12 +596,11 @@ class H2O(object):
     '''
     def delete_frames(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/3/Frames.json', cmd='delete', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Frames', cmd='delete', timeout=timeoutSecs)
 
         return result
 
 
-    # TODO: remove .json
     '''
     Return a model builder or all of the model builders known to the
     h2o cluster.  The model builders are contained in a dictionary
@@ -621,9 +615,9 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'model_builders', H2O.verbose)
 
         if algo:
-            result = self.__do_json_request('3/ModelBuilders.json/' + algo, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('3/ModelBuilders/' + algo, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request('3/ModelBuilders.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('3/ModelBuilders', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -649,7 +643,7 @@ class H2O(object):
 
         # TODO: add parameter existence checks
         # TODO: add parameter value validation
-        result = self.__do_json_request('/3/ModelBuilders.json/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
+        result = self.__do_json_request('/3/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors 
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result
@@ -680,7 +674,7 @@ class H2O(object):
 
         if destination_key is not None:
             parameters['destination_key'] = destination_key
-        result = self.__do_json_request('/3/ModelBuilders.json/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
+        result = self.__do_json_request('/3/ModelBuilders/' + algo, cmd='post', timeout=timeoutSecs, postData=parameters, raiseIfNon200=False)  # NOTE: DO NOT die if validation errors
 
         if asynchronous:
             return result
@@ -714,7 +708,7 @@ class H2O(object):
         assert frames is not None, "FAIL: /Frames/{0} REST call failed".format(frame)
         assert frames['frames'][0]['key']['name'] == frame, "FAIL: /Frames/{0} returned Frame {1} rather than Frame {2}".format(frame, frames['frames'][0]['key']['name'], frame)
 
-        result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/ModelMetrics/models/' + model + '/frames/' + frame, cmd='post', timeout=timeoutSecs)
 
         mm = result['model_metrics'][0]
         H2O.verboseprint("model metrics: " + repr(mm))
@@ -736,7 +730,7 @@ class H2O(object):
 
         postData = { 'destination_key': destination_key }
 
-        result = self.__do_json_request('/3/Predictions.json/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Predictions/models/' + model + '/frames/' + frame, cmd='post', postData=postData, timeout=timeoutSecs)
         return result
 
 
@@ -745,9 +739,9 @@ class H2O(object):
     '''
     def model_metrics(self, model=None, frame=None, timeoutSecs=60, **kwargs):
         if model is None and frame is None:
-            result = self.__do_json_request('/3/ModelMetrics.json', cmd='get', timeout=timeoutSecs)
+            result = self.__do_json_request('/3/ModelMetrics', cmd='get', timeout=timeoutSecs)
         elif model is not None and frame is not None:
-            result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='get', timeout=timeoutSecs)
+            result = self.__do_json_request('/3/ModelMetrics/models/' + model + '/frames/' + frame, cmd='get', timeout=timeoutSecs)
         else:
             raise ValueError("model_metrics can't yet handle the filter case")
         return result
@@ -760,12 +754,11 @@ class H2O(object):
         assert model is not None, 'FAIL: "model" parameter is null'
         assert frame is not None, 'FAIL: "frame" parameter is null'
 
-        result = self.__do_json_request('/3/ModelMetrics.json/models/' + model + '/frames/' + frame, cmd='delete', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/ModelMetrics/models/' + model + '/frames/' + frame, cmd='delete', timeout=timeoutSecs)
 
         return result
 
 
-    # TODO: remove .json
     '''
     Return all of the models in the h2o cluster, or a single model given its key.  
     The models are contained in a list called "models" at the top level of the
@@ -781,9 +774,9 @@ class H2O(object):
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'models', H2O.verbose)
 
         if key:
-            result = self.__do_json_request(str(api_version) + '/Models.json/' + key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request(str(api_version) + '/Models/' + key, timeout=timeoutSecs, params=params_dict)
         else:
-            result = self.__do_json_request(str(api_version) + '/Models.json', timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request(str(api_version) + '/Models', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -793,7 +786,7 @@ class H2O(object):
     def delete_model(self, key, ignoreMissingKey=True, timeoutSecs=60, **kwargs):
         assert key is not None, 'FAIL: "key" parameter is null'
 
-        result = self.__do_json_request('/3/Models.json/' + key, cmd='delete', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Models/' + key, cmd='delete', timeout=timeoutSecs)
 
         # TODO: look for what?
         if not ignoreMissingKey and 'f00b4r' in result:
@@ -807,7 +800,7 @@ class H2O(object):
     '''
     def delete_models(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/3/Models.json', cmd='delete', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Models', cmd='delete', timeout=timeoutSecs)
 
         return result
 
@@ -817,7 +810,7 @@ class H2O(object):
     '''
     def endpoints(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/1/Metadata/endpoints', cmd='get', timeout=timeoutSecs)
 
         return result
 
@@ -826,7 +819,7 @@ class H2O(object):
     '''
     def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/1/Metadata/endpoints/' + str(num), cmd='get', timeout=timeoutSecs)
 
         return result
 
@@ -835,7 +828,7 @@ class H2O(object):
     '''
     def schemas(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/1/Metadata/schemas', cmd='get', timeout=timeoutSecs)
 
         return result
 
@@ -844,6 +837,6 @@ class H2O(object):
     '''
     def schema(self, schemaname, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/1/Metadata/schemas/' + schemaname, cmd='get', timeout=timeoutSecs)
 
         return result

@@ -406,29 +406,28 @@ class H2OFrame:
     """
     return len(self._vecs)
 
-  def _simple_frames_bin_op(self, data, op, r=False):
+  def _simple_frames_bin_op(self, data, op):
     if len(self) == 0: return self
-    if isinstance(data, (H2OVec, H2OFrame)): self._len_check(data)
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                     Expr(data.send_frame(), length=data.nrow()))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
+                                                     Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
+    elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
+    elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
+    elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
+    else: raise NotImplementedError
 
-    if not r:
-      if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                       Expr(data.send_frame(), length=data.nrow()))
-      elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                       Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
-      elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
-      elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
-      elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
-      else: raise NotImplementedError
-    else:
-      if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), \
-                                                  Expr(self.send_frame(), length=self.nrow()))
-      elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), \
-                                                       Expr(self.send_frame(), length=self.nrow()))
-      elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
-      elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), \
-                                                       length=self.nrow())
-      elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
-      else: raise NotImplementedError
+  def _simple_frames_bin_rop(self, data, op):
+    if len(self) == 0: return self
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), \
+                                                Expr(self.send_frame(), length=self.nrow()))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), \
+                                                     Expr(self.send_frame(), length=self.nrow()))
+    elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
+    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), \
+                                                     length=self.nrow())
+    elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
+    else: raise NotImplementedError
 
   # ops
   def __add__(self, i): return self._simple_frames_bin_op(i, "+")
@@ -447,15 +446,15 @@ class H2OFrame:
 
   # rops
   def __radd__(self, i): return self.__add__(i)
-  def __rsub__(self, i): return self._simple_frames_bin_op(i,"-",True)
+  def __rsub__(self, i): return self._simple_frames_bin_rop(i,"-")
   def __rand__(self, i): return self.__and__(i)
   def __ror__ (self, i): return self.__or__ (i)
-  def __rdiv__(self, i): return self._simple_frames_bin_op(i,"/",True)
+  def __rdiv__(self, i): return self._simple_frames_bin_rop(i,"/")
   def __rmul__(self, i): return self.__mul__(i)
-  def __rpow__(self, i): return self._simple_frames_bin_op(i,"^",True)
+  def __rpow__(self, i): return self._simple_frames_bin_rop(i,"^")
 
   # unops
-  def __abs__ (self): return Expr("abs", Expr(self.send_frame(), length=self.nrow()), None)
+  def __abs__ (self): return h2o.abs(self)
 
   @staticmethod
   def py_tmp_key():
@@ -896,7 +895,7 @@ class H2OVec:
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return self._simple_vec_bin_rop(i,"^")  # not commutative
 
-  def __abs__ (self): return H2OVec(self._name, Expr("abs", self, None))
+  def __abs__ (self): return h2o.abs(self)
 
   def __len__(self):
     """
