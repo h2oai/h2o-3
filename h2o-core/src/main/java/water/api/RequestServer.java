@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import com.brsanthu.googleanalytics.ScreenViewHit;
+// import com.brsanthu.googleanalytics.ScreenViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -98,7 +98,6 @@ public class RequestServer extends NanoHTTPD {
     addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
     addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
     addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
-    addToNavbar(register("/1/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an arbitrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
 
     // Admin
     addToNavbar(register("/1/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
@@ -165,6 +164,8 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
       "Delete all Frames from the H2O distributed K/V store.");
+    register("/3/Models/(?<key>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"key"},
+      "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
@@ -237,8 +238,8 @@ public class RequestServer extends NanoHTTPD {
     register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
     register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
     register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
-    register("/1/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
-    register("/1/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
+    register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", new String[] { "key"}, "Remove an arbitrary key from the H2O distributed K/V store.");
+    register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
     register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
     register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
 
@@ -471,12 +472,15 @@ public class RequestServer extends NanoHTTPD {
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
 
+    // fails to compile in IntelliJ:
+    /*
     if (H2O.GA != null) {
       if (header.getProperty("user-agent") != null)
         H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
       else
-        H2O.GA.postAsync(new ScreenViewHit(uri));
+      H2O.GA.postAsync(new ScreenViewHit(uri));
     }
+    */
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -594,7 +598,9 @@ public class RequestServer extends NanoHTTPD {
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
-        return wrap(handle(type,route,version,parms),type);
+        Schema s = handle(type, route, version, parms);
+        Response r = wrap(s, type);
+        return r;
       }
     }
     catch (H2OFailException e) {
@@ -697,7 +703,7 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava());
+      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());

@@ -15,6 +15,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Random;
 
+import static hex.ModelMetricsMultinomial.getHitRatioTable;
+
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends SupervisedModelBuilder<M,P,O> {
   public SharedTree( String name, P parms) { super(name,parms); /*only call init in leaf classes*/ }
 
@@ -369,20 +371,26 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Score on training data
       Score sc = new Score(this,oob,_model._output.getModelCategory()).doAll(train(), build_tree_one_node);
       ModelMetricsSupervised mm = sc.makeModelMetrics(_model, _parms.train(), _parms._response_column);
-      out._train_metrics = mm;
-      if (oob) out._train_metrics._description = "Metrics reported on Out-Of-Bag training samples";
+      out._training_metrics = mm;
+      if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
       out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
       training_r2 = mm.r2();
       Log.info("training r2 is "+(float)mm.r2()+", mse is "+(float)mm._mse+ train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      if (mm.hr() != null) {
+        Log.info(getHitRatioTable(mm.hr()));
+      }
       // Score again on validation data
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
         out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
-        out._valid_metrics = mmv;
+        out._validation_metrics = mmv;
         String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
         Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
+        if (mmv.hr() != null) {
+          Log.info(getHitRatioTable(mm.hr()));
+        }
       }
 
       if( out._ntrees > 0 )     // Compute variable importances

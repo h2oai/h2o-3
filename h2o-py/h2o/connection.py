@@ -337,7 +337,7 @@ class H2OConnection(object):
   def _do_raw_rest(self, url_suffix, method, file_upload_info, **kwargs):
     if not url_suffix:
       raise ValueError("No url suffix supplied.")
-    url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix + ".json")
+    url = "http://{}:{}/{}/{}".format(self._ip,self._port,self._rest_version,url_suffix)
 
     query_string = ""
     for k,v in kwargs.iteritems():

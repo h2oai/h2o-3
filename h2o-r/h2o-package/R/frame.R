@@ -181,7 +181,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   if(!missing(seed))
     parms$seed <- seed
 
-  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
+  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(data@conn, json$key$name)
   # TODO: uncomment once job key progress is functional
   res <- json$dataset$name
@@ -224,7 +224,7 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if (!missing(destination_keys))
     params$destKeys <- .collapse(destination_keys)
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
+  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
   job_key <- res$key$name
   .h2o.__waitOnJob(data@conn, job_key)
 

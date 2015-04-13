@@ -97,7 +97,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
 
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make(conn, path)
-  urlSuffix <- sprintf("PostFile.json?destination_key=%s",  curlEscape(srcKey))
+  urlSuffix <- sprintf("PostFile?destination_key=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)

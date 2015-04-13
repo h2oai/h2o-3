@@ -231,7 +231,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._dropNA20Cols = _parms._dropNA20Cols;
-        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
         parms._k = _parms._k;

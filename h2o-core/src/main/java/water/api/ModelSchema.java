@@ -125,10 +125,14 @@ public class ModelSchema<M extends Model<M, P, O>,
   }
 
   public String toJava() {
+    return toJava(false);
+  }
+
+  public String toJava(boolean preview) {
     Model m = DKV.getGet(key.key());
     if (m == null) {
       throw new H2OKeyNotFoundArgumentException("model_key", "toJava", key.key().toString());
     }
-    return m.toJava();
+    return m.toJava(preview);
   }
 }

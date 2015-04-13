@@ -451,13 +451,12 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           dl.hide("_regression_stop", "regression_stop is used only with regression.");
         } else {
           dl.hide("_classification_stop", "classification_stop is used only with classification.");
-          dl.hide("_max_confusion_matrix_size", "max_confusion_matrix_size is used only with classification.");
-          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-          dl.hide("_balance_classes", "balance_classes is used only with classification.");
+//          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
+//          dl.hide("_balance_classes", "balance_classes is used only with classification.");
         }
 
-        if( !classification || !_balance_classes )
-          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
+//        if( !classification || !_balance_classes )
+//          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
 
 
         if (!classification && _valid != null || _valid == null)
@@ -1724,9 +1723,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           err.train_mse = mm1._mse;
           err.train_r2 = mm1.r2();
-          _output._train_metrics = mm1;
-          if (get_params()._score_training_samples != 0) {
-            _output._train_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
+          _output._training_metrics = mm1;
+          if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
+            _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
           }
           _output.run_time = run_time;
 
@@ -1750,11 +1749,11 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
               }
               err.valid_mse = mm2._mse;
               err.valid_r2 = mm2.r2();
-              _output._valid_metrics = mm2;
-              if (get_params()._score_validation_samples != 0) {
-                _output._valid_metrics._description = "Metrics reported on " + ftrain.numRows() + " validation set samples";
+              _output._validation_metrics = mm2;
+              if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
+                _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";
                 if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
-                  _output._valid_metrics._description += " (using stratified sampling)";
+                  _output._validation_metrics._description += " (stratified sampling)";
                 }
               }
             }
