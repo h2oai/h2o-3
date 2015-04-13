@@ -53,11 +53,11 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
           double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
           thresholdsByMetrics.set(i, j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
-      this.thresholds_and_metric_scores = new TwoDimTableV1().fillFromImpl(thresholdsByMetrics);
+      this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
       
       // Fill TwoDimTable
       TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, colHeaders,
-                                               new String[]{"Threshold","Metric","idx"},
+                                               new String[]{"Threshold","Value","idx"},
                                                new String[]{"double",   "double","long"},
                                                new String[]{"%f",       "%f",    "%d"},
                                                "Metric" );
@@ -68,7 +68,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         maxMetrics.set(i,2,idx);
       }
       
-      this.max_criteria_and_metric_scores = new TwoDimTableV1().fillFromImpl(maxMetrics);
+      this.max_criteria_and_metric_scores = new TwoDimTableV3().fillFromImpl(maxMetrics);
     }
     return this;
   }

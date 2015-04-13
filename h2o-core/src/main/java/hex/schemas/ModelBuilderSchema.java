@@ -39,7 +39,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   public Model.ModelCategory[] can_build;
 
   @API(help = "Job Key", direction = API.Direction.OUTPUT)
-  public JobV2 job;
+  public JobV3 job;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
   public ValidationMessageBase validation_messages[];
@@ -128,7 +128,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
 
     this.can_build = builder.can_build();
-    job = (JobV2)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
+    job = (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder);
     this.validation_messages = new ValidationMessageBase[builder._messages.length];
     int i = 0;
     for( ModelBuilder.ValidationMessage vm : builder._messages ) {
@@ -174,7 +174,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   @Override public DocGen.HTML writeHTML_impl( DocGen.HTML ab ) {
     ab.title(this.getClass().getSimpleName()+" Started");
-    String url = JobV2.link(job.key.key());
+    String url = JobV3.link(job.key.key());
     return ab.href("Poll",url,url);
   }
 

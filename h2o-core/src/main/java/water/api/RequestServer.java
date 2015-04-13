@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import com.brsanthu.googleanalytics.ScreenViewHit;
+// import com.brsanthu.googleanalytics.ScreenViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -92,58 +92,57 @@ public class RequestServer extends NanoHTTPD {
   static {
     // Data
 
-    addToNavbar(register("/2/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Create a synthetic H2O Frame."),"/CreateFrame", "Create Frame",  "Data");
-    addToNavbar(register("/2/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Split a H2O Frame."),"/SplitFrame",  "Split Frame",   "Data");
-    addToNavbar(register("/2/MissingInserter" ,"POST",MissingInserterHandler.class,"run","Insert missing values."),"/MissingInserter",  "Insert Missing Values",   "Data");
-    addToNavbar(register("/2/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
-    addToNavbar(register("/2/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
-    addToNavbar(register("/2/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
-    addToNavbar(register("/1/Inspect"    ,"GET",InspectHandler    .class,"inspect"     ,"View an arbitrary value from the distributed K/V store."),"/Inspect"    , "Inspect",       "Data");
+    addToNavbar(register("/3/CreateFrame","POST",CreateFrameHandler.class,"run"        ,"Create a synthetic H2O Frame."),"/CreateFrame", "Create Frame",  "Data");
+    addToNavbar(register("/3/SplitFrame" ,"POST",SplitFrameHandler.class,"run"         ,"Split a H2O Frame."),"/SplitFrame",  "Split Frame",   "Data");
+    addToNavbar(register("/3/MissingInserter" ,"POST",MissingInserterHandler.class,"run","Insert missing values."),"/MissingInserter",  "Insert Missing Values",   "Data");
+    addToNavbar(register("/3/ImportFiles","GET",ImportFilesHandler.class,"importFiles" ,"Import raw data files into a single-column H2O Frame."), "/ImportFiles", "Import Files",  "Data");
+    addToNavbar(register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  ,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame."),"/ParseSetup","ParseSetup",    "Data");
+    addToNavbar(register("/3/Parse"      ,"POST",ParseHandler     .class,"parse"       ,"Parse a raw byte-oriented Frame into a useful columnar data Frame."),"/Parse"      , "Parse",         "Data"); // NOTE: prefer POST due to higher content limits
 
     // Admin
-    addToNavbar(register("/1/Cloud"      ,"GET",CloudHandler      .class,"status"      ,"Determine the status of the nodes in the H2O cloud."),"/Cloud"      , "Cloud",         "Admin");
-    register("/1/Cloud", "HEAD", CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
-    addToNavbar(register("/2/Jobs"       ,"GET", JobsHandler.class, "list", "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
-    addToNavbar(register("/2/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
-    addToNavbar(register("/2/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
-    addToNavbar(register("/2/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
-    addToNavbar(register("/2/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
-    addToNavbar(register("/2/UnlockKeys" ,"GET",UnlockKeysHandler .class,"unlock"      ,"Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash."),"/UnlockKeys" , "Unlock Keys",   "Admin");
-    addToNavbar(register("/2/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
+    addToNavbar(register("/3/Cloud",      "GET", CloudHandler.class,  "status", "Determine the status of the nodes in the H2O cloud."), "/Cloud", "Cloud", "Admin");
+    register("/3/Cloud",                  "HEAD",CloudHandler.class, "status", "Determine the status of the nodes in the H2O cloud.");
+    addToNavbar(register("/3/Jobs"       ,"GET", JobsHandler.class,   "list",   "Get a list of all the H2O Jobs (long-running actions)."), "/Jobs", "Jobs", "Admin");
+    addToNavbar(register("/3/Timeline"   ,"GET",TimelineHandler   .class,"fetch"       ,"Something something something."),"/Timeline"   , "Timeline",      "Admin");
+    addToNavbar(register("/3/Profiler"   ,"GET",ProfilerHandler   .class,"fetch"       ,"Something something something."),"/Profiler"   , "Profiler",      "Admin");
+    addToNavbar(register("/3/JStack"     ,"GET",JStackHandler     .class,"fetch"       ,"Something something something."),"/JStack"     , "Stack Dump",    "Admin");
+    addToNavbar(register("/3/NetworkTest","GET",NetworkTestHandler.class,"fetch"       ,"Something something something."),"/NetworkTest", "NetworkTest",   "Admin");
+    register("/3/UnlockKeys", "POST", UnlockKeysHandler.class, "unlock", "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
+    addToNavbar(register("/3/Shutdown"   ,"POST",ShutdownHandler  .class,"shutdown"    ,"Shut down the cluster")         , "/Shutdown"  , "Shutdown",      "Admin");
 
     // Help and Tutorials get all the rest...
-    addToNavbar(register("/1/Tutorials"  ,"GET",TutorialsHandler  .class,"nop"         ,"H2O tutorials."),"/Tutorials"  , "Tutorials Home","Help");
+    addToNavbar(register("/3/Tutorials", "GET", TutorialsHandler.class, "nop", "H2O tutorials."), "/Tutorials", "Tutorials Home", "Help");
 
-    initializeNavBar();
+    // initializeNavBar();
 
     // REST only, no html:
 
     register("/3/About"                                              ,"GET"   ,AboutHandler.class, "get",
             "Return information about this H2O.");
 
-    register("/1/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
+    register("/3/Metadata/endpoints/(?<num>[0-9]+)"                  ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"num"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
-    register("/1/Metadata/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
+    register("/3/Metadata/endpoints/(?<path>.*)"                     ,"GET"   ,DocsHandler.class, "fetchRoute",                       new String[] {"path"},
       "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path.");
-    register("/1/Metadata/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
+    register("/3/Metadata/endpoints"                                 ,"GET"   ,DocsHandler.class, "listRoutes",
       "Return a list of all the REST API endpoints.");
 
-    register("/1/Metadata/schemaclasses/(?<classname>.*)"            ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
+    register("/3/Metadata/schemaclasses/(?<classname>.*)"            ,"GET"   ,DocsHandler.class, "fetchSchemaMetadataByClass", new String[] {"classname"},
             "Return the REST API schema metadata for specified schema class.");
-    register("/1/Metadata/schemas/(?<schemaname>.*)"                 ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata", new String[] {"schemaname"},
+    register("/3/Metadata/schemas/(?<schemaname>.*)"                 ,"GET"   ,DocsHandler.class, "fetchSchemaMetadata", new String[] {"schemaname"},
             "Return the REST API schema metadata for specified schema.");
-    register("/1/Metadata/schemas"                                   ,"GET"   ,DocsHandler.class, "listSchemas",
+    register("/3/Metadata/schemas"                                   ,"GET"   ,DocsHandler.class, "listSchemas",
             "Return list of all REST API schemas.");
 
 
-    register("/2/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
+    register("/3/Typeahead/files"                                  ,"GET",TypeaheadHandler.class, "files",
       "Typehead hander for filename completion.");
-    register("/2/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
+    register("/3/Jobs/(?<key>.*)"                                  ,"GET",JobsHandler     .class, "fetch", new String[] {"key"},
       "Get the status of the given H2O Job (long-running action).");
 
-    register("/2/Jobs/(?<key>.*)/cancel"                           ,"POST",JobsHandler     .class, "cancel", new String[] {"key"}, "Cancel a running job.");
+    register("/3/Jobs/(?<key>.*)/cancel"                           ,"POST",JobsHandler     .class, "cancel", new String[] {"key"}, "Cancel a running job.");
 
-    register("/2/Find"                                             ,"GET"   ,FindHandler.class,    "find",
+    register("/3/Find"                                             ,"GET"   ,FindHandler.class,    "find",
       "Find a value within a Frame.");
     register("/3/Frames/(?<key>.*)/export/(?<path>.*)/overwrite/(?<force>.*)" ,"GET", FramesHandler.class, "export",                  new String[] {"key", "path", "force"},
             "Export a Frame to the given path with optional overwrite.");
@@ -165,6 +164,8 @@ public class RequestServer extends NanoHTTPD {
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
       "Delete all Frames from the H2O distributed K/V store.");
+    register("/3/Models/(?<key>.*)/preview"                      ,"GET"   ,ModelsHandler.class, "fetchPreview",                       new String[] {"key"},
+      "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
     register("/3/Models/(?<key>.*)"                              ,"GET"   ,ModelsHandler.class, "fetch",                              new String[] {"key"},
       "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
     register("/3/Models"                                         ,"GET"   ,ModelsHandler.class, "list",
@@ -233,14 +234,14 @@ public class RequestServer extends NanoHTTPD {
     // typesafe way:
     //
     // register("/2/ModelBuilders/(?<algo>.*)"                      ,"POST"  ,ModelBuildersHandler.class, "train", new String[] {"algo"});
-    register("/1/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
-    register("/1/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
-    register("/1/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
-    register("/1/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
-    register("/1/Remove"                                           ,"DELETE",RemoveHandler.class, "remove", "Remove an arbitrary key from the H2O distributed K/V store.");
-    register("/1/RemoveAll"                                        ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
-    register("/1/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
-    register("/1/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
+    register("/3/KillMinus3"                                       ,"GET"   ,KillMinus3Handler.class, "killm3", "Kill minus 3 on *this* node");
+    register("/3/Rapids"                                           ,"POST"  ,RapidsHandler.class, "exec", "Something something R exec something.");
+    register("/3/Rapids/isEval"                                    ,"GET"   ,RapidsHandler.class, "isEvaluated", "something something r exec something.");
+    register("/3/DownloadDataset"                                  ,"GET"   ,DownloadDataHandler.class, "fetch", "Download something something.");
+    register("/3/DKV/(?<key>.*)"                                   ,"DELETE",RemoveHandler.class, "remove", new String[] { "key"}, "Remove an arbitrary key from the H2O distributed K/V store.");
+    register("/3/DKV"                                              ,"DELETE",RemoveAllHandler.class, "remove", "Remove all keys from the H2O distributed K/V store.");
+    register("/3/LogAndEcho"                                       ,"POST"  ,LogAndEchoHandler.class, "echo", "Save a message to the H2O logfile.");
+    register("/3/InitID"                                           ,"GET"   ,InitIDHandler.class, "issue", "Issue a new session ID.");
 
     register("/99/Sample"                                          ,"GET",CloudHandler      .class,"status"      ,"Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
   }
@@ -471,12 +472,15 @@ public class RequestServer extends NanoHTTPD {
     String paddedMethod = String.format("%-6s", method);
     Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
 
+    // fails to compile in IntelliJ:
+    /*
     if (H2O.GA != null) {
       if (header.getProperty("user-agent") != null)
         H2O.GA.postAsync(new ScreenViewHit(uri).customDimension(H2O.CLIENT_TYPE_GA_CUST_DIM, header.getProperty("user-agent")));
       else
-        H2O.GA.postAsync(new ScreenViewHit(uri));
+      H2O.GA.postAsync(new ScreenViewHit(uri));
     }
+    */
   }
 
   private void capturePathParms(Properties parms, String path, Route route) {
@@ -506,7 +510,7 @@ public class RequestServer extends NanoHTTPD {
     Log.warn(error._values.toJsonString());
     Log.warn((Object[]) error._stacktrace);
 
-    return wrap(new H2OErrorV1().fillFromImpl(error), type);
+    return wrap(new H2OErrorV3().fillFromImpl(error), type);
   }
 
   // Top-level dispatch based on the URI.  Break down URI into parts;
@@ -594,7 +598,9 @@ public class RequestServer extends NanoHTTPD {
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
         maybeLogRequest(method, uri, route._url_pattern.pattern(), parms, header);
-        return wrap(handle(type,route,version,parms),type);
+        Schema s = handle(type, route, version, parms);
+        Response r = wrap(s, type);
+        return r;
       }
     }
     catch (H2OFailException e) {
@@ -603,11 +609,11 @@ public class RequestServer extends NanoHTTPD {
       Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      Log.fatal(wrap(new H2OErrorV1().fillFromImpl(error), type));
+      Log.fatal(wrap(new H2OErrorV3().fillFromImpl(error), type));
       System.exit(-1);
 
       // unreachable, but the compiler doesn't know it:
-      return wrap(new H2OErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OErrorV3().fillFromImpl(error), type);
     }
     catch (H2OModelBuilderIllegalArgumentException e) {
       H2OModelBuilderError error = e.toH2OError(uri);
@@ -615,7 +621,7 @@ public class RequestServer extends NanoHTTPD {
       Log.warn("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OModelBuilderErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OModelBuilderErrorV3().fillFromImpl(error), type);
     }
     catch (H2OAbstractRuntimeException e) {
       H2OError error = e.toH2OError(uri);
@@ -623,7 +629,7 @@ public class RequestServer extends NanoHTTPD {
       Log.warn("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OErrorV3().fillFromImpl(error), type);
     }
     // TODO: kill the server if someone called H2O.fail()
     catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
@@ -640,7 +646,7 @@ public class RequestServer extends NanoHTTPD {
       Log.warn("Caught exception: " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OErrorV1().fillFromImpl(error), type);
+      return wrap(new H2OErrorV3().fillFromImpl(error), type);
     }
   }
 
@@ -686,7 +692,7 @@ public class RequestServer extends NanoHTTPD {
       //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
       throw H2O.unimpl("Unknown type: " + type.toString());
     case java:
-      if (s instanceof H2OErrorV1) {
+      if (s instanceof H2OErrorV3) {
         return new Response(http_response_header, MIME_JSON, s.toJsonString());
       }
       if (! (s instanceof ModelsBase)) {
@@ -697,7 +703,7 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("model key was found but model array is not length 1 (was " + mb.models.length + ")");
       }
       ModelSchema ms = mb.models[0];
-      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava());
+      return new Response(http_response_header, MIME_DEFAULT_BINARY, ms.toJava(mb.preview));
     case html: {
       RString html = new RString(_htmlTemplate);
       html.replace("CONTENTS", s.writeHTML(new water.util.DocGen.HTML()).toString());
@@ -709,7 +715,7 @@ public class RequestServer extends NanoHTTPD {
   }
 
   private Response wrapDownloadData(String http_code, Schema s) {
-    DownloadDataV1 dd = (DownloadDataV1)s;
+    DownloadDataV3 dd = (DownloadDataV3)s;
     Response res = new Response(http_code, MIME_DEFAULT_BINARY, dd.csv);
     res.addHeader("Content-Disposition", "filename=" + dd.filename);
     return res;
@@ -795,10 +801,11 @@ public class RequestServer extends NanoHTTPD {
    * Call this after the last call addToNavbar().
    * This is called automatically for navbar entries from inside H2O.
    * If user app level code calls addToNavbar, then call this again to make those changes visible.
-   */
   static void initializeNavBar() { _htmlTemplate = initializeNavBar(_htmlTemplateFromFile); }
+*/
 
   private static String initializeNavBar(String template) {
+    /*
     StringBuilder sb = new StringBuilder();
     for( String s : _navbarOrdering ) {
       ArrayList<MenuItem> arl = _navbar.get(s);
@@ -820,10 +827,13 @@ public class RequestServer extends NanoHTTPD {
     str.replace("NAVBAR", sb.toString());
     str.replace("CONTENTS", "%CONTENTS");
     return str.toString();
+    */
+    return "undefined";
   }
 
   // Add a new item to the navbar
   public static String addToNavbar(Route route, String base_url, String name, String category) {
+    /*
     assert route != null && base_url != null && name != null && category != null;
 
     ArrayList<MenuItem> arl = _navbar.get(category);
@@ -833,6 +843,7 @@ public class RequestServer extends NanoHTTPD {
       _navbarOrdering.add(category);
     }
     arl.add(new MenuItem(base_url, name));
+    */
     return route._url_pattern.pattern();
   }
 

@@ -35,7 +35,7 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if (! _parms._balance_classes)
-      hide("_max_after_balance_size","Balance classes is false, hide max_after_balance_size");
+      hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
 
     if( _parms._max_after_balance_size <= 0.0 )
       error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
@@ -58,10 +58,12 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       return;
     }
 
-    if( !_parms._balance_classes )
+    if( !_parms._balance_classes ) {
       hide("_max_after_balance_size", "Only used with balanced classes");
+      hide("_class_sampling_factors", "Class sampling factors is only applicable if balancing classes.");
+    }
 
-    // put response to the end (if not already), and convert to an enum
+    // put response to the end (if not already)
     int ridx = _train.find(_parms._response_column);
     if( ridx == -1 ) { // Actually, think should not get here either (cutout at higher layer)
       error("_response_column", "Response column " + _parms._response_column + " not found in frame: " + _parms._train + ".");
@@ -82,6 +84,14 @@ abstract public class SupervisedModelBuilder<M extends SupervisedModel<M,P,O>, P
       }
       // #Classes: 1 for regression, domain-length for enum columns
       _nclass = _response.isEnum() ? _response.domain().length : 1;
+
+      if( !isClassifier() ) {
+        hide("_balance_classes", "Balance classes is only applicable to classification problems.");
+        hide("_class_sampling_factors", "Class sampling factors is only applicable to classification problems.");
+        hide("_max_after_balance_size", "Max after balance size is only applicable to classification problems.");
+        hide("_max_confusion_matrix_size", "Max confusion matrix size is only applicable to classification problems.");
+      }
+      if (_nclass <= 2) hide("_max_hit_ratio_k", "Max K-value for hit ratio is only applicable to multi-class classification problems.");
     }
   }    
 }

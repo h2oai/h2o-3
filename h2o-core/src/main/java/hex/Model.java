@@ -68,11 +68,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // every iteration, allowing e.g. more fine-grained progress reporting.
     public boolean _score_each_iteration;
 
-    /** For classification models, the maximum size (in terms of classes) of
-     *  the confusion matrix for it to be printed. This option is meant to
-     *  avoid printing extremely large confusion matrices.  */
-    public int _max_confusion_matrix_size = 20;
-
     // Public no-arg constructor for reflective creation
     public Parameters() { _dropNA20Cols = defaultDropNA20Cols();
                           _dropConsCols = defaultDropConsCols(); }
@@ -450,8 +445,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
       ConfusionMatrix cm = mm.cm();
       if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
-          water.util.Log.info(cm.table().toString(1));
+        if( cm._cm.length < ((SupervisedModel.SupervisedParameters)_parms)._max_confusion_matrix_size/*Print size limitation*/ ) {
+          Log.info(cm.table().toString(1));
         }
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
@@ -579,8 +574,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *    }
    *  </pre>
    */
-  public final String toJava() { return toJava(new SB()).toString(); }
-  public SB toJava( SB sb ) {
+  public final String toJava(boolean preview) { return toJava(new SB(), preview).toString(); }
+  public SB toJava( SB sb, boolean preview ) {
     SB fileContext = new SB();  // preserve file context
     String modelName = JCodeGen.toJavaId(_key.toString());
     // HEADER
@@ -598,6 +593,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
+    if (preview && toJavaCheckTooBig()) {
+      sb.nl();
+      sb.nl();
+      sb.p("//").nl();
+      sb.p("// NOTE:  Java model is too large to preview, please download as shown above.").nl();
+      sb.p("//").nl();
+      return sb;
+    }
     sb.p("import java.util.Map;").nl();
     sb.p("import hex.genmodel.GenModel;").nl();
     sb.nl();
@@ -617,7 +620,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected SB toJavaSuper( String modelName, SB sb ) {
     return sb.nl().ip("public "+modelName+"() { super(NAMES,DOMAINS); }").nl();
   }
-  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names,_output.nfeatures()), "Names of columns used by model."); }
+  private SB toJavaNAMES( SB sb ) { return JCodeGen.toStaticVar(sb, "NAMES", Arrays.copyOf(_output._names, _output.nfeatures()), "Names of columns used by model."); }
   protected SB toJavaNCLASSES( SB sb ) { return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES", _output.nclasses(), "Number of output classes included in training data response column.") : sb; }
   private SB toJavaDOMAINS( SB sb, SB fileContext ) {
     String modelName = JCodeGen.toJavaId(_key.toString());
@@ -637,6 +640,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return sb.ip("};").nl();
   }
   protected SB toJavaPROB( SB sb) { return sb; }
+  protected boolean toJavaCheckTooBig() {
+    Log.warn("toJavaCheckTooBig must be overridden for this model type to render it in the browser");
+    return true;
+  }
   // Override in subclasses to provide some top-level model-specific goodness
   protected SB toJavaInit(SB sb, SB fileContext) { return sb; }
   // Override in subclasses to provide some inside 'predict' call goodness
@@ -689,7 +696,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
 
       String modelName = JCodeGen.toJavaId(_key.toString());
-      String java_text = toJava();
+      boolean preview = false;
+      String java_text = toJava(preview);
       //System.out.println(java_text);
       GenModel genmodel;
       try { 

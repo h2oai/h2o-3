@@ -96,7 +96,7 @@ h2o.parseSetup <- function(data, key = "", header=NA, sep = "", col.names=NULL, 
 .collapse.char <- function(v) paste0('[', paste0('"', v, '"', collapse=','), ']')
 
 .h2o.fetchNRows <- function(conn = h2o.getConnection(), key) {
-  .h2o.__remoteSend(conn, paste0(.h2o.__INSPECT, "?key=", key))$schema$rows
+  .h2o.__remoteSend(conn, paste0(.h2o.__FRAMES, "/", key))$frames[[1]]$rows
 }
 
 #'

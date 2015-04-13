@@ -38,6 +38,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     /** The maximum number (top K) of predictions to use for hit ratio
      *  computation (for multi-class only, 0 to disable) */
     public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
   }
 
   /** Output from all Supervised Models, includes class distribution
