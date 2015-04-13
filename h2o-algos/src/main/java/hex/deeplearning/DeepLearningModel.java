@@ -644,14 +644,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     DeepLearningScoring errors;
     double run_time;
 
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append(_model_summary.toString());
-      sb.append(_scoring_history.toString());
-      if (_variable_importances != null) sb.append(_variable_importances.toString());
-      return sb.toString();
-    }
-
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
     }
@@ -1833,30 +1825,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return keep_running;
  }
 
-//  @Override protected void setCrossValidationError(Parameters job, double cv_error, ConfusionMatrix cm, AUCData auc, HitRatio hr) {
-//    _have_cv_results = true;
-//    if (!get_params().classification)
-//      last_scored().valid_mse = cv_error;
-//    else
-//      last_scored().valid_err = cv_error;
-//    last_scored().score_validation_samples = last_scored().score_training_samples / get_params().n_folds;
-//    last_scored().num_folds = get_params().n_folds;
-//    last_scored().valid_confusion_matrix = cm;
-//    last_scored().validAUC = auc;
-//    last_scored().valid_hitratio = hr;
-//    DKV.put(this._key, this); //overwrite this model
-//  }
-
   @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(model_info.toString());
-    //sb.append(last_scored().toString());
-    sb.append(_output._scoring_history.toString());
-    if (_output._variable_importances != null) {
-      for (String s : Arrays.asList(_output._variable_importances.toString().split("\n")).subList(0, 12))
-        sb.append(s).append("\n");
-    }
-    return sb.toString();
+    return _output.toString();
   }
 
   /** Make either a prediction or a reconstruction.
