@@ -2,6 +2,8 @@ package hex.tree;
 
 import hex.*;
 import jsr166y.CountedCompleter;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
@@ -12,7 +14,10 @@ import water.util.*;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
@@ -393,8 +398,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
       }
 
-      if( out._ntrees > 0 )     // Compute variable importances
-        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
+      if( out._ntrees > 0 ) {    // Compute variable importances
+        out._model_summary = createModelSummaryTable(out);
+        out._scoring_history = createScoringHistoryTable(out);
+        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar, out._names));
+        Log.info(out._model_summary.toString());
+        // For Debugging:
+//        Log.info(out._scoring_history.toString());
+//        Log.info(out._variable_importances.toString());
+      }
+
       ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
         if( cm._cm.length <= _parms._max_confusion_matrix_size) {
@@ -452,5 +465,71 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public static Random createRNG(long seed) {
     return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
 //    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
+  }
+
+  private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    if (valid() != null) {
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+
+    final int rows = _output._mse_train.length;
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    for( int i = 0; i<rows; i++ ) {
+      int col = 0;
+      assert(row < table.getRowDim());
+      assert(col < table.getColDim());
+      table.set(row, col++, i);
+      table.set(row, col++, _output._mse_train[i]);
+      if (_valid != null) table.set(row, col++, _output._mse_valid[i]);
+      row++;
+    }
+    return table;
+  }
+
+  private TwoDimTable createModelSummaryTable(SharedTreeModel.SharedTreeOutput _output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+
+    colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+
+    colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Mean Depth"); colTypes.add("double"); colFormat.add("%.5f");
+
+    colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Mean Leaves"); colTypes.add("double"); colFormat.add("%.5f");
+
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable(
+            "Model Summary", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._treeStats._min_depth);
+    table.set(row, col++, _output._treeStats._max_depth);
+    table.set(row, col++, _output._treeStats._mean_depth);
+    table.set(row, col++, _output._treeStats._min_leaves);
+    table.set(row, col++, _output._treeStats._max_leaves);
+    table.set(row, col++, _output._treeStats._mean_leaves);
+    return table;
   }
 }
