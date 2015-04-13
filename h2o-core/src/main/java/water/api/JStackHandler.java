@@ -4,7 +4,7 @@ import water.util.JStack;
 
 public class JStackHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public JStackV2 fetch(int version, JStackV2 js) {
+  public JStackV3 fetch(int version, JStackV3 js) {
     return js.fillFromImpl(new JStack().execImpl());
   }
 }
