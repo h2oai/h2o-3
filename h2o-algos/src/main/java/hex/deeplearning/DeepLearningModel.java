@@ -2033,7 +2033,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Scope.enter();
     adaptTestForTrain(adaptFrm,true);
     for (int j=0; j<features; ++j) {
-      adaptFrm.add("DF.C" + (j+1), vecs[j]);
+      adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
