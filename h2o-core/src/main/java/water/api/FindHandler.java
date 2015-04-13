@@ -14,13 +14,13 @@ import water.util.IcedHashMap;
 class FindHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FindV2 find(int version, FindV2 find) {
+  public FindV3 find(int version, FindV3 find) {
     Frame frame = find.key.createAndFillImpl();
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
       Vec vec = frame.vec(find.column);
       if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
-      find.key = new FrameV2(new Frame(new String[]{find.column}, new Vec[]{vec}));
+      find.key = new FrameV3(new Frame(new String[]{find.column}, new Vec[]{vec}));
     }
 
     // Convert the search string into a column-specific flavor

@@ -142,7 +142,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     this.fields = new FieldMetadataBase[impl.fields.size()];
     int i = 0;
     for (FieldMetadata f : impl.fields)
-      this.fields[i++] = new FieldMetadataV1().fillFromImpl(f); // TODO: version!
+      this.fields[i++] = new FieldMetadataV3().fillFromImpl(f); // TODO: version!
     return this;
   }
 }

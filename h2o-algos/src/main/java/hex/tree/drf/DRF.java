@@ -2,7 +2,7 @@ package hex.tree.drf;
 
 import hex.Model;
 import static hex.genmodel.GenModel.getPrediction;
-import hex.schemas.DRFV2;
+import hex.schemas.DRFV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -40,7 +40,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // Called from an http request
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF",parms); init(false); }
 
-  @Override public DRFV2 schema() { return new DRFV2(); }
+  @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread. */
   @Override public Job<hex.tree.drf.DRFModel> trainModel() {

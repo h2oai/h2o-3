@@ -6,7 +6,6 @@ import water.H2O;
 import water.Futures;
 import water.DKV;
 import water.Iced;
-import water.api.ModelSchema;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -19,7 +18,6 @@ import water.util.Log;
 
 import hex.Model;
 import hex.word2vec.Word2VecModel.*;
-import hex.schemas.Word2VecModelV2;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
