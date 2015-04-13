@@ -62,8 +62,6 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     return preds;
   }
 
-  @Override protected boolean binomialOpt() { return true; }
-
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
@@ -88,4 +86,6 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     body.ip("water.util.ModelUtils.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
     body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, data);").nl();
   }
+
+  @Override protected boolean binomialOpt() { return true; }
 }
