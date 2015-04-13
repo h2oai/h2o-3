@@ -124,6 +124,7 @@ public abstract class Paxos {
   // change cloud shape - the distributed writes will be in the wrong place.
   static void lockCloud() {
     if( _cloudLocked ) return; // Fast-path cutout
+    Log.info("Locking cloud to new members");
     synchronized(Paxos.class) {
       while( !_commonKnowledge )
         try { Paxos.class.wait(); } catch( InterruptedException ignore ) { }

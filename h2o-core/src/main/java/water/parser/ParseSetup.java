@@ -1,7 +1,7 @@
 package water.parser;
 
 import water.*;
-import water.api.ParseSetupV2;
+import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OInternalParseException;
 import water.exceptions.H2OParseException;
@@ -11,7 +11,6 @@ import water.fvec.Vec;
 import water.fvec.UploadFileVec;
 import water.fvec.FileVec;
 import water.fvec.ByteVec;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -76,7 +75,7 @@ public final class ParseSetup extends Iced {
    *
    * @param ps Parse setup settings from client
    */
-  public ParseSetup(ParseSetupV2 ps) {
+  public ParseSetup(ParseSetupV3 ps) {
     this(false, 0, null, ps.parse_type, ps.separator, ps.single_quotes,
             ps.check_header, GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
             null, ps.na_strings, null, ps.chunk_size);
@@ -459,7 +458,7 @@ public final class ParseSetup extends Iced {
               other._parse_type+" as one dataset","File type mismatch: "+_parse_type+", "+other._parse_type);
 
     //different separators or col counts
-    if( other._separator != _separator && other._separator != GUESS_SEP )
+    if( _separator != other._separator && (_separator != GUESS_SEP || other._separator != GUESS_SEP))
       return false;
     // compatible column count
     return _number_columns == other._number_columns || other._number_columns == 0 || _number_columns == 0;

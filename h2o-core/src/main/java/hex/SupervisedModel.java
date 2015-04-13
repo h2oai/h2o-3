@@ -38,6 +38,11 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     /** The maximum number (top K) of predictions to use for hit ratio
      *  computation (for multi-class only, 0 to disable) */
     public int _max_hit_ratio_k = 10;
+
+    /** For classification models, the maximum size (in terms of classes) of
+     *  the confusion matrix for it to be printed. This option is meant to
+     *  avoid printing extremely large confusion matrices.  */
+    public int _max_confusion_matrix_size = 20;
   }
 
   /** Output from all Supervised Models, includes class distribution
@@ -47,8 +52,8 @@ public abstract class SupervisedModel<M extends SupervisedModel<M,P,O>, P extend
     public long [/*nclass*/] _distribution;  // Count of rows-per-class
     public double[/*nclass*/] _priorClassDist;// Fraction of classes out of 1.0
     public double[/*nclass*/] _modelClassDist;// Distribution, after balancing classes
-    public ModelMetrics _train_metrics; // Metrics on training frame
-    public ModelMetrics _valid_metrics; // Metrics on validation frame
+    public ModelMetrics _training_metrics; // Metrics on training frame
+    public ModelMetrics _validation_metrics; // Metrics on validation frame
 
     public SupervisedOutput() { this(null); }
 

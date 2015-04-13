@@ -157,8 +157,10 @@ def remove(key):
   :param key: The key pointing to the object to be removed.
   :return: Void
   """
-  H2OConnection.delete("Remove", key=key)
+  if key is None:
+    raise ValueError("remove with no key is not supported, for your protection")
 
+  H2OConnection.delete("DKV/" + key)
 
 def rapids(expr):
   """

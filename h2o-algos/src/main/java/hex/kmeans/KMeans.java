@@ -2,7 +2,7 @@ package hex.kmeans;
 
 import hex.ClusteringModelBuilder;
 import hex.Model;
-import hex.schemas.KMeansV2;
+import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
@@ -38,7 +38,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   public KMeans(Key dest, String desc, KMeansModel.KMeansParameters parms) { super(dest, desc, parms); init(false); }
   public KMeans( KMeansModel.KMeansParameters parms ) { super("K-means",parms); init(false); }
 
-  public ModelBuilderSchema schema() { return new KMeansV2(); }
+  public ModelBuilderSchema schema() { return new KMeansV3(); }
 
 
   /** Start the KMeans training Job on an F/J thread. */

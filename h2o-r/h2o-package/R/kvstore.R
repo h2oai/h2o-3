@@ -69,9 +69,9 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' @export
 h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=120) {
   tryCatch(
-    invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE", timeout=timeout_secs)),
+    invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {
-      print("Timeout on /RemoveAll from R")
+      print("Timeout on DELETE /DKV from R")
       print("Attempt thread dump...")
       h2o.killMinus3(conn)
       stop(e)
@@ -97,7 +97,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(conn, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
+    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", keys[[i]]), method = "DELETE")
 }
 
 #'

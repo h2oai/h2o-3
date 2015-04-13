@@ -1,14 +1,14 @@
 package water.api;
 
 import hex.SupervisedModel;
-import water.api.FrameV2.ColSpecifierV2;
+import water.api.FrameV3.ColSpecifierV2;
 
 /**
  * An instance of a SupervisedModelParameters schema contains the common SupervisedModel build parameters (e.g., response_column).
  */
 public class SupervisedModelParametersSchema<P extends SupervisedModel.SupervisedParameters, S extends SupervisedModelParametersSchema<P, S>> extends ModelParametersSchema<P, S> {
 
-  static public String[] own_fields = new String[]{"response_column", "balance_classes", "class_sampling_factors", "max_after_balance_size"};
+  static public String[] own_fields = new String[]{"response_column", "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k"};
 
   // TODO: pass these as a new helper class that contains frame and vec; right now we have no automagic way to
   // know which frame a Vec name corresponds to, so there's hardwired logic in the adaptor which knows that these
@@ -38,4 +38,16 @@ public class SupervisedModelParametersSchema<P extends SupervisedModel.Supervise
    */
   @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction = API.Direction.INOUT)
   public float max_after_balance_size;
+
+  /** For classification models, the maximum size (in terms of classes) of
+   *  the confusion matrix for it to be printed. This option is meant to
+   *  avoid printing extremely large confusion matrices.  */
+  @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.expert, direction = API.Direction.INOUT)
+  public int max_confusion_matrix_size;
+
+  /**
+   * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
+   */
+  @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.expert, direction=API.Direction.INOUT)
+  public int max_hit_ratio_k;
 }

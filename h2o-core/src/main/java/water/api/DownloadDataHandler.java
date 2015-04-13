@@ -9,7 +9,7 @@ import java.io.InputStream;
 public class DownloadDataHandler extends Handler { // TODO: recursive generics seem to prevent more specific types here
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public DownloadDataV1 fetch(int version, DownloadDataV1 server) {
+  public DownloadDataV3 fetch(int version, DownloadDataV3 server) {
 
     if (DKV.get(server.key.key()) == null) throw new H2OKeyNotFoundArgumentException("key", server.key.key());
     Frame value = server.key.key().get();

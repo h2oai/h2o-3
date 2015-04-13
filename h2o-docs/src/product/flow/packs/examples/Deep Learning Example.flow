@@ -63,23 +63,11 @@
     },
     {
       "type": "md",
-      "input": "##Results\n\n To view the results, click the **View** button. The output for the Deep Learning model displays the scoring history, the training metrics, and the status of the neuron layers. "
+      "input": "##Results\n\n To view the results, click the **View** button. The output for the Deep Learning model displays the status of the neuron layers and the scoring history. "
     },
     {
       "type": "cs",
       "input": "getModel \"deeplearning-98393399-59c6-4828-97a0-b8d5d458c8f3\""
-    },
-    {
-      "type": "md",
-      "input": " For more details, click the **Inspect** button. \n\n Select the appropriate link to view details for: \n \n - Neuron layer status\n - Scoring history\n - Training metrics\n - Training metrics confusion matrix\n - Validation metrics\n - Validation metrics confusion matrix\n\nThe training metrics are shown below. \n"
-    },
-    {
-      "type": "cs",
-      "input": "inspect getModel \"deeplearning-98393399-59c6-4828-97a0-b8d5d458c8f3\""
-    },
-    {
-      "type": "cs",
-      "input": "grid inspect \"Training Metrics\", getModel \"deeplearning-98393399-59c6-4828-97a0-b8d5d458c8f3\""
     }
   ]
 }
