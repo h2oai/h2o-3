@@ -79,7 +79,7 @@ h2o.downloadCSV <- function(data, filename) {
   if (!is(data, "H2OFrame"))
     stop("`data` must be an H2OFrame object")
 
-  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/2/DownloadDataset?src_key=', data@key)
+  str <- paste0('http://', data@conn@ip, ':', data@conn@port, '/3/DownloadDataset?src_key=', data@key)
   has_wget <- nzchar(Sys.which('wget'))
   has_curl <- nzchar(Sys.which('curl'))
   if(!(has_wget || has_curl))

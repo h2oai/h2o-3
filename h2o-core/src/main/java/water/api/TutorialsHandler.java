@@ -7,5 +7,5 @@ package water.api;
  */
 class TutorialsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public TutorialsV1 nop(int version, TutorialsV1 ignoreme) { return ignoreme; }
+  public TutorialsV3 nop(int version, TutorialsV3 ignoreme) { return ignoreme; }
 }

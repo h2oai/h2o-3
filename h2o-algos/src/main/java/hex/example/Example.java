@@ -2,7 +2,7 @@ package hex.example;
 
 import hex.Model;
 import hex.SupervisedModelBuilder;
-import hex.schemas.ExampleV2;
+import hex.schemas.ExampleV3;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
@@ -26,7 +26,7 @@ public class Example extends SupervisedModelBuilder<ExampleModel,ExampleModel.Ex
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super("Example",parms); init(false); }
 
-  public ModelBuilderSchema schema() { return new ExampleV2(); }
+  public ModelBuilderSchema schema() { return new ExampleV3(); }
 
   @Override public Example trainModel() {
     return (Example)start(new ExampleDriver(), _parms._max_iterations);

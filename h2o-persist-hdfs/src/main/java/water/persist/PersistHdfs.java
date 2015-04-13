@@ -15,8 +15,6 @@ import org.apache.hadoop.fs.*;
 import water.*;
 
 import water.api.HDFSIOException;
-import water.api.Schema;
-import water.api.TypeaheadV2;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
 import water.util.FileUtils;

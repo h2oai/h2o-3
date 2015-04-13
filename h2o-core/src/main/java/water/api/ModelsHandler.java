@@ -132,11 +132,11 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       m.models[0] = model;
       m.find_compatible_frames = true;
       Frame[] compatible = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
-      s.compatible_frames = new FrameV2[compatible.length]; // TODO: FrameBase
+      s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBase
       s.models[0].compatible_frames = new String[compatible.length];
       int i = 0;
       for (Frame f : compatible) {
-        s.compatible_frames[i] = new FrameV2(f).fillFromImpl(f); // TODO: FrameBase
+        s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBase
         s.models[0].compatible_frames[i] = f._key.toString();
         i++;
       }

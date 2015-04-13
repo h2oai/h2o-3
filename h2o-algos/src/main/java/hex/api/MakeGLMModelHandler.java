@@ -2,8 +2,8 @@ package hex.api;
 
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
-import hex.schemas.GLMModelV2;
-import hex.schemas.MakeGLMModelV2;
+import hex.schemas.GLMModelV3;
+import hex.schemas.MakeGLMModelV3;
 import water.DKV;
 import water.api.Handler;
 
@@ -13,7 +13,7 @@ import java.util.Map;
  * Created by tomasnykodym on 3/25/15.
  */
 public class MakeGLMModelHandler extends Handler {
-  public GLMModelV2 make_model(int version, MakeGLMModelV2 args){
+  public GLMModelV3 make_model(int version, MakeGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
@@ -29,7 +29,7 @@ public class MakeGLMModelHandler extends Handler {
     System.out.println(coefs);
     GLMModel m = new GLMModel(args.dest.key(),model._parms,new GLMOutput(model._output._names,model._output._domains, names, beta,.5f,model._output._binomial), model.dinfo(), Double.NaN, Double.NaN, -1);
     DKV.put(m._key, m);
-    GLMModelV2 res = new GLMModelV2();
+    GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
     return res;
   }

@@ -15,7 +15,7 @@ public class TimelineHandler extends Handler {
 
   // TODO: should return a base class for TimelineVx
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public TimelineV2 fetch(int version, TimelineV2 s) {
+  public TimelineV3 fetch(int version, TimelineV3 s) {
     Timeline t = s.createAndFillImpl();
     t.snapshot = new TimelineSnapshot(H2O.CLOUD,TimeLine.system_snapshot());
     return s.fillFromImpl(t);

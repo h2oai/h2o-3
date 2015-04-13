@@ -381,7 +381,7 @@ class H2O(object):
             'job_key': job_key
         }
         h2o_util.check_params_update_kwargs(params_dict, kwargs, 'jobs', H2O.verbose)
-        result = self.__do_json_request('/2/Jobs', timeout=timeoutSecs, params=params_dict)
+        result = self.__do_json_request('/3/Jobs', timeout=timeoutSecs, params=params_dict)
         return result
 
 
@@ -397,7 +397,7 @@ class H2O(object):
         start_time = time.time()
         while True:
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
-            result = self.__do_json_request('/2/Jobs/' + job_key, timeout=timeoutSecs, params=params_dict)
+            result = self.__do_json_request('/3/Jobs/' + job_key, timeout=timeoutSecs, params=params_dict)
             
             status = result['jobs'][0]['status']
             if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
@@ -428,7 +428,7 @@ class H2O(object):
     Split a Frame.
     '''
     def split_frame(self, timeoutSecs=180, **kwargs):
-        a = self.__do_json_request('2/SplitFrame', cmd="post",
+        a = self.__do_json_request('/3/SplitFrame', cmd="post",
             timeout=timeoutSecs,
             postData=kwargs
         )
@@ -441,7 +441,7 @@ class H2O(object):
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
     def import_files(self, path, timeoutSecs=180):
-        a = self.__do_json_request('/2/ImportFiles',
+        a = self.__do_json_request('/3/ImportFiles',
             timeout=timeoutSecs,
             params={"path": path}
         )
@@ -468,7 +468,7 @@ class H2O(object):
             'source_keys': '["' + key + '"]'  # NOTE: quote key names
         }
         # h2o_util.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=H2O.verbose)
-        setup_result = self.__do_json_request(jsonRequest="/2/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
+        setup_result = self.__do_json_request(jsonRequest="/3/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_util.dump_json(setup_result))
 
         # 
@@ -492,7 +492,7 @@ class H2O(object):
         H2O.verboseprint("parse_params: " + repr(parse_params))
         h2o_util.check_params_update_kwargs(parse_params, kwargs, 'parse', print_params=H2O.verbose)
 
-        parse_result = self.__do_json_request(jsonRequest="/2/Parse", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
+        parse_result = self.__do_json_request(jsonRequest="/3/Parse", cmd='post', timeout=timeoutSecs, postData=parse_params, **kwargs)
         H2O.verboseprint("Parse result:", h2o_util.dump_json(parse_result))
 
         # print("Parse result:", repr(parse_result))
@@ -810,7 +810,7 @@ class H2O(object):
     '''
     def endpoints(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/endpoints', cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Metadata/endpoints', cmd='get', timeout=timeoutSecs)
 
         return result
 
@@ -819,7 +819,7 @@ class H2O(object):
     '''
     def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/endpoints/' + str(num), cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Metadata/endpoints/' + str(num), cmd='get', timeout=timeoutSecs)
 
         return result
 
@@ -828,15 +828,15 @@ class H2O(object):
     '''
     def schemas(self, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/schemas', cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Metadata/schemas', cmd='get', timeout=timeoutSecs)
 
         return result
 
     '''
-    Fetch the metadata for the given named REST API schema (e.g., FrameV2).
+    Fetch the metadata for the given named REST API schema (e.g., FrameV3).
     '''
     def schema(self, schemaname, timeoutSecs=60, **kwargs):
         parameters = { }
-        result = self.__do_json_request('/1/Metadata/schemas/' + schemaname, cmd='get', timeout=timeoutSecs)
+        result = self.__do_json_request('/3/Metadata/schemas/' + schemaname, cmd='get', timeout=timeoutSecs)
 
         return result

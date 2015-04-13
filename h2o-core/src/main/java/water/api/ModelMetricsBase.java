@@ -2,8 +2,8 @@ package water.api;
 
 import hex.Model;
 import hex.ModelMetrics;
-import water.api.KeyV1.FrameKeyV1;
-import water.api.KeyV1.ModelKeyV1;
+import water.api.KeyV3.FrameKeyV3;
+import water.api.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
@@ -13,13 +13,13 @@ import water.util.PojoUtils;
 public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends Schema<I, S> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
-  public ModelKeyV1 model;
+  public ModelKeyV3 model;
 
   @API(help="The checksum for the model used for this scoring run.", direction=API.Direction.INOUT)
   public long model_checksum;
 
   @API(help="The frame used for this scoring run.", direction=API.Direction.INOUT)
-  public FrameKeyV1 frame;
+  public FrameKeyV3 frame;
   // public FrameV2 frame; // TODO: should use a base class!
 
   @API(help="The checksum for the frame used for this scoring run.", direction=API.Direction.INOUT)
@@ -39,7 +39,7 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
   public long scoring_time;
 
   @API(help="Predictions Frame.", direction=API.Direction.OUTPUT)
-  public FrameV2 predictions;
+  public FrameV3 predictions;
 
   @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
   public double mse;
@@ -48,7 +48,7 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();
     if( m != null ) {
-      this.model = new ModelKeyV1(m._key);
+      this.model = new ModelKeyV3(m._key);
       this.model_category = m._output.getModelCategory();
       this.model_checksum = m.checksum();
     }
@@ -56,7 +56,7 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
     // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
     Frame f = modelMetrics.frame();
     if (null != f) { //true == f.getClass().getSuperclass().getGenericSuperclass() instanceof ParameterizedType
-      this.frame = new FrameKeyV1(f._key);
+      this.frame = new FrameKeyV3(f._key);
       this.frame_checksum = f.checksum();
     }
 

@@ -1,11 +1,10 @@
 package hex.naivebayes;
 
 import hex.*;
-import hex.schemas.NaiveBayesModelV2;
+import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
 import water.api.ModelSchema;
-import water.util.ModelUtils;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
@@ -41,7 +40,7 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
   public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { super(selfKey,parms,output); }
 
   public ModelSchema schema() {
-    return new NaiveBayesModelV2();
+    return new NaiveBayesModelV3();
   }
 
   // TODO: Constant response shouldn't be regression. Need to override getModelCategory()
