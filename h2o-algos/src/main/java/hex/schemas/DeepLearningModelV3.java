@@ -16,36 +16,14 @@ public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLear
     @API(help="Training Time (milliseconds)", direction=API.Direction.OUTPUT)
     public long training_time_ms;
 
-    // training/validation sets
-    @API(help="Score for training samples", direction=API.Direction.OUTPUT)
-    public long score_training_samples;
-
-    @API(help="Score for validation samples", direction=API.Direction.OUTPUT)
-    public long score_validation_samples;
-
-    @API(help="Model summary")
-    TwoDimTableBase model_summary;
-
     @API(help="Whether the model is an autoencoder")
     boolean autoencoder;
 
     @API(help="Frame keys for weight matrices")
-    KeyV3[] weights;
+    KeyV3.FrameKeyV3[] weights;
 
     @API(help="Frame keys for bias vectors")
-    KeyV3[] biases;
-
-    @API(help="Scoring history")
-    TwoDimTableBase scoring_history;
-
-    @API(help="Training data model metrics")
-    ModelMetricsBase training_metrics;
-
-    @API(help="Validation data model metrics")
-    ModelMetricsBase validation_metrics;
-
-    @API(help="Variable Importances")
-    TwoDimTableBase variable_importances;
+    KeyV3.FrameKeyV3[] biases;
 
     @API(help="Training time (seconds)")
     double run_time;

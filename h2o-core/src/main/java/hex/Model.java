@@ -206,6 +206,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  ModelBuilder. */
     public Job.JobState _state;
 
+    /**
+     * Training set metrics obtained during model training
+     */
+    public ModelMetrics _training_metrics;
+
+    /**
+     * Validation set metrics obtained during model training (if a validation data set was specified)
+     */
+    public ModelMetrics _validation_metrics;
+
+    public TwoDimTable _model_summary;
+    public TwoDimTable _scoring_history;
+    public TwoDimTable _variable_importances;
+
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec

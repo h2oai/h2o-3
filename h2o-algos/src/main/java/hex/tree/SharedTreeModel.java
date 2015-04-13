@@ -58,9 +58,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_valid[/*_ntrees+1*/];
 
-    /** Variable Importance */
-    public TwoDimTable _variable_importances;
-
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
       super(b);
       _ntrees = 0;              // No trees yet
