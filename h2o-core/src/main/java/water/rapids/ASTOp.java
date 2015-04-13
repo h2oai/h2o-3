@@ -2066,28 +2066,27 @@ class ASTSetLevel extends ASTUniPrefixOp {
 }
 
 class ASTMatch extends ASTUniPrefixOp {
-  protected double _nomatch;
-  protected String[] _matches;
+  double _nomatch;
+  String[] _matches;
   @Override String opStr() { return "match"; }
   ASTMatch() { super( new String[]{"", "ary", "table", "nomatch", "incomparables"}); }
   @Override ASTOp make() { return new ASTMatch(); }
   ASTMatch parse_impl(Exec E) {
     // First parse out the `ary` arg
     AST ary = E.parse();
+
     // The `table` arg
     _matches = ((ASTStringList)E.parse())._s;
-    // cleanup _matches
-    for (int i = 0; i < _matches.length; ++i) _matches[i] = _matches[i].replace("\"", "").replace("\'", "");
+    Arrays.sort(_matches);
+
     // `nomatch` is just a number in case no match
-    try {
-      ASTNum nomatch = (ASTNum) E.parse();
-      _nomatch = nomatch.dbl();
-    } catch(ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `nomatch` expected a number.");
-    }
+    AST nm = E.parse();
+    if( nm instanceof ASTNum ) _nomatch = ((ASTNum)nm)._d;
+    else throw new IllegalArgumentException("Argument `nomatch` expected a number.");
+
     // drop the incomparables arg for now ...
     AST incomp = E.parse();
+
     E.eatEnd(); // eat the ending ')'
     ASTMatch res = (ASTMatch) clone();
     res._asts = new AST[]{ary};
@@ -2096,20 +2095,18 @@ class ASTMatch extends ASTUniPrefixOp {
 
   @Override void apply(Env e) {
     Frame fr = e.popAry();
-    if (fr.numCols() != 1) throw new IllegalArgumentException("can only match on a single categorical column.");
-    if (!fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
+    if (fr.numCols() != 1 && !fr.anyVec().isEnum()) throw new IllegalArgumentException("can only match on a single categorical column.");
     Key tmp = Key.make();
     final String[] matches = _matches;
     Frame rez = new MRTask() {
-      private int in(String s) { return Arrays.asList(matches).contains(s) ? 1 : 0; }
       @Override public void map(Chunk c, NewChunk n) {
         int rows = c._len;
-        for (int r = 0; r < rows; ++r) n.addNum(in(c.vec().domain()[(int)c.at8(r)]));
+        for (int r = 0; r < rows; ++r) n.addNum(in(matches, c.vec().domain()[(int)c.at8(r)]));
       }
     }.doAll(1, fr.anyVec()).outputFrame(tmp, null, null);
     e.pushAry(rez);
   }
-
+  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0;}
 }
 
 // R like binary operator ||
@@ -2132,21 +2129,12 @@ class ASTOR extends ASTBinOp {
     }
     double op2 = !Double.isNaN(op1) && op1!=0 ? 1 : (env.isNum()) ? env.peekDbl()
                     : (env.isAry()) ? env.peekAry().vecs()[0].at(0) : Double.NaN;
-
     // op2 is NaN ? push NaN
-    if (Double.isNaN(op2)) {
-      env.poppush(2, new ValNum(op2));
-      return;
-    }
-
+    if (Double.isNaN(op2))         env.poppush(2, new ValNum(op2));
     // both 0 ? push False
-    if (op1 == 0 && op2 == 0) {
-      env.poppush(2, new ValNum(0.0));
-      return;
-    }
-
+    else if (op1 == 0 && op2 == 0) env.poppush(2, new ValNum(0.0));
     // else push True
-    env.poppush(2, new ValNum(1.0));
+    else                           env.poppush(2, new ValNum(1.0));
   }
 }
 
@@ -2369,7 +2357,7 @@ class ASTQtile extends ASTUniPrefixOp {
     QuantileModel q = new Quantile(parms).trainModel().get();
     
     Frame fr = new Frame();
-    fr.add("Probs",Vec.makeCon(parms._probs));
+//    fr.add("Probs",Vec.makeCon(parms._probs));
     for( int i=0; i<x.numCols(); i++ )
       fr.add(x._names[i]+"Quantiles",Vec.makeCon(q._output._quantiles[i]));
     q.delete();

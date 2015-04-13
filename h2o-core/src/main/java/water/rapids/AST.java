@@ -192,7 +192,8 @@ class ASTFrame extends AST {
     Keyed val = DKV.getGet(k);
     if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
-    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
+    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame(Key.make(), null, new Vec[]{(Vec)val});
+    if( !isFrame && _fr._key!=null && DKV.get(_fr._key)==null ) DKV.put(_fr._key,_fr);
     _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
