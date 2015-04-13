@@ -2,6 +2,8 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.glrm.GLRMModel.GLRMParameters;
+import hex.svd.SVD;
+import hex.svd.SVDModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -256,5 +258,38 @@ public class GLRMTest extends TestUtil {
     sb.append("Missing Fraction --> Avg SSE in Eigenvectors\n");
     for (String s : Arrays.toString(ev_map.entrySet().toArray()).split(",")) sb.append(s.replace("=", " --> ")).append("\n");
     Log.info(sb.toString());
+  }
+
+  @Test public void testPowerMethod() {
+    double[][] svec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
+                          ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
+                          ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
+                          ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
+    SVDModel model = null;
+    Frame train = null;
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._seed = 1234;
+
+      SVD job = new SVD(parms);
+      try {
+        model = job.trainModel().get();
+        for(int i = 0; i < parms._k; i++)
+          Assert.assertArrayEquals(svec[i], model._output._v[i], TOLERANCE);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw new RuntimeException(t);
+      } finally {
+        job.remove();
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw new RuntimeException(t);
+    } finally {
+      if (train != null) train.delete();
+    }
   }
 }

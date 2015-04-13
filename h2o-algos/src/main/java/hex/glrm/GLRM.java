@@ -70,7 +70,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
-    if (_parms._gamma < 0) error("_gamma", "lambda must be a non-negative number");
+    if (_parms._gamma < 0) error("_gamma", "gambda must be a non-negative number");
+    if (_parms._max_iterations < 1) error("_max_iterations", "max_iterations must be at least 1");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
@@ -98,7 +99,83 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     _ncolX = _parms._k;
   }
 
+  // Squared Frobenius norm of a matrix (sum of squared entries)
+  public static double frobenius2(double[][] x) {
+    if(x == null) return 0;
+
+    double frob = 0;
+    for(int i = 0; i < x.length; i++) {
+      for(int j = 0; j < x[0].length; j++)
+        frob += x[i][j] * x[i][j];
+    }
+    return frob;
+  }
+
+  // Transform each column of a 2-D array
+  public static double[][] transform(double[][] centers, int ncats, double[] normSub, double[] normMul) {
+    int K = centers.length;
+    int N = centers[0].length;
+    double[][] value = new double[K][N];
+    double[] means = normSub == null ? MemoryManager.malloc8d(N) : normSub;
+    double[] mults = normMul == null ? MemoryManager.malloc8d(N) : normMul;
+
+    for (int clu = 0; clu < K; clu++) {
+      System.arraycopy(centers[clu], 0, value[clu], 0, N);
+      for (int col = ncats; col < N; col++)
+        value[clu][col] = (value[clu][col] - means[col]) * mults[col];
+    }
+    return value;
+  }
+
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
+
+    // Initialize Y to be the k centers from k-means++
+    public double[][] initialY() {
+      double[][] centers;
+
+      if (null != _parms._user_points) { // User-specified starting points
+        centers = new double[_parms._k][_ncolA];
+        Vec[] centersVecs = _parms._user_points.get().vecs();
+
+        // Get the centers and put into array
+        for (int r = 0; r < _parms._k; r++) {
+          for (int c = 0; c < _ncolA; c++)
+            centers[r][c] = centersVecs[c].at(r);
+        }
+        if (frobenius2(centers) == 0)
+          throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
+
+      } else {  // Run k-means++ and use resulting cluster centers as initial Y
+        KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+        parms._train = _parms._train;
+        parms._ignored_columns = _parms._ignored_columns;
+        parms._dropConsCols = _parms._dropConsCols;
+        parms._dropNA20Cols = _parms._dropNA20Cols;
+        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
+        parms._score_each_iteration = _parms._score_each_iteration;
+        parms._init = KMeans.Initialization.PlusPlus;
+        parms._k = _parms._k;
+        parms._max_iterations = _parms._max_iterations;
+        parms._standardize = true;
+        parms._seed = _parms._seed;
+
+        KMeansModel km = null;
+        KMeans job = null;
+        try {
+          job = new KMeans(parms);
+          km = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+          if (km != null) km.remove();
+        }
+
+        // K-means automatically destandardizes centers! Need the original standardized version
+        centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
+        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(_parms._k, _ncolA);
+      }
+      return centers;
+    }
+
     // Stopping criteria
     private boolean isDone(GLRMModel model) {
       if (!isRunning()) return true; // Stopped/cancelled
@@ -113,7 +190,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     public Cholesky regularizedCholesky(Gram gram, int max_attempts) {
       int attempts = 0;
       double addedL2 = 0;   // TODO: Should I report this to the user?
-      Gram.Cholesky chol = gram.cholesky(null);
+      Cholesky chol = gram.cholesky(null);
       while(!chol.isSPD() && attempts < max_attempts) {
         if(addedL2 == 0) addedL2 = 1e-5;
         else addedL2 *= 10;
@@ -202,9 +279,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // 0) a) Initialize Y matrix
         double nobs = _train.numRows() * _train.numCols();
-        GLRMInit ginit = new GLRMInit(_parms, _train);
         // for(int i = 0; i < _train.numCols(); i++) nobs -= _train.vec(i).naCnt();   // TODO: Should we count NAs?
-        double[][] yt = ArrayUtils.transpose(ginit.initialY());
+        double[][] yt = ArrayUtils.transpose(initialY());
 
         // 0) b) Initialize X matrix to random numbers
         // Jam A and X into a single frame for distributed computation
