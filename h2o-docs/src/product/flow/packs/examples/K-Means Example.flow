@@ -67,7 +67,7 @@
     },
     {
       "type": "cs",
-      "input": "grid inspect \"Cluster means\", getModel \"kmeans-57c800ec-2e31-43fa-8b2b-2034df6e7ae1\""
+      "input": "grid inspect \"Cluster means\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
     },
     {
       "type": "md",
