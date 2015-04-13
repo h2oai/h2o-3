@@ -191,11 +191,27 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
-  public static double[] multArray(double[][] ary, double[] nums) {
+  public static double[] multArrVec(double[][] ary, double[] nums) {
     if(ary == null || nums == null) return null;
     double[] res = new double[ary.length];
     for(int i = 0; i < ary.length; i++)
       res[i] = innerProduct(ary[i], nums);
+    return res;
+  }
+
+  public static double[][] multArrArr(double[][] ary1, double[][] ary2) {
+    if(ary1 == null || ary2 == null) return null;
+    assert ary1[0].length == ary2.length : "Inner dimensions must match: Got " + ary1[0].length + "!=" + ary2.length;   // Inner dimensions must match
+    double[][] res = new double[ary1.length][ary2[0].length];
+
+    for(int i = 0; i < ary1.length; i++) {
+      for(int j = 0; j < ary2[0].length; j++) {
+        double tmp = 0;
+        for(int k = 0; k < ary1[0].length; k++)
+          tmp += ary1[i][k] * ary2[k][j];
+        res[i][j] = tmp;
+      }
+    }
     return res;
   }
 

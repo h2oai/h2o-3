@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.DataInfo;
+import hex.FrameTask;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
@@ -10,6 +11,7 @@ import water.Key;
 import water.MemoryManager;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
@@ -124,7 +126,9 @@ public class GLRMInit {
       for(int j = 0; j < ivv.length; j++) ivv[j][j] = 1 - ivv[j][j];
 
       // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - v_iv_i' = A(I - v_iv_i')
-      // TODO: This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
+      // This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
+      double[][] lmat = ArrayUtils.multArrArr(ivv, gram);
+      gram = ArrayUtils.multArrArr(lmat, ivv);
     }
     return rsval;
   }
@@ -157,9 +161,31 @@ public class GLRMInit {
       iters++;
     }
 
-    // Compute singular value and vector from x_i
-    ArrayUtils.div(v, ArrayUtils.l2norm(v));    // v = x_i/||x_i||
+    // Compute singular vector v = x_i/||x_i||
+    ArrayUtils.div(v, ArrayUtils.l2norm(v));
     // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
     return v;
+  }
+
+  private class singVal extends FrameTask<singVal> {
+    double[] _svec;
+    double _sval;
+
+    public singVal(Key jobKey, DataInfo dinfo, final double[] svec) {
+      super(jobKey, dinfo);
+      _svec = svec;
+      _sval = 0;
+    }
+
+    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
+      double[] nums = row.numVals;
+      assert nums.length == _svec.length;
+      double tmp = ArrayUtils.innerProduct(nums, _svec);
+      _sval += tmp * tmp;
+    }
+
+    @Override protected void postGlobal() {
+      _sval = Math.sqrt(_sval);
+    }
   }
 }

@@ -551,7 +551,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   private static class BMulTask extends FrameTask<BMulTask> {
     double[][] _yt;   // _yt = Y' (transpose of Y)
 
-    BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
+    public BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
       super(jobKey, dinfo);
       _yt = yt;
     }

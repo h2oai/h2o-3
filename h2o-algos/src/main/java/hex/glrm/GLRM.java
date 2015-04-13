@@ -4,6 +4,7 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 import hex.DataInfo;
+import hex.FrameTask;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram;
@@ -17,6 +18,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -480,6 +482,31 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             xy += chk_xnew(cs, k).atd(row) * _yt[j][k];
           _loss += _parms.loss(xy, (a - _normSub[j]) * _normMul[j]);
         }
+      }
+    }
+  }
+
+  // Computes XY where X is n by k, Y is k by p, and k <= p
+  //  Resulting matrix Z = XY will have dimensions n by k
+  private static class BMulTask extends FrameTask<BMulTask> {
+    double[][] _yt;   // _yt = Y' (transpose of Y)
+
+    public BMulTask(Key jobKey, DataInfo dinfo, final double[][] yt) {
+      super(jobKey, dinfo);
+      _yt = yt;
+    }
+
+    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
+      double[] nums = row.numVals;
+      assert nums.length == _yt[0].length;
+
+      for(int k = 0; k < _yt[0].length; k++) {
+        double x = 0;
+        int c = _dinfo.numStart();
+        for(int d = 0; d < nums.length; d++)
+          x += nums[d] * _yt[k][c++];
+        assert c == _yt[0].length;
+        outputs[k].addNum(x);
       }
     }
   }
