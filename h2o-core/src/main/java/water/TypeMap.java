@@ -41,6 +41,15 @@ public class TypeMap {
     water.api.TutorialsV1.class.getName(),
     water.api.TypeaheadV2.class.getName(),    // Allow typeahead without locking
     water.Key.class.getName(),
+
+    water.api.AboutHandler.AboutV3.class.getName(),
+    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    water.api.NodePersistentStorageV1.class.getName(),
+    water.api.NodePersistentStorageV1.NodePersistentStorageEntryV1.class.getName(),
+    water.api.DocsV1.class.getName(),
+    water.api.DocsBase.class.getName(),
+    water.api.RouteV1.class.getName(),
+    water.api.RouteBase.class.getName(),
   };
   // Class name -> ID mapping
   static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
