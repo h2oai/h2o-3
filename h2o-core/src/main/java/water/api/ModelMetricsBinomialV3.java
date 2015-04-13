@@ -57,7 +57,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       
       // Fill TwoDimTable
       TwoDimTable maxMetrics = new TwoDimTable("Maximum Metric", null, colHeaders,
-                                               new String[]{"Threshold","Metric","idx"},
+                                               new String[]{"Threshold","Value","idx"},
                                                new String[]{"double",   "double","long"},
                                                new String[]{"%f",       "%f",    "%d"},
                                                "Metric" );
