@@ -305,16 +305,53 @@ setClass("H2OModel",
 #' @rdname H2OModel-class
 #' @export
 setMethod("show", "H2OModel", function(object) {
-  cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
+  o <- object
+  m <- o@model
   cat("Model Details:\n")
-  sub <- intersect(names(object@model), names(object@model$help))
-  val <- object@model[sub]
-  lab <- object@model$help[sub]
-  lab <- lab[names(lab) != "help"]
-  val <- val[names(lab)]
-  mapply(function(val, lab) { cat("\n", lab, "\n"); print(val) }, val, lab)
-  invisible(object)
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@key, "\n")
+
+  # History
+  cat("\n")
+  if( !is.null( m$scoring_history ) ) {
+    print(m$scoring_history)
+  }
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    print(m$variable_importances)
+  }
+
+  if( is(object, "H2OMultinomialModel") ) {
+    cat("\n")
+    # Training Metrics
+    if( !is.null(m$training_metrics) ) .showMultiMetrics(m$training_metrics,"Training")
+    else                               cat("\n No training metrics generated during model build.\n")
+    cat("\n")
+
+    # Validation Metrics
+    if( !is.null(m$validation_metrics) )  .showMultiMetrics(m$validation_metrics, "Validation")
+    cat("\n")
+  }
 })
+
+.showMultiMetrics <- function(metrics, train_or_valid="Training") {
+  arg <- "train"
+  if( train_or_valid != "Training" ) arg <- "validation"
+  tm <- metrics
+  cat(train_or_valid, "Metrics: \n")
+  cat("=================\n\n")
+  cat(tm$description, "\n")
+  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n\n")
+  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n\n")
+  if( !is.null(tm$mse)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$mse,"\n\n")
+  if( !is.null(tm$cm)              )  { cat(paste0("\nConfusion Matrix: (Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`) )\n")); print(tm$cm$table) }
+  if( !is.null(tm$hit_ratio_table) )  { cat(paste0("\nHit Ratio Table: (Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)` )\n"));   print(tm$hit_ratio_table) }
+}
 
 #' @rdname H2OModel-class
 #' @export
@@ -368,12 +405,12 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     if(object@algorithm == "glm") {
       cat("Null Deviance:     ", object@metrics$null_deviance,"\n", sep="")
       cat("Residual Deviance: ", object@metrics$residual_deviance,"\n", sep="")
-      cat("AIC:               ", object@metrics$aic,"\n", sep="")
+      cat("AIC:               ", object@metrics$AIC,"\n", sep="")
     }
     cat("\n")
     print(object@metrics$max_criteria_and_metric_scores)
@@ -387,7 +424,7 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setMethod("show", "H2OMultinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n\n", sep="")
     print(h2o.confusionMatrix(object))
 })
@@ -397,7 +434,7 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 setMethod("show", "H2ORegressionMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
 })
 #' @rdname H2OModelMetrics-class
 #' @export

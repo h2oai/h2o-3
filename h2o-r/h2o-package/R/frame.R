@@ -1552,7 +1552,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   if(is.character(by)) {
     vars <- match(by, colnames(data))
     if (any(is.na(vars)))
-      stop('No column named ', columns, ' in ', substitute(data), '.')
+      stop('No column named ', by, ' in ', substitute(data), '.')
   } else if(is.integer(by)) {
     vars <- by
   } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)

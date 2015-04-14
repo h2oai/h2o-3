@@ -45,7 +45,7 @@ fitH2O<- h2o.glm(x=c("V8", "V9", "V10", "V11", "V12"), y="V13", family="gaussian
 #test that R coefficients and basic descriptives are equal
 Rcoeffsglmnet<- sort(as.matrix(coefficients(fitRglmnet)))
 print(Rcoeffsglmnet)
-H2Ocoeffs<- sort(fitH2O@model$coefficients_table$Coefficients)
+H2Ocoeffs<- sort(fitH2O@model$coefficients_table$coefficients)
 H2Ocoeffs<- as.data.frame(H2Ocoeffs)
 print(H2Ocoeffs)
 

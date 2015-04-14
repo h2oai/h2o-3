@@ -38,7 +38,7 @@ class H2OBinomialModelMetrics(object):
     return self._metric_json['Gini']
 
   def mse(self):
-    return self._metric_json['mse']
+    return self._metric_json['MSE']
 
   def F1(self, thresholds=None):
     return self.metric("f1", thresholds=thresholds)
@@ -68,7 +68,7 @@ class H2OBinomialModelMetrics(object):
     return self.metric("absolute_MCC", thresholds=thresholds)
 
   def max_per_class_error(self, thresholds=None):
-    return 1-self.metric("minPerClassCorrect", thresholds=thresholds)
+    return 1-self.metric("min_per_class_correct", thresholds=thresholds)
 
   def metric(self, metric, thresholds=None):
     if not thresholds: thresholds=[self.find_threshold_by_max_metric(metric)]

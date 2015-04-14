@@ -323,7 +323,7 @@ h2o.performance <- function(model, data=NULL) {
 #' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
-#' @seealso \code{\link{h2o.giniCoef}} for the GINI coefficient,
+#' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
 #'          creating H2OModelMetrics objects.
@@ -515,7 +515,7 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "minPerClassCorrect")
+  1.0-h2o.metric(object, thresholds, "min_per_class_correct")
 }
 
 #' @rdname h2o.metric
@@ -547,7 +547,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(metric,max_metrics$Metric),"Threshold"]
+  max_metrics[match(metric,max_metrics$metric),"threshold"]
 }
 
 #
@@ -555,7 +555,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
-  res <- tmp[abs(as.numeric(tmp$Thresholds) - threshold) < 1e-8,]
+  res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
@@ -599,7 +599,18 @@ setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
 #' @export
-setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
+setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, ...) {
+  if( missing(newdata) ) {
+    l <- list(...)
+    if( is.null(l)  || length(l) == 0) { l$train <- TRUE }
+    if( is.null(l$train)      ) l$train <- FALSE
+    if( is.null(l$validation) ) l$validation <- FALSE
+    if( is.null(l$test)       ) l$test <- FALSE
+    l$test <- l$validation
+    if( l$train )             { cat("\nTraining Confusion Matrix: \n"); return(object@model$training_metrics$cm$table) }
+    else if( l$validation )   { cat("\nValidation Confusion Matrix: \n"); return(object@model$validation_metrics$cm$table) }
+    else                      return(NULL)
+  }
   delete <- !.is.eval(newdata)
   if(delete) {
     temp_key <- newdata@key
@@ -639,8 +650,9 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
   })
   names(m) <- "Actual/Predicted"
-  m
   dimnames(m[[1]]) <- list(list("0","1"), list("0","1"))
+  print(m)
+  m
 })
 
 #' @export
