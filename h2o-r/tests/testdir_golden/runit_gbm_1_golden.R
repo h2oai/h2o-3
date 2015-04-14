@@ -13,7 +13,7 @@ fith2o <- h2o.gbm(x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, loss="
 
 #Reported MSE from H2O through R
 err <- as.data.frame(fith2o@model$scoring_history$training_MSE)
-REPMSE <- err[4,]
+REPMSE <- err[3,]
 
 #MSE Calculated by hand From H2O predicted values
 pred <- as.data.frame(predict(fith2o, newdata=smtreesH2O))
@@ -26,7 +26,8 @@ Log.info(paste("Length of H2O MSE Vec: ", length(fith2o@model$scoring_history$tr
 Log.info(paste("H2O Reported MSE  : ", REPMSE, "\t\t", "R Expected MSE   : ", EXPMSE))
 
 Log.info("Compare model statistics in R to model statistics in H2O")
-expect_equal(length(fith2o@model$scoring_history$training_MSE), 4) # 3 errs per for each subforest + one error for empty forest.
+expect_equal(length(fith2o@model$scoring_history$training_MSE), 3)
+expect_equal(fith2o@model$initF, mean(smtreesH2O$vol), tolerance=1e-4) ## check the intercept term
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 
