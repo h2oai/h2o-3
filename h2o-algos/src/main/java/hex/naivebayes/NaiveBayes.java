@@ -146,7 +146,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
-        model._output._parameters = _parms;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);

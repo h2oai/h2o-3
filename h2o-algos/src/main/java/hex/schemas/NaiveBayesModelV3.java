@@ -9,9 +9,6 @@ import water.api.TwoDimTableBase;
 public class NaiveBayesModelV3 extends ModelSchema<NaiveBayesModel, NaiveBayesModelV3, NaiveBayesModel.NaiveBayesParameters, NaiveBayesV3.NaiveBayesParametersV3, NaiveBayesModel.NaiveBayesOutput, NaiveBayesModelV3.NaiveBayesModelOutputV3> {
   public static final class NaiveBayesModelOutputV3 extends ModelOutputSchema<NaiveBayesModel.NaiveBayesOutput, NaiveBayesModelOutputV3> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Model parameters")
-    NaiveBayesV3.NaiveBayesParametersV3 parameters;
-
     @API(help = "Categorical levels of the response")
     public String[] levels;
 
