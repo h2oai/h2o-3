@@ -65,8 +65,8 @@ public class ParseV3 extends Schema<Iced, ParseV3> {
   long rows;
 
   // Only not-null if blocking==true and removeFrame=true
-  @API(help="Vec keys", direction=API.Direction.OUTPUT)
-  VecKeyV3[] vec_keys;
+  @API(help="Vec IDs", direction=API.Direction.OUTPUT)
+  VecKeyV3[] vec_ids;
 
 
   //==========================

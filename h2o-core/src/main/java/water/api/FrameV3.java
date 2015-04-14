@@ -45,8 +45,8 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
   @API(help="Compatible models, if requested", direction=API.Direction.OUTPUT)
   public String[] compatible_models;
 
-  @API(help="The set of vector keys in the Frame", direction=API.Direction.OUTPUT)
-  public VecKeyV3[] vec_keys;
+  @API(help="The set of IDs of vectors in the Frame", direction=API.Direction.OUTPUT)
+  public VecKeyV3[] vec_ids;
 
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase chunk_summary;
@@ -211,9 +211,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     columns = new ColV2[fr.numCols()];
     Key[] keys = fr.keys();
     if(keys != null && keys.length > 0) {
-      vec_keys = new VecKeyV3[keys.length];
+      vec_ids = new VecKeyV3[keys.length];
       for (int i = 0; i < keys.length; i++)
-        vec_keys[i] = new VecKeyV3(keys[i]);
+        vec_ids[i] = new VecKeyV3(keys[i]);
     }
     Vec[] vecs = fr.vecs();
     for( int i=0; i<columns.length; i++ )
@@ -251,9 +251,9 @@ public class FrameV3 extends Schema<Frame, FrameV3> {
     columns = new ColV2[_fr.numCols()];
     Key[] keys = _fr.keys();
     if(keys != null && keys.length > 0) {
-      vec_keys = new VecKeyV3[keys.length];
+      vec_ids = new VecKeyV3[keys.length];
       for (int i = 0; i < keys.length; i++)
-        vec_keys[i] = new VecKeyV3(keys[i]);
+        vec_ids[i] = new VecKeyV3(keys[i]);
     }
     Vec[] vecs = _fr.vecs();
     for( int i=0; i<columns.length; i++ ) {

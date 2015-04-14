@@ -27,9 +27,9 @@ class ParseHandler extends Handler {
       if( parse.remove_frame ) {
         Key[] keys = fr.keys();
         if(keys != null && keys.length > 0) {
-          parse.vec_keys = new VecKeyV3[keys.length];
+          parse.vec_ids = new VecKeyV3[keys.length];
           for (int i = 0; i < keys.length; i++)
-            parse.vec_keys[i] = new VecKeyV3(keys[i]);
+            parse.vec_ids[i] = new VecKeyV3(keys[i]);
         }
         // parse.vecKeys = new VecKeyV1(fr.keys());
         fr.restructure(new String[0],new Vec[0]);
