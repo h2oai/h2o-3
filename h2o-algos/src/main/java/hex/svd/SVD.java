@@ -23,7 +23,7 @@ import java.util.Arrays;
  */
 public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-8;
+  private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
 
   @Override public ModelBuilderSchema schema() {
     return new SVDV2();
@@ -82,15 +82,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();
-        double norm = Math.sqrt(_train.numRows());    // Normalization constant dependent on n
         double[][] rsvec = new double[_parms._k][gram.length];
         model._output._iterations = 0;
 
         // 2) Compute and save first k singular values
         for(int i = 0; i < _parms._k; i++) {
-          // Iterate x_i <- (A'A/n)x_{i-1} and set v_i = sqrt(n)*x_i/||x_i||
+          // Iterate x_i <- (A'A/n)x_{i-1} and set v_i = x_i/||x_i||
           rsvec[i] = powerLoop(gram, _parms._seed);
-          ArrayUtils.mult(rsvec[i], norm);
 
           // Calculate I - v_iv_i' using current singular value
           double[][] ivv = ArrayUtils.outerProduct(rsvec[i], rsvec[i]);
@@ -103,7 +101,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
           model._output._iterations++;
         }
-        model._output._v = rsvec;
+        model._output._v = ArrayUtils.transpose(rsvec);
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
@@ -137,26 +135,29 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     assert gram.length == gram[0].length;
     assert vinit.length == gram.length;
 
-    // Set x_i to initial value x_0
+    // Set initial value v_0 to standard normal distribution
     int iters = 0;
-    double err = 2 * TOLERANCE;
+    double err = 2*TOLERANCE;
     double[] v = vinit.clone();
     double[] vnew = new double[v.length];
 
-    // Update x_i <- A'Ax_{i-1} where A'A = Gram of training frame
-    while(err > TOLERANCE && iters < _parms._max_iterations) {
-      err = 0;
-      for (int i = 0; i < v.length; i++) {
+    // Update v_i <- (A'Av_{i-1})/||A'Av_{i-1}|| where A'A = Gram matrix of training frame
+    while(iters < _parms._max_iterations && err > TOLERANCE) {
+      // Compute x_i <- A'Av_{i-1} and ||x_i||
+      for (int i = 0; i < v.length; i++)
         vnew[i] = ArrayUtils.innerProduct(gram[i], v);
-        double diff = vnew[i] - v[i];
+      double norm = ArrayUtils.l2norm(vnew);
+
+      double diff;
+      for (int i = 0; i < v.length; i++) {
+        vnew[i] /= norm;        // Compute singular vector v_i = x_i/||x_i||
+        diff = v[i] - vnew[i];  // Save error ||v_i - v_{i-1}||
         err += diff * diff;
+        v[i] = vnew[i];         // Update v_i for next iteration
       }
-      v = vnew;
+      err = Math.sqrt(err);
       iters++;
     }
-
-    // Compute singular vector v = x_i/||x_i||
-    ArrayUtils.div(v, ArrayUtils.l2norm(v));
     return v;
   }
 
