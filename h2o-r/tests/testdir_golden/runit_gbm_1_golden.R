@@ -26,7 +26,7 @@ Log.info(paste("Length of H2O MSE Vec: ", length(fith2o@model$scoring_history$"t
 Log.info(paste("H2O Reported MSE  : ", REPMSE, "\t\t", "R Expected MSE   : ", EXPMSE))
 
 Log.info("Compare model statistics in R to model statistics in H2O")
-expect_equal(length(fith2o@model$scoring_history$"trainin_mse"), 4) # 3 errs per for each subforest + one error for empty forest.
+expect_equal(length(fith2o@model$scoring_history$"training_mse"), 4) # 3 errs per for each subforest + one error for empty forest.
 expect_equal(REPMSE, EXPMSE, tolerance=1e-4)
 expect_equal(REPMSE>0, TRUE);
 
