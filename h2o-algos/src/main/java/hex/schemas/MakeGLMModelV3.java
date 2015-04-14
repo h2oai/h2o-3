@@ -18,7 +18,7 @@ public class MakeGLMModelV3 extends Schema<Iced,MakeGLMModelV3> {
   public KeyV3.ModelKeyV3 model;
 
   @API(help="destination key", required = false, direction = Direction.INPUT)
-  public KeyV3.ModelKeyV3 dest = new KeyV3.ModelKeyV3(Key.make());
+  public KeyV3.ModelKeyV3 dest;//new KeyV3.ModelKeyV3(Key.make());
 
   @API(help="coefficient names", required = true, direction = Direction.INPUT)
   public String [] names;
