@@ -590,8 +590,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     double 		  _null_deviance = Double.NaN;
     double 		  _residual_degrees_of_freedom = Double.NaN;
     double		  _null_degrees_of_freedom = Double.NaN;
-    double      _aic = Double.NaN;
-    double      _auc = Double.NaN;
+    double      _AIC = Double.NaN;
+    double      _AUC = Double.NaN;
     public boolean     _binomial;
     public int rank() { return _submodels[_best_lambda_idx].rank; }
     public boolean isNormalized(){
@@ -670,7 +670,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         for (int i = 1; i < _submodels.length; ++i) {
           GLMValidation val = xval ? _submodels[i].xVal : hval?_submodels[i].holdOutVal:_submodels[i].trainVal;
           if (val == null || val == bestVal) continue;
-          if ((useAuc && val.auc() > bestVal.auc()) || val.residual_deviance < bestVal.residual_deviance) {
+          if ((useAuc && val.AUC() > bestVal.AUC()) || val.residual_deviance < bestVal.residual_deviance) {
             bestVal = val;
             bestId = i;
           }
@@ -686,16 +686,16 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _null_deviance = Double.NaN;
         _residual_degrees_of_freedom = Double.NaN;
         _null_degrees_of_freedom = Double.NaN;
-        _aic = Double.NaN;
-        _auc = Double.NaN;
+        _AIC = Double.NaN;
+        _AUC = Double.NaN;
       } else {
         _threshold = _submodels[l].trainVal.bestThreshold();
         _residual_deviance = _submodels[l].trainVal.residualDeviance();
         _null_deviance = _submodels[l].trainVal.nullDeviance();
         _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();
         _null_degrees_of_freedom = _submodels[l].trainVal.nullDOF();
-        _aic = _submodels[l].trainVal.aic();
-        _auc = _submodels[l].trainVal.auc();
+        _AIC = _submodels[l].trainVal.AIC();
+        _AUC = _submodels[l].trainVal.AUC();
       }
       if(_global_beta == null) _global_beta = MemoryManager.malloc8d(_coefficient_names.length);
       else Arrays.fill(_global_beta,0);

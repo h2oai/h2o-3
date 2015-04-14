@@ -405,12 +405,12 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini: ", object@metrics$Gini, "\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     if(object@algorithm == "glm") {
       cat("Null Deviance:     ", object@metrics$null_deviance,"\n", sep="")
       cat("Residual Deviance: ", object@metrics$residual_deviance,"\n", sep="")
-      cat("AIC:               ", object@metrics$aic,"\n", sep="")
+      cat("AIC:               ", object@metrics$AIC,"\n", sep="")
     }
     cat("\n")
     print(object@metrics$max_criteria_and_metric_scores)
@@ -424,7 +424,7 @@ setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 setMethod("show", "H2OMultinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n\n", sep="")
     print(h2o.confusionMatrix(object))
 })
@@ -434,7 +434,7 @@ setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
 setMethod("show", "H2ORegressionMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
     if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
 })
 #' @rdname H2OModelMetrics-class
 #' @export

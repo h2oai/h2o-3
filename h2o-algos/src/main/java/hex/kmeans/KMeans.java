@@ -182,9 +182,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       double ssq = 0;       // sum squared error
       for( int i=0; i<_parms._k; i++ ) {
         ssq += model._output._within_mse[i]; // sum squared error all clusters
-        model._output._within_mse[i] /= task._size[i]; // mse within-cluster
+        model._output._within_mse[i] /= task._size[i]; // MSE within-cluster
       }
-      model._output._avg_within_ss = ssq/_train.numRows(); // mse total
+      model._output._avg_within_ss = ssq/_train.numRows(); // MSE total
 
       // Sum-of-square distance from grand mean
       if(_parms._k == 1)
@@ -192,9 +192,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       else {
         // If data already standardized, grand mean is just the origin
         TotSS totss = new TotSS(means,mults).doAll(vecs);
-        model._output._avg_ss = totss._tss/_train.numRows(); // mse with respect to grand mean
+        model._output._avg_ss = totss._tss/_train.numRows(); // MSE with respect to grand mean
       }
-      model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // mse between-cluster
+      model._output._avg_between_ss = model._output._avg_ss - model._output._avg_within_ss;  // MSE between-cluster
       return task._cMeans;      // New centers
     }
 

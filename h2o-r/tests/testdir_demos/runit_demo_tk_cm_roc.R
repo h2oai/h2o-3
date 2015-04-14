@@ -75,13 +75,17 @@ head(pred)
 
 perf <- h2o.performance(model_object,air.test)
 #Building confusion matrix for test set
-perf@metrics$cm$table
+
+# FIXME - these require work
+h2o.confusionMatrix(perf)
+h2o.auc(perf)
+h2o.precision(perf)
+h2o.accuracy(perf)
+
+#perf@metrics$AUC
 
 #Plot ROC for test set
-
-perf@metrics$auc$precision
-perf@metrics$auc$accuracy
-# perf@auc$auc
+#FIXME
 plot(perf,type="roc")
 
 PASS_BANNER()
