@@ -203,6 +203,23 @@ h2o.getFutureModel <- function(object) {
   h2o.getModel(object@destination_key, object@h2o)
 }
 
+#' Predict on an H2O Model
+#'
+#' Obtains predictions from various fitted H2O model objects.
+#'
+#' This method dispatches on the type of H2O model to select the correct
+#' prediction/scoring algorithm.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata A \linkS4class{H2OFrame} object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an \linkS4class{H2OFrame} object with probabilites and
+#'         default predictions.
+#' @seealso \code{link{h2o.deeplearning}}, \code{link{h2o.gbm}},
+#'          \code{link{h2o.glm}}, \code{link{h2o.randomForest}} for model
+#'          generation in h2o.
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
@@ -578,7 +595,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #
 # No duplicate thresholds allowed
 h2o.find_row_by_threshold <- function(object, threshold) {
-  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
+  if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
   res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")

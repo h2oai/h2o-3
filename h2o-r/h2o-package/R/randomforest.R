@@ -30,6 +30,7 @@
 #' @param seed Seed for random numbers (affects sampling) - Note: only
 #'        reproducible when running single threaded
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.randomForest <- function( x, y, training_frame,
                              destination_key,

@@ -29,7 +29,7 @@
 #' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded
 #' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty. **Currently not supported**
 #' @param score_each_iteration Attempts to score each tree.
-#' @seealso \code{\link{predict.H2OGBMModel}} for prediction.
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' library(h2o)
 #' localH2O = h2o.init()

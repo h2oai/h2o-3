@@ -41,6 +41,7 @@
 #'                              When \code{TRUE}, results in an over parameterized models.
 #' @param n_folds (Currently Unimplemented)
 #' @param ...
+#' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
 h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
                     max_iterations = 50,
@@ -241,15 +242,15 @@ h2o.startGLMJob <- function(x, y, training_frame, destination_key, validation_fr
 }
 
 #' @export
-h2o.getGLMModel <- function(keys) {
+h2o.getGLMModel <- function(keys, conn) {
+  if(missing(conn)) conn <- h2o.getConnection()
   job_key  <- keys[[1]]
   dest_key <- keys[[1]]
   .h2o.__waitOnJob(conn, job_key)
   model <- h2o.getModel(dest_key, conn)
-  if (delete_train)
-    h2o.rm(temp_train_key)
-  if (!is.null(params$validation_frame))
-    if (delete_valid)
-      h2o.rm(temp_valid_key)
-  model
+  # if (delete_train)
+  #   h2o.rm(temp_train_key)
+  # if (!is.null(params$validation_frame))
+  #   if (delete_valid)
+  #     h2o.rm(temp_valid_key)
 }

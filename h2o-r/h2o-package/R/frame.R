@@ -1,61 +1,60 @@
-#'
-#' A Mix of H2O-specific and Overloaded R methods.
-#'
-#' Below we have a mix of h2o and overloaded R methods according to the following ToC:
-#'
-#'  H2O Methods:
-#'  ------------
-#'
-#'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
-#'
-#'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
-#'  ------------
-#'
-#'      year.H2O*, month.H2O*, diff.H2O*
-#'
-#'
-#'
-#' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
-#' and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
-#'
-#' Important Developer Notes on the Lazy Evaluators:
-#' -------------------------------------------------
-#'
-#' The H2OFrame "lazy" evaluators: Evaulate an AST.
-#'
-#' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
-#' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
-#' calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
-#' and then all the way back up the scopes.
-#' Here's the example pattern: Number of columns
-#'
-#' Num Columns of an AST.
-#'
-#' Evaluate the AST and produce the ncol of the eval'ed AST.
-#'
-#'       ncol.H2OFrame <- function(x) {
-#'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
-#'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
-#'         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
-#'         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
-#'         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
-#'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
-#'       }
-#'
-#' Take this line-by-line:
-#'    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
-#'    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
-#'    Line 3:
-#'          1. Get a handle to h2o (h2o.getConnection())
-#'          2. x is the ast we want to eval
-#'          3. ID is the identifier we want the eventual object to have at the end of the day
-#'          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
-#'    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OFrame
-#'             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
-#'    Line 5: assign from *this* scope, into the parent scope
-#'    Line 6: Do
-#' @name MethodsIntro
-NULL
+##'
+##' A Mix of H2O-specific and Overloaded R methods.
+##'
+##' Below we have a mix of h2o and overloaded R methods according to the following ToC:
+##'
+##'  H2O Methods:
+##'  ------------
+##'
+##'      h2o.ls, h2o.rm, h2o.assign, h2o.createFrame, h2o.splitFrame, h2o.ignoreColumns, h2o.insertMissingValues, h2o.cut, h2o.table
+##'
+##'  Time & Date: '*' matches "Frame" and "ParsedData" --> indicates method dispatch via UseMethod
+##'  ------------
+##'
+##'      year.H2O*, month.H2O*, diff.H2O*
+##'
+##'
+##'
+##' Methods are grouped according to the data types upon which they operate. There is a grouping of H2O specifc methods
+##' and methods that are overloaded from the R language (e.g. summary, head, tail, dim, nrow).
+##'
+##' Important Developer Notes on the Lazy Evaluators:
+##' -------------------------------------------------
+##'
+##' The H2OFrame "lazy" evaluators: Evaulate an AST.
+##'
+##' The pattern below is necessary in order to swap out S4 objects *in the calling frame*,
+##' and the code re-use is necessary in order to safely assign back to the correct environment (i.e. back to the correct
+##' calling scope). If you *absolutely* need to nest calls like this, you _MUST_ correctly track the names all the way down,
+##' and then all the way back up the scopes.
+##' Here's the example pattern: Number of columns
+##'
+##' Num Columns of an AST.
+##'
+##' Evaluate the AST and produce the ncol of the eval'ed AST.
+##'
+##'       ncol.H2OFrame <- function(x) {
+##'         ID  <- as.list(match.call())$x                                    # try to get the ID from the call
+##'         if(length(as.list(substitute(x))) > 1) ID <- "Last.value"         # get an appropriate ID
+##'         .force.eval(h2o.getConnection(), x, ID = ID, rID = 'x')           # call the force eval
+##'         ID <- ifelse(ID == "Last.value", ID, x@@key)                      # bridge the IDs between the force.eval and the parent frame
+##'         assign(ID, x, parent.frame())                                     # assign the eval'd frame into the parent env
+##'         ncol(get(ID, parent.frame()))                                     # get the object back from the parent and perform the op
+##'       }
+##'
+##' Take this line-by-line:
+##'    Line 1: grab the ID from the arg list, this ID is what we want the key to be in H2O
+##'    Line 2: if there is no suitable ID (i.e. we have some object, not a named thing), assign to Last.value
+##'    Line 3:
+##'          1. Get a handle to h2o (h2o.getConnection())
+##'          2. x is the ast we want to eval
+##'          3. ID is the identifier we want the eventual object to have at the end of the day
+##'          4. rID is used in .force.eval to assign back into *this* scope (i.e. child scope -> parent scope)
+##'    Line 4: The identifier in the parent scope will either be Last.value, or the key of the H2OFrame
+##'             *NB: x is _guaranteed_ to be an H2OFrame object at this point (this is post .force.eval)
+##'    Line 5: assign from *this* scope, into the parent scope
+##'    Line 6: Do
+
 
 #' Data Frame Creation in H2O
 #'
@@ -82,11 +81,14 @@ NULL
 #' @examples
 #' library(h2o)
 #' localH2O <- h2o.init()
-#' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1, factors = 5, integer_fraction = 0.5, integer_range = 1, has_response = TRUE)
+#' hex <- h2o.createFrame(localH2O, rows = 1000, cols = 100, categorical_fraction = 0.1,
+#'                        factors = 5, integer_fraction = 0.5, integer_range = 1,
+#'                        has_response = TRUE)
 #' head(hex)
 #' summary(hex)
 #'
-#' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5, categorical_fraction = 0, integer_fraction = 0)
+#' hex2 <- h2o.createFrame(localH2O, rows = 100, cols = 10, randomize = FALSE, value = 5,
+#'                         categorical_fraction = 0, integer_fraction = 0)
 #' summary(hex2)
 #' @export
 h2o.createFrame <- function(conn = h2o.getConnection(), key = "", rows = 10000, cols = 10, randomize = TRUE,
@@ -353,6 +355,17 @@ setMethod("%in%", "H2OFrame", function(x, table) match(x, table, nomatch = 0) > 
 #-----------------------------------------------------------------------------------------------------------------------
 
 # TODO: s4 year, month impls as well?
+#' Convert Milliseconds to Years in H2O Datasets
+#'
+#' Conver the entries of a \linkS4class{H2OFrame} object from milliseconds to years, indexed
+#' starting from 1900.
+#'
+# is this still true?
+#' This method calls the function of the MutableDateTime class in Java.
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containig the entries of \code{x} converted to years
+#'         starting from 1900, e.g. 69 correspons to the year 1969.
+#' @seealso \code{\link{h2o.month}}
 #' @export
 h2o.year <- function(x){
   if( missing(x) ) stop('must specify x')
@@ -361,18 +374,31 @@ h2o.year <- function(x){
   .h2o.binary_frame_op("-", res1, 1900)
 }
 
+#' Convert Milliseconds to Months in H2O Datasets
+#'
+#' Converts the entries of a \linkS4class{H2OFrame} object from milliseconds to months (on a 0 to
+#' 11) scale.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @return A \linkS4class{H2OFrame} object containing the entries of \code{x} converted to months of
+#'         the year.
+#' @seealso \code{\link{h2o.year}}
 #' @export
 h2o.month <- function(x){
   if( missing(x) ) stop('must specify x')
   if( !class(x) == 'H2OFrame' ) stop('x must be an h2o data object')
   .h2o.unary_frame_op('month', x)
 }
+#' @rdname h2o.year
 #' @export
 year <- function(x) UseMethod('year', x)
+#' @rdname h2o.year
 #' @export
 year.H2OFrame <- h2o.year
+#' @rdname h2o.month
 #' @export
 month <- function(x) UseMethod('month', x)
+#' @rdname h2o.month
 #' @export
 month.H2OFrame <- h2o.month
 
@@ -387,32 +413,31 @@ as.Date.H2OFrame <- function(x, format, ...) {
   #res@logic <- FALSE
   #return(res)
 }
+## TODO: TIMEZONE HAS NO ENDPOINT, COMMENTING OUT UNTIL FLESHED OUT
+# h2o.setTimezone <- function(client, tz) {
+#   if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+#   if (!is.character(tz)) stop('tz must be a string')
 
-#' @export
-h2o.setTimezone <- function(client, tz) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
-  if (!is.character(tz)) stop('tz must be a string')
+#   res = .h2o.__remoteSend(client, .h2o.__PAGE_SETTIMEZONE, tz = tz)
+#   res$tz
+# }
 
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_SETTIMEZONE, tz = tz)
-  res$tz
-}
+# h2o.getTimezone <- function(client) {
+#   if(class(client) != "H2OClient") stop("client must be a H2OClient object")
 
-#' @export
-h2o.getTimezone <- function(client) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
+#   res = .h2o.__remoteSend(client, .h2o.__PAGE_GETTIMEZONE)
+#   res$tz
+# }
 
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_GETTIMEZONE)
-  res$tz
-}
+# h2o.listTimezones <- function(client) {
+#   if(class(client) != "H2OClient") stop("client must be a H2OClient object")
 
-#' @export
-h2o.listTimezones <- function(client) {
-  if(class(client) != "H2OClient") stop("client must be a H2OClient object")
-
-  res = .h2o.__remoteSend(client, .h2o.__PAGE_LISTTIMEZONES)
-  cat(res$tzlist)
-}
+#   res = .h2o.__remoteSend(client, .h2o.__PAGE_LISTTIMEZONES)
+#   cat(res$tzlist)
+# }
 #
+## --------------------------------------------------------------- ##
+
 #diff.H2OFrame <- function(x, lag = 1, differences = 1, ...) {
 #  if(!is.numeric(lag)) stop("lag must be numeric")
 #  if(!is.numeric(differences)) stop("differences must be numeric")
@@ -422,7 +447,27 @@ h2o.listTimezones <- function(client) {
 #  .newH2OObject("H2OFrame", conn=x@conn, key=res$dest_key, logic=FALSE, finalizers=x@finalizers)
 #}
 
-
+#' Produe a Vector of Random Uniform Numbers
+#'
+#' Creates a vector of random uniform numbers equal in length to the length of the specified H2O
+#' dataset.
+#'
+#' @param x An \linkS4class{H2OFrame} object.
+#' @param seed A random seed used to generate draws from the uniform distribution.
+#' @return A vector of random, uniformly distributed numbers. The elements are between 0 and 1.
+#' @examples
+#' library(h2o)
+#' localH2O = h2o.init()
+#' prosPath = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.importFile(localH2O, path = prosPath, key = "prostate.hex")
+#' s = h2o.runif(prostate.hex)
+#' summary(s)
+#'
+#' prostate.train = prostate.hex[s <= 0.8,]
+#' prostate.train = h2o.assign(prostate.train, "prostate.train")
+#' prostate.test = prostate.hex[s > 0.8,]
+#' prostate.test = h2o.assign(prostate.test, "prostate.test")
+#' nrow(prostate.train) + nrow(prostate.test)
 #' @export
 h2o.runif <- function(x, seed = -1) {
   if (!is(x, "H2OFrame")) stop("`data` must be an H2OFrame object")
@@ -1068,7 +1113,7 @@ quantile.H2OFrame <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .h2o.nary_frame_op("quantile", x, probs)
-  
+
   res <- as.matrix(res)
   col <- as.numeric(res[,-1])
   names(col) <- paste0(100*res[,1], "%")
@@ -1112,7 +1157,7 @@ setMethod("summary", "H2OFrame", function(object, ...) {
           params = format(signif(as.numeric(c(min(col$mins), col$percentiles[4], col$percentiles[6], col$mean, col$percentiles[8], max(col$maxs, na.rm = T))), digits), digits = 4)
         c(paste0("Min.   :", params[1], "  "), paste0("1st Qu.:", params[2], "  "),
           paste0("Median :", params[3], "  "), paste0("Mean   :", params[4], "  "),
-          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "), 
+          paste0("3rd Qu.:", params[5], "  "), paste0("Max.   :", params[6], "  "),
           if(!is.null(col$missing_count) && col$missing_count > 0) paste0("NA's   :", col$missing_count, "  ") else NA)
       } else {
         top.ix <- sort.int(col$histogram_bins, decreasing = TRUE, index.return = TRUE)$ix[1:6]
