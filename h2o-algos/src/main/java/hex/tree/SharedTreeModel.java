@@ -20,8 +20,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
 
-    public boolean _score_each_iteration;
-
     public long _seed;          // Seed for pseudo-random redistribution
 
     // TRUE: Continue extending an existing checkpointed model
