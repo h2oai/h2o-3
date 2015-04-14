@@ -4,14 +4,14 @@ import hex.tree.gbm.GBMModel;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 
-public class GBMModelV3 extends ModelSchema<GBMModel,
+public class GBMModelV3 extends SharedTreeModelV3<GBMModel,
                                                   GBMModelV3,
                                                   GBMModel.GBMParameters,
                                                   GBMV3.GBMParametersV3,
                                                   GBMModel.GBMOutput,
                                                   GBMModelV3.GBMModelOutputV3> {
 
-  public static final class GBMModelOutputV3 extends ModelOutputSchema<GBMModel.GBMOutput, GBMModelOutputV3> {}
+  public static final class GBMModelOutputV3 extends SharedTreeModelV3.SharedTreeModelOutputV3<GBMModel.GBMOutput, GBMModelOutputV3> {}
 
   public GBMV3.GBMParametersV3 createParametersSchema() { return new GBMV3.GBMParametersV3(); }
   public GBMModelOutputV3 createOutputSchema() { return new GBMModelOutputV3(); }
