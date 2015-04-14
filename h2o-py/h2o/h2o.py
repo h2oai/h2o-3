@@ -156,7 +156,12 @@ def ipy_notebook_exec(path):
   for block in notebook["cells"]:
     cmd = ''
     for line in block["source"]:
-      if "h2o.init" not in line: cmd += line
+      if "h2o.init" not in line:
+        if "def " in line:
+          cmd += line
+          cmd += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we enforce this def spacing
+          # standard in future notebooks
+        else: cmd += line
     exec(cmd)
 
 def remove(key):
