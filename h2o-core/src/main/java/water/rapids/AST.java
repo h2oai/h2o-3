@@ -1131,13 +1131,14 @@ class ASTSlice extends AST {
 
     // parse the cols
     AST cols = E.parse();
-    switch( cols.type() ) {
-      case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
-      case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
-      case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
-      case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
-
-      default: // pass thru
+    if( !(cols instanceof ASTStringList) ) {
+      switch( cols.type() ) {
+        case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
+        case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
+        case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
+        case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        default: // pass thru
+      }
     }
 
     E.eatEnd(); // eat ending ')'
@@ -1158,6 +1159,16 @@ class ASTSlice extends AST {
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = env.pop();
+
+    if( cols_type == Env.LIST ) {
+      assert cols instanceof ValStringList : "Expected ValStringList. Got: " + cols.getClass();
+      String[] colnames = ((ValStringList)cols)._s;
+      long[] colz = new long[colnames.length];
+      for( int i=0;i<colz.length;++i) colz[i] = env.peekAry().find(colnames[i]);
+      cols = new ValSeries(colz,null);
+      ((ValSeries)cols).setSlice(false,true);
+    }
+
     if( cols_type == Env.STR ) {
       Frame ary = env.peekAry();
       int idx = ary.find(((ValStr)cols)._s);

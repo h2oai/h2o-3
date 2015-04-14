@@ -599,7 +599,18 @@ setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
 #' @export
-setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata) {
+setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, ...) {
+  if( missing(newdata) ) {
+    l <- list(...)
+    if( is.null(l)  || length(l) == 0) { l$train <- TRUE }
+    if( is.null(l$train)      ) l$train <- FALSE
+    if( is.null(l$validation) ) l$validation <- FALSE
+    if( is.null(l$test)       ) l$test <- FALSE
+    l$test <- l$validation
+    if( l$train )             { cat("\nTraining Confusion Matrix: \n"); return(object@model$training_metrics$cm$table) }
+    else if( l$validation )   { cat("\nValidation Confusion Matrix: \n"); return(object@model$validation_metrics$cm$table) }
+    else                      return(NULL)
+  }
   delete <- !.is.eval(newdata)
   if(delete) {
     temp_key <- newdata@key
