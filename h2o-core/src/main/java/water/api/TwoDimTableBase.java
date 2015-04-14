@@ -54,16 +54,16 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     rowcount = rows;
     columns = new ColumnSpecsBase[cols];
     columns[0] = new ColumnSpecsBase();
-    columns[0].name = t.getColHeaderForRowHeaders();
+    columns[0].name = pythonify(t.getColHeaderForRowHeaders());
     columns[0].type = "string"; //Ugly: Should be an Enum in TwoDimTable class
     columns[0].format = "%s";
-    columns[0].description = null;
+    columns[0].description = t.getColHeaderForRowHeaders();
     for (int c=1; c<cols; ++c) {
       columns[c] = new ColumnSpecsBase();
-      columns[c].name = t.getColHeaders()[c-1];
+      columns[c].name = pythonify(t.getColHeaders()[c - 1]);
       columns[c].type = t.getColTypes()[c-1];
       columns[c].format = t.getColFormats()[c-1];
-      columns[c].description = null; //TODO: Add description
+      columns[c].description = t.getColHeaders()[c-1];
     }
     data = new IcedWrapper[cols][rows];
     data[0] = new IcedWrapper[t.getRowDim()];
@@ -79,6 +79,13 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     }
     return this;
   }
+
+  /**
+   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_mse"
+   * @param name
+   * @return
+   */
+  private String pythonify(String name) { return name.toLowerCase().replace(" ", "_").replace(".", ""); }
 
   /**
    * Fill a TwoDimTable from this Schema
@@ -99,7 +106,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     String[] colHeaders = new String[cols];
     colHeaders[0] = "";
     for (int c=1; c<cols; ++c) {
-      colHeaders[c] = columns[c].name;
+      colHeaders[c] = columns[c].description;
     }
     String[] colTypes = new String[cols];
     colTypes[0] = "";
