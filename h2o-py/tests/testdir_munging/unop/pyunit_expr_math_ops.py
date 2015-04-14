@@ -32,7 +32,11 @@ def expr_math_ops(ip,port):
         for i in range(10):
             r = random.randint(0,row-1)
             c = random.randint(0,col-1)
-            if not abs(h2o.as_list(h2o_data[r,c])[0][0] - numpy_data[r,c]) < 1e-06: success = False
+            h2o_val = h2o.as_list(h2o_data[r,c])[0][0]
+            num_val = numpy_data[r,c]
+            if not abs(h2o_val - num_val) < 1e-06:
+                success = False
+                print "check unsuccessful! h2o computed {0} and numpy computed {1}".format(h2o_val,num_val)
         return success
 
     h2o_data1 = h2o_data1 + 2
@@ -72,14 +76,22 @@ def expr_math_ops(ip,port):
     assert check_values(h2o.log2(h2o_data3), np.log2(np_data3)),         "expected equal log2 values between h2o and numpy"
     assert check_values(h2o.exp(h2o_data3), np.exp(np_data3)),           "expected equal exp values between h2o and numpy"
     assert check_values(h2o.expm1(h2o_data3), np.expm1(np_data3)),       "expected equal expm1 values between h2o and numpy"
-    assert (h2o.as_list(h2o.gamma(h2o_data3))[5][5] - math.gamma(h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
-        "expected equal gamma values between h2o and math"
-    assert (h2o.as_list(h2o.lgamma(h2o_data3))[5][5] - math.lgamma(h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
-        "expected equal gamma values between h2o and math"
-    assert (h2o.as_list(h2o.digamma(h2o_data3))[5][5] - scipy.special.polygamma(0,h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
-        "expected equal gamma values between h2o and math"
-    assert (h2o.as_list(h2o.trigamma(h2o_data3))[5][5] - scipy.special.polygamma(1,h2o.as_list(h2o_data3)[5][5])) < 1e-6, \
-        "expected equal gamma values between h2o and math"
+    h2o_val = h2o.as_list(h2o.gamma(h2o_data3))[5][5]
+    num_val = math.gamma(h2o.as_list(h2o_data3)[5][5])
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal gamma values between h2o and math".format(h2o_val,num_val)
+    h2o_val = h2o.as_list(h2o.lgamma(h2o_data3))[5][5]
+    num_val = math.lgamma(h2o.as_list(h2o_data3)[5][5])
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal lgamma values between h2o and math".format(h2o_val,num_val)
+    h2o_val = h2o.as_list(h2o.digamma(h2o_data3))[5][5]
+    num_val = scipy.special.polygamma(0,h2o.as_list(h2o_data3)[5][5])
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal digamma values between h2o and math".format(h2o_val,num_val)
+    h2o_val = h2o.as_list(h2o.trigamma(h2o_data3))[5][5]
+    num_val = scipy.special.polygamma(1,h2o.as_list(h2o_data3)[5][5])
+    assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal trigamma values between h2o and math".format(h2o_val,num_val)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, expr_math_ops)
