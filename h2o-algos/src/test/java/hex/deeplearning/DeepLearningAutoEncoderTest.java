@@ -103,7 +103,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           mean_l2 /= reconstr.numRows();
           reconstr.delete();
           sb.append("Mean reconstruction error (train): ").append(l2_train.mean()).append("\n");
-          Assert.assertEquals(mymodel._output.errors.train_mse, mean_l2, 1e-7);
+          Assert.assertEquals(mymodel._output.errors.training_MSE, mean_l2, 1e-7);
 
           // print stats and potential outliers
           sb.append("The following training points are reconstructed with an error above the ").append(quantile * 100).append("-th percentile - check for \"goodness\" of training data.\n");

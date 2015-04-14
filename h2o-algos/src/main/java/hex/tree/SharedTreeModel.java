@@ -39,9 +39,18 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
-
-    /** Initially predicted value (for zero trees) */
-    public double _initialPrediction;
+    /** InitF value (for zero trees)
+     *  f0 = mean(yi) for gaussian
+     *  f0 = log(yi/1-yi) for bernoulli
+     *
+     *  For GBM bernoulli, the initial prediction for 0 trees is
+     *  p = 1/(1+exp(-f0))
+     *
+     *  From this, the mse for 0 trees can be computed as follows:
+     *  mean((yi-p)^2)
+     *  This is what is stored in _mse_train[0]
+     * */
+    public double _initF;
 
     /** Number of trees actually in the model (as opposed to requested) */
     public int _ntrees;
