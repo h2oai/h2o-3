@@ -730,16 +730,16 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public double valid_err = Double.NaN;
     public double train_logloss = Double.NaN;
     public double valid_logloss = Double.NaN;
-    public AUC2 trainAUC;
-    public AUC2 validAUC;
+    public AUC2 training_AUC;
+    public AUC2 validation_AUC;
     public float[] train_hitratio; // "Hit ratio on training data"
     public float[] valid_hitratio; // "Hit ratio on validation data"
 
     // regression
-    public double train_mse = Double.NaN;
-    public double valid_mse = Double.NaN;
-    public double train_r2 = Double.NaN;
-    public double valid_r2 = Double.NaN;
+    public double training_MSE = Double.NaN;
+    public double validation_MSE = Double.NaN;
+    public double training_R2 = Double.NaN;
+    public double validation_R2 = Double.NaN;
 
     public long scoring_time;
 
@@ -752,29 +752,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append("Training MSE: " + train_mse + "\n");
-      sb.append("Training R^2: " + train_r2 + "\n");
+      sb.append("Training MSE: " + training_MSE + "\n");
+      sb.append("Training R^2: " + training_R2 + "\n");
       if (classification) {
         sb.append("Training LogLoss: " + train_logloss + "\n");
         sb.append("Training " + train_confusion_matrix.table().toString(1));
         sb.append("Training Misclassification"
-                + (trainAUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
+                + (training_AUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
                 + String.format("%.2f", 100 * train_err) + "%");
-        if (trainAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * trainAUC._auc) + "%");
+        if (training_AUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * training_AUC._auc) + "%");
       }
       if (validation || num_folds>0) {
         if (num_folds > 0) {
           sb.append("\nDoing " + num_folds + "-fold cross-validation:");
         }
-        sb.append("\nValidation MSE: " + valid_mse + "\n");
-        sb.append("Validation R^2: " + valid_r2 + "\n");
+        sb.append("\nValidation MSE: " + validation_MSE + "\n");
+        sb.append("Validation R^2: " + validation_R2 + "\n");
         if (classification) {
           sb.append("Validation LogLoss: " + valid_logloss + "\n");
           sb.append("Validation " + valid_confusion_matrix.table().toString(1));
           sb.append("Validation Misclassification"
-                  + (validAUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
+                  + (validation_AUC != null ? " [using threshold for " + AUC2.DEFAULT_CM.toString().replace("_", " ") + "]: " : ": ")
                   + String.format("%.2f", (100 * valid_err)) + "%");
-          if (validAUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * validAUC._auc) + "%");
+          if (validation_AUC != null) sb.append(", AUC: " + String.format("%.4f", 100 * validation_AUC._auc) + "%");
         }
       }
       sb.append("\n");
@@ -802,9 +802,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             lasterror.train_confusion_matrix;
     if (cm == null ) {
       if (lasterror.validation || lasterror.num_folds > 0) {
-        return new ConfMat(lasterror.valid_err, lasterror.validAUC != null ? lasterror.validAUC.maxF1() : 0);
+        return new ConfMat(lasterror.valid_err, lasterror.validation_AUC != null ? lasterror.validation_AUC.maxF1() : 0);
       } else {
-        return new ConfMat(lasterror.train_err, lasterror.trainAUC != null ? lasterror.trainAUC.maxF1() : 0);
+        return new ConfMat(lasterror.train_err, lasterror.training_AUC != null ? lasterror.training_AUC.maxF1() : 0);
       }
     }
     return cm;
@@ -812,7 +812,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
   public double mse() {
     if (errors == null) return Double.NaN;
-    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().valid_mse : last_scored().train_mse;
+    return last_scored().validation || last_scored().num_folds > 0 ? last_scored().validation_MSE : last_scored().training_MSE;
   }
 
   public double logloss() {
@@ -925,29 +925,29 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       table.set(row, col++, e.training_time_ms == 0 ? null : (String.format("%.3f", e.training_samples/(e.training_time_ms/1e3)) + " rows/sec"));
       table.set(row, col++, e.epoch_counter);
       table.set(row, col++, e.training_samples);
-      table.set(row, col++, e.train_mse);
+      table.set(row, col++, e.training_MSE);
       if (!_output.autoencoder) {
-        table.set(row, col++, e.train_r2);
+        table.set(row, col++, e.training_R2);
       }
       if (_output.isClassifier()) {
         table.set(row, col++, e.train_logloss);
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
-        table.set(row, col++, e.trainAUC != null ? e.trainAUC._auc : Double.NaN);
+        table.set(row, col++, e.training_AUC != null ? e.training_AUC._auc : Double.NaN);
       }
       if (_output.isClassifier()) {
         table.set(row, col++, e.train_err);
       }
       if (get_params()._valid != null) {
-        table.set(row, col++, e.valid_mse);
+        table.set(row, col++, e.validation_MSE);
         if (!_output.autoencoder) {
-          table.set(row, col++, e.valid_r2);
+          table.set(row, col++, e.validation_R2);
         }
         if (_output.isClassifier()) {
           table.set(row, col++, e.valid_logloss);
         }
         if (_output.getModelCategory() == ModelCategory.Binomial) {
-          table.set(row, col++, e.validAUC != null ? e.validAUC._auc : Double.NaN);
+          table.set(row, col++, e.validation_AUC != null ? e.validation_AUC._auc : Double.NaN);
         }
         if (_output.isClassifier()) {
           table.set(row, col++, e.valid_err);
@@ -1659,14 +1659,14 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             final Frame mse_frame = scoreAutoEncoder(ftrain, Key.make());
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
-            err.train_mse = l2.mean();
+            err.training_MSE = l2.mean();
             mse_frame.delete();
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
             final Vec l2 = mse_frame.anyVec();
             Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
-            err.valid_mse = l2.mean();
+            err.validation_MSE = l2.mean();
             mse_frame.delete();
           }
         } else {
@@ -1680,7 +1680,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)ModelMetrics.getFromDKV(this,ftrain);
           if (mm1 instanceof ModelMetricsBinomial) {
             ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
-            err.trainAUC = mm._auc;
+            err.training_AUC = mm._auc;
             err.train_confusion_matrix = mm.cm();
             err.train_err = err.train_confusion_matrix.err();
             err.train_logloss = mm._logloss;
@@ -1692,8 +1692,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             err.train_logloss = mm._logloss;
             err.train_hitratio = mm._hit_ratios;
           }
-          err.train_mse = mm1._mse;
-          err.train_r2 = mm1.r2();
+          err.training_MSE = mm1._MSE;
+          err.training_R2 = mm1.r2();
           _output._training_metrics = mm1;
           if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
             _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
@@ -1706,7 +1706,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             if (mm2 != null) {
               if (mm2 instanceof ModelMetricsBinomial) {
                 ModelMetricsBinomial mm = (ModelMetricsBinomial) (mm2);
-                err.validAUC = mm._auc;
+                err.validation_AUC = mm._auc;
                 err.valid_confusion_matrix = mm.cm();
                 err.valid_logloss = mm._logloss;
                 err.valid_err = err.valid_confusion_matrix.err();
@@ -1717,8 +1717,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 err.valid_logloss = mm._logloss;
                 err.valid_hitratio = mm._hit_ratios;
               }
-              err.valid_mse = mm2._mse;
-              err.valid_r2 = mm2.r2();
+              err.validation_MSE = mm2._MSE;
+              err.validation_R2 = mm2.r2();
               _output._validation_metrics = mm2;
               if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {
                 _output._validation_metrics._description = "Metrics reported on " + ftest.numRows() + " validation set samples";
@@ -1787,15 +1787,15 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             //  if (_output.isClassifier())
             //    assert (ftest != null ? Math.abs(err.valid_err - err3) < 1e-5 : Math.abs(err.train_err - err3) < 1e-5);
             //  else
-            //    assert (ftest != null ? Math.abs(err.valid_mse - err3) < 1e-5 : Math.abs(err.train_mse - err3) < 1e-5);
+            //    assert (ftest != null ? Math.abs(err.validation_MSE - err3) < 1e-5 : Math.abs(err.training_MSE - err3) < 1e-5);
             //  bestPredict.delete();
             //}
           }
 //        else {
 //          // keep output JSON small
 //          if (errors.length > 1) {
-//            if (last_scored().trainAUC != null) last_scored().trainAUC.clear();
-//            if (last_scored().validAUC != null) last_scored().validAUC.clear();
+//            if (last_scored().training_AUC != null) last_scored().training_AUC.clear();
+//            if (last_scored().validation_AUC != null) last_scored().validation_AUC.clear();
 //            last_scored()._variable_importances = null;
 //          }
 //        }
@@ -1810,7 +1810,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         Log.warn(unstable_msg);
         keep_running = false;
       } else if ( (_output.isClassifier() && last_scored().train_err <= get_params()._classification_stop)
-              || (!_output.isClassifier() && last_scored().train_mse <= get_params()._regression_stop) ) {
+              || (!_output.isClassifier() && last_scored().training_MSE <= get_params()._regression_stop) ) {
         Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
         keep_running = false;
       }

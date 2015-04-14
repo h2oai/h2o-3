@@ -17,5 +17,8 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
   public static class SharedTreeModelOutputV3<O extends SharedTreeModel.SharedTreeOutput, SO extends SharedTreeModelOutputV3<O,SO>> extends ModelOutputSchema<O, SO> {
     @API(help="Variable Importances", direction=API.Direction.OUTPUT)
     TwoDimTableBase variable_importances;
+
+    @API(help="The Intercept term, the initial model function value to which trees make adjustments", direction=API.Direction.OUTPUT)
+    double initF;
   }
 }
