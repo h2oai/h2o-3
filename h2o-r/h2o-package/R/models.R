@@ -639,8 +639,9 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds)
     matrix(c(n-fps,fps,p-tps,tps),nrow=2,byrow=T)
   })
   names(m) <- "Actual/Predicted"
-  m
   dimnames(m[[1]]) <- list(list("0","1"), list("0","1"))
+  print(m)
+  m
 })
 
 #' @export
