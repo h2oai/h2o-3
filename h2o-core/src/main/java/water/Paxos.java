@@ -122,16 +122,26 @@ public abstract class Paxos {
   // Before we start doing distributed writes... block until the cloud
   // stablizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.
-  static void lockCloud(Key key) {
+  static void lockCloudDKVUpdate(Key key) {
     if( _cloudLocked ) return; // Fast-path cutout
-    lockCloud("DKV update (" + key.toString() + ")");
+    slowLockCloud("DKV update (" + key.toString() + ")");
   }
 
-  static void lockCloud(String reason) {
+  static void lockCloudTypeMapInstall(String className, int id) {
     if( _cloudLocked ) return; // Fast-path cutout
+    slowLockCloud("TypeMap install (" + className + ", " + id + ")");
+  }
+
+  static void lockCloudTaskPutKeyDinvoke(Class klass) {
+    if( _cloudLocked ) return; // Fast-path cutout
+    slowLockCloud("TaskPutKey dinvoke (" + klass.getName() + ")");
+  }
+
+  static private void slowLockCloud(String reason) {
+    // Any fast-path cutouts must happen en route to here.
     Log.info("Locking cloud to new members");
     Log.info("Reason for locking cloud: " + reason);
-    Exception e = new Exception("lockCloud called (this is normal!  not an error!)");
+    Exception e = new Exception("slowLockCloud called (the following stack trace is normal and not an error)");
     Log.info(e.getMessage());
     for (StackTraceElement ste : e.getStackTrace()) {
       Log.info("    " + ste.toString());
