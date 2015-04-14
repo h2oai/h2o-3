@@ -65,6 +65,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // The model to be built
         model = new SVDModel(dest(), _parms, new SVDModel.SVDOutput(SVD.this));
         model.delete_and_lock(_key);
+        _train.read_lock(_key);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
         dinfo = new DataInfo(Key.make(), _train, null, 0, false, _parms._transform, DataInfo.TransformType.NONE, true);
@@ -78,26 +79,32 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
         // 1) Compute Gram of training data
+        // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();
+        double norm = Math.sqrt(_train.numRows());    // Normalization constant dependent on n
         double[][] rsvec = new double[_parms._k][gram.length];
+        model._output._iterations = 0;
 
         // 2) Compute and save first k singular values
         for(int i = 0; i < _parms._k; i++) {
+          // Iterate x_i <- (A'A/n)x_{i-1} and set v_i = sqrt(n)*x_i/||x_i||
           rsvec[i] = powerLoop(gram, _parms._seed);
+          ArrayUtils.mult(rsvec[i], norm);
 
           // Calculate I - v_iv_i' using current singular value
           double[][] ivv = ArrayUtils.outerProduct(rsvec[i], rsvec[i]);
           for(int j = 0; j < ivv.length; j++) ivv[j][j] = 1 - ivv[j][j];
 
-          // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - v_iv_i' = A(I - v_iv_i')
+          // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - Av_iv_i' = A(I - v_iv_i')
           // This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
           double[][] lmat = ArrayUtils.multArrArr(ivv, gram);
           gram = ArrayUtils.multArrArr(lmat, ivv);
           // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
+          model._output._iterations++;
         }
         model._output._v = rsvec;
-
+        done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
         if (thisJob._state == JobState.CANCELLED) {

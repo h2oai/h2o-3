@@ -151,7 +151,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._dropNA20Cols = _parms._dropNA20Cols;
-        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
         parms._k = _parms._k;
@@ -352,7 +351,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         DKV.put(xinfo._key, xinfo);
 
         model._output._archetypes = yt;
-        model._output._parameters = _parms;
         if (_parms._recover_pca) recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?

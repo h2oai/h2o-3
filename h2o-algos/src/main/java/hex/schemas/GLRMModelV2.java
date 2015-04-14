@@ -9,9 +9,6 @@ import water.api.TwoDimTableBase;
 public class GLRMModelV2 extends ModelSchema<GLRMModel, GLRMModelV2, GLRMModel.GLRMParameters, GLRMV2.GLRMParametersV2, GLRMModel.GLRMOutput, GLRMModelV2.GLRMModelOutputV2> {
   public static final class GLRMModelOutputV2 extends ModelOutputSchema<GLRMModel.GLRMOutput, GLRMModelOutputV2> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Model parameters")
-    GLRMV2.GLRMParametersV2 parameters;
-
     @API(help = "Iterations executed")
     public int iterations;
 

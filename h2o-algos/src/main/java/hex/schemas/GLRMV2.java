@@ -4,7 +4,7 @@ import hex.DataInfo;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import water.api.API;
-import water.api.KeyV1;
+import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
 public class GLRMV2 extends ModelBuilderSchema<GLRM,GLRMV2,GLRMV2.GLRMParametersV2> {
@@ -37,9 +37,9 @@ public class GLRMV2 extends ModelBuilderSchema<GLRM,GLRMV2,GLRMV2.GLRMParameters
     public GLRM.Initialization init;
 
     @API(help = "User-specified initial Y", required = false)
-    public KeyV1.FrameKeyV1 user_points;
+    public KeyV3.FrameKeyV3 user_points;
 
     @API(help = "Frame key to save resulting X")
-    public KeyV1.FrameKeyV1 loading_key;
+    public KeyV3.FrameKeyV3 loading_key;
   }
 }

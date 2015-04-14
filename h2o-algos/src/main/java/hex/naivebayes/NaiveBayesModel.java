@@ -31,9 +31,6 @@ public class NaiveBayesModel extends SupervisedModel<NaiveBayesModel,NaiveBayesM
     // Number of categorical predictors
     public int _ncats;
 
-    // Model parameters
-    NaiveBayesParameters _parameters;
-
     public NaiveBayesOutput(NaiveBayes b) { super(b); }
   }
 
