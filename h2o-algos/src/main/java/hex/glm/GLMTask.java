@@ -216,7 +216,7 @@ public abstract class GLMTask  {
     final protected DataInfo _dinfo;
     final double _reg;
     public double [] _gradient;
-    public double    _objVal;
+    public double _likelihood;
     protected transient boolean [] _skip;
     boolean _validate;
     double _ymu;
@@ -283,7 +283,7 @@ public abstract class GLMTask  {
         double mu = _params.linkInv(eta);
         if(_validate)
           _val.add(row.response(0),eta, mu);
-        _objVal += _params.likelihood(row.response(0), eta, mu);
+        _likelihood += _params.likelihood(row.response(0), eta, mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         double gval = (mu-row.response(0)) / (var * _params.linkDeriv(mu));
@@ -301,7 +301,6 @@ public abstract class GLMTask  {
     }
     @Override
     public void postGlobal(){
-      _objVal = _objVal*_reg + .5 * _currentLambda * ArrayUtils.l2norm2(_beta,_dinfo._intercept);
       if(_validate) {
         _val.computeAIC();
         _val.computeAUC();
@@ -316,6 +315,8 @@ public abstract class GLMTask  {
     // (looping by column in the outer loop to have good access pattern and to exploit sparsity)
     protected final double [] computeEtaByCols(Chunk [] chks, boolean [] skip) {
       double [] eta = MemoryManager.malloc8d(chks[0]._len);
+      if(_dinfo._intercept)
+        Arrays.fill(eta,_beta[_beta.length-1]);
       double [] b = _beta;
       // do categoricals first
       for(int i = 0; i < _dinfo._cats; ++i) {
@@ -380,7 +381,7 @@ public abstract class GLMTask  {
         double mu = _params.linkInv(eta[r] + offset);
         if(_validate)
           _val.add(y,eta[r] + offset, mu);
-        _objVal += _params.likelihood(y,eta[r],mu);
+        _likelihood += _params.likelihood(y,eta[r],mu);
         double var = _params.variance(mu);
         if(var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
         eta[r] = (mu-y) / (var * _params.linkDeriv(mu));
@@ -461,7 +462,7 @@ public abstract class GLMTask  {
       // apply reg
     }
     public void reduce(GLMGradientTask grt) {
-      _objVal += grt._objVal;
+      _likelihood += grt._likelihood;
       _nobs += grt._nobs;
       if(_validate)
         _val.add(grt._val);
@@ -512,17 +513,10 @@ public abstract class GLMTask  {
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
         double eta = row.innerProduct(b);
-        double xp = -y*eta;
         double gval;
-        if(xp > 20) {
-          _objVal += xp;
-          gval = -y;
-        } else if(xp > -20) {
-          double d = 1 + Math.exp(-y * eta);
-          _objVal += Math.log(d);
-          gval = -y*(1-1.0/d);
-        } else // gval and objval ~ 0
-          gval = 0;
+        double d = 1 + Math.exp(-y * eta);
+        _likelihood += Math.log(d);
+        gval = -y*(1-1.0/d);
         // categoricals
         for(int i = 0; i < row.nBins; ++i)
           g[row.binIds[i]] += gval;
@@ -560,13 +554,13 @@ public abstract class GLMTask  {
         switch(_params._family) {
           case gaussian:
             double diff = e - responseChunk.atd(r);
-            _objVal += diff*diff;
+            _likelihood += diff*diff;
             eta[r] = diff;
             break;
           case binomial:
             double y = -1 + 2*responseChunk.atd(r);
             double d = 1 + Math.exp(-y * e);
-            _objVal += Math.log(d);
+            _likelihood += Math.log(d);
             eta[r] = -y * (1 - 1.0 / d);
             break;
           default:

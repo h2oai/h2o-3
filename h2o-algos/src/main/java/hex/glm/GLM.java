@@ -121,8 +121,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           betaGiven = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
           for (int i = 0; i < (int) v.length(); ++i)
             betaGiven[map == null ? i : map[i]] = v.at(i);
-          if (betaStart == null)
-            betaStart = betaGiven;
         }
         if ((v = beta_constraints.vec("upper_bounds")) != null) {
           betaUB = MemoryManager.malloc8d(_dinfo.fullN() + (_dinfo._intercept ? 1 : 0));
@@ -186,9 +184,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       }
       // GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, GradientInfo ginfo, double objVal){
       GLMGradientTask gtBetastart = itsk._gtBetaStart != null?itsk._gtBetaStart:itsk._gtNull;
+      _bc.adjustGradient(itsk._gtNull._beta,itsk._gtNull._gradient);
       double lmax =  lmax(itsk._gtNull);
-      double l1pen = _parms._alpha[0] * lmax * ArrayUtils.l1norm(_bc._betaStart, _dinfo._intercept);
-      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0),new GradientInfo(gtBetastart._objVal,gtBetastart._gradient),gtBetastart._objVal + l1pen);
+      double objval = gtBetastart._likelihood/gtBetastart._nobs;
+      double l2pen = .5 * lmax * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gtBetastart._beta, _dinfo._intercept);
+      l2pen += _bc.proxPen(gtBetastart._beta);
+      objval += l2pen;
+      _tInfos[0] = new GLMTaskInfo(_dest, 0, itsk._ymut._nobs, itsk._ymut._ymu,lmax,_bc._betaStart, _dinfo.fullN() + (_dinfo._intercept?1:0), new GradientInfo(objval, gtBetastart._gradient), objVal(gtBetastart._likelihood,gtBetastart._beta, lmax, gtBetastart._nobs,_dinfo._intercept));
       if (_parms._lambda != null) { // check the lambdas
         ArrayUtils.mult(_parms._lambda, -1);
         Arrays.sort(_parms._lambda);
@@ -309,6 +311,26 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           if(!Double.isInfinite(d)) return true;
       return false;
     }
+
+    public void adjustGradient(double [] beta, double [] grad) {
+      if(_betaGiven != null && _rho != null) {
+        for(int i = 0; i < _betaGiven.length; ++i) {
+          double diff = beta[i] - _betaGiven[i];
+          grad[i]  += _rho[i] * diff;
+        }
+      }
+    }
+    double proxPen(double [] beta) {
+      double res = 0;
+      if(_betaGiven != null && _rho != null) {
+        for(int i = 0; i < _betaGiven.length; ++i) {
+          double diff = beta[i] - _betaGiven[i];
+          res += _rho[i] * diff * diff;
+        }
+        res *= .5;
+      }
+      return res;
+    }
   }
 
   /**
@@ -361,12 +383,13 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
     public void adjustToNewLambda( double currentLambda, double newLambda, double alpha, boolean intercept) {
       assert newLambda < currentLambda:"newLambda = " + newLambda + ", last lambda = " + currentLambda;
-      double l2diff = (newLambda - currentLambda) * (1 - alpha);
-      Log.info("beta size = " + _beta.length + ", grad size = " + _ginfo._gradient.length);
+      double ldiff = (newLambda - currentLambda);
+      double l2pen = .5 * (1-alpha) * ArrayUtils.l2norm2(_beta, intercept);
+      double l1pen = alpha * ArrayUtils.l1norm(_beta, intercept);
       for (int i = 0; i < _ginfo._gradient.length - (intercept?1:0); ++i)
-        _ginfo._gradient[i] += l2diff * _beta[i];
-      _ginfo = new GradientInfo(_ginfo ._objVal + .5 * l2diff * ArrayUtils.l2norm2(_beta, intercept), _ginfo._gradient);
-      _objVal = _ginfo._objVal + newLambda * alpha * ArrayUtils.l1norm(_beta,intercept);
+        _ginfo._gradient[i] += ldiff * (1-alpha) * _beta[i];
+      _ginfo = new GradientInfo(_ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
+      _objVal = _objVal + ldiff * (l1pen + l2pen); //todo add proximal penalty?
     }
   }
 
@@ -404,14 +427,16 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       DKV.remove(_dinfo._key);
       if(_rowFilter != null)
         _rowFilter.remove();
-      if(_tInfos[0]._wVec != null)
-        _tInfos[0]._wVec.remove();
-      if(_tInfos[0]._zVec != null)
-        _tInfos[0]._zVec.remove();
-      if(_tInfos[0]._eVec != null)
-        _tInfos[0]._eVec.remove();
-      if(_tInfos[0]._iVec != null)
-        _tInfos[0]._iVec.remove();
+      if(_tInfos != null && _tInfos[0] != null) {
+        if (_tInfos[0]._wVec != null)
+          _tInfos[0]._wVec.remove();
+        if (_tInfos[0]._zVec != null)
+          _tInfos[0]._zVec.remove();
+        if (_tInfos[0]._eVec != null)
+          _tInfos[0]._eVec.remove();
+        if (_tInfos[0]._iVec != null)
+          _tInfos[0]._iVec.remove();
+      }
     }
 
     @Override public void onCompletion(CountedCompleter cc){
@@ -524,7 +549,20 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 
 
 
-
+  double objVal(double likelihood, double[] beta, double lambda, long nobs, boolean intercept) {
+    double alpha = _parms._alpha[0];
+    double proximalPen = 0;
+    if (_bc._betaGiven != null) {
+      for (int i = 0; i < _bc._betaGiven.length; ++i) {
+        double diff = beta[i] - _bc._betaGiven[i];
+        proximalPen += diff * diff * _bc._rho[i] * .5;
+      }
+    }
+    return likelihood / nobs
+      + proximalPen
+      + lambda * (alpha * ArrayUtils.l1norm(beta, intercept)
+      + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, intercept));
+  }
 
 
 
@@ -552,21 +590,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       msg = "GLM2[dest=" + _taskInfo._dstKey + ", iteration=" + _taskInfo._iter + ", lambda = " + _parms._lambda[_lambdaId] + "]: " + msg;
       Log.info(msg);
       return msg;
-    }
-
-    double objVal(double likelihood, double[] beta) {
-      double alpha = _parms._alpha[0];
-      double proximalPen = 0;
-      if (_bc._betaGiven != null) {
-        for (int i = 0; i < _bc._betaGiven.length; ++i) {
-          double diff = beta[i] - _bc._betaGiven[i];
-          proximalPen += diff * diff * _bc._rho[i] * .5;
-        }
-      }
-      return likelihood / _taskInfo._nobs
-        + proximalPen
-        + _parms._lambda[_lambdaId] * (alpha * ArrayUtils.l1norm(beta, _activeData._intercept)
-        + (1 - alpha) * .5 * ArrayUtils.l2norm2(beta, _activeData._intercept));
     }
 
 
@@ -791,10 +814,18 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           } else {
             setSubmodel(_taskInfo._beta, gt1._val, null, null);
           }
-          // got valida solution, update the state and complete
-          _taskInfo._ginfo = new GradientInfo(gt1._objVal, gt1._gradient);
+          // got valid solution, update the state and complete
+          double l2pen = _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]) * ArrayUtils.l2norm2(gt1._beta, _activeData._intercept);
+          if(_bc._betaGiven != null && _bc._rho != null) {
+            for(int i = 0; i < _bc._betaGiven.length; ++i) {
+              double diff = gt1._beta[i] - _bc._betaGiven[i];
+              l2pen += _bc._rho[i] * diff * diff;
+            }
+          }
+          l2pen *= .5;
+          _taskInfo._ginfo = new GradientInfo(gt1._likelihood/gt1._nobs + l2pen, gt1._gradient);
           assert _taskInfo._ginfo._gradient.length == _dinfo.fullN() + (_dinfo._intercept?1:0);
-          _taskInfo._objVal = gt1._objVal + (1 - _parms._alpha[0]) * ArrayUtils.l1norm(_taskInfo._beta, _activeData._intercept);
+          _taskInfo._objVal = objVal(gt1._likelihood,gt1._beta, _parms._lambda[_lambdaId],gt1._nobs,_dinfo._intercept);
           _taskInfo._beta = fullBeta;
         }
       }).setValidate(_taskInfo._ymu,true).asyncExec(_dinfo._adaptedFrame);
@@ -841,7 +872,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         ArrayUtils.mult(glmt._xy, reg);
         if (_countIteration) ++_taskInfo._iter;
         long callbackStart = System.currentTimeMillis();
-        double objVal = objVal(glmt._likelihood, glmt._beta);
+        double objVal = objVal(glmt._likelihood, glmt._beta, _parms._lambda[_lambdaId], _taskInfo._nobs, _activeData._intercept);
         double lastObjVal = _taskInfo._objVal;
         LogInfo("gram computed in " + (callbackStart - _iterationStartTime) + "ms");
         double logl = glmt._likelihood;
@@ -911,9 +942,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
         double t = 1;
         for (int i = 0; i < lst._likelihoods.length; ++i, t *= LINE_SEARCH_STEP) {
           double[] beta = ArrayUtils.wadd(_taskInfo._beta.clone(), lst._direction, t);
-          if (_taskInfo._objVal > objVal(lst._likelihoods[i], beta)) {
+          double newObj = objVal(lst._likelihoods[i], beta, _parms._lambda[_lambdaId],_taskInfo._nobs,_activeData._intercept);
+          if (_taskInfo._objVal > newObj) {
             assert t < 1;
-            LogInfo("line search: found admissible step = " + t + ",  objval = " + lst._likelihoods[i]);
+            LogInfo("line search: found admissible step = " + t + ",  objval = " + newObj);
             getCompleter().addToPendingCount(1);
             new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, true, beta, _taskInfo._ymu, _rowFilter, new Iteration(getCompleter(), true, false)).asyncExec(_activeData._adaptedFrame);
             return;
@@ -1226,7 +1258,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter ).doAll(_dinfo._adaptedFrame)
         : new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter).doAll(_dinfo._adaptedFrame);
-      return new GradientInfo(gt._objVal, gt._gradient);
+      return new GradientInfo(gt._likelihood/gt._nobs + ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
     }
 
     @Override
