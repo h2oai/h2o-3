@@ -895,7 +895,7 @@ class H2OVec:
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
-    if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
+    if op == "n" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_vec_bin_rop(self, i, op):
