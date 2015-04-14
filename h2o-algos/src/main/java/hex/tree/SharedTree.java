@@ -99,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                              initial_MSE(response(), response()), 
                              _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
-          _model._output._initialPrediction = _initialPrediction;
+          _model._output._initF = _initialPrediction;
         }
 
         // Compute the response domain; makes for nicer printouts
@@ -474,7 +474,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
     }
 
-    final int rows = _output._mse_train.length;
+    final int rows = _output._mse_train.length-1;
     TwoDimTable table = new TwoDimTable(
             "Scoring History", null,
             new String[rows],
@@ -483,7 +483,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             colFormat.toArray(new String[0]),
             "");
     int row = 0;
-    for( int i = 0; i<rows; i++ ) {
+    for( int i = 1; i<=rows; i++ ) {
       int col = 0;
       assert(row < table.getRowDim());
       assert(col < table.getColDim());
