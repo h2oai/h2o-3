@@ -55,6 +55,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
       // Compute error
       for (int i = 0; i < dataRow.length; ++i) {
+        // TODO: Need to impute missing dataRow[i] using mean of test column i
         double err = (double) centers.get(clus, i) - dataRow[i]; // Error: distance from assigned cluster center
         _sumsqe += err * err;       // Squared error
         _within_sumsqe[clus] += err * err;
@@ -62,7 +63,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         _colSum[i] += dataRow[i];
         _colSumSq[i] += dataRow[i] * dataRow[i];
       }
-      assert !Double.isNaN(_sumsqe);
+      assert !Double.isNaN(_sumsqe) : "Data frame cannot contain missing values!";
       _size[clus]++;
       _count++;
       return preds;                // Flow coding
