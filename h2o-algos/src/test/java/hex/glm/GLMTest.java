@@ -622,7 +622,7 @@ public class GLMTest  extends TestUtil {
       model1 = job.trainModel().get();
       Frame score1 = model1.score(fr);
       ModelMetrics mm = ModelMetrics.getFromDKV(model1, fr);
-      Assert.assertEquals(5336.918,mm._mse * score1.numRows(),1);
+      Assert.assertEquals(5336.918,mm._MSE * score1.numRows(),1);
 
       res = model1.score(fr);
       // Build a POJO, validate same results

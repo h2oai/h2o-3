@@ -403,7 +403,7 @@ h2o.giniCoef <- function(object) {
 #' @export
 h2o.mse <- function(object) {
   if(is(object, "H2OBinomialMetrics") || is(object, "H2OMultinomialMetrics") || is(object, "H2ORegressionMetrics")){
-    object@metrics$mse
+    object@metrics$MSE
   }
   else{
     stop(paste0("No MSE for ",class(object)))

@@ -11,7 +11,7 @@ public class ModelMetricsRegressionV3 extends ModelMetricsBase<ModelMetricsRegre
 
   @Override public ModelMetricsRegressionV3 fillFromImpl(ModelMetricsRegression modelMetrics) {
     super.fillFromImpl(modelMetrics);
-    this.mse = modelMetrics._mse;
+    this.mse = modelMetrics._MSE;
     this.sigma = modelMetrics._sigma;
     return this;
   }

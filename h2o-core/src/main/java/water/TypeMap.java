@@ -148,7 +148,7 @@ public class TypeMap {
   // smaller type ids, and these will work fine in either old or new arrays.
   synchronized static private int install( String className, int id ) {
     assert !_check_no_locking : "Locking cloud to assign typeid to "+className;
-    Paxos.lockCloudTypeMapInstall(className, id);
+    Paxos.lockCloud(className);
     if( id == -1 ) {            // Leader requesting a new ID
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID
