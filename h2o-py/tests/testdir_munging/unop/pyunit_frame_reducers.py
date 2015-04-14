@@ -22,10 +22,14 @@ def frame_reducers(ip,port):
             if not abs(h2o.as_list(h2o_data[r,c])[0][0] - numpy_data[r,c]) < 1e-06: success = False
         return success
 
-    assert h2o.as_list(h2o.min(h2o_data))[0][0] - np.min(np_data) < 1e-06, "expected equal min values between h2o and numpy"
-    assert h2o.as_list(h2o.max(h2o_data))[0][0] - np.max(np_data) < 1e-06, "expected equal max values between h2o and numpy"
-    assert h2o.as_list(h2o.sum(h2o_data))[0][0] - np.sum(np_data) < 1e-06, "expected equal sum values between h2o and numpy"
-    assert check_values(h2o.var(h2o_data), np.cov(np_data,rowvar=0, ddof=1)), "expected equal var values between h2o and numpy"
+    assert h2o.as_list(h2o.min(h2o_data))[0][0] - np.min(np_data) < 1e-06, \
+        "expected equal min values between h2o and numpy"
+    assert h2o.as_list(h2o.max(h2o_data))[0][0] - np.max(np_data) < 1e-06, \
+        "expected equal max values between h2o and numpy"
+    assert h2o.as_list(h2o.sum(h2o_data))[0][0] - np.sum(np_data) < 1e-06, \
+        "expected equal sum values between h2o and numpy"
+    assert check_values(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1)), \
+        "expected equal var values between h2o and numpy"
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, frame_reducers)
