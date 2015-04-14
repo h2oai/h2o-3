@@ -2,9 +2,6 @@ package water.util;
 
 import java.util.*;
 
-import water.H2O;
-
-
 /**
  * Shared static code to support modeling, prediction, and scoring.
  *
@@ -34,7 +31,7 @@ public class ModelUtils {
     for( best=1; best<preds.length; best++)
       if( res == preds[best] && --idx < 0 )
         return best-1;          // Return best
-    throw H2O.fail();           // Should Not Reach Here
+    throw new RuntimeException("Unreachable code reached!");
   }
 
   /**
