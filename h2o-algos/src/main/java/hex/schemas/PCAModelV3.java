@@ -9,9 +9,6 @@ import water.api.TwoDimTableBase;
 public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAParameters, PCAV3.PCAParametersV3, PCAModel.PCAOutput, PCAModelV3.PCAModelOutputV3> {
   public static final class PCAModelOutputV3 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV3> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Model parameters")
-    PCAV3.PCAParametersV3 parameters;
-
     @API(help = "Iterations executed")
     public int iterations;
 

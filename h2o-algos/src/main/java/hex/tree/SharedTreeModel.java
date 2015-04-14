@@ -128,18 +128,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
-    try {
-      if ((this._output._treeStats._num_trees * this._output._treeStats._mean_leaves) > 5000) {
-        return true;
-      }
-    }
-    catch (Exception ignore) {
-      // If we can't figure out the answer, assume it's too big.
-      return true;
-    }
-
-    return false;
+    return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 5000;
   }
+  protected boolean binomialOpt() { return false; }
   @Override protected SB toJavaInit(SB sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
@@ -148,7 +139,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
     return sb;
   }
-  protected boolean binomialOpt() { return false; }
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();

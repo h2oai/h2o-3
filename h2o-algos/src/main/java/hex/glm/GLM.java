@@ -671,7 +671,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
 //            new GLMTask.GLMGradientTask(_dinfo,_parms,_parms._lambda[_lambdaId],)
           } else
             setSubmodel(newBeta, glrt._val, null, cmp);
-          System.out.println("haha, cmp.pending = " + cmp.getPendingCount());
         }
       }).setValidate(_taskInfo._ymu, true).asyncExec(_dinfo._adaptedFrame);
 

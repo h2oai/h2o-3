@@ -51,9 +51,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
     public TwoDimTable _pc_importance;
 
-    // Model parameters
-    PCAParameters _parameters;
-
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 
