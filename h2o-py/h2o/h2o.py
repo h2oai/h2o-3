@@ -5,6 +5,7 @@ This module implements the communication REST layer for the python <-> H2O conne
 import os
 import re
 import urllib
+import json
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -149,6 +150,14 @@ So each test must have an ip and port
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
+
+def ipy_notebook_exec(path):
+  notebook = json.load(open(path))
+  for block in notebook["cells"]:
+    cmd = ''
+    for line in block["source"]:
+      if "h2o.init" not in line: cmd += line
+    exec(cmd)
 
 def remove(key):
   """
