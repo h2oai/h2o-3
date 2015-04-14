@@ -262,9 +262,9 @@ public class GLRMTest extends TestUtil {
 
   @Test public void testPowerMethod() throws InterruptedException, ExecutionException {
     // Expected right singular values
-    double[][] svec = ard(ard(-0.04239181, 0.01616262, -0.06588426, 0.99679535),
-                          ard(-0.94395706, 0.32068580, 0.06655170, -0.04094568),
-                          ard(-0.30842767, -0.93845891, 0.15496743, 0.01234261),
+    double[][] svec = ard(ard(-0.04239181,  0.01616262, -0.06588426,  0.99679535),
+                          ard(-0.94395706,  0.32068580,  0.06655170, -0.04094568),
+                          ard(-0.30842767, -0.93845891,  0.15496743,  0.01234261),
                           ard(-0.10963744, -0.12725666, -0.98347101, -0.06760284));
     SVDModel model = null;
     Frame train = null;
@@ -278,9 +278,7 @@ public class GLRMTest extends TestUtil {
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
-        System.out.println(ArrayUtils.pprint(model._output._v));
-        // for(int i = 0; i < parms._k; i++)
-        //  Assert.assertArrayEquals(svec[i], model._output._v[i], TOLERANCE);
+        checkEigvec(svec, model._output._v);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);

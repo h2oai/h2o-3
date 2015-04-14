@@ -93,12 +93,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           // Calculate I - v_iv_i' using current singular value
           double[][] ivv = ArrayUtils.outerProduct(rsvec[i], rsvec[i]);
           for(int j = 0; j < ivv.length; j++) ivv[j][j] = 1 - ivv[j][j];
+          for(int j = 0; j < ivv.length; j++) {
+            for(int k = 0; k < j; k++)
+              ivv[k][j] = ivv[j][k] = -ivv[k][j];
+          }
 
           // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - Av_iv_i' = A(I - v_iv_i')
+          // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
           // This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
           double[][] lmat = ArrayUtils.multArrArr(ivv, gram);
           gram = ArrayUtils.multArrArr(lmat, ivv);
-          // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
           model._output._iterations++;
         }
         model._output._v = ArrayUtils.transpose(rsvec);
