@@ -122,9 +122,20 @@ public abstract class Paxos {
   // Before we start doing distributed writes... block until the cloud
   // stablizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.
-  static void lockCloud() {
+  static void lockCloud(Key key) {
+    if( _cloudLocked ) return; // Fast-path cutout
+    lockCloud("DKV update (" + key.toString() + ")");
+  }
+
+  static void lockCloud(String reason) {
     if( _cloudLocked ) return; // Fast-path cutout
     Log.info("Locking cloud to new members");
+    Log.info("Reason for locking cloud: " + reason);
+    Exception e = new Exception("lockCloud called (this is normal!  not an error!)");
+    Log.info(e.getMessage());
+    for (StackTraceElement ste : e.getStackTrace()) {
+      Log.info("    " + ste.toString());
+    }
     synchronized(Paxos.class) {
       while( !_commonKnowledge )
         try { Paxos.class.wait(); } catch( InterruptedException ignore ) { }
