@@ -312,20 +312,11 @@ setMethod("show", "H2OModel", function(object) {
   cat(class(o), ": ", o@algorithm, "\n", sep = "")
   cat("Model Key: ", o@key, "\n")
 
-  # History
+  # summary
   cat("\n")
-  if( !is.null( m$scoring_history ) ) {
-    print(m$scoring_history)
-  }
+  if( !is.null(m$model_summary) ) { print(m$model_summary) }
 
-  # Varimp
-  cat("\n")
-  if( !is.null( m$variable_importances ) ) {
-    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
-    cat("=================================================\n\n")
-    print(m$variable_importances)
-  }
-
+  # metrics
   if( is(object, "H2OMultinomialModel") ) {
     cat("\n")
     # Training Metrics
@@ -336,6 +327,18 @@ setMethod("show", "H2OModel", function(object) {
     # Validation Metrics
     if( !is.null(m$validation_metrics) )  .showMultiMetrics(m$validation_metrics, "Validation")
     cat("\n")
+  }
+
+  # History
+  cat("\n")
+  if( !is.null(m$scoring_history) ) print(m$scoring_history)
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    print(m$variable_importances)
   }
 })
 

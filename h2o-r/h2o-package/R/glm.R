@@ -138,6 +138,7 @@ h2o.glm <- function(x, y, training_frame, destination_key, validation_frame,
   m
 }
 
+#' @export
 h2o.makeGLMModel <- function(model,beta) {
    cat("beta =",beta,",",paste("[",paste(as.vector(beta),collapse=","),"]"))
    res = .h2o.__remoteSend(model@conn, method="POST", .h2o.__GLMMakeModel, model=model@key, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))

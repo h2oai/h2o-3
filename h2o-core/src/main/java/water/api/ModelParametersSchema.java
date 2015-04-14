@@ -73,6 +73,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Drop columns with more than 20% missing values", direction=API.Direction.INOUT)
   public boolean dropNA20Cols; // Drop columns with more than 20% missing values
 
+  @API(help="Whether to score during each iteration of model training")
+  public boolean score_each_iteration;
+
   protected static String[] append_field_arrays(String[] first, String[] second) {
     String[] appended = new String[first.length + second.length];
     System.arraycopy(first, 0, appended, 0, first.length);
