@@ -19,15 +19,25 @@ def frame_reducers(ip,port):
         for i in range(10):
             r = random.randint(0,row-1)
             c = random.randint(0,col-1)
-            if not abs(h2o.as_list(h2o_data[r,c])[0][0] - numpy_data[r,c]) < 1e-06: success = False
+            h2o_val = h2o.as_list(h2o_data[r,c])[0][0]
+            num_val = numpy_data[r,c]
+            if not abs(h2o_val - num_val) < 1e-06:
+                success = False
+                print "check unsuccessful! h2o computed {0} and numpy computed {1}".format(h2o_val,num_val)
         return success
 
-    assert h2o.as_list(h2o.min(h2o_data))[0][0] - np.min(np_data) < 1e-06, \
-        "expected equal min values between h2o and numpy"
-    assert h2o.as_list(h2o.max(h2o_data))[0][0] - np.max(np_data) < 1e-06, \
-        "expected equal max values between h2o and numpy"
-    assert h2o.as_list(h2o.sum(h2o_data))[0][0] - np.sum(np_data) < 1e-06, \
-        "expected equal sum values between h2o and numpy"
+    h2o_val = h2o.as_list(h2o.min(h2o_data))[0][0]
+    num_val = np.min(np_data)
+    assert abs(h2o_val - num_val) < 1e-06, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal min values between h2o and numpy".format(h2o_val,num_val)
+    h2o_val = h2o.as_list(h2o.max(h2o_data))[0][0]
+    num_val = np.max(np_data)
+    assert abs(h2o_val - num_val) < 1e-06, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal max values between h2o and numpy".format(h2o_val,num_val)
+    h2o_val = h2o.as_list(h2o.sum(h2o_data))[0][0]
+    num_val = np.sum(np_data)
+    assert abs(h2o_val - num_val) < 1e-06, \
+        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and numpy".format(h2o_val,num_val)
     assert check_values(h2o.var(h2o_data), np.cov(np_data, rowvar=0, ddof=1)), \
         "expected equal var values between h2o and numpy"
 

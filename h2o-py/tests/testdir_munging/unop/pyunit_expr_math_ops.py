@@ -79,19 +79,19 @@ def expr_math_ops(ip,port):
     h2o_val = h2o.as_list(h2o.gamma(h2o_data3))[5][5]
     num_val = math.gamma(h2o.as_list(h2o_data3)[5][5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal gamma values between h2o and math".format(h2o_val,num_val)
+        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal gamma values between h2o and math".format(h2o_val,num_val)
     h2o_val = h2o.as_list(h2o.lgamma(h2o_data3))[5][5]
     num_val = math.lgamma(h2o.as_list(h2o_data3)[5][5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal lgamma values between h2o and math".format(h2o_val,num_val)
+        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal lgamma values between h2o and math".format(h2o_val,num_val)
     h2o_val = h2o.as_list(h2o.digamma(h2o_data3))[5][5]
     num_val = scipy.special.polygamma(0,h2o.as_list(h2o_data3)[5][5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal digamma values between h2o and math".format(h2o_val,num_val)
+        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal digamma values between h2o and math".format(h2o_val,num_val)
     h2o_val = h2o.as_list(h2o.trigamma(h2o_data3))[5][5]
     num_val = scipy.special.polygamma(1,h2o.as_list(h2o_data3)[5][5])
     assert abs(h2o_val - num_val) < max(abs(h2o_val), abs(num_val)) * 1e-6, \
-        "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal trigamma values between h2o and math".format(h2o_val,num_val)
+        "check unsuccessful! h2o computed {0} and math computed {1}. expected equal trigamma values between h2o and math".format(h2o_val,num_val)
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, expr_math_ops)
