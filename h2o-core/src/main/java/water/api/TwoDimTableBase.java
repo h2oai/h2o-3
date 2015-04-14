@@ -4,6 +4,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 /**
@@ -85,7 +86,24 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
    * @param name
    * @return
    */
-  private String pythonify(String name) { return name.toLowerCase().replace(" ", "_").replace(".", ""); }
+  private String pythonify(String name) {
+    StringBuilder sb = new StringBuilder();
+    String [] modified = name.split("[\\s_]+");
+    for (int i=0; i<modified.length; ++i) {
+      if (i!=0) sb.append("_");
+      String s = modified[i];
+      if (!s.matches("^[A-Z]{2,3}$")) {
+        sb.append(s.toLowerCase());
+      } else {
+        sb.append(s);
+      }
+    }
+    String newString = sb.toString().replaceAll("[^\\w]", "");
+//    if (!newString.equals(name)) {
+//      Log.warn("Turning column description into field name: " + name + " --> " + newString);
+//    }
+    return newString;
+  }
 
   /**
    * Fill a TwoDimTable from this Schema
