@@ -144,7 +144,7 @@ The shape of the H2OFrame is determined by two factors:
 If there are no nested arrays (as in Example A and Example D above), 
 the resulting H2OFrame will have the following shape (rows x cols):
 
-1 x len(tuple)
+  1 x len(tuple)
 
 (i.e. a Frame with a single row).
 
@@ -169,7 +169,7 @@ The same principles that apply to tuples also apply to lists. Lists are mutable
 objects, so there is no semantic difference regarding mutability between an
 H2OFrame and a list (as there is for a tuple).
 
- Additionally, a list [] is ordered the same way as a tuple (), with the data appearing within the brackets.
+Additionally, a list [] is ordered the same way as a tuple (), with the data appearing within the brackets.
 
 Loading A Python Dictionary Or collections.OrderedDict
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
