@@ -1692,7 +1692,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             err.train_logloss = mm._logloss;
             err.train_hitratio = mm._hit_ratios;
           }
-          err.train_mse = mm1._mse;
+          err.train_mse = mm1._MSE;
           err.train_r2 = mm1.r2();
           _output._training_metrics = mm1;
           if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
@@ -1717,7 +1717,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                 err.valid_logloss = mm._logloss;
                 err.valid_hitratio = mm._hit_ratios;
               }
-              err.valid_mse = mm2._mse;
+              err.valid_mse = mm2._MSE;
               err.valid_r2 = mm2.r2();
               _output._validation_metrics = mm2;
               if (get_params()._score_validation_samples != 0 && get_params()._score_validation_samples != ftest.numRows()) {

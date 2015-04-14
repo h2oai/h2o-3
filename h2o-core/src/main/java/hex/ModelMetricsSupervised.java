@@ -14,7 +14,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
   }
   public final double r2() {
     double var = _sigma*_sigma;
-    return 1.0-(_mse/var);
+    return 1.0-(_MSE /var);
   }
 
   public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

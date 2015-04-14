@@ -63,7 +63,7 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
     PojoUtils.copyProperties(this, modelMetrics, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES,
             new String[]{"model", "model_category", "model_checksum", "frame", "frame_checksum"});
 
-    this.MSE = modelMetrics._mse;
+    this.MSE = modelMetrics._MSE;
 
     return (S) this;
   }

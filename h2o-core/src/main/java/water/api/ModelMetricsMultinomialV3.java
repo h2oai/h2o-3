@@ -19,7 +19,7 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
 
   @Override public ModelMetricsMultinomialV3 fillFromImpl(ModelMetricsMultinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
-    mse = modelMetrics._mse;
+    mse = modelMetrics._MSE;
     logloss = modelMetrics._logloss;
 
     if (modelMetrics._hit_ratios != null) {
