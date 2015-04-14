@@ -45,7 +45,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("gaussian_test_data_parsed");
     Key modelKey = Key.make("gaussian_test");
     GLMModel model = null;
-    Frame fr = null;
+    Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
@@ -61,9 +61,15 @@ public class GLMTest  extends TestUtil {
       HashMap<String, Double> coefs = model.coefficients();
       System.out.println("coefs = " + coefs);
       assertEquals(0.0,coefs.get("Intercept"),1e-4);
-      assertEquals(0.1,coefs.get("x"),1e-4);
+      assertEquals(0.1, coefs.get("x"), 1e-4);
+
+      res = model.score(fr);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
+
     }finally{
       if( fr != null ) fr.remove();
+      if(res != null ) res.remove();
       if(model != null)model.remove();
       if( job != null ) job.remove();
     }
@@ -80,7 +86,7 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("poisson_test_data_parsed");
     Key modelKey = Key.make("poisson_test");
     GLMModel model = null;
-    Frame fr = null;
+    Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
@@ -116,9 +122,13 @@ public class GLMTest  extends TestUtil {
       assertEquals(0.3396,model.beta()[1],1e-4);
       assertEquals(0.2565,model.beta()[0],1e-4);
       // test scoring
+      res = model.score(fr);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
 
     } finally {
       if( fr != null ) fr.delete();
+      if(res != null ) res.delete();
       if(model != null)model.delete();
       if( job != null ) job.remove();
     }
@@ -134,7 +144,7 @@ public class GLMTest  extends TestUtil {
   @Test public void testGammaRegression() throws InterruptedException, ExecutionException {
     GLM job = null;
     GLMModel model = null;
-    Frame fr = null;
+    Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       Key raw = Key.make("gamma_test_data_raw");
@@ -155,8 +165,13 @@ public class GLMTest  extends TestUtil {
       model = DKV.get(modelKey).get();
       for(double c:model.beta())assertEquals(1.0, c,1e-4);
       // test scoring
+      res = model.score(fr);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
+
     }finally{
       if( fr != null ) fr.delete();
+      if(res != null ) res.delete();
       if(model != null)model.delete();
       if( job != null ) job.remove();
     }
@@ -193,21 +208,9 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
-  static int rank(double [] ary) {
-    int res = 0;
-    for(int i = 0; i < ary.length-1; ++i)
-      if(ary[i] != 0) ++res;
-    return res;
-
-  }
-
   @Test public void testLineSearchTask () {
-    GLM job = null;
     Key parsed = Key.make("cars_parsed");
-    Key modelKey = Key.make("cars_model");
     Frame fr = null;
-    GLMModel model = null;
-    Frame score = null;
     DataInfo dinfo = null;
     double ymu = 0;
     try {
@@ -243,20 +246,13 @@ public class GLMTest  extends TestUtil {
       }
     } finally {
       if (fr != null) fr.delete();
-      if (score != null) score.delete();
-      if (model != null) model.delete();
-      if (job != null) job.remove();
       if (dinfo != null) dinfo.remove();
     }
   }
   // Make sure all three implementations of gradient computation in GLM get the same results
   @Test public void testGradientTask(){
-    GLM job = null;
     Key parsed = Key.make("cars_parsed");
-    Key modelKey = Key.make("cars_model");
     Frame fr = null;
-    GLMModel model = null;
-    Frame score = null;
     DataInfo dinfo = null;
     try {
       fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
@@ -269,7 +265,6 @@ public class GLMTest  extends TestUtil {
 
       dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
-      double ymu = 0;
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       Random rnd = new Random(987654321);
       for(int i = 0; i < beta.length; ++i)
@@ -302,7 +297,6 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       DKV.put(dinfo._key,dinfo);
-      ymu = 0;
       beta = MemoryManager.malloc8d(dinfo.fullN()+1);
       rnd = new Random(987654321);
       for(int i = 0; i < beta.length; ++i)
@@ -314,31 +308,8 @@ public class GLMTest  extends TestUtil {
         assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
       dinfo.remove();
       // arcene takes too long
-//      fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
-//      params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
-//      // params._response = fr.find(params._response_column);
-//      params._train = parsed;
-//      params._lambda = new double[]{0};
-//      params._use_all_factor_levels = true;
-//      dinfo = new DataInfo(Key.make(), fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-//      DKV.put(dinfo._key,dinfo);
-//      ymu = 0;
-//      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-//      rnd = new Random(987654321);
-//      for(int i = 0; i < beta.length; ++i)
-//        beta[i] = 1 - 2*rnd.nextDouble();
-//      glmt = new GLMTask.GLMIterationTask(null,dinfo,params,false,true,true,beta,ymu,1, ModelUtils.DEFAULT_THRESHOLDS,null).doAll(dinfo._adaptedFrame);
-//      grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceColAccess().doAll(dinfo._adaptedFrame);
-//      grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1).forceRowAccess().doAll(dinfo._adaptedFrame);
-//      for(int i = 0; i < beta.length; ++i) {
-//        assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
-//        assertEquals("gradients differ", glmt._ginfo._gradient[i], grtRow._gradient[i], 1e-4);
-//      }
     } finally {
       if( fr != null ) fr.delete();
-      if(score != null)score.delete();
-      if(model != null)model.delete();
-      if( job != null ) job.remove();
       if(dinfo != null) dinfo.remove();
     }
   }
@@ -377,10 +348,6 @@ public class GLMTest  extends TestUtil {
       // test gamma
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
       score = model.score(fr);
-      GLMValidation val = model.validation();
-//      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("power (hp)"),score.vec("predict")})._val;
-//      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-5);
-//      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
       score.delete();
       model.delete();
       job.remove();
@@ -399,10 +366,6 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls2[i], coefs.get(cfs1[i]), 1e-4);
       score = model.score(fr);
-      val = model.validation();
-//      val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("power (hp)"),score.vec("predict")})._val;
-//      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
-//      assertEquals(val.nullDeviance(),val2.nullDeviance(),1e-6);
       model.delete();
       job.remove();
       // test gaussian
@@ -503,7 +466,7 @@ public class GLMTest  extends TestUtil {
 
 //    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
     FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
-    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 
     try {
       // H2O differs on intercept and race, same residual deviance though
@@ -532,7 +495,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
-      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
       job = new GLM(modelKey, "glm test simple poisson", params);
       job.trainModel().get();
       assertTrue(job.isDone());
@@ -587,16 +550,12 @@ public class GLMTest  extends TestUtil {
     GLMModel model = null;
 
     Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
-    Key k = Key.make("rebalanced");
     fr.remove("ID").remove();
     DKV.put(fr._key,fr);
     Key betaConsKey = Key.make("beta_constraints");
 
-    String[] cfs1 = new String[]{"RACE", "AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","Intercept"};
-    double[] vals = new double[]{0, 0, 0.54788332,0.53816534, 0.02380097, 0, 0.98115670,-8.945984};
-//    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
     FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
-    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), new Key[]{betaConsKey});
+    Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
     try {
       // H2O differs on intercept and race, same residual deviance though
       GLMParameters params = new GLMParameters();
@@ -624,7 +583,7 @@ public class GLMTest  extends TestUtil {
       // todo: remove, result from h2o.1
      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
       LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta_1,1.0/380.0, null).doAll(dinfo._adaptedFrame);
-      GLMGradientTask glmt = new GLMGradientTask(dinfo,params,0,beta_1,1.0/380, null).doAll(dinfo._adaptedFrame);
+      new GLMGradientTask(dinfo,params,0,beta_1,1.0/380, null).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       for(int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-5);
@@ -641,14 +600,14 @@ public class GLMTest  extends TestUtil {
   // once on explicitly expanded data, once on h2o autoexpanded and compare the results
   @Test public void testAirlines() {
     GLM job = null;
-    GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
+    GLMModel model1 = null, model2 = null, model3, model4;
     Frame frMM = parse_test_file("smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"),"smalldata/airlines/gram_std.csv", true);
     Vec xy = frG.remove("xy");
     frMM.remove("").remove();
-    frMM.add("IsDepDelayed",frMM.remove("IsDepDelayed"));
+    frMM.add("IsDepDelayed", frMM.remove("IsDepDelayed"));
     DKV.put(frMM._key,frMM);
-    Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+    Frame fr = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
     //  Distance + Origin + Dest + UniqueCarrier
     String [] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime","ArrTime","IsDepDelayed_REC"};
     try{
@@ -664,6 +623,13 @@ public class GLMTest  extends TestUtil {
       Frame score1 = model1.score(fr);
       ModelMetrics mm = ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(5336.918,mm._mse * score1.numRows(),1);
+
+      res = model1.score(fr);
+      // Build a POJO, validate same results
+      Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
+
+
+
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
       job = new GLM(Key.make("airlines_mm"),"Airlines with pre-expanded (mode.matrix) categoricals, no standardization",params);
@@ -739,9 +705,11 @@ public class GLMTest  extends TestUtil {
 //          s1 = "UniqueCarrier." + s.substring(13);
 //        assertEquals("coeff " + s1 + " differs, " + coefs3.get(s1) + " != " + coefs4.get(s), coefs3.get(s1), coefs4.get(s),1e-4);
 //      }
+
     } finally {
       fr.delete();
       frMM.delete();
+      res.delete();
       if(model1 != null)model1.delete();
       if(model2 != null)model2.delete();
 //      if(score != null)score.delete();
@@ -926,6 +894,5 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
-
 
 }

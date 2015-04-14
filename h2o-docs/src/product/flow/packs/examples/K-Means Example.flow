@@ -63,7 +63,7 @@
     },
     {
       "type": "cs",
-      "input": "grid inspect \"clusters\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
+      "input": "grid inspect \"within_mse\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
     },
     {
       "type": "cs",
