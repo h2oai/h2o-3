@@ -477,7 +477,7 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
-    elif self._op in ["min", "max", "sum"]:
+    elif self._op in ["min", "max", "sum", "median"]:
       if left.is_local():   raise NotImplementedError
       else:                 __CMD__ += "%FALSE"
 

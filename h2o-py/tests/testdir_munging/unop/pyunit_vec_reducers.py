@@ -27,9 +27,8 @@ def frame_reducers(ip,port):
         "expected equal var values between h2o and numpy"
     assert h2o.as_list(h2o.mean(h2o_data[c]))[0][0] - np.mean(np_data[:,c]) < 1e-06, \
         "expected equal mean values between h2o and numpy"
-    # PUBDEV-814
-    # assert h2o.as_list(h2o.median(h2o_data[c]))[0][0] - np.median(np_data[:,c]) < 1e-06, \
-    #     "expected equal median values between h2o and numpy"
+    assert h2o.as_list(h2o.median(h2o_data[c]))[0][0] - np.median(np_data[:,c]) < 1e-06, \
+         "expected equal median values between h2o and numpy"
 
 if __name__ == "__main__":
     h2o.run_test(sys.argv, frame_reducers)
