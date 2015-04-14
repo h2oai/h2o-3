@@ -639,10 +639,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     public DeepLearningModelOutput() { super(); }
     public DeepLearningModelOutput(DeepLearning b) { super(b); }
     boolean autoencoder;
+    DeepLearningScoring errors;
     Key[] weights;
     Key[] biases;
-    DeepLearningScoring errors;
-    double run_time;
     public TwoDimTable _variable_importances;
 
     @Override public ModelCategory getModelCategory() {
@@ -1699,7 +1698,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           if (get_params()._score_training_samples != 0 && get_params()._score_training_samples != ftrain.numRows()) {
             _output._training_metrics._description = "Metrics reported on " + ftrain.numRows() + " training set samples";
           }
-          _output.run_time = run_time;
 
           if (ftest != null) {
             Frame validPred = score(ftest);

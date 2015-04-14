@@ -8,9 +8,6 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   @API(help="The Mean Squared Error of the prediction for this scoring run.", direction=API.Direction.OUTPUT)
   public double mse;
 
-  @API(help="The hit ratios for this scoring run.", direction=API.Direction.OUTPUT)
-  public float[] hit_ratios;
-
   @API(help="The hit ratio table for this scoring run.", direction=API.Direction.OUTPUT)
   public TwoDimTableBase hit_ratio_table;
 
@@ -23,11 +20,10 @@ public class ModelMetricsMultinomialV3 extends ModelMetricsBase<ModelMetricsMult
   @Override public ModelMetricsMultinomialV3 fillFromImpl(ModelMetricsMultinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
     mse = modelMetrics._mse;
-    hit_ratios = modelMetrics._hit_ratios;
     logloss = modelMetrics._logloss;
 
-    if (hit_ratios != null) {
-      TwoDimTable table = getHitRatioTable(hit_ratios);
+    if (modelMetrics._hit_ratios != null) {
+      TwoDimTable table = getHitRatioTable(modelMetrics._hit_ratios);
       hit_ratio_table = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
