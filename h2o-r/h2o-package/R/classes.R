@@ -325,22 +325,18 @@ setMethod("show", "H2OModel", function(object) {
     cat("=================================================\n\n")
     print(m$variable_importances)
   }
-})
 
-setMethod("show", "H2OMultinomialModel", function(object) {
-  o <- object
-  m <- o@model
-  callNextMethod(object)  # call super
-
-  cat("\n")
-  # Training Metrics
-  if( !is.null(m$training_metrics) ) .showMultiMetrics(m$training_metrics,"Training")
-  else                               cat("\n No training metrics generated during model build.\n")
-  cat("\n")
-
-  # Validation Metrics
-  if( !is.null(m$validation_metrics) )  .showMultiMetrics(m$validation_metrics, "Validation")
+  if( is(object, "H2OMultinomialModel") ) {
     cat("\n")
+    # Training Metrics
+    if( !is.null(m$training_metrics) ) .showMultiMetrics(m$training_metrics,"Training")
+    else                               cat("\n No training metrics generated during model build.\n")
+    cat("\n")
+
+    # Validation Metrics
+    if( !is.null(m$validation_metrics) )  .showMultiMetrics(m$validation_metrics, "Validation")
+    cat("\n")
+  }
 })
 
 .showMultiMetrics <- function(metrics, train_or_valid="Training") {
