@@ -29,9 +29,6 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Scoring history", direction=API.Direction.OUTPUT)
   TwoDimTableBase scoring_history;
 
-  @API(help="Variable Importances", direction=API.Direction.OUTPUT)
-  TwoDimTableBase variable_importances;
-
   @API(help="Training data model metrics", direction=API.Direction.OUTPUT)
   ModelMetricsBase training_metrics;
 

@@ -643,6 +643,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Key[] biases;
     DeepLearningScoring errors;
     double run_time;
+    public TwoDimTable _variable_importances;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();

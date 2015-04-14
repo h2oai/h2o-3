@@ -226,11 +226,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public TwoDimTable _scoring_history;
 
-    /**
-     * Variable importances computed during training
-     */
-    public TwoDimTable _variable_importances;
-
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec

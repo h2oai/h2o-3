@@ -25,6 +25,9 @@ public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLear
     @API(help="Frame keys for bias vectors")
     KeyV3.FrameKeyV3[] biases;
 
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT)
+    TwoDimTableBase variable_importances;
+
     @API(help="Training time (seconds)")
     double run_time;
   } // DeepLearningModelOutputV2

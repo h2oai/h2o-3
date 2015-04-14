@@ -15,5 +15,7 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
         extends ModelSchema<M, S, P, PS, O, OS> {
 
   public static class SharedTreeModelOutputV3<O extends SharedTreeModel.SharedTreeOutput, SO extends SharedTreeModelOutputV3<O,SO>> extends ModelOutputSchema<O, SO> {
+    @API(help="Variable Importances", direction=API.Direction.OUTPUT)
+    TwoDimTableBase variable_importances;
   }
 }
