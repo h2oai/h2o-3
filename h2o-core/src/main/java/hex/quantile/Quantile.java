@@ -134,10 +134,11 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     double _maxs[/*nbins*/];     // Largest  element in bin
 
     private Histo( double lb, double ub, long start_row, long nrows, boolean isInt  ) {
-      _nbins = NBINS;
+      boolean is_int = (isInt && (ub-lb < NBINS));
+      _nbins = is_int ? (int)(ub-lb+1) : NBINS;
       _lb = lb;
       double ulp = Math.ulp(Math.max(Math.abs(lb),Math.abs(ub)));
-      _step = (ub+ulp-lb)/_nbins;
+      _step = is_int ? 1 : (ub+ulp-lb)/_nbins;
       _start_row = start_row;
       _nrows = nrows;
       _isInt = isInt;
@@ -147,6 +148,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       long   bins[] = _bins = new long  [_nbins];
       double mins[] = _mins = new double[_nbins];
       double maxs[] = _maxs = new double[_nbins];
+      Arrays.fill(_mins, Double.MAX_VALUE);
+      Arrays.fill(_maxs,-Double.MAX_VALUE);
       for( int row=0; row<chk._len; row++ ) {
         double d = chk.atd(row);
         double idx = (d-_lb)/_step;
