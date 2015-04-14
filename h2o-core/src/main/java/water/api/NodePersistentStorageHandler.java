@@ -8,14 +8,14 @@ import java.util.UUID;
 
 public class NodePersistentStorageHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 configured(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 configured(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     s.configured = nps.configured();
     return s;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 exists(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 exists(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     if (s.name != null) {
       s.exists = nps.exists(s.category, s.name);
@@ -27,7 +27,7 @@ public class NodePersistentStorageHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 put(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 put(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     UUID uuid = java.util.UUID.randomUUID();
     s.name = uuid.toString();
@@ -36,28 +36,28 @@ public class NodePersistentStorageHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 put_with_name(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 put_with_name(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     nps.put(s.category, s.name, s.value);
     return s;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 get_as_string(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 get_as_string(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     s.value = nps.get_as_string(s.category, s.name);
     return s;
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 list(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 list(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     NodePersistentStorageEntry[] entries = nps.list(s.category);
 
-    s.entries = new NodePersistentStorageV1.NodePersistentStorageEntryV1[entries.length];
+    s.entries = new NodePersistentStorageV3.NodePersistentStorageEntryV3[entries.length];
     int i = 0;
     for (NodePersistentStorageEntry entry : entries) {
-      NodePersistentStorageV1.NodePersistentStorageEntryV1 e = new NodePersistentStorageV1.NodePersistentStorageEntryV1();
+      NodePersistentStorageV3.NodePersistentStorageEntryV3 e = new NodePersistentStorageV3.NodePersistentStorageEntryV3();
       e.category = entry._category;
       e.name = entry._name;
       e.size = entry._size;
@@ -71,7 +71,7 @@ public class NodePersistentStorageHandler extends Handler {
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public NodePersistentStorageV1 delete(int version, NodePersistentStorageV1 s) {
+  public NodePersistentStorageV3 delete(int version, NodePersistentStorageV3 s) {
     NodePersistentStorage nps = H2O.getNPS();
     nps.delete(s.category, s.name);
     return s;

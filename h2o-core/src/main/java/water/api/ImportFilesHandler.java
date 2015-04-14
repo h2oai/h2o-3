@@ -14,7 +14,7 @@ import java.util.ArrayList;
 public class ImportFilesHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public ImportFilesV2 importFiles(int version, ImportFilesV2 importFiles) {
+  public ImportFilesV3 importFiles(int version, ImportFilesV3 importFiles) {
     ArrayList<String> files = new ArrayList();
     ArrayList<String> keys = new ArrayList();
     ArrayList<String> fails = new ArrayList();

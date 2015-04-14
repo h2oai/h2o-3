@@ -3,7 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import org.junit.Test;
 import water.api.TimelineHandler;
-import water.api.TimelineV2;
+import water.api.TimelineV3;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -63,11 +63,11 @@ public class TimelineTest extends TestUtil{
     };
     H2O.submitTask(test).join();
     TimelineHandler handler = new TimelineHandler();
-    TimelineV2 t = handler.fetch(2, new TimelineV2());
+    TimelineV3 t = handler.fetch(2, new TimelineV3());
     Set<String> msgs = new HashSet<>();
-    for( TimelineV2.EventV2 e : t.events) {
-      if(e.bytes().contains("TestTask") && e instanceof TimelineV2.NetworkEvent) {
-        TimelineV2.NetworkEvent ne = (TimelineV2.NetworkEvent)e;
+    for( TimelineV3.EventV2 e : t.events) {
+      if(e.bytes().contains("TestTask") && e instanceof TimelineV3.NetworkEvent) {
+        TimelineV3.NetworkEvent ne = (TimelineV3.NetworkEvent)e;
         msgs.add((ne.is_send ?"SEND":"RECV")  + " " + ne.from + " -> " + ne.to);
       }
     }

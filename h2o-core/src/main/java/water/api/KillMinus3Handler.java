@@ -22,7 +22,7 @@ public class KillMinus3Handler extends Handler {
     return Long.toString(Long.parseLong(jvmName.substring(0, index)));
   }
 
-  public KillMinus3V1 killm3(int version, KillMinus3V1 u) {
+  public KillMinus3V3 killm3(int version, KillMinus3V3 u) {
       new MRTask() {
         @Override public void setupLocal() {
           try {

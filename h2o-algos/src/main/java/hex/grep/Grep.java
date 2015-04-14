@@ -2,7 +2,7 @@ package hex.grep;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.schemas.GrepV2;
+import hex.schemas.GrepV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
@@ -24,7 +24,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   // Called from Nano thread; start the Grep Job on a F/J thread
   public Grep( GrepModel.GrepParameters parms ) { super("Grep",parms); init(false); }
 
-  public ModelBuilderSchema schema() { return new GrepV2(); }
+  public ModelBuilderSchema schema() { return new GrepV3(); }
 
   @Override public Grep trainModel() {
     return (Grep)start(new GrepDriver(), _parms.train().numRows());

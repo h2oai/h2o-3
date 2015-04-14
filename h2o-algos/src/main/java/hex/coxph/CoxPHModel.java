@@ -5,7 +5,7 @@ import hex.DataInfo;
 import hex.ModelMetrics;
 import hex.ModelMetricsRegression;
 import hex.SupervisedModel;
-import hex.schemas.CoxPHModelV2;
+import hex.schemas.CoxPHModelV3;
 import water.Key;
 import water.MemoryManager;
 import water.api.ModelSchema;
@@ -83,7 +83,7 @@ public class CoxPHModel extends SupervisedModel<CoxPHModel,CoxPHModel.CoxPHParam
   }
 
   // Default publically visible Schema is V2
-  public ModelSchema schema() { return new CoxPHModelV2(); }
+  public ModelSchema schema() { return new CoxPHModelV3(); }
 
   // @Override
   public final CoxPHParameters get_params() { return _parms; }

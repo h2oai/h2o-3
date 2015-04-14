@@ -4,7 +4,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.NaiveBayesV2;
+import hex.schemas.NaiveBayesV3;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Vec;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
   @Override
   public ModelBuilderSchema schema() {
-    return new NaiveBayesV2();
+    return new NaiveBayesV3();
   }
 
   @Override
@@ -146,7 +146,6 @@ public class NaiveBayes extends SupervisedModelBuilder<NaiveBayesModel,NaiveBaye
         NBTask tsk = new NBTask(dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         computeStatsFillModel(model, dinfo, tsk);
 
-        model._output._parameters = _parms;
         model._output._levels = _response.domain();
         model._output._ncats = dinfo._cats;
         model.update(_key);

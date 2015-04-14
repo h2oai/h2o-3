@@ -1,7 +1,7 @@
 package water.api;
 
 import hex.SupervisedModel;
-import water.api.FrameV2.ColSpecifierV2;
+import water.api.FrameV3.ColSpecifierV2;
 
 /**
  * An instance of a SupervisedModelParameters schema contains the common SupervisedModel build parameters (e.g., response_column).

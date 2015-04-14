@@ -1,7 +1,7 @@
 package hex.tree.gbm;
 
 import hex.Model;
-import hex.schemas.GBMV2;
+import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -29,7 +29,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
 
-  @Override public GBMV2 schema() { return new GBMV2(); }
+  @Override public GBMV3 schema() { return new GBMV3(); }
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> trainModel() {
@@ -315,7 +315,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
           float gf = (float)(_parms._learn_rate * m1class * gp._rss[k][i] / gp._gss[k][i]);
-          if( gp._rss[k][i]==0 && gp._gss[k][i]==0 ) gf = 0; // bad split; no rows, so do not adjust the predictions
+          if( gp._gss[k][i]==0 ) // Bad split; all corrections sum to zero
+            gf = (float)(Math.signum(gp._rss[k][i])*1e4);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.

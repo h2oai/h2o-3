@@ -3,7 +3,7 @@ package hex.quantile;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.QuantileV2;
+import hex.schemas.QuantileV3;
 import water.DKV;
 import water.H2O.H2OCountedCompleter;
 import water.Job;
@@ -24,7 +24,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // Called from Nano thread; start the Quantile Job on a F/J thread
   public Quantile( QuantileModel.QuantileParameters parms ) { super("Quantile",parms); init(false); }
 
-  public ModelBuilderSchema schema() { return new QuantileV2(); }
+  public ModelBuilderSchema schema() { return new QuantileV3(); }
 
   @Override public Quantile trainModel() {
     return (Quantile)start(new QuantileDriver(), train().numCols()*_parms._probs.length);
