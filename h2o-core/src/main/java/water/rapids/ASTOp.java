@@ -2355,12 +2355,22 @@ class ASTQtile extends ASTUniPrefixOp {
     Frame x = env.popAry();
     parms._train = x._key;
     QuantileModel q = new Quantile(parms).trainModel().get();
-    
-    Frame fr = new Frame();
-//    fr.add("Probs",Vec.makeCon(parms._probs));
-    for( int i=0; i<x.numCols(); i++ )
-      fr.add(x._names[i]+"Quantiles",Vec.makeCon(q._output._quantiles[i]));
+
+    Vec shape = Vec.makeZero(parms._probs.length);
+    Key[] keys = shape.group().addVecs(1 /*1 more for the probs themselves*/ + x.numCols());
+    Vec[] vecs = new Vec[keys.length];
+    String[] names = new String[keys.length];
+    vecs [0] = Vec.makeCon(keys[0],parms._probs);
+    DKV.put(keys[0],vecs[0]);
+    names[0] = "Probs";
+    for( int i=1; i<=x.numCols(); ++i ) {
+      vecs[i] = Vec.makeCon(keys[i],q._output._quantiles[i-1]);
+      DKV.put(keys[i],vecs[i]);
+      names[i] = x._names[i-1]+"Quantiles";
+    }
+    Frame fr = new Frame(names,vecs);
     q.delete();
+    shape.remove();
     parms._probs=_probs=null;
     env.pushAry(fr);
   }

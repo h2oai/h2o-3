@@ -203,6 +203,7 @@ class ASTFrame extends AST {
       if (e.isGlobal()) e._global._frames.put(_key, _fr);
       else e._local._frames.put(_key, _fr);
     }
+    if( !isFrame ) e._tmpFrames.add(_fr);
     e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
