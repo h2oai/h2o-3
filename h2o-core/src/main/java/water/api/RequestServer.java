@@ -1,12 +1,13 @@
 package water.api;
 
-import water.exceptions.*;
-import water.util.HttpResponseStatus;
+import com.brsanthu.googleanalytics.ScreenViewHit;
 import water.*;
+import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.util.GetLogsFromNode;
+import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.RString;
 
@@ -21,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import com.brsanthu.googleanalytics.ScreenViewHit;
 
 /**
  * This is a simple web server which accepts HTTP requests and routes them
@@ -162,7 +162,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Frames/(?<frameid>.*)"                              ,"GET"   ,FramesHandler.class, "fetch",                              new String[] {"frame_id"},
       "Return the specified Frame.");
     register("/3/Frames"                                         ,"GET"   ,FramesHandler.class, "list",
-      "Return all Frames in the H2O distributed K/V store.");
+      "Return all Frames in the H2O distributed K/V store."); 
     register("/3/Frames/(?<frameid>.*)"                              ,"DELETE",FramesHandler.class, "delete",                             new String[] {"frame_id"},
       "Delete the specified Frame from the H2O distributed K/V store.");
     register("/3/Frames"                                         ,"DELETE",FramesHandler.class, "deleteAll",
