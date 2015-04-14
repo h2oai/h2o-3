@@ -477,6 +477,10 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op in ["min", "max", "sum"]:
+      if left.is_local():   raise NotImplementedError
+      else:                 __CMD__ += "%FALSE"
+
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)

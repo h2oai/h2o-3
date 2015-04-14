@@ -696,6 +696,25 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
+  # generic reducers
+  def min(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("min", Expr(self.send_frame(), length=self.nrow()))
+
+  def max(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("max", Expr(self.send_frame(), length=self.nrow()))
+
+  def sum(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("sum", Expr(self.send_frame(), length=self.nrow()))
+
   def var(self):
     """
     :return: The covariance matrix of the columns in this H2OFrame.
