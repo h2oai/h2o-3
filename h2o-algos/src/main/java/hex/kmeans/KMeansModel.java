@@ -29,11 +29,15 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Iterations executed
     public int _iterations;
 
+    // Compute average change in standardized cluster centers
+    public double[/*iterations*/] _avg_centroids_chg = new double[]{Double.NaN};
+
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _within_mse;   // Within-cluster MSE, variance
 
     // Sum squared distance between each point and its cluster center, divided by total number of observations.
     public double _avg_within_ss;      // Average within-cluster sum-of-square error
+    public double[/*iterations*/] _history_avg_within_ss = new double[0];
 
     // Sum squared distance between each point and grand mean, divided by total number of observations.
     public double _avg_ss;            // Total MSE to grand mean centroid

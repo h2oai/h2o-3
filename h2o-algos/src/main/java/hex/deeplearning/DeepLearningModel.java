@@ -642,18 +642,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     Key[] weights;
     Key[] biases;
     DeepLearningScoring errors;
-    TwoDimTable model_summary;
-    TwoDimTable scoring_history;
-    TwoDimTable variable_importances;
     double run_time;
-
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append(model_summary.toString());
-      sb.append(scoring_history.toString());
-      if (variable_importances != null) sb.append(variable_importances.toString());
-      return sb.toString();
-    }
+    public TwoDimTable _variable_importances;
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -821,7 +811,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return cm;
   }
 
-//  @Override
   public double mse() {
     if (errors == null) return Double.NaN;
     return last_scored().validation || last_scored().num_folds > 0 ? last_scored().valid_mse : last_scored().train_mse;
@@ -830,12 +819,6 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
   public double logloss() {
     if (errors == null) return Double.NaN;
     return last_scored().validation || last_scored().num_folds > 0 ? last_scored().valid_logloss : last_scored().train_logloss;
-  }
-
-//  @Override
-  public VarImp varimp() {
-    if (errors == null) return null;
-    return last_scored().variable_importances;
   }
 
   private TwoDimTable createScoringHistoryTable(DeepLearningScoring[] errors) {
@@ -913,20 +896,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 
     List<Integer> which = new ArrayList<>();
     if (errors.length > size_limit) {
-      // always show first few
+      // always show first and last
       which.add(0);
-//      which.add(1);
-//      which.add(2);
-//      which.add(3);
-//      which.add(4);
-
-      // always show last few
-//      which.add(errors.length-5);
-//      which.add(errors.length-4);
-//      which.add(errors.length-3);
-//      which.add(errors.length-2);
       which.add(errors.length-1);
-
       // pick the remaining scoring points from the middle section
       final float step = (float)(errors.length-which.size())/(size_limit-which.size());
       for (float i=5; i<errors.length-5; i+=step) {
@@ -1573,8 +1545,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[i] = cp.errors[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output.scoring_history = createScoringHistoryTable(errors);
-    _output.variable_importances = calcVarImp(last_scored().variable_importances);
+    _output._scoring_history = createScoringHistoryTable(errors);
+    _output._variable_importances = calcVarImp(last_scored().variable_importances);
 
     // set proper timing
     _timeLastScoreEnter = System.currentTimeMillis();
@@ -1602,8 +1574,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       errors[0].validation = (parms._valid != null);
       errors[0].num_folds = parms.getNumFolds();
       _output.errors = last_scored();
-      _output.scoring_history = createScoringHistoryTable(errors);
-      _output.variable_importances = calcVarImp(last_scored().variable_importances);
+      _output._scoring_history = createScoringHistoryTable(errors);
+      _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     makeWeightsBiases(destKey);
     run_time = 0;
@@ -1788,9 +1760,9 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
           }
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
         }
-        _output.scoring_history = createScoringHistoryTable(errors);
-        _output.variable_importances = calcVarImp(last_scored().variable_importances);
-        _output.model_summary = model_info.createSummaryTable();
+        _output._scoring_history = createScoringHistoryTable(errors);
+        _output._variable_importances = calcVarImp(last_scored().variable_importances);
+        _output._model_summary = model_info.createSummaryTable();
 
         if (!get_params()._autoencoder) {
           // always keep a copy of the best model so far (based on the following criterion)
@@ -1826,7 +1798,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
 //          if (errors.length > 1) {
 //            if (last_scored().trainAUC != null) last_scored().trainAUC.clear();
 //            if (last_scored().validAUC != null) last_scored().validAUC.clear();
-//            last_scored().variable_importances = null;
+//            last_scored()._variable_importances = null;
 //          }
 //        }
 
@@ -1854,30 +1826,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     return keep_running;
  }
 
-//  @Override protected void setCrossValidationError(Parameters job, double cv_error, ConfusionMatrix cm, AUCData auc, HitRatio hr) {
-//    _have_cv_results = true;
-//    if (!get_params().classification)
-//      last_scored().valid_mse = cv_error;
-//    else
-//      last_scored().valid_err = cv_error;
-//    last_scored().score_validation_samples = last_scored().score_training_samples / get_params().n_folds;
-//    last_scored().num_folds = get_params().n_folds;
-//    last_scored().valid_confusion_matrix = cm;
-//    last_scored().validAUC = auc;
-//    last_scored().valid_hitratio = hr;
-//    DKV.put(this._key, this); //overwrite this model
-//  }
-
   @Override public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(model_info.toString());
-    //sb.append(last_scored().toString());
-    sb.append(_output.scoring_history.toString());
-    if (_output.variable_importances != null) {
-      for (String s : Arrays.asList(_output.variable_importances.toString().split("\n")).subList(0, 12))
-        sb.append(s).append("\n");
-    }
-    return sb.toString();
+    return _output.toString();
   }
 
   /** Make either a prediction or a reconstruction.
