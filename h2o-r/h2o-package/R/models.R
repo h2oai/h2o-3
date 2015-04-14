@@ -515,7 +515,7 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "minPerClassCorrect")
+  1.0-h2o.metric(object, thresholds, "min_per_class_correct")
 }
 
 #' @rdname h2o.metric
@@ -547,7 +547,7 @@ h2o.specificity <- function(object, thresholds){
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   max_metrics <- object@metrics$max_criteria_and_metric_scores
-  max_metrics[match(metric,max_metrics$Metric),"Threshold"]
+  max_metrics[match(metric,max_metrics$metric),"threshold"]
 }
 
 #
@@ -555,7 +555,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
   tmp <- object@metrics$thresholds_and_metric_scores
-  res <- tmp[abs(as.numeric(tmp$Thresholds) - threshold) < 1e-8,]
+  res <- tmp[abs(as.numeric(tmp$thresholds) - threshold) < 1e-8,]
   if( nrow(res) != 1 ) stop("Duplicate or not-found thresholds")
   res
 }
