@@ -38,7 +38,7 @@ class H2OBinomialModelMetrics(object):
     return self._metric_json['Gini']
 
   def mse(self):
-    return self._metric_json['mse']
+    return self._metric_json['MSE']
 
   def F1(self, thresholds=None):
     return self.metric("f1", thresholds=thresholds)

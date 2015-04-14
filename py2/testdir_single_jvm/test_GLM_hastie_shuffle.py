@@ -103,7 +103,7 @@ def glm_doit(self, csvFilename, bucket, csvPathname, timeoutSecs=30):
     # compare this glm to the first one. since the files are replications, the results
     # should be similar?
     if self.validation1:
-        h2o_glm.compareToFirstGlm(self, 'auc', validation, self.validation1)
+        h2o_glm.compareToFirstGlm(self, 'AUC', validation, self.validation1)
     else:
         # self.validation1 = copy.deepcopy(validation)
         self.validation1 = None

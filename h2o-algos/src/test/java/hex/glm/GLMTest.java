@@ -677,7 +677,7 @@ public class GLMTest  extends TestUtil {
       }
       assertEquals(val1.nullDeviance(), val2.nullDeviance(),1e-4);
       assertEquals(val1.residualDeviance(), val2.residualDeviance(),1e-4);
-      assertEquals(val1.aic(), val2.aic(),1e-2);
+      assertEquals(val1.AIC(), val2.AIC(),1e-2);
       // compare result against glmnet
       assertEquals(5336.918,val1.residualDeviance(),1);
       assertEquals(6051.613,val1.nullDeviance(),1);
@@ -759,12 +759,12 @@ public class GLMTest  extends TestUtil {
       assertEquals(512.3, val.nullDeviance(),1e-1);
       assertEquals(378.3, val.residualDeviance(),1e-1);
       assertEquals(371,val.resDOF());
-      assertEquals(396.3, val.aic(),1e-1);
+      assertEquals(396.3, val.AIC(),1e-1);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
       hex.AUC2 adata = mm._auc;
-      assertEquals(val.auc(), adata._auc, 1e-2);
+      assertEquals(val.AUC(), adata._auc, 1e-2);
 
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
@@ -797,15 +797,15 @@ public class GLMTest  extends TestUtil {
       model = job.trainModel().get();
       double [] beta = model.beta();
       System.out.println("beta = " + Arrays.toString(beta));
-      assertEquals(model.validation().auc(), 1, 1e-4);
+      assertEquals(model.validation().AUC(), 1, 1e-4);
       GLMValidation val = model.validation();
-      assertEquals(1,val.auc(),1e-2);
+      assertEquals(1,val.AUC(),1e-2);
       score = model.score(fr);
 
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
 
       hex.AUC2 adata = mm._auc;
-      assertEquals(val.auc(), adata._auc, 1e-2);
+      assertEquals(val.AUC(), adata._auc, 1e-2);
     } finally {
       fr.remove();
       if(model != null)model.delete();

@@ -79,9 +79,9 @@ perf@metrics$cm$table
 
 #Plot ROC for test set
 
-perf@metrics$auc$precision
-perf@metrics$auc$accuracy
-# perf@auc$auc
+perf@metrics$AUC$precision
+perf@metrics$AUC$accuracy
+# perf@AUC$AUC
 plot(perf,type="roc")
 
 PASS_BANNER()
