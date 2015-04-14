@@ -167,7 +167,7 @@ public class Exec extends Iced {
 
   char ppeek() { return (char)_ast[_x-1];}  // past peek
   char peek() { return (char)_ast[_x]; }    // ppek ahead
-  char peekPlus() { return (char)_ast[_x++]; } // peek and move ahead
+  char peekPlus() { skipWS(); return (char)_ast[_x++]; } // peek and move ahead
   boolean isEnd() { return _x >= _ast.length || (char) _ast[_x] == ')'; } // out of chars OR end of AST (signaled by ')' )
   void eatEnd() {
     skipWS();

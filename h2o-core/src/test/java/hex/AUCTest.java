@@ -84,7 +84,7 @@ public class AUCTest extends TestUtil {
     fr.remove();
     for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._p)+","+((double)auc._fps[i]/auc._n)+"} ");
     System.out.println();
-    for( int i=0; i<auc._nBins; i++ ) System.out.print(AUC2.ThresholdCriterion.minPerClassCorrect.exec(auc,i)+" ");
+    for( int i=0; i<auc._nBins; i++ ) System.out.print(AUC2.ThresholdCriterion.min_per_class_correct.exec(auc,i)+" ");
     System.out.println();
     return auc._auc;
   }
