@@ -1,3 +1,11 @@
+#' Deprecated Script Shim
+#'
+#' Something desciptive
+#'
+#' Details
+#'
+#' @param start a logical value indicating whether to start remove the shim.
+#' @seealso \url{http://something.here}
 #' @export
 h2o.shim <- function(start = TRUE) {
   if(!start) {
