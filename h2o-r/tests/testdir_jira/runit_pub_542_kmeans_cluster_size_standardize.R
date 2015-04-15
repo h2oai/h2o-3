@@ -16,7 +16,7 @@ test.pub_542_kmeans_mismatched_size <- function(H2Oserver) {
   Log.info("Compare cluster sizes with assignments from prediction")
   pred_km.df <- as.data.frame(pred_km)
   pred_size <- table(pred_km.df)
-  expect_equal(km@model$size, as.numeric(pred_size))
+  expect_equal(getClusterSizes(km), as.numeric(pred_size))
   
   Log.info("Compare H2O's predictions with R's assignments using l2 norm")
   closest <- function(row, centers) {
@@ -27,7 +27,7 @@ test.pub_542_kmeans_mismatched_size <- function(H2Oserver) {
     which.min(l2norm)
   }
   iris.sub.std <- scale(subset(iris.dat, select = myCols), center = TRUE, scale = TRUE)
-  pred_km.std.r <- apply(iris.sub.std, 1, closest, km@model$centers_std)
+  pred_km.std.r <- apply(iris.sub.std, 1, closest, getCentersStd(km))
   expect_equal(as.numeric(pred_km.df[,1]+1), as.numeric(pred_km.std.r))
   
   testEnd()

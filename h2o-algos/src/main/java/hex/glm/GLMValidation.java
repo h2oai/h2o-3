@@ -19,8 +19,8 @@ public class GLMValidation extends Iced {
   long nobs;
   AUC2 _auc;
   private AUC2.AUCBuilder _auc_bldr;
-  double aic;// internal aic used only for poisson family!
-  private double _aic2;// internal aic used only for poisson family!
+  double aic;// internal AIC used only for poisson family!
+  private double _aic2;// internal AIC used only for poisson family!
   final Key dataKey;
   final GLMModel.GLMParameters _glm;
   final private int _rank;
@@ -40,7 +40,7 @@ public class GLMValidation extends Iced {
     ++nobs;
     if( _auc_bldr != null ) _auc_bldr.perRow(ymodel, (int) yreal);
 
-    if( _glm._family == Family.poisson ) { // aic for poisson
+    if( _glm._family == Family.poisson ) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = 0;
       for( long i = 2; i <= y; ++i )
@@ -73,7 +73,7 @@ public class GLMValidation extends Iced {
         break;
       case poisson:
         aic = -2*_aic2;
-        break; // aic is set during the validation task
+        break; // AIC is set during the validation task
       case gamma:
       case tweedie:
         aic = Double.NaN;

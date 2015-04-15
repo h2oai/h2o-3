@@ -10,13 +10,13 @@ public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetri
   @API(help="null deviance",direction = Direction.OUTPUT)
   public double null_deviance;
 
-  @API(help="aic",direction = Direction.OUTPUT)
-  public double aic;
+  @API(help="AIC",direction = Direction.OUTPUT)
+  public double AIC;
 
   @Override
   public ModelMetricsBinomialGLMV3 fillFromImpl(ModelMetricsBinomialGLM modelMetrics) {
     super.fillFromImpl(modelMetrics);
-    this.aic = modelMetrics._aic;
+    this.AIC = modelMetrics._AIC;
     this.residual_deviance = modelMetrics._resDev;
     this.null_deviance = modelMetrics._nullDev;
     return this;
