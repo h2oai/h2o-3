@@ -1,8 +1,16 @@
 #' Deprecated Script Shim
 #'
-#' Something desciptive
+#' Due to the many improvements implemented in H2O-Dev and the differences
+#' in architecture between H2O and H2O-Dev, some parameters, options, and
+#' objects are no longer supported. To assist our legacy H2O users in
+#' upgrading their workflows for compatibility with H2O-Dev,
+#' we have developed the "Deprecated Script Shim" tool to detect deprecated
+#' parameters, options, and objects in H2O scripts being imported into
+#' H2O-Dev and suggest updated alternatives.
 #'
-#' Details
+#' For more information on converting legacy H2O scripts so that they will
+#' run in H2O-Dev, please refer to the following documentation:
+#' \url{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}
 #'
 #' @param start a logical value indicating whether to start remove the shim.
 #' @seealso \url{http://something.here}
