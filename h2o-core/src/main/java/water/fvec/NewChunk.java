@@ -757,8 +757,10 @@ public class NewChunk extends Chunk {
           break;
       boolean isInteger = i == sparseLen();
       boolean isConstant = sparseLen() == 0;
+      double constVal = 0;
       if (!sparse) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
         double d = _ds[0];
+        constVal = _ds[0];
         for(int j = 1; j < _len; ++j)
           if(_ds[j] != d) {
             isConstant = false;
@@ -766,7 +768,7 @@ public class NewChunk extends Chunk {
           }
       }
       if(isConstant)
-        return isInteger? new C0LChunk((long)_ds[0], _len): new C0DChunk(_ds[0],_len);
+        return isInteger? new C0LChunk((long)constVal, _len): new C0DChunk(constVal,_len);
       if(!isInteger)
         return  sparse? new CXDChunk(_len, sparseLen(), 8, bufD(8)): chunkD();
       // Else flip to longs
