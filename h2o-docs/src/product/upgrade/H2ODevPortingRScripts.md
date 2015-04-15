@@ -127,19 +127,19 @@ H2O  | H2O-Dev  | Model Type
 `@model$err` | `@model$scoring_history` | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` |  &nbsp; | `binomial` and `multinomial`
-`@model$auc` | &nbsp; | `binomial`
-`@model$gini` | &nbsp;  | `binomial`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | &nbsp;  | `binomial`
-`@model$F2` | &nbsp;  | `binomial`
-`@model$accuracy` | &nbsp;  | `binomial`
+`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
 `@model$error` | &nbsp;  | `binomial`
-`@model$precision` | &nbsp;  | `binomial`
-`@model$recall` | &nbsp;  | `binomial`
-`@model$mcc` | &nbsp;  | `binomial`
-`@model$max_per_class_err` | &nbsp;  | `binomial`
-`@model$scoring_history$Training MSE` | `@model$scoring_history$training_MSE`| `all`
+`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
+
 
 
 
@@ -237,7 +237,7 @@ The following table provides the component name in H2O, the corresponding compon
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$params` | `@allparameters` | `all`
-`@model$coefficients` | `@model$coefficients_table$coefficients` | `all`
+`@model$coefficients` | `@model$coefficients` | `all`
 `@model$nomalized_coefficients` | `@model$coefficients_table$norm_coefficients` | `all`
 `@model$rank` | `@model$rank` | `all`
 `@model$iter` |`@model$iter` | `all`
@@ -309,8 +309,8 @@ H2O  | H2O-Dev
 ------------- | -------------
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
-`@model$withinss` | `@model$within_MSE`
-`@model$tot.withinss` | 
+`@model$withinss` | `@model$within_mse`
+`@model$tot.withinss` | `@model$avg_within_ss`
 `@model$size` | `@model$size`
 `@model$iter` | `@model$iterations`
 &nbsp; | `@model$_scoring_history`
@@ -432,10 +432,10 @@ H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$train_class_error` | &nbsp;  | `all`
-`@model$valid_class_error` | &nbsp;  | `all`
+`@model$train_class_error` | `@model$training_metrics$MSE`  | `all`
+`@model$valid_class_error` | `@model$validation_metrics$MSE` | `all`
 `@model$varimp` | `@model$_variable_importances` | `all`
-`@model$confusion` | &nbsp;  | `binomial` and `multinomial`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
 `@model$train_auc` | `@model$train_AUC`  | `binomial`
 &nbsp; | `@model$_validation_metrics` | `all`
 &nbsp; | `@model$_model_summary` | `all`
@@ -535,22 +535,22 @@ H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$mse` | `@model$MSE_train` | `all`
-`@model$forest` | &nbsp;  | `all`
+`@model$mse` | `@model$scoring_history` | `all`
+`@model$forest` | `@model$model_summary`  | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` | &nbsp;  | `binomial` and `multinomial`
-`@model$auc` | `@model$AUC`  | `binomial`
-`@model$gini` | &nbsp;  | `binomial`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | &nbsp;  | `binomial`
-`@model$F2` | &nbsp;  | `binomial`
-`@model$accuracy` | &nbsp;  | `binomial`
+`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
 `@model$Error` | `@model$Error`  | `binomial`
-`@model$precision` | &nbsp;  | `binomial`
-`@model$recall` | &nbsp;  | `binomial`
-`@model$mcc` | &nbsp;  | `binomial`
-`@model$max_per_class_err` | &nbsp;  | `binomial`
+`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
 
 
