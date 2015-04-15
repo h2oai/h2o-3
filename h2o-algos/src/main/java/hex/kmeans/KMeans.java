@@ -277,7 +277,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._training_metrics = makeTrainingMetrics(model);
           if (_valid != null) {
             model.score(_parms.valid());
-            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[0]);
+            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[1]);
           }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -703,7 +703,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * @param model, must contain valid statistics from training, such as _avg_between_ss etc.
    */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
-    ModelMetricsClustering mm = new ModelMetricsClustering(model, _train);
+    ModelMetricsClustering mm = new ModelMetricsClustering(model, model._parms.train());
+    mm._size = model._output._size;
+    mm._within_mse = model._output._within_mse;
     mm._avg_between_ss = model._output._avg_between_ss;
     mm._avg_ss = model._output._avg_ss;
     mm._avg_within_ss = model._output._avg_within_ss;

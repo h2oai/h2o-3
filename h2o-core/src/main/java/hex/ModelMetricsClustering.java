@@ -16,6 +16,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public double _avg_ss;
   public double _avg_within_ss;
   public double _avg_between_ss;
+//  public TwoDimTable _centroid_stats;
 
   public ModelMetricsClustering(Model model, Frame frame) {
     super(model, frame);
@@ -23,13 +24,13 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     _within_mse = null;
     _avg_ss = _avg_within_ss = _avg_between_ss = Double.NaN;
   }
-
   /**
    * Populate TwoDimTable from members _size and _within_mse
    * @return TwoDimTable
    */
   public TwoDimTable createCentroidStatsTable() {
-    if (_size == null || _within_mse == null) return null;
+    if (_size == null || _within_mse == null)
+      return null;
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
@@ -136,6 +137,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         mm._avg_ss /= f.numRows();
       }
       mm._avg_between_ss = mm._avg_ss - mm._avg_within_ss;
+//      mm._centroid_stats = mm.createCentroidStatsTable();
       return m.addMetrics(mm);
     }
   }
