@@ -6,7 +6,9 @@ import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public long[/*k*/] _size;
@@ -20,6 +22,39 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     _size = null;
     _within_mse = null;
     _avg_ss = _avg_within_ss = _avg_between_ss = Double.NaN;
+  }
+
+  /**
+   * Populate TwoDimTable from members _size and _within_mse
+   * @return TwoDimTable
+   */
+  public TwoDimTable createCentroidStatsTable() {
+    if (_size == null || _within_mse == null) return null;
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+
+    colHeaders.add("Centroid"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Size"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Within Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
+
+    final int K = _size.length;
+    assert(_within_mse.length == K);
+
+    TwoDimTable table = new TwoDimTable(
+            "Centroid Statistics", null,
+            new String[K],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    for (int k =0; k<K; ++k) {
+      int col = 0;
+      table.set(k, col++, k+1);
+      table.set(k, col++, _size[k]);
+      table.set(k, col++, _within_mse[k]);
+    }
+    return table;
   }
 
   public static class MetricBuilderClustering extends MetricBuilderUnsupervised {

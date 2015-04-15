@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import hex.ClusteringModelBuilder;
 import hex.Model;
+import hex.ModelMetricsClustering;
 import hex.schemas.KMeansV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
@@ -61,6 +62,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
+    if (_parms._standardize && _parms._valid != null) {
+      error("_valid", "Validation dataset can only be specified if standardization is disabled.");
+    }
   }
 
   // ----------------------
@@ -71,8 +75,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults ) {
 
       // Categoricals use a different distance metric than numeric columns.
+      model._output._categorical_column_count=0;
       _isCats = new String[vecs.length][];
-      for( int v=0; v<vecs.length; v++ ) _isCats[v] = vecs[v].isEnum() ? new String[0] : null;
+      for( int v=0; v<vecs.length; v++ ) {
+        _isCats[v] = vecs[v].isEnum() ? new String[0] : null;
+        if (_isCats[v] != null) model._output._categorical_column_count++;
+      }
       
       Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
       double centers[][];    // Cluster centers
@@ -172,10 +180,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       Arrays.fill(colFormats, "%5f");
       if (model._parms._standardize) {
         model._output._centers_std_raw = centers;
-        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", null, rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_std_raw);
+        model._output._centers_std = new TwoDimTable("Cluster means (standardized)", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_std_raw);
       }
       model._output._centers_raw = destandardize(centers, _isCats, means, mults);
-      model._output._centers = new TwoDimTable("Cluster means", null, rowHeaders, _train.names(), colTypes, colFormats, "", new String[_parms._k][], model._output._centers_raw);
+      model._output._centers = new TwoDimTable("Cluster means", null, rowHeaders, _train.names(), colTypes, colFormats, "Centroid", new String[_parms._k][], model._output._centers_raw);
 
       model._output._size = task._size;
       model._output._within_mse = task._cSqr;
@@ -266,8 +274,16 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
           model._output._model_summary = createModelSummaryTable(model._output);
           model._output._scoring_history = createScoringHistoryTable(model._output);
+          model._output._training_metrics = makeTrainingMetrics(model);
+          if (_valid != null) {
+            model.score(_parms.valid());
+            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[0]);
+          }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
+
+          if (model._parms._score_each_iteration)
+            Log.info(model._output._model_summary);
         }
         Log.info(model._output._model_summary);
 //        Log.info(model._output._scoring_history);
@@ -326,7 +342,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       colHeaders.add("Average Change of Standardized Centroids"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Average Within Cluster Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
-      final int rows = output._iterations;
+      final int rows = output._avg_centroids_chg.length;
       TwoDimTable table = new TwoDimTable(
               "Scoring History", null,
               new String[rows],
@@ -681,4 +697,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
     return d;
   }
+
+  /**
+   * This helper creates a ModelMetricsClustering from a trained model
+   * @param model, must contain valid statistics from training, such as _avg_between_ss etc.
+   */
+  private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
+    ModelMetricsClustering mm = new ModelMetricsClustering(model, _train);
+    mm._avg_between_ss = model._output._avg_between_ss;
+    mm._avg_ss = model._output._avg_ss;
+    mm._avg_within_ss = model._output._avg_within_ss;
+    model.addMetrics(mm);
+    return mm;
+  }
+
 }
