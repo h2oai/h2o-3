@@ -5,6 +5,7 @@ This module implements the communication REST layer for the python <-> H2O conne
 import os
 import re
 import urllib
+import json
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -149,6 +150,19 @@ So each test must have an ip and port
 def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
+
+def ipy_notebook_exec(path):
+  notebook = json.load(open(path))
+  for block in notebook["cells"]:
+    cmd = ''
+    for line in block["source"]:
+      if "h2o.init" not in line:
+        if "def " in line:
+          cmd += line
+          cmd += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we enforce this def spacing
+          # standard in future notebooks
+        else: cmd += line
+    exec(cmd)
 
 def remove(key):
   """
@@ -380,3 +394,12 @@ def _simple_un_math_op(op, data):
   elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
   elif isinstance(data, Expr)    : return Expr(op, data)
   else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
+
+# generic reducers
+def min(data)   : return data.min()
+def max(data)   : return data.max()
+def sum(data)   : return data.sum()
+def sd(data)    : return data.sd()
+def var(data)   : return data.var()
+def mean(data)  : return data.mean()
+def median(data): return data.median()
