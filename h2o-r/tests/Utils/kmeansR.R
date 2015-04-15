@@ -1,14 +1,14 @@
 checkKMeansModel <- function(myKM.h2o, myKM.r, training_rows, tol = 0.01) {
   Log.info("R Final Clusters:"); print(myKM.r$centers)
-  Log.info("H2O Final Clusters:"); print(myKM.h2o@model$centers)
-  expect_equivalent(as.matrix(myKM.h2o@model$centers), myKM.r$centers)
+  Log.info("H2O Final Clusters:"); print(getCenters(myKM.h2o))
+  expect_equivalent(as.matrix(getCenters(myKM.h2o)), myKM.r$centers)
   
   wmseR <- sort.int(myKM.r$withinss/myKM.r$size)
-  wmseH2O <- sort.int(myKM.h2o@model$within_mse)
+  wmseH2O <- sort.int(getWithinMSE(myKM.h2o))
   totssR <- myKM.r$totss
-  totssH2O <- myKM.h2o@model$avg_ss*training_rows
+  totssH2O <- getAvgSS(myKM.h2o)*training_rows
   btwssR <- myKM.r$betweenss
-  btwssH2O <- myKM.h2o@model$avg_between_ss*training_rows
+  btwssH2O <- getAvgBetweenSS(myKM.h2o)*training_rows
   
   Log.info(paste("H2O WithinMSE : ", wmseH2O, "\t\t", "R WithinMSE : ", wmseR))
   Log.info("Compare Within-Cluster MSE between R and H2O\n")  

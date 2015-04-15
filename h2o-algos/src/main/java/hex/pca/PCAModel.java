@@ -78,7 +78,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   public static class ModelMetricsPCA extends ModelMetricsUnsupervised {
     public ModelMetricsPCA(Model model, Frame frame) {
-      super(model, frame);
+      super(model, frame, Double.NaN);
     }
 
     // PCA currently does not have any model metrics to compute during scoring
@@ -88,7 +88,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       }
 
       @Override
-      public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      public double[] perRow(double[] dataRow, float[] preds, Model m, double[] mean) { return dataRow; }
 
       @Override
       public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
