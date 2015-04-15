@@ -14,6 +14,9 @@ public class H2OParseSetupException extends H2OParseException {
     super(msg, dev_msg);
   }
 
+  public H2OParseSetupException(String msg) {
+    super(msg, msg);
+  }
   public H2OParseSetupException(Key key, H2OParseException pe) {
     super("Problem parsing "+key.toString()+"\n"+pe.getMessage(), pe.dev_message);
   }

@@ -13,7 +13,7 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
     // Determines the order of parameters in the GUI
     static public String[] own_fields = new String[] {
 //        "n_folds",
-        "keep_cross_validation_splits",
+//        "keep_cross_validation_splits",
         "checkpoint",
         "override_with_best_model",
         "use_all_factor_levels",
@@ -72,8 +72,8 @@ public class DeepLearningV3 extends SupervisedModelBuilderSchema<DeepLearning,De
 //    @API(help="Number of folds for n-fold cross-validation (0 to n)", level = API.Level.critical, direction= API.Direction.INOUT)
 //    public int n_folds;
 
-    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
-    public boolean keep_cross_validation_splits;
+//    @API(help="Keep cross-validation Frames", level = API.Level.expert, direction=API.Direction.INOUT)
+//    public boolean keep_cross_validation_splits;
 
     /**
      * A model key associated with a previously trained Deep Learning

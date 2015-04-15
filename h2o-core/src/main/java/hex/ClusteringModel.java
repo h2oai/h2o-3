@@ -25,9 +25,6 @@ public abstract class ClusteringModel<M extends ClusteringModel<M,P,O>, P extend
     public TwoDimTable _centers;    // Row = cluster ID, Column = feature
     public double[/*k*/][/*features*/] _centers_raw;
 
-    /** Cluster size. Defined as the number of rows in each cluster. */
-    public long[/*k*/] _size;
-
     public ClusteringOutput() {
       this(null);
     }

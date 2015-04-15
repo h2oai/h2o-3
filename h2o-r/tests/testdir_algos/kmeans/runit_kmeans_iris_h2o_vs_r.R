@@ -14,13 +14,15 @@ test.km.iris <- function(conn) {
   Log.info("Cluster centers from R:")
   print(iris.km.r$centers)
   Log.info("Cluster centers from H2O:")
-  print(iris.km.h2o@model$centers)
+  print(getCenters(iris.km.h2o))
 
+  centersH2O <- getCenters(iris.km.h2o)
+  centersH2O2 <- getCenters(iris.km.h2o2)
   for (r in 1:3) {
     for (c in 1:4) {
       # Sliced initial centers should match R matrix passed across REST API. Both should match R's output.
-      expect_equal(as.numeric(iris.km.h2o@model$centers[r,c]), as.numeric(iris.km.h2o2@model$centers[r,c]))
-      expect_equal(as.numeric(iris.km.h2o@model$centers[r,c]), as.numeric(iris.km.r$centers[r,c]))
+      expect_equal(as.numeric(centersH2O[r,c]), as.numeric(centersH2O2[r,c]))
+      expect_equal(as.numeric(centersH2O[r,c]), as.numeric(iris.km.r$centers[r,c]))
     }
   }
 
