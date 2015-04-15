@@ -14,6 +14,8 @@ import hex.kmeans.KMeansModel;
 import hex.schemas.GLRMV2;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
+import hex.svd.SVD;
+import hex.svd.SVDModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
@@ -86,9 +88,6 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         error("_user_points", "The user-specified points must have k = " + _parms._k + " rows");
     }
 
-    // Currently, SVD initialization is unimplemented
-    if (_parms._init == Initialization.SVD) throw H2O.unimpl();
-
     // Currently, does not work on categorical data
     Vec[] vecs = _train.vecs();
     for (int i = 0; i < vecs.length; i++) {
@@ -145,6 +144,24 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         if (frobenius2(centers) == 0)
           throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
 
+      } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
+        SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
+        parms._train = _parms._train;
+        parms._k = _parms._k;
+        parms._max_iterations = _parms._max_iterations;
+        parms._transform = _parms._transform;
+        parms._seed = _parms._seed;
+
+        SVDModel svd = null;
+        SVD job = null;
+        try {
+          job = new SVD(parms);
+          svd = job.trainModel().get();
+        } finally {
+          if (job != null) job.remove();
+          if (svd != null) svd.remove();
+        }
+        centers = ArrayUtils.transpose(svd._output._v);
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;

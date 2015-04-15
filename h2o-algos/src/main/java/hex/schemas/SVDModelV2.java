@@ -11,9 +11,6 @@ public class SVDModelV2 extends ModelSchema<SVDModel, SVDModelV2, SVDModel.SVDPa
     @API(help = "Model parameters")
     SVDV2.SVDParametersV2 parameters;
 
-    @API(help = "Iterations executed")
-    public int iterations;
-
     @API(help = "Right singular vectors")
     public double[][] v;
 

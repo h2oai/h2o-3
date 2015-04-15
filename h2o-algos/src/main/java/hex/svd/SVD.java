@@ -78,34 +78,42 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         } else
           model._output._normMul = Arrays.copyOf(dinfo._normMul, _train.numCols());
 
-        // 1) Compute Gram of training data
+        // 1) Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();
         double[][] rsvec = new double[_parms._k][gram.length];
-        model._output._iterations = 0;
+        double[] sigma = new double[_parms._k];
 
-        // 2) Compute and save first k singular values
-        for(int i = 0; i < _parms._k; i++) {
-          // Iterate x_i <- (A'A/n)x_{i-1} and set v_i = x_i/||x_i||
-          rsvec[i] = powerLoop(gram, _parms._seed);
+        // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
+        double[][] ivv_sum = new double[gram.length][gram.length];
+        for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
 
-          // Calculate I - v_iv_i' using current singular value
-          double[][] ivv = ArrayUtils.outerProduct(rsvec[i], rsvec[i]);
-          for(int j = 0; j < ivv.length; j++) ivv[j][j] = 1 - ivv[j][j];
-          for(int j = 0; j < ivv.length; j++) {
-            for(int k = 0; k < j; k++)
-              ivv[k][j] = ivv[j][k] = -ivv[k][j];
+        double[][] gram_update = gram.clone();
+        for(int k = 0; k < _parms._k; k++) {
+          // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
+          rsvec[k] = powerLoop(gram_update, _parms._seed);
+
+          // 3) Residual data A_k = A - \sum_{i=1}^k \sigma_i u_iv_i' = A - \sum_{i=1}^k Av_iv_i' = A(I - \sum_{i=1}^k v_iv_i')
+          // 3a) Compute \sigma_k = ||A_{k-1}v_k|| and TODO: u_k = A_{k-1}v_k/\sigma_k (latter during scoring?)
+          double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, rsvec[k]);
+          sigma[k] = new MultBArrSVec(self(), dinfo, ivv_vk).doAll(dinfo._adaptedFrame)._sval;
+
+          // 3b) Compute Gram of residual A_k'A_k = (I - \sum_{i=1}^k v_jv_j')A'A(I - \sum_{i=1}^k v_jv_j')
+          // Update I - \sum_{i=1}^k v_iv_i' with sum up to current singular value
+          double[][] vv = ArrayUtils.outerProduct(rsvec[k], rsvec[k]);
+          for(int i = 0; i < vv.length; i++) {
+            for(int j = 0; j < i; j++) {
+              double diff = ivv_sum[i][j] - vv[i][j];
+              ivv_sum[i][j] = ivv_sum[j][i] = diff;
+            }
+            ivv_sum[i][i] -= vv[i][i];
           }
-
-          // TODO: Update training frame A <- A - \sigma_i u_iv_i' = A - Av_iv_i' = A(I - v_iv_i')
-          // TODO: Compute \sigma_1 = ||Av_1|| and u_1 = Av_1/\sigma_1 (optional?)
-          // This gives Gram matrix A'A <- (I - v_iv_i')A'A(I - v_iv_i')
-          double[][] lmat = ArrayUtils.multArrArr(ivv, gram);
-          gram = ArrayUtils.multArrArr(lmat, ivv);
-          model._output._iterations++;
+          double[][] lmat = ArrayUtils.multArrArr(ivv_sum, gram);
+          gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
         }
         model._output._v = ArrayUtils.transpose(rsvec);
+        model._output._singular_vals = sigma;
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);
@@ -165,17 +173,17 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return v;
   }
 
-  private class SingVal extends FrameTask<SingVal> {
+  private class MultBArrSVec extends FrameTask<MultBArrSVec> {
     double[] _svec;   // Input: Right singular vectors (V)
     double _sval;     // Output: Singular values (\sigma)
 
-    public SingVal(Key jobKey, DataInfo dinfo, final double[] svec) {
+    public MultBArrSVec(Key jobKey, DataInfo dinfo, final double[] svec) {
       super(jobKey, dinfo);
       _svec = svec;
       _sval = 0;
     }
 
-    @Override protected void processRow(long gid, DataInfo.Row row, NewChunk[] outputs) {
+    @Override protected void processRow(long gid, DataInfo.Row row) {
       double[] nums = row.numVals;
       assert nums.length == _svec.length;
       double tmp = ArrayUtils.innerProduct(nums, _svec);

@@ -15,17 +15,11 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   }
 
   public static class SVDOutput extends Model.Output {
-    // Iterations executed
-    public int _iterations;
-
     // Right singular vectors (V)
     public double[][] _v;
 
     // Singular values (diagonal of S)
     public double[] _singular_vals;
-
-    // Model parameters
-    SVDParameters _parameters;
 
     // If standardized, mean of each numeric data column
     public double[] _normSub;
