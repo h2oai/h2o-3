@@ -224,6 +224,9 @@ predict.H2OModel <- function(object, newdata, ...) {
   .h2o.parsedPredData(newdata@conn, res)
 }
 
+#' @export
+h2o.predict <- predict.H2OModel
+
 #' Cross Validate an H2O Model
 #' @export
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random"), ...)

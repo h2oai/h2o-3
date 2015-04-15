@@ -370,7 +370,6 @@ h2o.shim <- function(start = TRUE) {
                          "strong_rules" = "no longer supported.",
                          "intercept" = "no longer supported.",
                          "non_negative" = "no longer supported.",
-                         "variable_importances" = "now computed by default.",
                          "disable_line_search" = "no longer supported.",
                          "offset" = "no longer supported.",
                          "max_predictors" = "no longer supported.",
@@ -486,7 +485,7 @@ h2o.shim <- function(start = TRUE) {
       if(!missing(dropNACols))
         paramsIn$dropNACols <- dropNACols
       # Fix up parameters for H2ODev
-      paramsDev <- .dep.params(paramsIn, .km.dep.map, .km.unsp.map)
+      paramsDev <- .dep.params(paramsIn, .km.dep.map)
       paramsDev <- append(paramsDev, list(...))
       m <- do.call("h2o.dev.kmeans", dots)
       m@model <- .dep.model(m)
@@ -594,10 +593,8 @@ h2o.shim <- function(start = TRUE) {
         paramsIn$oobee <- oobee
       if(!missing(stat.type))
         paramsIn$stat.type <- stat.type
-      if(!missing(type)){
-        paramsIn$type <- type
-        if (type == "fast")
-          stop("SpeedRF is no longer a supported model type.", call. = F)
+      if(missing(type) || identical(type,"fast")){
+        stop("SpeedRF is no longer a supported model type.", call. = F)
       }
       paramsDev <- .dep.params(paramsIn, .drf.dep.map, .drf.unsp.map)
       paramsDev <- append(paramsDev, list(...))
@@ -615,30 +612,32 @@ h2o.shim <- function(start = TRUE) {
     model <- old@model
     algo <- old@algorithm
 
-
+    warning("Not all outputs might be fully supported, please see ?h2o.shim() for more information", call. = FALSE)
     #### Deprecated features start here ####
     model$params <- old@allparameters
-    if(algo == "gbm") {
+    if(identical(algo, "gbm")) {
       model$err <- model$mse_train
     }
-    if(algo == "drf")
-    {
+    if(identical(algo, "drf")) {
       model$mse <- model$mse_train
-      model$forest <- warning("forest output is not currently supported")
+      model$forest <- warning("forest output field is not currently supported", call. = false)
     }
-    if(algo == "glm") {
-      TRUE
+    if(identical(algo, "glm")) {
+      model$normalized_coefficients <- cbind(names = model$coefficients_table$names,
+                           normalized_coefficients = model$coefficients_table$norm_coefficients)
+      model$null <- model$null_deviance
+      model$deviance <- model$residual_deviance
+      model$df.residual <- model$residual_degrees_of_freedom
+      model$df.null <- model$null_degrees_of_freedom
     }
-    if(algo == "deeplearning") {
-      TRUE
+    if(identical(algo, "deeplearning")) {
+      model
     }
     if (class(model) %in% c("H2OBinomialModel", "H2OMultinomialModel")){
-      model$priorDistribution <- warning("priorDistribution output field is not currently supported")
+      model$priorDistribution <- warning("priorDistribution output field is no longer supported", call.=FALSE)
       model$classification <- TRUE
       warning("classification is no longer a supported output field")
-      cm <- h2o.confusionMatrix(h2o.getModel(key, conn),
-                                h2o.getFrame(allparams$training_frame, conn))
-      model$confusion <- cm
+      model$confusion <- model$training_metrics$cm$table
     } else
       model$classification <- FALSE
 
