@@ -7,10 +7,10 @@ import water.api.API;
 import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
-public class GLRMV2 extends ModelBuilderSchema<GLRM,GLRMV2,GLRMV2.GLRMParametersV2> {
+public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
-  public static final class GLRMParametersV2 extends ModelParametersSchema<GLRMParameters, GLRMParametersV2> {
-    static public String[] own_fields = new String[] { "transform", "k", "loss", "regularization", "gamma", "max_iterations", "seed", "init", "user_points" };
+  public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
+    static public String[] own_fields = new String[] { "loading_key", "transform", "k", "loss", "regularization", "gamma", "max_iterations", "seed", "init", "user_points", "recover_pca" };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" })  // TODO: pull out of enum class
     public DataInfo.TransformType transform;
@@ -41,5 +41,8 @@ public class GLRMV2 extends ModelBuilderSchema<GLRM,GLRMV2,GLRMV2.GLRMParameters
 
     @API(help = "Frame key to save resulting X")
     public KeyV3.FrameKeyV3 loading_key;
+
+    @API(help = "Recover principal components")
+    public boolean recover_pca;
   }
 }

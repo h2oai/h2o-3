@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.api.*;
 import hex.deeplearning.DeepLearning;
 import hex.glm.GLM;
+import hex.glrm.GLRM;
 import hex.kmeans.KMeans;
 import hex.naivebayes.NaiveBayes;
 import hex.pca.PCA;
@@ -55,6 +56,10 @@ public class H2OApp {
     H2O.registerPOST("/3/ModelBuilders/glm", GLMBuilderHandler.class, "train",                                                        "Train a GLM model on the specified Frame.");
     H2O.registerPOST("/3/ModelBuilders/glm/parameters", GLMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLM model builder parameters.");
     H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
+
+    ModelBuilder.registerModelBuilder("glrm", "Generalized Low Rank Model", GLRM.class);
+    H2O.registerPOST("/3/ModelBuilders/glrm", GLRMBuilderHandler.class, "train",                                                        "Train a GLRM model on the specified Frame.");
+    H2O.registerPOST("/3/ModelBuilders/glrm/parameters", GLRMBuilderHandler.class, "validate_parameters",                               "Validate a set of GLRM model builder parameters.");
 
     ModelBuilder.registerModelBuilder("pca", "Principal Component Analysis", PCA.class);
     H2O.registerPOST("/3/ModelBuilders/pca", PCABuilderHandler.class, "train",                                                        "Train a PCA model on the specified Frame.");

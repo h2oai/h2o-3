@@ -9,8 +9,8 @@
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param nv The number of right singular vectors to be computed. This must be
 #'        between 1 and min(ncol(training_frame), nrow(training_frame)) inclusive.
-#' @param max_iterations The maximum number of iterations to run alternating
-#'        minimization. Must be between 0 and 1e6 inclusive.
+#' @param max_iterations The maximum number of iterations to run each power
+#'        iteration loop. Must be between 1 and 1e6 inclusive.
 #' @param center A logical value indicating whether to subtract the mean from 
 #'        each column so it is zero-centered.
 #' @param scale. A logical value indicating whether to divide each column by

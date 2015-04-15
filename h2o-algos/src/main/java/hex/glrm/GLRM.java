@@ -11,13 +11,12 @@ import hex.gram.Gram;
 import hex.gram.Gram.*;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.schemas.GLRMV2;
+import hex.schemas.GLRMV3;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.schemas.ModelBuilderSchema;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -48,7 +47,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient double[] _normMul;
 
   @Override public ModelBuilderSchema schema() {
-    return new GLRMV2();
+    return new GLRMV3();
   }
 
   @Override public Job<GLRMModel> trainModel() {
@@ -73,7 +72,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     super.init(expensive);
     if (_parms._loading_key == null) _parms._loading_key = Key.make("GLRMLoading_" + Key.rand());
     if (_parms._gamma < 0) error("_gamma", "gambda must be a non-negative number");
-    if (_parms._max_iterations < 1) error("_max_iterations", "max_iterations must be at least 1");
+    if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
+      error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
@@ -89,11 +89,11 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
       else {
         int zero_vec = 0;
         Vec[] centersVecs = _parms._user_points.get().vecs();
-        for (int c = 0; c < _ncolA; c++) {
+        for (int c = 0; c < _train.numCols(); c++) {
           if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
-        if (zero_vec == _ncolA)
+        if (zero_vec == _train.numCols())
           error("_user_points", "The user-specified points cannot all be zero");
       }
     }
