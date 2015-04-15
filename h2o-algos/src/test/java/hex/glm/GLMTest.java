@@ -272,8 +272,11 @@ public class GLMTest  extends TestUtil {
 
       GLMGradientTask grtCol = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceColAccess().doAll(dinfo._adaptedFrame);
       GLMGradientTask grtRow = new GLMGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
-      for(int i = 0; i < beta.length; ++i)
+      LBFGS_LogisticGradientTask logistic = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,params._lambda[0],beta,1, null).forceRowAccess().doAll(dinfo._adaptedFrame);
+      for(int i = 0; i < beta.length; ++i) {
         assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
+        assertEquals("gradients differ", grtRow._gradient[i], logistic._gradient[i], 1e-4);
+      }
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0});
       params._use_all_factor_levels = false;
       dinfo.remove();
