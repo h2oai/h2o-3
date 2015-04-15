@@ -5,6 +5,17 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 description = "H2O web client"
 
+// Represents external dependencies which will be put into web root and accessible
+// via REST API
+configurations {
+    publishedJars
+}
+
+dependencies {
+    // Dependency on shared model support which is served by web backend as a file
+    publishedJars project(':h2o-genmodel')
+}
+
 def getOsSpecificCommandLine(args) {
   return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
 }
@@ -90,8 +101,20 @@ task copyFlowToWebRoot(type: Copy) {
   into 'src/main/resources/www/flow'
 }
 
+task copyGenModelJarToWebRoot(type: Copy) {
+  from {
+      configurations.publishedJars.filter { it.name.startsWith("h2o-genmodel") }
+  }
+  into "src/main/resources/www/${h2oRESTApiVersion}/"
+  rename { filename -> "h2o-genmodel.jar"}
+}
+
 task deleteFlowFromWebRoot(type: Delete) {
   delete 'src/main/resources/www/flow'
+}
+
+task deleteGenModelJarFromWebRoot(type: Delete) {
+    delete "src/main/resources/www/${h2oRESTApiVersion}/h2o-genmodel.jar"
 }
 
 def exampleFlowsOutputDir = "$rootDir/h2o-web/src/main/resources/www/flow/packs"
@@ -125,12 +148,15 @@ task cleanUpSmokeTest << {
 installNpmPackages.dependsOn checkClientPrerequisites
 installBowerPackages.dependsOn installNpmPackages
 copyFlowToWebRoot.dependsOn installBowerPackages
-processResources.dependsOn copyFlowToWebRoot
-clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest
-
-processResources.dependsOn copyExampleFlows
 
 compileHelpFiles.dependsOn installNpmPackages
+
+// Prepare resource stage fetch all necessary artifacts and put there under src/../resources
+processResources.dependsOn copyFlowToWebRoot
+processResources.dependsOn copyExampleFlows
 processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
+processResources.dependsOn copyGenModelJarToWebRoot
 
+// Hook clean stage
+clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot

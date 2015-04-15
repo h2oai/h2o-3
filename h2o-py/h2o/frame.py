@@ -696,6 +696,25 @@ class H2OFrame:
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
+  # generic reducers (min, max, sum, var)
+  def min(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("min", Expr(self.send_frame(), length=self.nrow()))
+
+  def max(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("max", Expr(self.send_frame(), length=self.nrow()))
+
+  def sum(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("sum", Expr(self.send_frame(), length=self.nrow()))
+
   def var(self):
     """
     :return: The covariance matrix of the columns in this H2OFrame.
@@ -876,7 +895,7 @@ class H2OVec:
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
-    if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
+    if op == "n" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_vec_bin_rop(self, i, op):
@@ -920,23 +939,48 @@ class H2OVec:
     """
     return H2OVec(self._name,Expr("floor", self._expr, None))
 
-  def mean(self):
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
     """
-    :return: A lazy Expr representing the mean of this H2OVec.
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("mean", self._expr, None, length=1)
+    return Expr("min", self._expr)
 
-  def var(self):
+  def max(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr, None, length=1)
+    return Expr("max", self._expr)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self._expr)
 
   def sd(self):
     """
     :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("sd", self._expr, None, length=1)
+    return Expr("sd", self._expr)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self._expr)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self._expr)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self._expr)
 
   def quantile(self,prob=None):
     """
