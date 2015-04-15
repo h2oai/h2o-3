@@ -30,8 +30,8 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
             "tweedie_link_power",
             "prior",
             "lambda_min_ratio",
-            "use_all_factor_levels"
-            //"beta_constraints" //FIXME: Shouldn't this be exposed?
+            "use_all_factor_levels",
+            "beta_constraints"
     };
 
     // Input fields
