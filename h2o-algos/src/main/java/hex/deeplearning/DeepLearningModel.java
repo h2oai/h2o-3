@@ -830,10 +830,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     List<String> colTypes = new ArrayList<>();
     List<String> colFormat = new ArrayList<>();
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
-    colHeaders.add("Training Duration"); colTypes.add("string"); colFormat.add("%s");
+    colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Training Speed"); colTypes.add("string"); colFormat.add("%s");
-    colHeaders.add("Training Epochs"); colTypes.add("double"); colFormat.add("%.5f");
-    colHeaders.add("Training Samples"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Epochs"); colTypes.add("double"); colFormat.add("%.5f");
+    colHeaders.add("Samples"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
 
     if (!_output.autoencoder) {
@@ -1192,15 +1192,17 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
                               _classification ? (units[units.length-1] + "-class classification") : "regression" )
                       + ", " + get_params()._loss.toString() + " loss",
               new String[neurons.length],
-              new String[]{"#", "Units", "Type", "Dropout", "L1", "L2",
-                      (get_params()._adaptive_rate ? "Rate (Mean,RMS)" : "Rate"),
-                      (get_params()._adaptive_rate ? "" : "Momentum"),
-                      "Weight (Mean,RMS)",
-                      "Bias (Mean,RMS)"
+              new String[]{"Layer", "Units", "Type", "Dropout", "L1", "L2",
+                      "Mean Rate", "Rate RMS", "Momentum",
+                      "Mean Weight", "Weight RMS",
+                      "Mean Bias", "Bias RMS"
               },
               new String[]{"integer", "integer", "string", "double", "double", "double",
-                           "string", "string", "string", "string"},
-              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%s", "%s", "%s", "%s"},
+                           "double", "double", "double",
+                      "double", "double",
+                      "double", "double"
+              },
+              new String[]{"%d", "%d", "%s", "%2.2f %%", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
               "");
 
       final String format = "%7g";
@@ -1221,13 +1223,13 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         }
         table.set(i, 4, neurons[i].params._l1);
         table.set(i, 5, neurons[i].params._l2);
-        table.set(i, 6, (get_params()._adaptive_rate ? (" (" + String.format(format, mean_rate[i]) + ", " + String.format(format, rms_rate[i]) + ")")
-                : (String.format("%10g", neurons[i].rate(get_processed_total())))));
-        table.set(i, 7, get_params()._adaptive_rate ? "" : String.format("%5f", neurons[i].momentum(get_processed_total())));
-        table.set(i, 8, " (" + String.format(format, mean_weight[i])
-                + ", " + String.format(format, rms_weight[i]) + ")");
-        table.set(i, 9, " (" + String.format(format, mean_bias[i])
-                + ", " + String.format(format, rms_bias[i]) + ")");
+        table.set(i, 6, (get_params()._adaptive_rate ? mean_rate[i] : neurons[i].rate(get_processed_total())));
+        table.set(i, 7, (get_params()._adaptive_rate ? rms_rate[i] : 0));
+        table.set(i, 8, get_params()._adaptive_rate ? 0 : neurons[i].momentum(get_processed_total()));
+        table.set(i, 9, mean_weight[i]);
+        table.set(i, 10, rms_weight[i]);
+        table.set(i, 11, mean_bias[i]);
+        table.set(i, 12, rms_bias[i]);
       }
       summaryTable = table;
       return summaryTable;
