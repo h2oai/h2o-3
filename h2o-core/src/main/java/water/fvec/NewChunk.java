@@ -756,7 +756,7 @@ public class NewChunk extends Chunk {
         if (!Double.isNaN(_ds[i]) && (double) (long) _ds[i] != _ds[i])
           break;
       boolean isInteger = i == sparseLen();
-      boolean isConstant = sparseLen() == 0;
+      boolean isConstant = !sparse || sparseLen() == 0;
       double constVal = 0;
       if (!sparse) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
         double d = _ds[0];
