@@ -64,7 +64,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   }
 
   // Called from an http request
-  public GLRM(GLRMModel.GLRMParameters parms) {
+  public GLRM(GLRMParameters parms) {
     super("GLRM", parms);
     init(false);
   }
