@@ -70,6 +70,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
+`class.sampling.factors` | `class_sampling_factors`
 
 ###Deprecated GBM Parameters
 
@@ -78,7 +79,6 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `class.sampling.factors`: Specifying the over- or under-sampling ratios per class is no longer supported. 
 - `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O-Dev. 
 
 ###New GBM Parameters
@@ -332,6 +332,8 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `data` | `training_frame`
 `key` | `destination_key`
 `validation` | `validation_frame`
+`class.sampling.factors` | `class_sampling_factors`
+
 
 ###Deprecated DL Parameters
 
@@ -339,7 +341,6 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
-- `classification_stop`: Classification is now inferred from the data type. 
 - `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
@@ -347,7 +348,6 @@ The following parameters have been removed:
 The following parameters have been added: 
 
 - `export_weights_and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
-- `average_activation`: Average activation for sparse auto-encoder (Experimental)
 
 The following options for the `loss` parameter have been added:
 - `absolute`: Provides strong penalties for mispredictions 
@@ -419,7 +419,7 @@ H2O  | H2O-Dev
 `col_major,` | `_col_major = false,`
 `max_categorical_features,` | `_max_categorical_features = Integer.MAX_VALUE,`
 `reproducible)` | `_reproducible = false,` 
- &nbsp; | `_average_activation = 0,`
+`average_activation` | `_average_activation = 0,`
  &nbsp; | `_sparsity_beta = 0`
  &nbsp; | `_export_weights_and_biases = false)`
 
@@ -468,6 +468,9 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `depth` | `max_depth`
 `balance.classes` | `balance_classes`
 `score.each.iteration` | `score_each_iteration`
+`class.sampling.factors` | `class_sampling_factors`
+`nodesize` | `min_rows`
+
 
 ###Deprecated DRF Parameters
 
@@ -475,13 +478,13 @@ The following parameters have been removed:
 
 - `classification`: This is now automatically inferred from the response type. To achieve classification with a 0/1 response column, explicitly convert the response to a factor (`as.factor()`). 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
-- `nodesize`: Use the `build_tree_one_node` parameter instead. 
 - `holdout.fraction`: Specifying the fraction of the training data to hold out for validation is no longer supported. 
 - `doGrpSplit`: The bit-set group splitting of categorical variables is now the default. 
 - `verbose`: Infonrmation about tree splits and extra statistics is now included automatically in the stdout. 
 - `oobee`: The out-of-bag error estimate is now computed automatically (if no validation set is specified).
 - `stat.type`: This parameter was used for SpeeDRF, which is no longer supported.
 - `type`: This parameter was used for SpeeDRF, which is no longer supported. 
+- `keep_cross_validation_splits`: This parameter is used for cross-validation, which is not currently supported. 
 
 ###New DRF Parameters
 
@@ -508,15 +511,14 @@ H2O  | H2O-Dev
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
-&nbsp; | `_keep_cross_validation_splits`
 `seed = -1,` | `_seed)` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size` (to be re-added)
-`class.sampling.factors = NULL,` | `class_sampling_factors` (to be re-added)
+`max.after.balance.size = 5,` | `max_after_balance_size` 
+`class.sampling.factors = NULL,` | `class_sampling_factors` 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
