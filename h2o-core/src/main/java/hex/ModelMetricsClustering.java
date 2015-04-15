@@ -19,7 +19,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 //  public TwoDimTable _centroid_stats;
 
   public ModelMetricsClustering(Model model, Frame frame) {
-    super(model, frame);
+    super(model, frame, Double.NaN);
     _size = null;
     _within_mse = null;
     _avg_ss = _avg_within_ss = _avg_between_ss = Double.NaN;

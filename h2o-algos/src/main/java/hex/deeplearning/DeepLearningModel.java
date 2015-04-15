@@ -1661,6 +1661,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             Log.info("Mean reconstruction error on training data: " + l2.mean() + "\n");
             err.training_MSE = l2.mean();
             mse_frame.delete();
+
+            hex.ModelMetricsAutoEncoder mm1 = (ModelMetricsAutoEncoder)ModelMetrics.getFromDKV(this,ftrain);
+            err.training_MSE = err.train_err = mm1._MSE;
+            _output._training_metrics = mm1;
           }
           if (ftest != null) {
             final Frame mse_frame = scoreAutoEncoder(ftest, Key.make());
@@ -1668,6 +1672,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
             Log.info("Mean reconstruction error on validation data: " + l2.mean() + "\n");
             err.validation_MSE = l2.mean();
             mse_frame.delete();
+
+            hex.ModelMetricsAutoEncoder mm1 = (ModelMetricsAutoEncoder)ModelMetrics.getFromDKV(this,ftest);
+            err.validation_MSE = err.valid_err = mm1._MSE;
+            _output._validation_metrics = mm1;
           }
         } else {
           if (printme) Log.info("Scoring the model.");
