@@ -61,10 +61,10 @@ for(k in ncent) {
   # expect_equal(t(clust.h2o), t(clust.mllib), tolerance = 0.3)
   
   wcsse.mllib <- err.mllib[which(err.mllib[,1] == k),2]
-  wcsse.mllib <- cross.km@model$avg_within_ss
+  wcsse.mllib <- getAvgWithinSS(cross.km)
   cat("\nMLlib Average Within-Cluster SSE: ", wcsse.mllib, "\n")
   cat("H2O Average Within-Cluster SSE: ", wcsse.mllib, "\n")
-  expect_equal(cross.km@model$avg_within_ss, wcsse.mllib)
+  expect_equal(getAvgWithinSS(cross.km), wcsse.mllib)
 }
 
 PASS_BANNER()

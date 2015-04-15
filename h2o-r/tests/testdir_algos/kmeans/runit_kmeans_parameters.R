@@ -7,20 +7,20 @@ check.verify.parameters.slot <- function(conn) {
     
     Log.info("Create and and duplicate...")
     iris.km <-  h2o.kmeans(x=1:4, training_frame=iris.hex, k = 3, seed = 1234, destination_key = "f00b4r")
-    parameters <- iris.km@parameters
-    parameters_unmunged <- iris.km@parameters
+    parameters <- getParms(iris.km)
+    parameters_unmunged <- getParms(iris.km)
 
     parameters$destination_key <- NULL
     iris.km.cpy <- do.call("h2o.kmeans", parameters)
 
-    wmse.org <- sort.int(iris.km@model$within_mse)
-    wmse.cpy <- sort.int(iris.km.cpy@model$within_mse)
+    wmse.org <- sort.int(getWithinMSE(iris.km))
+    wmse.cpy <- sort.int(getWithinMSE(iris.km.cpy))
 
     Log.info("Verify outputs...")
     Log.info("centers")
-    print(iris.km@model$centers)
-    print(iris.km.cpy@model$centers)
-    expect_equivalent(iris.km@model$centers, iris.km.cpy@model$centers)
+    print(getCenters(iris.km))
+    print(getCenters(iris.km.cpy))
+    expect_equivalent(getCenters(iris.km), getCenters(iris.km.cpy))
 
     Log.info("wmse")
     print(wmse.org)

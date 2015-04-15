@@ -379,6 +379,30 @@ setClass("H2OAutoEncoderModel", contains="H2OModel")
 setClass("H2ODimReductionModel", contains="H2OModel")
 
 #'
+#' Accessor Methods for H2OModel Object
+#' 
+setGeneric("getParms", function(object) { standardGeneric("getParms") })
+setMethod("getParms", "H2OModel", function(object) { object@parameters })
+
+setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
+setGeneric("getCentersStd", function(object) { standardGeneric("getCentersStd") })
+setGeneric("getWithinMSE", function(object) { standardGeneric("getWithinMSE") })
+setGeneric("getAvgWithinSS", function(object) { standardGeneric("getAvgWithinSS") })
+setGeneric("getAvgBetweenSS", function(object) { standardGeneric("getAvgBetweenSS") })
+setGeneric("getAvgSS", function(object) { standardGeneric("getAvgSS") })
+setGeneric("getIterations", function(object) { standardGeneric("getIterations") })
+setGeneric("getClusterSizes", function(object) { standardGeneric("getClusterSizes") })
+
+setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers)[,-1] })
+setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
+setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$within_sum_of_squares })
+setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_within_ss })
+setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_between_ss })
+setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_ss } )
+setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
+setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$size })
+
+#'
 #' The H2OModelMetrics Object.
 #'
 #' A class for constructing performance measures of H2O models.
