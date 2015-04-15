@@ -320,18 +320,26 @@ setMethod("show", "H2OModel", function(object) {
   if( is(object, "H2OMultinomialModel") ) {
     cat("\n")
     # Training Metrics
-    if( !is.null(m$training_metrics) ) .showMultiMetrics(m$training_metrics,"Training")
+    if( !is.null(m$training_metrics) ) { .showMultiMetrics(m$training_metrics,"Training"); cat("\n"); }
     else                               cat("\n No training metrics generated during model build.\n")
-    cat("\n")
 
     # Validation Metrics
-    if( !is.null(m$validation_metrics) )  .showMultiMetrics(m$validation_metrics, "Validation")
-    cat("\n")
+    if( !is.null(m$validation_metrics) )  { .showMultiMetrics(m$validation_metrics, "Validation"); cat("\n"); }
   }
 
   # History
   cat("\n")
-  if( !is.null(m$scoring_history) ) print(m$scoring_history)
+  if( !is.null(m$scoring_history) ) {
+    nr <- nrow(m$scoring_history)
+    if( nr > 20L ) {
+      print(m$scoring_history[1L:5L,])
+      cat("\n---\n")
+      print(data.frame(m$scoring_history[(nr-5L):nr,]))
+    } else {
+      print(m$scoring_history)
+    }
+    cat("\n")
+  }
 
   # Varimp
   cat("\n")
@@ -347,13 +355,15 @@ setMethod("show", "H2OModel", function(object) {
   if( train_or_valid != "Training" ) arg <- "validation"
   tm <- metrics
   cat(train_or_valid, "Metrics: \n")
-  cat("=================\n\n")
-  cat(tm$description, "\n")
-  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n\n")
-  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n\n")
-  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n\n")
-  if( !is.null(tm$cm)              )  { cat(paste0("\nConfusion Matrix: (Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`) )\n")); print(tm$cm$table) }
-  if( !is.null(tm$hit_ratio_table) )  { cat(paste0("\nHit Ratio Table: (Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)` )\n"));   print(tm$hit_ratio_table) }
+  cat("=================\n")
+  if( !is.null(tm$description)     )  cat(tm$description, "\n")
+  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
+  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n")
+  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n")
+  if( !is.null(tm$cm)              )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
+  if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(tm$cm$table) }
+  if( !is.null(tm$hit_ratio_table) )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); print(tm$hit_ratio_table) }
 }
 
 #' @rdname H2OModel-class
