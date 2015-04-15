@@ -101,7 +101,11 @@ class ModelBase(object):
     Print a detailed summary of the model.
     :return:
     """
-    raise NotImplementedError
+    model = self._model_json["output"]
+    if model["model_summary"]:
+      print
+      model["model_summary"].show()  # H2OTwoDimTable object
+
 
   def show(self):
     """
@@ -109,20 +113,41 @@ class ModelBase(object):
     :return: None
     """
     model = self._model_json["output"]
-    sub = [k for k in model.keys() if k in model["help"].keys() and not k.startswith("_") and k != "help"]
-    val = [[model[k]] for k in sub if not isinstance(model[k], H2OTwoDimTable)]
-    lab = [model["help"][k] + ":" for k in sub if k != "help"]
+    print "Model Details"
+    print "============="
 
-    two_dim_tables = [model[k] for k in sub if isinstance(model[k], H2OTwoDimTable)]
+    print self.__class__.__name__, ": ", self._model_json["algo_full_name"]
+    print "Model Key: ", self._key
 
-    for i in range(len(val)):
-      val[i].insert(0, lab[i])
+    self.summary()
 
     print
-    print "Model Details:"
+    if self.__class__.__name__ == "H2OMultinomialModel":
+      # training metrics
+      tm = model["training_metrics"]
+      if tm: ModelBase._show_multi_metrics(tm)
+      vm = model["validation_metrics"]
+      if vm: ModelBase._show_multi_metrics(vm)
+
     print
-    for v in two_dim_tables:
-      v.show()
+    if "scoring_history" in model.keys() and model["scoring_history"]: model["scoring_history"].show()
+    if "variable_importances" in model.keys() and model["variable_importances"]: model["variable_importances"].show()
+
+
+  @staticmethod
+  def _show_multi_metrics(metrics, train_or_valid="Training"):
+    tm = metrics
+    print train_or_valid, " Metrics: "
+    print "==================="
+    print
+    if tm["description"]:     print tm["description"]
+    if tm["frame"]:           print "Extract ", train_or_valid.lower(), " frame with `h2o.getFrame(\""+tm["frame"]["name"]+"\")`"
+    if tm["MSE"]:             print "MSE on ", train_or_valid, ": ", tm["MSE"]
+    if tm["logloss"]:         print "logloss on ", train_or_valid, ": ", tm["logloss"]
+    if tm["cm"]:              print "Confusion Matrix on ", train_or_valid, ": ", tm["cm"]["table"].show(header=False)  # H2OTwoDimTable object
+    if tm["hit_ratio_table"]: print "Hit Ratio Table on ", train_or_valid, ": ", tm["hit_ratio_table"].show(header=False)
+
+
 
   # Delete from cluster as model goes out of scope
   def __del__(self):

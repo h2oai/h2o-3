@@ -350,8 +350,8 @@ setMethod("show", "H2OModel", function(object) {
   cat("=================\n\n")
   cat(tm$description, "\n")
   if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n\n")
+  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n\n")
   if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n\n")
-  if( !is.null(tm$mse)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$mse,"\n\n")
   if( !is.null(tm$cm)              )  { cat(paste0("\nConfusion Matrix: (Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`) )\n")); print(tm$cm$table) }
   if( !is.null(tm$hit_ratio_table) )  { cat(paste0("\nHit Ratio Table: (Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)` )\n"));   print(tm$hit_ratio_table) }
 }
