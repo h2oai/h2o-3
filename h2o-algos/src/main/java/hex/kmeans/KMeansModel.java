@@ -35,6 +35,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Sum squared distance between each point and its cluster center, divided by total observations in cluster.
     public double[/*k*/] _within_mse;   // Within-cluster MSE, variance
 
+    // Cluster size. Defined as the number of rows in each cluster.
+    public long[/*k*/] _size;
+
     // Sum squared distance between each point and its cluster center, divided by total number of observations.
     public double _avg_within_ss;      // Average within-cluster sum-of-square error
     public double[/*iterations*/] _history_avg_within_ss = new double[0];
@@ -48,6 +51,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // For internal use only: means and 1/(std dev) of each training col
     public double[] _normSub;
     public double[] _normMul;
+
+    // Number of categorical columns trained on
+    public int _categorical_column_count;
 
     public KMeansOutput( KMeans b ) { super(b); }
   }

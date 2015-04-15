@@ -16,22 +16,22 @@ test.kmstand.golden <- function(H2Oserver) {
   fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], standardize = TRUE)
   
   Log.info("R Final Clusters:"); print(fitR$centers)
-  Log.info("H2O Final Clusters:"); print(fitH2O@model$centers_std)
-  Log.info("H2O Final Clusters (de-standardized):"); print(fitH2O@model$centers)
-  expect_equivalent(as.matrix(fitH2O@model$centers_std), fitR$centers)
+  Log.info("H2O Final Clusters:"); print(getCentersStd(fitH2O))
+  Log.info("H2O Final Clusters (de-standardized):"); print(getCenters(fitH2O))
+  expect_equivalent(as.matrix(getCentersStd(fitH2O)), fitR$centers)
   
   # De-standardize R final clusters for comparison with H2O
   avg <- apply(ozoneR, 2, mean)
   std <- apply(ozoneR, 2, sd)
   fitR_centstd <- sweep(sweep(fitR$centers, 2, std, '*'), 2, avg, "+")
-  expect_equivalent(as.matrix(fitH2O@model$centers), fitR_centstd)
+  expect_equivalent(as.matrix(getCenters(fitH2O)), fitR_centstd)
   
   wmseR <- sort.int(fitR$withinss/fitR$size)
-  wmseH2O <- sort.int(fitH2O@model$within_mse)
+  wmseH2O <- sort.int(getWithinMSE(fitH2O))
   totssR <- fitR$totss
-  totssH2O <- fitH2O@model$avg_ss*nrow(ozoneH2O)
+  totssH2O <- getAvgSS(fitH2O)*nrow(ozoneH2O)
   btwssR <- fitR$betweenss
-  btwssH2O <- fitH2O@model$avg_between_ss*nrow(ozoneH2O)
+  btwssH2O <- getAvgBetweenSS(fitH2O)*nrow(ozoneH2O)
   
   Log.info(paste("H2O WithinMSE : ", wmseH2O, "\t\t", "R WithinMSE : ", wmseR))
   Log.info("Compare Within-Cluster MSE between R and H2O\n")  
