@@ -259,6 +259,7 @@ public final class L_BFGS extends Iced {
 
     while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
+      double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
         LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, gslvr._stepDec);
         if(ls.step == 1) {
@@ -270,10 +271,13 @@ public final class L_BFGS extends Iced {
           ls_switch = 0;
         }
         if (ls.madeProgress || _hist._k < 2) {
+          lsVal = ls.objVal;
           ArrayUtils.wadd(beta, pk, ls.step);
         } else break; // ls did not make progress => converged
       } else  ArrayUtils.add(beta, pk);
       GradientInfo newGinfo = gslvr.getGradient(beta); // expensive / distributed
+      if(doLineSearch)
+        assert Math.abs(lsVal - newGinfo._objVal) < 1e-10:"objvals from line-search and gradient tasks differ, " + lsVal + " != " + newGinfo._objVal;
       if(!doLineSearch) //{
         if(!admissibleStep(1,ginfo._objVal,newGinfo._objVal,pk,ginfo._gradient)) {
           if(++ls_switch == 2) {
@@ -286,18 +290,6 @@ public final class L_BFGS extends Iced {
             continue;
           }
         } else ls_switch = 0;
-//        doLineSearch = true;
-//        Log.info("switching line search on");
-//        ArrayUtils.subtract(beta, pk);
-//        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk);
-//        Log.info("ls took " + (System.currentTimeMillis() - t) + "ms, found step " + ls.step);
-//        doLineSearch = ls.step < 1;
-//        if (ls.madeProgress || _hist._k < _hist._m) {
-//          ArrayUtils.mult(pk, ls.step);
-//          ArrayUtils.add(beta, pk);
-//          newGinfo = gslvr.getGradient(beta); // expensive / distributed
-//        } else break;
-//      }
       ++iter;
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       ginfo = newGinfo;

@@ -45,13 +45,12 @@ public abstract class GLMTask  {
 
    @Override public void map(Chunk [] chunks) {
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
-     for(int i = 0; i < chunks.length-1; ++i)
+     for(int i = 0; i < chunks.length; ++i)
        for(int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r))
          skip[r] |= chunks[i].isNA(r);
      Chunk response = chunks[chunks.length-1];
      for(int r = 0; r < response._len; ++r) {
        if(skip[r]) continue;
-       if(skip[r] = response.isNA(r))continue;
        double d = response.atd(r);
        assert !Double.isNaN(d);
        assert !Double.isNaN(_ymu+d):"got NaN by adding " + _ymu + " + " + d;
@@ -133,6 +132,15 @@ public abstract class GLMTask  {
       double [][] eta = new double[responseChunk._len][_nSteps];
       double [] beta = _beta;
       double [] pk = _direction;
+      // intercept
+      if(_dinfo._intercept) {
+        for (int r = 0; r < eta.length; ++r) {
+          int off = beta.length - 1;
+          double t = 1;
+          for (int j = 0; j < _nSteps; ++j, t *= _step)
+            eta[r][j] += beta[off] + pk[off] * t;
+        }
+      }
       // categoricals
       for(int i = 0; i < _dinfo._cats; ++i) {
         Chunk c = chks[i];
@@ -483,6 +491,7 @@ public abstract class GLMTask  {
         row = _dinfo.extractDenseRow(chks, rid, row);
         double y = -1 + 2*row.response(0);
         if(row.bad) continue;
+        ++_nobs;
         double eta = row.innerProduct(b);
         double gval;
         double d = 1 + Math.exp(-y * eta);
@@ -504,7 +513,6 @@ public abstract class GLMTask  {
     @Override protected void goByCols(Chunk [] chks, boolean [] skp){
       int numStart = _dinfo.numStart();
       double  [] eta = computeEtaByCols(chks,skp);
-      double  [] b = _beta;
       double  [] g = _gradient;
       Chunk offsetChunk = null;
       int nxs = chks.length-1; // -1 for response
@@ -518,10 +526,9 @@ public abstract class GLMTask  {
       for(int r = 0; r < chks[0]._len; ++r){
         if(skp[r] || responseChunk.isNA(r))
           continue;
+        ++_nobs;
         double off = (_dinfo._offset?offsetChunk.atd(r):0);
-
         double e = eta[r]  + off;
-
         switch(_params._family) {
           case gaussian:
             double diff = e - responseChunk.atd(r);
