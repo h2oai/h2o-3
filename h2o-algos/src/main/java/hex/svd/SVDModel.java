@@ -8,7 +8,7 @@ import water.Key;
 
 public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
   public static class SVDParameters extends Model.Parameters {
-    public int _k = 1;    // Number of singular vectors to calculate
+    public int _nv = 1;    // Number of singular vectors to calculate
     public int _max_iterations = 1000;    // Maximum number of iterations
     public long _seed = System.nanoTime();        // RNG seed
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
@@ -18,8 +18,8 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Right singular vectors (V)
     public double[][] _v;
 
-    // Singular values (diagonal of S)
-    public double[] _singular_vals;
+    // Singular values (diagonal of D)
+    public double[] _d;
 
     // If standardized, mean of each numeric data column
     public double[] _normSub;

@@ -52,14 +52,14 @@ public class SVDTest extends TestUtil {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
-      parms._k = 4;
+      parms._nv = 4;
       parms._seed = 1234;
 
       SVD job = new SVD(parms);
       try {
         model = job.trainModel().get();
         checkEigvec(svec, model._output._v);
-        Assert.assertArrayEquals(sval, model._output._singular_vals, TOLERANCE);
+        Assert.assertArrayEquals(sval, model._output._d, TOLERANCE);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
@@ -98,7 +98,7 @@ public class SVDTest extends TestUtil {
 
         parms = new SVDParameters();
         parms._train = train._key;
-        parms._k = train.numCols();
+        parms._nv = train.numCols();
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._max_iterations = 1000;
         parms._seed = seed;
@@ -106,7 +106,7 @@ public class SVDTest extends TestUtil {
         SVD job = new SVD(parms);
         try {
           model = job.trainModel().get();
-          Log.info(100 * missing_fraction + "% missing values: Singular values = " + Arrays.toString(model._output._singular_vals));
+          Log.info(100 * missing_fraction + "% missing values: Singular values = " + Arrays.toString(model._output._d));
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);

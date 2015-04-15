@@ -44,6 +44,7 @@ Collate:
          'gbm.R'
          'glm.R'
          'pca.R'
+         'svd.R'
          'deeplearning.R'
          'randomforest.R'
          'naivebayes.R'

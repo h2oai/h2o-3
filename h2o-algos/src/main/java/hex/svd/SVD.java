@@ -4,12 +4,10 @@ import hex.DataInfo;
 import hex.FrameTask;
 import hex.Model;
 import hex.ModelBuilder;
-import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.SVDV2;
+import hex.schemas.SVDV3;
 import water.*;
-import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -26,7 +24,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private final double TOLERANCE = 1e-6;    // Cutoff for estimation error of singular value \sigma_i
 
   @Override public ModelBuilderSchema schema() {
-    return new SVDV2();
+    return new SVDV3();
   }
 
   @Override public Job<SVDModel> trainModel() {
@@ -47,8 +45,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     super.init(expensive);
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
-    if(_train != null && (_parms._k < 1 || _parms._k > _train.numCols()))
-      error("_k", "Number of singular values must be between 1 and " + _train.numCols());
+    if(_train != null && (_parms._nv < 1 || _parms._nv > _train.numCols()))
+      error("_nv", "Number of right singular values must be between 1 and " + _train.numCols());
   }
 
   class SVDDriver extends H2O.H2OCountedCompleter<SVDDriver> {
@@ -82,15 +80,15 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
         double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
-        double[][] rsvec = new double[_parms._k][gram.length];
-        double[] sigma = new double[_parms._k];
+        double[][] rsvec = new double[_parms._nv][gram.length];
+        double[] sigma = new double[_parms._nv];
 
         // Keep track of I - \sum_i v_iv_i' where v_i = eigenvector i
         double[][] ivv_sum = new double[gram.length][gram.length];
         for(int i = 0; i < gram.length; i++) ivv_sum[i][i] = 1;
 
         double[][] gram_update = gram.clone();
-        for(int k = 0; k < _parms._k; k++) {
+        for(int k = 0; k < _parms._nv; k++) {
           // 2) Iterate x_i <- (A_k'A_k/n)x_{i-1} until convergence and set v_k = x_i/||x_i||
           rsvec[k] = powerLoop(gram_update, _parms._seed);
 
@@ -113,7 +111,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           gram_update = ArrayUtils.multArrArr(lmat, ivv_sum);
         }
         model._output._v = ArrayUtils.transpose(rsvec);
-        model._output._singular_vals = sigma;
+        model._output._d = sigma;
         done();
       } catch( Throwable t ) {
         Job thisJob = DKV.getGet(_key);

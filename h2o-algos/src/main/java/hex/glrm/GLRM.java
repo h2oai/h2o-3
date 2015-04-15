@@ -155,7 +155,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
-        parms._k = _parms._k;
+        parms._nv = _parms._k;
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
         parms._seed = _parms._seed;
