@@ -47,7 +47,7 @@ for(k in ncent) {
 
   path <- paste("smalldata/mllib_bench/bigcross_centers_", k, ".csv", sep = "")
   clust.mllib <- read.csv(locate(path), header = FALSE)
-  clust.h2o <- as.data.frame(as.matrix(cross.km@model$centers))
+  clust.h2o <- getCenters(cross.km)
   
   # Sort in ascending order by first dimension for comparison purposes
   clust.mllib <- clust.mllib[order(clust.mllib[,1]),]
