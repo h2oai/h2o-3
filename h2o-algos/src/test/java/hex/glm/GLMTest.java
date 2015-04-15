@@ -839,7 +839,7 @@ public class GLMTest  extends TestUtil {
       params._lambda_search = true;
       params._nlambdas = 35;
       params._lambda_min_ratio = 0.18;
-      params._max_iter = 100000;
+      params._max_iterations = 100000;
       params._max_active_predictors = 215;
       params._alpha = new double[]{1};
       for(Solver s: new Solver[]{Solver.L_BFGS, Solver.ADMM}) {
