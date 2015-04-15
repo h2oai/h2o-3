@@ -195,16 +195,10 @@ public abstract class GLMTask  {
         _nobs++;
         double y = responseChunk.atd(r);
         double yy = -1 + 2*y;
-        double b = 0, s = 0;
-        if(_dinfo._intercept) {
-          b = beta[beta.length-1];
-          s = pk[pk.length-1];
-        }
-        for(int i = 0; i < _nSteps; ++i, s*= _step) {
-          double e = eta[r][i] + off[i] + b + s;
+        for(int i = 0; i < _nSteps; ++i) {
+          double e = eta[r][i] + off[i];
           if(_params._family == Family.binomial) {
             _likelihoods[i] += Math.log(1 + Math.exp(-yy * e));
-            double mu = _params.linkInv(e);
           } else {
             double mu = _params.linkInv(e);
             _likelihoods[i] += _params.likelihood(y, e, mu);

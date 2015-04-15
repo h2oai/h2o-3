@@ -19,6 +19,7 @@ import hex.glm.GLMModel.GetScoringModelTask;
 import hex.glm.GLMModel.Submodel;
 import hex.utils.MSETsk;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -32,6 +33,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
@@ -249,6 +251,28 @@ public class GLMTest  extends TestUtil {
       if (dinfo != null) dinfo.remove();
     }
   }
+
+  @Test public void testAllNAs(){
+    Key raw = Key.make("gamma_test_data_raw");
+    Key parsed = Key.make("gamma_test_data_parsed");
+    FVecTest.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
+    Frame fr = ParseDataset.parse(parsed, raw);
+    try {
+      GLMParameters params = new GLMParameters(Family.gamma);
+      // params._response = 1;
+      params._response_column = fr._names[1];
+      params._train = parsed;
+      params._lambda = new double[]{0};
+      Key modelKey = Key.make("gamma_test");
+      GLM job = new GLM(modelKey,"glm test simple gamma",params);
+      job.trainModel().get();
+      assertFalse("should've thrown IAE",true);
+    } catch(H2OModelBuilderIllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("Got no data to run on after filtering out the rows with missing values."));
+    }
+    fr.delete();
+  }
+
   // Make sure all three implementations of gradient computation in GLM get the same results
   @Test public void testGradientTask(){
     Key parsed = Key.make("cars_parsed");

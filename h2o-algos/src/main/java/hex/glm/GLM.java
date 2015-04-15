@@ -175,17 +175,20 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       InitTsk itsk = new InitTsk(0, _dinfo._intercept, null);
       H2O.submitTask(itsk).join();
       assert itsk._ymut != null;
-      assert itsk._gtNull != null;
-      assert itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs;// +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean()
+      assert itsk._ymut._nobs == 0 || itsk._gtNull != null;
+      assert itsk._ymut._nobs == 0 || itsk._ymut._nobs == itsk._gtNull._nobs:"unexpected nobs, " + itsk._ymut._nobs + " != " + itsk._gtNull._nobs;// +", filterVec = " + (itsk._gtNull._rowFilter != null) + ", nrows = " + itsk._gtNull._rowFilter.length() + ", mean = " + itsk._gtNull._rowFilter.mean()
       _rowFilter = itsk._ymut._fVec;
       assert _rowFilter.nChunks() == _dinfo._adaptedFrame.anyVec().nChunks();
       assert (_dinfo._adaptedFrame.numRows() - _rowFilter.mean() * _rowFilter.length()) == itsk._ymut._nobs:"unexpected nobs, expected " + itsk._ymut._nobs + ", but got " + _rowFilter.mean() * _rowFilter.length();
       assert _rowFilter != null;
-      if (itsk._ymut._nobs == 0) // can happen if all rows have missing value and we're filtering missing out
+      if (itsk._ymut._nobs == 0) { // can happen if all rows have missing value and we're filtering missing out
         error("training_frame", "Got no data to run on after filtering out the rows with missing values.");
-      if (itsk._ymut._yMin == itsk._ymut._yMax)
-        error("response", "Can not run glm on dataset with constant response. Response == " + itsk._ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + itsk._ymut._nobs + " of rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
-      if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
+        return;
+      }
+      if (itsk._ymut._yMin == itsk._ymut._yMax) {
+        error("response", "Can not run glm on dataset with constant response. Response == " + itsk._ymut._yMin + " for all rows in the dataset after filtering out rows with NAs, got " + itsk._ymut._nobs + " rows out of " + _dinfo._adaptedFrame.numRows() + " rows total.");
+        return;
+      } if (itsk._ymut._nobs < (_dinfo._adaptedFrame.numRows() >> 1)) { // running less than half of rows?
         warn("training_frame", "Dataset has less than 1/2 of the data after filtering out rows with NAs");
       }
       // GLMTaskInfo(Key dstKey, int foldId, long nobs, double ymu, double lmax, double[] beta, GradientInfo ginfo, double objVal){
@@ -253,23 +256,25 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     GLMGradientTask _gtBetaStart;
     @Override
     protected void compute2() {
-      addToPendingCount(1);
       // get filtered dataset's mean and number of observations
       new YMUTask(_dinfo, _dinfo._adaptedFrame.anyVec().makeZero(), new H2OCallback<YMUTask>(this) {
         @Override
         public void callback(final YMUTask ymut) {
           _rowFilter = ymut._fVec;
           _ymut = ymut;
-          final double[] beta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-          if(_intercept)
-            beta[beta.length-1] = _parms.link(ymut._ymu);
-          if (_bc._betaStart == null)
-            _bc.setBetaStart(beta);
-          // compute the lambda_max
-          _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).asyncExec(_dinfo._adaptedFrame);
-          if(beta != _bc._betaStart) {
+          if(ymut._nobs > 0) {
             InitTsk.this.addToPendingCount(1);
-            _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs,_rowFilter,InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+            final double[] beta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+            if (_intercept)
+              beta[beta.length - 1] = _parms.link(ymut._ymu);
+            if (_bc._betaStart == null)
+              _bc.setBetaStart(beta);
+            // compute the lambda_max
+            _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+            if (beta != _bc._betaStart) {
+              InitTsk.this.addToPendingCount(1);
+              _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+            }
           }
         }
       }).asyncExec(_dinfo._adaptedFrame);
@@ -1265,7 +1270,7 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       GLMGradientTask gt = _glmp._family == Family.binomial
         ? new LBFGS_LogisticGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter ).doAll(_dinfo._adaptedFrame)
         : new GLMGradientTask(_dinfo, _glmp, _lambda, beta, 1.0 / _nobs, _rowFilter).doAll(_dinfo._adaptedFrame);
-      return new GradientInfo(gt._likelihood/gt._nobs + ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
+      return new GradientInfo(gt._likelihood/gt._nobs + .5 * _lambda * ArrayUtils.l2norm2(beta,_dinfo._intercept), gt._gradient);
     }
 
     @Override
