@@ -15,12 +15,6 @@ public class KMeansModelV3 extends ModelSchema<KMeansModel, KMeansModelV3, KMean
 
     @API(help="Cluster Centers[k][features] on Standardized Data")
     public TwoDimTableBase centers_std;
-
-    @API(help="Iterations executed")
-    public double iterations;
-
-    @API(help="Number of categorical columns trained on")
-    public int categorical_column_count;
   } // KMeansModelOutputV2
 
   // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
