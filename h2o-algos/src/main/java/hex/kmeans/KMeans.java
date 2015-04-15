@@ -309,7 +309,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       List<String> colHeaders = new ArrayList<>();
       List<String> colTypes = new ArrayList<>();
       List<String> colFormat = new ArrayList<>();
-
       colHeaders.add("Number of Clusters"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Categorical Columns"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
