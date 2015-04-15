@@ -81,7 +81,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         // 1) Calculate and save Gram matrix of training data
         // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set
         GramTask tsk = new GramTask(self(), dinfo).doAll(dinfo._adaptedFrame);
-        double[][] gram = tsk._gram.getXX();
+        double[][] gram = tsk._gram.getXX();    // TODO: This ends up with all NaNs if training data has too many missing values
         double[][] rsvec = new double[_parms._k][gram.length];
         double[] sigma = new double[_parms._k];
 

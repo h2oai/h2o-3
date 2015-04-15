@@ -223,6 +223,7 @@ public class GLRMTest extends TestUtil {
         parms._k = train.numCols();
         parms._gamma = 0;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
+        parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
         parms._seed = seed;
         parms._recover_pca = true;

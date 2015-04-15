@@ -86,6 +86,16 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         error("_user_points", "The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       else if (_parms._user_points.get().numRows() != _parms._k)
         error("_user_points", "The user-specified points must have k = " + _parms._k + " rows");
+      else {
+        int zero_vec = 0;
+        Vec[] centersVecs = _parms._user_points.get().vecs();
+        for (int c = 0; c < _ncolA; c++) {
+          if(centersVecs[c].isConst() && centersVecs[c].max() == 0)
+            zero_vec++;
+        }
+        if (zero_vec == _ncolA)
+          error("_user_points", "The user-specified points cannot all be zero");
+      }
     }
 
     // Currently, does not work on categorical data
@@ -128,23 +138,21 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
   class GLRMDriver extends H2O.H2OCountedCompleter<GLRMDriver> {
 
-    // Initialize Y to be the k centers from k-means++
+    // Initialize Y matrix
     public double[][] initialY() {
       double[][] centers;
 
       if (null != _parms._user_points) { // User-specified starting points
-        centers = new double[_parms._k][_ncolA];
         Vec[] centersVecs = _parms._user_points.get().vecs();
+        centers = new double[_parms._k][_ncolA];
 
         // Get the centers and put into array
         for (int r = 0; r < _parms._k; r++) {
           for (int c = 0; c < _ncolA; c++)
             centers[r][c] = centersVecs[c].at(r);
         }
-        if (frobenius2(centers) == 0)
-          throw new H2OIllegalArgumentException("The user-specified points cannot all be zero");
-
       } else if (_parms._init == Initialization.SVD) {  // Run SVD and use right singular vectors as initial Y
+
         SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
         parms._train = _parms._train;
         parms._k = _parms._k;
@@ -163,6 +171,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         }
         centers = ArrayUtils.transpose(svd._output._v);
       } else {  // Run k-means++ and use resulting cluster centers as initial Y
+
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -187,7 +196,13 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         // K-means automatically destandardizes centers! Need the original standardized version
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
-        if(frobenius2(centers) == 0) centers = ArrayUtils.gaussianArray(_parms._k, _ncolA);
+      }
+
+      // If all centers entries are zero or any is NaN, initialize to standard normal random matrix
+      double frob = frobenius2(centers);
+      if(frob == 0 || Double.isNaN(frob)) {
+        warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead...");
+        centers = ArrayUtils.gaussianArray(_parms._k, _ncolA);
       }
       return centers;
     }

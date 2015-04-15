@@ -106,7 +106,7 @@ public class SVDTest extends TestUtil {
         SVD job = new SVD(parms);
         try {
           model = job.trainModel().get();
-          Log.info(100 * missing_fraction + "% missing values: Singular Vectors = " + Arrays.deepToString(model._output._v));
+          Log.info(100 * missing_fraction + "% missing values: Singular values = " + Arrays.toString(model._output._singular_vals));
         } catch (Throwable t) {
           t.printStackTrace();
           throw new RuntimeException(t);
