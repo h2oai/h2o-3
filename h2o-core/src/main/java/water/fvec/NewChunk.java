@@ -746,30 +746,33 @@ public class NewChunk extends Chunk {
     // If the data is UUIDs there's not much compression going on
     if( _ds != null && _ls != null )
       return chunkUUID();
-
+    // cut out the easy all NaNs case
+    if(_naCnt == _len) return new C0DChunk(Double.NaN,_len);
     // If the data was set8 as doubles, we do a quick check to see if it's
     // plain longs.  If not, we give up and use doubles.
     if( _ds != null ) {
-      int i;
+      int i; // check if we can flip to ints
       for (i=0; i < sparseLen(); ++i)
         if (!Double.isNaN(_ds[i]) && (double) (long) _ds[i] != _ds[i])
           break;
       boolean isInteger = i == sparseLen();
-
-      boolean isConstant = (sparse && sparseLen() ==0);
-      if (!isConstant) //not yet declared constant - check every entry
-      for (i=0; i < sparseLen(); ++i)
-        if (_ds[i] != _ds[0])
-          break;
-      isConstant = i == sparseLen();
-
-      if (!isInteger) {
-        if (isConstant) return new C0DChunk(_ds[0], _len);
-        if (sparse) return new CXDChunk(_len, sparseLen(), 8, bufD(8));
-        else return chunkD();
+      boolean isConstant = !sparse || sparseLen() == 0;
+      double constVal = 0;
+      if (!sparse) { // check the values, sparse with some nonzeros can not be constant - has 0s and (at least 1) nonzero
+        double d = _ds[0];
+        constVal = _ds[0];
+        for(int j = 1; j < _len; ++j)
+          if(_ds[j] != d) {
+            isConstant = false;
+            break;
+          }
       }
-
-      _ls = new long[_ds.length]; // Else flip to longs
+      if(isConstant)
+        return isInteger? new C0LChunk((long)constVal, _len): new C0DChunk(constVal,_len);
+      if(!isInteger)
+        return  sparse? new CXDChunk(_len, sparseLen(), 8, bufD(8)): chunkD();
+      // Else flip to longs
+      _ls = new long[_ds.length];
       _xs = new int [_ds.length];
       double [] ds = _ds;
       _ds = null;
@@ -817,13 +820,11 @@ public class NewChunk extends Chunk {
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
-
-    if(_len != sparseLen()){ // sparse?  then compare vs implied 0s
+    if(sparse){ // sparse?  then compare vs implied 0s
       if( min > 0 ) { min = 0; llo=0; xlo=0; }
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
       xmin = Math.min(xmin,0);
     }
-
     // Constant column?
     if( _naCnt==0 && (min==max)) {
       if (llo == lhi && xlo == 0 && xhi == 0)
