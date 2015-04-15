@@ -419,7 +419,7 @@ public class GLMTest  extends TestUtil {
 //      GLMValidation val = model.trainVal();
 ////      assertEquals(512.3, val.nullDeviance(),1e-1);
 ////      assertEquals(378.3, val.residualDeviance(),1e-1);
-////      assertEquals(396.3, val.aic(),1e-1);
+////      assertEquals(396.3, val.AIC(),1e-1);
 ////      score = model.score(fr);
 ////
 ////      hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(model,fr);
