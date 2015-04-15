@@ -45,21 +45,19 @@ public class FrameSplitter extends H2OCountedCompleter {
   /** Temporary variable holding exceptions of workers */
   private Throwable[] workersExceptions;
 
-  public FrameSplitter(Frame dataset, double[] ratios) {
-    this(dataset, ratios, null, null);
-  }
   public FrameSplitter(Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
     this(null, dataset, ratios,destKeys,jobKey);
   }
   public FrameSplitter(H2OCountedCompleter cc, Frame dataset, double[] ratios, Key[] destKeys, Key jobKey) {
-    super(null);
+    super(cc);
     assert ratios.length > 0 : "No ratio specified!";
     assert ratios.length < 100 : "Too many frame splits demanded!";
+    assert destKeys!=null : "Destination keys are not specified!";
+    assert destKeys.length == ratios.length+1 : "Unexpected number of destination keys.";
     this.dataset  = dataset;
-    this.ratios    = ratios;
-    this.destKeys = destKeys!=null ? destKeys : generateNumKeys(dataset._key, ratios.length+1);
-    assert this.destKeys.length == this.ratios.length+1 : "Unexpected number of destination keys.";
+    this.ratios   = ratios;
     this.jobKey   = jobKey;
+    this.destKeys = destKeys;
   }
 
   @Override public void compute2() {
@@ -107,6 +105,10 @@ public class FrameSplitter extends H2OCountedCompleter {
     join();
     if (workersExceptions!=null) throw new RuntimeException(workersExceptions[0]);
     return splits;
+  }
+
+  public Throwable[] getErrors() {
+    return workersExceptions;
   }
 
   @Override public void onCompletion(CountedCompleter caller) {

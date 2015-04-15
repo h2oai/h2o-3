@@ -33,7 +33,7 @@ test.GBM.smallcat <- function(conn) {
   
   # Check AUC and overall prediction error at least as good with group split than without
   #Log.info("Expect GBM with Group Split to give Perfect Prediction in Single Iteration")
-  #expect_true(drfmodel.grpsplit@model$auc == 1)
+  #expect_true(drfmodel.grpsplit@model$AUC == 1)
   #expect_true(drfmodel.grpsplit@model$confusion[3,3] == 0)
   #expect_true(h2o.auc(drfmodel.grpsplit.perf) >= h2o.auc(drfmodel.nogrp.perf))
   #expect_true(h2o.accuracy(drfmodel.grpsplit.perf, 0.5) <= h2o.accuracy(drfmodel.nogrp.perf, 0.5))
@@ -51,7 +51,7 @@ test.GBM.smallcat <- function(conn) {
   # actual <- ifelse(alphabet.data$y == "0", 0, 1)
   # pred <- ifelse(drfmodel.r.pred == "0", 0, 1)
   # R.auc = gbm.roc.area(actual, pred)
-  # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$auc))
+  # Log.info(paste("R AUC:", R.auc, "\tH2O (Group Split) AUC:", drfmodel.grpsplit@model$AUC))
   testEnd()
 }
 

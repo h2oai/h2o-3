@@ -34,10 +34,10 @@ h2o.importFolder <- function(path, conn = h2o.getConnection(), pattern = "", key
   if(length(res$files) > 0L) {
     if(parse) {
       srcKey <- res$keys
-      rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)  # # do not gc, H2O handles these nfs:// vecs
+      rawData <- .newH2OObject("H2ORawData", conn=conn, key=srcKey, linkToGC=FALSE)  # do not gc, H2O handles these nfs:// vecs
       ret <- h2o.parseRaw(data=rawData, key=key, header=header, sep=sep, col.names=col.names)
     } else {
-      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=FALSE))  # # do not gc, H2O handles these nfs:// vecs
+      myData <- lapply(res$keys, function(x) .newH2OObject("H2ORawData", conn=conn, key=x, linkToGC=FALSE))  # do not gc, H2O handles these nfs:// vecs
       if(length(res$keys) == 1L)
         ret <- myData[[1L]]
       else
@@ -97,7 +97,7 @@ h2o.uploadFile <- function(path, conn = h2o.getConnection(), key = "", parse = T
 
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make(conn, path)
-  urlSuffix <- sprintf("PostFile.json?destination_key=%s",  curlEscape(srcKey))
+  urlSuffix <- sprintf("PostFile?destination_key=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(conn = conn, h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix,
                   fileUploadInfo = fileUploadInfo)

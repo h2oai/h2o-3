@@ -130,6 +130,20 @@ public class PersistManager {
   /** Get the current Persist flavor for user-mode swapping. */
   public Persist getIce() { return I[Value.ICE]; }
 
+  /** Convert given URI into a specific H2O key representation.
+   *
+   * The representation depends on persistent backend, since it will
+   * deduce file location from the key content.
+   *
+   * The method will look at scheme of URI and based on it, it will
+   * ask a backend to provide a conversion to a key (i.e., URI with scheme
+   * 'hdfs' will be forwared to HDFS backend).
+   *
+   * @param uri file location
+   * @return a key encoding URI
+   * @throws IOException in the case of uri conversion problem
+   * @throws water.exceptions.H2OIllegalArgumentException in case of unsupported scheme
+   */
   public final Key anyURIToKey(URI uri) throws IOException {
     Key ikey = null;
     String scheme = uri.getScheme();
@@ -137,8 +151,10 @@ public class PersistManager {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3n".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("files".equals(scheme) || scheme == null) {
+    } else if ("file".equals(scheme) || scheme == null) {
       ikey = I[Value.NFS].uriToKey(uri);
+    } else {
+      throw new H2OIllegalArgumentException("Unsupported schema '" + scheme + "' for given uri " + uri);
     }
     return ikey;
   }

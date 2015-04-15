@@ -10,7 +10,7 @@ import h2o
 import numpy as np
 
 def var_test(ip,port):
-    ## Connect to h2o
+    # Connect to h2o
     h2o.init(ip,port)
 
     iris_h2o = h2o.import_frame(path=h2o.locate("smalldata/iris/iris_wheader.csv"))
@@ -21,8 +21,8 @@ def var_test(ip,port):
 
     var_np = np.var(iris_np, axis=0, ddof=1)
     for i in range(4):
-        var_h2o = iris_h2o[i].var()
-        assert abs(var_np[i] - var_h2o.eager()) < 1e-10, "expected standard deviations to be the same"
+        var_h2o = h2o.as_list(iris_h2o[i].var())[0][0]
+        assert abs(var_np[i] - var_h2o) < 1e-10, "expected standard deviations to be the same"
 
 
     var_cov_h2o = iris_h2o[0:4].var()
@@ -30,7 +30,7 @@ def var_test(ip,port):
 
     for c in range(var_cov_h2o.ncol()):
         for r in range(var_cov_h2o.nrow()):
-            assert abs(var_cov_h2o[c][r].eager() - var_cov_np[c][r]) < 1e-10, "expected equal (co)variances"
+            assert abs(h2o.as_list(var_cov_h2o[r,c])[0][0] - var_cov_np[r,c]) < 1e-6, "expected equal (co)variances"
 
 if __name__ == "__main__":
   h2o.run_test(sys.argv, var_test)

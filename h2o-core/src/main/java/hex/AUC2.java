@@ -1,9 +1,10 @@
 package hex;
 
 import java.util.Arrays;
-import water.*;
-import water.fvec.*;
+import water.Iced;
 import water.MRTask;
+import water.fvec.Chunk;
+import water.fvec.Vec;
 
 /** One-pass approximate AUC
  *
@@ -68,7 +69,7 @@ public class AUC2 extends Iced {
     // minimize max-per-class-error by maximizing min-per-class-correct.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    minPerClassCorrect(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    min_per_class_correct(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
     tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {
@@ -103,7 +104,7 @@ public class AUC2 extends Iced {
       return mx;
     }
     public static final ThresholdCriterion[] VALUES = values();
-  }
+  } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
   public long tp( int idx ) { return _tps[idx]; }

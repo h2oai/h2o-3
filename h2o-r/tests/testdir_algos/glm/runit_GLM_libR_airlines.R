@@ -27,18 +27,18 @@ test.LiblineaR.airlines <- function(conn) {
     Log.info(" family =          'binomial': Logistic Regression\n")
     Log.info(" lambda = 1/ (cost * params) [3.8e-05]: Shrinkage Parameter\n")
     Log.info("  alpha =                           0.0: Elastic Net Parameter\n")
-    Log.info("beta_eps=                         1E-04: Tolerance of termination criterion\n")
+    Log.info("beta_epsilon=                     1E-04: Tolerance of termination criterion\n")
     Log.info(" nfolds =                             1: No kfold cross-validation\n")
     h2o.m <- h2o.glm(x            = c("DepTime", "ArrTime", "Distance"),
                                     #c("fYear","fMonth","fDayofMonth","fDayOfWeek","DepTime","ArrTime","UniqueCarrier","Origin","Dest","Distance"), 
                      y            = "IsDepDelayed_REC", 
                      training_frame         = trainhex, 
                      family       = "binomial",
-                     n_folds      = 1, 
+                     nfolds      = 1, 
                      lambda       = 1 / (3*100),
                      alpha        = 0.0,
                      standardize  = TRUE,
-                     beta_eps = 1E-4)
+                     beta_epsilon = 1E-4)
     
     h2op         <- predict(h2o.m, testhex)
     h2operf      <- h2o.performance(h2o.m, testhex)
@@ -70,11 +70,11 @@ test.LiblineaR.airlines <- function(conn) {
             and coefficients.\n")
     
 
-    cat("\n H2O betas: ", h2o@model$coefficients_table$Coefficients, "\n")
+    cat("\n H2O betas: ", h2o@model$coefficients_table$coefficients, "\n")
     cat("\n============================================== \n")
     cat("\n LiblineaR betas: ", libR$W, "\n")
     cat("\n============================================== \n")
-    rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$Coefficients) - abs(libR$W))**2)
+    rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$coefficients) - abs(libR$W))**2)
     Log.info(paste("RMS of the absolute difference in the sets of coefficients is: ", rms_diff, "\n", sep = ""))
     #print(all.equal(abs(as.vector(h2o@model$coefficients)), abs(as.vector(libR$W))), "\n")
   }

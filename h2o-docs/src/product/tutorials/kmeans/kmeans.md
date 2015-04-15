@@ -53,7 +53,7 @@ Now, parse the imported data:
 ### Building a Model
 
 0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `kmeans` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
+0. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 7 (the a priori known clusters for this dataset). 
 0. In the **K** field, specify the number of clusters. For this example, enter `3`.  
@@ -80,7 +80,6 @@ K-Means randomly chooses starting points and converges on
 optimal centroids. The cluster number is arbitrary, and should
 be thought of as a factor.
 
-  >Output for K-Means is currently in progress in H2O-dev. 
 
 
 

@@ -51,20 +51,20 @@ public class IcedBitSet extends Iced {
     idx -= _bitoff;
     if(idx < 0 || idx >= _nbits)
       throw new IndexOutOfBoundsException("Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     _val[idx >> 3] |= ((byte)1 << (idx & 7));
   }
   public void clear(int idx) {
     idx -= _bitoff;
     if(idx < 0 || idx >= _nbits)
       throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     _val[idx >> 3] &= ~((byte)1 << (idx & 7));
   }
   public int cardinality() {
     int nbits = 0;
     int bytes = numBytes();
-    if( _byteoff != 0 ) throw H2O.unimpl(); // TODO
+    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     for(int i = 0; i < bytes; i++)
       nbits += Integer.bitCount(_val[i]);
     return nbits;
@@ -114,7 +114,7 @@ public class IcedBitSet extends Iced {
     for(int i = 0; i < bytes; i++) {
       if( i>0 ) sb.p(' ');
       for( int j=0; j<8; j++ )
-        sb.p((_val[i]>>j)&1);
+        sb.p((_val[_byteoff+i]>>j)&1);
     }
     return sb.p("}");
   }

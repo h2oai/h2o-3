@@ -56,6 +56,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
+#' @param timeout_secs Timeout in seconds. Default is 5 minutes (300s).
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' library(h2o)
@@ -66,8 +67,15 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 #' @export
-h2o.removeAll <- function(conn = h2o.getConnection()) {
-  invisible(.h2o.__remoteSend(conn, .h2o.__REMOVEALL, method = "DELETE"))
+h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=120) {
+  tryCatch(
+    invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
+    error = function(e) {
+      print("Timeout on DELETE /DKV from R")
+      print("Attempt thread dump...")
+      h2o.killMinus3(conn)
+      stop(e)
+    })
 }
 
 #
@@ -89,7 +97,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
-    .h2o.__remoteSend(conn, .h2o.__REMOVE, key=keys[[i]], method = "DELETE")
+    .h2o.__remoteSend(conn, paste0(.h2o.__DKV, "/", keys[[i]]), method = "DELETE")
 }
 
 #'

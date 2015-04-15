@@ -125,6 +125,7 @@ public class DTree extends Iced {
       assert _bin > 0 && _bin < h.nbins();
       assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
       if( _equal == 1 ) { assert h.bins(_bin)!=0; return h.binAt(_bin); }
+      assert _equal==0; // not here for bitset splits, just range splits
       // Find highest non-empty bin below the split
       int x=_bin-1;
       while( x >= 0 && h.bins(x)==0 ) x--;
@@ -373,22 +374,19 @@ public class DTree extends Iced {
       }
     }
 
-    // Bin #.
-    public int bin( Chunk chks[], int row ) {
-      float d = (float)chks[_split._col].atd(row); // Value to split on for this row
-//      if( Float.isNaN(d) )               // Missing data?
-//        return 0;                        // NAs always to bin 0
+    public int ns( Chunk chks[], int row ) {
+      float d = (float)chks[_split._col].atd(row);
+      int bin;
       // Note that during *scoring* (as opposed to training), we can be exposed
       // to data which is outside the bin limits.
       if(_split._equal == 0)
-        return d >= _splat ? 1 : 0; //NaN goes to 0 // >= goes right
+        bin = d >= _splat ? 1 : 0; //NaN goes to 0 // >= goes right
       else if(_split._equal == 1)
-        return d == _splat ? 1 : 0; //NaN goes to 0
+        bin = d == _splat ? 1 : 0; //NaN goes to 0
       else
-        return _split._bs.contains((int)d) ? 1 : 0; // contains goes right
+        bin = _split._bs.contains((int)d) ? 1 : 0; // contains goes right
+      return _nids[bin];
     }
-
-    public int ns( Chunk chks[], int row ) { return _nids[bin(chks,row)]; }
 
     public double pred( int nid ) {
       return nid==0 ? _split._p0 : _split._p1;
@@ -524,7 +522,6 @@ public class DTree extends Iced {
       return sb.append("pred=").append(_pred).append("\n");
     }
     public final double pred() { return _pred; }
-    public final void pred(double pred) { _pred = (float)pred; }
   }
 
   static public boolean isRootNode(Node n)   { return n._pid == -1; }

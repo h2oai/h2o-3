@@ -24,7 +24,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '<=' = 'L',
              '==' = 'n',
              '!=' = 'N',
-             '%%' = '%',
+             '%%' = 'mod',
              '**' = '^',
              '!'  = '_',
              '|'  = '|',
@@ -36,7 +36,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
              '/'  = '/',
              '^'  = '^',
              't'  = 't', 
-             "%/%"="%/%")
+             "%/%"="intDiv")
 
 .binary_op.map <- c("%*%" = "x",
                     '>'  = 'g',
@@ -170,41 +170,39 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__REST_API_VERSION <- 3L
 
 #' Administrative Endpoints
-.h2o.__JOBS           <- "Jobs.json"          # Jobs.json/$90w3r52hfej_JOB_KEY_12389471jsdfs
-.h2o.__CLOUD          <- "Cloud.json"
-.h2o.__SHUTDOWN       <- "Shutdown.json"
+.h2o.__JOBS           <- "Jobs"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
+.h2o.__CLOUD          <- "Cloud"
+.h2o.__SHUTDOWN       <- "Shutdown"
 .h2o.__DOWNLOAD_LOGS  <- "/Logs/download"
 
 #' Removal Endpoints
-.h2o.__REMOVE         <- "Remove.json"
-.h2o.__REMOVEALL      <- "RemoveAll.json"
+.h2o.__DKV            <- "DKV"
 
 #' Log and Echo Endpoint
-.h2o.__LOGANDECHO     <- "LogAndEcho.json"
+.h2o.__LOGANDECHO     <- "LogAndEcho"
 
 #' Import/Export Endpoints
-.h2o.__IMPORT         <- "ImportFiles.json"   # ImportFiles.json?path=/path/to/data
+.h2o.__IMPORT         <- "ImportFiles"   # ImportFiles?path=/path/to/data
 
 #' Parse Endpoints
-.h2o.__PARSE_SETUP    <- "ParseSetup.json"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
-.h2o.__PARSE          <- "Parse.json"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_key=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
+.h2o.__PARSE_SETUP    <- "ParseSetup"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
+.h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_key=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
 
 #' Inspect/Summary Endpoints
-.h2o.__INSPECT        <- "Inspect.json"       # Inspect.json?key=asdfasdf
-.h2o.__FRAMES         <- "Frames.json"        # Frames.json/<key>    example: http://localhost:54321/3/Frames.json/meow.hex
+.h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex
 .h2o.__COL_SUMMARY <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "summary", sep = "/")
 .h2o.__COL_DOMAIN  <- function(key, col) paste(.h2o.__FRAMES, key, "columns", col, "domain", sep = "/")
 
 #' Frame Manipulation
-.h2o.__CREATE_FRAME   <- "CreateFrame.json"
+.h2o.__CREATE_FRAME   <- "CreateFrame"
 
-.h2o.__GLMMakeModel <- "MakeGLMModel.json"
+.h2o.__GLMMakeModel <- "MakeGLMModel"
 
 #' Rapids Endpoint
-.h2o.__RAPIDS         <- "Rapids.json"
+.h2o.__RAPIDS         <- "Rapids"
 
 #' Model Builder Endpoint Generator
-.h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo, '.json')
+.h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
 #' Export Files Endpoint Generator
 .h2o.__EXPORT_FILES <- function(frame,path,force) {
@@ -213,23 +211,23 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
     key  <- frame@key
     .h2o.eval.frame(conn=h2o.getConnection(), ast=frame@mutable$ast, key=key)
   }
-  paste0("Frames.json/",frame@key,"/export/",path,"/overwrite/",force)
+  paste0("Frames/",frame@key,"/export/",path,"/overwrite/",force)
 }
 
 #' Model Endpoint
-.h2o.__MODELS         <- "Models.json"
+.h2o.__MODELS         <- "Models"
 
 #' Word To Vector Endpoints
-.h2o.__W2V            <- "Word2Vec.json"
-.h2o.__SYNONYMS       <- "Synonyms.json"
-.h2o.__TRANSFORM      <- "Transform.json"
+.h2o.__W2V            <- "Word2Vec"
+.h2o.__SYNONYMS       <- "Synonyms"
+.h2o.__TRANSFORM      <- "Transform"
 
 #' Model Metrics Endpoint
 .h2o.__MODEL_METRICS <- function(model,data) {
   if(missing(data)) {
-    paste0("ModelMetrics.json/models/",model)
+    paste0("ModelMetrics/models/",model)
   }
   else {
-    paste0("ModelMetrics.json/models/",model,"/frames/",data)
+    paste0("ModelMetrics/models/",model,"/frames/",data)
   }
 }

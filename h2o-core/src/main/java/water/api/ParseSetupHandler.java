@@ -13,7 +13,7 @@ import java.util.Arrays;
  */
 public class ParseSetupHandler extends Handler {
 
-  public ParseSetupV2 guessSetup(int version, ParseSetupV2 p) {
+  public ParseSetupV3 guessSetup(int version, ParseSetupV3 p) {
     Key[] fkeys = new Key[p.source_keys.length];
     for(int i=0; i < p.source_keys.length; i++) {
       fkeys[i] = p.source_keys[i].key();

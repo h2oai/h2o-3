@@ -107,7 +107,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       if( _K > 0 && iact < ds.length-1) updateHits(iact,ds,_hits);
 
       // Compute log loss
-      _logloss -= Math.log(Math.max(1e-15, 1-err));
+      final double eps = 1e-15;
+      _logloss -= Math.log(Math.max(eps, 1-err));
 
       return ds;                // Flow coding
     }
@@ -128,7 +129,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         double logloss = Double.NaN;
         if (_count != 0) {
           if (_hits != null) {
-            for (int i = 0; i < hr.length; i++)  hr[i] = _hits[i] / _count;
+            for (int i = 0; i < hr.length; i++)  hr[i] = (float)_hits[i] / _count;
             for (int i = 1; i < hr.length; i++)  hr[i] += hr[i-1];
           }
           mse = _sumsqe / _count;

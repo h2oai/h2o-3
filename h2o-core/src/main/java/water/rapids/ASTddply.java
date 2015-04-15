@@ -18,9 +18,9 @@ import java.util.HashSet;
  *  Third arg is the function to apply to each group.
  */
 public class ASTddply extends ASTOp {
-  protected static long[] _cols;
-  protected static String _fun;
-  protected static AST[] _fun_args;
+  long[] _cols;
+  String _fun;
+  AST[] _fun_args;
   static final String VARS[] = new String[]{ "ary", "{cols}", "FUN"};
   public ASTddply( ) { super(VARS); }
 
@@ -30,49 +30,37 @@ public class ASTddply extends ASTOp {
   @Override ASTddply parse_impl(Exec E) {
     // get the frame to work
     AST ary = E.parse();
-    if (ary instanceof ASTId) ary = Env.staticLookup((ASTId)ary);
 
     // Get the col ids
-    AST s=null;
-    try {
-      s = E.skipWS().parse(); // this jumps out to le squiggly du parse
-      _cols = ((ASTSeries)s).toArray(); // do the dump to array here -- no worry about efficiency or speed
-
-      // SANITY CHECK COLS:
-      if (_cols.length > 1000) throw new IllegalArgumentException("Too many columns selected. Please select < 1000 columns.");
-
-    } catch (ClassCastException e) {
-
-      assert s != null;
-      try {
-        _cols = new long[]{(long)((ASTNum)s).dbl()};
-      } catch (ClassCastException e2) {
-        throw new IllegalArgumentException("Badly formed AST. Columns argument must be a ASTSeries or ASTNum");
-      }
-    }
+    AST s=E.parse();
+    if( s instanceof ASTLongList) _cols = ((ASTLongList)s)._l;
+    else if( s instanceof ASTNum) _cols = new long[]{(long)((ASTNum)s)._d};
+    else throw new IllegalArgumentException("Columns expected to be a llist or number. Got: " + s.getClass());
 
     // get the fun
-    _fun = ((ASTId)E.skipWS().parse())._id;
+    _fun = ((ASTId)E.parse())._id;
 
     // get any fun args
     ArrayList<AST> fun_args = new ArrayList<>();
-    while(E.skipWS().hasNext()) {
+    while( !E.isEnd() )
       fun_args.add(E.parse());
-    }
-    ASTddply res = (ASTddply)clone();
-    res._asts = new AST[]{ary};
+
     if (fun_args.size() > 0) {
       _fun_args = fun_args.toArray(new AST[fun_args.size()]);
     } else {
       _fun_args = null;
     }
+
+    E.eatEnd();
+    ASTddply res = (ASTddply)clone();
+    res._asts = new AST[]{ary};
     return res;
   }
 
   @Override void apply(Env env) {
     Frame fr = env.popAry();    // The Frame to work on
 
-    // sanity check cols some moar
+    // sanity check cols
     for (long l : _cols) {
       if (l > fr.numCols() || l < 0) throw new IllegalArgumentException("Column "+(l+1)+" out of range for frame columns "+fr.numCols());
     }
@@ -125,8 +113,10 @@ public class ASTddply extends ASTOp {
     NewChunk[] nchkz = new NewChunk[results[0]._vs.length];
     for (int i=0; i<nchkz.length;++i) {
       nchkz[i] = new NewChunk(grpColz[i]=new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
-      Chunk src = ((Vec)DKV.get(results[0]._vs[i]).get()).chunkForChunkIdx(0);
-      nchkz[i].add(src.inflate_impl(new NewChunk(src)));
+      Vec v = DKV.get(results[0]._vs[i]).get();
+      Chunk src = v.nChunks()==0?null:v.chunkForChunkIdx(0);
+      if( src==null ) continue;
+      else nchkz[i].add(src.inflate_impl(new NewChunk(src)));
     }
 
     // fold in rest of the chunks
@@ -137,7 +127,7 @@ public class ASTddply extends ASTOp {
       }
     }
 
-    // single-threaded result folding -- could be made distrubted/|| for moar speed
+    // single-threaded result folding
     for (Group g: p1._groups.keySet()) {
       int c = 0;
       for (double d : g._ds) nchks.get(c++).addNum(d);
@@ -159,6 +149,12 @@ public class ASTddply extends ASTOp {
     Vec rm;
     for( int i = _cols.length; i < names.length; i++) names[i] = "C"+(i-_cols.length+1);
     for (int i = 0; i < vres.length; ++i) {
+      if( vres[i].length()==0 ) {
+        //got no results --
+        Frame ff = new Frame(new String[]{"C1"}, new Vec[]{vres[i]});
+        env.pushAry(ff);
+        return;
+      }
       if (vres[0].group().equals(vres[i].group())) continue;
       vres[i] = vres[0].align(rm = vres[i]); // align makes a copy
       Keyed.remove(rm._key);
@@ -506,6 +502,10 @@ public class ASTddply extends ASTOp {
             _nchks[i] = new NewChunk(_grpCols[i] = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec()), 0);
         }
         for (int i = 0; i < _ncols; ++i) {
+          if( env.isStr() ) { // must be TRUE or FALSE
+            String s = env.popStr();
+            env.push(new ValNum(s.equals("TRUE")?1:0));
+          } else if( env.isNul() )  { env.pop(); continue; }
           _nchks[i].addNum(_ncols == 1 ? env.popDbl() : fr.vecs()[i].at(0));
         }
         aa.delete(); // nuke the group frame

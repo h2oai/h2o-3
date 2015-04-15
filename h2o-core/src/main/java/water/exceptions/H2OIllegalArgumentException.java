@@ -9,14 +9,14 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
   public H2OIllegalArgumentException(String argument, String function, Object value) {
     super("Illegal argument: " + argument + " of function: " + function + ": " + value.toString(),
           "Illegal argument: " + argument + " of function: " + function + ": " + value.toString() + " of class: " + value.getClass());
-    this.values = new IcedHashMap<String, Object>();
+    this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("function", function);
     this.values.put("argument", argument);
     this.values.put("value", value);
   }
 
   /** Raw-message constructor for use by subclasses. */
-  public H2OIllegalArgumentException(String message, String dev_message, IcedHashMap values) {
+  public H2OIllegalArgumentException(String message, String dev_message, IcedHashMap.IcedHashMapStringObject values) {
     super(message, dev_message, values);
   }
 
@@ -35,7 +35,7 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
             new H2OIllegalArgumentException(
                   expectedType + " argument: " + fieldName + " with value: " + keyName + " points to a non-" + expectedType + " object: " + actualType.getSimpleName(),
                   expectedType + " argument: " + fieldName + " with value: " + keyName + " points to a non-" + expectedType + " object: " + actualType.getName());
-    e.values = new IcedHashMap<String, Object>();
+    e.values = new IcedHashMap.IcedHashMapStringObject();
     e.values.put("argument", fieldName);
     e.values.put("value", keyName);
     e.values.put("expected_type", expectedType);

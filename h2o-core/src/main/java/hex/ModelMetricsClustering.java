@@ -45,8 +45,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     @Override
     public double[] perRow(double[] preds, float[] dataRow, Model m) {
       assert m instanceof ClusteringModel;
-      if (Double.isNaN(preds  [0])) return preds; // No errors if prediction is missing
-      if (Float .isNaN(dataRow[0])) return preds; // No errors if actual is missing
+      assert !Double.isNaN(preds[0]);
 
       ClusteringModel clm = (ClusteringModel) m;
       final TwoDimTable centers = ((ClusteringOutput) clm._output)._centers; // De-standardized centers

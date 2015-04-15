@@ -12,8 +12,7 @@ def benign(ip,port):
     X = [x for x in range(2,11) if x != Y]
 
     #Log.info("Build the model")
-    model = h2o.glm(y=training_data[Y].asfactor(), x=training_data[X], family="binomial", n_folds=0, alpha=[0], Lambda=[1e-5])
-    #model = h2o.glm(y=training_data[Y].asfactor(), x=training_data[X], family="binomial", n_folds=5, alpha=[0], Lambda=[1e-5])
+    model = h2o.glm(y=training_data[Y].asfactor(), x=training_data[X], family="binomial", alpha=[0], Lambda=[1e-5])
 
     #Log.info("Check that the columns used in the model are the ones we passed in.")
     #Log.info("===================Columns passed in: ================")

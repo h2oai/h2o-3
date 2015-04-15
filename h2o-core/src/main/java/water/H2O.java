@@ -5,6 +5,7 @@ import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
+import water.exceptions.H2OIllegalArgumentException;
 import water.init.*;
 import water.nbhm.NonBlockingHashMap;
 import water.persist.PersistManager;
@@ -20,8 +21,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-//import com.brsanthu.googleanalytics.GoogleAnalytics;
-//import com.brsanthu.googleanalytics.EventHit;
+import com.brsanthu.googleanalytics.GoogleAnalytics;
+import com.brsanthu.googleanalytics.EventHit;
 
 /**
 * Start point for creating or joining an <code>H2O</code> Cloud.
@@ -375,8 +376,8 @@ final public class H2O {
   }
 
   //Google analytics performance measurement
-//  public static GoogleAnalytics GA;
-//  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
+  public static GoogleAnalytics GA;
+  public static int CLIENT_TYPE_GA_CUST_DIM = 1;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Embedded configuration for a full H2O node to be implanted in another
@@ -471,18 +472,19 @@ final public class H2O {
 
 
   /**
-   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * Throw an exception that will cause the request to fail, but the cluster to continue.
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException unimpl() { return H2O.fail("unimplemented"); }
+  public static H2OIllegalArgumentException unimpl() { return new H2OIllegalArgumentException("unimplemented"); }
 
   /**
-   * Throw an exception that will cause H2O to shut down (but tests can catch).
+   * Throw an exception that will cause the request to fail, but the cluster to continue.
+   * @see #unimpl(String)
    * @see #fail(String, Throwable)
    * @return never returns
    */
-  public static H2OFailException unimpl(String msg) { return H2O.fail("unimplemented: " + msg); }
+  public static H2OIllegalArgumentException unimpl(String msg) { return new H2OIllegalArgumentException("unimplemented: " + msg); }
 
   /**
    * H2O.fail is intended to be used in code where something should never happen, and if
@@ -501,6 +503,8 @@ final public class H2O {
   public static H2OFailException fail(String msg, Throwable cause) {
     Log.fatal(msg);
     if (null != cause) Log.fatal(cause);
+    Log.fatal("Stacktrace: ");
+    Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
 
     H2O.shutdown();
     System.exit(-1);
@@ -1062,8 +1066,10 @@ final public class H2O {
   public static Value putIfMatch( Key key, Value val, Value old ) {
     if( old != null ) // Have an old value?
       key = old._key; // Use prior key
-    if( val != null )
-      val._key = key;
+    if( val != null ) {
+      assert val._key.equals(key);
+      if( val._key != key ) val._key = key; // Attempt to uniquify keys
+    }
 
     // Insert into the K/V store
     Value res = STORE.putIfMatchUnlocked(key,val,old);
@@ -1156,15 +1162,21 @@ final public class H2O {
     if( ARGS.help ) { printHelp(); exit(0); }
 
     // Register with GA
-/*    if((new File(".h2o_no_collect")).exists()
+    if((new File(".h2o_no_collect")).exists()
             || (new File(System.getProperty("user.home")+File.separator+".h2o_no_collect")).exists()
             || ARGS.ga_opt_out ) {
       GA = null;
       Log.info("Opted out of sending usage metrics.");
     } else {
-      GA = new GoogleAnalytics("UA-56665317-2","H2O",ABV.projectVersion());
+      try {
+        GA = new GoogleAnalytics("UA-56665317-1", "H2O", ABV.projectVersion());
+      } catch(Throwable t) {
+        Log.POST(11, t.toString());
+        StackTraceElement[] stes = t.getStackTrace();
+        for(int i =0; i < stes.length; i++) Log.POST(11, stes[i].toString());
+      }
     }
-*/
+
     // Epic Hunt for the correct self InetAddress
     NetworkInit.findInetAddressForSelf();
 
@@ -1229,7 +1241,8 @@ final public class H2O {
     // join an existing Cloud.
     new HeartBeatThread().start();
 
-    startGAStartupReport();
+    if (GA != null)
+      startGAStartupReport();
   }
 
   // Die horribly
@@ -1239,7 +1252,6 @@ final public class H2O {
   }
 
   public static class GAStartupReportThread extends Thread {
-    final private String threadName = "GAStartupReport";
     final private int sleepMillis = 150 * 1000; //2.5 min
 
     // Constructor.
@@ -1256,11 +1268,11 @@ final public class H2O {
         Thread.sleep (sleepMillis);
       }
       catch (Exception ignore) {};
-/*      if (H2O.SELF == H2O.CLOUD._memary[0]) {
+      if (H2O.SELF == H2O.CLOUD._memary[0]) {
         if (ARGS.ga_hadoop_ver != null)
           H2O.GA.postAsync(new EventHit("System startup info", "Hadoop version", ARGS.ga_hadoop_ver, 1));
         H2O.GA.postAsync(new EventHit("System startup info", "Cloud", "Cloud size", CLOUD.size()));
-      } */
+      }
     }
   }
 }

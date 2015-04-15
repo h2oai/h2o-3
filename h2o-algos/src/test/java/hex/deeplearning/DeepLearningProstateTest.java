@@ -143,7 +143,10 @@ public class DeepLearningProstateTest extends TestUtil {
                                         p._override_with_best_model = override_with_best_model;
                                         p._epochs = epochs;
                                         p._loss = loss;
-                                        p._n_folds = n_folds;
+                                        if (n_folds > 0) {
+                                          H2O.unimpl();
+                                          // p._n_folds = n_folds;
+                                        }
                                         p._keep_cross_validation_splits = keep_cv_splits;
                                         p._seed = seed;
                                         p._train_samples_per_iteration = train_samples_per_iteration;
@@ -194,7 +197,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                       p._destination_key = Key.make();
                                       dest = p._destination_key;
                                       p._checkpoint = dest_tmp;
-                                      p._n_folds = 0;
+                                      // p._n_folds = 0;
 
                                       p._valid = valid == null ? null : valid._key;
                                       p._response_column = frame._names[resp];
@@ -238,7 +241,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                             // check that calcError() is consistent as well (for CM=null, AUC!=null)
                                             Assert.assertEquals(mm.cm().err(), error, 1e-15);
                                           }
-                                          double CMerrorOrig = buildCM(valid.vecs()[resp].toEnum(), pred.vecs()[0].toEnum()).err();
 
                                           // confirm that orig CM was made with threshold 0.5
                                           // put pred2 into DKV, and allow access
@@ -247,23 +249,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                           pred2.unlock(null);
 
                                           if (model2._output.nclasses() == 2) {
-                                            // make labels with 0.5 threshold for binary classifier
-                                            // ast is from this expression pred2[,1] = (pred2[,3]>=0.5)
-                                            String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+0.5+"))";
+                                            // manually make labels with AUC-given threshold for best F1
+                                            String ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
                                             Env ev = Exec.exec(ast);
-                                            try {
-                                              pred2 = ev.popAry(); // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
-                                            } finally {
-                                              if (ev!=null) ev.remove_and_unlock();
-                                            }
-
-                                            double threshErr = buildCM(valid.vecs()[resp].toEnum(), pred2.vecs()[0].toEnum()).err();
-                                            Assert.assertEquals(threshErr, CMerrorOrig, 1e-15);
-
-                                            // make labels with AUC-given threshold for best F1
-                                            // similar ast to the above
-                                            ast = "(= ([ %pred2 \"null\" #0) (G ([ %pred2 \"null\" #2) #"+threshold+"))";
-                                            ev = Exec.exec(ast);
                                             try {
                                               pred2 = ev.popAry();  // pop0 pops w/o lowering refs, let remove_and_unlock handle cleanup
                                             } finally {

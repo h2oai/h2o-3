@@ -1434,9 +1434,22 @@ public final class AutoBuffer {
         put1('\\');             // The extra backslash
         off=i;                  // Advance the "so far" variable
       }
-      // Replace embedded newline & tab with quoted newlines
-      if( b[i] == '\n' ) { putA1(b,off,i); put1('\\'); put1('n'); off=i+1; }
-      if( b[i] == '\t' ) { putA1(b,off,i); put1('\\'); put1('t'); off=i+1; }
+      // Handle remaining special cases in JSON
+      if( b[i] == '/' ) { putA1(b,off,i); put1('\\'); put1('/'); off=i+1; continue;}
+      if( b[i] == '\b' ) { putA1(b,off,i); put1('\\'); put1('b'); off=i+1; continue;}
+      if( b[i] == '\f' ) { putA1(b,off,i); put1('\\'); put1('f'); off=i+1; continue;}
+      if( b[i] == '\n' ) { putA1(b,off,i); put1('\\'); put1('n'); off=i+1; continue;}
+      if( b[i] == '\r' ) { putA1(b,off,i); put1('\\'); put1('r'); off=i+1; continue;}
+      if( b[i] == '\t' ) { putA1(b,off,i); put1('\\'); put1('t'); off=i+1; continue;}
+      // ASCII Control characters
+      if( b[i] == 127 ) { putA1(b,off,i); put1('\\'); put1('u'); put1('0'); put1('0'); put1('0'); put1(b[i]); off=i+1; continue;}
+      if( b[i] >= 0 && b[i] < 32 ) {
+        String hexStr = Integer.toHexString(b[i]);
+        putA1(b, off, i); put1('\\'); put1('u');
+        for (int j = 0; j < 4 - hexStr.length(); j++) put1('0');
+        for (int j = 0; j < hexStr.length(); j++) put1(hexStr.charAt(hexStr.length()-j-1));
+        off=i+1;
+      }
     }
     return putA1(b,off,b.length);
   }

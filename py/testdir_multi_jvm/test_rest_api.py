@@ -454,11 +454,11 @@ if verboser:
 
 ####################################
 # test schemas individual GET
-if verbose: print 'Testing /Metadata/schemas/FrameV2. . .'
-schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
-assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
-assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
-assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+if verbose: print 'Testing /Metadata/schemas/FrameV3. . .'
+schemas = a_node.schema(schemaname='FrameV3', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV3: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV3 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV3 has an unexpected length: " + repr(schemas)
 
 if verboser:
     print 'Schemas: '
@@ -557,7 +557,7 @@ assert 'fields' in schemas['schemas'][0], "FAIL: schemas[0] in the schemas resul
 if verbose: print 'Testing CreateFrame. . .'
 created_job = a_node.create_frame(dest='created') # call with defaults
 
-a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV2 instance (aka the Job)
+a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV3 instance (aka the Job)
 
 frames = a_node.frames(key='created')['frames']
 assert len(frames) == 1, "FAIL: expected to find 1 frame called 'created', found: " + str(len(frames))
@@ -793,6 +793,16 @@ validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
 assert parameters_validation['__http_response']['status_code'] == requests.codes.precondition_failed, "FAIL: expected 412 Precondition Failed from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
 if verbose: print 'Done trying to build DeepLearning model with bad parameters.'
 
+#####################################
+# Early test of predict()
+# TODO: remove after we remove the early exit
+p = a_node.predict(model='deeplearning_airlines_binomial', frame='airlines_binomial', destination_key='deeplearning_airlines_binomial_predictions')
+validate_predictions(p, 'deeplearning_airlines_binomial', 'airlines_binomial', 43978, destination_key='deeplearning_airlines_binomial_predictions')
+validate_frame_exists('deeplearning_airlines_binomial_predictions')
+h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_airlines_binomial', " on: ", 'airlines_binomial', ":  ", repr(p))
+
+# print h2o_util.dump_json(p)
+
 print("WARNING: Terminating test before the end because we don't have as.factor yet. . .")   # TODO: Remove after deeplearning_prostate_binomial is updated
 sys.exit(0)
 
@@ -918,11 +928,11 @@ if verboser:
 
 ####################################
 # test schemas individual GET again
-if verbose: print 'Testing /Metadata/schemas/FrameV2 again. . .'
-schemas = a_node.schema(schemaname='FrameV2', timeoutSecs=240)
-assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV2: " + repr(schemas)
-assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV2 is not a list: " + repr(schemas)
-assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV2 has an unexpected length: " + repr(schemas)
+if verbose: print 'Testing /Metadata/schemas/FrameV3 again. . .'
+schemas = a_node.schema(schemaname='FrameV3', timeoutSecs=240)
+assert 'schemas' in schemas, "FAIL: failed to find 'schemas' field in output of /Metadata/schemas/FrameV3: " + repr(schemas)
+assert type(schemas['schemas']) is list, "'schemas' field in output of /Metadata/schemas/FrameV3 is not a list: " + repr(schemas)
+assert len(schemas['schemas']) == 1, "'schemas' field in output of /Metadata/schemas/FrameV3 has an unexpected length: " + repr(schemas)
 
 if verboser:
     print 'Schemas: '

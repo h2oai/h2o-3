@@ -44,8 +44,8 @@ public class CXIChunk extends Chunk {
   @Override public final int nonzeros(int [] arr){
     int len = sparseLen();
     int off = _OFF;
-    final int inc = _valsz + 2;
-    for(int i = 0; i < len; ++i, off += inc) arr[i] = UnsafeUtils.get2(_mem, off)&0xFFFF;
+    final int inc = _valsz + _ridsz;
+    for(int i = 0; i < len; ++i, off += inc) arr[i] = getId(off);
     return len;
   }
 
@@ -109,7 +109,7 @@ public class CXIChunk extends Chunk {
       case 2: return UnsafeUtils.get2(_mem, off + _ridsz);
       case 4: return UnsafeUtils.get4(_mem, off + _ridsz);
       case 8: return UnsafeUtils.get8(_mem, off + _ridsz);
-      default: throw H2O.unimpl();
+      default: throw H2O.fail();
    } 
   }
 

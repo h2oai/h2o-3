@@ -71,9 +71,9 @@ def simpleCheckGLM(self, model, parameters,
     threshold = model.threshold
     check_obj_has_good_numbers(threshold, 'threshold', allowNaN=allowNaN)
 
-    auc = model.auc
+    auc = model.AUC
     # NaN if not logistic
-    # check_obj_has_good_numbers(auc, 'model.auc')
+    # check_obj_has_good_numbers(auc, 'model.AUC')
 
     best_lambda_idx = model.best_lambda_idx
     model_category = model.model_category
@@ -92,8 +92,8 @@ def simpleCheckGLM(self, model, parameters,
     domains = model.domains
 
     # when is is this okay to be NaN?
-    aic = model.aic
-    check_obj_has_good_numbers(aic, 'model.aic', allowNaN=allowNaN)
+    AIC = model.AIC
+    check_obj_has_good_numbers(AIC, 'model.AIC', allowNaN=allowNaN)
 
     names = model.names
 
@@ -248,13 +248,13 @@ def simpleCheckGLMScore(self, glmScore, family='gaussian', allowFailWarning=Fals
     # threshold only there if binomial?
     # auc only for binomial
     if family=="binomial":
-        print "%15s %s" % ("auc:\t", validation['auc'])
+        print "%15s %s" % ("AUC:\t", validation['AUC'])
         print "%15s %s" % ("threshold:\t", validation['threshold'])
 
     err = False
     if family=="poisson" or family=="gaussian":
-        if 'aic' not in validation:
-            print "aic is missing from the glm json response"
+        if 'AIC' not in validation:
+            print "AIC is missing from the glm json response"
             err = True
 
     if not allowNaN and math.isnan(validation['err']):
@@ -405,7 +405,7 @@ def oldSimpleCheckGLM(self, glm, colX, allowFailWarning=False, allowZeroCoeff=Fa
 
 
     if family=="poisson" or family=="gaussian":
-        print "%15s %s" % ("aic:\t", validations['aic'])
+        print "%15s %s" % ("AIC:\t", validations['AIC'])
 
     coefficients_names = GLMModel['coefficients_names']
     # print "coefficients_names:", coefficients_names

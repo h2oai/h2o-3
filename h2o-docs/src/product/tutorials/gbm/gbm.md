@@ -41,7 +41,7 @@ Now, parse the imported data:
 0. If the data uses apostrophes ( `'` - also known as single quotes), check the **Enable single quotes as a field quotation character** checkbox. 
 0. To delete the imported dataset after the parse is complete, check the **Delete on done** checkbox. 
 
-  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can’t be used by H2O.
+  **NOTE**: In general, we recommend enabling this option. Retaining data requires memory resources, but does not aid in modeling because unparsed data can't be used by H2O.
 
 
 0. Review the data in the **Data Preview** section, then click the **Parse** button.  
@@ -56,7 +56,7 @@ Now, parse the imported data:
 ### Building a Model
 
 0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `gbm` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
+0. Select `Gradient Boosting Machine` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns. 
 0. From the drop-down **Response** list, select column 1 (`C1`).  

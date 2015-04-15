@@ -22,15 +22,15 @@ def covtype(ip,port):
   #covtype.summary()
 
   # L2: alpha = 0, lambda = 0
-  covtype_mod1 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", n_folds=0, alpha=[0], Lambda=[0])
+  covtype_mod1 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", alpha=[0], Lambda=[0])
   covtype_mod1.show()
 
   # Elastic: alpha = 0.5, lambda = 1e-4
-  covtype_mod2 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", n_folds=0, alpha=[0.5], Lambda=[1e-4])
+  covtype_mod2 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", alpha=[0.5], Lambda=[1e-4])
   covtype_mod2.show()
 
   # L1: alpha = 1, lambda = 1e-4
-  covtype_mod3 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", n_folds=0, alpha=[1], Lambda=[1e-4])
+  covtype_mod3 = h2o.glm(y=covtype[myY], x=covtype[myX], family="binomial", alpha=[1], Lambda=[1e-4])
   covtype_mod3.show()
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ test.DRF.SWpreds <- function(conn) {
 
   # BUG? With noise, seems like AUC and/or prediction error can be slightly better with naive rather than group split
   #      This behavior is inconsistent over repeated runs when the seed is different
-  # expect_true(drfmodel.grpsplit2@model$auc >= drfmodel.nogrp2@model$auc - tol)
+  # expect_true(drfmodel.grpsplit2@model$AUC >= drfmodel.nogrp2@model$AUC - tol)
   # expect_true(drfmodel.grpsplit2@model$confusion[3,3] <= drfmodel.nogrp2@model$confusion[3,3] + tol)
 
   testEnd()
