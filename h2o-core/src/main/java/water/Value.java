@@ -162,6 +162,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Time of last access to this value.
   transient long _lastAccessedTime = System.currentTimeMillis();
   private void touch() {_lastAccessedTime = System.currentTimeMillis();}
+  // Exposed and used for testing only; used to trigger premature cleaning/disk-swapping
+  void touchAt(long time) {_lastAccessedTime = time;}
 
   // ---
   // Backend persistence info.  3 bits are reserved for 8 different flavors of

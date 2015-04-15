@@ -12,7 +12,7 @@ class Cleaner extends Thread {
   // msec time at which the STORE was dirtied.
   // Long.MAX_VALUE if clean.
   static private volatile long _dirty; // When was store dirtied
-
+  static long dirty() { return _dirty; } // exposed for testing only
   static void dirty_store() { dirty_store(System.currentTimeMillis()); }
   static void dirty_store( long x ) {
     // Keep earliest dirty time seen
@@ -27,6 +27,7 @@ class Cleaner extends Thread {
   }
   static void block_store_cleaner() {
     synchronized( _store_cleaner_lock ) {
+      _store_cleaner_lock.notifyAll(); // wake up test thread only, otherwise nobody else is listening nor cares
       try { _store_cleaner_lock.wait(5000); } catch (InterruptedException ignore) { }
     }
   }
@@ -179,12 +180,8 @@ class Cleaner extends Thread {
   boolean lazy_clean( Key key ) {
     // Only data chunks are worth tossing out even lazily.
     if( !key.isChunkKey() ) // Not arraylet?
-      return false; // Not enough savings to write it with mem-pressure to force us
-    // If this is a chunk of a system-defined array, then assume it has
-    // short lifetime, and we do not want to spin the disk writing it
-    // unless we're under memory pressure.
-    Key veckey = key.getVecKey();
-    return veckey.user_allowed(); // Write user keys but not system keys
+      return false; // Not enough savings to write it without mem-pressure to force us
+    return true;
   }
 
   // Current best histogram
