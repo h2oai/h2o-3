@@ -128,7 +128,7 @@ H2O  | H2O-Dev  | Model Type
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
 `@model$confusion` |  &nbsp; | `binomial` and `multinomial`
-`@model$auc` | `@model$AUC` | `binomial`
+`@model$auc` | &nbsp; | `binomial`
 `@model$gini` | &nbsp;  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
 `@model$F1` | &nbsp;  | `binomial`
