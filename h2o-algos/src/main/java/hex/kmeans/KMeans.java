@@ -277,7 +277,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._training_metrics = makeTrainingMetrics(model);
           if (_valid != null) {
             model.score(_parms.valid());
-            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[1]);
+            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
           }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -311,6 +311,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       List<String> colFormat = new ArrayList<>();
 
       colHeaders.add("Number of Clusters"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Number of Categorical Columns"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Number of Iterations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Avg Within Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Avg Sum of Squares"); colTypes.add("double"); colFormat.add("%.5f");
@@ -327,6 +328,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       int row = 0;
       int col = 0;
       table.set(row, col++, output._centers_raw.length);
+      table.set(row, col++, output._categorical_column_count);
       table.set(row, col++, output._iterations);
       table.set(row, col++, output._avg_within_ss);
       table.set(row, col++, output._avg_ss);
