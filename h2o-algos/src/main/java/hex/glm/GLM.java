@@ -647,8 +647,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     protected void solve(){
-      if (_activeData.fullN() > _parms._max_active_predictors)
-        throw new TooManyPredictorsException();
       switch(_parms._solver) {
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
@@ -755,6 +753,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // done, compute the gradient and check KKTs
           break;
         case ADMM:// fork off ADMM iteration
+          if (_activeData.fullN() > _parms._max_active_predictors)
+            throw new TooManyPredictorsException();
           new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _taskInfo._ymu, _rowFilter, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
           return;
         default:
