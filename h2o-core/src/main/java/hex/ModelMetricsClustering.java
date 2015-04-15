@@ -2,6 +2,9 @@ package hex;
 
 import hex.ClusteringModel.ClusteringOutput;
 import hex.ClusteringModel.ClusteringParameters;
+import water.H2OModelBuilderError;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -98,7 +101,8 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
         _colSum[i] += dataRow[i];
         _colSumSq[i] += dataRow[i] * dataRow[i];
       }
-      assert !Double.isNaN(_sumsqe);
+      if (Double.isNaN(_sumsqe))
+        throw new H2OIllegalArgumentException("Sum of Squares is invalid (Double.NaN) - Check for missing values in the dataset.");
       _size[clus]++;
       _count++;
       return preds;                // Flow coding
