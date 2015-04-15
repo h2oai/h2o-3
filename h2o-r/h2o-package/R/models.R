@@ -725,6 +725,6 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 .model.ellipses <- function(dots) {
   lapply(names(dots), function(type) {
     stop(paste0('\n  unexpected argument "',
-                type,'", is this legacy code? Try h2o.shim'), call. = FALSE)
+                type,'", is this legacy code? Try ?h2o.shim'), call. = FALSE)
   })
 }
