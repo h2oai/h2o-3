@@ -327,7 +327,7 @@ public abstract class Parser extends Iced {
 
         // All same string, declare enum
         if (_domains[i].size() <= 1
-                &&  _nstrings[i] == nonemptyLines) {
+                &&  _nstrings[i] >= nonemptyLines) {
           types[i] = Vec.T_ENUM;
           continue;
         }
