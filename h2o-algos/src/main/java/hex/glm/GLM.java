@@ -234,8 +234,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       // _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
       if(_valid != null)
         _validDinfo = new DataInfo(Key.make(), _valid, null, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
-      if(_parms._lambda_search) // todo add xval/hval for null model?
-        setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null,null);
+//      if(_parms._lambda_search) // todo add xval/hval for null model?
+      setSubmodel(_dest,0,_bc._betaStart,gtBetastart._val,null,null);
       if(_parms._solver == Solver.COORDINATE_DESCENT) { // make needed vecs
         double eta = _parms.link(_tInfos[0]._ymu);
         _tInfos[0]._eVec = _dinfo._adaptedFrame.anyVec().makeCon(eta);

@@ -84,7 +84,7 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
     @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 beta_constraints;
 
-    @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT)
+    @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT, level = Level.expert)
     public int max_active_predictors = -1;
   }
 }
