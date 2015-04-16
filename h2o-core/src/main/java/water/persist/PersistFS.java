@@ -6,7 +6,6 @@ import java.util.ArrayList;
 
 import water.*;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.util.Log;
 
 /**
@@ -19,10 +18,21 @@ final class PersistFS extends Persist {
   PersistFS(File root) {
     _root = root;
     _dir = new File(root, "ice" + H2O.API_PORT);
+    deleteRecursive(_dir);
     // Make the directory as-needed
     root.mkdirs();
     if( !(root.isDirectory() && root.canRead() && root.canWrite()) )
       H2O.die("ice_root not a read/writable directory");
+  }
+
+  public void cleanUp() { deleteRecursive(_dir); }
+
+  private static void deleteRecursive(File path) {
+    if( !path.exists() ) return;
+    if( path.isDirectory() )
+      for (File f : path.listFiles())
+        deleteRecursive(f);
+    path.delete();
   }
 
   private File getFile(Value v) {
@@ -50,14 +60,12 @@ final class PersistFS extends Persist {
     new File(_dir, getIceDirectory(v._key)).mkdirs();
     // Nuke any prior file.
     FileOutputStream s = null;
-    try {
-      s = new FileOutputStream(getFile(v));
-    } catch( FileNotFoundException e ) {
-      Log.throwErr(e);
-    }
+    try { s = new FileOutputStream(getFile(v)); }
+    catch( FileNotFoundException e ) { throw Log.throwErr(e); }
     try {
       byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      assert m != null && m.length == v._max : " " + v._key + " " + m; // Assert not saving partial files
+      if( m != null && m.length == v._max )
+        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
       new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
       v.setdsk();             // Set as write-complete to disk
     } finally {

@@ -408,11 +408,10 @@ class ASTasDate extends ASTUniPrefixOp {
   @Override ASTOp make() {return new ASTasDate();}
   @Override ASTasDate parse_impl(Exec E) {
     AST ast = E.parse();
-    try {
-      _format = ((ASTString)E.parse())._s;
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("`format` must be a string.");
-    }
+    AST a = E.parse();
+    if( a instanceof ASTString ) _format = ((ASTString)a)._s;
+    else throw new IllegalArgumentException("`format` must be a string.");
+
     E.eatEnd(); // eat ending ')'
     ASTasDate res = (ASTasDate) clone();
     res._asts = new AST[]{ast};

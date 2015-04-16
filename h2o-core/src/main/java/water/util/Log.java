@@ -64,6 +64,7 @@ abstract public class Log {
 
   public static void info( String s, boolean stdout ) { write0(INFO, stdout, s); }
 
+  // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
     err(e);                     // Log it
     throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e); // Throw it
