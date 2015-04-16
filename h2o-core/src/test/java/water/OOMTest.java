@@ -72,6 +72,8 @@ public class OOMTest extends TestUtil {
       Value v2 = vrnd2.chunkIdx(i);
       Assert.assertTrue(v1.isPersisted());
       Assert.assertTrue(v2.isPersisted());
+      Assert.assertTrue(v1.rawMem() != null || !v1._key.home());
+      Assert.assertTrue(v2.rawMem() != null || !v2._key.home());
     }
 
     // Cleanup
