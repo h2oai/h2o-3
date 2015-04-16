@@ -153,7 +153,7 @@ There are multiple ways to import data in H2O flow:
   
  ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
-- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
+- In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
@@ -586,8 +586,21 @@ For parsed data, the following information displays:
 
 To make a prediction, check the checkboxes for the frames you want to use to make the prediction, then click the **Predict on Selected Frames** button. 
 
+---
 
+## Splitting Frames
 
+In H2O Flow, you can split datasets within Flow for use in training and testing. 
+
+0. To split a frame, click the **Assist Me** button, then click **splitFrame**. 
+0. From the drop-down **Frame:** list, select the frame to split. 
+0. In the **Ratio** entry field, specify the fractional value to determine the split. 
+   **Note** Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
+0. In the **Key** entry field, specify a name for the new frame. 
+0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
+0. Click the **Create** button.  
+
+---
 
 ## Plotting Frames
 
@@ -635,7 +648,10 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 <a name="Outline"></a>
 # Viewing Outlines
 
-The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. To jump to a specific cell, click the cell description. 
+The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
+
+- To jump to a specific cell, click the cell description. 
+- To delete a cell, select it and press the X key on your keyboard. 
 
  ![View Outline](images/Flow_outline.png)
 
