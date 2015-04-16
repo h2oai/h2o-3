@@ -36,8 +36,7 @@ function(conn) {
 
 	# Sanity Check whether comparing models built on the same dataset
 	expect_equal( nrow(mfrmr), nrow(rr))
-	expect_equal(gg$nulldev,hh@model$null_deviance)
-
+	expect_true(abs(gg$nulldev-hh@model$null_deviance) < 1e-8*gg$nulldev)
 	res_dev_R = deviance(gg)
 	obs = nrow(mfrmr)
 	cof_R = coef(gg,s= lambda)
@@ -57,9 +56,7 @@ function(conn) {
 	print(paste("penalty on model from H2O:  ",penalty, sep = ""))
 	print(paste("Objective function for model from R:  ",objective_R, sep = ""))
 	print(paste("Objective function for model from H2O:  ",objective, sep = ""))
-
-	expect_true(objective<=objective_R)
-
+	expect_true(objective < objective_R + 1e-5*gg$nulldev)
     testEnd()
 }
 doTest("Comapares objective function results from H2O-glm and glmnet: marketing data with no NAs Smalldata", glm.objectiveFun.test)
