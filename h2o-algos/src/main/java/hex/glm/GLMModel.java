@@ -686,8 +686,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         _AUC = Double.NaN;
       } else {
         _threshold = _submodels[l].trainVal.bestThreshold();
-        _residual_deviance = MathUtils.roundToNDigits(_submodels[l].trainVal.residualDeviance(),5);
-        _null_deviance = MathUtils.roundToNDigits(_submodels[l].trainVal.nullDeviance(),5);
+        _residual_deviance = _submodels[l].trainVal.residualDeviance();
+        _null_deviance = _submodels[l].trainVal.nullDeviance();
         _residual_degrees_of_freedom = _submodels[l].trainVal.resDOF();
         _null_degrees_of_freedom = _submodels[l].trainVal.nullDOF();
         _AIC = _submodels[l].trainVal.AIC();

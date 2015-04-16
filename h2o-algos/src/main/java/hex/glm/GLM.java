@@ -679,9 +679,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             double [] g = solver.getGradient(nullBeta)._gradient;
             double [] rho = MemoryManager.malloc8d(beta.length);
             // compute rhos
-            double avg = 0;
             for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
-              avg += rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen);
+              rho[i] = ADMM.L1Solver.estimateRho(-g[i], l1pen);
 //            avg /= rho.length - (_dinfo._intercept?1:0);
 //            for(int i = 0; i < rho.length - (_dinfo._intercept?1:0); ++i)
 //              rho[i] = Math.max(Math.min(rho[i],1.5*avg),0.5*avg);
@@ -690,8 +689,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             Result r = lbfgs.solve(solver, beta, _taskInfo._ginfo, new ProgressMonitor() {
               @Override
               public boolean progress(double[] beta, GradientInfo ginfo) {
-                if ((_taskInfo._iter & 15) == 0) {
-                  update(16, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
+                if ((_taskInfo._iter & 3) == 0) {
+                  update(4, "iteration " + (_taskInfo._iter + 1) + ", objective value = " + ginfo._objVal, GLM.this._key);
                   LogInfo("LBFGS: objval = " + ginfo._objVal);
                 }
                 ++_taskInfo._iter;
@@ -1222,14 +1221,15 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
       double [] objs = _solver.getObjVals(beta,pk, nSteps, stepDec);
       double step = 1;
+      assert objs.length == nSteps;
       for (int i = 0; i < objs.length; ++i, step *= stepDec) {
-        double[] b = ArrayUtils.wadd(beta.clone(), pk, step);
+        double [] b = ArrayUtils.wadd(beta.clone(), pk, step);
         double pen = 0;
         for (int j = 0; j < _betaGiven.length; ++j) {
           double diff = b[j] - _betaGiven[j];
-          pen += .5 * _rho[j] * diff * diff;
+          pen +=  _rho[j] * diff * diff;
         }
-        objs[i] += pen;
+        objs[i] += .5 * pen;
       }
       return objs;
     }

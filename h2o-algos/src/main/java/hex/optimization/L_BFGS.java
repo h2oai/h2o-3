@@ -120,7 +120,7 @@ public final class L_BFGS extends Iced {
           return new LineSearchSol(true, objVals[i], t);
         t *= tdec;
       }
-      return new LineSearchSol(false, objVals[objVals.length-1], t);
+      return new LineSearchSol(objVals[objVals.length-1] < ginfo._objVal, objVals[objVals.length-1], t/tdec);
     }
   }
 
@@ -132,7 +132,7 @@ public final class L_BFGS extends Iced {
   }
 
   // constants used in line search
-  public static final double c1 = .1;
+  public static final double c1 = .25;
 
   public static final class Result {
     public final int iter;
@@ -255,10 +255,11 @@ public final class L_BFGS extends Iced {
     int ls_switch = 0;
 
     while(pm.progress(beta, ginfo) && MathUtils.l2norm2(ginfo._gradient) > _gradEps && iter != _maxIter) {
+//      System.out.println("objVal = " + ginfo._objVal + ", gradNorm = " + MathUtils.l2norm2(ginfo._gradient) + ", doLineSearch = " + doLineSearch);
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
-        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 16, .5);
+        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 24, .5);
         if(ls.step == 1) {
           if (++ls_switch == 2) {
             ls_switch = 0;
