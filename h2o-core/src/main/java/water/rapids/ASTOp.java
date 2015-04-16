@@ -1528,13 +1528,15 @@ abstract class ASTReducerOp extends ASTOp {
         if( Env.staticLookup((ASTId) a ) instanceof ASTFrame) dblarys.add(a); // kv lookup
         if( E._env.tryLookup((ASTId)a) ) break;
         else dblarys.add(a);
-      } else if( a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
+      } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
       else break;
     }
 
     // Get the na.rm last
+    if( !E.isEnd() ) a = E.parse();
     if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
     else throw new IllegalArgumentException("Expected the na.rm value to be one of %TRUE, %FALSE, %T, %F");
+
     _narm = ((ASTNum)a).dbl() == 1;
     E.eatEnd(); // eat ending ')'
     AST[] arys = new AST[_argcnt = dblarys.size()];
