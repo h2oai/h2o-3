@@ -670,7 +670,7 @@ h2o.shim <- function(enable = TRUE) {
           model$precision <- scores$precision
           model$recall <- scores$recall
           model$mcc <- scores$absolute_MCC
-          model$max_per_class_error <- 1 - scores$min_per_class_correct
+          model$max_per_class_error <- 1 - scores$min_per_class_accuracy
         }
       }
     } else

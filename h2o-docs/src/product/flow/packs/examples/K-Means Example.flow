@@ -47,31 +47,15 @@
     },
     {
       "type": "md",
-      "input": "### K-Means Output\n\nOutput is a matrix of the cluster assignments, and the\ncoordinates of the cluster centers in terms of the originally\nchosen attributes. Your cluster centers may differ slightly.\nK-Means randomly chooses starting points and converges on\noptimal centroids. The cluster number is arbitrary, and should\nbe thought of as a factor.\n\nTo view the output, click the **Inspect** button, then select the type of information to view (parameters, output, clusters, cluster means). "
+      "input": "### K-Means Output\n\nOutput is a matrix of the cluster assignments, and the\ncoordinates of the cluster centers in terms of the originally\nchosen attributes. Your cluster centers may differ slightly.\nK-Means randomly chooses starting points and converges on\noptimal centroids. The cluster number is arbitrary, and should\nbe thought of as a factor.\n\nBy default, the following output displays: \n\n- Output (model category, validation metrics if applicable, and centers std)\n- Model Summary\n- Scoring history\n- Training metrics\n- Centroid statistics\n- Cluster means\n"
     },
     {
       "type": "cs",
       "input": "getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
     },
     {
-      "type": "cs",
-      "input": "inspect getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
-    },
-    {
-      "type": "cs",
-      "input": "grid inspect \"output\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
-    },
-    {
-      "type": "cs",
-      "input": "grid inspect \"within_mse\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
-    },
-    {
-      "type": "cs",
-      "input": "grid inspect \"Cluster means\", getModel \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\""
-    },
-    {
       "type": "md",
-      "input": "####Making Predictions\n\nTo make a prediction based on the model, click the **Predict** button in the **Model** cell. Select a data frame to use for the prediction, then click the **Predict** button. In the **Prediction** cell, click the **View Prediction Frame** button to view the prediction. "
+      "input": "####Making Predictions\n\nTo make a prediction based on the model, click the **Predict** button in the **Model** cell. Select a data frame to use for the prediction, then click the **Predict** button. "
     },
     {
       "type": "cs",
@@ -80,10 +64,6 @@
     {
       "type": "cs",
       "input": "predict model: \"kmeans-d1cc0a90-3a54-4eac-8b06-1d66f1f57741\", frame: \"seeds_dataset.hex\", destination_key: \"prediction-2e8d0460-8bc0-4dc1-9cad-df0a3a9d2eb1\""
-    },
-    {
-      "type": "cs",
-      "input": "getFrame \"prediction-2e8d0460-8bc0-4dc1-9cad-df0a3a9d2eb1\""
     }
   ]
 }

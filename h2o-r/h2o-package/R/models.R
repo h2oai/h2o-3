@@ -540,7 +540,7 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "min_per_class_correct")
+  1.0-h2o.metric(object, thresholds, "min_per_class_accuracy")
 }
 
 #' @rdname h2o.metric

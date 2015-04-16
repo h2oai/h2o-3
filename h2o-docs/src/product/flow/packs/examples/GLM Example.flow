@@ -43,7 +43,7 @@
     },
     {
       "type": "md",
-      "input": "### GLM Results\n\nTo view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when\nstandardization is requested). The output also displays AIC, AUC, and deviance rates.  \n\nTo view more details, click the **Inspect** button. \n\nTo view the best coefficient values, click the **Coefficient Magnitudes** link. \n"
+      "input": "### GLM Results\n\nTo view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when\nstandardization is requested). The output also displays AIC, AUC, and deviance rates.  \n\nTo view more details, click the **Inspect** button. \n\nTo view the best coefficient values, click the **output - Coefficient Magnitudes** link. \n"
     },
     {
       "type": "cs",
@@ -55,7 +55,7 @@
     },
     {
       "type": "cs",
-      "input": "grid inspect \"Coefficient Magnitudes\", getModel \"glm-072b6da6-fc66-4288-b122-656db078301e\""
+      "input": "grid inspect \"output - Coefficient Magnitudes\", getModel \"glm-072b6da6-fc66-4288-b122-656db078301e\""
     }
   ]
 }
