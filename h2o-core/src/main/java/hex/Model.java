@@ -510,7 +510,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       names[i] = _output.classNames()[i-1];
     domains[0] = nc==1 ? null : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means()).doAll(ncols,adaptFrm);
     bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
     Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
@@ -521,7 +521,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String[] _domain; // Prediction domain; union of test and train classes
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
+    final double[] _mean;  // Column means of test frame
+
+    BigScore( String[] domain, int ncols, double[] mean ) { _domain = domain; _npredcols = ncols; _mean = mean; }
+
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       double[] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
@@ -534,7 +537,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual, Model.this);
+        _mb.perRow(preds, actual, Model.this, _mean);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
