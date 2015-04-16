@@ -540,7 +540,7 @@ h2o.error <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
-  1.0-h2o.metric(object, thresholds, "min_per_class_correct")
+  1.0-h2o.metric(object, thresholds, "min_per_class_accuracy")
 }
 
 #' @rdname h2o.metric
@@ -725,6 +725,6 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 .model.ellipses <- function(dots) {
   lapply(names(dots), function(type) {
     stop(paste0('\n  unexpected argument "',
-                type,'", is this legacy code? Try h2o.shim'), call. = FALSE)
+                type,'", is this legacy code? Try ?h2o.shim'), call. = FALSE)
   })
 }
