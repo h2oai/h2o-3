@@ -57,27 +57,24 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
   public static TwoDimTable getHitRatioTable(float[] hits) {
     String tableHeader = "Top-" + hits.length + " Hit Ratios";
-    String tableDescription = null;
     String[] rowHeaders = new String[hits.length];
-    for (int k=0; k<hits.length; ++k) {
-      rowHeaders[k] = new Integer(k+1).toString();
-    }
+    for (int k=0; k<hits.length; ++k)
+      rowHeaders[k] = Integer.toString(k+1);
     String[] colHeaders = new String[]{"Hit Ratio"};
     String[] colTypes = new String[]{"float"};
     String[] colFormats = new String[]{"%f"};
     String colHeaderForRowHeaders = "K";
-    TwoDimTable table = new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
-    for (int k=0; k<hits.length; ++k) {
-      table.set(k, 0, new Float(hits[k]));
-    }
+    TwoDimTable table = new TwoDimTable(tableHeader, null/*tableDescription*/, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders);
+    for (int k=0; k<hits.length; ++k)
+      table.set(k, 0, hits[k]);
     return table;
   }
 
 
-  public static class MetricBuilderMultinomial extends MetricBuilderSupervised {
+  public static class MetricBuilderMultinomial<T extends MetricBuilderMultinomial<T>> extends MetricBuilderSupervised<T> {
     long[/*nclasses*/][/*nclasses*/] _cm;
     long[/*K*/] _hits;            // the number of hits for hitratio, length: K
-    private int _K;               // TODO: Let user set K
+    int _K;               // TODO: Let user set K
     double _logloss;
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
@@ -113,12 +110,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       return ds;                // Flow coding
     }
 
-    @Override public void reduce( MetricBuilder mb ) {
+    @Override public void reduce( T mb ) {
       super.reduce(mb);
-      assert(((MetricBuilderMultinomial) mb)._K == _K);
-      ArrayUtils.add(_cm, ((MetricBuilderMultinomial)mb)._cm);
-      _hits = ArrayUtils.add(_hits, ((MetricBuilderMultinomial) mb)._hits);
-      _logloss += ((MetricBuilderMultinomial) mb)._logloss;
+      assert mb._K == _K;
+      ArrayUtils.add(_cm, mb._cm);
+      _hits = ArrayUtils.add(_hits, mb._hits);
+      _logloss += mb._logloss;
     }
 
     @Override public ModelMetrics makeModelMetrics( Model m, Frame f, double sigma) {
