@@ -2,6 +2,7 @@ package water.parser;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -347,7 +348,12 @@ public final class ParseDataset extends Job<Frame> {
       } else if (etk._gEnums != null) {
         for( int i : _ecols ) {
           if( _gEnums[i] == null ) _gEnums[i] = etk._gEnums[i];
-          else if( etk._gEnums[i] != null ) _gEnums[i].merge(etk._gEnums[i]);
+          else if( etk._gEnums[i] != null ) {
+            _gEnums[i].merge(etk._gEnums[i]);
+            if (_gEnums[i].isMapFull())
+              throw new H2OParseException("Column contains over "+Categorical.MAX_ENUM_SIZE
+              +" unique values and exceeds limits.  Consider parsing this column as string values.");
+          }
         }
         for( int i = 0; i < _lEnums.length; ++i )
           if( _lEnums[i] == null ) _lEnums[i] = etk._lEnums[i];
