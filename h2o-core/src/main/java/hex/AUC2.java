@@ -69,10 +69,10 @@ public class AUC2 extends Iced {
         assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
         return Math.abs(mcc);
       } },
-    // minimize max-per-class-error by maximizing min-per-class-correct.
+    // minimize max-per-class-error by maximizing min-per-class-accuracy.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    min_per_class_correct(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    min_per_class_accuracy(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
     tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
