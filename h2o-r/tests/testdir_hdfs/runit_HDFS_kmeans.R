@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# Purpose:  This test exercises HDFS operations from R.
+# Purpose:  This tests k-means on a large dataset.
 #----------------------------------------------------------------------
 
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
@@ -42,8 +42,8 @@ if (n != 150) {
 }
 
 heading("Running KMeans on iris")
-iris.km = h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
-iris.km
+iris.km <- h2o.kmeans(training_frame = iris.hex, k = 3, x = 1:4, max_iterations = 10)
+print(iris.km)
 
 
 
@@ -57,8 +57,8 @@ if (n != 581012) {
 }
 
 heading("Running KMeans on covtype")
-covtype.km = h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
-covtype.km
+covtype.km <- h2o.kmeans(training_frame = covtype.hex, k = 8, max_iterations = 10)
+print(covtype.km)
 
 
 PASS_BANNER()

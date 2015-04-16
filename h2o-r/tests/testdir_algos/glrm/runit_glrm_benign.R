@@ -1,0 +1,19 @@
+setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
+source('../../h2o-runit.R')
+
+test.glrm.benign <- function(conn) {
+  Log.info("Importing benign.csv data...\n")
+  benign.hex <- h2o.uploadFile(conn, locate("smalldata/logreg/benign.csv"))
+  benign.sum <- summary(benign.hex)
+  print(benign.sum)
+
+  for( i in 1:6 ) {
+    Log.info(paste("H2O GLRM with rank", i, "decomposition:\n"))
+    benign.glrm <- h2o.glrm(training_frame = benign.hex, k = as.numeric(i), init = "PlusPlus", recover_pca = TRUE)
+    print(benign.glrm)
+  }
+  
+  testEnd()
+}
+
+doTest("GLRM Test: Benign Data with Missing Entries", test.glrm.benign)
