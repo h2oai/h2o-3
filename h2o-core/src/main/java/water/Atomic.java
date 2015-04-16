@@ -7,7 +7,7 @@ package water;
  * @version 1.0
  */
 
-abstract public class Atomic<T extends Atomic> extends DTask {
+abstract public class Atomic<T extends Atomic> extends DTask<T> {
   protected Key _key;           // Transaction key
 
   public Atomic(){}
