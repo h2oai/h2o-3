@@ -484,7 +484,6 @@ The following parameters have been removed:
 - `oobee`: The out-of-bag error estimate is now computed automatically (if no validation set is specified).
 - `stat.type`: This parameter was used for SpeeDRF, which is no longer supported.
 - `type`: This parameter was used for SpeeDRF, which is no longer supported. 
-- `keep_cross_validation_splits`: This parameter is used for cross-validation, which is not currently supported. 
 
 ###New DRF Parameters
 
