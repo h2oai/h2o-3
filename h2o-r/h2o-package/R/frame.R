@@ -852,7 +852,8 @@ setMethod("nrow", "H2OFrame", function(x) {
 #' @export
 setMethod("ncol", "H2OFrame", function(x) {
   .byref.update.frame(x)
-  x@mutable$ncols
+  if( x@mutable$nrows==0L ) 0L
+  else x@mutable$ncols
 })
 
 #'
@@ -979,6 +980,8 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
 
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
+  nc <- ncol(x)
+  if( n==0L && nc==0L ) { return(data.frame()) }
   if(n == 0L)
     data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
