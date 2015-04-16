@@ -208,6 +208,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   void storePersist() throws IOException {
     if( isPersisted() ) return;
     H2O.getPM().store(backend(), this);
+    assert isPersisted();
   }
 
   /** Remove dead Values from disk */

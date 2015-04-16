@@ -666,7 +666,7 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
    *  on every Chunk index on the same node will probably trigger an OOM!  */
-  Value chunkIdx( int cidx ) {
+  public Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val);
     return val;
