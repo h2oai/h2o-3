@@ -17,42 +17,55 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
 
   public static final class GLMParametersV3 extends SupervisedModelParametersSchema<GLMParameters, GLMParametersV3> {
     static public String[] own_fields = new String[]{
-      "solver",
-      "max_iterations",
-      "beta_epsilon",
-      "standardize",
-      "family",
-      "link",
-      "tweedie_variance_power",
-      "tweedie_link_power",
-      "alpha",
-      "lambda",
-      "prior",
-      "lambda_search",
-      "nlambdas",
-      "lambda_min_ratio",
-      "use_all_factor_levels"
+            "family",
+            "solver",
+            "alpha",
+            "lambda",
+            "lambda_search",
+            "nlambdas",
+            "standardize",
+            "max_iterations",
+            "beta_epsilon",
+            "link",
+            "tweedie_variance_power",
+            "tweedie_link_power",
+            "prior",
+            "lambda_min_ratio",
+            "use_all_factor_levels",
+            "beta_constraints"
     };
 
-    @API(help = "solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"})
-    public Solver solver;
-
     // Input fields
-    @API(help = "Standardize numeric columns to have zero mean and unit variance")
-    public boolean standardize;
-
-    @API(help = "Maximum number of iterations")
-    public int max_iterations = 50;
-
-    @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold")
-    public double beta_epsilon;
-
-    @API(help = "Family.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */})
+    @API(help = "Family.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
+    @API(help = "solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"}, level = Level.critical)
+    public Solver solver;
+
+    @API(help = "distribution of regularization between L1 and L2.", level = Level.critical)
+    public double[] alpha;
+
+    @API(help = "regularization strength", required = false, level = Level.critical)
+    public double[] lambda;
+
+    @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
+    public boolean lambda_search;
+
+    @API(help = "number of lambdas to be used in a search", level = Level.critical)
+    public int nlambdas;
+
+    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
+    public boolean standardize;
+
+    @API(help = "Maximum number of iterations", level = Level.secondary)
+    public int max_iterations;
+
+    @API(help = "beta esilon -> consider being converged if L1 norm of the current beta change is below this threshold", level = Level.secondary)
+    public double beta_epsilon;
+
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
-    public GLMParameters.Link link = Link.family_default;
+    public GLMParameters.Link link;
 
     @API(help = "Tweedie variance power", level = Level.secondary)
     public double tweedie_variance_power;
@@ -60,20 +73,8 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
     @API(help = "Tweedie link power", level = Level.secondary)
     public double tweedie_link_power;
 
-    @API(help = "distribution of regularization between L1 and L2.", level = Level.secondary)
-    public double[] alpha;
-
-    @API(help = "regularization strength", level = Level.secondary, required = false)
-    public double[] lambda = null;
-
     @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
-
-    @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.secondary)
-    public boolean lambda_search;
-
-    @API(help = "number of lambdas to be used in a search", level = Level.expert)
-    public int nlambdas;
 
     @API(help = "min lambda used in lambda search, specified as a ratio of lambda_max", level = Level.expert)
     public double lambda_min_ratio;
