@@ -75,9 +75,11 @@ public class GLMValidation extends Iced {
         aic = -2*_aic2;
         break; // AIC is set during the validation task
       case gamma:
-      case tweedie:
         aic = Double.NaN;
         break;
+//      case tweedie:
+//        aic = Double.NaN;
+//        break;
       default:
         assert false : "missing implementation for family " + _glm._family;
     }

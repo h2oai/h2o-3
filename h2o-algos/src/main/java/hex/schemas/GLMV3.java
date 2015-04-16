@@ -27,20 +27,21 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
             "max_iterations",
             "beta_epsilon",
             "link",
-            "tweedie_variance_power",
-            "tweedie_link_power",
+//            "tweedie_variance_power",
+//            "tweedie_link_power",
             "prior",
             "lambda_min_ratio",
             "use_all_factor_levels",
-            "beta_constraints"
+            "beta_constraints",
+            "max_active_predictors"
     };
 
     // Input fields
-    @API(help = "Family.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial", "poisson", "gamma" /* , "tweedie" */}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
-    @API(help = "solver to use, ADMM supports more features, L_BFGS scales better for datasets with many columns", values = {"ADMM", "L_BFGS"}, level = Level.critical)
+    @API(help = "Auto will pick solver better suited for the given dataset, in case of lambda search solvers may be changed during computation. IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.", values = {"AUTO", "IRLSM", "L_BFGS"}, level = Level.critical)
     public Solver solver;
 
     @API(help = "distribution of regularization between L1 and L2.", level = Level.critical)
@@ -67,11 +68,11 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
     @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse", "tweedie"})
     public GLMParameters.Link link;
 
-    @API(help = "Tweedie variance power", level = Level.secondary)
-    public double tweedie_variance_power;
-
-    @API(help = "Tweedie link power", level = Level.secondary)
-    public double tweedie_link_power;
+//    @API(help = "Tweedie variance power", level = Level.secondary)
+//    public double tweedie_variance_power;
+//
+//    @API(help = "Tweedie link power", level = Level.secondary)
+//    public double tweedie_link_power;
 
     @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;

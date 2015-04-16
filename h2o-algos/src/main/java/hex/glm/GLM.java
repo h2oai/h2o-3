@@ -272,10 +272,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
             if (_bc._betaStart == null)
               _bc.setBetaStart(beta);
             // compute the lambda_max
-            _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+            _gtNull = new GLMGradientTask(_dinfo, _parms, 0, beta, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).setValidate(ymut._ymu,true).asyncExec(_dinfo._adaptedFrame);
             if (beta != _bc._betaStart) {
               InitTsk.this.addToPendingCount(1);
-              _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).asyncExec(_dinfo._adaptedFrame);
+              _gtBetaStart = new GLMGradientTask(_dinfo, _parms, 0, _bc._betaStart, 1.0 / ymut._nobs, _rowFilter, InitTsk.this).setValidate(ymut._ymu,true).asyncExec(_dinfo._adaptedFrame);
             }
           }
         }

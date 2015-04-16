@@ -217,10 +217,10 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
             if (_link != Link.inverse && _link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only inverse, log and identity links are allowed for family=gamma.");
             break;
-          case tweedie:
-            if (_link != Link.tweedie)
-              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
-            break;
+//          case tweedie:
+//            if (_link != Link.tweedie)
+//              throw new IllegalArgumentException("Incompatible link function for selected family. Only tweedie link allowed for family=tweedie.");
+//            break;
           default:
             H2O.fail();
         }
@@ -261,8 +261,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return mu;
         case gamma:
           return mu * mu;
-        case tweedie:
-          return Math.pow(mu, _tweedie_variance_power);
+//        case tweedie:
+//          return Math.pow(mu, _tweedie_variance_power);
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
@@ -284,8 +284,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return _link == Link.log;
         case gamma:
           return false; //return link == Link.inverse;
-        case tweedie:
-          return false;
+//        case tweedie:
+//          return false;
         default:
           throw H2O.unimpl();
       }
@@ -299,8 +299,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return ymu;
         case gamma:
           return y;
-        case tweedie:
-          return y + (y==0?0.1:0);
+//        case tweedie:
+//          return y + (y==0?0.1:0);
         default:
           throw new RuntimeException("unimplemented");
       }
@@ -320,13 +320,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie:
-          // Theory of Dispersion Models: Jorgensen
-          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-          double one_minus_p = 1 - _tweedie_variance_power;
-          double two_minus_p = 2 - _tweedie_variance_power;
-          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+//        case tweedie:
+//          // Theory of Dispersion Models: Jorgensen
+//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+//          double one_minus_p = 1 - _tweedie_variance_power;
+//          double two_minus_p = 2 - _tweedie_variance_power;
+//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
         default:
           throw new RuntimeException("unknown family " + _family);
       }
@@ -345,13 +345,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie:
-          // Theory of Dispersion Models: Jorgensen
-          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-          double one_minus_p = 1 - _tweedie_variance_power;
-          double two_minus_p = 2 - _tweedie_variance_power;
-          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+//        case tweedie:
+//          // Theory of Dispersion Models: Jorgensen
+//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+//          double one_minus_p = 1 - _tweedie_variance_power;
+//          double two_minus_p = 2 - _tweedie_variance_power;
+//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
         default:
           throw new RuntimeException("unknown family " + _family);
       }
@@ -373,13 +373,13 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie:
-          // Theory of Dispersion Models: Jorgensen
-          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
-          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
-          double one_minus_p = 1 - _tweedie_variance_power;
-          double two_minus_p = 2 - _tweedie_variance_power;
-          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+//        case tweedie:
+//          // Theory of Dispersion Models: Jorgensen
+//          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+//          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+//          double one_minus_p = 1 - _tweedie_variance_power;
+//          double two_minus_p = 2 - _tweedie_variance_power;
+//          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
         default:
           throw new RuntimeException("unknown family " + _family);
       }
@@ -398,8 +398,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-        case tweedie:
-          return Math.pow(x, _tweedie_link_power);
+//        case tweedie:
+//          return Math.pow(x, _tweedie_link_power);
         default:
           throw new RuntimeException("unknown link function " + this);
       }
@@ -417,8 +417,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
           return 1.0 / x;
         case inverse:
           return -1.0 / (x * x);
-        case tweedie:
-          return _tweedie_link_power * Math.pow(x, _tweedie_link_power - 1);
+//        case tweedie:
+//          return _tweedie_link_power * Math.pow(x, _tweedie_link_power - 1);
         default:
           throw H2O.unimpl();
       }
@@ -435,8 +435,8 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
-        case tweedie:
-          return Math.pow(x, 1/ _tweedie_link_power);
+//        case tweedie:
+//          return Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -456,9 +456,9 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return -1 / (xx * xx);
-        case tweedie:
-          double vp = (1. - _tweedie_link_power) / _tweedie_link_power;
-          return (1/ _tweedie_link_power) * Math.pow(x, vp);
+//        case tweedie:
+//          double vp = (1. - _tweedie_link_power) / _tweedie_link_power;
+//          return (1/ _tweedie_link_power) * Math.pow(x, vp);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -467,11 +467,11 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     // supported families
     public enum Family {
       gaussian(Link.identity), binomial(Link.logit), poisson(Link.log),
-      gamma(Link.inverse), tweedie(Link.tweedie);
+      gamma(Link.inverse)/*, tweedie(Link.tweedie)*/;
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-    public static enum Link {family_default, identity, logit, log,inverse,tweedie}
+    public static enum Link {family_default, identity, logit, log,inverse,/* tweedie*/}
 
     public static enum Solver {ADMM, L_BFGS, COORDINATE_DESCENT}
 
@@ -801,7 +801,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
     body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
     body.ip("eta += b[b.length-1]; // add intercept").nl();
     body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
-    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
+//    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
     body.p(");").nl();
     body.ip("preds[0] = mu;").nl();
     if( _parms._family == Family.binomial ) { // threshold for prediction
