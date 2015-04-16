@@ -640,7 +640,15 @@ MAIN_LOOP:
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
       ncols = (ncols > 0) ? ncols : data[0].length;
-      if( checkHeader == GUESS_HEADER) labels =  ParseSetup.allStrings(data[0]) ? data[0] : null;
+      if( checkHeader == GUESS_HEADER) {
+        if (ParseSetup.allStrings(data[0])) {
+          labels = data[0];
+          checkHeader = HAS_HEADER;
+        } else {
+          labels = null;
+          checkHeader = NO_HEADER;
+        }
+      }
       else if( checkHeader == HAS_HEADER ) labels = data[0];
       else labels = null;
     } else {                    // 2 or more lines

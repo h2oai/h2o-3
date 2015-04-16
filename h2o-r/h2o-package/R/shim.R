@@ -8,21 +8,19 @@
 #' parameters, options, and objects in H2O scripts being imported into
 #' H2O-Dev and suggest updated alternatives.
 #'
-#' For more information on converting legacy H2O scripts so that they will
-#' run in H2O-Dev, please refer to the following documentation:
-#' \url{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md}
-#'
-#' @param start a logical value indicating whether to start remove the shim.
-#' @seealso \url{http://something.here}
+#' @param enable a logical value indicating whether the shim should be enabled or disabled.
+#' @seealso \url{https://github.com/h2oai/h2o-dev/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md},
+#'          For more information on converting legacy H2O scripts so that they
+#'          will run in H2O-Dev
 #' @export
-h2o.shim <- function(start = TRUE) {
-  if(!start) {
+h2o.shim <- function(enable = TRUE) {
+  if(!enable) {
     rm(list = c("h2o.deeplearning",
                 "h2o.gbm",
                 "h2o.glm",
                 "h2o.kmeans",
                 "h2o.randomForest"), envir = parent.frame())
-    stop("Removed Shims", call. = FALSE)
+    return("Removing Shims")
   }
 
   ### --- ALGO SHIMS --- ###
@@ -370,7 +368,6 @@ h2o.shim <- function(start = TRUE) {
                          "strong_rules" = "no longer supported.",
                          "intercept" = "no longer supported.",
                          "non_negative" = "no longer supported.",
-                         "variable_importances" = "now computed by default.",
                          "disable_line_search" = "no longer supported.",
                          "offset" = "no longer supported.",
                          "max_predictors" = "no longer supported.",
@@ -486,7 +483,7 @@ h2o.shim <- function(start = TRUE) {
       if(!missing(dropNACols))
         paramsIn$dropNACols <- dropNACols
       # Fix up parameters for H2ODev
-      paramsDev <- .dep.params(paramsIn, .km.dep.map, .km.unsp.map)
+      paramsDev <- .dep.params(paramsIn, .km.dep.map)
       paramsDev <- append(paramsDev, list(...))
       m <- do.call("h2o.dev.kmeans", dots)
       m@model <- .dep.model(m)
@@ -594,10 +591,8 @@ h2o.shim <- function(start = TRUE) {
         paramsIn$oobee <- oobee
       if(!missing(stat.type))
         paramsIn$stat.type <- stat.type
-      if(!missing(type)){
-        paramsIn$type <- type
-        if (type == "fast")
-          stop("SpeedRF is no longer a supported model type.", call. = F)
+      if(missing(type) || identical(type,"fast")){
+        stop("SpeedRF is no longer a supported model type.", call. = F)
       }
       paramsDev <- .dep.params(paramsIn, .drf.dep.map, .drf.unsp.map)
       paramsDev <- append(paramsDev, list(...))
@@ -615,33 +610,71 @@ h2o.shim <- function(start = TRUE) {
     model <- old@model
     algo <- old@algorithm
 
-
+    warning("Not all shim outputs are fully supported, please see ?h2o.shim for more information", call. = FALSE)
     #### Deprecated features start here ####
     model$params <- old@allparameters
-    if(algo == "gbm") {
-      model$err <- model$mse_train
+    if(!identical(algo, "kmeans"))
+      model$varimp <- model$variable_importances
+    if(identical(algo, "kmeans")){
+      model$withinss <- model$within_mse
+      model$tot.withinss <- model$avg_within_ss
+      model$iter <- model$iterations
     }
-    if(algo == "drf")
-    {
-      model$mse <- model$mse_train
-      model$forest <- warning("forest output is not currently supported")
+
+    if(identical(algo, "gbm")) {
+      model$err <- model$scoring_history
     }
-    if(algo == "glm") {
-      TRUE
+    if(identical(algo, "drf")) {
+      model$mse <- model$scoring_history
+      summ <- model$model_summary
+      Min. <- c(summ$min_depth, summ$min_leaves)
+      Max. <- c(summ$max_depth, summ$max_leaves)
+      Mean.  <- c(summ$mean_depth, summ$mean_leaves)
+      model$forest <- matrix(c(Min., Max., Mean.),
+                             nrow = 2,
+                             dimnames = list(c("Depth", "Leaves"),
+                                             c("Min.", "Max.", "Mean.")))
     }
-    if(algo == "deeplearning") {
-      TRUE
+    if(identical(algo, "glm")) {
+      model$normalized_coefficients <- cbind(names = model$coefficients_table$names,
+                           normalized_coefficients = model$coefficients_table$norm_coefficients)
+      model$null <- model$null_deviance
+      model$deviance <- model$residual_deviance
+      model$df.residual <- model$residual_degrees_of_freedom
+      model$df.null <- model$null_degrees_of_freedom
+      model$aic <- model$AIC
+      model$auc <- model$AUC
     }
-    if (class(model) %in% c("H2OBinomialModel", "H2OMultinomialModel")){
-      model$priorDistribution <- warning("priorDistribution output field is not currently supported")
+    if(identical(algo, "deeplearning")) {
+      model$train_class_error <- model$training_metrics$MSE
+      model$valid_class_error <- model$validation_metrics$MSE
+    }
+    if (class(old) %in% c("H2OBinomialModel", "H2OMultinomialModel")) {
+      model$priorDistribution <- warning("priorDistribution output field is no longer supported", call.=FALSE)
       model$classification <- TRUE
       warning("classification is no longer a supported output field")
-      cm <- h2o.confusionMatrix(h2o.getModel(key, conn),
-                                h2o.getFrame(allparams$training_frame, conn))
-      model$confusion <- cm
+      model$confusion <- model$training_metrics$cm$table
+      if (inherits(old, "H2OBinomialModel"))
+      {
+        warning("Most binomial model methods are now accessible by h2o.performance() now.")
+        if(algo %in% c("drf", "gbm")) {
+          metrics <- model$training_metrics
+          model$auc <- metrics$AUC
+          model$gini <- metrics$Gini
+          model$best_cutoff <- warning("best_cutoff output field is no longer supported", call. = FALSE)
+          scores <- metrics$thresholds_and_metric_scores
+          model$F1 <- scores$f1
+          model$F2 <- scores$f2
+          model$accuracy <- scores$accuracy
+          model$error <- warning("error output field is not currently supported", call.=FALSE)
+          model$precision <- scores$precision
+          model$recall <- scores$recall
+          model$mcc <- scores$absolute_MCC
+          model$max_per_class_error <- 1 - scores$min_per_class_correct
+        }
+      }
     } else
       model$classification <- FALSE
-
     model
   }
 

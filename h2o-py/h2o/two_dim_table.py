@@ -20,9 +20,9 @@ class H2OTwoDimTable(object):
     self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
     self.col_formats = col_formats
 
-  def show(self):
+  def show(self, header=True):
     print
-    print self.table_header + ":"
+    if header: print self.table_header + ":"
     print
     table = copy.deepcopy(self.cell_values)
     print tabulate.tabulate(table, headers=self.col_header, numalign="left", stralign="left")

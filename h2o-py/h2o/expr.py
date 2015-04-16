@@ -257,6 +257,49 @@ class Expr(object):
 
   def __abs__ (self): return h2o.abs(self)
 
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("min", self)
+
+  def max(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("max", self)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self)
+
+  def sd(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("sd", self)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self)
+
   def __del__(self):
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
@@ -476,6 +519,10 @@ class Expr(object):
     elif self._op == "dayOfWeek":
       if left.is_local():   raise NotImplementedError
       else:                 pass
+
+    elif self._op in ["min", "max", "sum", "median"]:
+      if left.is_local():   raise NotImplementedError
+      else:                 __CMD__ += "%FALSE"
 
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
