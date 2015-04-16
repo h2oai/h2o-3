@@ -120,6 +120,7 @@ public abstract class Persist {
       case ':': c='c'; break;
       case '"': c='q'; break;
       case '>': c='g'; break;
+      case '<': c='l'; break;
       case '\\':c='b'; break;
       case '\0':c='z'; break;
       }
@@ -155,6 +156,7 @@ public abstract class Persist {
         case 'c':  b = ':';  break;
         case 'd':  b = '.';  break;
         case 'g':  b = '>';  break;
+        case 'l':  b = '<';  break;
         case 'q':  b = '"';  break;
         case 's':  b = '/';  break;
         case 'b':  b = '\\'; break;
