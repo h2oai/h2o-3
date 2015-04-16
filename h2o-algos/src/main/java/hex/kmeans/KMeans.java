@@ -8,6 +8,7 @@ import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -276,8 +277,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model._output._training_metrics = makeTrainingMetrics(model);
           if (_valid != null) {
-            model.score(_parms.valid());
+            Frame pred = model.score(_parms.valid());
             model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
+            pred.delete();
           }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
