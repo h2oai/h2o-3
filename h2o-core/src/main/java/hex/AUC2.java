@@ -63,7 +63,8 @@ public class AUC2 extends Iced {
         return (double)tn/(tn+fp);
       } },
     absolute_MCC(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        double mcc = (tp*tn - fp*fn)/Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+        double mcc = ((double)tp*tn - (double)fp*fn)/Math.sqrt(((double)tp+fp)*((double)tp+fn)*((double)tn+fp)*((double)tn+fn));
+        assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
         return Math.abs(mcc);
       } },
     // minimize max-per-class-error by maximizing min-per-class-correct.
@@ -72,10 +73,10 @@ public class AUC2 extends Iced {
     min_per_class_correct(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
-    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
-    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
     tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
     fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
+    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
+    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
     ;
     public final boolean _isInt; // Integral-Valued data vs Real-Valued
     ThresholdCriterion(boolean isInt) { _isInt = isInt; }
