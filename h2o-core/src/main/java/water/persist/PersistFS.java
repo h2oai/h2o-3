@@ -64,8 +64,8 @@ final class PersistFS extends Persist {
     catch( FileNotFoundException e ) { throw Log.throwErr(e); }
     try {
       byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      assert m != null && m.length == v._max : // Assert not saving partial files
-        "Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max;
+      if( m != null && m.length == v._max )
+        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
       new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
       v.setdsk();             // Set as write-complete to disk
     } finally {
