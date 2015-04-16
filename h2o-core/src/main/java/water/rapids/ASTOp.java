@@ -1533,11 +1533,8 @@ abstract class ASTReducerOp extends ASTOp {
     }
 
     // Get the na.rm last
-    try {
-      a = E._env.lookup((ASTId) a);
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Expected the na.rm value to be one of $TRUE, $FALSE, $T, $F");
-    }
+    if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
+    else throw new IllegalArgumentException("Expected the na.rm value to be one of %TRUE, %FALSE, %T, %F");
     _narm = ((ASTNum)a).dbl() == 1;
     E.eatEnd(); // eat ending ')'
     AST[] arys = new AST[_argcnt = dblarys.size()];
