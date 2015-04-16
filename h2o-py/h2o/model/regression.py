@@ -17,7 +17,7 @@ class H2ORegressionModelMetrics(object):
   """
   This class provides an API for inspecting the metrics returned by a regression model.
 
-  It is possible to retrieve the R^2 (1 - MSE/variance), MSE, and sigma.s
+  It is possible to retrieve the R^2 (1 - MSE/variance) and MSE
   """
   def __init__(self, metric_json):
     self._metric_json = metric_json
@@ -30,10 +30,7 @@ class H2ORegressionModelMetrics(object):
     where var is computed as sigma*sigma.
     :return: The R^2 for this regression model.
     """
-    mse  =self._metric_json['MSE'  ]
-    sigma=self._metric_json['sigma']
-    var  =sigma*sigma
-    return 1-(mse/var)
+    return self._metric_json["r2"]
 
   def mse(self):
     """
@@ -41,14 +38,8 @@ class H2ORegressionModelMetrics(object):
     """
     return self._metric_json["MSE"]
 
-  def sigma(self):
-    """
-    :return:
-    """
-    return self._metric_json["sigma"]
-
   def show(self):
     mse = self._metric_json['MSE']
     print "Regression model"
-    print "MSE=",mse,"RMSE=",math.sqrt(mse),"sigma=",self._metric_json['sigma']
+    print "MSE=",mse,"RMSE=",math.sqrt(mse),"r2=",self.r2()
     print
