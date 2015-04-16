@@ -64,7 +64,10 @@ final class PersistFS extends Persist {
     catch( FileNotFoundException e ) { throw Log.throwErr(e); }
     try {
       byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      assert m != null && m.length == v._max : " " + v._key + " " + m; // Assert not saving partial files
+      if( m != null && m.length == v._max ) {
+        Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
+        v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
+      }
       new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
       v.setdsk();             // Set as write-complete to disk
     } finally {
