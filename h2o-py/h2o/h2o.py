@@ -288,8 +288,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 
-def groupby(frame,cols,aggregates):
-  return frame.groupby(cols,aggregates)
+def group_by(frame,cols,aggregates):
+  return frame.group_by(cols,aggregates)
 
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
