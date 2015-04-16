@@ -134,6 +134,9 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     // Standard deviation, proportion of variance explained, and cumulative proportion of variance explained
     public TwoDimTable _pc_importance;
 
+    // Frame key of X matrix
+    public Key<Frame> _loading_key;
+
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 

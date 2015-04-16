@@ -1,10 +1,7 @@
 package hex.schemas;
 
 import hex.pca.PCAModel;
-import water.api.API;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
-import water.api.TwoDimTableBase;
+import water.api.*;
 
 public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAParameters, PCAV3.PCAParametersV3, PCAModel.PCAOutput, PCAModelV3.PCAModelOutputV3> {
   public static final class PCAModelOutputV3 extends ModelOutputSchema<PCAModel.PCAOutput, PCAModelOutputV3> {
@@ -23,6 +20,9 @@ public class PCAModelV3 extends ModelSchema<PCAModel, PCAModelV3, PCAModel.PCAPa
 
     @API(help = "Importance of each principal component")
     public TwoDimTableBase pc_importance;
+
+    @API(help = "Frame key for loading matrix")
+    public KeyV3.FrameKeyV3 loading_key;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

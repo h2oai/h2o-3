@@ -382,6 +382,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         xinfo = new DataInfo(Key.make(), x, null, 0, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
         DKV.put(x._key, x);
         DKV.put(xinfo._key, xinfo);
+        model._output._loading_key = _parms._loading_key;
 
         model._output._archetypes = yt;
         if (_parms._recover_pca) recoverPCA(model, xinfo);

@@ -209,6 +209,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
             uvecs[i] = fr.vec(idx_u(i));
           u = new Frame(_parms._ukey, null, uvecs);
           DKV.put(u._key, u);
+          model._output._ukey = _parms._ukey;
         }
         done();
       } catch( Throwable t ) {
@@ -234,32 +235,12 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     }
   }
 
-  /* private class CalcSigma extends FrameTask<CalcSigma> {
-    double[] _svec;   // Input: Right singular vector (v_k)
-    double _sval;     // Output: Singular value (\sigma_k)
-
-    public CalcSigma(Key jobKey, DataInfo dinfo, final double[] svec) {
-      super(jobKey, dinfo);
-      _svec = svec;
-      _sval = 0;
-    }
-
-    @Override protected void processRow(long gid, DataInfo.Row row) {
-      double[] nums = row.numVals;
-      assert nums.length == _svec.length;
-      double tmp = ArrayUtils.innerProduct(nums, _svec);
-      _sval += tmp * tmp;
-    }
-
-    @Override protected void postGlobal() {
-      _sval = Math.sqrt(_sval);
-    }
-  } */
-
   // In chunk, first cols are training frame A, next cols are left singular vectors U
   protected static int idx_u(int c) { return _ncols+c; }
   protected static Chunk chk_u(Chunk chks[], int c) { return chks[_ncols+c]; }
 
+  // Save inner product of each row with vec to col k of chunk array
+  // Returns sum over l2 norms of each row with vec
   private static double l2norm2(Chunk[] cs, double[] vec, int k) {
     double sumsqr = 0;
     for (int row = 0; row < cs[0]._len; row++) {
@@ -275,6 +256,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return sumsqr;
   }
 
+  // Divide each row of a chunk by a constant
   private static void div(Chunk chk, double norm) {
     for(int row = 0; row < chk._len; row++) {
       double tmp = chk.atd(row);
@@ -283,8 +265,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   }
 
   private class CalcSigmaU extends MRTask<CalcSigmaU> {
-    double[] _svec;
-    double _sval;
+    double[] _svec;   // Input: Right singular vector (v_1)
+    double _sval;     // Output: Singular value (\sigma_1)
 
     public CalcSigmaU(final double[] svec) {
       _svec = svec;

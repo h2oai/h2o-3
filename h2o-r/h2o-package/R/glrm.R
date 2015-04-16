@@ -62,6 +62,13 @@ h2o.glrm <- function(training_frame, x, k,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
   
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(training_frame)
+  if( delete ) {
+    temp_key <- training_frame@key
+    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, key = temp_key)
+  }
+  
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame

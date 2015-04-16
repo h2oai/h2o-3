@@ -464,6 +464,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // 4) Save solution to model output
         model._output._archetypes = yt;
+        if(_parms._keep_loading) model._output._loading_key = _parms._loading_key;
         recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?

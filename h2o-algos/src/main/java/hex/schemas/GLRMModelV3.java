@@ -1,10 +1,7 @@
 package hex.schemas;
 
 import hex.glrm.GLRMModel;
-import water.api.API;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
-import water.api.TwoDimTableBase;
+import water.api.*;
 
 public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.GLRMParameters, GLRMV3.GLRMParametersV3, GLRMModel.GLRMOutput, GLRMModelV3.GLRMModelOutputV3> {
   public static final class GLRMModelOutputV3 extends ModelOutputSchema<GLRMModel.GLRMOutput, GLRMModelOutputV3> {
@@ -26,6 +23,9 @@ public class GLRMModelV3 extends ModelSchema<GLRMModel, GLRMModelV3, GLRMModel.G
 
     @API(help = "Importance of each principal component")
     public TwoDimTableBase pc_importance;
+
+    @API(help = "Frame key for X matrix")
+    public KeyV3.FrameKeyV3 loading_key;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.

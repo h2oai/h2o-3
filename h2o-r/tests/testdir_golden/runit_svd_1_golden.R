@@ -11,12 +11,23 @@ test.svd.golden <- function(H2Oserver) {
   fitR <- svd(arrestsR, nv = 4)
   fitH2O <- h2o.svd(arrestsH2O, nv = 4, center = FALSE, scale. = FALSE)
   
+  Log.info("Compare singular values (D)")
+  Log.info(paste("R Singular Values:", paste(fitR$d, collapse = ", ")))
+  Log.info(paste("H2O Singular Values:", paste(fitH2O@model$d, collapse = ", ")))
   expect_equal(fitH2O@model$d, fitR$d, tolerance = 1e-6)
-  checkSignedCols(fitH2O@model$v, fitR$v)
   
-  udf <- as.data.frame(fitH2O@model$u)
+  Log.info("Compare right singular vectors (V)")
+  Log.info("R Right Singular Vectors"); print(fitR$v)
+  Log.info("H2O Right Singular Vectors"); print(fitH2O@model$v)
+  isFlipped1 <- checkSignedCols(fitH2O@model$v, fitR$v)
+  
+  Log.info("Compare left singular vectors (U)")
+  uH2O <- h2o.getFrame(fitH2O@model$ukey$name)
   Log.info("R Left Singular Vectors:"); print(head(fitR$u))
-  Log.info("H2O Left Singular Vectors:"); print(head(udf))
+  Log.info("H2O Left Singular Vectors:"); print(head(uH2O))
+  isFlipped2 <- checkSignedCols(as.data.frame(uH2O), fitR$u)
+  expect_equal(isFlipped1, isFlipped2)
+  
   testEnd()
 }
 

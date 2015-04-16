@@ -24,6 +24,9 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     // Singular values (diagonal of D)
     public double[] _d;
 
+    // Frame key for left singular vectors (U)
+    public Key<Frame> _ukey;
+
     // If standardized, mean of each numeric data column
     public double[] _normSub;
 

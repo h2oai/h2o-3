@@ -14,6 +14,9 @@ public class SVDModelV3 extends ModelSchema<SVDModel, SVDModelV3, SVDModel.SVDPa
 
     @API(help = "Singular values")
     public double[] d;
+
+    @API(help = "Frame key of left singular vectors")
+    public KeyV3.FrameKeyV3 ukey;
   }
 
   // TODO: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
