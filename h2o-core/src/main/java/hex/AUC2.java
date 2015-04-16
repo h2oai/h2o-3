@@ -72,12 +72,10 @@ public class AUC2 extends Iced {
     min_per_class_correct(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
-    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return tp;
-      } },
-    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        return fp;
-      } },
+    tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tp; } },
+    fps(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fp; } },
+    tns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return tn; } },
+    fns(true) { @Override double exec( long tp, long fp, long fn, long tn ) { return fn; } },
     ;
     public final boolean _isInt; // Integral-Valued data vs Real-Valued
     ThresholdCriterion(boolean isInt) { _isInt = isInt; }
