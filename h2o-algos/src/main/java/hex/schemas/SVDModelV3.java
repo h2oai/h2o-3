@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.svd.SVDModel;
 import water.api.API;
+import water.api.KeyV3;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 

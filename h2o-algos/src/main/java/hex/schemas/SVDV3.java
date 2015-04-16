@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.api.API;
+import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
 public class SVDV3 extends ModelBuilderSchema<SVD,SVDV3,SVDV3.SVDParametersV3> {
@@ -22,5 +23,8 @@ public class SVDV3 extends ModelBuilderSchema<SVD,SVDV3,SVDV3.SVDParametersV3> {
 
     @API(help = "RNG seed for k-means++ initialization")
     public long seed;
+
+    @API(help = "Frame key to save left singular vectors")
+    public KeyV3.FrameKeyV3 ukey;
   }
 }

@@ -159,6 +159,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         parms._max_iterations = _parms._max_iterations;
         parms._transform = _parms._transform;
         parms._seed = _parms._seed;
+        parms._only_v = true;
 
         SVDModel svd = null;
         SVD job = null;

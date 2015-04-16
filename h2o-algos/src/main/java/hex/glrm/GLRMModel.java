@@ -164,7 +164,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   public static class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     public ModelMetricsGLRM(Model model, Frame frame) {
-      super(model, frame);
+      super(model, frame, Double.NaN);
     }
 
     // GLRM currently does not have any model metrics to compute during scoring
@@ -173,7 +173,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
         _work = new double[dims];
       }
 
-      @Override public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      @Override public double[] perRow(double[] dataRow, float[] preds, Model m, double[] mean) { return dataRow; }
 
       @Override
       public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {

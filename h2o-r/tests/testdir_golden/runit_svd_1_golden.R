@@ -13,6 +13,10 @@ test.svd.golden <- function(H2Oserver) {
   
   expect_equal(fitH2O@model$d, fitR$d, tolerance = 1e-6)
   checkSignedCols(fitH2O@model$v, fitR$v)
+  
+  udf <- as.data.frame(fitH2O@model$u)
+  Log.info("R Left Singular Vectors:"); print(head(fitR$u))
+  Log.info("H2O Left Singular Vectors:"); print(head(udf))
   testEnd()
 }
 

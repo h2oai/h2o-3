@@ -40,6 +40,13 @@ h2o.svd <- function(training_frame, x, nv, center = FALSE, scale. = FALSE,
                stop("argument \"training_frame\" must be a valid H2OFrame or key")
              })
   
+  ## -- Force evaluate temporary ASTs -- ##
+  delete <- !.is.eval(training_frame)
+  if( delete ) {
+    temp_key <- training_frame@key
+    .h2o.eval.frame(conn = training_frame@conn, ast = training_frame@mutable$ast, key = temp_key)
+  }
+  
   # Gather user input
   parms <- list()
   parms$training_frame <- training_frame
@@ -65,4 +72,6 @@ h2o.svd <- function(training_frame, x, nv, center = FALSE, scale. = FALSE,
   
   # Error check and build model
   .h2o.createModel(training_frame@conn, 'svd', parms)
+  # h2o.getFrame of the U frame key
+  # Also need to return frame key in output or check it is filled properly
 }
