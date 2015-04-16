@@ -423,8 +423,8 @@ public class Vec extends Keyed<Vec> {
   /** A Vec from an array of doubles
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec makeCon(double ...rows) { 
-    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+  public static Vec makeCon(Key k, double ...rows) {
+    k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k);
     NewChunk chunk = new NewChunk(avec, 0);

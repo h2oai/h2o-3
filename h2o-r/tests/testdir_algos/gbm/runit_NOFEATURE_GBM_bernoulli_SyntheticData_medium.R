@@ -73,7 +73,7 @@ test.GBM.bernoulli.SyntheticData <- function(conn) {
         R_auc <- round(gbm.roc.area(test.data2$y,mm_y), digits=3)
         pred <- predict(model,test)                                                                #H2O Predict
         H2O_perf <- h2o.performance(pred$'1',test$y,measure="F1")
-        H2O_auc <- round(H2O_perf@model$auc, digits=3)
+        H2O_auc <- round(H2O_perf@model$AUC, digits=3)
         print(paste ( tru.gbm@sumtable[[i]]$model_key,
                 " trees:", tru.gbm@sumtable[[i]]$ntrees,
                 " depth:",tru.gbm@sumtable[[i]]$max_depth,

@@ -4,6 +4,11 @@
 # related jiras- PUBDEV-782,  PUBDEV-783,  PUBDEV-784
 # 
 
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+install.packages("h2o", type="source", repos=(c("file:///users/arno/h2o-dev/h2o-r/R")))
+
+
 
 library(h2o)
 h <- h2o.init(ip="mr-0xd1", port=53322)

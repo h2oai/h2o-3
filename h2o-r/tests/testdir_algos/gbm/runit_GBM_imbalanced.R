@@ -11,8 +11,8 @@ test.gbm.imbalanced <- function(conn) {
   hh_balanced_metrics   <- h2o.performance(hh_balanced  )
 
   #compare error for class 6 (difficult minority)
-  class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$Error[6]
-  class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$Error[6]
+  class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$error[6]
+  class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$error[6]
 
   print("class_6_err_imbalanced")
   print(class_6_err_imbalanced)

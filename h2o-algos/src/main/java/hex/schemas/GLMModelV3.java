@@ -50,10 +50,10 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     double      null_degrees_of_freedom;
 
     @API(help="AIC - Training")
-    double      aic;
+    double      AIC;
 
     @API(help="AUC - Training")
-    double      auc;
+    double      AUC;
 
 //    @API(help="Residual Deviance - Validation")
 //    double      validation_residual_deviance;

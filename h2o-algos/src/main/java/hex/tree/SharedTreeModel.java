@@ -20,8 +20,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins = 20; // Build a histogram of this many bins, then split at the best point
 
-    public boolean _score_each_iteration;
-
     public long _seed;          // Seed for pseudo-random redistribution
 
     // TRUE: Continue extending an existing checkpointed model
@@ -39,9 +37,18 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   public abstract static class SharedTreeOutput extends SupervisedModel.SupervisedOutput {
-
-    /** Initially predicted value (for zero trees) */
-    public double _initialPrediction;
+    /** InitF value (for zero trees)
+     *  f0 = mean(yi) for gaussian
+     *  f0 = log(yi/1-yi) for bernoulli
+     *
+     *  For GBM bernoulli, the initial prediction for 0 trees is
+     *  p = 1/(1+exp(-f0))
+     *
+     *  From this, the mse for 0 trees can be computed as follows:
+     *  mean((yi-p)^2)
+     *  This is what is stored in _mse_train[0]
+     * */
+    public double _initF;
 
     /** Number of trees actually in the model (as opposed to requested) */
     public int _ntrees;
@@ -58,7 +65,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double _mse_train[/*_ntrees+1*/];
     public double _mse_valid[/*_ntrees+1*/];
 
-    /** Variable Importance */
+    /**
+     * Variable importances computed during training
+     */
     public TwoDimTable _variable_importances;
 
     public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
@@ -128,18 +137,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
-    try {
-      if ((this._output._treeStats._num_trees * this._output._treeStats._mean_leaves) > 5000) {
-        return true;
-      }
-    }
-    catch (Exception ignore) {
-      // If we can't figure out the answer, assume it's too big.
-      return true;
-    }
-
-    return false;
+    return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 5000;
   }
+  protected boolean binomialOpt() { return false; }
   @Override protected SB toJavaInit(SB sb, SB fileContext) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
@@ -148,7 +148,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     sb.ip("public ModelCategory getModelCategory() { return ModelCategory."+_output.getModelCategory()+"; }").nl();
     return sb;
   }
-  protected boolean binomialOpt() { return false; }
   @Override protected void toJavaPredictBody(SB body, SB classCtx, SB file) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();

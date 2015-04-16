@@ -50,6 +50,7 @@ public class Env extends Iced {
   final private boolean _isGlobal;
 
   transient HashSet<ValFrame> _trash;
+  transient HashSet<Frame>    _tmpFrames;  // cleanup any tmp frames made by new ASTString
 
   @Override public AutoBuffer write_impl(AutoBuffer ab) {
     // write _refcnt
@@ -82,6 +83,7 @@ public class Env extends Iced {
     _parent = null;
     _isGlobal = true;
     _trash = new HashSet<>();
+    _tmpFrames = new HashSet<>();
   }
 
   // Capture the current environment & return it (for some closure's future execution).
@@ -96,6 +98,7 @@ public class Env extends Iced {
     _parent = e;
     _isGlobal = false;
     _trash = e._trash;
+    _tmpFrames = new HashSet<>();
   }
 
   // makes a new "global" context -- useful for one off invocations
@@ -315,6 +318,8 @@ public class Env extends Iced {
       }
     }
     fs.blockForPending();
+
+    for(Frame f: _tmpFrames) {if(f._key!=null) DKV.remove(f._key); } // top level removal only (Vecs may be live still)
   }
 
   public void unlock() {

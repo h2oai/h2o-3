@@ -51,3 +51,4 @@ Collate:
          'naivebayes.R'
          'word2vec.R'
          'locate.R'
+         'shim.R'

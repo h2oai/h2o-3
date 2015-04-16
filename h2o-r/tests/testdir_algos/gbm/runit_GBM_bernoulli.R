@@ -33,7 +33,8 @@ test.GBM.bernoulli <- function(conn) {
   }
   
   Log.info("Mean-squared Error by tree in H2O:\n")
-  print(prostate.h2o@model$err)
+  print(prostate.h2o@model$scoring_history)
+
   Log.info("Gaussian Deviance by tree in R (i.e. the per tree 'train error'):\n")
   print(prostate.r$train.err)
   
@@ -41,10 +42,17 @@ test.GBM.bernoulli <- function(conn) {
   Log.info("R Confusion Matrix:")
   print(RCM)
   Log.info("H2O Confusion Matrix:")
-  print(prostate.h2o@model$confusion)
+  print(h2o.confusionMatrix(h2o.performance(prostate.h2o)))
   
   R.auc <- gbm.roc.area(prostate.data$CAPSULE,R.preds)
-  Log.info(paste("R AUC:", R.auc, "\tH2O AUC:", prostate.h2o@model$auc))
+  Log.info(paste("R AUC:", R.auc, "\tH2O AUC:", h2o.auc(h2o.performance(prostate.h2o))))
+
+  # PUBDEV-515
+  f0 = log(mean(prostate.data$CAPSULE)/(1-mean(prostate.data$CAPSULE)))
+  print(f0)
+  print(prostate.h2o@model$initF)
+  expect_equal(prostate.h2o@model$initF, f0, tolerance=1e-4) ## check the intercept term
+
   testEnd()
 }
 

@@ -113,6 +113,12 @@ class Expr(object):
   def _is_valid(self):
     return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
 
+  def _is_key(self):
+    has_key = self._data is not None and isinstance(self._data, unicode)
+    if has_key:
+      return "py" == self._data[0:2]
+    return False
+
   def __len__(self):
     """
     The length of this H2OVec/H2OFrame (generally without triggering eager evaluation)
@@ -251,6 +257,49 @@ class Expr(object):
 
   def __abs__ (self): return h2o.abs(self)
 
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("min", self)
+
+  def max(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("max", self)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self)
+
+  def sd(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("sd", self)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self)
+
   def __del__(self):
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
@@ -312,9 +361,7 @@ class Expr(object):
       elif isinstance(child._data, (str,unicode)):
         __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
-        __CMD__ += \
-            "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
-            + ")"
+        __CMD__ += "(: #"+str(child._data.start)+" #"+str(child._data.stop - 1)+")"
         child._data = None  # trigger GC now
       elif self._op == "[" and isinstance(self._rite._data, tuple): # multi-dimensional slice
         if not isinstance(child._data, tuple): return child         # doing left child.  just return.
@@ -382,13 +429,20 @@ class Expr(object):
     py_tmp = cnt != 4 and self._len > 1 and not assign_vec
 
     global __CMD__
+    skip=False
     if py_tmp:
-        self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
-        __CMD__ += "(= !" + self._data + " "
+      self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
+      __CMD__ += "(= !" + self._data + " "
     if self._op != ",":           # Comma ops curry in-place (just gather args)
       __CMD__ += "(" + self._op + " "
 
     left = self._do_child(self._left)  # down the left
+
+    # gross hack just to get the ")" in the right place after the (!= ... ending ")" strictly enforced by Rapids
+    if py_tmp and self._left._is_key() and self._op==",":
+      skip=True
+      __CMD__ += ")"
+
     rite = self._do_child(self._rite)  # down the right
 
     # eventually will need to create dedicated objects each overriding a "set_data" method
@@ -466,6 +520,10 @@ class Expr(object):
       if left.is_local():   raise NotImplementedError
       else:                 pass
 
+    elif self._op in ["min", "max", "sum", "median"]:
+      if left.is_local():   raise NotImplementedError
+      else:                 __CMD__ += "%FALSE"
+
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
       else:                 __CMD__ += " #0 %TRUE"  # Rapids mean extra args (trim=0, rmNA=TRUE)
@@ -506,7 +564,7 @@ class Expr(object):
     # End of expression... wrap up parens
     if self._op != ",":
       __CMD__ += ")"
-    if py_tmp:
+    if py_tmp and not skip:
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead

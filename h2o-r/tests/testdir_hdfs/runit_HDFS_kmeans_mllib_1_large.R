@@ -47,7 +47,7 @@ for(k in ncent) {
 
   path <- paste("smalldata/mllib_bench/bigcross_centers_", k, ".csv", sep = "")
   clust.mllib <- read.csv(locate(path), header = FALSE)
-  clust.h2o <- as.data.frame(as.matrix(cross.km@model$centers))
+  clust.h2o <- getCenters(cross.km)
   
   # Sort in ascending order by first dimension for comparison purposes
   clust.mllib <- clust.mllib[order(clust.mllib[,1]),]
@@ -61,10 +61,10 @@ for(k in ncent) {
   # expect_equal(t(clust.h2o), t(clust.mllib), tolerance = 0.3)
   
   wcsse.mllib <- err.mllib[which(err.mllib[,1] == k),2]
-  wcsse.mllib <- cross.km@model$avg_within_ss
+  wcsse.mllib <- getAvgWithinSS(cross.km)
   cat("\nMLlib Average Within-Cluster SSE: ", wcsse.mllib, "\n")
   cat("H2O Average Within-Cluster SSE: ", wcsse.mllib, "\n")
-  expect_equal(cross.km@model$avg_within_ss, wcsse.mllib)
+  expect_equal(getAvgWithinSS(cross.km), wcsse.mllib)
 }
 
 PASS_BANNER()

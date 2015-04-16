@@ -206,6 +206,26 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  ModelBuilder. */
     public Job.JobState _state;
 
+    /**
+     * Training set metrics obtained during model training
+     */
+    public ModelMetrics _training_metrics;
+
+    /**
+     * Validation set metrics obtained during model training (if a validation data set was specified)
+     */
+    public ModelMetrics _validation_metrics;
+
+    /**
+     * User-facing model summary - Display model type, complexity, size and other useful stats
+     */
+    public TwoDimTable _model_summary;
+
+    /**
+     * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
+     */
+    public TwoDimTable _scoring_history;
+
     /** Any final prep-work just before model-building starts, but after the
      *  user has clicked "go".  E.g., converting a response column to an enum
      *  touches the entire column (can be expensive), makes a parallel vec
@@ -490,7 +510,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       names[i] = _output.classNames()[i-1];
     domains[0] = nc==1 ? null : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols).doAll(ncols,adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means()).doAll(ncols,adaptFrm);
     bs._mb.makeModelMetrics(this,fr, this instanceof SupervisedModel ? adaptFrm.lastVec().sigma() : Double.NaN);
     Frame res = bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names,domains);
     DKV.put(res);
@@ -501,7 +521,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String[] _domain; // Prediction domain; union of test and train classes
     final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     ModelMetrics.MetricBuilder _mb;
-    BigScore( String[] domain, int ncols ) { _domain = domain; _npredcols = ncols; }
+    final double[] _mean;  // Column means of test frame
+
+    BigScore( String[] domain, int ncols, double[] mean ) { _domain = domain; _npredcols = ncols; _mean = mean; }
+
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       double[] tmp = new double[_output.nfeatures()];
       _mb = Model.this.makeMetricBuilder(_domain);
@@ -514,7 +537,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         for (int c = startcol; c < chks.length; c++) {
           actual[c-startcol] = (float)chks[c].atd(row);
         }
-        _mb.perRow(preds, actual, Model.this);
+        _mb.perRow(preds, actual, Model.this, _mean);
         for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
           cpreds[c].addNum(p[c]);
       }
@@ -587,10 +610,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.p("// How to download, compile and execute:").nl();
     sb.p("//     mkdir tmpdir").nl();
     sb.p("//     cd tmpdir").nl();
-    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-model.jar > h2o-model.jar").nl();
+    sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/h2o-genmodel.jar > h2o-genmodel.jar").nl();
     sb.p("//     curl http:/").p(H2O.SELF.toString()).p("/3/Models.java/").pobj(_key).p(" > ").p(modelName).p(".java").nl();
-    sb.p("//     javac -cp h2o-model.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
-    sb.p("//     java -cp h2o-model.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
+    sb.p("//     javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m ").p(modelName).p(".java").nl();
+    // Intentionally disabled since there is no main method in generated code
+    // sb.p("//     java -cp h2o-genmodel.jar:. -Xmx2g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m ").p(modelName).nl();
     sb.p("//").nl();
     sb.p("//     (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)").nl();
     if (preview && toJavaCheckTooBig()) {

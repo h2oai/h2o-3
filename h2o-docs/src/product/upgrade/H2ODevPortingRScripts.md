@@ -26,14 +26,14 @@ The purpose of `h2o.exec` was to wrap expressions so that they could be evaluate
  `fr[,1] + 2/fr[,3]`
 produced the same results in H2O. However, the first example makes a single REST call and uses a single temp object, while the second makes several REST calls and uses several temp objects. 
 
-Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typcial R expression. 
+Due to the improved architecture in H2O-Dev, the need to use `h2o.exec` has been eliminated, as the expression can be processed by R as an "unwrapped" typical R expression. 
 
 Currently, the only known exception is when `factor` is used in conjunction with `h2o.exec`. For example, `h2o.exec(fr$myIntCol <- factor(fr$myIntCol))` would become `fr$myIntCol <- as.factor(fr$myIntCol)`
 
 <a name="h2operf"></a>
 ###`h2o.performance`
 
-To access any exclusively binomial output, use `h2o.performance`, optionally with the corresponding accessor. The accessor can only use the model metrics object created by `h2o.performance`. Each accessor is named for its corresponding field (for example, `h2o.auc`, `h2o.gini`, `h2o.F1`). `h2o.performance` supports all current algorithms except for K-Means. 
+To access any exclusively binomial output, use `h2o.performance`, optionally with the corresponding accessor. The accessor can only use the model metrics object created by `h2o.performance`. Each accessor is named for its corresponding field (for example, `h2o.AUC`, `h2o.gini`, `h2o.F1`). `h2o.performance` supports all current algorithms except for K-Means. 
 
 If you specify a data frame as a second parameter, H2O will use the specified data frame for scoring. If you do not specify a second parameter, the training metrics for the model metrics object are used. 
 
@@ -70,6 +70,7 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `validation` | `validation_frame`
 `balance.classes` | `balance_classes`
 `max.after.balance.size` | `max_after_balance_size`
+`class.sampling.factors` | `class_sampling_factors`
 
 ###Deprecated GBM Parameters
 
@@ -78,7 +79,6 @@ The following parameters have been removed:
 - `group_split`: Bit-set group splitting of categorical variables is now the default. 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
 - `holdout.fraction`: The fraction of the training data to hold out for validation is no longer supported. 
-- `class.sampling.factors`: Specifying the over- or under-sampling ratios per class is no longer supported. 
 - `grid.parallelism`: Specifying the number of parallel threads to run during a grid search is no longer supported. Grid search will be supported in a future version of H2O-Dev. 
 
 ###New GBM Parameters
@@ -124,21 +124,22 @@ H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$err` | `@model$mse_train` | `all`
+`@model$err` | `@model$scoring_history` | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` |  &nbsp; | `binomial` and `multinomial`
-`@model$auc` |  &nbsp; | `binomial`
-`@model$gini` | &nbsp;  | `binomial`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | &nbsp;  | `binomial`
-`@model$F2` | &nbsp;  | `binomial`
-`@model$accuracy` | &nbsp;  | `binomial`
+`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
 `@model$error` | &nbsp;  | `binomial`
-`@model$precision` | &nbsp;  | `binomial`
-`@model$recall` | &nbsp;  | `binomial`
-`@model$mcc` | &nbsp;  | `binomial`
-`@model$max_per_class_err` | &nbsp;  | `binomial`
+`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
+
 
 
 
@@ -211,7 +212,6 @@ H2O  | H2O-Dev
 `family,` | `family = c("gaussian", "binomial", "poisson", "gamma"),` 
 `link,` | `link = c("family_default", "identity", "logit", "log", "inverse"),`
 `tweedie.p = ifelse(family == "tweedie",1.5, NA_real_)` |  
-&nbsp; |  
 `alpha = 0.5,` | `alpha = 0.5,` 
 `prior = NULL` | `prior = 0.0,` 
 `lambda = 1e-5,` | `lambda = 1e-05,` 
@@ -236,8 +236,8 @@ The following table provides the component name in H2O, the corresponding compon
 H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$params` | `@allparameters` | `all`
-`@model$coefficients` | `@model$coefficients_table$Coefficients` | `all`
-`@model$nomalized_coefficients` | `@model$coefficients_table$Norm Coefficients` | `all`
+`@model$coefficients` | `@model$coefficients` | `all`
+`@model$nomalized_coefficients` | `@model$coefficients_table$norm_coefficients` | `all`
 `@model$rank` | `@model$rank` | `all`
 `@model$iter` |`@model$iter` | `all`
 `@model$lambda` | &nbsp;  | `all`
@@ -245,12 +245,12 @@ H2O  | H2O-Dev  | Model Type
 `@model$null.deviance` | `@model$null_deviance` | `all`
 `@model$df.residual` | `@model$residual_degrees_of_freedom` | `all`
 `@model$df.null` | `@model$null_degrees_of_freedom` | `all`
-`@model$aic` | `@model$aic`| `all`
+`@model$aic` | `@model$AIC`| `all`
 `@model$train.err` |  &nbsp; | `binomial`
 `@model$prior` | &nbsp;  | `binomial`
 `@model$thresholds` | `@model$threshold` | `binomial`
 `@model$best_threshold` | &nbsp;  | `binomial`
-`@model$auc` | `@model$auc` | `binomial`
+`@model$auc` | `@model$AUC` | `binomial`
 `@model$confusion` | &nbsp;  | `binomial`
 
 <a name="Kmeans"></a>
@@ -309,9 +309,11 @@ H2O  | H2O-Dev
 `@model$params` | `@allparameters`
 `@model$centers` | `@model$centers`
 `@model$withinss` | `@model$within_mse`
-`@model$tot.withinss` | 
+`@model$tot.withinss` | `@model$avg_within_ss`
 `@model$size` | `@model$size`
 `@model$iter` | `@model$iterations`
+&nbsp; | `@model$_scoring_history`
+&nbsp; | `@model$_model_summary`
 
 ---
 
@@ -329,6 +331,8 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `data` | `training_frame`
 `key` | `destination_key`
 `validation` | `validation_frame`
+`class.sampling.factors` | `class_sampling_factors`
+
 
 ###Deprecated DL Parameters
 
@@ -336,7 +340,6 @@ The following parameters have been removed:
 
 - `classification`: Classification is now inferred from the data type.
 - `holdout_fraction`: Fraction of the training data to hold out for validation.
-- `classification_stop`: Classification is now inferred from the data type. 
 - `n_folds`:Number of folds for cross-validation (will be re-added).
 
 ###New DL Parameters
@@ -344,9 +347,9 @@ The following parameters have been removed:
 The following parameters have been added: 
 
 - `export_weights_and_biases`: An additional option allowing users to export the raw weights and biases as H2O frames. 
-- `average_activation`: Average activation for sparse auto-encoder (Experimental)
 
 The following options for the `loss` parameter have been added:
+
 - `absolute`: Provides strong penalties for mispredictions 
 - `huber`: Can improve results for regression 
 
@@ -358,64 +361,67 @@ H2O  | H2O-Dev
 `y,` | `y,`
 `data,` | `training_frame,` 
 `key = "",` | `destination_key = "",`
-`override_with_best_model,` | `override_with_best_model,` 
+`override_with_best_model,` | `_override_with_best_model = true,` 
 `classification = TRUE,` | 
 `nfolds = 0,` |  
 `validation,` | `validation_frame,` 
 `holdout_fraction = 0,` |  
-`checkpoint = " "` | `checkpoint,` 
-`autoencoder,` | `autoencoder = FALSE,` 
-`use_all_factor_levels,` | `use_all_factor_levels = TRUE`
-`activation,` | `activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),`
-`hidden,` | `hidden= c(200, 200),`
-`epochs,` | `epochs = 10.0,`
-`train_samples_per_iteration,` |`train_samples_per_iteration = -2,`
-`seed,` | `seed,` 
-`adaptive_rate,` | `adaptive_rate = TRUE,` 
-`rho,` | `rho = 0.99,` 
-`epsilon,` | `epsilon = 1e-08,` 
-`rate,` | `rate = 0.005,` 
-`rate_annealing,` | `rate_annealing = 1e-06,` 
-`rate_decay,` | `rate_decay = 1.0,` 
-`momentum_start,` | `momentum_start = 0,`
-`momentum_ramp,` | `momentum_ramp = 1e+06,`
-`momentum_stable,` | `momentum_stable = 0,` 
-`nesterov_accelerated_gradient,` | `nesterov_accelerated_gradient = TRUE,`
-`input_dropout_ratio,` | `input_dropout_ratio = 0,` 
-`hidden_dropout_ratios,` | `hidden_dropout_ratios,` 
-`l1,` | `l1 = 0,` 
-`l2,` | `l2 = 0,` 
-`max_w2,` | `max_w2 = Inf,`
-`initial_weight_distribution,` | `initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
-`initial_weight_scale,` | `initial_weight_scale = 1,`
-`loss,` | `loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
-`score_interval,` | `score_interval = 5,` 
-`score_training_samples,` | `score_training_samples,` 
-`score_validation_samples,` | `score_validation_samples,`
-`score_duty_cycle,` | `score_duty_cycle,` 
-`classification_stop,` | 
-`regression_stop,` | `regression_stop,`
-`quiet_mode,` | `quiet_mode,`
-`max_confusion_matrix_size,` | `max_confusion_matrix_size,`
-`max_hit_ratio_k,` | `max_hit_ratio_k,`
-`balance_classes,` | `balance_classes = FALSE,`
-`class_sampling_factors,` | `class_sampling_factors,`
-`max_after_balance_size,` | `max_after_balance_size,` 
-`score_validation_sampling,` | `score_validation_sampling,`
-`diagnostics,` | `diagnostics,` 
-`variable_importances,` | `variable_importances,`
-`fast_mode,` | `fast_mode,` 
-`ignore_const_cols,` | `ignore_const_cols,`
-`force_load_balance,` | `force_load_balance,`
-`replicate_training_data,` | `replicate_training_data,`
-`single_node_mode,` | `single_node_mode,` 
-`shuffle_training_data,` | `shuffle_training_data,`
-`sparse,` | `sparse,` 
-`col_major,` | `col_major,`
-`max_categorical_features,` | `max_categorical_features,`
-`reproducible)` | `reproducible=FALSE,` 
- &nbsp; | `average_activation,`
- &nbsp; | `export_weights_and_biases = FALSE)`
+`checkpoint = " "` | `_checkpoint,` 
+`autoencoder,` | `_autoencoder = false,` 
+`use_all_factor_levels,` | `_use_all_factor_levels = true`
+`activation,` | `_activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),`
+`hidden,` | `_hidden= c(200, 200),`
+`epochs,` | `_epochs = 10.0,`
+`train_samples_per_iteration,` |`_train_samples_per_iteration = -2,`
+&nbsp; | `_target_ratio_comm_to_comp = 0.02,`
+`seed,` | `_seed,` 
+`adaptive_rate,` | `_adaptive_rate = true,` 
+`rho,` | `_rho = 0.99,` 
+`epsilon,` | `_epsilon = 1e-8,` 
+`rate,` | `_rate = .005,` 
+`rate_annealing,` | `_rate_annealing = 1e-6,` 
+`rate_decay,` | `_rate_decay = 1.0,` 
+`momentum_start,` | `_momentum_start = 0,`
+`momentum_ramp,` | `_momentum_ramp = 1e6,`
+`momentum_stable,` | `_momentum_stable = 0,` 
+`nesterov_accelerated_gradient,` | `_nesterov_accelerated_gradient = true,`
+`input_dropout_ratio,` | `_input_dropout_ratio = 0.0,` 
+`hidden_dropout_ratios,` | `_hidden_dropout_ratios,` 
+`l1,` | `_l1 = 0.0,` 
+`l2,` | `_l2 = 0.0,` 
+`max_w2,` | `_max_w2 = Inf,`
+`initial_weight_distribution,` | `_initial_weight_distribution = c("UniformAdaptive","Uniform", "Normal"),`
+`initial_weight_scale,` | `_initial_weight_scale = 1.0,`
+`loss,` | `_loss = "Automatic", "CrossEntropy", "MeanSquare", "Absolute", "Huber"),`
+`score_interval,` | `_score_interval = 5,` 
+`score_training_samples,` | `_score_training_samples = 10000l,` 
+`score_validation_samples,` | `_score_validation_samples = 0l,`
+`score_duty_cycle,` | `_score_duty_cycle = 0.1,` 
+`classification_stop,` | `_classification_stop = 0`
+`regression_stop,` | `_regression_stop = 1e-6,`
+`quiet_mode,` | `_quiet_mode = false,`
+`max_confusion_matrix_size,` | &nbsp;
+`max_hit_ratio_k,` | `_max_hit_ratio_k,`
+`balance_classes,` | `_balance_classes = false,`
+`class_sampling_factors,` | `_class_sampling_factors,`
+`max_after_balance_size,` | &nbsp; 
+`score_validation_sampling,` | `_score_validation_sampling,`
+`diagnostics,` | `_diagnostics = true,` 
+`variable_importances,` | `_variable_importances = false,`
+`fast_mode,` | `_fast_mode = true,` 
+`ignore_const_cols,` | `_ignore_const_cols = true,`
+`force_load_balance,` | `_force_load_balance = true,`
+`replicate_training_data,` | `_replicate_training_data = true,`
+`single_node_mode,` | `_single_node_mode = false,` 
+`shuffle_training_data,` | `_shuffle_training_data = false,`
+ &nbsp; | `_missing_values_handling = MissingValuesHandling.MeanImputation`
+`sparse,` | `_sparse = false,` 
+`col_major,` | `_col_major = false,`
+`max_categorical_features,` | `_max_categorical_features = Integer.MAX_VALUE,`
+`reproducible)` | `_reproducible = false,` 
+`average_activation` | `_average_activation = 0,`
+ &nbsp; | `_sparsity_beta = 0`
+ &nbsp; | `_export_weights_and_biases = false)`
 
 ###Output
 
@@ -426,11 +432,14 @@ H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | ------------- 
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$train_class_error` | &nbsp;  | `all`
-`@model$valid_class_error` | &nbsp;  | `all`
-`@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` | &nbsp;  | `binomial` and `multinomial`
-`@model$train_auc` | &nbsp;  | `binomial`
+`@model$train_class_error` | `@model$training_metrics$MSE`  | `all`
+`@model$valid_class_error` | `@model$validation_metrics$MSE` | `all`
+`@model$varimp` | `@model$_variable_importances` | `all`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$train_auc` | `@model$train_AUC`  | `binomial`
+&nbsp; | `@model$_validation_metrics` | `all`
+&nbsp; | `@model$_model_summary` | `all`
+&nbsp; | `@model$_scoring_history` | `all`
 
  
  ---
@@ -459,6 +468,9 @@ H2O Parameter Name | H2O-Dev Parameter Name
 `depth` | `max_depth`
 `balance.classes` | `balance_classes`
 `score.each.iteration` | `score_each_iteration`
+`class.sampling.factors` | `class_sampling_factors`
+`nodesize` | `min_rows`
+
 
 ###Deprecated DRF Parameters
 
@@ -466,7 +478,6 @@ The following parameters have been removed:
 
 - `classification`: This is now automatically inferred from the response type. To achieve classification with a 0/1 response column, explicitly convert the response to a factor (`as.factor()`). 
 - `importance`: Variable importances are now computed automatically and displayed in the model output. 
-- `nodesize`: Use the `build_tree_one_node` parameter instead. 
 - `holdout.fraction`: Specifying the fraction of the training data to hold out for validation is no longer supported. 
 - `doGrpSplit`: The bit-set group splitting of categorical variables is now the default. 
 - `verbose`: Infonrmation about tree splits and extra statistics is now included automatically in the stdout. 
@@ -499,14 +510,14 @@ H2O  | H2O-Dev
 `nbins=20,` | `nbins = 20,` 
 `balance.classes = FALSE,` | `balance_classes = FALSE,` 
 `score.each.iteration = FALSE,` | `score_each_iteration = FALSE,` 
-`seed = -1,` | `seed)` 
+`seed = -1,` | `_seed)` 
 `nodesize = 1,` |  
 `classification=TRUE,` | 
 `importance=FALSE,` | 
 `nfolds=0,` | 
 `holdout.fraction = 0,` | 
-`max.after.balance.size = 5,` | `max_after_balance_size` (to be re-added)
-`class.sampling.factors = NULL,` | `class_sampling_factors` (to be re-added)
+`max.after.balance.size = 5,` | `max_after_balance_size` 
+`class.sampling.factors = NULL,` | `class_sampling_factors` 
 `doGrpSplit = TRUE,` | 
 `verbose = FALSE,` |
 `oobee = TRUE,` | 
@@ -523,22 +534,22 @@ H2O  | H2O-Dev  | Model Type
 ------------- | ------------- | -------------
 `@model$priorDistribution`| &nbsp;  | `all`
 `@model$params` | `@allparameters` | `all`
-`@model$mse` | `@model$mse_train` | `all`
-`@model$forest` | &nbsp;  | `all`
+`@model$mse` | `@model$scoring_history` | `all`
+`@model$forest` | `@model$model_summary`  | `all`
 `@model$classification` | &nbsp;  | `all`
 `@model$varimp` | `@model$variable_importances` | `all`
-`@model$confusion` | &nbsp;  | `binomial` and `multinomial`
-`@model$auc` | &nbsp;  | `binomial`
-`@model$gini` | &nbsp;  | `binomial`
+`@model$confusion` | `@model$training_metrics$cm$table`  | `binomial` and `multinomial`
+`@model$auc` | `@model$training_metrics$AUC`  | `binomial`
+`@model$gini` | `@model$training_metrics$Gini`  | `binomial`
 `@model$best_cutoff` | &nbsp;  | `binomial`
-`@model$F1` | &nbsp;  | `binomial`
-`@model$F2` | &nbsp;  | `binomial`
-`@model$accuracy` | &nbsp;  | `binomial`
-`@model$error` | &nbsp;  | `binomial`
-`@model$precision` | &nbsp;  | `binomial`
-`@model$recall` | &nbsp;  | `binomial`
-`@model$mcc` | &nbsp;  | `binomial`
-`@model$max_per_class_err` | &nbsp;  | `binomial`
+`@model$F1` | `@model$training_metrics$thresholds_and_metric_scores$f1`  | `binomial`
+`@model$F2` | `@model$training_metrics$thresholds_and_metric_scores$f2`  | `binomial`
+`@model$accuracy` | `@model$training_metrics$thresholds_and_metric_scores$accuracy`  | `binomial`
+`@model$Error` | `@model$Error`  | `binomial`
+`@model$precision` | `@model$training_metrics$thresholds_and_metric_scores$precision`  | `binomial`
+`@model$recall` | `@model$training_metrics$thresholds_and_metric_scores$recall`  | `binomial`
+`@model$mcc` | `@model$training_metrics$thresholds_and_metric_scores$absolute_MCC`  | `binomial`
+`@model$max_per_class_err` | currently replaced by `@model$training_metrics$thresholds_and_metric_scores$min_per_class_correct`  | `binomial`
 
 
 

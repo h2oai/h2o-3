@@ -192,7 +192,8 @@ class ASTFrame extends AST {
     Keyed val = DKV.getGet(k);
     if (val == null) throw new H2OKeyNotFoundArgumentException(key);
     _key = key;
-    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame((Vec)val);
+    _fr = (isFrame=(val instanceof Frame)) ? (Frame)val : new Frame(Key.make(), null, new Vec[]{(Vec)val});
+    if( !isFrame && _fr._key!=null && DKV.get(_fr._key)==null ) DKV.put(_fr._key,_fr);
     _g = true;
   }
   @Override public String toString() { return "Frame with key " + _key + ". Frame: :" +_fr.toString(); }
@@ -202,6 +203,7 @@ class ASTFrame extends AST {
       if (e.isGlobal()) e._global._frames.put(_key, _fr);
       else e._local._frames.put(_key, _fr);
     }
+    if( !isFrame ) e._tmpFrames.add(_fr);
     e.addKeys(_fr); e.push(new ValFrame(_fr, !isFrame, _g));
   }
   @Override int type () { return Env.ARY; }
@@ -1129,13 +1131,14 @@ class ASTSlice extends AST {
 
     // parse the cols
     AST cols = E.parse();
-    switch( cols.type() ) {
-      case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
-      case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
-      case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
-      case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
-
-      default: // pass thru
+    if( !(cols instanceof ASTStringList) ) {
+      switch( cols.type() ) {
+        case Env.STR: cols = cols.value().equals("null") ? new ASTNull() : cols; break;
+        case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
+        case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
+        case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        default: // pass thru
+      }
     }
 
     E.eatEnd(); // eat ending ')'
@@ -1156,6 +1159,16 @@ class ASTSlice extends AST {
     int cols_type = env.peekType();
     Val cols = env.pop();    int rows_type = env.peekType();
     Val rows = env.pop();
+
+    if( cols_type == Env.LIST ) {
+      assert cols instanceof ValStringList : "Expected ValStringList. Got: " + cols.getClass();
+      String[] colnames = ((ValStringList)cols)._s;
+      long[] colz = new long[colnames.length];
+      for( int i=0;i<colz.length;++i) colz[i] = env.peekAry().find(colnames[i]);
+      cols = new ValSeries(colz,null);
+      ((ValSeries)cols).setSlice(false,true);
+    }
+
     if( cols_type == Env.STR ) {
       Frame ary = env.peekAry();
       int idx = ary.find(((ValStr)cols)._s);

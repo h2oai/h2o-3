@@ -408,10 +408,8 @@ class H2OFrame:
 
   def _simple_frames_bin_op(self, data, op):
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                     Expr(data.send_frame(), length=data.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), \
-                                                     Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data.send_frame(), length=data.nrow()))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)))
     elif isinstance(data, Expr)        : return Expr(op, Expr(self.send_frame(), length=self.nrow()), data)
     elif isinstance(data, (int, float)): return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(data))
     elif isinstance(data, str)         : return Expr(op, Expr(self.send_frame(), length=self.nrow()), Expr(None, data))
@@ -419,13 +417,10 @@ class H2OFrame:
 
   def _simple_frames_bin_rop(self, data, op):
     if len(self) == 0: return self
-    if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), \
-                                                Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), \
-                                                     Expr(self.send_frame(), length=self.nrow()))
+    if isinstance(data, H2OFrame)      : return Expr(op, Expr(data.send_frame(), length=data.nrow()), Expr(self.send_frame(), length=self.nrow()))
+    elif isinstance(data, H2OVec)      : return Expr(op, Expr(H2OFrame(vecs=[data]).send_frame(), length=len(data)), Expr(self.send_frame(), length=self.nrow()))
     elif isinstance(data, Expr)        : return Expr(op, data, Expr(self.send_frame(), length=self.nrow()))
-    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), \
-                                                     length=self.nrow())
+    elif isinstance(data, (int, float)): return Expr(op, Expr(data), Expr(self.send_frame(), length=self.nrow()), length=self.nrow())
     elif isinstance(data, str)         : return Expr(op, Expr(None, data), Expr(self.send_frame(), length=self.nrow()))
     else: raise NotImplementedError
 
@@ -471,14 +466,17 @@ class H2OFrame:
     """
     # Send over the frame
     fr = H2OFrame.py_tmp_key()
+    rapids_call = "(, "  # fold into a single rapids call
     cbind = "(= !" + fr + " (cbind '"
-    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "'))"
-    h2o.rapids(cbind)
+    cbind += "' '".join([vec._expr.eager() for vec in self._vecs]) + "')) "
+    rapids_call += cbind
+    # h2o.rapids(cbind)
     # And frame columns
     colnames = "(colnames= %" + fr + " (: #0 #" + str(len(self) - 1) + ") "
     cnames = "(slist \"" + '" "'.join([vec._name for vec in self._vecs]) +"\")"
     colnames += cnames
-    h2o.rapids(colnames)
+    rapids_call += colnames
+    h2o.rapids(rapids_call)
     return fr
 
   def _row(self, field, idx):
@@ -563,7 +561,20 @@ class H2OFrame:
   # Quantiles
   def quantile(self, prob=None):
     if len(self) == 0: return self
-    return H2OFrame(vecs=[vec.quantile(prob) for vec in self._vecs ])
+    if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
+    if not isinstance(prob, list): raise ValueError("prob must be a list")
+    probs = "(dlist #"+" #".join([str(p) for p in prob])+")"
+    key = self.send_frame()
+    tmp_key = H2OFrame.py_tmp_key()
+    expr = "(= !{} (quantile '{}' {}".format(tmp_key, key, probs)
+    h2o.rapids(expr)
+    j = h2o.frame(tmp_key)
+    fr = j['frames'][0]       # Just the first (only) frame
+    rows = fr['rows']         # Row count
+    veckeys = fr['vec_keys']  # List of h2o vec keys
+    cols = fr['columns']      # List of columns
+    colnames = [col['label'] for col in cols]
+    return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
 
   # H2OFrame Mutating cbind
   def cbind(self,data):
@@ -684,6 +695,25 @@ class H2OFrame:
     cols = fr['columns']    # List of columns
     colnames = [col['label'] for col in cols]
     return H2OFrame(vecs=H2OVec.new_vecs(zip(colnames, veckeys), rows))
+
+  # generic reducers (min, max, sum, var)
+  def min(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("min", Expr(self.send_frame(), length=self.nrow()))
+
+  def max(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("max", Expr(self.send_frame(), length=self.nrow()))
+
+  def sum(self):
+    """
+    :return: The minimum value of all frame entries
+    """
+    return Expr("sum", Expr(self.send_frame(), length=self.nrow()))
 
   def var(self):
     """
@@ -865,7 +895,7 @@ class H2OVec:
     if isinstance(i, (int, float)):  return H2OVec(self._name, Expr(op, self, Expr(i)))
     if isinstance(i, Expr)        :  return H2OVec(self._name, Expr(op, self, i))
     if isinstance(i, str)         :  return H2OVec(self._name, Expr(op, self, Expr(None,i)))
-    if op == "==" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
+    if op == "n" and i is None   :  return H2OVec(self._name, Expr("is.na", self._expr, None))
     raise NotImplementedError
 
   def _simple_vec_bin_rop(self, i, op):
@@ -909,30 +939,55 @@ class H2OVec:
     """
     return H2OVec(self._name,Expr("floor", self._expr, None))
 
-  def mean(self):
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
     """
-    :return: A lazy Expr representing the mean of this H2OVec.
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("mean", self._expr, None, length=1)
+    return Expr("min", self._expr)
 
-  def var(self):
+  def max(self):
     """
     :return: A lazy Expr representing the variance of this H2OVec.
     """
-    return Expr("var", self._expr, None, length=1)
+    return Expr("max", self._expr)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self._expr)
 
   def sd(self):
     """
     :return: A lazy Expr representing the standard deviation of this H2OVec.
     """
-    return Expr("sd", self._expr, None, length=1)
+    return Expr("sd", self._expr)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self._expr)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self._expr)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self._expr)
 
   def quantile(self,prob=None):
     """
     :return: A lazy Expr representing the quantiles of this H2OVec.
     """
     if not prob: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
-    return H2OVec(self._name,Expr("quantile", self, Expr(prob), length=len(prob)))
+    return H2OFrame(vecs=[self]).quantile(prob)
 
   def asfactor(self):
     """

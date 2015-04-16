@@ -42,12 +42,12 @@ public class SupervisedModelParametersSchema<P extends SupervisedModel.Supervise
   /** For classification models, the maximum size (in terms of classes) of
    *  the confusion matrix for it to be printed. This option is meant to
    *  avoid printing extremely large confusion matrices.  */
-  @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.expert, direction = API.Direction.INOUT)
+  @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
   public int max_confusion_matrix_size;
 
   /**
    * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
    */
-  @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT)
   public int max_hit_ratio_k;
 }

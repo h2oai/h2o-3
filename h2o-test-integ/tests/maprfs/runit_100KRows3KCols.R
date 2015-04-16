@@ -24,8 +24,8 @@ data.hex <- h2o.importFile(conn, "maprfs:/datasets/WU_100KRows3KCols.csv")
 
 #print(summary(data.hex))
 
-myX = setdiff(names(data.hex), myY) 
 myY = "C1"
+myX = setdiff(names(data.hex), myY) 
 
 # GLM Model
 data.glm <- h2o.glm(myX, myY, training_frame = data.hex, family = 'gaussian', solver = 'L_BFGS')

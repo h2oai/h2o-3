@@ -5,7 +5,9 @@ import hex.glm.GLMModel.GLMOutput;
 import hex.schemas.GLMModelV3;
 import hex.schemas.MakeGLMModelV3;
 import water.DKV;
+import water.Key;
 import water.api.Handler;
+import water.api.KeyV3.ModelKeyV3;
 
 import java.util.Map;
 
@@ -17,6 +19,7 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
+
     String [] names = model._output.coefficientNames();
     Map<String,Double> coefs = model.coefficients();
     for(int i = 0; i < args.names.length; ++i)
@@ -24,10 +27,7 @@ public class MakeGLMModelHandler extends Handler {
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    // beta has new coefficients in proper order
-    System.out.println("coefs:");
-    System.out.println(coefs);
-    GLMModel m = new GLMModel(args.dest.key(),model._parms,new GLMOutput(model._output._names,model._output._domains, names, beta,.5f,model._output._binomial), model.dinfo(), Double.NaN, Double.NaN, -1);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,new GLMOutput(model._output._names,model._output._domains, names, beta,.5f,model._output._binomial), model.dinfo(), Double.NaN, Double.NaN, -1);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);

@@ -69,7 +69,7 @@ public class AUC2 extends Iced {
     // minimize max-per-class-error by maximizing min-per-class-correct.
     // Report from max_criterion is the smallest correct rate for both classes.
     // The max min-error-rate is 1.0 minus that.
-    minPerClassCorrect(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
+    min_per_class_correct(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
         return Math.min((double)tp/(tp+fn),(double)tn/(tn+fp));
       } },
     tps(true) { @Override double exec( long tp, long fp, long fn, long tn ) {

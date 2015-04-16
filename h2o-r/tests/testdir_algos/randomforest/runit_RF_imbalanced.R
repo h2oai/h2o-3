@@ -14,8 +14,8 @@ test.rf.imbalanced <- function(conn) {
   #confusion_matrix element at position A,P for N classes is at: model$confusion[P*(N+1)-(N-A+1)]
   #Here, A=6 P=8, N=7 -> need element 8*(7+1)-(7-6+1) = 62
 
-  class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$Error[6]
-  class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$Error[6]
+  class_6_err_imbalanced <- hh_imbalanced_metrics@metrics$cm$table$error[6]
+  class_6_err_balanced   <- hh_balanced_metrics  @metrics$cm$table$error[6]
 
 
   print("class_6_err_imbalanced")

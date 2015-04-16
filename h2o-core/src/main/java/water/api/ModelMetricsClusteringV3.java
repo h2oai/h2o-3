@@ -1,14 +1,9 @@
 package water.api;
 
 import hex.ModelMetricsClustering;
+import water.util.TwoDimTable;
 
 public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClustering, ModelMetricsClusteringV3> {
-  @API(help="Cluster Size[k]")
-  public long[/*k*/] size;
-
-  @API(help="Within cluster Mean Square Error per cluster")
-  public double[/*k*/] within_mse;   // Within-cluster MSE, variance
-
   @API(help="Average within cluster Mean Square Error")
   public double avg_within_ss;       // Average within-cluster MSE, variance
 
@@ -17,4 +12,16 @@ public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClust
 
   @API(help="Average between cluster Mean Square Error")
   public double avg_between_ss;
+
+  @API(help="Centroid Statistics")
+  public TwoDimTableBase centroid_stats;
+
+  @Override
+  public ModelMetricsClusteringV3 fillFromImpl(ModelMetricsClustering impl) {
+    ModelMetricsClusteringV3 mm = super.fillFromImpl(impl);
+    TwoDimTable tdt = impl.createCentroidStatsTable();
+    if (tdt != null)
+      mm.centroid_stats = new TwoDimTableBase().fillFromImpl(tdt);
+    return mm;
+  }
 }

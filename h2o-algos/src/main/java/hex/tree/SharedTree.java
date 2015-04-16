@@ -12,7 +12,9 @@ import water.util.*;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
@@ -64,7 +66,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
-    if (_parms._max_depth < 0) error ("_max_depth", "_max_depth must be >= 0.");
+    if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows < 1) error ("_min_rows", "_min_rows must be >= 1.");
     if (_train != null && _train.numRows() < _parms._min_rows*2 ) // Need at least 2xmin_rows to split even once
       error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows + " , number of rows: " + _train.numRows() + " < 2*" + _parms._min_rows);
@@ -97,7 +99,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                              initial_MSE(response(), response()), 
                              _valid == null ? Double.NaN : initial_MSE(response(),vresponse())); // Make a fresh model
           _model.delete_and_lock(_key);       // and clear & write-lock it (smashing any prior)
-          _model._output._initialPrediction = _initialPrediction;
+          _model._output._initF = _initialPrediction;
         }
 
         // Compute the response domain; makes for nicer printouts
@@ -374,9 +376,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       String train_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mm)._logloss : ((ModelMetricsMultinomial)mm)._logloss) : "";
-      out._mse_train[out._ntrees] = mm._mse; // Store score results in the model output
+      out._mse_train[out._ntrees] = mm._MSE; // Store score results in the model output
       training_r2 = mm.r2();
-      Log.info("training r2 is "+(float)mm.r2()+", mse is "+(float)mm._mse+ train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
+      Log.info("training r2 is "+(float)mm.r2()+", MSE is "+(float)mm._MSE + train_logloss + ", with "+_model._output._ntrees+"x"+_nclass+" trees (average of "+(1 + _model._output._treeStats._mean_leaves)+" nodes)"); //add 1 for root, which is not a leaf
       if (mm.hr() != null) {
         Log.info(getHitRatioTable(mm.hr()));
       }
@@ -384,17 +386,25 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( _parms._valid != null ) {
         Score scv = new Score(this,oob,_model._output.getModelCategory()).doAll(valid(), build_tree_one_node);
         ModelMetricsSupervised mmv = scv.makeModelMetrics(_model,_parms.valid(), _parms._response_column);
-        out._mse_valid[out._ntrees] = mmv._mse; // Store score results in the model output
+        out._mse_valid[out._ntrees] = mmv._MSE; // Store score results in the model output
         out._validation_metrics = mmv;
         String valid_logloss = isClassifier() ? ", logloss is " + (float)(_nclass == 2 ? ((ModelMetricsBinomial)mmv)._logloss : ((ModelMetricsMultinomial)mmv)._logloss) : "";
-        Log.info("validation r2 is "+(float)mmv.r2()+", mse is "+(float)mmv._mse + valid_logloss);
+        Log.info("validation r2 is "+(float)mmv.r2()+", MSE is "+(float)mmv._MSE + valid_logloss);
         if (mmv.hr() != null) {
           Log.info(getHitRatioTable(mm.hr()));
         }
       }
 
-      if( out._ntrees > 0 )     // Compute variable importances
-        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar,out._names));
+      if( out._ntrees > 0 ) {    // Compute variable importances
+        out._model_summary = createModelSummaryTable(out);
+        out._scoring_history = createScoringHistoryTable(out);
+        out._variable_importances = hex.ModelMetrics.calcVarImp(new hex.VarImp(_improvPerVar, out._names));
+        Log.info(out._model_summary.toString());
+        // For Debugging:
+//        Log.info(out._scoring_history.toString());
+//        Log.info(out._variable_importances.toString());
+      }
+
       ConfusionMatrix cm = mm.cm();
       if( cm != null ) {
         if( cm._cm.length <= _parms._max_confusion_matrix_size) {
@@ -452,5 +462,71 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public static Random createRNG(long seed) {
     return new RandomUtils.MersenneTwisterRNG((int)(seed>>32L),(int)seed );
 //    return RandomUtils.getRNG((int)(seed>>32L),(int)seed ); //for later
+  }
+
+  private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+    colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    if (valid() != null) {
+      colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    }
+
+    final int rows = _output._mse_train.length-1;
+    TwoDimTable table = new TwoDimTable(
+            "Scoring History", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    for( int i = 1; i<=rows; i++ ) {
+      int col = 0;
+      assert(row < table.getRowDim());
+      assert(col < table.getColDim());
+      table.set(row, col++, i);
+      table.set(row, col++, _output._mse_train[i]);
+      if (_valid != null) table.set(row, col++, _output._mse_valid[i]);
+      row++;
+    }
+    return table;
+  }
+
+  private TwoDimTable createModelSummaryTable(SharedTreeModel.SharedTreeOutput _output) {
+    List<String> colHeaders = new ArrayList<>();
+    List<String> colTypes = new ArrayList<>();
+    List<String> colFormat = new ArrayList<>();
+
+    colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+
+    colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Mean Depth"); colTypes.add("double"); colFormat.add("%.5f");
+
+    colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Mean Leaves"); colTypes.add("double"); colFormat.add("%.5f");
+
+    final int rows = 1;
+    TwoDimTable table = new TwoDimTable(
+            "Model Summary", null,
+            new String[rows],
+            colHeaders.toArray(new String[0]),
+            colTypes.toArray(new String[0]),
+            colFormat.toArray(new String[0]),
+            "");
+    int row = 0;
+    int col = 0;
+    table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._treeStats._min_depth);
+    table.set(row, col++, _output._treeStats._max_depth);
+    table.set(row, col++, _output._treeStats._mean_depth);
+    table.set(row, col++, _output._treeStats._min_leaves);
+    table.set(row, col++, _output._treeStats._max_leaves);
+    table.set(row, col++, _output._treeStats._mean_leaves);
+    return table;
   }
 }
