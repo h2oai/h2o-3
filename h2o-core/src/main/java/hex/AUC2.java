@@ -63,7 +63,9 @@ public class AUC2 extends Iced {
         return (double)tn/(tn+fp);
       } },
     absolute_MCC(false) { @Override double exec( long tp, long fp, long fn, long tn ) {
-        double mcc = ((double)tp*tn - (double)fp*fn)/Math.sqrt(((double)tp+fp)*((double)tp+fn)*((double)tn+fp)*((double)tn+fn));
+        double mcc = ((double)tp*tn - (double)fp*fn);
+        if (mcc == 0) return 0;
+        mcc /= Math.sqrt(((double)tp+fp)*((double)tp+fn)*((double)tn+fp)*((double)tn+fn));
         assert(Math.abs(mcc)<=1.) : tp + " " + fp + " " + fn + " " + tn;
         return Math.abs(mcc);
       } },
