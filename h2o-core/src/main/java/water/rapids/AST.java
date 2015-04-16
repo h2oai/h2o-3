@@ -642,6 +642,7 @@ class ASTNull extends AST {
   @Override ASTNull make() { return new ASTNull(); }
   String opStr() { throw H2O.unimpl();}
   ASTNull() {}
+  ASTNull parse_impl(Exec E) { return this; }
   @Override void exec(Env e) { e.push(new ValNull());}
   @Override String value() { return null; }
   @Override int type() { return Env.NULL; }
@@ -1123,6 +1124,7 @@ class ASTSlice extends AST {
       case Env.SPAN: ((ASTSpan) rows).setSlice(true, false);     break;
       case Env.SERIES: ((ASTSeries) rows).setSlice(true, false); break;
       case Env.LIST: rows = new ASTSeries(((ASTLongList)rows)._l,null,((ASTLongList)rows)._spans); ((ASTSeries)rows).setSlice(true,false); break;
+      case Env.NULL: rows = new ASTNull(); break;
       default: //pass thru
     }
 
@@ -1137,6 +1139,7 @@ class ASTSlice extends AST {
         case Env.SPAN: ((ASTSpan) cols).setSlice(false, true);     break;
         case Env.SERIES: ((ASTSeries) cols).setSlice(false, true); break;
         case Env.LIST: cols = new ASTSeries(((ASTLongList)cols)._l,null,((ASTLongList)cols)._spans); ((ASTSeries)cols).setSlice(false,true); break;
+        case Env.NULL: rows = new ASTNull(); break;
         default: // pass thru
       }
     }
@@ -1448,8 +1451,11 @@ class ASTStringList extends ASTList {
   @Override ASTStringList make() { return new ASTStringList(); }
   ASTStringList parse_impl(Exec E) {
     ArrayList<String> strs = new ArrayList<>();
-    while( !E.isEnd() ) // read until we hit a ")"
-      strs.add(E.nextStr());
+    while( !E.isEnd() ) {// read until we hit a ")"
+      AST a = E.parse();
+      if( a instanceof ASTNull ) strs.add(null);
+      else if( a instanceof ASTString ) strs.add(((ASTString) a)._s);
+    }
     E.eatEnd();
     _s = new String[strs.size()];
     int i=0;

@@ -73,6 +73,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("x", new ASTMMult());
     SYMBOLS.put("t", new ASTTranspose());
     SYMBOLS.put("agg",new ASTGroupBy.AGG());
+    SYMBOLS.put(")", new ASTNull());
     //lists
     SYMBOLS.put("list", new ASTDoubleList());
     SYMBOLS.put("dlist", new ASTDoubleList());
@@ -1521,7 +1522,7 @@ abstract class ASTReducerOp extends ASTOp {
     ArrayList<AST> dblarys = new ArrayList<>();
     AST a;
 
-    while( true ) {  // rely on breaks
+    do {  // rely on breaks
       a = E.parse();
       if( a instanceof ASTId ) {
         if( Env.staticLookup((ASTId) a ) instanceof ASTFrame) dblarys.add(a); // kv lookup
@@ -1529,14 +1530,16 @@ abstract class ASTReducerOp extends ASTOp {
         else dblarys.add(a);
       } else if( a instanceof ASTAssign || a instanceof ASTNum || a instanceof ASTFrame || a instanceof ASTSlice || a instanceof ASTOp ) dblarys.add(a);
       else break;
-    }
+    } while( !E.isEnd() );
 
     // Get the na.rm last
-    if( !E.isEnd() ) a = E.parse();
-    if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
-    else throw new IllegalArgumentException("Expected the na.rm value to be one of %TRUE, %FALSE, %T, %F");
+    if( !E.isEnd() ) {
+      a = E.parse();
+      if( a instanceof ASTId ) a = E._env.lookup((ASTId)a);
+      else throw new IllegalArgumentException("Expected the na.rm value to be one of %TRUE, %FALSE, %T, %F");
+      _narm = ((ASTNum)a).dbl() == 1;
+    } else { _narm=true; }
 
-    _narm = ((ASTNum)a).dbl() == 1;
     E.eatEnd(); // eat ending ')'
     AST[] arys = new AST[_argcnt = dblarys.size()];
     for (int i = 0; i < dblarys.size(); i++) arys[i] = dblarys.get(i);
@@ -3448,24 +3451,32 @@ class ASTCat extends ASTUniPrefixOp {
     ArrayList<Double> dbls = new ArrayList<>();
     ArrayList<ASTSpan> spans = new ArrayList<>();
     ArrayList<Long> cnts = new ArrayList<>();
+    boolean strs=false;
     long cnt=0;
     AST a;
     while( !E.isEnd() ) {
       a = E.parse();
-      if( a instanceof ASTDoubleList ) { cnt += addAll(dbls,((ASTDoubleList)a)._d); }
-      else if( a instanceof ASTNum)    { dbls.add(((ASTNum)a)._d); cnt++; }
-      else if( a instanceof ASTSpan)   { spans.add((ASTSpan)a); cnts.add(cnt); cnt=0; cnts.add(cnt); }
+      if( a instanceof ASTStringList ) strs = true;
+      else if( a instanceof ASTDoubleList ) { cnt += addAll(dbls,((ASTDoubleList)a)._d); }
+      else if( a instanceof ASTNum   ) { dbls.add(((ASTNum)a)._d); cnt++; }
+      else if( a instanceof ASTSpan  ) { spans.add((ASTSpan)a); cnts.add(cnt); cnt=0; cnts.add(cnt); }
       else throw new IllegalArgumentException("'c' expected a dlist, a number, or a span. Got: " + a.getClass());
     }
-    cnts.add(cnt);
-    _tilNext = new long[cnts.size()];
-    int i = 0;
-    for (long l : cnts) _tilNext[i++] = l;
-    ASTSeries s = new ASTSeries(null, toArray(dbls), spans.toArray(new ASTSpan[spans.size()]));
-    E.eatEnd(); // eat ending ')'
-    ASTCat res = (ASTCat) clone();
-    res._asts = new AST[]{s};
-    return res;
+    if( strs ) {
+      // buildin an Enum Vec
+
+    } else {
+      cnts.add(cnt);
+      _tilNext = new long[cnts.size()];
+      int i = 0;
+      for (long l : cnts) _tilNext[i++] = l;
+      ASTSeries s = new ASTSeries(null, toArray(dbls), spans.toArray(new ASTSpan[spans.size()]));
+      E.eatEnd(); // eat ending ')'
+      ASTCat res = (ASTCat) clone();
+      res._asts = new AST[]{s};
+      return res;
+    }
+    return new ASTCat();
   }
 
   @Override void apply(Env env) {
