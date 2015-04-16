@@ -60,7 +60,6 @@ public class OOMTest extends TestUtil {
         Assert.assertTrue(val2s[i].isPersisted()); // Chunks all hit disk
         Assert.assertTrue(val2s[i].rawMem()==null);// Chunks all hit disk
       }
-      //Cleaner.DESIRED = old_DESIRED;
     }
 
     // Now touch all the data, forcing a reload.  Confirm all reads the same.
@@ -71,8 +70,8 @@ public class OOMTest extends TestUtil {
     for( int i=0; i<nchks; i++ ) {
       Value v1 = vrnd1.chunkIdx(i);
       Value v2 = vrnd2.chunkIdx(i);
-      Assert.assertTrue(v1.isPersisted() && v1.rawMem() != null );
-      Assert.assertTrue(v2.isPersisted() && v2.rawMem() != null );
+      Assert.assertTrue(v1.isPersisted());
+      Assert.assertTrue(v2.isPersisted());
     }
 
     // Cleanup
