@@ -158,7 +158,7 @@ public class GLMModel extends SupervisedModel<GLMModel,GLMModel.GLMParameters,GL
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
-    public int _max_active_predictors = 10000; // NOTE: Not brought out to the REST API
+    public int _max_active_predictors = -1;
 
     public void validate(GLM glm) {
       if(_n_folds < 0) glm.error("n_folds","must be >= 0");

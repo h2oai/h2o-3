@@ -72,6 +72,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
     if (expensive) {
+      if(_parms._max_active_predictors == -1)
+        _parms._max_active_predictors = _parms._solver == Solver.ADMM?6000:100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(Key.make(), _train, _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true);
@@ -652,6 +654,8 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     protected void solve(){
+      if (_activeData.fullN() > _parms._max_active_predictors)
+        throw new TooManyPredictorsException();
       switch(_parms._solver) {
         case L_BFGS: {
           double[] beta = _taskInfo._beta;
@@ -758,8 +762,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
           // done, compute the gradient and check KKTs
           break;
         case ADMM:// fork off ADMM iteration
-          if (_activeData.fullN() > _parms._max_active_predictors)
-            throw new TooManyPredictorsException();
           new GLMIterationTask(GLM.this._key, _activeData, _parms._lambda[_lambdaId] * (1 - _parms._alpha[0]), _parms, false, _taskInfo._beta, _taskInfo._ymu, _rowFilter, new Iteration(this, false)).asyncExec(_activeData._adaptedFrame);
           return;
         default:
@@ -1217,10 +1219,10 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       return gt;
     }
     @Override
-    public double[] getObjVals(double[] beta, double[] pk) {
-      double [] objs = _solver.getObjVals(beta,pk);
+    public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
+      double [] objs = _solver.getObjVals(beta,pk, nSteps, stepDec);
       double step = 1;
-      for (int i = 0; i < objs.length; ++i, step *= _solver.stepDec()) {
+      for (int i = 0; i < objs.length; ++i, step *= stepDec) {
         double[] b = ArrayUtils.wadd(beta.clone(), pk, step);
         double pen = 0;
         for (int j = 0; j < _betaGiven.length; ++j) {
@@ -1242,7 +1244,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     final double _ymu;
     final double _lambda;
     final long _nobs;
-    int _nsteps = 32;
     Vec _rowFilter;
     double [] _beta;
 
@@ -1256,7 +1257,6 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
       _ymu = ymu;
       _nobs = nobs;
       _lambda = lambda;
-      _stepDec = LINE_SEARCH_STEP;
       _rowFilter = rowFilter;
     }
 
@@ -1274,11 +1274,11 @@ public class GLM extends SupervisedModelBuilder<GLMModel,GLMModel.GLMParameters,
     }
 
     @Override
-    public double[] getObjVals(double[] beta, double[] direction) {
+    public double[] getObjVals(double[] beta, double[] direction, int nSteps, double stepDec) {
       double reg = 1.0 / _nobs;
-      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, _stepDec, _nsteps, _rowFilter).doAll(_dinfo._adaptedFrame)._likelihoods;
+      double[] objs = new GLMLineSearchTask(_dinfo, _glmp, 1.0 / _nobs, beta, direction, stepDec, nSteps, _rowFilter).doAll(_dinfo._adaptedFrame)._likelihoods;
       double step = 1;
-      for (int i = 0; i < objs.length; ++i, step *= _stepDec) {
+      for (int i = 0; i < objs.length; ++i, step *= stepDec) {
         objs[i] *= reg;
         if (_lambda > 0 ) { // have some l2 pen
           double[] b = ArrayUtils.wadd(beta.clone(), direction, step);

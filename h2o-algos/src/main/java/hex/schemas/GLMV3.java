@@ -5,6 +5,7 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
+import water.api.API.Direction;
 import water.api.API.Level;
 import water.api.KeyV3.FrameKeyV3;
 import water.api.SupervisedModelParametersSchema;
@@ -82,5 +83,8 @@ public class GLMV3 extends SupervisedModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParam
 
     @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 beta_constraints;
+
+    @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT)
+    public int max_active_predictors = -1;
   }
 }

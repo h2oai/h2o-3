@@ -101,11 +101,8 @@ public final class L_BFGS extends Iced {
      * @param pk   - search direction
      * @return objective values evaluated at k line-search points beta + pk*step[k]
      */
-    public abstract double [] getObjVals(double[] beta, double[] pk);
+    public abstract double [] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec);
 
-    protected double _startStep = 1.0;
-    protected double _stepDec = .75;
-    public double stepDec(){return _stepDec;}
 
     /**
      * Perform line search at given solution and search direction.
@@ -115,8 +112,8 @@ public final class L_BFGS extends Iced {
      * @param direction - search direction
      * @return
      */
-    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, double tdec) {
-      double [] objVals = getObjVals(beta, direction);
+    public LineSearchSol doLineSearch(GradientInfo ginfo, double [] beta, double [] direction, int nSteps, double tdec) {
+      double [] objVals = getObjVals(beta, direction, nSteps, tdec);
       double t = 1;
       for (int i = 0; i < objVals.length; ++i) {
         if (admissibleStep(t, ginfo._objVal, objVals[i], direction, ginfo._gradient))
@@ -261,7 +258,7 @@ public final class L_BFGS extends Iced {
       double [] pk = _hist.getSearchDirection(ginfo._gradient);
       double lsVal = Double.POSITIVE_INFINITY;
       if(doLineSearch) {
-        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, gslvr._stepDec);
+        LineSearchSol ls = gslvr.doLineSearch(ginfo, beta, pk, 16, .5);
         if(ls.step == 1) {
           if (++ls_switch == 2) {
             ls_switch = 0;

@@ -858,7 +858,19 @@ public class GLMTest  extends TestUtil {
     Frame fr = parse_test_file(parsed, "smalldata/glm_test/arcene.csv");
     try{
       Scope.enter();
+      // test LBFGS with l1 pen
       GLMParameters params = new GLMParameters(Family.gaussian);
+      params._solver = Solver.L_BFGS;
+      params._response_column = fr._names[0];
+      params._train = parsed;
+      params._alpha = new double[]{0};
+
+      job = new GLM(modelKey, "glm test simple poisson", params);
+      job.trainModel().get();
+      model = DKV.get(modelKey).get();
+      System.out.println(model.validation());
+      model.delete();
+      params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
       params._response_column = fr._names[0];

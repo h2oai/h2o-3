@@ -47,20 +47,19 @@ public class L_BFGS_Test  extends TestUtil {
       }
 
       @Override
-      public double[] getObjVals(double[] beta, double[] pk) {
-        double [] res = new double[128];
+      public double[] getObjVals(double[] beta, double[] pk, int nSteps, double stepDec) {
+        double [] res = new double[nSteps];
         double step = 1;
         for(int i = 0; i < res.length; ++i) {
           double x = beta[0] + pk[0]*step;
           double y = beta[1] + pk[1]*step;
           double xx = x * x;
           res[i] = (a - x) * (a - x) + b * (y - xx) * (y - xx);
-          step *= _stepDec;
+          step *= stepDec;
         }
         return res;
       }
     };
-    int fails = 0;
     L_BFGS lbfgs = new L_BFGS().setGradEps(1e-12);
     L_BFGS.Result r = lbfgs.solve(gs, L_BFGS.startCoefs(2, 987654321));
     assertTrue("LBFGS failed to solve Rosenbrock function optimization",r.ginfo._objVal <  1e-4);
