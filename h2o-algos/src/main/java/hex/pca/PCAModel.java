@@ -88,7 +88,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       }
 
       @Override
-      public double[] perRow(double[] dataRow, float[] preds, Model m) { return dataRow; }
+      public double[] perRow(double[] dataRow, float[] preds, Model m, double[] mean) { return dataRow; }
 
       @Override
       public ModelMetrics makeModelMetrics(Model m, Frame f, double sigma) {
