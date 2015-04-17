@@ -136,6 +136,14 @@ abstract public class Log {
   // A little bit of startup buffering
   private static ArrayList<String> INIT_MSGS = new ArrayList<String>();
 
+  public static void flushStdout() {
+    for (String s : INIT_MSGS) {
+      System.out.println(s);
+    }
+
+    INIT_MSGS.clear();
+  }
+
   /**
    * @return This is what should be used when doing Download All Logs.
    */
