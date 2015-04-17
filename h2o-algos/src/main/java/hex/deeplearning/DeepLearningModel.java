@@ -424,7 +424,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Activation functions
      */
     public enum Activation {
-      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
+      Sigmoid, SigmoidWithDropout, Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
     }
 
     /**
@@ -464,10 +464,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       }
 
       // Auto-fill defaults
-      if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
+      if (_activation != Activation.SigmoidWithDropout && _activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout)
         dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       if (_hidden_dropout_ratios == null) {
-        if (_activation == Activation.TanhWithDropout || _activation == Activation.MaxoutWithDropout || _activation == Activation.RectifierWithDropout) {
+        if (_activation == Activation.SigmoidWithDropout || _activation == Activation.TanhWithDropout || _activation == Activation.MaxoutWithDropout || _activation == Activation.RectifierWithDropout) {
           if (expensive) {
             _hidden_dropout_ratios = new double[_hidden.length];
             dl.info("_hidden_dropout_ratios", "Automatically setting all hidden dropout ratios to 0.5.");
@@ -478,7 +478,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
       else if (_hidden_dropout_ratios.length != _hidden.length) {
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
       }
-      else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
+      else if (_activation != Activation.SigmoidWithDropout && _activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout) {
         if (!_quiet_mode) dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
       }
 
@@ -594,6 +594,10 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
         if (_activation == Activation.Tanh || _activation == Activation.TanhWithDropout) {
           if (_average_activation >= 1 || _average_activation <= -1)
             dl.error("_average_activation", "Tanh average activation must be in (-1,1).");
+        }
+        else if (_activation == Activation.Sigmoid || _activation == Activation.SigmoidWithDropout) {
+          if (_average_activation >= 1 || _average_activation <= -1)
+            dl.error("_average_activation", "Sigmoid average activation must be in (-1,1).");
         }
         else if (_activation == Activation.Rectifier || _activation == Activation.RectifierWithDropout) {
           if (_average_activation <= 0)
@@ -2272,6 +2276,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     boolean tanh=(get_params()._activation == DeepLearningParameters.Activation.Tanh || get_params()._activation == DeepLearningParameters.Activation.TanhWithDropout);
+    boolean sigmoid=(get_params()._activation == DeepLearningParameters.Activation.Sigmoid || get_params()._activation == DeepLearningParameters.Activation.SigmoidWithDropout);
     boolean relu=(get_params()._activation == DeepLearningParameters.Activation.Rectifier || get_params()._activation == DeepLearningParameters.Activation.RectifierWithDropout);
     boolean maxout=(get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout);
 
@@ -2309,6 +2314,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
     if (tanh) {
       bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
+    } else if (sigmoid) {
+      bodySb.i(3).p("ACTIVATION[i][r] = 1f / (1f + (float)Math.exp(-ACTIVATION[i][r]));").nl();
     } else if (relu) {
       bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
     } else if (maxout) {
