@@ -902,7 +902,7 @@ class ASTAssign extends AST {
                 : new Frame(null, new String[]{"C1"}, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
         Key k = Key.make(id._id);
         Vec[] vecs = f.vecs();
-        if (id.isGlobalSet()) vecs = f.deepSlice(null,null).vecs();
+        if (id.isGlobalSet()) vecs = f.deepCopy(null).vecs();
         Frame fr = new Frame(k, f.names(), vecs);
         if (id.isGlobalSet()) DKV.put(k, fr);
         e._locked.add(k);

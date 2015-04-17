@@ -1652,7 +1652,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   # create the AGG AST
   op <- new("ASTApply", op="agg")
-  children <- list( c(paste0('#',nAggs), unlist( .args.to.ast(.args=aggs) ) ) )
+  children <- list( unlist( .args.to.ast(.args=aggs) ) )
   AGG <- new("ASTNode", root=op, children=children)
 
   # create the group by AST
