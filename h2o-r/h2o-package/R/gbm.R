@@ -45,7 +45,7 @@
 #' @export
 h2o.gbm <- function(x, y, training_frame,
                     destination_key,
-                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),.
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial"),
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
