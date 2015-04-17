@@ -14,7 +14,7 @@ test.GBM <- function(conn) {
   excluded_column_names = c("", y, "TARGET_D", "CONTROLN")
   x = setdiff(colnames(train.hex), excluded_column_names)
   model <- h2o.gbm(training_frame = train.hex, y = y, x = x,
-                   loss = "multinomial", ntrees = 5)
+                   distribution = "multinomial", ntrees = 5)
 
   testEnd()
 }

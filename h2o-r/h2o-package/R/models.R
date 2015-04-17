@@ -339,7 +339,7 @@ h2o.performance <- function(model, data=NULL) {
 #' hex <- h2o.uploadFile(prosPath)
 #'
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.auc(perf)
 #' @export
@@ -375,7 +375,7 @@ h2o.auc <- function(object, ...) {
 #' hex <- h2o.uploadFile(prosPath)
 #'
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.giniCoef(perf)
 #' @export
@@ -409,7 +409,7 @@ h2o.giniCoef <- function(object, ...) {
 #' hex <- h2o.uploadFile(prosPath)
 #'
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.mse(perf)
 #' @export
@@ -477,7 +477,7 @@ h2o.logloss <- function(object, ...) {
 #' hex <- h2o.uploadFile(prosPath)
 #'
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' perf <- h2o.performance(model, hex)
 #' h2o.F1(perf, c(0.3,0.4,0.5,0.6))
 #' @export
@@ -614,7 +614,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' hex <- h2o.uploadFile(prosPath)
 #' hex[,2] <- as.factor(hex[,2])
-#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, loss = "bernoulli")
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
 #' h2o.confusionMatrix(model, hex)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, hex)
