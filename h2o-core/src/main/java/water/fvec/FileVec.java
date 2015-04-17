@@ -42,8 +42,20 @@ public abstract class FileVec extends ByteVec {
     _log2ChkSize = water.util.MathUtils.log2(chunkSize);
     _chunkSize = 1 << _log2ChkSize;
 
-    //Now reset the chunk size on each node
+    /*
+    * Clear cached chunks
+    * Peaking into a file before the chunkSize has been set
+    * will load chunks of the file in DFLT_CHUNK_SIZE amounts.
+    * If this side-effect is not reversed when _chunkSize differs
+    * from the default value, parsing will either double read
+    * sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
+    * (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
+    */
     Futures fs = new Futures();
+    Keyed.remove(_key, fs);
+    fs.blockForPending();
+
+    //Now reset the chunk size on each node
     DKV.put(_key, this, fs);
     // also update Frame to invalidate local caches
     if (fr != null ) {
@@ -173,19 +185,5 @@ public abstract class FileVec extends ByteVec {
    * </p>
    * @param
    */
-  public void clearAllCachedChunks() {
-    new MRTask() {
-      @Override public void map (Chunk[]cs){
-        Futures fs = new Futures();
-        int nChunks = cs.length;
-        for (int i=0; i < nChunks; i++) {
-          Key cckey = chunkKey(cs[i].cidx());
-          if (DKV.get(cckey) != null) {
-            DKV.remove(cckey, fs);
-          }
-        }
-        fs.blockForPending();
-      }
-    }.doAll(this);
-  }
+
 }

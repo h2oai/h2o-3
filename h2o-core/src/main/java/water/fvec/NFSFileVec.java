@@ -42,9 +42,4 @@ public class NFSFileVec extends FileVec {
   }
 
   private NFSFileVec(Key key, long len) {super(key,len,Value.NFS);}
-
-  @Override public int setChunkSize(Frame fr, int chunkSize) {
-    clearAllCachedChunks();
-    return super.setChunkSize(fr, chunkSize);
-  }
 }
