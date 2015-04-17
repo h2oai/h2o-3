@@ -16,7 +16,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
      *  depending on cont/cat response
      */
     public enum Family {  AUTO, bernoulli, multinomial, gaussian  }
-    public Family _loss = Family.AUTO;
+    public Family _distribution = Family.AUTO;
     public float _learn_rate=0.1f; // Learning rate from 0.0 to 1.0
   }
 
@@ -39,7 +39,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     super.score0(data, preds);    // These are f_k(x) in Algorithm 10.4
-    if( _parms._loss == GBMParameters.Family.bernoulli ) {
+    if( _parms._distribution == GBMParameters.Family.bernoulli ) {
       double fx = preds[1] + _output._initF;
       preds[2] = 1.0/(1.0+Math.exp(-fx));
       preds[1] = 1.0-preds[2];
@@ -65,7 +65,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected void toJavaUnifyPreds(SB body, SB file) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if( _parms._loss == GBMParameters.Family.bernoulli ) {
+    if( _parms._distribution == GBMParameters.Family.bernoulli ) {
       body.ip("double fx = preds[1] + ").p(_output._initF).p(";").nl();
       body.ip("preds[2] = 1.0/(1.0+Math.exp(-fx));").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();

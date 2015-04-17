@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source('../../h2o-runit.R')
 
-randomParams <- function(loss, train, test, x, y) {
+randomParams <- function(distribution, train, test, x, y) {
   parms <- list()
   # used to sample a T or F
   bools <- c(TRUE, FALSE)
@@ -20,8 +20,8 @@ randomParams <- function(loss, train, test, x, y) {
   Log.info(paste("x:", paste(parms$x, collapse = ", ")))
   parms$y <- y
   Log.info(paste("y:", parms$y))
-  parms$loss <- loss
-  Log.info(paste("loss:", parms$loss))
+  parms$distribution <- distribution
+  Log.info(paste("distribution:", parms$distribution))
   # [1, 100,000]
   parms$ntrees <- sample.int(1000,1)
   Log.info(paste("ntrees:", parms$ntrees))
@@ -42,7 +42,7 @@ randomParams <- function(loss, train, test, x, y) {
     Log.info(paste("validation_frame:", deparse(substitute(test))))
   # parms$score_each_iteration <- sample(bools, 1)
 
-  if(loss %in% c("multinomial", "bernoulli")) {
+  if(distribution %in% c("multinomial", "bernoulli")) {
     parms$balance_classes <- sample(bools, 1)
     Log.info(paste("balance_classes:", parms$balance_classes))
   # if balance_classes TRUE, maybe max_size_after_balance
