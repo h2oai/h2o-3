@@ -13,7 +13,7 @@ test.hex.207 <- function(conn) {
   myX <- setdiff(colnames(tr), c("Angaus", "Site"))
   myY <- "Angaus"
   Log.info(paste("Run GBM on ecology_model.csv with Y:", myY, "\tX:", paste(myX, collapse = ", ")))
-  tru.gbms <- h2o.gbm(x = myX, y = myY, training_frame = tr, loss = "gaussian", ntrees = 400, nbins = 20, min_rows = 1, max_depth = 4, learn_rate = 0.01, validation_frame = tr)
+  tru.gbms <- h2o.gbm(x = myX, y = myY, training_frame = tr, distribution = "gaussian", ntrees = 400, nbins = 20, min_rows = 1, max_depth = 4, learn_rate = 0.01, validation_frame = tr)
   
   Log.info(paste("Predict on columns", paste(3:8, collapse = ", "), "of ecology_model.csv"))
   predict(object = tru.gbms, tr[,3:8])

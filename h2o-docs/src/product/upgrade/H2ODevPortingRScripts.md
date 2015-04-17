@@ -6,6 +6,8 @@ The original R script for H2O is listed first, followed by the updated script fo
 
 Some of the parameters have been renamed for consistency. For each algorithm, a table that describes the differences is provided. 
 
+For additional assistance within R, enter a question mark before the command (for example, `?h2o.glm`). 
+
 **Table of Contents**
 
 - [GBM](#GBM)

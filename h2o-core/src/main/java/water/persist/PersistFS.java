@@ -18,7 +18,7 @@ final class PersistFS extends Persist {
   PersistFS(File root) {
     _root = root;
     _dir = new File(root, "ice" + H2O.API_PORT);
-    deleteRecursive(_dir);
+    //deleteRecursive(_dir);
     // Make the directory as-needed
     root.mkdirs();
     if( !(root.isDirectory() && root.canRead() && root.canWrite()) )
@@ -64,8 +64,10 @@ final class PersistFS extends Persist {
     catch( FileNotFoundException e ) { throw Log.throwErr(e); }
     try {
       byte[] m = v.memOrLoad(); // we are not single threaded anymore
-      if( m != null && m.length == v._max )
+      if( m != null && m.length == v._max ) {
         Log.warn("Value size mismatch? " + v._key + " byte[].len=" + m.length+" v._max="+v._max);
+        v._max = m.length; // Implies update of underlying POJO, then re-serializing it without K/V storing it
+      }
       new AutoBuffer(s.getChannel(), false, Value.ICE).putA1(m, m.length).close();
       v.setdsk();             // Set as write-complete to disk
     } finally {

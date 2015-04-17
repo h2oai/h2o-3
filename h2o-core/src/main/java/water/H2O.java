@@ -1156,7 +1156,10 @@ final public class H2O {
 
     // Always print version, whether asked-for or not!
     printAndLogVersion();
-    if( ARGS.version ) { exit(0); }
+    if( ARGS.version ) {
+      Log.flushStdout();
+      exit(0);
+    }
 
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
