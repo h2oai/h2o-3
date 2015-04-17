@@ -140,9 +140,13 @@ class Cleaner extends Thread {
           continue;             // Too young
         }
 
+        // CNC - Memory cleaning turned off, except for Chunks
+        // Too many POJOs are written to dynamically; cannot spill & reload
+        // them without losing changes.
+
         // Should I write this value out to disk?
         // Should I further force it from memory?
-        if( !val.isPersisted() && !diskFull && (force || (lazyPersist() && lazy_clean(key)))) {
+        if( isChunk && !val.isPersisted() && !diskFull ) { // && (force || (lazyPersist() && lazy_clean(key)))) {
           try {
             val.storePersist(); // Write to disk
             if( m == null ) m = val.rawMem();
@@ -158,7 +162,7 @@ class Cleaner extends Thread {
           }
         }
         // And, under pressure, free all
-        if( force && val.isPersisted() ) {
+        if( isChunk && force && val.isPersisted() ) {
           val.freeMem ();  if( m != null ) freed += val._max;  m = null;
           val.freePOJO();  if( p != null ) freed += val._max;  p = null;
           if( isChunk ) freed -= val._max; // Double-counted freed mem for Chunks since val._pojo._mem & val._mem are the same.
