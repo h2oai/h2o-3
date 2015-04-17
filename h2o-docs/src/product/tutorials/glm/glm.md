@@ -88,11 +88,11 @@ Now, parse the imported data:
 To view the results, click the **View** button. The GLM output includes coefficients (as well as normalized coefficients when
 standardization is requested). The output also displays AIC, AUC, and deviance rates.  
 
-![GLM Results](../images/GLM_ModelResults.png)
+![GLM Results](images/GLM_ModelResults.png)
 
 To view more details, click the **Inspect** button. 
 
- ![GLM - Inspecting Results](../images/GLM_Inspect.png)
+ ![GLM - Inspecting Results](images/GLM_Inspect.png)
  
 
 
