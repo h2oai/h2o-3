@@ -117,7 +117,8 @@ abstract public class MemoryManager {
     while( (age-=5000) > 0 ) p = p-(p>>3); // Decay effective POJO by 1/8th every 5sec
     d -= 2*p - bytes; // Allow for the effective POJO, and again to throttle GC rate
     d = Math.max(d,MEM_MAX>>3); // Keep at least 1/8th heap
-    Cleaner.DESIRED = d;
+    if( Cleaner.DESIRED != -1 ) // Set to -1 only for OOM/Cleaner testing.  Never negative normally
+      Cleaner.DESIRED = d;
 
     String m="";
     if( cacheUsage > Cleaner.DESIRED ) {

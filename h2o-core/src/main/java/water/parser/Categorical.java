@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class Categorical extends Iced {
 
-  public static final int MAX_ENUM_SIZE = 65000;
+  public static final int MAX_ENUM_SIZE = 10000000;
   AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
   volatile NonBlockingHashMap<ValueString, Integer> _map;

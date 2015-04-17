@@ -153,16 +153,14 @@ def run_test(sys_args, test_to_run):
 
 def ipy_notebook_exec(path):
   notebook = json.load(open(path))
+  program = ''
   for block in notebook["cells"]:
-    cmd = ''
     for line in block["source"]:
       if "h2o.init" not in line:
-        if "def " in line:
-          cmd += line
-          cmd += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we enforce this def spacing
-          # standard in future notebooks
-        else: cmd += line
-    exec(cmd)
+        program += line
+        if "def " in line: program += "  import h2o\n" # this is a hack for the citiBike ipython notebook, unless we
+        # enforce this def spacing standard in future notebooks
+  exec(program)
 
 def remove(key):
   """

@@ -3,7 +3,6 @@ package water;
 import java.io.IOException;
 import java.util.Arrays;
 import water.fvec.Chunk;
-import water.persist.Persist;
 import water.util.Log;
 
 /** Store Cleaner: User-Mode Swap-To-Disk */
@@ -12,7 +11,7 @@ class Cleaner extends Thread {
   // msec time at which the STORE was dirtied.
   // Long.MAX_VALUE if clean.
   static private volatile long _dirty; // When was store dirtied
-
+  static long dirty() { return _dirty; } // exposed for testing only
   static void dirty_store() { dirty_store(System.currentTimeMillis()); }
   static void dirty_store( long x ) {
     // Keep earliest dirty time seen
@@ -21,15 +20,20 @@ class Cleaner extends Thread {
 
   static volatile long HEAP_USED_AT_LAST_GC;
   static volatile long TIME_AT_LAST_GC=System.currentTimeMillis();
-  static private final Object _store_cleaner_lock = new Object();
+  static final Cleaner THE_CLEANER = new Cleaner();
   static void kick_store_cleaner() {
-    synchronized(_store_cleaner_lock) { _store_cleaner_lock.notifyAll(); }
+    synchronized(THE_CLEANER) { THE_CLEANER.notifyAll(); }
   }
-  static void block_store_cleaner() {
-    synchronized( _store_cleaner_lock ) {
-      try { _store_cleaner_lock.wait(5000); } catch (InterruptedException ignore) { }
-    }
+  private static void block_store_cleaner() {
+    try { THE_CLEANER.wait(5000); } catch (InterruptedException ignore) { }
   }
+  volatile boolean _did_sweep;
+  static void block_for_test() throws InterruptedException { 
+    THE_CLEANER._did_sweep = false;
+    while( !THE_CLEANER._did_sweep )
+      THE_CLEANER.wait();
+  }
+
 
   // Desired cache level. Set by the MemoryManager asynchronously.
   static volatile long DESIRED;
@@ -56,7 +60,7 @@ class Cleaner extends Thread {
     return space >= 0 && space < (5 << 10);
   }
 
-  @Override public void run() {
+  @Override synchronized public void run() {
     boolean diskFull = false;
     while( true ) {
       // Sweep the K/V store, writing out Values (cleaning) and free'ing
@@ -87,13 +91,14 @@ class Cleaner extends Thread {
       // caching levels. If forced, be exact (toss out the minimal amount).
       // If lazy, store-to-disk things down to 1/2 the desired cache level
       // and anything older than 5 secs.
-      boolean force = (h._cached >= DESIRED); // Forced to clean
+      final boolean force = (h._cached >= DESIRED); // Forced to clean
       if( force && diskFull )
         diskFull = isDiskFull();
       long clean_to_age = h.clean_to(force ? DESIRED : (DESIRED>>1));
       // If not forced cleaning, expand the cleaning age to allows Values
       // more than 5sec old
       if( !force ) clean_to_age = Math.max(clean_to_age,now-5000);
+      if( DESIRED == -1 ) clean_to_age = now;  // Test mode: clean all
 
       // No logging if under memory pressure: can deadlock the cleaner thread
       String s = h+" DESIRED="+(DESIRED>>20)+"M dirtysince="+(now-dirty)+" force="+force+" clean2age="+(now-clean_to_age);
@@ -135,9 +140,13 @@ class Cleaner extends Thread {
           continue;             // Too young
         }
 
+        // CNC - Memory cleaning turned off, except for Chunks
+        // Too many POJOs are written to dynamically; cannot spill & reload
+        // them without losing changes.
+
         // Should I write this value out to disk?
         // Should I further force it from memory?
-        if( !val.isPersisted() && !diskFull && (force || (lazyPersist() && lazy_clean(key)))) {
+        if( isChunk && !val.isPersisted() && !diskFull ) { // && (force || (lazyPersist() && lazy_clean(key)))) {
           try {
             val.storePersist(); // Write to disk
             if( m == null ) m = val.rawMem();
@@ -153,7 +162,7 @@ class Cleaner extends Thread {
           }
         }
         // And, under pressure, free all
-        if( force && val.isPersisted() ) {
+        if( isChunk && force && val.isPersisted() ) {
           val.freeMem ();  if( m != null ) freed += val._max;  m = null;
           val.freePOJO();  if( p != null ) freed += val._max;  p = null;
           if( isChunk ) freed -= val._max; // Double-counted freed mem for Chunks since val._pojo._mem & val._mem are the same.
@@ -165,6 +174,10 @@ class Cleaner extends Thread {
           freed += val._max;
         }
       }
+      // For testing thread
+      _did_sweep = true;
+      if( DESIRED == -1 ) DESIRED = 0; // Turn off test-mode after 1 sweep
+      notifyAll();                     // Wake up testing thread
 
       h = _myHisto.histo(true); // Force a new histogram
       MemoryManager.set_goals("postclean",false);
@@ -178,13 +191,7 @@ class Cleaner extends Thread {
   // Rules on when to write & free a Key, when not under memory pressure.
   boolean lazy_clean( Key key ) {
     // Only data chunks are worth tossing out even lazily.
-    if( !key.isChunkKey() ) // Not arraylet?
-      return false; // Not enough savings to write it with mem-pressure to force us
-    // If this is a chunk of a system-defined array, then assume it has
-    // short lifetime, and we do not want to spin the disk writing it
-    // unless we're under memory pressure.
-    Key veckey = key.getVecKey();
-    return veckey.user_allowed(); // Write user keys but not system keys
+    return key.isChunkKey();
   }
 
   // Current best histogram
