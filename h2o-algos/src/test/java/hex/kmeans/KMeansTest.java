@@ -15,6 +15,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.Log;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -314,7 +315,7 @@ public class KMeansTest extends TestUtil {
 
   @Test public void testValidation() {
     KMeansModel kmm = null;
-      for (boolean standardize : new boolean[]{false}) {
+      for (boolean standardize : new boolean[]{true,false}) {
       Frame fr = null, fr2= null;
       Frame tr = null, te= null;
       try {
@@ -326,7 +327,6 @@ public class KMeansTest extends TestUtil {
         sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex")};
         // Invoke the job
         sf.exec().get();
-        Assert.assertTrue("The job is not in DONE state, but in " + sf._state, sf.isDone());
         Key[] ksplits = sf.dest_keys;
         tr = DKV.get(ksplits[0]).get();
         te = DKV.get(ksplits[1]).get();
@@ -365,27 +365,50 @@ public class KMeansTest extends TestUtil {
 
   @Test public void testValidationSame() {
     KMeansModel kmm = null;
-    for (boolean standardize : new boolean[]{false}) {
+    for (boolean standardize : new boolean[]{true}) {
       Frame fr = null, fr2= null;
+      Frame test = null;
       try {
         fr = parse_test_file("smalldata/iris/iris_wheader.csv");
 
+        SplitFrame sf = new SplitFrame(Key.make());
+        sf.dataset = fr;
+        sf.ratios = new double[] { 0.02, 0.6 };
+        sf.dest_keys = new Key[] { Key.make("train.hex"), Key.make("test.hex"), Key.make() };
+        // Invoke the job
+        sf.exec().get();
+        Key[] ksplits = sf.dest_keys;
+        test = DKV.get(ksplits[0]).get();
+
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-        parms._train = fr._key;
-        parms._valid = fr._key;
+        parms._train = test._key;
+//        parms._ignored_columns = new String[]{fr._names[4]};
+        parms._valid = test._key;
         parms._k = 3;
         parms._standardize = standardize;
         parms._max_iterations = 10;
-        parms._init = KMeans.Initialization.Random;
+        parms._init = KMeans.Initialization.Furthest;
         kmm = doSeed(parms, 0);
 
-        // Iris last column is categorical; make sure centers are ordered in the
-        // same order as the iris columns.
-        double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
-        for( int k=0; k<parms._k; k++ ) {
-          double flower = centers[k][4];
-          Assert.assertTrue("categorical column expected",flower==(int)flower);
-        }
+//        // Iris last column is categorical; make sure centers are ordered in the
+//        // same order as the iris columns.
+//        double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+//        for( int k=0; k<parms._k; k++ ) {
+//          double flower = centers[k][4];
+//          Assert.assertTrue("categorical column expected",flower==(int)flower);
+//        }
+
+        // Done building model; produce a score column with cluster choices
+        fr2 = kmm.score(test);
+        Log.info(fr2.toString(0,150));
+        Assert.assertTrue(kmm.testJavaScoring(test, fr2, 1e-15));
+        fr2.delete();
+
+        test.delete();
+
+        ksplits[0].remove();
+        ksplits[1].remove();
+        ksplits[2].remove();
 
         Assert.assertEquals(
                 ((ModelMetricsClustering) kmm._output._training_metrics)._avg_between_ss,
@@ -401,11 +424,6 @@ public class KMeansTest extends TestUtil {
                   ((ModelMetricsClustering) kmm._output._validation_metrics)._size[i], 0
           );
         }
-
-        // Done building model; produce a score column with cluster choices
-        fr2 = kmm.score(fr);
-        Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-        fr2.delete();
 
       } finally {
         if( fr  != null ) fr .delete();

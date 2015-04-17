@@ -63,9 +63,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_user_points","The user-specified points must have the same number of columns (" + _train.numCols() + ") as the training observations");
       }
     }
-    if (_parms._standardize && _parms._valid != null) {
-      error("_valid", "Validation dataset can only be specified if standardization is disabled.");
-    }
   }
 
   // ----------------------
@@ -276,11 +273,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._model_summary = createModelSummaryTable(model._output);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model._output._training_metrics = makeTrainingMetrics(model);
-          if (_valid != null) {
-            Frame pred = model.score(_parms.valid());
-            model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
-            pred.delete();
-          }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
 
@@ -289,6 +281,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         }
         Log.info(model._output._model_summary);
 //        Log.info(model._output._scoring_history);
+
+        // Final validation scoring, no need to gather scoring history
+        if (_valid != null) {
+          model.score(_parms.valid()); //this appends a ModelMetrics
+          model._output._validation_metrics = DKV.getGet(model._output._model_metrics[model._output._model_metrics.length-1]);
+        }
         done();                 // Job done!
 
       } catch( Throwable t ) {
