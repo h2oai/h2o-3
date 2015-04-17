@@ -80,7 +80,7 @@ def import_files(self, path, timeoutSecs=180):
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
-    a = self.do_json_request('2/ImportFiles.json',
+    a = self.do_json_request('3/ImportFiles.json',
         timeout=timeoutSecs,
         params={"path": path}
     )
@@ -109,7 +109,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         'number_columns': None,
         'column_names': None, # a list
         'column_types': None, # a list. or can use columnTypeDict param (see below)
-	'na_strings' : None, # a list
+        'na_strings' : None, # a list
         'chunk_size': None,
         # are these two no longer supported?
         'delete_on_done': None,
@@ -126,12 +126,12 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
         # len 1 is ok here. 0 not. what if None or [None] here
         if not key:
             raise Exception("key seems to be bad in parse. Should be list or string. %s" % key)
-        # have to put quotes around the individual list items
-        source_keys = "[" + ",".join(map((lambda x: "'" + x + "'"), key)) + "]"
+        # have to put double quotes around the individual list items (single not legal)
+        source_keys = "[" + ",".join(map((lambda x: '"' + x + '"'), key)) + "]"
 
     else:
         # what if None here
-        source_keys = "['" + key + "']" # quotes required on key
+        source_keys = '["' + key + '"]' # quotes required on key
 
     params_dict['source_keys'] = source_keys
 
@@ -147,7 +147,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
 
     # h2o_methods.check_params_update_kwargs(params_dict, kwargs, 'parse_setup', print_params=True)
     params_setup = {'source_keys': source_keys}
-    setup_result = self.do_json_request(jsonRequest="2/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
+    setup_result = self.do_json_request(jsonRequest="3/ParseSetup.json", cmd='post', timeout=timeoutSecs, postData=params_setup)
     h2o_sandbox.check_sandbox_for_errors()
     verboseprint("ParseSetup result:", dump_json(setup_result))
 
@@ -161,7 +161,8 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
     if setup_result['column_names']:
-        columnNamesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), setup_result['column_names'])) + "]"
+        # single quotes not legal..need double quotes
+        columnNamesStr = "[" + ",".join(map((lambda x: '"' + x + '"'), setup_result['column_names'])) + "]"
     else:
         columnNamesStr = None
 
@@ -169,7 +170,8 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
 
     if setup_result['na_strings']:
-	naStrings = "[" + ",".join(map((lambda x: "'" + x + "'" if x != None else "''"), setup_result['na_strings'])) + "]"
+    # single quotes not legal..need double quotes
+	naStrings = "[" + ",".join(map((lambda x: '"' + x + '"' if x != None else '""'), setup_result['na_strings'])) + "]"
     else:
         naStrings = None
 
@@ -230,7 +232,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # print "parse column_names is length:", len(parse_params['column_names'])
 
     # none of the kwargs passed to here!
-    parse_result = self.do_json_request( jsonRequest="2/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
+    parse_result = self.do_json_request( jsonRequest="3/Parse.json", cmd='post', postData=parse_params, timeout=timeoutSecs)
     verboseprint("Parse result:", dump_json(parse_result))
 
     job_key = parse_result['job']['key']['name']
