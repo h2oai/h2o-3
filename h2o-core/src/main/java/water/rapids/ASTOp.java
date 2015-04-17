@@ -2077,13 +2077,16 @@ class ASTMatch extends ASTUniPrefixOp {
     AST ary = E.parse();
 
     // The `table` arg
-    _matches = ((ASTStringList)E.parse())._s;
+    AST a = E.parse();
+    if( a instanceof ASTString ) _matches = new String[]{((ASTString)a)._s};
+    else if( a instanceof ASTStringList ) _matches = ((ASTStringList)E.parse())._s;
+    else throw new IllegalArgumentException("`table` expected to be either a String or an slist. Got: " + a.getClass());
     Arrays.sort(_matches);
 
     // `nomatch` is just a number in case no match
     AST nm = E.parse();
     if( nm instanceof ASTNum ) _nomatch = ((ASTNum)nm)._d;
-    else throw new IllegalArgumentException("Argument `nomatch` expected a number.");
+    else throw new IllegalArgumentException("Argument `nomatch` expected a number. Got: " + nm.getClass());
 
     // drop the incomparables arg for now ...
     AST incomp = E.parse();
