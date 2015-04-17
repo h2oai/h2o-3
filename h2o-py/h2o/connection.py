@@ -13,6 +13,8 @@ import tempfile
 import tabulate
 import subprocess
 import atexit
+import pkg_resources
+
 from two_dim_table import H2OTwoDimTable
 
 __H2OCONN__ = None            # the single active connection to H2O cloud
@@ -31,7 +33,7 @@ class H2OConnection(object):
   """
 
   def __init__(self, ip="localhost", port=54321, size=1, start_h2o=False, enable_assertions=False,
-               license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None):
+               license=None, max_mem_size_GB=1, min_mem_size_GB=1, ice_root=None, strict_version_check=False):
     """
         Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -95,6 +97,16 @@ class H2OConnection(object):
     print
     print tabulate.tabulate(cluster_info)
     print
+
+    ver_h2o = cld['version']
+    ver_pkg = pkg_resources.get_distribution("h2o").version
+    if ver_h2o != ver_pkg:
+      message = \
+        "Version mismatch! H2O is running version {0} but python package is version {1}".format(ver_h2o, str(ver_pkg))
+      if strict_version_check:
+        raise EnvironmentError, message
+      else:
+        print "Warning: {0}".format(message)
 
   def _connect(self, size, max_retries=5, print_dots=False):
     """
