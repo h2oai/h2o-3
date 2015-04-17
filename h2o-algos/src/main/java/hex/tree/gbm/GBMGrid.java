@@ -31,7 +31,7 @@ public class GBMGrid<G extends GBMGrid<G>> extends SharedTreeGrid<G> {
   /** @return Model name */
   @Override protected String modelName() { return MODEL_NAME; }
 
-  private static final String[] HYPER_NAMES    = ArrayUtils.append(SharedTreeGrid.HYPER_NAMES   ,new String[] {    "_loss"               , "_learn_rate"});
+  private static final String[] HYPER_NAMES    = ArrayUtils.append(SharedTreeGrid.HYPER_NAMES   ,new String[] {    "_distribution"               , "_learn_rate"});
   private static final double[] HYPER_DEFAULTS = ArrayUtils.append(SharedTreeGrid.HYPER_DEFAULTS,new double[] { Family.gaussian.ordinal(),     0.1f     });
   /** @return hyperparameter names corresponding to a Model.Parameter field names */
   @Override protected String[] hyperNames() { return HYPER_NAMES; }
@@ -59,7 +59,7 @@ public class GBMGrid<G extends GBMGrid<G>> extends SharedTreeGrid<G> {
     GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
     getBuilder(parms,hypers);
     int slen = SharedTreeGrid.HYPER_NAMES.length;
-    parms._loss = Family.values()[(int)hypers[slen+0]];
+    parms._distribution = Family.values()[(int)hypers[slen+0]];
     parms._learn_rate =         (float)hypers[slen+1];
     return new GBM(parms);
   }
@@ -71,7 +71,7 @@ public class GBMGrid<G extends GBMGrid<G>> extends SharedTreeGrid<G> {
     double[] hypers = new double[HYPER_NAMES.length];
     super.getHypers(gbmp,hypers);
     int slen = SharedTreeGrid.HYPER_NAMES.length;
-    hypers[slen+0] = gbmp._loss.ordinal();
+    hypers[slen+0] = gbmp._distribution.ordinal();
     hypers[slen+1] = gbmp._learn_rate;
     return hypers;
   }

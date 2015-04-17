@@ -29,7 +29,7 @@ def prep_airlines(ip,port):
     noDepDelayedNAs[numCols] = noDepDelayedNAs[numCols].asfactor()
     noDepDelayedNAs._vecs[numCols].setName(y_col)
 
-    gbm = h2o.gbm(x=noDepDelayedNAs[x_cols], y=noDepDelayedNAs[y_col], loss="bernoulli")
+    gbm = h2o.gbm(x=noDepDelayedNAs[x_cols], y=noDepDelayedNAs[y_col], distribution="bernoulli")
     gbm.show()
 
 if __name__ == "__main__":
