@@ -142,7 +142,8 @@ public abstract class ASTOp extends AST {
     putPrefix(new ASTRound());
     putPrefix(new ASTSignif());
     putPrefix(new ASTTrun());
-
+    putPrefix(new ASTLPut());
+    putPrefix(new ASTGPut());
     putPrefix(new ASTTranspose());
 
     // Trigonometric functions
@@ -2030,6 +2031,73 @@ class ASTRename extends ASTUniPrefixOp {
     Frame fr2 = fr.deepCopy(_newname);
     DKV.put(fr2._key, fr2);
     e.pushAry(fr2);
+  }
+}
+
+// non-copying DKV put...
+class ASTGPut extends ASTUniPrefixOp {
+  @Override String opStr() { return "gput"; }
+  ASTGPut() { super(new String[] {"lhs_name","rhs"}); }
+  ASTGPut(String[] s) { super(s); }
+  @Override ASTOp make() { return new ASTGPut(); }
+  ASTGPut parse_impl(Exec E) {
+    String l;
+    if( E.isSpecial(E.peek()) ) l = E.nextStr();
+    else                        l = E.parseID();
+    AST lhs = new ASTString('\"',l);
+    AST rhs = E.parse();
+    E.eatEnd();
+    ASTGPut res = (ASTGPut)clone();
+    res._asts = new AST[]{rhs,lhs};
+    return res;
+  }
+  @Override void apply(Env e) {
+    // stack is [ ..., rhs, lhs ]
+    Key k = Key.make(e.popStr());
+    Frame fr;
+    if( e.isAry() ) {
+      Frame f = e.popAry();
+      fr = new Frame(k, f.names(), f.vecs());
+    } else if( e.isNum() ) fr = new Frame(k, null, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
+    else if( e.isStr() ) {
+      Vec v = Vec.makeZero(1);
+      v.setDomain(new String[]{e.popStr()});
+      fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
+    } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
+    DKV.put(k, fr);
+    e._locked.add(k);
+    e.addKeys(fr);
+    e._global._frames.put(k.toString(), fr);
+    e.push(new ValFrame(fr, true /*isGlobalSet*/));
+    e.put(k.toString(), Env.ARY, k.toString());
+  }
+}
+
+// non-copying local put...
+class ASTLPut extends ASTGPut {
+  @Override String opStr() { return "lput"; }
+  ASTLPut() { super(new String[] {"lhs_name","rhs"}); }
+  @Override ASTOp make() { return new ASTLPut(); }
+  // rely on ASTGPut parse impl...
+  @Override void apply(Env e) {
+    // stack is [ ..., rhs, lhs ]
+    Key k = Key.make(e.popStr());
+    Frame fr;
+    if( e.isAry() ) {
+      Frame f = e.popAry();
+      fr = new Frame(k, f.names(), f.vecs());
+    } else if( e.isNum() ) fr = new Frame(k, null, new Vec[]{Vec.makeCon(e.popDbl(), 1)});
+    else if( e.isStr() ) {
+      Vec v = Vec.makeZero(1);
+      v.setDomain(new String[]{e.popStr()});
+      fr = new Frame(k,new String[]{"C1"}, new Vec[]{v});
+    } else throw new IllegalArgumentException("Don't know what to do with: "+e.peek().getClass());
+    e._locked.add(k);
+    e.addKeys(fr);
+    e._local._frames.put(k.toString(), fr);
+    e._global._frames.put(k.toString(), fr);
+    e.push(new ValFrame(fr, false /*isGlobalSet*/));
+    e.put(k.toString(), Env.ARY, k.toString());
   }
 }
 
