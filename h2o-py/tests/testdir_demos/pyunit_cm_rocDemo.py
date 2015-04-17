@@ -28,7 +28,7 @@ def demo_cm_roc(ip,port):
 
     #gbm
     gbm = h2o.gbm(x=air_train[myX], y=air_train[myY], validation_x= air_valid[myX],
-                  validation_y=air_valid[myY], loss="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
+                  validation_y=air_valid[myY], distribution="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
     gbm.show()
     gbm._model_json['output']['variable_importances'].show()
 
