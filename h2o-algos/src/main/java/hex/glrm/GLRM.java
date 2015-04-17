@@ -74,6 +74,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     if (_parms._gamma < 0) error("_gamma", "gambda must be a non-negative number");
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
       error("_max_iterations", "max_iterations must be between 1 and 1e6 inclusive");
+    if (_parms._init_step_size <= 0)
+      error ("_init_step_size", "init_step_size must be a positive number");
+    if (_parms._min_step_size < 0 || _parms._min_step_size > _parms._init_step_size)
+      error("_min_step_size", "min_step_size must be between 0 and " + _parms._init_step_size);
 
     if (_train == null) return;
     if (_train.numCols() < 2) error("_train", "_train must have more than one column");
@@ -199,7 +203,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         centers = transform(km._output._centers_raw, 0, km._output._normSub, km._output._normMul);
       }
 
-      // If all centers entries are zero or any is NaN, initialize to standard normal random matrix
+      // If all centers are zero or any are NaN, initialize to standard normal random matrix
       double frob = frobenius2(centers);
       if(frob == 0 || Double.isNaN(frob)) {
         warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead...");
@@ -209,14 +213,19 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     // Stopping criteria
-    private boolean isDone(GLRMModel model) {
-      if (!isRunning()) return true; // Stopped/cancelled
+    private boolean isDone(GLRMModel model, int steps_in_row, double alpha) {
+      if (!isRunning()) return true;  // Stopped/cancelled
+
       // Stopped for running out of iterations
       if (model._output._iterations > _parms._max_iterations) return true;
 
-      // Stopped when average decrease in objective per iteration < TOLERANCE
-      if( Math.abs(model._output._avg_change_obj) < TOLERANCE ) return true;
-      return false;             // Not stopping
+      // Stopped for falling below minimum step size
+      if (alpha <= _parms._min_step_size) return true;
+
+      // Stopped when enough steps and average decrease in objective per iteration < TOLERANCE
+      if (model._output._iterations > 10 && steps_in_row > 3 &&
+              Math.abs(model._output._avg_change_obj) < TOLERANCE) return true;
+      return false;       // Not stopping
     }
 
     public Cholesky regularizedCholesky(Gram gram, int max_attempts) {
@@ -339,10 +348,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._avg_change_obj = 2 * TOLERANCE;    // Run at least 1 iteration
 
         boolean overwriteX = false;
-        double step = 1.0;        // Initial step size
-        double steps_in_row = 0;  // Keep track of number of steps taken that decrease objective
+        double step = _parms._init_step_size;   // Initial step size
+        int steps_in_row = 0;                   // Keep track of number of steps taken that decrease objective
 
-        while (!isDone(model)) {
+        while (!isDone(model, steps_in_row, step)) {
           // 1) Update X matrix given fixed Y
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX);
           xtsk.doAll(dinfo._adaptedFrame);
@@ -368,7 +377,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             step = step / Math.max(1.5, -steps_in_row);
             steps_in_row = Math.min(0, steps_in_row-1);
             overwriteX = false;
-            // Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective);
+            // Log.info("Iteration " + model._output._iterations + ": Objective increased to " + model._output._objective + "; reducing step size to " + step);
           }
           model.update(_key); // Update model in K/V store
           update(1);          // One unit of work
@@ -432,7 +441,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private class UpdateX extends MRTask<UpdateX> {
     // Input
     GLRMParameters _parms;
-    double _alpha;      // Step size
+    double _alpha;      // Step size divided by num cols in A
     boolean _update;    // Should we update X from working copy?
     double[][] _yt;     // _yt = Y' (transpose of Y)
 
@@ -506,7 +515,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private class UpdateY extends MRTask<UpdateY> {
     // Input
     GLRMParameters _parms;
-    double _alpha;      // Step size
+    double _alpha;      // Step size divided by num cols in A
     double[][] _ytold;  // Old Y matrix
 
     // Output

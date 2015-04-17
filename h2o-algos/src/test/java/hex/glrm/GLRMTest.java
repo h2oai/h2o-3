@@ -70,12 +70,13 @@ public class GLRMTest extends TestUtil {
     GLRM job = null;
     GLRMModel model = null;
     Frame train = null;
+
     try {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._k = 4;
       parms._gamma = 0;
+      parms._k = 4;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_pca = false;
 
@@ -109,12 +110,12 @@ public class GLRMTest extends TestUtil {
       train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
-      parms._k = 10;
+      parms._k = 14;
       parms._gamma = 0;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._recover_pca = false;
-      parms._max_iterations = 5000;
+      parms._max_iterations = 2000;
 
       try {
         job = new GLRM(parms);
@@ -161,14 +162,16 @@ public class GLRMTest extends TestUtil {
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._max_iterations = 1000;
+      parms._min_step_size = 1e-8;
       parms._user_points = yinit._key;
       parms._recover_pca = true;
 
       GLRM job = new GLRM(parms);
       try {
         model = job.trainModel().get();
-        // checkStddev(stddev, model._output._std_deviation);
-        // checkEigvec(eigvec, model._output._eigenvectors_raw);
+        Log.info("Iteration " + model._output._iterations + ": Objective value = " + model._output._objective);
+        checkStddev(stddev, model._output._std_deviation);
+        checkEigvec(eigvec, model._output._eigenvectors_raw);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
