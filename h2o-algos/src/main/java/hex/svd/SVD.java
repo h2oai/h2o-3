@@ -56,9 +56,20 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     if (_parms._ukey == null) _parms._ukey = Key.make("SVDUMatrix_" + Key.rand());
     if (_parms._max_iterations < 1)
       error("_max_iterations", "max_iterations must be at least 1");
-    if(_train != null && (_parms._nv < 1 || _parms._nv > _train.numCols()))
+
+    if(_train == null) return;
+
+    if(_parms._nv < 1 || _parms._nv > _train.numCols())
       error("_nv", "Number of right singular values must be between 1 and " + _train.numCols());
-    if(_train != null) _ncols = _train.numCols();
+
+    Vec[] vecs = _train.vecs();
+    for (int i = 0; i < vecs.length; i++) {
+      if (!vecs[i].isNumeric()) {
+        error("_train", "Training frame must contain all numeric data");
+        break;
+      }
+    }
+    _ncols = _train.numCols();
   }
 
   public double[] powerLoop(double[][] gram) {
@@ -73,7 +84,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     // Set initial value v_0 to standard normal distribution
     int iters = 0;
-    double err = 2*TOLERANCE;
+    double err = 2 * TOLERANCE;
     double[] v = vinit.clone();
     double[] vnew = new double[v.length];
 
@@ -97,6 +108,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
     return v;
   }
 
+  // Subtract two symmetric matrices
   public double[][] sub_symm(double[][] lmat, double[][] rmat) {
     for(int i = 0; i < rmat.length; i++) {
       for(int j = 0; j < i; j++) {
