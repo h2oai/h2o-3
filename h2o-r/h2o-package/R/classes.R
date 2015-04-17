@@ -313,47 +313,35 @@ setMethod("show", "H2OModel", function(object) {
   cat("Model Key: ", o@key, "\n")
 
   # summary
-  cat("\n")
-  if( !is.null(m$model_summary) ) { print(m$model_summary) }
+  print(summary(o))
 
   # metrics
-  if( is(object, "H2OMultinomialModel") ) {
-    cat("\n")
+  if( is(o, "H2OMultinomialModel") ) {
     # Training Metrics
-    if( !is.null(m$training_metrics) ) { .showMultiMetrics(m$training_metrics,"Training"); cat("\n"); }
-    else                               cat("\n No training metrics generated during model build.\n")
+    h2o.performance(o,train=TRUE)
 
     # Validation Metrics
-    if( !is.null(m$validation_metrics) )  { .showMultiMetrics(m$validation_metrics, "Validation"); cat("\n"); }
+    h2o.performance(o,valid=TRUE)
   }
 
   # History
   cat("\n")
-  if( !is.null(m$scoring_history) ) {
-    nr <- nrow(m$scoring_history)
-    if( nr > 20L ) {
-      print(m$scoring_history[1L:5L,])
-      cat("\n---\n")
-      print(data.frame(m$scoring_history[(nr-5L):nr,]))
-    } else {
-      print(m$scoring_history)
-    }
-    cat("\n")
-  }
+  h2o.scoreHistory(o)
 
   # Varimp
   cat("\n")
   if( !is.null( m$variable_importances ) ) {
     cat("Variable Importances: (Extract with `h2o.varimp`) \n")
     cat("=================================================\n\n")
-    print(m$variable_importances)
+    h2o.varimp(o)
   }
 })
 
-.showMultiMetrics <- function(metrics, train_or_valid="Training") {
+.showMultiMetrics <- function(o, train_or_valid="Training") {
   arg <- "train"
   if( train_or_valid != "Training" ) arg <- "validation"
-  tm <- metrics
+  tm <- o@model$training_metrics
+  if( arg == "validation" ) tm <- o@model$validation_metrics
   cat(train_or_valid, "Metrics: \n")
   cat("=================\n")
   if( !is.null(tm$description)     )  cat(tm$description, "\n")
@@ -361,9 +349,10 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n")
   if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n")
   if( !is.null(tm$cm)              )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
-  if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(tm$cm$table) }
+  if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) }
   if( !is.null(tm$hit_ratio_table) )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
-  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); print(tm$hit_ratio_table) }
+  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); h2o.hit_ratio_table(o); }
+  invisible(tm)
 }
 
 #' @rdname H2OModel-class
