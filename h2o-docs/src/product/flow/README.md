@@ -153,7 +153,7 @@ There are multiple ways to import data in H2O flow:
   
  ![Flow - Import Files](images/Flow_Import_DragDrop.png)
 
-- In a blank cell, select the CS format, then enter `importFiles [ "path/filename.format" ]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
+- In a blank cell, select the CS format, then enter `importFiles ["path/filename.format"]` (where `path/filename.format` represents the complete file path to the file, including the full file name. The file path can be a local file path or a website address. 
 
 After selecting the file to import, the file path displays in the "Search Results" section. To import a single file, click the plus sign next to the file. To import all files in the search results, click the **Add all** link. The files selected for import display in the "Selected Files" section. 
 
@@ -331,9 +331,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Solver**: [(GLM)](#GLM) Select the solver to use (ADMM, L\_BFGS, or none). [ADMM](http://www.stanford.edu/~boyd/papers/admm_distr_stats.html) supports more features and [L_BFGS](http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf) scales better for datasets with many columns. The default is ADMM. 
 
-- **Ntrees**: [(GBM](#GBM), [DRF)](#drf) Specify the number of trees. For Grid Search, use comma-separated values (for example: 50,100,150,200). The default value is 50. 
+- **Ntrees**: [(GBM](#GBM), [DRF)](#drf) Specify the number of trees. The default value is 50. 
 
-- **Max\_depth**: [(GBM](#GBM), [DRF)](#drf) Specify the maximum tree depth. For Grid Search, use comma-separated values (for example: 5,7). For GBM, the default value is 5. For DRF, the default value is 20. 
+- **Max\_depth**: [(GBM](#GBM), [DRF)](#drf) Specify the maximum tree depth. For GBM, the default value is 5. For DRF, the default value is 20. 
 
 - **Min\_rows**: [(GBM)](#GBM), [(DRF)](#drf) Specify the minimum number of observations for a leaf ("nodesize" in R). For Grid Search, use comma-separated values. The default value is 10.
 
@@ -347,7 +347,10 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers. 
+- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
+
+- **Score\_each\_iteration**: ([K-Means](#kmeans), [DRF](#drf), [NaiveBayes](#nb), [PCA](#pca), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
+
 - **K**: [(K-Means)](#Kmeans), [(PCA)](#pca) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation. The default for K-Means and PCA is 1.  
 
 - **Gamma**: [(PCA)](#pca) Specify the regularization weight for PCA. The default is 0. 
@@ -411,6 +414,10 @@ The available options vary depending on the selected model. If an option is only
 
 - **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
+- **Max\_confusion\_matrix\_size**: ([DRF](#drf), [NaiveBayes](#nb), [GBM](#GBM)) Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
+
+- **Max\_hit\_ratio\_k**: ([DRF](#drf), [NaiveBayes](#nb)) Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
+
 - **Link**: [(GLM)](#GLM) Select a link function (Identity, Family_Default, Logit, Log, or Inverse).
 
 - **Alpha**: [(GLM)](#GLM) Specify the regularization distribution between L2 and L2. The default value is 0.5. 
@@ -449,7 +456,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Max_W2**: [(DL)](#DL) Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). The default value is infinity. 
 
-- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, Normal, or None). The default is Uniform Adaptive. If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
+- **Initial\_weight\_distribution**: [(DL)](#DL) Select the initial weight distribution (Uniform Adaptive, Uniform, or Normal). The default is Uniform Adaptive. If Uniform Adaptive is used, the **initial\_weight\_scale** parameter is not applicable. 
  
 - **Initial\_weight\_scale**: [(DL)](#DL) Specify the initial weight scale of the distribution function for Uniform or Normal distributions. For Uniform, the values are drawn uniformly from initial weight scale. For Normal, the values are drawn from a Normal distribution with the standard deviation of the initial weight scale. The default value is 1.0. If Uniform Adaptive is selected as the **initial\_weight\_distribution**, the **initial\_weight\_scale** parameter is not applicable.
 
@@ -473,7 +480,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Shuffle\_training\_data**: [(DL)](#DL) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip, MeanImputation, or None). The default value is MeanImputation. 
+- **Missing\_values\_handling**: [(DL)](#DL) Select how to handle missing values (Skip or MeanImputation). The default value is MeanImputation. 
 
 - **Quiet_mode**: [(DL)](#DL) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
@@ -491,7 +498,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **Export\_weights\_and\_biases**: [(DL)](#DL) To export the neural network weights and biases as H2O frames, check this checkbox. 
 
-- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#drf), [NaiveBayes)](#nb), [GBM](#GBM)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
+- **Class\_sampling\_factors**: ([GLM](#GLM), [DRF](#drf), [NaiveBayes)](#nb), [GBM](#GBM), [DL](#DL)) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. There is no default value. This option is only applicable for classification problems and when **Balance_Classes** is enabled. 
 
 - **Seed**: ([K-Means](#Kmeans), [GBM](#GBM), [DL](#DL), [DRF](#drf)) Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
@@ -586,8 +593,21 @@ For parsed data, the following information displays:
 
 To make a prediction, check the checkboxes for the frames you want to use to make the prediction, then click the **Predict on Selected Frames** button. 
 
+---
 
+## Splitting Frames
 
+In H2O Flow, you can split datasets within Flow for use in training and testing. 
+
+0. To split a frame, click the **Assist Me** button, then click **splitFrame**. 
+0. From the drop-down **Frame:** list, select the frame to split. 
+0. In the **Ratio** entry field, specify the fractional value to determine the split. 
+   **Note** Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
+0. In the **Key** entry field, specify a name for the new frame. 
+0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
+0. Click the **Create** button.  
+
+---
 
 ## Plotting Frames
 
@@ -635,7 +655,10 @@ Deleted clips are stored in the trash. To permanently delete all clips in the tr
 <a name="Outline"></a>
 # Viewing Outlines
 
-The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. To jump to a specific cell, click the cell description. 
+The "Outline" tab in the sidebar displays a brief summary of the cells currently used in your flow; essentially, a command history. 
+
+- To jump to a specific cell, click the cell description. 
+- To delete a cell, select it and press the X key on your keyboard. 
 
  ![View Outline](images/Flow_outline.png)
 

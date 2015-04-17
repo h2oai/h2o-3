@@ -14,6 +14,10 @@ public class H2OParseException extends H2OAbstractRuntimeException {
     super(msg, dev_msg);
   }
 
+  public H2OParseException(String msg) {
+    super(msg, msg);
+  }
+
   public H2OParseException(Key key, H2OParseException pse) {
     super("Problem parsing "+key.toString()+"\n"+pse.getMessage(), pse.dev_message);
   }

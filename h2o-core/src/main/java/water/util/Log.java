@@ -64,6 +64,7 @@ abstract public class Log {
 
   public static void info( String s, boolean stdout ) { write0(INFO, stdout, s); }
 
+  // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
     err(e);                     // Log it
     throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e); // Throw it
@@ -134,6 +135,14 @@ abstract public class Log {
 
   // A little bit of startup buffering
   private static ArrayList<String> INIT_MSGS = new ArrayList<String>();
+
+  public static void flushStdout() {
+    for (String s : INIT_MSGS) {
+      System.out.println(s);
+    }
+
+    INIT_MSGS.clear();
+  }
 
   /**
    * @return This is what should be used when doing Download All Logs.

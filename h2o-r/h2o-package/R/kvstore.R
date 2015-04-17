@@ -56,7 +56,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #'
 #' @param conn An \linkS4class{H2OConnection} object containing the IP address and port number
 #' of the H2O server.
-#' @param timeout_secs Timeout in seconds. Default is 5 minutes (300s).
+#' @param timeout_secs Timeout in seconds. Default is no timeout.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' library(h2o)
@@ -67,7 +67,7 @@ h2o.ls <- function(conn = h2o.getConnection()) {
 #' h2o.removeAll(localH2O)
 #' h2o.ls(localH2O)
 #' @export
-h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=120) {
+h2o.removeAll <- function(conn = h2o.getConnection(), timeout_secs=0) {
   tryCatch(
     invisible(.h2o.__remoteSend(conn, .h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {

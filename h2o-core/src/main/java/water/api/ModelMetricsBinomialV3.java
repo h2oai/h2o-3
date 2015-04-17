@@ -46,20 +46,25 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       for( int i=0; i<auc._nBins; i++ )
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
-      String[] colHeaders = new String[crits.length];
-      String[] types      = new String[crits.length];
-      String[] formats    = new String[crits.length];
-      for( int i=0; i<crits.length; i++ ) {
+      String[] colHeaders = new String[crits.length+1];
+      String[] types      = new String[crits.length+1];
+      String[] formats    = new String[crits.length+1];
+      int i=0;
+      for( i=0; i<crits.length; i++ ) {
         colHeaders[i] = crits[i].toString();
         types     [i] = crits[i]._isInt ? "long" : "double";
         formats   [i] = crits[i]._isInt ? "%d"   : "%f"    ;
       }
+      colHeaders[i] = "idx"; types[i] = "integer"; formats[i] = "%d";
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Thresholds x Metric Scores", null, thresholds, colHeaders, types, formats, "Thresholds" );
-      for( int i=0; i<auc._nBins; i++ )
-        for (int j = 0; j < crits.length; j++) {
+      for( i=0; i<auc._nBins; i++ ) {
+        int j;
+        for (j = 0; j < crits.length; j++) {
           double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
           thresholdsByMetrics.set(i, j, crits[j]._isInt ? (Object) ((long) d) : d);
         }
+        thresholdsByMetrics.set(i, j, i);
+      }
       this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
 
       // Fill TwoDimTable
@@ -68,7 +73,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
               new String[]{"double",   "double","long"},
               new String[]{"%f",       "%f",    "%d"},
               "Metric" );
-      for( int i=0; i<crits.length; i++ ) {
+      for( i=0; i<crits.length; i++ ) {
         int idx = crits[i].max_criterion_idx(auc);
         maxMetrics.set(i,0,idx==-1 ? Double.NaN : auc._ths[idx]);
         maxMetrics.set(i,1,idx==-1 ? Double.NaN : crits[i].exec(auc,idx));

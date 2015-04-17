@@ -892,7 +892,7 @@ final public class H2O {
     // mappings periodically to disk. There should be only 1 of these, and it
     // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
     // an initial histogram state.
-    new Cleaner().start();
+    Cleaner.THE_CLEANER.start();
 
     // Start a UDP timeout worker thread. This guy only handles requests for
     // which we have not recieved a timely response and probably need to
@@ -1030,7 +1030,7 @@ final public class H2O {
 
   // --------------------------------------------------------------------------
   static void initializePersistence() {
-    PM = new PersistManager(ICE_ROOT);
+    _PM = new PersistManager(ICE_ROOT);
 
     if( ARGS.aws_credentials != null ) {
       try { water.persist.PersistS3.getClient(); }
@@ -1117,8 +1117,8 @@ final public class H2O {
   }
 
   // Persistence manager
-  private static PersistManager PM;
-  public static PersistManager getPM() { return PM; }
+  private static PersistManager _PM;
+  public static PersistManager getPM() { return _PM; }
 
   // Node persistent storage
   private static NodePersistentStorage NPS;
@@ -1156,7 +1156,10 @@ final public class H2O {
 
     // Always print version, whether asked-for or not!
     printAndLogVersion();
-    if( ARGS.version ) { exit(0); }
+    if( ARGS.version ) {
+      Log.flushStdout();
+      exit(0);
+    }
 
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }

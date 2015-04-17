@@ -2,9 +2,7 @@ package hex;
 
 import hex.ClusteringModel.ClusteringOutput;
 import hex.ClusteringModel.ClusteringParameters;
-import water.H2OModelBuilderError;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -82,7 +80,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
     @Override
-    public double[] perRow(double[] preds, float[] dataRow, Model m) {
+    public double[] perRow(double[] preds, float[] dataRow, Model m, double[] mean) {
       assert m instanceof ClusteringModel;
       assert !Double.isNaN(preds[0]);
 
@@ -94,12 +92,14 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
       // Compute error
       for (int i = 0; i < dataRow.length; ++i) {
-        double err = (double) centers.get(clus, i) - dataRow[i]; // Error: distance from assigned cluster center
+        // Impute missing dataRow[i] using mean of test column i if available
+        double d = Double.isNaN(dataRow[i]) && mean != null ? mean[i] : dataRow[i];
+        double err = (double) centers.get(clus, i) - d; // Error: distance from assigned cluster center
         _sumsqe += err * err;       // Squared error
         _within_sumsqe[clus] += err * err;
 
-        _colSum[i] += dataRow[i];
-        _colSumSq[i] += dataRow[i] * dataRow[i];
+        _colSum[i] += d;
+        _colSumSq[i] += d * d;
       }
       if (Double.isNaN(_sumsqe))
         throw new H2OIllegalArgumentException("Sum of Squares is invalid (Double.NaN) - Check for missing values in the dataset.");
