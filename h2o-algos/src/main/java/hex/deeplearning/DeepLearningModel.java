@@ -424,7 +424,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
      * Activation functions
      */
     public enum Activation {
-      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
+      Sigmoid, Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout
     }
 
     /**
@@ -2272,6 +2272,7 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     }
 
     boolean tanh=(get_params()._activation == DeepLearningParameters.Activation.Tanh || get_params()._activation == DeepLearningParameters.Activation.TanhWithDropout);
+    boolean sigmoid=(get_params()._activation == DeepLearningParameters.Activation.Sigmoid);
     boolean relu=(get_params()._activation == DeepLearningParameters.Activation.Rectifier || get_params()._activation == DeepLearningParameters.Activation.RectifierWithDropout);
     boolean maxout=(get_params()._activation == DeepLearningParameters.Activation.Maxout || get_params()._activation == DeepLearningParameters.Activation.MaxoutWithDropout);
 
@@ -2309,6 +2310,8 @@ public class DeepLearningModel extends SupervisedModel<DeepLearningModel,DeepLea
     bodySb.i(2).p("for (int r=0; r<ACTIVATION[i].length; ++r) {").nl();
     if (tanh) {
       bodySb.i(3).p("ACTIVATION[i][r] = 1f - 2f / (1f + (float)Math.exp(2*ACTIVATION[i][r]));").nl();
+    } else if (sigmoid) {
+      bodySb.i(3).p("ACTIVATION[i][r] = 1f / (1f + (float)Math.exp(-ACTIVATION[i][r]));").nl();
     } else if (relu) {
       bodySb.i(3).p("ACTIVATION[i][r] = Math.max(0f, ACTIVATION[i][r]);").nl();
     } else if (maxout) {
