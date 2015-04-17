@@ -195,7 +195,7 @@ Metrics
 * See more in the chapter on Metrics
 
 """
-__version__ = "0.3.0.99999"
+__version__ = "SUBST_PROJECT_VERSION"
 from h2o import *
 from model import *
 from frame import H2OFrame
