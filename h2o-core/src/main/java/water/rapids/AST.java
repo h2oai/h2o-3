@@ -1393,6 +1393,21 @@ abstract class ASTList extends AST {
   ASTList() { spans=new ArrayList<>(); }
 }
 
+class ASTAry extends ASTList {
+  AST[] _a;
+  @Override String opStr() { return "list"; }
+  @Override ASTDoubleList make() { return new ASTDoubleList(); }
+  ASTAry parse_impl(Exec E) {
+    ArrayList<AST> asts = new ArrayList<>();
+    while( !E.isEnd() ) asts.add(E.parse());
+    E.eatEnd();
+    _a = asts.toArray(new AST[asts.size()]);
+    ASTAry res = (ASTAry) clone();
+    res._a = _a;
+    return res;
+  }
+}
+
 class ASTDoubleList extends ASTList {
   ASTDoubleList() {super();}
   double[] _d;
@@ -1413,7 +1428,7 @@ class ASTDoubleList extends ASTList {
 
     ASTDoubleList res = (ASTDoubleList) clone();
     res._d = _d; //probably useless
-   res._spans = _spans;
+    res._spans = _spans;
     return res;
   }
   @Override public Env treeWalk(Env e) { e.push(new ValDoubleList(_d,_spans)); return e; }
