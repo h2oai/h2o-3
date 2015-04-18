@@ -181,7 +181,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   if(!missing(seed))
     parms$seed <- seed
 
-  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter.json', .params = parms)
+  json <- .h2o.__remoteSend(conn = data@conn, method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(data@conn, json$key$name)
   # TODO: uncomment once job key progress is functional
   res <- json$dataset$name
@@ -224,7 +224,9 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_keys) {
   if (!missing(destination_keys))
     params$destKeys <- .collapse(destination_keys)
 
-  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame.json", .params = params)
+  res <- .h2o.__remoteSend(data@conn, method="POST", "SplitFrame", .params = params)
+  job_key <- res$key$name
+  .h2o.__waitOnJob(data@conn, job_key)
 
   if( delete )
     h2o.rm(temp_key)
@@ -978,7 +980,7 @@ setMethod("head", "H2OFrame", function(x, n = 6L, ...) {
   numRows <- nrow(x)
   n <- ifelse(n < 0L, max(numRows + n, 0L), min(n, numRows))
   if(n == 0L)
-    data.frame()
+    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
     tmp_head <- x[1:n,]  # seq_len unimpl
     x.slice <- as.data.frame(tmp_head)
@@ -997,9 +999,9 @@ setMethod("tail", "H2OFrame", function(x, n = 6L, ...) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if(n == 0L)
-    data.frame()
+    data.frame(matrix( nrow = 0, ncol = ncol(x), dimnames = list(NULL, colnames(x)) ))
   else {
-    startidx <- max(1L, endidx - n)
+    startidx <- max(1L, endidx - n + 1)
     idx <- startidx:endidx
     tmp_tail <- x[startidx:endidx,]
     x.slice <- as.data.frame(tmp_tail)
@@ -1324,7 +1326,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   use_hex_string <- getRversion() >= "3.1"
 
   url <- paste0('http://', x@conn@ip, ':', x@conn@port,
-                '/2/DownloadDataset',
+                '/3/DownloadDataset',
                 '?key=', URLencode(x@key),
                 '&hex_string=', as.numeric(use_hex_string))
 
@@ -1535,7 +1537,7 @@ h2o.merge <- function (x, y, all.x = FALSE, all.y = FALSE) {
 #' Group By
 #'
 #' @export
-h2o.group_by <- function(data, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
+h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.names=NULL)) {
   if( !is(data, "H2OFrame") )
       stop("`data` must be of type H2OFrame")
 
@@ -1545,14 +1547,30 @@ h2o.group_by <- function(data, ..., gb.control=list(na.methods=NULL, col.names=N
     .h2o.eval.frame(conn=h2o.getConnection(), ast=data@mutable$ast, key=data@key)
   }
 
-  by <- substitute(list(...))
-  by[[1]] <- NULL  # drop the wrapping list()
+  # handle the columns
+  # we accept: c('col1', 'col2'), 1:2, c(1,2) as column names.
+  if(is.character(by)) {
+    vars <- match(by, colnames(data))
+    if (any(is.na(vars)))
+      stop('No column named ', by, ' in ', substitute(data), '.')
+  } else if(is.integer(by)) {
+    vars <- by
+  } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
+    vars <- as.integer(by)
+  }
+  # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
+  vars <- vars - 1L
+  if(vars < 0L || vars > (ncol(data)-1L))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
 
-  nAggs <- length(by)  # the number of aggregates
+  a <- substitute(list(...))
+  a[[1]] <- NULL  # drop the wrapping list()
+
+  nAggs <- length(a)  # the number of aggregates
 
   # for each aggregate, build this list: (agg,col.idx,na.method,col.name)
-  agg.methods <- unlist(lapply(by, function(agg) as.character(agg[[1]]) ))
-  col.idxs    <- unlist(lapply(by, function(agg) {
+  agg.methods <- unlist(lapply(a, function(agg) as.character(agg[[1]]) ))
+  col.idxs    <- unlist(lapply(a, function(agg) {
     # to get the column index, check if the column passed in the agg (@ agg[[2]]) is numeric
     # if numeric, then eval it and return
     # otherwise, as.character the *name* and look it up in colnames(data) and fail/return appropriately
@@ -1575,7 +1593,7 @@ h2o.group_by <- function(data, ..., gb.control=list(na.methods=NULL, col.names=N
   col.names.defaults  <- paste0(agg.methods, "_", colnames(data)[col.idxs])
 
   # 1 -> 0 based indexing of columns
-  col.idxs <- sort(col.idxs) - 1
+  col.idxs <- col.idxs - 1
 
   ### NA handling ###
 
@@ -1598,7 +1616,7 @@ h2o.group_by <- function(data, ..., gb.control=list(na.methods=NULL, col.names=N
   } else if( length(gb.control$na.methods) > nAggs ) {
     gb.control$na.methods <- gb.control$na.methods[1:nAggs]
   } else {
-    stop("Shouldn't be here.")
+    # no problem...
   }
 
   ### End NA handling ###
@@ -1636,7 +1654,7 @@ h2o.group_by <- function(data, ..., gb.control=list(na.methods=NULL, col.names=N
 
   # create the group by AST
   op <- new("ASTApply", op="GB")
-  vars <- .args.to.ast(col.idxs)
+  vars <- .args.to.ast(vars)
   GB <- new("ASTNode", root=op, children=list(.args.to.ast(data),vars,AGG))
 
   mutable <- new("H2OFrameMutableState", ast = GB, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)

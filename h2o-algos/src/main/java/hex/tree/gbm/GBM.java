@@ -1,7 +1,7 @@
 package hex.tree.gbm;
 
 import hex.Model;
-import hex.schemas.GBMV2;
+import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -29,7 +29,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // Called from an http request
   public GBM( GBMModel.GBMParameters parms) { super("GBM",parms); init(false); }
 
-  @Override public GBMV2 schema() { return new GBMV2(); }
+  @Override public GBMV3 schema() { return new GBMV3(); }
 
   /** Start the GBM training Job on an F/J thread. */
   @Override public Job<GBMModel> trainModel() {
@@ -44,11 +44,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
    *
-   *  Validate the learning rate and loss family. */
+   *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
 
-    // Initialize response based on given loss function.
+    // Initialize response based on given distribution family.
     // Regression: initially predict the response mean
     // Binomial: just class 0 (class 1 in the exact inverse prediction)
     // Multinomial: Class distribution which is not a single value.
@@ -77,37 +77,36 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _initialPrediction = _nclass == 1 ? mean
               : (_nclass == 2 ? -0.5 * Math.log(mean / (1.0 - mean))/*0.0*/ : 0.0/*not a single value*/);
 
-      if (_parms._loss == GBMModel.GBMParameters.Family.AUTO) {
-        if (_nclass == 1) _parms._loss = GBMModel.GBMParameters.Family.gaussian;
-        if (_nclass == 2) _parms._loss = GBMModel.GBMParameters.Family.bernoulli;
-        if (_nclass >= 3) _parms._loss = GBMModel.GBMParameters.Family.multinomial;
+      if (_parms._distribution == GBMModel.GBMParameters.Family.AUTO) {
+        if (_nclass == 1) _parms._distribution = GBMModel.GBMParameters.Family.gaussian;
+        if (_nclass == 2) _parms._distribution = GBMModel.GBMParameters.Family.bernoulli;
+        if (_nclass >= 3) _parms._distribution = GBMModel.GBMParameters.Family.multinomial;
       }
     }
 
-    switch( _parms._loss ) {
+    switch( _parms._distribution) {
     case bernoulli:
       if( _nclass != 2 /*&& !couldBeBool(_response)*/)
-        error("_loss", "Binomial requires the response to be a 2-class categorical");
+        error("_distribution", "Binomial requires the response to be a 2-class categorical");
       else if( _response != null ) 
         // Bernoulli: initial prediction is log( mean(y)/(1-mean(y)) )
         _initialPrediction = Math.log(mean / (1.0 - mean));
       break;
     case multinomial:
-      if (!isClassifier()) error("_loss", "Multinomial requires an enum response.");
+      if (!isClassifier()) error("_distribution", "Multinomial requires an enum response.");
       break;
     case gaussian:
-      if (isClassifier()) error("_loss", "Gaussian requires the response to be numeric.");
+      if (isClassifier()) error("_distribution", "Gaussian requires the response to be numeric.");
       break;
     case AUTO:
       break;
     default:
-      error("_loss","Invalid loss: " + _parms._loss);
+      error("_distribution","Invalid distribution: " + _parms._distribution);
     }
     
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
   }
-  private static boolean couldBeBool(Vec v) { return v != null && v.isInt() && v.min()+1==v.max(); }
 
   // ----------------------
   private class GBMDriver extends Driver {
@@ -168,7 +167,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     class ComputeProb extends MRTask<ComputeProb> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
-        if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
+        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
           Chunk tr = chk_tree(chks,0);
           Chunk wk = chk_work(chks,0);
           for( int row = 0; row < ys._len; row++)
@@ -200,7 +199,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     class ComputeRes extends MRTask<ComputeRes> {
       @Override public void map( Chunk chks[] ) {
         Chunk ys = chk_resp(chks);
-        if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
+        if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
           for(int row = 0; row < ys._len; row++) {
             if( ys.isNA(row) ) continue;
             int y = (int)ys.at8(row); // zero-based response variable
@@ -283,17 +282,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for( int nid=0; nid<leaf; nid++ ) {
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
+            if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
+              if( nid==0 )               // Handle the trivial non-splitting tree
+                new GBMLeafNode(tree,-1,0);
+              continue;
+            }
             for( int i=0; i<dn._nids.length; i++ ) {
               int cnid = dn._nids[i];
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                   tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                   (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                   ((DecidedNode)tree.node(cnid))._split.col()==-1) )
+                   ((DecidedNode)tree.node(cnid))._split._col==-1) )
                 dn._nids[i] = new GBMLeafNode(tree,nid).nid(); // Mark a leaf here
             }
-            // Handle the trivial non-splitting tree
-            if( nid==0 && dn._split.col() == -1 )
-              new GBMLeafNode(tree,-1,0);
           }
         }
       } // -- k-trees are done
@@ -307,20 +308,24 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
       // For regression (gaussian):
       //    gamma_i = sum res_i / count(res_i)
-      GammaPass gp = new GammaPass(ktrees,leafs,_parms._loss == GBMModel.GBMParameters.Family.bernoulli).doAll(_train);
-      double m1class = _nclass > 1 && _parms._loss != GBMModel.GBMParameters.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
+      GammaPass gp = new GammaPass(ktrees,leafs,_parms._distribution == GBMModel.GBMParameters.Family.bernoulli).doAll(_train);
+      double m1class = _nclass > 1 && _parms._distribution != GBMModel.GBMParameters.Family.bernoulli ? (double)(_nclass-1)/_nclass : 1.0; // K-1/K for multinomial
       for( int k=0; k<_nclass; k++ ) {
         final DTree tree = ktrees[k];
         if( tree == null ) continue;
         for( int i=0; i<tree._len-leafs[k]; i++ ) {
-          double g = Math.abs(gp._gss[k][i]) < 1e-15 // Constant response?
-            ? (gp._rss[k][i]==0?0:1000) // Cap (exponential) learn, instead of dealing with Inf
-            : _parms._learn_rate*m1class*gp._rss[k][i]/gp._gss[k][i];
-          assert !Double.isNaN(g);
-          assert !Double.isInfinite(g);
-          assert !Float.isNaN((float)g);
-          assert !Float.isInfinite((float)g);
-          ((LeafNode)tree.node(leafs[k]+i))._pred = (float)g;
+          float gf = (float)(_parms._learn_rate * m1class * gp._rss[k][i] / gp._gss[k][i]);
+          if( gp._gss[k][i]==0 ) // Bad split; all corrections sum to zero
+            gf = (float)(Math.signum(gp._rss[k][i])*1e4);
+          // In the multinomial case, check for very large values (which will get exponentiated later)
+          // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
+          // split are perfectly predicted true, and others perfectly predicted false.
+          if( _parms._distribution == GBMModel.GBMParameters.Family.multinomial ) {
+            if     ( gf >  1e4 ) gf =  1e4f; // Cap prediction, will already overflow during Math.exp(gf)
+            else if( gf < -1e4 ) gf = -1e4f;
+          }
+          assert !Float.isNaN(gf) && !Float.isInfinite(gf);
+          ((LeafNode) tree.node(leafs[k] + i))._pred = gf;
         }
       }
 
@@ -354,7 +359,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if( ktrees[i] != null )
           ktrees[i]._leaves = ktrees[i].len() - leafs[i];
       // DEBUG: Print the generated K trees
-      //printGenerateTrees(ktrees);
+      printGenerateTrees(ktrees);
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
     }
@@ -392,7 +397,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // root and the residuals should be zero.
           if( tree.root() instanceof LeafNode ) continue;
           for( int row=0; row<nids._len; row++ ) { // For all rows
-            int nid = (int)nids.at8(row);         // Get Node to decide from
+            int nid = (int)nids.at8(row);          // Get Node to decide from
             if( nid < 0 ) continue;                // Missing response
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
               nid = tree.node(nid)._pid;                  // Then take parent's decision
@@ -490,7 +495,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double fs[/*nclass*/], int row ) {
-    if( _parms._loss == GBMModel.GBMParameters.Family.bernoulli ) {
+    if( _parms._distribution == GBMModel.GBMParameters.Family.bernoulli ) {
       fs[1] = 1.0/(1.0+Math.exp(chk_tree(chks,0).atd(row)));
       fs[2] = 1.0-fs[1];
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
@@ -504,10 +509,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fs[2] = 1.0/fs[1]; // exp(-d) === 1/exp(d)
       return fs[1]+fs[2];
     }
-    double sum=0;
-    for( int k=0; k<_nclass; k++ ) // Sum across of likelyhoods
-      sum+=(fs[k+1]=Math.exp(chk_tree(chks,k).atd(row)));
-    return sum;
+    // Multinomial loss function; sum(exp(data)).  Load tree data
+    for( int k=0; k<_nclass; k++ ) 
+      fs[k+1]=chk_tree(chks,k).atd(row);
+    // Rescale to avoid Infinities; return sum(exp(data))
+    return hex.genmodel.GenModel.log_rescale(fs);
   }
 
 }

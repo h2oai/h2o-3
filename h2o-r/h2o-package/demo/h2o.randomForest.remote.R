@@ -8,5 +8,5 @@ remoteH2O = h2o.init(ip = myIP, port = as.numeric(myPort), startH2O = FALSE)
 
 iris.hex = h2o.uploadFile(remoteH2O, path = system.file("extdata", "iris.csv", package="h2o"), key = "iris.hex")
 summary(iris.hex)
-iris.rf = h2o.randomForest(y = 5, x = c(1,2,3,4), data = iris.hex, ntree = 50, depth = 100)
+iris.rf = h2o.randomForest(y = 5, x = c(1,2,3,4), training_frame = iris.hex, ntrees = 50, max_depth = 100)
 print(iris.rf)

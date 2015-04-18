@@ -15,8 +15,6 @@ import org.apache.hadoop.fs.*;
 import water.*;
 
 import water.api.HDFSIOException;
-import water.api.Schema;
-import water.api.TypeaheadV2;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
 import water.util.FileUtils;
@@ -62,6 +60,7 @@ public final class PersistHdfs extends Persist {
   
   // Loading HDFS files
   public PersistHdfs() { _iceRoot = null; }
+  public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
 
   // Loading/Writing ice to HDFS
   public PersistHdfs(URI uri) {

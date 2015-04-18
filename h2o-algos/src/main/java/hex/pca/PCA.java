@@ -10,7 +10,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.gram.Gram.*;
 import hex.schemas.ModelBuilderSchema;
-import hex.schemas.PCAV2;
+import hex.schemas.PCAV3;
 import hex.gram.Gram.GramTask;
 import hex.FrameTask;
 import hex.gram.Gram.NonSPDMatrixException;
@@ -44,7 +44,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
   @Override
   public ModelBuilderSchema schema() {
-    return new PCAV2();
+    return new PCAV3();
   }
 
   @Override
@@ -231,7 +231,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         parms._ignored_columns = _parms._ignored_columns;
         parms._dropConsCols = _parms._dropConsCols;
         parms._dropNA20Cols = _parms._dropNA20Cols;
-        parms._max_confusion_matrix_size = _parms._max_confusion_matrix_size;
         parms._score_each_iteration = _parms._score_each_iteration;
         parms._init = KMeans.Initialization.PlusPlus;
         parms._k = _parms._k;
@@ -460,7 +459,6 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
         // 4) Save solution to model output
         model._output._archetypes = yt;
-        model._output._parameters = _parms;
         recoverPCA(model, xinfo);
 
         // Optional: This computes XY, but do we need it?

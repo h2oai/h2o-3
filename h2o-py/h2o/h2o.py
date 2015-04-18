@@ -3,8 +3,10 @@ This module implements the communication REST layer for the python <-> H2O conne
 """
 
 import os
+import os.path
 import re
 import urllib
+import json
 from connection import H2OConnection
 from job import H2OJob
 from frame import H2OFrame, H2OVec
@@ -150,6 +152,46 @@ def run_test(sys_args, test_to_run):
   ip, port = sys_args[2].split(":")
   test_to_run(ip, port)
 
+def ipy_notebook_exec(path,save_and_norun=False):
+  notebook = json.load(open(path))
+  program = ''
+  for block in ipy_blocks(notebook):
+    prev_line_was_def_stmnt = False
+    for line in ipy_lines(block):
+      if "h2o.init" not in line:
+        if prev_line_was_def_stmnt:
+          program += ipy_get_leading_spaces(line) + 'import h2o\n'
+          prev_line_was_def_stmnt = False
+        program += line if '\n' in line else line + '\n'
+        if "def " in line: prev_line_was_def_stmnt = True
+  if save_and_norun:
+    with open(os.path.basename(path).split('ipynb')[0]+'py',"w") as f:
+      f.write(program)
+  else:
+    exec(program)
+
+def ipy_blocks(notebook):
+  if 'worksheets' in notebook.keys():
+    return notebook['worksheets'][0]['cells'] # just take the first worksheet
+  elif 'cells' in notebook.keys():
+    return notebook['cells']
+  else:
+    raise NotImplementedError, "ipython notebook cell/block json format not handled"
+
+def ipy_lines(block):
+  if 'source' in block.keys():
+    return block['source']
+  elif 'input' in block.keys():
+    return block['input']
+  else:
+    raise NotImplementedError, "ipython notebook source/line json format not handled"
+
+def ipy_get_leading_spaces(line):
+  spaces = ''
+  for c in line:
+    if c in [' ', '\t']: spaces += c
+    else: return spaces
+
 def remove(key):
   """
   Remove key from H2O.
@@ -157,8 +199,10 @@ def remove(key):
   :param key: The key pointing to the object to be removed.
   :return: Void
   """
-  H2OConnection.delete("Remove", key=key)
+  if key is None:
+    raise ValueError("remove with no key is not supported, for your protection")
 
+  H2OConnection.delete("DKV/" + key)
 
 def rapids(expr):
   """
@@ -272,8 +316,8 @@ def random_forest(x,y,validation_x=None,validation_y=None,**kwargs):
 def ddply(frame,cols,fun):
   return frame.ddply(cols,fun)
 
-def groupby(frame,cols,aggregates):
-  return frame.groupby(cols,aggregates)
+def group_by(frame,cols,aggregates):
+  return frame.group_by(cols,aggregates)
 
 def network_test():
   res = H2OConnection.get_json(url_suffix="NetworkTest")
@@ -332,3 +376,58 @@ def as_list(data):
         tmp.append(vec_as_list[col][row][0])
       frm.append(tmp)
     return frm
+
+
+def cos(data)     : return _simple_un_math_op("cos", data)
+def sin(data)     : return _simple_un_math_op("sin", data)
+def tan(data)     : return _simple_un_math_op("tan", data)
+def acos(data)    : return _simple_un_math_op("acos", data)
+def asin(data)    : return _simple_un_math_op("asin", data)
+def atan(data)    : return _simple_un_math_op("atan", data)
+def cosh(data)    : return _simple_un_math_op("cosh", data)
+def sinh(data)    : return _simple_un_math_op("sinh", data)
+def tanh(data)    : return _simple_un_math_op("tanh", data)
+def acosh(data)   : return _simple_un_math_op("acosh", data)
+def asinh(data)   : return _simple_un_math_op("asinh", data)
+def atanh(data)   : return _simple_un_math_op("atanh", data)
+def cospi(data)   : return _simple_un_math_op("cospi", data)
+def sinpi(data)   : return _simple_un_math_op("sinpi", data)
+def tanpi(data)   : return _simple_un_math_op("tanpi", data)
+def abs(data)     : return _simple_un_math_op("abs", data)
+def sign(data)    : return _simple_un_math_op("sign", data)
+def sqrt(data)    : return _simple_un_math_op("sqrt", data)
+def trunc(data)   : return _simple_un_math_op("trunc", data)
+def ceil(data)    : return _simple_un_math_op("ceiling", data)
+def floor(data)   : return _simple_un_math_op("floor", data)
+def log(data)     : return _simple_un_math_op("log", data)
+def log10(data)   : return _simple_un_math_op("log10", data)
+def log1p(data)   : return _simple_un_math_op("log1p", data)
+def log2(data)    : return _simple_un_math_op("log2", data)
+def exp(data)     : return _simple_un_math_op("exp", data)
+def expm1(data)   : return _simple_un_math_op("expm1", data)
+def gamma(data)   : return _simple_un_math_op("gamma", data)
+def lgamma(data)  : return _simple_un_math_op("lgamma", data)
+def digamma(data) : return _simple_un_math_op("digamma", data)
+def trigamma(data): return _simple_un_math_op("trigamma", data)
+
+def _simple_un_math_op(op, data):
+  """
+  Element-wise math operations on H2OFrame, H2OVec, and Expr objects.
+
+  :param op: the math operation
+  :param data: the H2OFrame, H2OVec, or Expr object to operate on.
+  :return: Expr'd data
+  """
+  if   isinstance(data, H2OFrame): return Expr(op, Expr(data.send_frame(), length=data.nrow()))
+  elif isinstance(data, H2OVec)  : return Expr(op, data, length=len(data))
+  elif isinstance(data, Expr)    : return Expr(op, data)
+  else: raise ValueError, op + " only operates on H2OFrame, H2OVec, or Expr objects"
+
+# generic reducers
+def min(data)   : return data.min()
+def max(data)   : return data.max()
+def sum(data)   : return data.sum()
+def sd(data)    : return data.sd()
+def var(data)   : return data.var()
+def mean(data)  : return data.mean()
+def median(data): return data.median()

@@ -36,6 +36,9 @@ public abstract class Persist {
   /** Transform given uri into file vector holding file name. */
   abstract public Key uriToKey(URI uri) throws IOException;
 
+  /** Delete persistent storage on startup and shutdown */
+  abstract public void cleanUp();
+
   /**
    * Calculate typeahead matches for src
    *
@@ -47,11 +50,11 @@ public abstract class Persist {
 
   abstract public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
-  //the filename can be either byte encoded if it starts with % followed by
+  // The filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
   // special ways.
   // It is questionable whether we need this because the only keys we have on
-  // ice are likely to be arraylet chunks
+  // ice are likely to be Chunks
 
   static String getIceName(Value v) {
     return getIceName(v._key);
@@ -62,10 +65,9 @@ public abstract class Persist {
   }
 
   static String getIceDirectory(Key key) {
-    if( !key.isChunkKey() ) return "not_an_arraylet";
-    // Reverse arraylet key generation
-    byte[] b = key.getVecKey()._kb;
-    return escapeBytes(b, 0, new StringBuilder(b.length)).toString();
+    if( !key.isChunkKey() ) return "not_a_Chunk";
+    // Reverse Chunk key generation
+    return key2Str(key.getVecKey());
   }
 
   // Verify bijection of key/file-name mappings.
@@ -118,6 +120,7 @@ public abstract class Persist {
       case ':': c='c'; break;
       case '"': c='q'; break;
       case '>': c='g'; break;
+      case '<': c='l'; break;
       case '\\':c='b'; break;
       case '\0':c='z'; break;
       }
@@ -153,6 +156,7 @@ public abstract class Persist {
         case 'c':  b = ':';  break;
         case 'd':  b = '.';  break;
         case 'g':  b = '>';  break;
+        case 'l':  b = '<';  break;
         case 'q':  b = '"';  break;
         case 's':  b = '/';  break;
         case 'b':  b = '\\'; break;

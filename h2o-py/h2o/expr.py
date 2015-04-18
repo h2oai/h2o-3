@@ -7,6 +7,7 @@ from math import sqrt, isnan, floor
 import h2o
 import frame
 import tabulate
+import math
 
 __CMD__ = None
 __TMPS__ = None
@@ -111,6 +112,12 @@ class Expr(object):
 
   def _is_valid(self):
     return self.is_local() or self.is_remote() or self.is_pending() or self.is_slice()
+
+  def _is_key(self):
+    has_key = self._data is not None and isinstance(self._data, unicode)
+    if has_key:
+      return "py" == self._data[0:2]
+    return False
 
   def __len__(self):
     """
@@ -248,6 +255,51 @@ class Expr(object):
   def __rmul__(self, i): return self.__mul__(i)
   def __rpow__(self, i): return self._simple_expr_bin_rop(i,"^")
 
+  def __abs__ (self): return h2o.abs(self)
+
+  # generic reducers (min, max, sum, sd, var, mean, median)
+  def min(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("min", self)
+
+  def max(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("max", self)
+
+  def sum(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("sum", self)
+
+  def sd(self):
+    """
+    :return: A lazy Expr representing the standard deviation of this H2OVec.
+    """
+    return Expr("sd", self)
+
+  def var(self):
+    """
+    :return: A lazy Expr representing the variance of this H2OVec.
+    """
+    return Expr("var", self)
+
+  def mean(self):
+    """
+    :return: A lazy Expr representing the mean of this H2OVec.
+    """
+    return Expr("mean", self)
+
+  def median(self):
+    """
+    :return: A lazy Expr representing the median of this H2OVec.
+    """
+    return Expr("median", self)
+
   def __del__(self):
     # Dead pending op or local data; nothing to delete
     if self.is_pending() or self.is_local(): return
@@ -290,7 +342,7 @@ class Expr(object):
     if isinstance(self._data, unicode):
       pass  # Big Data Key is the result
     # Small data result pulled locally
-    elif j['num_rows']:
+    elif j['num_rows']:   # basically checks if num_rows is nonzero... sketchy.
       self._data = j['head']
     elif j['result'] in [u'TRUE', u'FALSE']:
       self._data = (j['result'] == u'TRUE')
@@ -309,9 +361,7 @@ class Expr(object):
       elif isinstance(child._data, (str,unicode)):
         __CMD__ += "'" + str(child._data) + "'"
       elif isinstance(child._data, slice):
-        __CMD__ += \
-            "(: #" + str(child._data.start) + " #" + str(child._data.stop - 1) \
-            + ")"
+        __CMD__ += "(: #"+str(child._data.start)+" #"+str(child._data.stop - 1)+")"
         child._data = None  # trigger GC now
       elif self._op == "[" and isinstance(self._rite._data, tuple): # multi-dimensional slice
         if not isinstance(child._data, tuple): return child         # doing left child.  just return.
@@ -379,13 +429,20 @@ class Expr(object):
     py_tmp = cnt != 4 and self._len > 1 and not assign_vec
 
     global __CMD__
+    skip=False
     if py_tmp:
-        self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
-        __CMD__ += "(= !" + self._data + " "
+      self._data = frame.H2OFrame.py_tmp_key()  # Top-level key/name assignment
+      __CMD__ += "(= !" + self._data + " "
     if self._op != ",":           # Comma ops curry in-place (just gather args)
       __CMD__ += "(" + self._op + " "
 
     left = self._do_child(self._left)  # down the left
+
+    # gross hack just to get the ")" in the right place after the (!= ... ending ")" strictly enforced by Rapids
+    if py_tmp and self._left._is_key() and self._op==",":
+      skip=True
+      __CMD__ += ")"
+
     rite = self._do_child(self._rite)  # down the right
 
     # eventually will need to create dedicated objects each overriding a "set_data" method
@@ -431,8 +488,28 @@ class Expr(object):
       else:
         if rite is None: __CMD__ += "#NaN"
 
-    elif self._op == "floor":
-      if left.is_local():   self._data = [floor(x) for x in left._data]
+    elif self._op in ["floor", "abs"]:
+      if left.is_local():   self._data = eval("[" + self._op +  "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op == "sign":
+      if left.is_local():   self._data = [cmp(x,0) for x in left._data]
+      else:                 pass
+
+    elif self._op in ["cos", "sin", "tan", "acos", "asin", "atan", "cosh", "sinh", "tanh", "acosh", "asinh", "atanh", \
+                      "sqrt", "trunc", "log", "log10", "log1p", "exp", "expm1", "gamma", "lgamma"]:
+      if left.is_local():   self._data = eval("[math." + self._op + "(x) for x in left._data]")
+      else:                 pass
+
+    elif self._op in ["cospi", "sinpi", "tanpi", "ceiling", "log2", "digamma", "trigamma"]:
+      if left.is_local():
+        if self._op   == "cospi"   : self._data = eval("[math.cos(math.pi*x) for x in left._data]")
+        elif self._op == "sinpi"   : self._data = eval("[math.sin(math.pi*x) for x in left._data]")
+        elif self._op == "tanpi"   : self._data = eval("[math.tan(math.pi*x) for x in left._data]")
+        elif self._op == "ceiling" : self._data = eval("[math.ceil(x) for x in left._data]")
+        elif self._op == "log2"    : self._data = eval("[math.log(x,2) for x in left._data]")
+        elif self._op == "digamma" : self._data = eval("[scipy.special.polygamma(0,x) for x in left._data]")
+        elif self._op == "trigamma": self._data = eval("[scipy.special.polygamma(1,x) for x in left._data]")
       else:                 pass
 
     elif self._op == "month":
@@ -442,6 +519,10 @@ class Expr(object):
     elif self._op == "dayOfWeek":
       if left.is_local():   raise NotImplementedError
       else:                 pass
+
+    elif self._op in ["min", "max", "sum", "median"]:
+      if left.is_local():   raise NotImplementedError
+      else:                 __CMD__ += "%FALSE"
 
     elif self._op == "mean":
       if left.is_local():   self._data = sum(left._data) / len(left._data)
@@ -467,7 +548,7 @@ class Expr(object):
     elif self._op == "quantile":
       if left.is_local():   raise NotImplementedError
       else:
-        rapids_series = "{"+";".join([str(x) for x in rite._data])+"}"
+        rapids_series = "(dlist #"+" #".join([str(x) for x in rite._data])+")"
         __CMD__ += rapids_series + " "
 
     elif self._op == "mktime":
@@ -483,7 +564,7 @@ class Expr(object):
     # End of expression... wrap up parens
     if self._op != ",":
       __CMD__ += ")"
-    if py_tmp:
+    if py_tmp and not skip:
       __CMD__ += ")"
 
     # Free children expressions; might flag some subexpresions as dead

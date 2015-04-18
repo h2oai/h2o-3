@@ -7,7 +7,7 @@ test.GBM.frameslice <- function(conn) {
 
   Log.info("Running GBM on a sliced data frame...\n")
   pros.hex[,2] = as.factor(pros.hex[,2])
-  pros.gbm <- h2o.gbm(x = 2:8, y = 1, training_frame = pros.hex[, 2:9], loss = "bernoulli")
+  pros.gbm <- h2o.gbm(x = 2:8, y = 1, training_frame = pros.hex[, 2:9], distribution = "bernoulli")
 
   testEnd()
 }

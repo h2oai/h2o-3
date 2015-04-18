@@ -2,7 +2,7 @@ package hex.tree.drf;
 
 import hex.Model;
 import static hex.genmodel.GenModel.getPrediction;
-import hex.schemas.DRFV2;
+import hex.schemas.DRFV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -40,7 +40,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   // Called from an http request
   public DRF( hex.tree.drf.DRFModel.DRFParameters parms) { super("DRF",parms); init(false); }
 
-  @Override public DRFV2 schema() { return new DRFV2(); }
+  @Override public DRFV3 schema() { return new DRFV3(); }
 
   /** Start the DRF training Job on an F/J thread. */
   @Override public Job<hex.tree.drf.DRFModel> trainModel() {
@@ -360,7 +360,6 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
               double prediction = ((LeafNode)tree.node(leafnid)).pred(); // Prediction for this k-class and this row
               if (importance) rpred[1+k] = (float) prediction; // for both regression and classification
-              assert(ct.atd(row) >= 0);
               ct.set(row, (float) (ct.atd(row) + prediction));
               // For this tree this row is out-of-bag - i.e., a tree voted for this row
               oobt.set(row, _nclass > 1 ? 1 : oobt.atd(row) + 1); // for regression track number of trees, for classification boolean flag is enough

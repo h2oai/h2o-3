@@ -3,9 +3,11 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import water.AutoBuffer;
+import water.DKV;
 import water.H2O;
-import water.api.KeyV1.ModelKeyV1;
+import water.api.KeyV3.ModelKeyV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.util.PojoUtils;
 
 /**
@@ -30,7 +32,7 @@ public class ModelSchema<M extends Model<M, P, O>,
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  public ModelKeyV1 key;
+  public ModelKeyV3 key;
 
   // Output fields
   @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
@@ -77,7 +79,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     this.algo = ModelBuilder.getAlgo(m);
     this.algo_full_name = ModelBuilder.getAlgoFullName(this.algo);
     // Key<? extends Model> k = m._key;
-    this.key = new ModelKeyV1(m._key);
+    this.key = new ModelKeyV3(m._key);
     this.checksum = m.checksum();
 
     parameters = createParametersSchema();
@@ -122,4 +124,15 @@ public class ModelSchema<M extends Model<M, P, O>,
     return ab;
   }
 
+  public String toJava() {
+    return toJava(false);
+  }
+
+  public String toJava(boolean preview) {
+    Model m = DKV.getGet(key.key());
+    if (m == null) {
+      throw new H2OKeyNotFoundArgumentException("model_key", "toJava", key.key().toString());
+    }
+    return m.toJava(preview);
+  }
 }

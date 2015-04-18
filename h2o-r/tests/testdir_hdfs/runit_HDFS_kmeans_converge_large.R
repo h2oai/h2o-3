@@ -43,11 +43,12 @@ cross1.km <- h2o.kmeans(training_frame = cross.hex, k = ncent, max_iterations = 
 print(cross1.km)
 
 heading("Run k-means with init = final cluster centers and max_iterations = 1")
-cross2.km <- h2o.kmeans(training_frame = cross.hex, init = cross1.km@model$centers, max_iterations = 1)
+init_centers <- as.h2o(getCenters(cross1.km))
+cross2.km <- h2o.kmeans(training_frame = cross.hex, init = init_centers, max_iterations = 1)
 print(cross2.km)
 
 heading("Check k-means converged or maximum iterations reached")
-avg_change <- sum((cross1.km@model$centers - cross2.km@model$centers)^2)/ncent
-expect_true(avg_change < 1e-6 || cross1.km@model$iterations > miters)
+avg_change <- sum((getCenters(cross1.km) - getCenters(cross2.km))^2)/ncent
+expect_true(avg_change < 1e-6 || getIterations(cross1.km) > miters)
 
 PASS_BANNER()

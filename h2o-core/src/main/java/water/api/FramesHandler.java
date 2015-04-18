@@ -79,22 +79,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
   }
 
-  /** /2/Frames backward compatibility: uses ?key parameter and returns either a single frame or all. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public FramesV2 list_or_fetch(int version, FramesV2 f) {
-    //if (this.version != 2)
-    //  throw H2O.fail("list_or_fetch should not be routed for version: " + this.version + " of route: " + this.route);
-    FramesV3 f3 = new FramesV3();
-    f3.fillFromImpl(f.createAndFillImpl());
-
-    if (null != f.key) {
-      f3 = fetch(version, f3);
-    } else {
-      f3 = list(version, f3);
-    }
-    return new FramesV2().fillFromImpl(f3.createAndFillImpl());
-  }
-
   /** Return all the frames. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 list(int version, FramesV3 s) {
@@ -105,7 +89,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameV2 a_frame: s.frames) {
+    for (FrameV3 a_frame: s.frames) {
       a_frame.clearBinsField();
     }
 
@@ -155,8 +139,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Vec[] vecs = { vec };
     String[] names = { s.column };
     Frame new_frame = new Frame(names, vecs);
-    s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2().fillFromImpl(new_frame);
+    s.frames = new FrameV3[1];
+    s.frames[0] = new FrameV3().fillFromImpl(new_frame);
     s.frames[0].clearBinsField();
     return s;
   }
@@ -185,8 +169,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     }
 
     // Cons up our result
-    s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), true);
+    s.frames = new FrameV3[1];
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), true);
     return s;
   }
 
@@ -198,11 +182,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 fetch(int version, FramesV3 s) {
-    FramesV3 frames = doFetch(version, s, FrameV2.ColV2.NO_SUMMARY);
+    FramesV3 frames = doFetch(version, s, FrameV3.ColV2.NO_SUMMARY);
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameV2 a_frame: frames.frames) {
+    for (FrameV3 a_frame: frames.frames) {
       a_frame.clearBinsField();
     }
 
@@ -213,8 +197,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     Frames f = s.createAndFillImpl();
 
     Frame frame = getFromDKV("key", s.key.key()); // safe
-    s.frames = new FrameV2[1];
-    s.frames[0] = new FrameV2(frame, s.row_offset, s.row_count).fillFromImpl(frame, force_summary);  // TODO: Refactor with FrameBase
+    s.frames = new FrameV3[1];
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, force_summary);  // TODO: Refactor with FrameBase
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
@@ -272,7 +256,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       }
     }
 
-    return doFetch(version, s, FrameV2.ColV2.FORCE_SUMMARY);
+    return doFetch(version, s, FrameV3.ColV2.FORCE_SUMMARY);
   }
 
   /** Remove an unlocked frame.  Fails if frame is in-use. */

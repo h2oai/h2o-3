@@ -249,7 +249,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 #
 # Get a session ID at init
 .init.session_id <- function(conn) {
-  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID.json"))
+  res <- .h2o.fromJSON(.h2o.doSafeGET(conn = conn, urlSuffix = "InitID"))
   res$session_key
 }
 
@@ -545,7 +545,7 @@ h2o.clusterStatus <- function(conn = h2o.getConnection()) {
 #' View Network Traffic Speed
 #' @export
 h2o.networkTest <- function(conn = h2o.getConnection()) {
-  res <- .h2o.__remoteSend(conn = conn, "NetworkTest.json", method = "GET")
+  res <- .h2o.__remoteSend(conn = conn, "NetworkTest", method = "GET")
 
   res$table
 }

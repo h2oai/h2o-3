@@ -70,11 +70,11 @@ test.LiblineaR.airlines <- function(conn) {
             and coefficients.\n")
     
 
-    cat("\n H2O betas: ", h2o@model$coefficients_table$Coefficients, "\n")
+    cat("\n H2O betas: ", h2o@model$coefficients_table$coefficients, "\n")
     cat("\n============================================== \n")
     cat("\n LiblineaR betas: ", libR$W, "\n")
     cat("\n============================================== \n")
-    rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$Coefficients) - abs(libR$W))**2)
+    rms_diff <- sqrt(sum(abs(h2o@model$coefficients_table$coefficients) - abs(libR$W))**2)
     Log.info(paste("RMS of the absolute difference in the sets of coefficients is: ", rms_diff, "\n", sep = ""))
     #print(all.equal(abs(as.vector(h2o@model$coefficients)), abs(as.vector(libR$W))), "\n")
   }

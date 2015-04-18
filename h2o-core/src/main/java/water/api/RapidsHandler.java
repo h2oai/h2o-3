@@ -1,6 +1,7 @@
 package water.api;
 
 import water.DKV;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.parser.ValueString;
@@ -10,7 +11,7 @@ import water.util.PrettyPrint;
 
 class RapidsHandler extends Handler {
 
-  public RapidsV1 isEvaluated(int version, RapidsV1 rapids) {
+  public RapidsV3 isEvaluated(int version, RapidsV3 rapids) {
     if (rapids == null) return null;
     if (rapids.ast_key == null) throw new IllegalArgumentException("No key supplied to getKey.");
     boolean isEval = false;
@@ -22,34 +23,46 @@ class RapidsHandler extends Handler {
   }
 
 
-  public RapidsV1 exec(int version, RapidsV1 rapids) {
+  public RapidsV3 exec(int version, RapidsV3 rapids) {
     if (rapids == null) return null;
     Throwable e = null;
     Env env = null;
     try {
       //learn all fcns
-      if(rapids.funs != null) {
-        for (String f : rapids.funs) {
-          water.rapids.Exec.new_func(f);
-        }
-      }
+      if( rapids.fun!=null ) water.rapids.Exec.new_func(rapids.fun);
       if (rapids.ast == null || rapids.ast.equals("")) return rapids;
       env = water.rapids.Exec.exec(rapids.ast);
       StringBuilder sb = env._sb;
       if( sb.length()!=0 ) sb.append("\n");
       if (env.isAry()) {
         Frame fr = env.popAry();
+        Key[] keys = fr.keys();
+        if(keys != null && keys.length > 0) {
+          rapids.vec_keys = new KeyV3.VecKeyV3[keys.length];
+          for (int i = 0; i < keys.length; i++)
+            rapids.vec_keys[i] = new KeyV3.VecKeyV3(keys[i]);
+        }
         if (fr.numRows() == 1 && fr.numCols() == 1) {
+          rapids.key = new KeyV3.FrameKeyV3(fr._key);
+          rapids.num_rows = 0;
+          rapids.num_cols = 0;
           if (fr.anyVec().isEnum()) {
             rapids.string = fr.anyVec().domain()[(int)fr.anyVec().at(0)];
             sb.append(rapids.string);
+            rapids.result_type = RapidsV3.ARYSTR;
+          } else if (fr.anyVec().isString()) {
+            rapids.string = fr.anyVec().atStr(new ValueString(), 0).toString();
+            sb.append(rapids.string);
+            rapids.result_type = RapidsV3.ARYSTR;
           } else {
             rapids.scalar = fr.anyVec().at(0);
             sb.append(Double.toString(rapids.scalar));
             rapids.string = null;
+            rapids.result_type = RapidsV3.ARYNUM;
           }
         } else {
-          rapids.key = new KeyV1.FrameKeyV1(fr._key);
+          rapids.result_type = RapidsV3.ARY;
+          rapids.key = new KeyV3.FrameKeyV3(fr._key);
           rapids.num_rows = fr.numRows();
           rapids.num_cols = fr.numCols();
           rapids.col_names = fr.names();
@@ -73,9 +86,11 @@ class RapidsHandler extends Handler {
         rapids.scalar = env.popDbl();
         sb.append(Double.toString(rapids.scalar));
         rapids.string = null;
+        rapids.result_type = RapidsV3.NUM;
       } else if (env.isStr()) {
         rapids.string = env.popStr();
         sb.append(rapids.string);
+        rapids.result_type = RapidsV3.STR;
       }
       rapids.result = sb.toString();
       return rapids;

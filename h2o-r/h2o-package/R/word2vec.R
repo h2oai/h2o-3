@@ -58,7 +58,7 @@ h2o.word2vec <- function(trainingFrame, minWordFreq, wordModel, normModel, negEx
   res <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__W2V, .params = params)
   .h2o.__waitOnJob(trainingFrame@conn, res$job)
   dest_key <- .h2o.__remoteSend(trainingFrame@conn, paste0(.h2o.__JOBS, "/", res$job))$jobs[[1L]]$dest$name
-  w2vmodel <- .h2o.__remoteSend(trainingFrame@conn, .h2o.__INSPECT, key = dest_key)
+  w2vmodel <- h2o.getModel(dest_key, trainingFrame@conn)
   new("H2OW2V", h2o = trainingFrame@conn, key = dest_key, train.data=trainingFrame)
 }
 

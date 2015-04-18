@@ -11,6 +11,7 @@ import water.nbhm.NonBlockingHashSet;
 import water.nbhm.UtilUnsafe;
 import water.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,27 +58,15 @@ import java.util.concurrent.atomic.AtomicInteger;
   @Override ASTOp make() {return new ASTGroupBy();}
   ASTGroupBy parse_impl(Exec E) {
     AST ary = E.parse();
-    if( ary instanceof ASTId ) ary = Env.staticLookup((ASTId)ary);
-
     // parse gby columns
-    AST s=null;
-    try {
-      s=E.skipWS().parse();
-      _gbCols=((ASTSeries)s).toArray();
-      if(_gbCols.length > 1000 )
-        throw new IllegalArgumentException("Too many columns selected. Please select < 1000 columns.");
-    } catch (ClassCastException e) {
-      assert s!=null;
-      try {
-        _gbCols = new long[]{(long)((ASTNum)s).dbl()};
-      } catch (ClassCastException e2) {
-        throw new IllegalArgumentException("Badly formed AST. Columns argument must be a ASTSeries or ASTNum");
-      }
-    }
+    AST s = E.parse();
+    if( s instanceof ASTLongList ) _gbCols = ((ASTLongList)s)._l;
+    else if( s instanceof ASTNum ) _gbCols = new long[]{(long)((ASTNum)s)._d};
+    else throw new IllegalArgumentException("Badly formed AST. Columns argument must be a llist or number. Got: " +s.getClass());
 
     //parse AGGs
     _agg = ((AGG)E.parse())._aggs;
-
+    E.eatEnd();
     ASTGroupBy res = (ASTGroupBy)clone();
     res._asts = new AST[]{ary};
     return res;
@@ -253,9 +242,9 @@ import java.util.concurrent.atomic.AtomicInteger;
           case AGG.T_MAX: setMax(  g,c==null ? Double.doubleToRawLongBits(that._max[i]) : bits,i);   break;
           case AGG.T_VAR: /* fall through */
           case AGG.T_SD:
-          case AGG.T_SS:  setSS(   g,c==null ? Double.doubleToRawLongBits(that._ss[i] ) : bits,i);   break;
+          case AGG.T_SS:  setSS(g, c == null ? Double.doubleToRawLongBits(that._ss[i]) : bits, i);   break;
           case AGG.T_F:   setFirst(g,c==null ? that._f[i] : chkRow+rowOffset,i);   break;
-          case AGG.T_L:   setLast( g,c==null ? that._l[i] : chkRow+rowOffset,i);   break;
+          case AGG.T_L:   setLast(g, c == null ? that._l[i] : chkRow + rowOffset, i);   break;
           default:
             throw new IllegalArgumentException("Unsupported aggregation type: " + type);
         }
@@ -483,15 +472,15 @@ import java.util.concurrent.atomic.AtomicInteger;
     String opStr() { return "agg";  }
     private AGG[] _aggs;
     AGG parse_impl(Exec E) {
-      int n = (int)((ASTNum)(E.parse()))._d; E.skipWS();
-      _aggs=new AGG[n];
-      for( int i=0;i<n;++i) {
-        String type = E.parseString(E.peekPlus()); E.skipWS();
-        int     col = (int)((ASTNum)E.parse()).dbl(); E.skipWS();
-        String   na = E.parseString(E.peekPlus()); E.skipWS();
-        String name = E.parseString(E.peekPlus()); E.skipWS();
-        _aggs[i]=new AGG(type,col,na,name);
+      ArrayList<AGG> aggs = new ArrayList<>();
+      while( !E.isEnd() ) {
+        String type = E.parseString(E.peekPlus());
+        int     col = (int)((ASTNum)E.parse()).dbl();
+        String   na = E.parseString(E.peekPlus());
+        String name = E.parseString(E.peekPlus());
+        aggs.add(new AGG(type,col,na,name));
       }
+      _aggs = aggs.toArray(new AGG[aggs.size()]);
       return this;
     }
 

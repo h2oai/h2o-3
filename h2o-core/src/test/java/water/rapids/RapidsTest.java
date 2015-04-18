@@ -2,7 +2,6 @@ package water.rapids;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
@@ -67,10 +66,10 @@ public class RapidsTest extends TestUtil {
     tree = "([ %a.hex #0 #5)";
     checkTree(tree);
     // Checking `hex[c(1:5,7,9),6]`
-    tree = "([ %a.hex {(: #0 #4);6;8} #5)";
+    tree = "([ %a.hex (llist (: #0 #4) #6 #8) #5)";
     checkTree(tree);
     // Checking `hex[1,c(1:5,7,8)]`
-    tree = "([ %a.hex #0 {(: #0 #4);6;7})";
+    tree = "([ %a.hex #0 (llist (: #0 #4) #6 #7))";
     checkTree(tree);
   }
 

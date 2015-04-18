@@ -154,10 +154,10 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     # this should match what we gave as input?
     if setup_result['source_keys']:
         # should these be quoted?
-        source_keysStr = "[" + ",".join([("'%s'" % src['name']) for src in setup_result['source_keys'] ]) + "]"
+        source_keysStr = "[" + ",".join([('"%s"' % src['name']) for src in setup_result['source_keys'] ]) + "]"
     else:
         source_keysStr = None
-    
+
     # I suppose we need a way for parameters to parse() to override these
     # should it be an array or a dict?
     if setup_result['column_names']:
@@ -170,8 +170,8 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
     assert columnTypes is not None, "%s %s" % ("column_types:", columnTypes)
 
     if setup_result['na_strings']:
-    # single quotes not legal..need double quotes
-	naStrings = "[" + ",".join(map((lambda x: '"' + x + '"' if x != None else '""'), setup_result['na_strings'])) + "]"
+        # single quotes not legal..need double quotes
+        naStrings = "[" + ",".join(map((lambda x: '"' + x + '"' if x != None else '""'), setup_result['na_strings'])) + "]"
     else:
         naStrings = None
 
@@ -196,7 +196,7 @@ def parse(self, key, hex_key=None, columnTypeDict=None,
             else:
                 raise Exception("%s %s should be int or string" % (k, type(k)))
 
-    columnTypesStr = "[" + ",".join(map((lambda x: "'" + x + "'"), ct)) + "]"
+    columnTypesStr = "[" + ",".join(map((lambda x: '"' + x + '"'), ct)) + "]"
 
 
     parse_params = {
@@ -634,7 +634,7 @@ def endpoints(self, timeoutSecs=60, **kwargs):
     Fetch the list of REST API endpoints.
     '''
     parameters = { }
-    result = self.do_json_request('/1/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Metadata/endpoints.json', cmd='get', timeout=timeoutSecs)
     return result
 
 def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
@@ -642,7 +642,7 @@ def endpoint_by_number(self, num, timeoutSecs=60, **kwargs):
     Fetch the metadata for the given numbered REST API endpoint.
     '''
     parameters = { }
-    result = self.do_json_request('/1/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
+    result = self.do_json_request('/3/Metadata/endpoints.json/' + str(num), cmd='get', timeout=timeoutSecs)
     return result
 
 
@@ -651,7 +651,7 @@ def schemas(self, timeoutSecs=60, **kwargs):
     Fetch the list of REST API schemas.
     '''
     parameters = { }
-    result = self.__do_json_request('/1/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
+    result = self.__do_json_request('/3/Metadata/schemas.json', cmd='get', timeout=timeoutSecs)
 
     return result
 
@@ -660,7 +660,7 @@ def schema(self, schemaname, timeoutSecs=60, **kwargs):
     Fetch the metadata for the given named REST API schema (e.g., FrameV2).
     '''
     parameters = { }
-    result = self.__do_json_request('/1/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
+    result = self.__do_json_request('/3/Metadata/schemas.json/' + schemaname, cmd='get', timeout=timeoutSecs)
 
     return result
 

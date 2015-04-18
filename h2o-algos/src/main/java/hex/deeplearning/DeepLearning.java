@@ -5,7 +5,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.SupervisedModelBuilder;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
-import hex.schemas.DeepLearningV2;
+import hex.schemas.DeepLearningV3;
 import hex.schemas.ModelBuilderSchema;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -47,7 +47,7 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
     super("DeepLearning",parms); init(false);
   }
 
-  public ModelBuilderSchema schema() { return new DeepLearningV2(); }
+  public ModelBuilderSchema schema() { return new DeepLearningV3(); }
 
   /** Start the DeepLearning training Job on an F/J thread. */
   @Override public Job<DeepLearningModel> trainModel() {
@@ -331,10 +331,10 @@ public class DeepLearning extends SupervisedModelBuilder<DeepLearningModel,DeepL
           }
         }
 
-        Log.info("==============================================================================================");
+        Log.info("==============================================================================================================================================================================");
         Log.info("Finished training the Deep Learning model.");
         Log.info(model);
-        Log.info("==============================================================================================");
+        Log.info("==============================================================================================================================================================================");
       }
       catch(Throwable ex) {
         model = DKV.get(dest()).get();

@@ -68,7 +68,7 @@ test <- function(conn) {
   print("Check performce and AUC")
     perf <- h2o.performance(airline.glm,airline.test.hex)
     print(perf)
-    perf@metrics$auc
+    perf@metrics$AUC
 
   print("Show distribution of predictions with quantile.")
     print(quant <- quantile.H2OFrame(air.results$'1'))

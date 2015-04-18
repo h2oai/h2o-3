@@ -305,16 +305,66 @@ setClass("H2OModel",
 #' @rdname H2OModel-class
 #' @export
 setMethod("show", "H2OModel", function(object) {
-  cat(class(object), ": ", object@algorithm, "\n\n", sep = "")
+  o <- object
+  m <- o@model
   cat("Model Details:\n")
-  sub <- intersect(names(object@model), names(object@model$help))
-  val <- object@model[sub]
-  lab <- object@model$help[sub]
-  lab <- lab[names(lab) != "help"]
-  val <- val[names(lab)]
-  mapply(function(val, lab) { cat("\n", lab, "\n"); print(val) }, val, lab)
-  invisible(object)
+  cat("==============\n\n")
+  cat(class(o), ": ", o@algorithm, "\n", sep = "")
+  cat("Model Key: ", o@key, "\n")
+
+  # summary
+  cat("\n")
+  if( !is.null(m$model_summary) ) { print(m$model_summary) }
+
+  # metrics
+  if( is(object, "H2OMultinomialModel") ) {
+    cat("\n")
+    # Training Metrics
+    if( !is.null(m$training_metrics) ) { .showMultiMetrics(m$training_metrics,"Training"); cat("\n"); }
+    else                               cat("\n No training metrics generated during model build.\n")
+
+    # Validation Metrics
+    if( !is.null(m$validation_metrics) )  { .showMultiMetrics(m$validation_metrics, "Validation"); cat("\n"); }
+  }
+
+  # History
+  cat("\n")
+  if( !is.null(m$scoring_history) ) {
+    nr <- nrow(m$scoring_history)
+    if( nr > 20L ) {
+      print(m$scoring_history[1L:5L,])
+      cat("\n---\n")
+      print(data.frame(m$scoring_history[(nr-5L):nr,]))
+    } else {
+      print(m$scoring_history)
+    }
+    cat("\n")
+  }
+
+  # Varimp
+  cat("\n")
+  if( !is.null( m$variable_importances ) ) {
+    cat("Variable Importances: (Extract with `h2o.varimp`) \n")
+    cat("=================================================\n\n")
+    print(m$variable_importances)
+  }
 })
+
+.showMultiMetrics <- function(metrics, train_or_valid="Training") {
+  arg <- "train"
+  if( train_or_valid != "Training" ) arg <- "validation"
+  tm <- metrics
+  cat(train_or_valid, "Metrics: \n")
+  cat("=================\n")
+  if( !is.null(tm$description)     )  cat(tm$description, "\n")
+  if( !is.null(tm$frame)           )  cat("\nExtract", tolower(train_or_valid),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`")," \n")
+  if( !is.null(tm$MSE)             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE,"\n")
+  if( !is.null(tm$logloss)         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss,"\n")
+  if( !is.null(tm$cm)              )  cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, "=TRUE)`)\n"));
+  if( !is.null(tm$cm)              )  { cat("=========================================================================\n"); print(tm$cm$table) }
+  if( !is.null(tm$hit_ratio_table) )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, "=TRUE)`\n"))
+  if( !is.null(tm$hit_ratio_table) )  { cat("=======================================================================\n"); print(tm$hit_ratio_table) }
+}
 
 #' @rdname H2OModel-class
 #' @export
@@ -337,6 +387,30 @@ setClass("H2OAutoEncoderModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2ODimReductionModel", contains="H2OModel")
+
+#'
+#' Accessor Methods for H2OModel Object
+#' 
+setGeneric("getParms", function(object) { standardGeneric("getParms") })
+setMethod("getParms", "H2OModel", function(object) { object@parameters })
+
+setGeneric("getCenters", function(object) { standardGeneric("getCenters") })
+setGeneric("getCentersStd", function(object) { standardGeneric("getCentersStd") })
+setGeneric("getWithinMSE", function(object) { standardGeneric("getWithinMSE") })
+setGeneric("getAvgWithinSS", function(object) { standardGeneric("getAvgWithinSS") })
+setGeneric("getAvgBetweenSS", function(object) { standardGeneric("getAvgBetweenSS") })
+setGeneric("getAvgSS", function(object) { standardGeneric("getAvgSS") })
+setGeneric("getIterations", function(object) { standardGeneric("getIterations") })
+setGeneric("getClusterSizes", function(object) { standardGeneric("getClusterSizes") })
+
+setMethod("getCenters", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers)[,-1] })
+setMethod("getCentersStd", "H2OClusteringModel", function(object) { as.data.frame(object@model$centers_std)[,-1] })
+setMethod("getWithinMSE", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$within_sum_of_squares })
+setMethod("getAvgWithinSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_within_ss })
+setMethod("getAvgBetweenSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_between_ss })
+setMethod("getAvgSS", "H2OClusteringModel", function(object) { object@model$training_metrics$avg_ss } )
+setMethod("getIterations", "H2OClusteringModel", function(object) { object@model$model_summary$number_of_iterations })
+setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@model$training_metrics$centroid_stats$size })
 
 #'
 #' The H2OModelMetrics Object.
@@ -365,15 +439,17 @@ setClass("H2OBinomialMetrics",    contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2OBinomialMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n\n", sep="")
-    cat("Metric Details:\n\n")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    cat("AUC:  ", object@metrics$AUC, "\n", sep="")
+    cat("Gini: ", object@metrics$Gini, "\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
+    cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     if(object@algorithm == "glm") {
       cat("Null Deviance:     ", object@metrics$null_deviance,"\n", sep="")
       cat("Residual Deviance: ", object@metrics$residual_deviance,"\n", sep="")
-      cat("aic:               ", object@metrics$aic,"\n\n", sep="")
+      cat("AIC:               ", object@metrics$AIC,"\n", sep="")
     }
-    cat("AUC:  ", object@metrics$AUC, "\n", sep="")
-    cat("Gini: ", object@metrics$Gini, "\n", sep="")
-    cat("MSE:  ", object@metrics$mse, "\n\n", sep="")
+    cat("\n")
     print(object@metrics$max_criteria_and_metric_scores)
 })
 
@@ -382,7 +458,21 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
 setClass("H2OMultinomialMetrics", contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
+setMethod("show", "H2OMultinomialMetrics", function(object) {
+    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n", sep="")
+    cat("LogLoss:  ", object@metrics$logloss, "\n\n", sep="")
+    print(h2o.confusionMatrix(object))
+})
+#' @export
 setClass("H2ORegressionMetrics",  contains="H2OModelMetrics")
+#' @export
+setMethod("show", "H2ORegressionMetrics", function(object) {
+    cat(class(object), ": ", object@algorithm, "\n\n", sep="")
+    if (!is.null(object@metrics$description)) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    cat("MSE:  ", object@metrics$MSE, "\n\n", sep="")
+})
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
