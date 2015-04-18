@@ -73,7 +73,7 @@ def check_params_update_kwargs(params_dict, kw, function, print_params, ignoreNo
 
 def get_cloud(self, noExtraErrorCheck=False, timeoutSecs=10):
     # hardwire it to allow a 60 second timeout
-    a = self.do_json_request('1/Cloud.json', noExtraErrorCheck=noExtraErrorCheck, timeout=timeoutSecs)
+    a = self.do_json_request('3/Cloud.json', noExtraErrorCheck=noExtraErrorCheck, timeout=timeoutSecs)
     # verboseprint(a)
 
     version    = a['version']
@@ -105,14 +105,14 @@ def h2o_log_msg(self, message=None, timeoutSecs=15):
     # print "HACK: not doing 3/LogAndEcho.json"
 
 def get_timeline(self):
-    return self.do_json_request('2/Timeline.json')
+    return self.do_json_request('3/Timeline.json')
 
 # Shutdown url is like a reset button. Doesn't send a response before it kills stuff
 # safer if random things are wedged, rather than requiring response
 # so request library might retry and get exception. allow that.
 def shutdown_all(self):
     try:
-        self.do_json_request('2/Shutdown.json', cmd='post', noExtraErrorCheck=True)
+        self.do_json_request('3/Shutdown.json', cmd='post', noExtraErrorCheck=True)
     except:
         print "Got exception on Shutdown.json. Ignoring"
         pass
@@ -134,23 +134,23 @@ def typeahead(self, timeoutSecs=10, **kwargs):
     }
     check_params_update_kwargs(params_dict, kwargs, 'typeahead', print_params=True)
     # odd ...needs /files
-    a = self.do_json_request('2/Typeahead.json/files', params=params_dict, timeout=timeoutSecs)
+    a = self.do_json_request('3/Typeahead.json/files', params=params_dict, timeout=timeoutSecs)
     verboseprint("\ntypeahead result:", dump_json(a))
     return a
 
 #*******************************************************************************
 def unlock (self, timeoutSecs=30, **kwargs):
-    a = self.do_json_request('2/UnlockKeys.json', params=None, timeout=timeoutSecs)
+    a = self.do_json_request('3/UnlockKeys.json', params=None, timeout=timeoutSecs)
     return a
     # print "WARNING: faking unlock keys"
     # pass
 
 def remove_all_keys(self, timeoutSecs=120):
-    return self.do_json_request('1/RemoveAll.json', cmd='delete', timeout=timeoutSecs)
+    return self.do_json_request('3/RemoveAll.json', cmd='delete', timeout=timeoutSecs)
 
 # ignore errors on remove..key might already be gone due to h2o removing it now after parse
 def remove_key(self, key, timeoutSecs=120):
-    a = self.do_json_request('1/Remove.json',
+    a = self.do_json_request('3/Remove.json',
         params={"key": key}, ignoreH2oError=True, cmd='delete', timeout=timeoutSecs)
     self.unlock()
     return a
@@ -251,7 +251,7 @@ def inspect(self, key, offset=None, view=None, max_column_display=1000, ignoreH2
         "offset": offset,
         # view doesn't exist for 2. let it be passed here from old tests but not used
     }
-    a = self.do_json_request('1/Inspect.json',
+    a = self.do_json_request('3/Inspect.json',
         params=params,
         ignoreH2oError=ignoreH2oError,
         timeout=timeoutSecs
@@ -266,7 +266,7 @@ def split_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
         'destKeys': None, # ['bigger', 'smaller']
     }
     check_params_update_kwargs(params_dict, kwargs, 'split_frame', print_params=True)
-    firstResult = self.do_json_request('2/SplitFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
+    firstResult = self.do_json_request('3/SplitFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
     print "firstResult:", dump_json(firstResult)
     # FIX! what is ['dest']['name'] ..It's not there at the beginning?
     job_key = firstResult['key']['name']
@@ -288,7 +288,7 @@ def create_frame(self, timeoutSecs=120, noPoll=False, **kwargs):
 
     }
     check_params_update_kwargs(params_dict, kwargs, 'create_frame', print_params=True)
-    firstResult = self.do_json_request('2/CreateFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
+    firstResult = self.do_json_request('3/CreateFrame.json', cmd='post', timeout=timeoutSecs, params=params_dict)
     job_key = firstResult['dest']['name']
 
     if noPoll:
@@ -363,7 +363,7 @@ def quantiles(self, timeoutSecs=300, print_params=True, **kwargs):
         'probs': None,
     }
     check_params_update_kwargs(params_dict, kwargs, 'quantiles', print_params)
-    a = self.do_json_request('1/Quantiles.json', timeout=timeoutSecs, params=params_dict)
+    a = self.do_json_request('3/Quantiles.json', timeout=timeoutSecs, params=params_dict)
     verboseprint("\nquantiles result:", dump_json(a))
     h2o_sandbox.check_sandbox_for_errors()
     return a

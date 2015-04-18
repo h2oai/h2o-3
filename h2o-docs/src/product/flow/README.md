@@ -292,7 +292,7 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu:
 **Note**: For a K-Means model, the columns in the training frame cannot contain categorical values. If you select a dataset with categorical values as the training frame, the categorical columns are identified.
 
 <a name="GLM"></a>
-- **glm**: Create a Generalized Linear model
+- **Generalized Linear Model**: Create a Generalized Linear model
 
 <a name="drf"></a>
 - **Distributed RF**: Create a distributed Random Forest model.  
@@ -347,7 +347,9 @@ The available options vary depending on the selected model. If an option is only
 
 - **Learn_rate**: [(GBM)](#GBM) Specify the learning rate. The range is 0.0 to 1.0 and the default is 0.1. 
 
-- **Loss**: ([GBM](#GBM), [DL](#DL)) Select the loss function. For GBM, the options are auto, bernoulli, or none and the default is auto. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
+- **Distribution**: [(DL)](#DL) Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, or gaussian and the default is auto.
+
+- **Loss**: ([DL](#DL)) Select the loss function. For DL, the options are Automatic, MeanSquare, CrossEntropy, Huber, Absolute, or None and the default value is Automatic. Absolute, MeanSquare, and Huber are applicable for regression or classification, while CrossEntropy is only applicable for classification. Huber can improve for regression problems with outliers.
 
 - **Score\_each\_iteration**: ([K-Means](#kmeans), [DRF](#drf), [NaiveBayes](#nb), [PCA](#pca), [GBM](#GBM)) To score during each iteration of the model training, check this checkbox. 
 
@@ -410,7 +412,8 @@ The available options vary depending on the selected model. If an option is only
 
 - **Score\_duty\_cycle**: [(DL)](#DL) Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. The default value is 0.1.
 
-- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
+- **Autoencoder**: [(DL)](#DL) Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
+   **Note**: This option requires a loss function other than CrossEntropy. If this option is enabled, **use\_all\_factor\_levels** must be enabled. 
 
 - **Balance_classes**: ([GLM](#GLM), [GBM](#GBM), [DRF](#drf), [DL](#DL), [NaiveBayes)](#nb) Oversample the minority classes to balance the class distribution. This option is not selected by default. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
@@ -523,7 +526,7 @@ To inspect a model, check its checkbox then click the **Inspect** button, or cli
  
  A summary of the model's parameters displays. To display more details, click the **Show All Parameters** button. 
  
- **NOTE**: The **Clone this model...** button will be supported in a future version. 
+   **NOTE**: The **Clone this model...** button will be supported in a future version. 
  
 To compare models, check the checkboxes for the models to use in the comparison and click the **Compare selected models** button. To select all models, check the checkbox at the top of the checkbox column (next to the **KEY** heading). 
 
@@ -599,10 +602,13 @@ To make a prediction, check the checkboxes for the frames you want to use to mak
 
 In H2O Flow, you can split datasets within Flow for use in training and testing. 
 
+ ![splitFrame cell](images/Flow_splitFrame.png)
+
 0. To split a frame, click the **Assist Me** button, then click **splitFrame**. 
 0. From the drop-down **Frame:** list, select the frame to split. 
-0. In the **Ratio** entry field, specify the fractional value to determine the split. 
-   **Note** Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
+0. In the second **Ratio** entry field, specify the fractional value to determine the split. The first **Ratio** field is automatically calculated based on the values entered in the second **Ratio** field. 
+   
+  **Note**: Only fractional values between 0 and 1 are supported (for example, enter `.5` to split the frame in half). The total sum of the ratio values must equal one. H2O automatically adjusts the ratio values to equal one; if unsupported values are entered, an error displays.  
 0. In the **Key** entry field, specify a name for the new frame. 
 0. (Optional) To add another split, click the **Add a split** link. To remove a split, click the `X` to the right of the **Key** entry field. 
 0. Click the **Create** button.  
