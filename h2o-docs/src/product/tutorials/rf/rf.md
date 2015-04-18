@@ -52,8 +52,8 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
-0. Select `Distributed RF` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
+0. Select `Distributed RF` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed ad.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Response column** drop-down list, select `C1`. 
 0. In the **Ntrees** field, specify the number of trees for the model to build. For this example, enter `150`. 
@@ -66,14 +66,17 @@ Now, parse the imported data:
 
 ### RF Output
 
-To view the output, click the **View** button. The DRF model output displays a graph of the MSE values by tree and a chart of variable importances. 
+The DRF model output includes the following: 
+
+- Output (model category, validation metrics, initf)
+- Model summary (number of trees, min. depth, max. depth, mean depth, min. leaves, max. leaves, mean leaves)
+- Scoring history (number for each tree and MSE)
+- Training metrics (model name, model checksum, frame name, frame checksum, description if applicable, model category, duration in ms, scoring time, predictions, MSE, R2, Logloss, AUC, Gini)
+- Training metrics (thresholds, F1, F2, F0Points, Accuracy, Precision, Recall, Specificity, Absolute MCC, min. per-class accuracy, TNS, FNS, FPS, TPS, IDX)
+- Maximum metrics (metric, threshold, value, IDX)
+- Variable importances (variable name, relative importance, scaled importance, percentage)
 
   ![Random Forest Model Results](../images/RF_Model_Results.png)
-
-
-To view more details, click the **Inspect** button, then select the type of information (parameters, output, or variable importances). The variable importances details are shown below. 
-
- ![Random Forest Model Results Details](../images/RF_VarImp.png)
 
 ### RF Predict
 
