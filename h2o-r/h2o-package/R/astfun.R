@@ -243,18 +243,18 @@ function(stmnt) {
     if (missing(i)) return("")
     if (length(i) > 1L) stop("`[[` can only select one column")
     if (!is.numeric(i)) stop("column selection within a function call must be numeric")
-    rows <- "\"null\""
+    rows <- "()"
     cols <- .eval(substitute(i), parent.frame())
   } else {
     j <- stmnt_list[[4L]]  # columns
     if (missing(i))
-      rows <- "\"null\""
+      rows <- "()"
     else if (is(i, "ASTNode"))
       rows <- eval(i, parent.frame())
     else
       rows <- .eval(substitute(i), parent.frame())
     if (missing(j))
-      cols <- "\"null\""
+      cols <- "()"
     else
       cols <- .eval(substitute(j), parent.frame())
   }

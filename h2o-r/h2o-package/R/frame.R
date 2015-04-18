@@ -499,7 +499,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
 
   if (missingI) {
     nrows <- x@mutable$nrows
-    rows <- "\"null\""
+    rows <- "()"
   } else {
     nrows <- NA_integer_
     if (is(i, "H2OFrame")) {
@@ -514,7 +514,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missingJ) {
     ncols <- x@mutable$ncols
     col_names <- x@mutable$col_names
-    cols <- "\"null\""
+    cols <- "()"
   } else {
     ncols <- NA_integer_
     col_names <- NA_character_
@@ -628,7 +628,7 @@ setMethod("[<-", "H2OFrame", function(x, i, j, ..., value) {
       }
       j <- .eval(idx,parent.frame())
       op  <- new("ASTApply", op = "[")
-      ast <- new("ASTNode", root = op, children = list(.get(x), deparse("null"), j))
+      ast <- new("ASTNode", root = op, children = list(.get(x), "()", j))
       mutable <- new("H2OFrameMutableState", ast = ast, nrows = NA_integer_, ncols = NA_integer_, col_names = NA_character_)
       finalizers <- x@finalizers
       sub <-  .newH2OObject("H2OFrame", conn = x@conn, key = .key.make(x@conn, "subset"),
