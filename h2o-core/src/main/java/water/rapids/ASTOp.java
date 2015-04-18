@@ -404,7 +404,7 @@ class ASTIsNA extends ASTUniPrefixOp { @Override String opStr(){ return "is.na";
 }
 
 class ASTasDate extends ASTUniPrefixOp {
-  protected String _format;
+  String _format;
   ASTasDate() { super(new String[]{"as.Date", "x", "format"}); }
   @Override String opStr() { return "as.Date"; }
   @Override ASTOp make() {return new ASTasDate();}
@@ -456,7 +456,7 @@ class ASTasDate extends ASTUniPrefixOp {
 
 // pass thru directly to Joda -- as.Date is because R is a special snowflake
 class ASTToDate extends ASTUniPrefixOp {
-  protected String _format;
+  String _format;
   ASTToDate() { super(new String[]{"toDate", "x", "format"}); }
   @Override String opStr() { return "toDate"; }
   @Override ASTOp make() {return new ASTToDate();}
@@ -1511,9 +1511,9 @@ class ASTFoldCombine extends ASTUniPrefixOp {
 
 // Variable length; instances will be created of required length
 abstract class ASTReducerOp extends ASTOp {
-  protected double _init;
-  protected boolean _narm;        // na.rm in R
-  protected int _argcnt;
+  double _init;
+  boolean _narm;        // na.rm in R
+  int _argcnt;
   ASTReducerOp( double init) {
     super(new String[]{"","dblary","...", "na.rm"});
     _init = init;
@@ -1660,7 +1660,7 @@ class ASTSum extends ASTReducerOp {
 
 
 class ASTRbind extends ASTUniPrefixOp {
-  protected int argcnt;
+  int argcnt;
   @Override String opStr() { return "rbind"; }
   public ASTRbind() { super(new String[]{"rbind", "ary","..."}); }
   @Override ASTOp make() { return new ASTRbind(); }
@@ -1853,7 +1853,7 @@ class ASTRbind extends ASTUniPrefixOp {
 }
 
 class ASTCbind extends ASTUniPrefixOp {
-  protected int argcnt;
+  int argcnt;
   @Override String opStr() { return "cbind"; }
   public ASTCbind() { super(new String[]{"cbind","ary", "..."}); }
   @Override ASTOp make() {return new ASTCbind();}
@@ -2013,7 +2013,7 @@ class ASTAND extends ASTBinOp {
 }
 
 class ASTRename extends ASTUniPrefixOp {
-  protected String _newname;
+  String _newname;
   @Override String opStr() { return "rename"; }
   ASTRename() { super(new String[] {"", "ary", "new_name"}); }
   @Override ASTOp make() { return new ASTRename(); }
@@ -2212,7 +2212,7 @@ class ASTOR extends ASTBinOp {
 
 // Similar to R's seq_len
 class ASTSeqLen extends ASTUniPrefixOp {
-  protected double _length;
+  double _length;
   @Override String opStr() { return "seq_len"; }
   ASTSeqLen( ) { super(new String[]{"seq_len", "n"}); }
   @Override ASTOp make() { return new ASTSeqLen(); }
@@ -2240,9 +2240,9 @@ class ASTSeqLen extends ASTUniPrefixOp {
 
 // Same logic as R's generic seq method
 class ASTSeq extends ASTUniPrefixOp {
-  protected double _from;
-  protected double _to;
-  protected double _by;
+  double _from;
+  double _to;
+  double _by;
 
   @Override String opStr() { return "seq"; }
   ASTSeq() { super(new String[]{"seq", "from", "to", "by"}); }
@@ -2317,18 +2317,14 @@ class ASTSeq extends ASTUniPrefixOp {
 }
 
 class ASTRepLen extends ASTUniPrefixOp {
-  protected double _length;
+  double _length;
   @Override String opStr() { return "rep_len"; }
   public ASTRepLen() { super(new String[]{"rep_len", "x", "length.out"}); }
   @Override ASTOp make() { return new ASTRepLen(); }
   ASTRepLen parse_impl(Exec E) {
     AST ary = E.parse();
-    try {
-      _length = E.nextDbl();
-    } catch(ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `length` expected to be a number.");
-    }
+    AST a = E.parse();
+    _length = a.treeWalk(new Env(new HashSet<Key>())).popDbl();
     E.eatEnd(); // eat the ending ')'
     ASTRepLen res = (ASTRepLen) clone();
     res._asts = new AST[]{ary};
@@ -2449,8 +2445,8 @@ class ASTQtile extends ASTUniPrefixOp {
 }
 
 class ASTSetColNames extends ASTUniPrefixOp {
-  protected long[] _idxs;
-  protected String[] _names;
+  long[] _idxs;
+  String[] _names;
   @Override String opStr() { return "colnames="; }
   public ASTSetColNames() { super(new String[]{}); }
   @Override ASTSetColNames make() { return new ASTSetColNames(); }
@@ -2494,7 +2490,7 @@ class ASTSetColNames extends ASTUniPrefixOp {
 }
 
 class ASTRunif extends ASTUniPrefixOp {
-  protected long   _seed;
+  long   _seed;
   @Override String opStr() { return "h2o.runif"; }
   public ASTRunif() { super(new String[]{"h2o.runif","dbls","seed"}); }
   @Override ASTOp make() {return new ASTRunif();}
@@ -2502,12 +2498,7 @@ class ASTRunif extends ASTUniPrefixOp {
     // peel off the ary
     AST ary = E.parse();
     // parse the seed
-    try {
-      _seed = (long) E.parse().treeWalk(new Env(null)).popDbl();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `seed` expected to be a number.");
-    }
+    _seed = (long) E.parse().treeWalk(new Env(new HashSet<Key>())).popDbl();
     E.eatEnd(); // eat the ending ')'
     ASTRunif res = (ASTRunif) clone();
     res._asts = new AST[]{ary};
