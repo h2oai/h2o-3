@@ -176,6 +176,12 @@ function(op, ..., .args = list(...)) {
   .h2o.nary_frame_op(op, .args = .args, nrows = x@mutable$nrows, ncols = x@mutable$ncols, col_names = x@mutable$col_names)
 }
 
+.h2o.raw_expr_op<-
+function(expr, ..., .args=list(...), key = .key.make(h2o.getConnection(), "raw_expr_op"), linkToGC = TRUE) {
+  res <- .h2o.__remoteSend(h2o.getConnection(), .h2o.__RAPIDS, ast=expr, method = "POST")
+  h2o.getFrame(key, h2o.getConnection(), linkToGC=linkToGC)
+}
+
 #'
 #' Ship AST to H2O for evaluation
 #'

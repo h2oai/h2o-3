@@ -41,6 +41,7 @@
 #' h2o.ls(localH2O)
 #' @export
 h2o.ls <- function(conn = h2o.getConnection()) {
+  gc()
   ast <- new("ASTNode", root = new("ASTApply", op = "ls"))
   mutable <- new("H2OFrameMutableState", ast = ast)
   fr <- .newH2OObject("H2OFrame", conn = conn, key = .key.make(conn, "ls"), linkToGC = TRUE, mutable = mutable)
@@ -94,6 +95,7 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
     conn <- temp
   }
   if(!is(conn, "H2OConnection")) stop("`conn` must be of class H2OConnection")
+  if( is(keys, "H2OFrame") ) keys <- keys@key
   if(!is.character(keys)) stop("`keys` must be of class character")
 
   for(i in seq_len(length(keys)))
@@ -143,9 +145,16 @@ h2o.rm <- function(keys, conn = h2o.getConnection()) {
 #' @export
 h2o.assign <- function(data, key) {
   if(!is(data, "H2OFrame")) stop("`data` must be of class H2OFrame")
+  t <- !.is.eval(data)
+  if( t ) {
+    tk <- data@key
+    .h2o.eval.frame(conn = data@conn, ast = data@mutable$ast, key = tk)
+  }
+
   .key.validate(key)
   if(key == data@key) stop("Destination key must differ from data key ", data@key)
-  res <- .h2o.nary_frame_op("rename", data, key, key = key, linkToGC = FALSE)
+  expr <- paste0("(= !", key, " %", data@key, ")")
+  res <- .h2o.raw_expr_op(expr, data, key=key, linkToGC=FALSE)
   .byref.update.frame(res)
 }
 

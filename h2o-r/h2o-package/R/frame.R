@@ -1063,7 +1063,7 @@ quantile.H2OFrame <- function(x,
 {
   # verify input parameters
   if (!is(x, "H2OFrame")) stop("`x` must be an H2OFrame object")
-  if(ncol(x) != 1L) stop("quantile only operates on a single column")
+#  if(ncol(x) != 1L) stop("quantile only operates on a single column") # pointless check?
   if(is.factor(x)) stop("factors are not allowed")
   #if(!na.rm && .h2o.__unary_op("any.na", x)) stop("missing values and NaN's not allowed if 'na.rm' is FALSE")
   if(!is.numeric(probs) || length(probs) == 0L || any(!is.finite(probs) | probs < 0 | probs > 1))
