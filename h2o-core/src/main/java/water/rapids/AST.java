@@ -1455,6 +1455,7 @@ class ASTStringList extends ASTList {
       AST a = E.parse();
       if( a instanceof ASTNull ) strs.add(null);
       else if( a instanceof ASTString ) strs.add(((ASTString) a)._s);
+      else if( a instanceof ASTFrame  ) strs.add(((ASTFrame)a)._key);  // got screwed by the st00pid aststring hack for keys w/ spaces
     }
     E.eatEnd();
     _s = new String[strs.size()];
