@@ -75,7 +75,7 @@ public abstract class ASTOp extends AST {
     SYMBOLS.put("agg",new ASTGroupBy.AGG());
     SYMBOLS.put(")", new ASTNull());
     //lists
-    SYMBOLS.put("list", new ASTDoubleList());
+    SYMBOLS.put("list", new ASTAry());
     SYMBOLS.put("dlist", new ASTDoubleList());
     SYMBOLS.put("llist", new ASTLongList());
     SYMBOLS.put("flist", new ASTFloatList());
@@ -2558,7 +2558,7 @@ class ASTVar extends ASTUniPrefixOp {
     AST ary = E.parse();
     // Get the trim
     AST y = E.parse();
-    if (y instanceof ASTString && ((ASTString)y)._s.equals("null")) {_ynull = true; y = ary; }
+    if( y instanceof ASTNull ) { _ynull=true; y=ary; }
     // Get the na.rm
     AST a = E._env.lookup((ASTId)E.parse());
     try {
@@ -2569,12 +2569,11 @@ class ASTVar extends ASTUniPrefixOp {
     }
     // Get the `use`
     ASTString use;
-    try {
-      use = (ASTString) E.skipWS().parse();
-    } catch (ClassCastException e) {
-      e.printStackTrace();
-      throw new IllegalArgumentException("Argument `use` expected to be a string.");
-    }
+    AST u = E.parse();
+    if( u instanceof ASTNull ) use = new ASTString('\"', "null");
+    else if( u instanceof ASTString ) use = (ASTString)u;
+    else throw new IllegalArgumentException("Argument `use` expected to be a string.");
+
     E.eatEnd(); // eat the ending ')'
     // Finish the rest
     ASTVar res = (ASTVar) clone();
@@ -2849,30 +2848,28 @@ class ASTTable extends ASTUniPrefixOp {
     final int ncol;
     if ((ncol = fr.vecs().length) > 2)
       throw new IllegalArgumentException("table does not apply to more than two cols.");
-    for (int i = 0; i < ncol; i++)
-      if (!fr.vecs()[i].isInt())
-        throw new IllegalArgumentException("table only applies to integer vectors.");
     Vec dataLayoutVec;
     Frame fr2;
     String colnames[];
     String[][] d = new String[ncol+1][];
 
-    if (ncol == 1) {
-      final int min = (int)fr.anyVec().min();
-      final int max = (int)fr.anyVec().max();
+    if (ncol == 1 && fr.anyVec().isInt()) {  // fast path for int vecs
+      final int min = (int) fr.anyVec().min();
+      final int max = (int) fr.anyVec().max();
       colnames = new String[]{fr.name(0), "Count"};
       d[0] = fr.anyVec().domain(); // should always be null for all neg values!
       d[1] = null;
 
       // all pos
       if (min >= 0) {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(max,false,false,0).doAll(fr.anyVec());
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max, false, false, 0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
@@ -2884,13 +2881,14 @@ class ASTTable extends ASTUniPrefixOp {
 
         // all neg  -- flip the sign and count...
       } else if (min <= 0 && max <= 0) {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(-1*min,true,false,0).doAll(fr.anyVec());
+        UniqueColumnCountTask t = new UniqueColumnCountTask(-1 * min, true, false, 0).doAll(fr.anyVec());
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
@@ -2902,37 +2900,33 @@ class ASTTable extends ASTUniPrefixOp {
 
         // mixed
       } else {
-        UniqueColumnCountTask t = new UniqueColumnCountTask(max+-1*min,false,true,max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
+        UniqueColumnCountTask t = new UniqueColumnCountTask(max + -1 * min, false, true, max).doAll(fr.anyVec()); // pivot around max value... vals > max are negative
         final long[] cts = t._cts;
         dataLayoutVec = Vec.makeCon(0, cts.length);
 
         // second pass to build the result frame
         fr2 = new MRTask() {
-          @Override public void map(Chunk[] c, NewChunk[] cs) {
+          @Override
+          public void map(Chunk[] c, NewChunk[] cs) {
             for (int i = 0; i < c[0]._len; ++i) {
               int idx = (int) (i + c[0].start());
               if (cts[idx] == 0) continue;
-              cs[0].addNum(idx > max ? (idx-max)*-1 : idx);
+              cs[0].addNum(idx > max ? (idx - max) * -1 : idx);
               cs[1].addNum(cts[idx]);
             }
           }
         }.doAll(2, dataLayoutVec).outputFrame(colnames, d);
       }
-
     } else {
-
-      // 2 COLUMN CASE
-      colnames = new String[]{fr.name(0), fr.name(1), "count"};
+      // Build a NBHS of all groups
+      // Create a dense array (1 index per group) of counts, updated atomically
+      colnames = ncol==1? new String[]{fr.name(0), "count"} : new String[]{fr.name(0), fr.name(1), "count"};
       long s = System.currentTimeMillis();
 
-      // Strategy: Avoid doing NBHM reduces (which is way too slow).
-      //  1. Build NBHS of Groups (useful for
       Uniq2ColTsk u = new Uniq2ColTsk().doAll(fr);
       Log.info("Finished gathering uniq groups in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
-      final long[] pairs = new long[u._s.size()];
-      int i=0;
-      for (Object o : u._s) pairs[i++] = (long) o;
+      final ASTddply.Group[] pairs = u._s.toArray(new ASTddply.Group[u._s.size()]);
       dataLayoutVec = Vec.makeCon(0, pairs.length);
 
       s = System.currentTimeMillis();
@@ -2944,17 +2938,21 @@ class ASTTable extends ASTUniPrefixOp {
       Log.info("Finished gathering counts in: " + (System.currentTimeMillis() - s) / 1000. + " (s)");
 
       d[0] = fr.vec(0).domain();
-      d[1] = fr.vec(1).domain();
+      if( ncol==2 ) d[1] = fr.vec(1).domain();
 
       fr2 = new MRTask() {
         @Override
         public void map(Chunk[] c, NewChunk[] cs) {
           int start = (int)c[0].start();
           for (int i = 0; i < c[0]._len; ++i) {
-            long[] g = unmix(pairs[i+start]);
+            double[] g = pairs[i+start]._ds;
             cs[0].addNum(g[0]);
-            cs[1].addNum(g[1]);
-            cs[2].addNum(cnts[i+start]);
+            if( ncol==2) {
+              cs[1].addNum(g[1]);
+              cs[2].addNum(cnts[i+start]);
+            } else {
+              cs[1].addNum(cnts[i+start]);
+            }
           }
         }
       }.doAll(ncol + 1, dataLayoutVec).outputFrame(colnames, d);
@@ -2999,18 +2997,26 @@ class ASTTable extends ASTUniPrefixOp {
   }
 
   private static class Uniq2ColTsk extends MRTask<Uniq2ColTsk> {
-    NonBlockingHashSet<Long> _s;
-    @Override public void setupLocal() { _s = new NonBlockingHashSet<>(); }
+    NonBlockingHashSet<ASTddply.Group> _s;
+    private long[] _cols;
+    @Override public void setupLocal() {
+      _s = new NonBlockingHashSet<>();
+      _cols = new long[_fr.numCols()];
+      for(int i=0;i<_cols.length;++i) _cols[i]=i;
+    }
     @Override public void map(Chunk[] c) {
+      ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0;i<c[0]._len;++i)
-        _s.add(mix(c[0].at8(i), c[1].at8(i)));
+        if( _s.add(g.fill(i,c,_cols))) {
+          g = new ASTddply.Group(_cols.length);
+        }
     }
     @Override public void reduce(Uniq2ColTsk t) { if (_s!=t._s) _s.addAll(t._s); }
 
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _s == null ) return ab.put4(0);
       ab.put4(_s.size());
-      for( Long g : _s ) {ab.put8(g); }
+      for( ASTddply.Group g : _s ) {ab.put(g); }
       return ab;
     }
 
@@ -3018,33 +3024,33 @@ class ASTTable extends ASTUniPrefixOp {
       int len = ab.get4();
       if( len == 0 ) return this;
       _s = new NonBlockingHashSet<>();
-      for( int i=0; i<len; i++ ) { _s.add(ab.get8());}
+      for( int i=0; i<len; i++ ) { _s.add(ab.get(ASTddply.Group.class));}
       return this;
     }
   }
 
   /** http://szudzik.com/ElegantPairing.pdf */
-  private static long mix(long A, long B) {
-    long a=A,b=B;
-    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
-    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
-    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
-    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
-  }
-
-  // always returns a long[] of length 2;
-  // long[0] -> A, long[1] -> B
-  private static long[] unmix(long z) {
-    long rflr = (long)Math.floor(Math.sqrt(z));
-    long rflr2=rflr*rflr;
-    long z_rflr2 = z-rflr2;
-    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
-  }
+//  private static long mix(long A, long B) {
+//    long a=A,b=B;
+//    long a1 = (a<<=1) >= 0 ? a : -1 * a - 1;
+//    long b1 = (b<<=1) >= 0 ? b : -1 * b - 1;
+//    long v = (a1 >= b1 ? a1 * a1 + a1 + b1 : a1 + b1 * b1) >> 1; // pairing fcn
+//    return a < 0 && b < 0 || a >= 0 && b >= 0 ? v : -v - 1;
+//  }
+//
+//  // always returns a long[] of length 2;
+//  // long[0] -> A, long[1] -> B
+//  private static long[] unmix(long z) {
+//    long rflr = (long)Math.floor(Math.sqrt(z));
+//    long rflr2=rflr*rflr;
+//    long z_rflr2 = z-rflr2;
+//    return z_rflr2 < rflr ?  new long[]{z_rflr2,rflr} : new long[]{rflr, z_rflr2-rflr};
+//  }
 
   private static class NewHashMap extends MRTask<NewHashMap> {
-    NonBlockingHashMap<Long, Integer> _s;
-    final long[] _m;
-    NewHashMap(long[] m) { _m = m; }
+    NonBlockingHashMap<ASTddply.Group, Integer> _s;
+    final ASTddply.Group[] _m;
+    NewHashMap(ASTddply.Group[] m) { _m = m; }
     @Override public void setupLocal() { _s = new NonBlockingHashMap<>();}
     @Override public void map(Chunk[] c) {
       int start = (int)c[0].start();
@@ -3056,7 +3062,7 @@ class ASTTable extends ASTUniPrefixOp {
     @Override public AutoBuffer write_impl( AutoBuffer ab ) {
       if( _s == null ) return ab.put4(0);
       ab.put4(_s.size());
-      for( Long l : _s.keySet() ) {ab.put8(l); ab.put4(_s.get(l)); }
+      for( ASTddply.Group l : _s.keySet() ) {ab.put(l); ab.put4(_s.get(l)); }
       return ab;
     }
 
@@ -3064,25 +3070,31 @@ class ASTTable extends ASTUniPrefixOp {
       int len = ab.get4();
       if( len == 0 ) return this;
       _s = new NonBlockingHashMap<>();
-      for( int i=0;i<len;i++ ) _s.put(ab.get8(), ab.get4());
+      for( int i=0;i<len;i++ ) _s.put(ab.get(ASTddply.Group.class), ab.get4());
       return this;
     }
   }
 
   private static class CountUniq2ColTsk extends MRTask<CountUniq2ColTsk> {
     private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-    final NonBlockingHashMap<Long, Integer> _m;
+    final NonBlockingHashMap<ASTddply.Group, Integer> _m;
+    private long[] _cols;
     // out
     long[] _cnts;
     private static final int _b = _unsafe.arrayBaseOffset(long[].class);
     private static final int _s = _unsafe.arrayIndexScale(long[].class);
     private static long ssid(int i) { return _b + _s*i; } // Scale and Shift
 
-    CountUniq2ColTsk(NonBlockingHashMap<Long, Integer> s) {_m = s; }
-    @Override public void setupLocal() { _cnts = MemoryManager.malloc8(_m.size()); }
+    CountUniq2ColTsk(NonBlockingHashMap<ASTddply.Group, Integer> s) {_m = s; }
+    @Override public void setupLocal() {
+      _cnts = MemoryManager.malloc8(_m.size());
+      _cols = new long[_fr.numCols()];
+      for(int i=0;i<_cols.length;++i) _cols[i]=i;
+    }
     @Override public void map(Chunk[] cs) {
+      ASTddply.Group g = new ASTddply.Group(_cols.length);
       for (int i=0; i < cs[0]._len; ++i) {
-        int h = _m.get(mix(cs[0].at8(i), cs[1].at8(i)));
+        int h = _m.get(g.fill(i,cs,_cols));
         long offset = ssid(h);
         long c = _cnts[h];
         while(!_unsafe.compareAndSwapLong(_cnts,offset,c,c+1))  //yee-haw
@@ -3280,11 +3292,12 @@ class ASTCut extends ASTUniPrefixOp {
     if( labels instanceof ASTStringList ) _labels = ((ASTStringList)labels)._s;
     else if( labels instanceof ASTString) _labels = new String[]{((ASTString)labels)._s};
     else if( labels instanceof ASTFrame ) _labels = new String[]{((ASTFrame)labels)._key};
+    else if( labels instanceof ASTNull  ) _labels = null;
     else throw new IllegalArgumentException("`labels` argument expected to be a slist or String. Got: " + labels.getClass());
 
     // cleanup _labels
-    for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
-    if (_labels.length==1 && _labels[0].equals("null")) _labels = null;
+    if( _labels!=null )
+      for (int i = 0; i < _labels.length; ++i) _labels[i] = _labels[i].replace("\"", "").replace("\'", "");
 
     //include.lowest
     AST inc_lowest = E.parse();
