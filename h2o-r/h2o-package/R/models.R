@@ -301,8 +301,8 @@ h2o.performance <- function(model, data=NULL, ...) {
   l <- list(...)
   if( length(l)!=0 ) {  # basically only do this if the args are legit passed in... otherwise, always compute from scratch...
     l <- .trainOrValid(l)
-    if(      l$train )  return(.showMultiMetrics(model, "Training"))
-    else if( l$valid )  return(.showMultiMetrics(model, "Validation"))
+    if(      l$train )  return(model@model$training_metrics)
+    else if( l$valid )  return(model@model$validation_metrics)
     else                return(NULL)
   }
   parms <- list()
@@ -310,22 +310,25 @@ h2o.performance <- function(model, data=NULL, ...) {
   if(!is.null(data))
     parms[["frame"]] <- data@key
 
-  if(missing(data)){
-    res <- .h2o.__remoteSend(model@conn, method = "GET", .h2o.__MODEL_METRICS(model@key))
-  }
-  else {
-    res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
-  }
+  if( missing(data) ) res <- .h2o.__remoteSend(model@conn, method = "GET", .h2o.__MODEL_METRICS(model@key))
+  else                res <- .h2o.__remoteSend(model@conn, method = "POST", .h2o.__MODEL_METRICS(model@key,data@key), .params = parms)
 
   algo <- model@algorithm
-  res$model_metrics <- res$model_metrics[[1L]]
-  metrics <- res$model_metrics[!(names(res$model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
 
-  model_category <- res$model_metrics$model_category
+  ####
+  # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+  data.key <- if( missing(data) || is.null(data) ) model@parameters$training_frame else data@key
+  model_metrics <- Filter(function(mm) { mm$frame$name==data.key}, res$model_metrics)[[1]]   # filter on data.key, R's builtin Filter function
+  #
+  ####
+  metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
+  model_category <- model_metrics$model_category
   Class <- paste0("H2O", model_category, "Metrics")
-
+  metrics$frame <- list()
+  metrics$frame$name <- data.key
   new(Class     = Class,
       algorithm = algo,
+      on_train  = missing(data),
       metrics   = metrics)
 }
 
@@ -515,6 +518,9 @@ h2o.scoreHistory <- function(object, ...) {
 #' @export
 h2o.hit_ratio_table <- function(object, ...) {
   o <- object
+  hrt <- NULL
+
+  # get the hrt if o is a model
   if( is(o, "H2OModel") ) {
     hrt <- o@model$training_metrics$hit_ratio_table  # by default grab the training metrics hrt
     l <- list(...)
@@ -523,21 +529,23 @@ h2o.hit_ratio_table <- function(object, ...) {
       if( l$valid )  hrt <- o@model$validation_metrics$hit_ratio_table  # otherwise get the validation_metrics hrt
     }
 
-    # pretty print that sucka
+  # if o is a data.frame, then the hrt was passed in -- just for pretty printing
+  } else if( is(o, "data.frame") ) hrt <- o
+
+  # warn if we got something unexpected...
+  else warning( paste0("No hit ratio table for ", class(o)) )
+
+  # if hrt not NULL, pretty print
+  if( !is.null(hrt) ) {
     nr  <- nrow(hrt)
     if( is.null(hrt) ) return(NULL)
     if( nr > 20L ) {
       print(hrt[1L:5L,])
       cat("\n---\n")
       print(data.frame(hrt[(nr-5L):nr,]))
-    } else {
-      print(hrt)
-    }
-    invisible( hrt )
-  } else {
-    warning( paste0("No hit ratio table for ", class(o)) )
-    return(NULL)
+    } else print(hrt)
   }
+  invisible( hrt )  # return something
 }
 
 #' H2O Model Metric Accessor Functions
