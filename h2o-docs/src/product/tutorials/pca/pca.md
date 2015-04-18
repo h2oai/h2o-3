@@ -54,7 +54,7 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `Principal Component Analysis` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed arrhythmia.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, do not select any columns.  
@@ -72,29 +72,14 @@ Now, parse the imported data:
 ![Building PCA Models](../images/PCA_BuildModel.png)
 
 
-
-
-
 ### PCA Results
 
-PCA output returns a table displaying the number of components
-indicated by whichever criteria was more restrictive in this
-particular case. In this example, a maximum of 100 components were
-requested, and a tolerance set to .5.
+The output for PCA includes the following: 
 
-Scree and cumulative variance plots for the components are returned as
-well. Users can access them by clicking on the black button labeled
-"Scree and Variance Plots" at the top left of the results page. A
-scree plot shows the variance of each component, while the cumulative
-variance plot shows the total variance accounted for by the set of
-components.
-
-Users should note that if they wish to replicate results between H2O
-and R, it is recommended that standardization and cross validation
-either be turned off in H2O, or specified in R.
-
-
-  > Output for PCA is currently in progress for H2O-dev. 
-
+- Output (model category, model summary, scoring history, training metrics, validation metrics, iterations)
+- Archetypes
+- Standard deviation
+- Rotation 
+- Importance of components
 
 

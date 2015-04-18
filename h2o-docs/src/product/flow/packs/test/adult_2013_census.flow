@@ -47,7 +47,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\",\"training_frame\":\"adult_2013_train.hex\",\"validation_frame\":\"adult_2013_test.hex\",\"dropNA20Cols\":false,\"response_column\":\"LOG_WAGP\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"loss\":\"gaussian\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
+      "input": "buildModel 'gbm', {\"destination_key\":\"gbm-6beacf38-4f22-4de1-969b-8e4a8a853b28\",\"training_frame\":\"adult_2013_train.hex\",\"validation_frame\":\"adult_2013_test.hex\",\"dropNA20Cols\":false,\"response_column\":\"LOG_WAGP\",\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"learn_rate\":0.1,\"distribution\":\"gaussian\",\"balance_classes\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"seed\":0}"
     },
     {
       "type": "cs",

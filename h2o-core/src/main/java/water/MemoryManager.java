@@ -197,18 +197,20 @@ abstract public class MemoryManager {
      * Limit to touching global vars in the Boot class.
      */
     @Override public void handleNotification(Notification notification, Object handback) {
-      String notifType = notification.getType();
-      if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
-        // Memory used after this FullGC
-        Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
-        Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
-        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
-        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
-          setMemLow();
-        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
-          setMemGood();
-        Cleaner.kick_store_cleaner();
-      }
+      // TODO:  re-enable when this works.
+
+//      String notifType = notification.getType();
+//      if( notifType.equals(MemoryNotificationInfo.MEMORY_COLLECTION_THRESHOLD_EXCEEDED)) {
+//        // Memory used after this FullGC
+//        Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
+//        Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
+//        MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
+//        if( Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 1))) { // emergency measure - really low on memory, stop allocations right now!
+//          setMemLow();
+//        } else // enable new allocations (even if cleaner is still running, we have enough RAM)
+//          setMemGood();
+//        Cleaner.kick_store_cleaner();
+//      }
     }
   }
 
