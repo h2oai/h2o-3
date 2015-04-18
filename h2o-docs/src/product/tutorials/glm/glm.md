@@ -66,16 +66,14 @@ Now, parse the imported data:
 
 ### Building a Model
 
-0. Once data are parsed, click the **Assist Me!** button, then click **buildModel**. 
+0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `Generalized Linear Model` from the drop-down **Select an algorithm** menu, then click the **Build model** button.  
 0. If the parsed Abalone .hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
 0. In the **Ignored_Columns** field, select all columns except columns 1 and 9 from the *Available* section to move them into the *Selected* section.
 **Note**: You must include at least 2 columns. 
 0. In the **Response** field, select the column associated with the Whole Weight variable (`C1`).
-0. Leave the **Do_Classification** checkbox checked. Use classification when the dependent variable (column 1 in this example) is a binomial classifier. 
 0. Uncheck the **Standardize** checkbox.
 0. From the drop-down **Family** menu, select `gaussian`. 
-0. Enter `0` in the **N_folds** field. If **N_folds** is greater than 0, the model displays the specified number of cross-validation models.  
 0. Enter `0.3` in the **Alpha** field. The alpha parameter is the mixing parameter for the L1 and L2 penalty.
 0. Enter `.002` in the **Lambda** field. 
 0. Click the **Build Model** button.
@@ -96,10 +94,5 @@ To view more details, click the **Inspect** button.
 
  ![GLM - Inspecting Results](../images/GLM_Inspect.png)
  
-To view the best lambda values, click the **Best Lambda** link. 
-
-  ![GLM - Best Lambda](../images/GLM_Inspect_BestLambda.png)
-
-
 
 
