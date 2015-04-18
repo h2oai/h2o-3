@@ -1,5 +1,9 @@
 # Change this global variable to match your own system's path
+<<<<<<< Updated upstream
 ROOT.PATH <- "/Users/spencer/0xdata/"
+=======
+ROOT.PATH <- "C:/Users/Anqi/Documents/Work/"
+>>>>>>> Stashed changes
 DEV.PATH  <- "h2o-dev/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
