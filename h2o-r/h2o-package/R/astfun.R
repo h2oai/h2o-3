@@ -141,7 +141,7 @@ function(stmnt) {
   stmnt_list <- as.list(stmnt)
 
   # is null
-  if (is.atomic(stmnt_list[[1L]]) && is.null(stmnt_list[[1L]])) return(deparse("null"))
+  if (is.atomic(stmnt_list[[1L]]) && is.null(stmnt_list[[1L]])) return("()")
 
   if (is.atomic(stmnt_list[[1L]]))
     if (is.numeric(stmnt_list[[1L]])   ||  # Got atomic numeric

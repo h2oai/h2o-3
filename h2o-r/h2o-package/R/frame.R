@@ -514,7 +514,7 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
   if (missingJ) {
     ncols <- x@mutable$ncols
     col_names <- x@mutable$col_names
-    cols <- "()"
+    cols <- "\"null\""  # TODO: investigate why changing this to "()" borks the object
   } else {
     ncols <- NA_integer_
     col_names <- NA_character_
@@ -527,7 +527,6 @@ setMethod("[", "H2OFrame", function(x, i, j, ..., drop = TRUE) {
     }
     cols <- .eval(substitute(j), parent.frame())
   }
-
   op  <- new("ASTApply", op = "[")
   ast <- new("ASTNode", root = op, children = list(.get(x), rows, cols))
   mutable <- new("H2OFrameMutableState", ast = ast, nrows = nrows, ncols = ncols, col_names = col_names)
