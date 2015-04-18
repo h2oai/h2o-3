@@ -217,10 +217,11 @@ public class ASTddply extends ASTOp {
     public Group(int len) { _ds = new double[len]; }
     public Group( double ds[] ) { _ds = ds; _hash=hash(); }
     // Efficiently allow groups to be hashed & hash-probed
-    public void fill(int row, Chunk chks[], long cols[]) {
+    public Group fill(int row, Chunk chks[], long cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _ds[c] = chks[(int)cols[c]].atd(row); // Load into working array
       _hash = hash();
+      return this;
     }
     private int hash() {
       long h=0;                 // hash is sum of field bits
