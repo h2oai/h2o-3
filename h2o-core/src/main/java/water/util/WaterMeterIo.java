@@ -32,6 +32,7 @@ public class WaterMeterIo extends Iced {
         persist_stats = new IoStatsEntry[io.persist_stats.length];
         for (int j = 0; j < persist_stats.length; j++) {
           persist_stats[j] = new IoStatsEntry();
+          persist_stats[j].backend    = io.persist_stats[j].backend;
         }
       }
 
